@@ -14,12 +14,14 @@
 """
 Unit tests for the ParticleConservingU1 template.
 """
+
+from functools import partial
+
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -28,9 +30,45 @@ def test_standard_validity(init_state):
     """Check the operation using the assert_valid function."""
 
     weights = np.random.random(size=(1, 2, 2))
-    op = qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
+    op = qp.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
 
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
+
+
+def test_resources():
+    """Test the expected resources for the decomposition rule."""
+
+    rule = qp.list_decomps(qp.ParticleConservingU1)[0]
+
+    n_layers = 3
+    num_wires = 4
+
+    expected = {
+        qp.resource_rep(qp.BasisEmbedding, num_wires=num_wires): 1,
+        qp.resource_rep(qp.CZ): 3 * (num_wires - 1) * n_layers,
+        qp.resource_rep(qp.CRot): 3 * (num_wires - 1) * n_layers,
+        qp.resource_rep(qp.PhaseShift): 6 * (num_wires - 1) * n_layers,
+        qp.resource_rep(qp.CNOT): 4 * (num_wires - 1) * n_layers,
+    }
+    assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
+
+
+def _get_queue(op, system):
+    if system == "decomp_method":
+        return op.decomposition()
+    if system == "graph_decomp":
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.list_decomps(qp.ParticleConservingU1)[0](*op.data, op.wires, **op.hyperparameters)
+        return q.queue
+    jax = pytest.importorskip("jax")
+    qp.capture.enable()
+    try:
+        f = partial(qp.list_decomps(qp.ParticleConservingU1)[0], **op.hyperparameters)
+        jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        return tape.circuit
+    finally:
+        qp.capture.disable()
 
 
 class TestDecomposition:
@@ -62,7 +100,11 @@ class TestDecomposition:
 
         return exp_wires
 
-    def test_operations(self):
+    @pytest.mark.parametrize(
+        "system",
+        ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),
+    )
+    def test_operations(self, system):
         """Test the correctness of the ParticleConservingU1 template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
@@ -76,28 +118,30 @@ class TestDecomposition:
         gate_count = layers * gates_per_layer + 1
 
         gates_u1 = [
-            qml.CZ,
-            qml.CRot,
-            qml.PhaseShift,
-            qml.CNOT,
-            qml.PhaseShift,
-            qml.CNOT,
-            qml.PhaseShift,
+            qp.CZ,
+            qp.CRot,
+            qp.PhaseShift,
+            qp.CNOT,
+            qp.PhaseShift,
+            qp.CNOT,
+            qp.PhaseShift,
         ]
-        gates_ent = gates_u1 + [qml.CZ, qml.CRot] + gates_u1
+        gates_ent = gates_u1 + [qp.CZ, qp.CRot] + gates_u1
 
         wires = list(range(qubits))
 
         nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
-        op = qml.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
-        queue = op.decomposition()
+        op = qp.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+
+        queue = _get_queue(op, system)
 
         assert gate_count == len(queue)
 
         # check initialization of the qubit register
-        assert isinstance(queue[0], qml.BasisEmbedding)
+        expected = qp.BasisState if system == "capture" else qp.BasisEmbedding
+        assert isinstance(queue[0], expected)
 
         # check all quantum operations
         idx_CRot = 8
@@ -118,7 +162,7 @@ class TestDecomposition:
                     assert queue[idx].wires.tolist() == exp_wires[j]
 
                     # check that parametrized gates take the parameters \phi and \theta properly
-                    if exp_gate is qml.CRot:
+                    if exp_gate is qp.CRot:
                         if j < idx_CRot:
                             exp_params = [-phi, np.pi, phi]
                         elif j > idx_CRot:
@@ -128,7 +172,7 @@ class TestDecomposition:
 
                         assert queue[idx].parameters == exp_params
 
-                    elif exp_gate is qml.PhaseShift:
+                    elif exp_gate is qp.PhaseShift:
                         if j < idx_CRot:
                             exp_params = phi if j == idx_CRot / 2 else -phi
                         if j > idx_CRot:
@@ -141,18 +185,18 @@ class TestDecomposition:
         weights = np.random.random(size=(1, 2, 2))
         init_state = np.array([1, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.ParticleConservingU1(weights, wires=["z", "a", "k"], init_state=init_state)
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.ParticleConservingU1(weights, wires=["z", "a", "k"], init_state=init_state)
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -207,99 +251,14 @@ class TestDecomposition:
         wires = range(N)
         weights = np.array([[[0.2045368, -0.6031732]]])
 
-        dev = qml.device("default.qubit", wires=N)
+        dev = qp.device("default.qubit", wires=N)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.ParticleConservingU1(weights, wires, init_state=init_state)
-            return qml.state()
+            qp.ParticleConservingU1(weights, wires, init_state=init_state)
+            return qp.state()
 
         assert np.allclose(circuit(weights), exp_state, atol=tol)
-
-    DECOMP_PARAMS = [
-        # 4 layers, 2 qubits
-        (
-            [
-                [[0.11017280164958265, 0.4698218184451487]],
-                [[0.7135672121068317, 0.0272660664063894]],
-                [[0.5157427097550098, 0.10272892526263466]],
-                [[0.9239814091830049, 0.8808136909883172]],
-            ],
-            [0, 1],
-            [0, 0],
-        ),
-        # 5 layers, 3 qubits
-        (
-            [
-                [
-                    [0.30996116164608845, 0.7762565711230485],
-                    [0.29871765303474085, 0.24416302786429345],
-                ],
-                [
-                    [0.17436018243610651, 0.2734732726492589],
-                    [0.545084231833944, 0.3152339642958135],
-                ],
-                [
-                    [0.5155025591256616, 0.010752411646314797],
-                    [0.01299807042587997, 0.28647607092144867],
-                ],
-                [
-                    [0.24446696573419435, 0.3000904265834745],
-                    [0.3765987980718698, 0.14682646358276497],
-                ],
-                [
-                    [0.40048766331999774, 0.8765133487227904],
-                    [0.4958676000527388, 0.9877614437193426],
-                ],
-            ],
-            [0, 1, 2],
-            [1, 0, 1],
-        ),
-        # 6 layers, 4 qubits
-        (
-            [
-                [
-                    [0.26912988693106343, 0.7471399517794667],
-                    [0.45243585979670253, 0.4841394533928278],
-                    [0.20547086596211728, 0.24306963037339213],
-                ],
-                [
-                    [0.7109658281610554, 0.16071657656855232],
-                    [0.8463217509168768, 0.04811307565512346],
-                    [0.3028182641489623, 0.130379080742683],
-                ],
-                [
-                    [0.100436673785685, 0.02729620001262867],
-                    [0.012189820928570572, 0.9408691015077094],
-                    [0.8649719443970864, 0.16911101452497068],
-                ],
-                [
-                    [0.8848486243995226, 0.20487678689411004],
-                    [0.7884149466080009, 0.10983556912458681],
-                    [0.2273674130906974, 0.07707995281244895],
-                ],
-                [
-                    [0.49691776367871987, 0.15122009425990723],
-                    [0.164885189391221, 0.7987235260782912],
-                    [0.7153276123829537, 0.6469720977785561],
-                ],
-                [
-                    [0.3924863551874419, 0.9532711994451982],
-                    [0.4074478651463257, 0.4393058861225143],
-                    [0.3135000703614109, 0.5396793760954518],
-                ],
-            ],
-            [0, 1, 2, 3],
-            [0, 0, 1, 1],
-        ),
-    ]
-
-    @pytest.mark.capture
-    @pytest.mark.parametrize(("weights", "wires", "init_state"), DECOMP_PARAMS)
-    def test_decomposition_new(self, weights, wires, init_state):
-        op = qml.ParticleConservingU1(weights, wires=wires, init_state=init_state)
-        for rule in qml.list_decomps(qml.ParticleConservingU1):
-            _test_decomposition_rule(op, rule)
 
 
 class TestInputs:
@@ -324,12 +283,12 @@ class TestInputs:
 
         wires = range(n_wires)
         init_state = np.array([1, 1, 0, 0])
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
-            return qml.expval(qml.PauliZ(0))
+            qp.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
@@ -337,7 +296,7 @@ class TestInputs:
     @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.ParticleConservingU1(
+        template = qp.ParticleConservingU1(
             weights=np.array([[[0.2, -0.6]]]), wires=range(2), init_state=np.array([1, 1]), id="a"
         )
         assert template.id == "a"
@@ -356,41 +315,41 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.ParticleConservingU1.shape(n_layers, n_wires)
+        shape = qp.ParticleConservingU1.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="The number of qubits must be greater than one"):
-            qml.ParticleConservingU1.shape(3, 1)
+            qp.ParticleConservingU1.shape(3, 1)
 
 
 def circuit_template(weights):
-    qml.ParticleConservingU1(weights, range(2), init_state=np.array([1, 1]))
-    return qml.expval(qml.PauliZ(0))
+    qp.ParticleConservingU1(weights, range(2), init_state=np.array([1, 1]))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(weights):
-    qml.BasisState(np.array([1, 1]), wires=[0, 1])
-    qml.CZ(wires=[0, 1])
-    qml.CRot(weights[0, 0, 0], np.pi, weights[0, 0, 0], wires=[0, 1])
-    qml.PhaseShift(-weights[0, 0, 0], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.PhaseShift(weights[0, 0, 0], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.PhaseShift(-weights[0, 0, 0], wires=[0])
-    qml.CZ(wires=[1, 0])
-    qml.CRot(0, weights[0, 0, 1], 0, wires=[1, 0])
-    qml.CZ(wires=[0, 1])
-    qml.CRot(weights[0, 0, 0], np.pi, -weights[0, 0, 0], wires=[0, 1])
-    qml.PhaseShift(weights[0, 0, 0], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.PhaseShift(-weights[0, 0, 0], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.PhaseShift(weights[0, 0, 0], wires=[0])
+    qp.BasisState(np.array([1, 1]), wires=[0, 1])
+    qp.CZ(wires=[0, 1])
+    qp.CRot(weights[0, 0, 0], np.pi, weights[0, 0, 0], wires=[0, 1])
+    qp.PhaseShift(-weights[0, 0, 0], wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.PhaseShift(weights[0, 0, 0], wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.PhaseShift(-weights[0, 0, 0], wires=[0])
+    qp.CZ(wires=[1, 0])
+    qp.CRot(0, weights[0, 0, 1], 0, wires=[1, 0])
+    qp.CZ(wires=[0, 1])
+    qp.CRot(weights[0, 0, 0], np.pi, -weights[0, 0, 0], wires=[0, 1])
+    qp.PhaseShift(weights[0, 0, 0], wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.PhaseShift(-weights[0, 0, 0], wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.PhaseShift(weights[0, 0, 0], wires=[0])
 
-    return qml.expval(qml.PauliZ(0))
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -404,19 +363,19 @@ class TestInterfaces:
         weights = np.random.random(size=(1, 1, 2))
         weights = pnp.array(weights, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -430,14 +389,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 1, 2)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -456,14 +415,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 1, 2)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -471,7 +430,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -481,14 +440,14 @@ class TestInterfaces:
 
         weights = tf.Variable(np.random.random(size=(1, 1, 2)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -508,14 +467,14 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(1, 1, 2)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()

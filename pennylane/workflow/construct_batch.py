@@ -177,18 +177,18 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit')
+            dev = qp.device('default.qubit')
 
-            @qml.metric_tensor # final transform
-            @qml.transforms.merge_rotations # transform 2
-            @qml.transforms.cancel_inverses # transform 1
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            @qp.metric_tensor # final transform
+            @qp.transforms.merge_rotations # transform 2
+            @qp.transforms.cancel_inverses # transform 1
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit():
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
-        >>> print(qml.workflow.get_transform_program(circuit))
+        >>> print(qp.workflow.get_transform_program(circuit))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -206,7 +206,7 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="user"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="user"))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -219,7 +219,7 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
         present at the very end of resulting program.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="gradient"))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -230,14 +230,14 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         ``"top"`` and ``0`` both return empty transform programs.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="top"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="top"))
         CompilePipeline()
-        >>> print(qml.workflow.get_transform_program(circuit, level=0))
+        >>> print(qp.workflow.get_transform_program(circuit, level=0))
         CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level=2))
+        >>> print(qp.workflow.get_transform_program(circuit, level=2))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations()
@@ -247,12 +247,12 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
+        >>> print(qp.workflow.get_transform_program(circuit, level=slice(1,3)))
         CompilePipeline(
           [1] merge_rotations(),
           [2] _expand_metric_tensor(device_wires=None)
         )
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
+        >>> print(qp.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
         CompilePipeline(
           [1] _conditional_broadcast_expand(),
           [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
@@ -270,9 +270,9 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
 
-        >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
-        >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
-        >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
+        >>> user_prog = qp.workflow.get_transform_program(circuit, level="user")
+        >>> grad_prog = qp.workflow.get_transform_program(circuit, level="gradient")
+        >>> dev_prog = qp.workflow.get_transform_program(circuit, level="device")
         >>> print(grad_prog[len(user_prog) - 1 : -1])
         CompilePipeline(
           [1] metric_tensor(device_wires=None)
@@ -330,20 +330,20 @@ def construct_batch(
 
             from pennylane.workflow import construct_batch
 
-            dev = qml.device('default.qubit')
+            dev = qp.device('default.qubit')
 
-            @qml.transforms.undo_swaps
-            @qml.transforms.merge_rotations
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
+            @qp.transforms.undo_swaps
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
             def circuit(x):
-                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
-                qml.RX(x, wires=0)
-                qml.RX(-x, wires=0)
-                qml.SWAP((0,1))
-                qml.X(0)
-                qml.X(0)
-                return qml.expval(qml.X(0) + qml.Y(0))
+                qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0,1))
+                qp.RX(x, wires=0)
+                qp.RX(-x, wires=0)
+                qp.SWAP((0,1))
+                qp.X(0)
+                qp.X(0)
+                return qp.expval(qp.X(0) + qp.Y(0))
 
         We can inspect what the device will execute with:
 

@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   update-durations:
+    permissions:
+      contents: read
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
@@ -24,11 +26,13 @@ jobs:
       skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
 
   merge-durations-files:
+    permissions:
+      contents: read  
     needs: update-durations
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: durations-*
           path: ./
@@ -41,13 +45,16 @@ jobs:
           jq -s 'add' durations-jax-*/*.json > durations/jax_tests_durations.json
 
       - name: Upload combined durations artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: merged-durations
           path: ./durations
           include-hidden-files: true
 
   upload-durations:
+    permissions:
+      pull-requests: write
+      contents: write
     needs:
       - update-durations
       - merge-durations-files

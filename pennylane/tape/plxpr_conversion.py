@@ -17,9 +17,10 @@ Defines a function for converting plxpr to a tape.
 
 from copy import copy
 
+import jax
 import numpy as np
 
-from pennylane import ops
+from pennylane import ops, queuing
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -32,6 +33,7 @@ from pennylane.capture.primitives import (
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    quantum_subroutine_prim,
     value_and_grad_prim,
     vjp_prim,
 )
@@ -44,6 +46,7 @@ from pennylane.ops.mid_measure import (
     measure,
     pauli_measure,
 )
+from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
@@ -54,20 +57,20 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     .. code-block:: python
 
-        @qml.for_loop(3)
+        @qp.for_loop(3)
         def loop(i):
-            qml.X(i)
+            qp.X(i)
 
         def f(x):
             loop()
-            qml.adjoint(qml.S)(0)
-            m0 = qml.measure(0)
-            qml.RX(2*x, 0)
-            return qml.probs(wires=0), qml.expval(qml.Z(1))
+            qp.adjoint(qp.S)(0)
+            m0 = qp.measure(0)
+            qp.RX(2*x, 0)
+            return qp.probs(wires=0), qp.expval(qp.Z(1))
 
     >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
     >>> from jax import make_jaxpr
-    >>> qml.capture.enable()
+    >>> qp.capture.enable()
     >>> plxpr = make_jaxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
@@ -82,10 +85,10 @@ class CollectOpsandMeas(FlattenedInterpreter):
     same state.
 
     >>> collector = CollectOpsandMeas()
-    >>> collector(qml.T)(0)
+    >>> collector(qp.T)(0)
     >>> collector.state['ops']
     [T(0)]
-    >>> collector(qml.S)(0)
+    >>> collector(qp.S)(0)
     >>> collector.state['ops']
     [T(0), S(0)]
 
@@ -154,7 +157,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     if mcm_conditions:
         if len(mcm_conditions) != len(conditions) - 1:
             raise ValueError(
-                "Cannot use qml.cond with a combination of mid-circuit measurements "
+                "Cannot use qp.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
         conditions = get_mcm_predicates(mcm_conditions)
@@ -243,6 +246,25 @@ def _deallocate_primitive(self, *wires):
     return []
 
 
+# pylint: disable=unused-argument
+@CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
+    child = CollectOpsandMeas()
+    with queuing.QueuingManager.stop_recording():
+        out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+    name = name.split("_")[0]
+    with pause():
+        self.state["ops"].append(CollectedSubroutine(name, child.state["ops"]))
+    return out
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.convert_element_type_p)
+def _convert_element_type(self, operand, **kwargs):
+    if isinstance(operand, MeasurementValue):
+        return operand
+    return jax.lax.convert_element_type_p.bind(operand, **kwargs)
+
+
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
@@ -259,22 +281,22 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
 
     .. code-block:: python
 
-        @qml.for_loop(3)
+        @qp.for_loop(3)
         def loop(i):
-            qml.X(i)
+            qp.X(i)
 
         def f(x):
             loop()
-            qml.adjoint(qml.S)(0)
-            m0 = qml.measure(0)
-            qml.RX(2*x, 0)
-            return qml.probs(wires=0), qml.expval(qml.Z(1))
+            qp.adjoint(qp.S)(0)
+            m0 = qp.measure(0)
+            qp.RX(2*x, 0)
+            return qp.probs(wires=0), qp.expval(qp.Z(1))
 
-        qml.capture.enable()
+        qp.capture.enable()
 
         plxpr = jax.make_jaxpr(f)(0.5)
-        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
-        print(qml.drawer.tape_text(tape, decimals=2))
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
+        print(qp.drawer.tape_text(tape, decimals=2))
 
     .. code-block::
 

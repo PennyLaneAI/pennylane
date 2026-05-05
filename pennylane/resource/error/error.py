@@ -14,11 +14,12 @@
 """
 Stores classes and logic to define and track algorithmic error in a quantum workflow.
 """
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation, Operator
 
 
@@ -135,15 +136,15 @@ class SpectralNormError(AlgorithmicError):
 
         **Example**
 
-        >>> Op1 = qml.RY(0.40, 0)
-        >>> Op2 = qml.RY(0.41, 0)
+        >>> Op1 = qp.RY(0.40, 0)
+        >>> Op2 = qp.RY(0.41, 0)
         >>> SpectralNormError.get_error(Op1, Op2)
         np.float64(0.004999994791668287)
         """
         wire_order = exact_op.wires
-        m1 = qml.matrix(exact_op, wire_order=wire_order)
-        m2 = qml.matrix(approximate_op, wire_order=wire_order)
-        return qml.math.max(qml.math.svd(m1 - m2, compute_uv=False))
+        m1 = qp.matrix(exact_op, wire_order=wire_order)
+        m2 = qp.matrix(approximate_op, wire_order=wire_order)
+        return qp.math.max(qp.math.svd(m1 - m2, compute_uv=False))
 
 
 def _compute_algo_error(tape) -> dict[str, AlgorithmicError]:
@@ -180,7 +181,7 @@ def _algo_error_qnode(
             tape, or a list of such dictionaries when there are multiple tapes in the batch.
     """
 
-    batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
+    batch, _ = qp.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
     # Compute errors for each tape separately
     errors_list = [_compute_algo_error(tape) for tape in batch]
@@ -221,20 +222,20 @@ def algo_error(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        dev = qml.device("null.qubit", wires=2)
-        Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+        dev = qp.device("null.qubit", wires=2)
+        Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(time):
-            qml.TrotterProduct(Hamiltonian, time=time, n=4, order=2)
-            qml.TrotterProduct(Hamiltonian, time=time, n=4, order=4)
-            return qml.state()
+            qp.TrotterProduct(Hamiltonian, time=time, n=4, order=2)
+            qp.TrotterProduct(Hamiltonian, time=time, n=4, order=4)
+            return qp.state()
 
     We can compute the errors using ``algo_error``:
 
-    >>> errors = qml.resource.algo_error(circuit)(time=1.0)
+    >>> errors = qp.resource.algo_error(circuit)(time=1.0)
     >>> print(errors)
     {'SpectralNormError': SpectralNormError(...)}
 
@@ -254,15 +255,15 @@ def algo_error(
         :class:`~.resource.AlgorithmicError`, :class:`~.resource.SpectralNormError`,
         :class:`~.resource.ErrorOperation`, :class:`~.TrotterProduct`
     """
-    if isinstance(qnode, qml.QNode):
+    if isinstance(qnode, qp.QNode):
         return partial(_algo_error_qnode, qnode, level)
 
     try:
         from pennylane.qnn.torch import TorchLayer  # pylint: disable=import-outside-toplevel
 
-        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qml.QNode):
+        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
             return partial(_algo_error_qnode, qnode, level)
     except ImportError:  # pragma: no cover
         pass
 
-    raise ValueError("qml.resource.algo_error can only be applied to a QNode")
+    raise ValueError("qp.resource.algo_error can only be applied to a QNode")

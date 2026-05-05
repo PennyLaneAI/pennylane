@@ -14,6 +14,7 @@
 """
 Defines the MeasurementValue class
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Generator
@@ -133,7 +134,7 @@ class MeasurementValue:
 
     def __bool__(self) -> bool:
         raise ValueError(
-            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qml.cond instead."
+            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qp.cond instead."
         )
 
     def __eq__(self, other):

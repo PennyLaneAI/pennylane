@@ -14,6 +14,7 @@
 """
 This submodule tests the base classes for resource operators.
 """
+
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator.ops as qre_ops
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
@@ -53,7 +54,7 @@ class DummyAdjoint(ResourceOperator):
 class TestCompressedResourceOp:
     """Testing the methods and attributes of the CompressedResourceOp class"""
 
-    test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
+    test_hamiltonian = qp.dot([1, -1, 0.5], [qp.X(0), qp.Y(1), qp.Z(0) @ qp.Z(1)])
     compressed_ops_and_params_lst = (
         ("DummyX", DummyX, 1, {"num_wires": 1}, None),
         ("DummyQFT", DummyQFT, 5, {"num_wires": 5}, None),
@@ -393,7 +394,7 @@ class TestResourceOperator:
 
     def test_equality_false(self):
         """Test that the __eq__ method returns False if the input operator is not ResourceOperator."""
-        assert not qre_ops.X() == qml.X(0)
+        assert not qre_ops.X() == qp.X(0)
 
     ops_to_queue = [
         Hadamard(wires=[0]),

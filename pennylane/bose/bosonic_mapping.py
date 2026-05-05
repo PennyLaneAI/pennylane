@@ -63,8 +63,8 @@ def binary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord({(0, 0): "+"})
-    >>> qml.binary_mapping(w, n_states=4)
+    >>> w = qp.BoseWord({(0, 0): "+"})
+    >>> qp.binary_mapping(w, n_states=4)
     (
         0.6830127018922193 * X(0)
       + -0.1830127018922193 * (X(0) @ Z(1))
@@ -116,7 +116,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
     for (_, b_idx), sign in bose_operator.items():
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat[sign])
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat[sign][i][j]
 
             binary_row = list(map(int, bin(i)[2:]))[::-1]
@@ -188,8 +188,8 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord({(0, 0): "+"})
-    >>> qml.unary_mapping(w, n_states=4)
+    >>> w = qp.BoseWord({(0, 0): "+"})
+    >>> qp.unary_mapping(w, n_states=4)
     (
         0.25 * (X(0) @ X(1))
       + -0.25j * (X(0) @ Y(1))
@@ -255,7 +255,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
 
         op = PauliSentence()
         sparse_coeffmat = np.nonzero(coeff_mat_prod)
-        for i, j in zip(*sparse_coeffmat):
+        for i, j in zip(*sparse_coeffmat, strict=True):
             coeff = coeff_mat_prod[i][j]
 
             row = np.zeros(n_states)
@@ -339,8 +339,8 @@ def christiansen_mapping(
 
     **Example**
 
-    >>> w = qml.bose.BoseWord({(0,0):"+", (1,1): "-"})
-    >>> qml.christiansen_mapping(w)
+    >>> w = qp.bose.BoseWord({(0,0):"+", (1,1): "-"})
+    >>> qp.christiansen_mapping(w)
     (
         0.25 * (X(0) @ X(1))
       + 0.25j * (X(0) @ Y(1))

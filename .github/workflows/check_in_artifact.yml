@@ -69,16 +69,18 @@ on:
 jobs:
   check_in_artifact:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: ${{ inputs.main_branch_fetch_depth }}
           ref: main
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ inputs.artifact_name_pattern }}
           path: ${{ inputs.artifact_save_path }}

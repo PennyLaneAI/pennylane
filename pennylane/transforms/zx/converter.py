@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
+
 # pylint: disable=too-many-return-statements,too-many-arguments
 
 from collections import OrderedDict
@@ -20,7 +21,7 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
@@ -37,21 +38,21 @@ def _toffoli_clifford_t_decomp(wires):
     replacing Adjoint(T) with PhaseShift(-π/4)."""
 
     return [
-        qml.Hadamard(wires=wires[2]),
-        qml.CNOT(wires=[wires[1], wires[2]]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
-        qml.CNOT(wires=[wires[0], wires[2]]),
-        qml.T(wires=wires[2]),
-        qml.CNOT(wires=[wires[1], wires[2]]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
-        qml.CNOT(wires=[wires[0], wires[2]]),
-        qml.T(wires=wires[2]),
-        qml.T(wires=wires[1]),
-        qml.CNOT(wires=[wires[0], wires[1]]),
-        qml.Hadamard(wires=wires[2]),
-        qml.T(wires=wires[0]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[1]),
-        qml.CNOT(wires=[wires[0], wires[1]]),
+        qp.Hadamard(wires=wires[2]),
+        qp.CNOT(wires=[wires[1], wires[2]]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qp.CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        qp.CNOT(wires=[wires[1], wires[2]]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qp.CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        qp.T(wires=wires[1]),
+        qp.CNOT(wires=[wires[0], wires[1]]),
+        qp.Hadamard(wires=wires[2]),
+        qp.T(wires=wires[0]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[1]),
+        qp.CNOT(wires=[wires[0], wires[1]]),
     ]
 
 
@@ -60,21 +61,21 @@ def _ccz_clifford_t_decomp(wires):
     replacing Adjoint(T) with PhaseShift(-π/4)."""
 
     return [
-        qml.CNOT(wires=[wires[1], wires[2]]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
-        qml.CNOT(wires=[wires[0], wires[2]]),
-        qml.T(wires=wires[2]),
-        qml.CNOT(wires=[wires[1], wires[2]]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
-        qml.CNOT(wires=[wires[0], wires[2]]),
-        qml.T(wires=wires[2]),
-        qml.T(wires=wires[1]),
-        qml.CNOT(wires=[wires[0], wires[1]]),
-        qml.Hadamard(wires=wires[2]),
-        qml.T(wires=wires[0]),
-        qml.PhaseShift(-np.pi / 4, wires=wires[1]),
-        qml.CNOT(wires=[wires[0], wires[1]]),
-        qml.Hadamard(wires=wires[2]),
+        qp.CNOT(wires=[wires[1], wires[2]]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qp.CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        qp.CNOT(wires=[wires[1], wires[2]]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qp.CNOT(wires=[wires[0], wires[2]]),
+        qp.T(wires=wires[2]),
+        qp.T(wires=wires[1]),
+        qp.CNOT(wires=[wires[0], wires[1]]),
+        qp.Hadamard(wires=wires[2]),
+        qp.T(wires=wires[0]),
+        qp.PhaseShift(-np.pi / 4, wires=wires[1]),
+        qp.CNOT(wires=[wires[0], wires[1]]),
+        qp.Hadamard(wires=wires[2]),
     ]
 
 
@@ -116,7 +117,7 @@ def to_zx(tape, expand_measurements=False):
     Returns:
         graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the ZX graph in the form of a PyZX graph.
 
     Raises:
@@ -130,21 +131,21 @@ def to_zx(tape, expand_measurements=False):
     .. code-block:: python
 
         import pyzx
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.transforms.to_zx
-        @qml.qnode(device=dev)
+        @qp.transforms.to_zx
+        @qp.qnode(device=dev)
         def circuit(p):
-            qml.RZ(p[0], wires=1),
-            qml.RZ(p[1], wires=1),
-            qml.RX(p[2], wires=0),
-            qml.Z(0),
-            qml.RZ(p[3], wires=1),
-            qml.X(1),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=[1, 0]),
-            qml.SWAP(wires=[0, 1]),
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RZ(p[0], wires=1),
+            qp.RZ(p[1], wires=1),
+            qp.RX(p[2], wires=0),
+            qp.Z(0),
+            qp.RZ(p[3], wires=1),
+            qp.X(1),
+            qp.CNOT(wires=[0, 1]),
+            qp.CNOT(wires=[1, 0]),
+            qp.SWAP(wires=[0, 1]),
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
@@ -162,19 +163,19 @@ def to_zx(tape, expand_measurements=False):
     .. code-block:: python
 
         operations = [
-                qml.RZ(5 / 4 * np.pi, wires=1),
-                qml.RZ(3 / 4 * np.pi, wires=1),
-                qml.RX(0.1, wires=0),
-                qml.Z(0),
-                qml.RZ(0.3, wires=1),
-                qml.X(1),
-                qml.CNOT(wires=[0, 1]),
-                qml.CNOT(wires=[1, 0]),
-                qml.SWAP(wires=[0, 1]),
+                qp.RZ(5 / 4 * np.pi, wires=1),
+                qp.RZ(3 / 4 * np.pi, wires=1),
+                qp.RX(0.1, wires=0),
+                qp.Z(0),
+                qp.RZ(0.3, wires=1),
+                qp.X(1),
+                qp.CNOT(wires=[0, 1]),
+                qp.CNOT(wires=[1, 0]),
+                qp.SWAP(wires=[0, 1]),
             ]
 
-        tape = qml.tape.QuantumTape(operations)
-        g = qml.transforms.to_zx(tape)
+        tape = qp.tape.QuantumTape(operations)
+        g = qp.transforms.to_zx(tape)
 
     >>> g
     Graph(20 vertices, 23 edges)
@@ -190,78 +191,78 @@ def to_zx(tape, expand_measurements=False):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=5)
+            dev = qp.device("default.qubit", wires=5)
 
-            @qml.transforms.to_zx
-            @qml.qnode(device=dev)
+            @qp.transforms.to_zx
+            @qp.qnode(device=dev)
             def mod_5_4():
-                qml.X(4),
-                qml.Hadamard(wires=4),
-                qml.CNOT(wires=[3, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[0, 4]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[3, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[0, 4]),
-                qml.T(wires=[3]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[0, 3]),
-                qml.T(wires=[0]),
-                qml.adjoint(qml.T(wires=[3]))
-                qml.CNOT(wires=[0, 3]),
-                qml.CNOT(wires=[3, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[2, 4]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[3, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[2, 4]),
-                qml.T(wires=[3]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[2, 3]),
-                qml.T(wires=[2]),
-                qml.adjoint(qml.T(wires=[3]))
-                qml.CNOT(wires=[2, 3]),
-                qml.Hadamard(wires=[4]),
-                qml.CNOT(wires=[3, 4]),
-                qml.Hadamard(wires=4),
-                qml.CNOT(wires=[2, 4]),
-                qml.adjoint(qml.T(wires=[4]),)
-                qml.CNOT(wires=[1, 4]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[2, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[1, 4]),
-                qml.T(wires=[4]),
-                qml.T(wires=[2]),
-                qml.CNOT(wires=[1, 2]),
-                qml.T(wires=[1]),
-                qml.adjoint(qml.T(wires=[2]))
-                qml.CNOT(wires=[1, 2]),
-                qml.Hadamard(wires=[4]),
-                qml.CNOT(wires=[2, 4]),
-                qml.Hadamard(wires=4),
-                qml.CNOT(wires=[1, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[0, 4]),
-                qml.T(wires=[4]),
-                qml.CNOT(wires=[1, 4]),
-                qml.adjoint(qml.T(wires=[4])),
-                qml.CNOT(wires=[0, 4]),
-                qml.T(wires=[4]),
-                qml.T(wires=[1]),
-                qml.CNOT(wires=[0, 1]),
-                qml.T(wires=[0]),
-                qml.adjoint(qml.T(wires=[1])),
-                qml.CNOT(wires=[0, 1]),
-                qml.Hadamard(wires=[4]),
-                qml.CNOT(wires=[1, 4]),
-                qml.CNOT(wires=[0, 4]),
-                return qml.expval(qml.Z(0))
+                qp.X(4),
+                qp.Hadamard(wires=4),
+                qp.CNOT(wires=[3, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[0, 4]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[3, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[0, 4]),
+                qp.T(wires=[3]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[0, 3]),
+                qp.T(wires=[0]),
+                qp.adjoint(qp.T(wires=[3]))
+                qp.CNOT(wires=[0, 3]),
+                qp.CNOT(wires=[3, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[2, 4]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[3, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[2, 4]),
+                qp.T(wires=[3]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[2, 3]),
+                qp.T(wires=[2]),
+                qp.adjoint(qp.T(wires=[3]))
+                qp.CNOT(wires=[2, 3]),
+                qp.Hadamard(wires=[4]),
+                qp.CNOT(wires=[3, 4]),
+                qp.Hadamard(wires=4),
+                qp.CNOT(wires=[2, 4]),
+                qp.adjoint(qp.T(wires=[4]),)
+                qp.CNOT(wires=[1, 4]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[2, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[1, 4]),
+                qp.T(wires=[4]),
+                qp.T(wires=[2]),
+                qp.CNOT(wires=[1, 2]),
+                qp.T(wires=[1]),
+                qp.adjoint(qp.T(wires=[2]))
+                qp.CNOT(wires=[1, 2]),
+                qp.Hadamard(wires=[4]),
+                qp.CNOT(wires=[2, 4]),
+                qp.Hadamard(wires=4),
+                qp.CNOT(wires=[1, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[0, 4]),
+                qp.T(wires=[4]),
+                qp.CNOT(wires=[1, 4]),
+                qp.adjoint(qp.T(wires=[4])),
+                qp.CNOT(wires=[0, 4]),
+                qp.T(wires=[4]),
+                qp.T(wires=[1]),
+                qp.CNOT(wires=[0, 1]),
+                qp.T(wires=[0]),
+                qp.adjoint(qp.T(wires=[1])),
+                qp.CNOT(wires=[0, 1]),
+                qp.Hadamard(wires=[4]),
+                qp.CNOT(wires=[1, 4]),
+                qp.CNOT(wires=[0, 4]),
+                return qp.expval(qp.Z(0))
 
-        The circuit contains 63 gates; 28 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.X`. We applied the ``qml.transforms.to_zx`` decorator in order to transform our circuit to
+        The circuit contains 63 gates; 28 :func:`qp.T` gates, 28 :func:`qp.CNOT`, 6 :func:`qp.Hadmard` and
+        1 :func:`qp.X`. We applied the ``qp.transforms.to_zx`` decorator in order to transform our circuit to
         a ZX graph.
 
         You can get the PyZX graph by simply calling the QNode:
@@ -279,25 +280,25 @@ def to_zx(tape, expand_measurements=False):
         >>> pyzx.tcount(g)
         8
 
-        If you give a closer look, the circuit contains now 53 gates; 8 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.X` and 10 :func:`qml.S`. We successfully reduced the T-count by 20 and have ten additional
+        If you give a closer look, the circuit contains now 53 gates; 8 :func:`qp.T` gates, 28 :func:`qp.CNOT`, 6 :func:`qp.Hadmard` and
+        1 :func:`qp.X` and 10 :func:`qp.S`. We successfully reduced the T-count by 20 and have ten additional
         S gates. The number of CNOT gates remained the same.
 
         The :func:`from_zx` transform can now convert the optimized circuit back into PennyLane operations:
 
         .. code-block:: python
 
-            tape_opt = qml.transforms.from_zx(g)
+            tape_opt = qp.transforms.from_zx(g)
 
-            wires = qml.wires.Wires([4, 3, 0, 2, 1])
+            wires = qp.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = qp.map_wires(tape_opt, wire_map=wires_map)[0][0]
 
-            @qml.qnode(device=dev)
+            @qp.qnode(device=dev)
             def mod_5_4():
                 for g in tape_opt_reorder:
-                    qml.apply(g)
-                return qml.expval(qml.Z(0))
+                    qp.apply(g)
+                return qp.expval(qp.Z(0))
 
         >>> result = mod_5_4()
         >>> print(result) # doctest: +SKIP
@@ -320,8 +321,16 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
+
+    ######################################################################
+    # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
+    # populated only via add_label(label, row).  Use it so output boundary
+    # vertices are created later.
+    from packaging.version import Version
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
+
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
@@ -367,7 +376,7 @@ def to_zx(tape, expand_measurements=False):
 
         consecutive_wires = Wires(range(len(res[0].wires)))
         consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires, strict=True))
-        mapped_tapes, fn = qml.map_wires(res[0], wire_map=consecutive_wires_map)
+        mapped_tapes, fn = qp.map_wires(res[0], wire_map=consecutive_wires_map)
         mapped_tape = fn(mapped_tapes)
 
         inputs = []
@@ -377,17 +386,23 @@ def to_zx(tape, expand_measurements=False):
             vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
             inputs.append(vertex)
             q_mapper.set_prev_vertex(i, vertex)
-            q_mapper.set_next_row(i, 1)
-            q_mapper.set_qubit(i, i)
+            if _pyzx_010:
+                # add_label(i, 1) does all three things: set qubit, set rows, update labels
+                q_mapper.add_label(i, 1)
+            else:  # pragma: no cover
+                # pyzx 0.9: `add_label(l)` has a different signature (no `row` param) and destructive semantics (set_all_rows).
+                # We must call `set_next_row(i, 1)` + `set_qubit(i, i)` separately.
+                q_mapper.set_next_row(i, 1)
+                q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         kwargs = {"gate_set": gate_sets.PYZX}
-        if qml.decomposition.enabled_graph():
-            kwargs["fixed_decomps"] = {qml.GlobalPhase: null_decomp}
-        [mapped_tape], _ = qml.transforms.decompose(mapped_tape, **kwargs)
+        if qp.decomposition.enabled_graph():
+            kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
+        [mapped_tape], _ = qp.transforms.decompose(mapped_tape, **kwargs)
 
         if expand_measurements:
-            [mapped_tape], _ = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
+            [mapped_tape], _ = qp.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
 
         expanded_operations = []
         for op in mapped_tape.operations:
@@ -453,8 +468,8 @@ def from_zx(graph, decompose_phases=True):
 
     Args:
         graph (Graph): ZX graph in PyZX.
-        decompose_phases (bool): If True the phases are decomposed, meaning that :func:`qml.RZ` and :func:`qml.RX` are
-            simplified into other gates (e.g. :func:`qml.T`, :func:`qml.S`, ...).
+        decompose_phases (bool): If True the phases are decomposed, meaning that :func:`qp.RZ` and :func:`qp.RX` are
+            simplified into other gates (e.g. :func:`qp.T`, :func:`qp.S`, ...).
 
     **Example**
 
@@ -463,25 +478,25 @@ def from_zx(graph, decompose_phases=True):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.transforms.to_zx
+        @qp.transforms.to_zx
         def circuit(p):
-            qml.RZ(p[0], wires=0),
-            qml.RZ(p[1], wires=0),
-            qml.RX(p[2], wires=1),
-            qml.Z(1),
-            qml.RZ(p[3], wires=0),
-            qml.X(0),
-            qml.CNOT(wires=[1, 0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.SWAP(wires=[1, 0]),
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RZ(p[0], wires=0),
+            qp.RZ(p[1], wires=0),
+            qp.RX(p[2], wires=1),
+            qp.Z(1),
+            qp.RZ(p[3], wires=0),
+            qp.X(0),
+            qp.CNOT(wires=[1, 0]),
+            qp.CNOT(wires=[0, 1]),
+            qp.SWAP(wires=[1, 0]),
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
 
-        pennylane_tape = qml.transforms.from_zx(g)
+        pennylane_tape = qp.transforms.from_zx(g)
 
     You can check that the operations are similar but some were decomposed in the process.
 
@@ -563,7 +578,7 @@ def from_zx(graph, decompose_phases=True):
 
             # Add Hadamard gate (written in the edge)
             if graph.edge_type(graph.edge(neighbor_0, vertex)) == EdgeType.HADAMARD:
-                operations.append(qml.Hadamard(wires=qubit_1))
+                operations.append(qp.Hadamard(wires=qubit_1))
 
             # Vertex is a boundary
             if type_1 == VertexType.BOUNDARY:
@@ -593,35 +608,31 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
     if decompose_phases:
         type_z = type_1 == VertexType.Z
         if type_z and param.denominator == 2:
-            op = qml.adjoint(qml.S(wires=qubit_1)) if param.numerator == 3 else qml.S(wires=qubit_1)
+            op = qp.adjoint(qp.S(wires=qubit_1)) if param.numerator == 3 else qp.S(wires=qubit_1)
             return [op]
         if type_z and param.denominator == 4:
             if param.numerator in (1, 7):
                 op = (
-                    qml.adjoint(qml.T(wires=qubit_1))
-                    if param.numerator == 7
-                    else qml.T(wires=qubit_1)
+                    qp.adjoint(qp.T(wires=qubit_1)) if param.numerator == 7 else qp.T(wires=qubit_1)
                 )
                 return [op]
             if param.numerator in (3, 5):
-                op1 = qml.Z(qubit_1)
+                op1 = qp.Z(qubit_1)
                 op2 = (
-                    qml.adjoint(qml.T(wires=qubit_1))
-                    if param.numerator == 3
-                    else qml.T(wires=qubit_1)
+                    qp.adjoint(qp.T(wires=qubit_1)) if param.numerator == 3 else qp.T(wires=qubit_1)
                 )
                 return [op1, op2]
         if param == 1:
-            op = qml.Z(qubit_1) if type_1 == VertexType.Z else qml.X(qubit_1)
+            op = qp.Z(qubit_1) if type_1 == VertexType.Z else qp.X(qubit_1)
             return [op]
         if param != 0:
             scaled_param = np.pi * float(param)
-            op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+            op_class = qp.RZ if type_1 == VertexType.Z else qp.RX
             return [op_class(scaled_param, wires=qubit_1)]
     # Phases are not decomposed
     if param != 0:
         scaled_param = np.pi * float(param)
-        op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+        op_class = qp.RZ if type_1 == VertexType.Z else qp.RX
         return [op_class(scaled_param, wires=qubit_1)]
 
     # No gate is added
@@ -638,12 +649,12 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
             )
 
         if type_1 == VertexType.Z:
-            op = qml.CZ(wires=[qubit_2, qubit_1])
+            op = qp.CZ(wires=[qubit_2, qubit_1])
             return [op]
 
-        op_1 = qml.Hadamard(wires=qubit_2)
-        op_2 = qml.CNOT(wires=[qubit_2, qubit_1])
-        op_3 = qml.Hadamard(wires=qubit_2)
+        op_1 = qp.Hadamard(wires=qubit_2)
+        op_2 = qp.CNOT(wires=[qubit_2, qubit_1])
+        op_3 = qp.Hadamard(wires=qubit_2)
         return [op_1, op_2, op_3]
 
     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
@@ -651,5 +662,5 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
             "A green and red node connected by a Hadamard edge does not have a circuit representation."
         )
     # Type1 is always of type Z therefore the qubits are already ordered.
-    op = qml.CNOT(wires=[qubit_1, qubit_2])
+    op = qp.CNOT(wires=[qubit_1, qubit_2])
     return [op]

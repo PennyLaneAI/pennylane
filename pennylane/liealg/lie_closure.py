@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
+
 import warnings
 from collections.abc import Iterable
 from copy import copy
@@ -67,32 +68,34 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
         :class:`~.Operator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
 
-    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso::
+        :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`,
+        and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
 
     >>> from pennylane import X, Y, Z
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops)
+    >>> dla = qp.lie_closure(ops)
 
     Let us walk through what happens in this simple example of computing the Lie closure of these generators (the transverse field Ising model on two qubits).
     A first round of commutators between all elements yields:
 
-    >>> qml.commutator(X(0) @ X(1), Z(0))
+    >>> qp.commutator(X(0) @ X(1), Z(0))
     -2j * (Y(0) @ X(1))
-    >>> qml.commutator(X(0) @ X(1), Z(1))
+    >>> qp.commutator(X(0) @ X(1), Z(1))
     -2j * (X(0) @ Y(1))
 
     A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
-    >>> qml.commutator(X(0) @ Y(1), Z(0))
+    >>> qp.commutator(X(0) @ Y(1), Z(0))
     -2j * (Y(0) @ Y(1))
 
     After that, no new operators emerge from taking nested commutators and we have the resulting DLA.
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops)
+    >>> dla = qp.lie_closure(ops)
     >>> dla
     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
@@ -111,7 +114,7 @@ def lie_closure(
         ...     PauliSentence({PauliWord({0: "Z"}): 1.}),
         ...     PauliSentence({PauliWord({1: "Z"}): 1.}),
         ... ]
-        >>> dla = qml.lie_closure(ops, pauli=True)
+        >>> dla = qp.lie_closure(ops, pauli=True)
         >>> dla
         [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
@@ -122,13 +125,13 @@ def lie_closure(
         We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
         dimension of the DLA and ``n`` the number of qubits.
 
-        >>> dla = qml.lie_closure(ops, matrix=True)
+        >>> dla = qp.lie_closure(ops, matrix=True)
         >>> dla.shape
         (6, 4, 4)
 
         You can retrieve a semi-analytic representation again by using :func:`~pauli_decompose`.
 
-        >>> dla_ops = [qml.pauli_decompose(op) for op in dla]
+        >>> dla_ops = [qp.pauli_decompose(op) for op in dla]
         >>> dla_ops
         [1.0 * (X(0) @ X(1)),
          1.0 * (Z(0) @ I(1)),
@@ -251,7 +254,7 @@ def _lie_closure_matrix(
     .. seealso::
 
         For details on the mathematical definitions, see :func:`~lie_closure` and our
-        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+        :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
@@ -274,7 +277,7 @@ def _lie_closure_matrix(
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
-    >>> g_ops = [qml.pauli_decompose(op) for op in g]
+    >>> g_ops = [qp.pauli_decompose(op) for op in g]
 
     **Internal representation**
 

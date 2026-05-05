@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``MergeAmplitudeEmbeddingInterpreter`` class"""
+
 # pylint:disable=protected-access, wrong-import-position
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.core import TransformError
 
 jax = pytest.importorskip("jax")
@@ -58,15 +59,15 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.Hadamard(wires=2)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.measure(wires=1)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=2)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.measure(wires=1)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -75,12 +76,12 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.X(0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.X(0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -89,12 +90,12 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc(w):
-            qml.X(w)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
+            qp.X(w)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
 
         with pytest.raises(
             TransformError,
-            match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
+            match="AmplitudeEmbedding after operators with dynamic wires.",
         ):
             jax.make_jaxpr(qfunc)(1)
 
@@ -103,13 +104,13 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.CNOT(wires=[0.0, 1.0])
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.CNOT(wires=[0.0, 1.0])
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
 
@@ -117,17 +118,17 @@ class TestRepeatedQubitTransformErrors:
         """Test that wire collision can be detected before a higher-order primitive is applied."""
 
         def ctrl_fn():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
-            qml.X(0)  # Same wire as AE in ctrl_fn
-            qml.ctrl(ctrl_fn, [2, 3])()
+            qp.X(0)  # Same wire as AE in ctrl_fn
+            qp.ctrl(ctrl_fn, [2, 3])()
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
 
@@ -135,17 +136,17 @@ class TestRepeatedQubitTransformErrors:
         """Test that wire collision is able to be detected after a higher order primitive is applied."""
 
         def ctrl_fn():
-            qml.X(0)
+            qp.X(0)
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
-            qml.ctrl(ctrl_fn, [2])()  # ctrl_fn has wires 0
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.ctrl(ctrl_fn, [2])()  # ctrl_fn has wires 0
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
 
@@ -155,24 +156,24 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
 
             @cond_f.else_if(x > 1)
             def _else_if():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
             def _else():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
 
-            qml.X(collision_wire)  # Each branch of the cond will have a collision with this wire
+            qp.X(collision_wire)  # Each branch of the cond will have a collision with this wire
             cond_f()
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -182,24 +183,24 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.Z(0)
+                qp.Z(0)
 
             @cond_f.else_if(x > 1)
             def _else_if():
-                qml.Y(1)
+                qp.Y(1)
 
             @cond_f.otherwise
             def _else():
-                qml.X(2)
+                qp.X(2)
 
             cond_f()  # Each branch of the cond will have a collision with this wire
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=collision_wire)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -209,26 +210,26 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.Z(1)
+                qp.Z(1)
 
             @cond_f.else_if(x > 1)
             def _else_if():
-                qml.Y(2)
+                qp.Y(2)
 
             @cond_f.otherwise
             def _else():
-                qml.X(3)
+                qp.X(3)
 
-            qml.X(0)
+            qp.X(0)
             cond_f()
             # visited wires after cond should be 0 (before cond) and 1, 2, 3 (during cond)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=collision_wire)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
 
@@ -237,31 +238,31 @@ class TestRepeatedQubitTransformErrors:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.for_loop(3)
+            @qp.for_loop(3)
             def loop(i):
-                qml.RX(i, 0)
+                qp.RX(i, 0)
 
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.else_if(x > 1)
             def _else_if():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             @cond_f.otherwise
             def _else():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             loop()  # Contains wires 0
             cond_f()  # Also contains wires 0
 
         with pytest.raises(
             TransformError,
-            match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
+            match="AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             args = (3,)
             jax.make_jaxpr(f)(*args)
@@ -275,10 +276,10 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc(state1, state2):
-            qml.AmplitudeEmbedding(state1, wires=0)
-            qml.Hadamard(wires=0)
-            qml.AmplitudeEmbedding(state2, wires=1)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(state1, wires=0)
+            qp.Hadamard(wires=0)
+            qp.AmplitudeEmbedding(state2, wires=1)
+            return qp.expval(qp.Z(0))
 
         args = (jnp.array([0.0, 1.0]), jnp.array([0.0, 1.0]))
         jaxpr = jax.make_jaxpr(qfunc)(*args)
@@ -286,15 +287,15 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.AmplitudeEmbedding(jnp.array([0.0, 0.0, 0.0, 1.0]), wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
+            qp.AmplitudeEmbedding(jnp.array([0.0, 0.0, 0.0, 1.0]), wires=[0, 1]),
+            qp.Hadamard(wires=[0]),
         ]
 
         ops = collector.state["ops"]
         assert ops == expected_ops
 
         expected_meas = [
-            qml.expval(qml.PauliZ(0)),
+            qp.expval(qp.PauliZ(0)),
         ]
         meas = collector.state["measurements"]
         assert meas == expected_meas
@@ -304,10 +305,10 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc(wires1, wires2):
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=wires1)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=wires2)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=wires1)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=wires2)
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.Z(0))
 
         args = (0, 1)
         jaxpr = jax.make_jaxpr(qfunc)(*args)
@@ -315,15 +316,15 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
+            qp.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
+            qp.Hadamard(wires=[0]),
         ]
 
         ops = collector.state["ops"]
         assert ops == expected_ops
 
         expected_meas = [
-            qml.expval(qml.PauliZ(0)),
+            qp.expval(qp.PauliZ(0)),
         ]
         meas = collector.state["measurements"]
         assert meas == expected_meas
@@ -333,9 +334,9 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
@@ -343,15 +344,15 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
         expected_ops = [
-            qml.AmplitudeEmbedding([0.0, 1.0], wires=[1]),
-            qml.Hadamard(wires=[0]),
+            qp.AmplitudeEmbedding([0.0, 1.0], wires=[1]),
+            qp.Hadamard(wires=[0]),
         ]
 
         ops = collector.state["ops"]
         assert ops == expected_ops
 
         expected_meas = [
-            qml.expval(qml.PauliZ(0)),
+            qp.expval(qp.PauliZ(0)),
         ]
         meas = collector.state["measurements"]
         assert meas == expected_meas
@@ -361,11 +362,11 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.Hadamard(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 0.0, 0.0, 1.0]), wires=[2, 3])
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.Hadamard(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 0.0, 0.0, 1.0]), wires=[2, 3])
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
@@ -374,15 +375,15 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         expected_state = [0.0] * 16
         expected_state[-1] = 1.0
         expected_ops = [
-            qml.AmplitudeEmbedding(expected_state, wires=[0, 1, 2, 3]),
-            qml.Hadamard(wires=[0]),
+            qp.AmplitudeEmbedding(expected_state, wires=[0, 1, 2, 3]),
+            qp.Hadamard(wires=[0]),
         ]
 
         ops = collector.state["ops"]
         assert ops == expected_ops
 
         expected_meas = [
-            qml.expval(qml.PauliZ(0)),
+            qp.expval(qp.PauliZ(0)),
         ]
         meas = collector.state["measurements"]
         assert meas == expected_meas
@@ -392,12 +393,12 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.AmplitudeEmbedding(jnp.array([[0, 1], [1, 0]]), wires=0)  # |1> and |0>
-            qml.AmplitudeEmbedding(
+            qp.AmplitudeEmbedding(jnp.array([[0, 1], [1, 0]]), wires=0)  # |1> and |0>
+            qp.AmplitudeEmbedding(
                 jnp.array([1, 0]), wires=1
             )  # |0> (batch will be extended to |0> and |0>)
-            qml.AmplitudeEmbedding(jnp.array([[0, 1], [1, 0]]), wires=2)  # |1> and |0>
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([[0, 1], [1, 0]]), wires=2)  # |1> and |0>
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
@@ -406,14 +407,14 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         state1 = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]  # |1 0 1>
         state2 = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # |0 0 0>
         expected_ops = [
-            qml.AmplitudeEmbedding((state1, state2), wires=[0, 1, 2]),
+            qp.AmplitudeEmbedding((state1, state2), wires=[0, 1, 2]),
         ]
 
         ops = collector.state["ops"]
         assert ops == expected_ops
 
         expected_meas = [
-            qml.expval(qml.PauliZ(0)),
+            qp.expval(qp.PauliZ(0)),
         ]
         meas = collector.state["measurements"]
         assert meas == expected_meas
@@ -423,16 +424,16 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
-            qml.AmplitudeEmbedding(jnp.array([1, 0]), wires=0)
-            return qml.AmplitudeEmbedding(jnp.array([1, 0]), wires=1)
+            qp.AmplitudeEmbedding(jnp.array([1, 0]), wires=0)
+            return qp.AmplitudeEmbedding(jnp.array([1, 0]), wires=1)
 
         jaxpr = jax.make_jaxpr(f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
         expected_ops = [
-            qml.AmplitudeEmbedding([1.0, 0.0], wires=[0]),
-            qml.AmplitudeEmbedding([1.0, 0.0], wires=[1]),
+            qp.AmplitudeEmbedding([1.0, 0.0], wires=[0]),
+            qp.AmplitudeEmbedding([1.0, 0.0], wires=[1]),
         ]
 
         ops = collector.state["ops"]
@@ -444,9 +445,9 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def circuit(w):
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=0)
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=1)
-            qml.H(w)
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=0)
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=1)
+            qp.H(w)
 
         jaxpr = jax.make_jaxpr(circuit)(0)
         collector = CollectOpsandMeas()
@@ -454,8 +455,8 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         ops = collector.state["ops"]
         expected_ops = [
-            qml.AmplitudeEmbedding(qml.math.array([1.0, 0.0, 0.0, 0.0]), wires=[0, 1]),
-            qml.H(0),
+            qp.AmplitudeEmbedding(qp.math.array([1.0, 0.0, 0.0, 0.0]), wires=[0, 1]),
+            qp.H(0),
         ]
         assert ops == expected_ops
 
@@ -464,12 +465,12 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(w):
-            qml.H(w)
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=[0])
+            qp.H(w)
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=[0])
 
         with pytest.raises(
             TransformError,
-            match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
+            match="AmplitudeEmbedding after operators with dynamic wires.",
         ):
             _ = jax.make_jaxpr(f)(2)
 
@@ -479,21 +480,21 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(w):
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0]), [w])
-            qml.H(0)
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [1])
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0]), [w])
+            qp.H(0)
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [1])
 
         jaxpr = jax.make_jaxpr(f)(0)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0)
         ops = collector.state["ops"]
-        expected = [qml.AmplitudeEmbedding(qml.math.array([1.0, 0.0, 0.0, 0.0]), [0, 1]), qml.H(0)]
+        expected = [qp.AmplitudeEmbedding(qp.math.array([1.0, 0.0, 0.0, 0.0]), [0, 1]), qp.H(0)]
 
         assert ops == expected
 
         # If first embedding has wire 1, error will happen at runtime
         collector = CollectOpsandMeas()
-        with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
+        with pytest.raises(qp.wires.WireError, match="Wires must be unique"):
             collector.eval(jaxpr.jaxpr, jaxpr.consts, 1)
 
     def test_dynamic_wire_embedding_after_op(self):
@@ -502,12 +503,10 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(w):
-            qml.H(0)
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [w])
+            qp.H(0)
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [w])
 
-        with pytest.raises(
-            TransformError, match="Cannot apply qml.AmplitudeEmbedding with dynamic wires"
-        ):
+        with pytest.raises(TransformError, match="AmplitudeEmbedding with dynamic wires"):
             _ = jax.make_jaxpr(f)(0)
 
 
@@ -515,10 +514,10 @@ def test_plxpr_to_plxpr_transform():
     """Test that the plxpr transform works correctly for a simple example."""
 
     def qfunc():
-        qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-        qml.Hadamard(wires=0)
-        qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-        return qml.expval(qml.Z(0))
+        qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+        qp.Hadamard(wires=0)
+        qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+        return qp.expval(qp.Z(0))
 
     jaxpr = jax.make_jaxpr(qfunc)()
     transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
@@ -529,15 +528,15 @@ def test_plxpr_to_plxpr_transform():
     collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts)
 
     expected_ops = [
-        qml.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
-        qml.Hadamard(0),
+        qp.AmplitudeEmbedding([0.0, 0.0, 0.0, 1.0], wires=[0, 1]),
+        qp.Hadamard(0),
     ]
 
     ops = collector.state["ops"]
     assert ops == expected_ops
 
     expected_meas = [
-        qml.expval(qml.PauliZ(0)),
+        qp.expval(qp.PauliZ(0)),
     ]
     meas = collector.state["measurements"]
     assert meas == expected_meas
@@ -551,16 +550,16 @@ class TestHigherOrderPrimitiveIntegration:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.Hadamard(wires=2)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            qml.measure(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.Hadamard(wires=2)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.measure(wires=0)
 
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
         assert jaxpr.eqns[2].primitive == measure_prim
 
     @pytest.mark.xfail(
@@ -571,10 +570,10 @@ class TestHigherOrderPrimitiveIntegration:
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc():
-            qml.Hadamard(wires=2)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.measure(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.Hadamard(wires=2)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.measure(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
         jaxpr = jax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
@@ -582,50 +581,48 @@ class TestHigherOrderPrimitiveIntegration:
 
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
         assert jaxpr.eqns[2].primitive == measure_prim
 
     def test_dynamic_wires_embedding_after_measure(self):
         """Test that an error is raised if an AmplitudeEmbedding with dynamic wires is applied after a
-        qml.measure."""
+        qp.measure."""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def qfunc(w):
-            qml.measure(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
+            qp.measure(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=w)
 
-        with pytest.raises(
-            TransformError, match="Cannot apply qml.AmplitudeEmbedding with dynamic wires"
-        ):
+        with pytest.raises(TransformError, match="AmplitudeEmbedding with dynamic wires"):
             _ = jax.make_jaxpr(qfunc)(1)
 
     def test_ctrl_transform_prim(self):
         """Test that the transform works correctly when applied with ctrl_transform_prim."""
 
         def ctrl_fn():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            qml.X(0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            qp.X(0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.ctrl(ctrl_fn, [3, 4])()
-            qml.RY(0, 1)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.ctrl(ctrl_fn, [3, 4])()
+            qp.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 3
         # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
+        assert jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
         assert jaxpr.eqns[1].primitive == ctrl_transform_prim
-        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+        assert jaxpr.eqns[2].primitive == qp.RY._primitive
 
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+        assert inner_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[1].primitive == qp.X._primitive
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_transform_prim(self, lazy):
@@ -634,11 +631,11 @@ class TestHigherOrderPrimitiveIntegration:
         @MergeAmplitudeEmbeddingInterpreter()
         def f():
             def g():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.X(0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.X(0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
-            qml.adjoint(g, lazy=lazy)()
+            qp.adjoint(g, lazy=lazy)()
 
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 1
@@ -647,19 +644,19 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+        assert inner_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[1].primitive == qp.X._primitive
 
     def test_cond_prim_only_true_branch(self):
         """Test that the transform works correctly when applied with cond_prim with just a true branch."""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             cond_f()
 
@@ -670,34 +667,34 @@ class TestHigherOrderPrimitiveIntegration:
         # True branch
         branch = jaxpr.eqns[1].params["jaxpr_branches"][0]
         assert len(branch.eqns) == 1
-        assert branch.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert branch.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(branch.eqns[0].params["n_wires"], 2)
 
     def test_cond_prim_all_cond_branches(self):
         """Test that the transform works correctly when applied with cond_prim."""
 
         @MergeAmplitudeEmbeddingInterpreter()
         def f(x):
-            @qml.cond(x > 2)
+            @qp.cond(x > 2)
             def cond_f():
-                qml.Z(0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
-                return qml.expval(qml.Z(0))
+                qp.Z(0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
+                return qp.expval(qp.Z(0))
 
             @cond_f.else_if(x > 1)
             def _else_if():
-                qml.Y(1)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
-                return qml.expval(qml.Y(0))
+                qp.Y(1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=2)
+                return qp.expval(qp.Y(0))
 
             @cond_f.otherwise
             def _else():
-                qml.X(2)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-                return qml.expval(qml.X(0))
+                qp.X(2)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                return qp.expval(qp.X(0))
 
             out = cond_f()
             return out
@@ -709,12 +706,12 @@ class TestHigherOrderPrimitiveIntegration:
 
         # True branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][0]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert qp.math.allclose(branch.eqns[0].params["n_wires"], 2)
         expected_primitives = [
-            qml.AmplitudeEmbedding._primitive,
-            qml.Z._primitive,
-            qml.Z._primitive,
-            qml.measurements.ExpectationMP._obs_primitive,
+            qp.AmplitudeEmbedding._primitive,
+            qp.Z._primitive,
+            qp.Z._primitive,
+            qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim
@@ -723,12 +720,12 @@ class TestHigherOrderPrimitiveIntegration:
 
         # Elif branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][1]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert qp.math.allclose(branch.eqns[0].params["n_wires"], 2)
         expected_primitives = [
-            qml.AmplitudeEmbedding._primitive,
-            qml.Y._primitive,
-            qml.Y._primitive,
-            qml.measurements.ExpectationMP._obs_primitive,
+            qp.AmplitudeEmbedding._primitive,
+            qp.Y._primitive,
+            qp.Y._primitive,
+            qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim
@@ -737,12 +734,12 @@ class TestHigherOrderPrimitiveIntegration:
 
         # Else branch
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
-        assert qml.math.allclose(branch.eqns[0].params["n_wires"], 2)
+        assert qp.math.allclose(branch.eqns[0].params["n_wires"], 2)
         expected_primitives = [
-            qml.AmplitudeEmbedding._primitive,
-            qml.X._primitive,
-            qml.X._primitive,
-            qml.measurements.ExpectationMP._obs_primitive,
+            qp.AmplitudeEmbedding._primitive,
+            qp.X._primitive,
+            qp.X._primitive,
+            qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim
@@ -756,11 +753,11 @@ class TestHigherOrderPrimitiveIntegration:
         def f(n):
 
             # pylint:disable=unused-argument
-            @qml.for_loop(n)
+            @qp.for_loop(n)
             def h(i):
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.Hadamard(0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.Hadamard(0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
             h()
 
@@ -770,9 +767,9 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert inner_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[1].primitive == qp.Hadamard._primitive
 
     def test_while_loop_prim(self):
         """Test that the transform works correctly when applied with while_loop_prim."""
@@ -780,11 +777,11 @@ class TestHigherOrderPrimitiveIntegration:
         @MergeAmplitudeEmbeddingInterpreter()
         def f(n):
 
-            @qml.while_loop(lambda i: i < n)
+            @qp.while_loop(lambda i: i < n)
             def h(i):
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-                qml.Hadamard(0)
-                qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+                qp.Hadamard(0)
+                qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
                 return i + 1
 
             h(0)
@@ -795,47 +792,47 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 3
-        assert inner_jaxpr.eqns[1].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[1].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
+        assert inner_jaxpr.eqns[1].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(inner_jaxpr.eqns[1].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[2].primitive == qp.Hadamard._primitive
 
     def test_qnode_prim(self):
         """Test that the transform works correctly when applied with qnode_prim."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.Hadamard(0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.Hadamard(0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert len(qfunc_jaxpr.eqns) == 4
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qp.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     def test_jacobian_prim(self):
         """Test that the transform works correctly when applied with jacobian_prim."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @MergeAmplitudeEmbeddingInterpreter()
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(a, b):
-            qml.AmplitudeEmbedding(jnp.array([a, b]), wires=0)
-            qml.Hadamard(0)
-            qml.AmplitudeEmbedding(jnp.array([a, b]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([a, b]), wires=0)
+            qp.Hadamard(0)
+            qp.AmplitudeEmbedding(jnp.array([a, b]), wires=1)
+            return qp.expval(qp.Z(0))
 
-        f = qml.grad(circuit)
+        f = qp.grad(circuit)
         jaxpr = jax.make_jaxpr(f)(0, 1)
         assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
@@ -849,10 +846,10 @@ class TestHigherOrderPrimitiveIntegration:
             ]
         )
         assert len(qfunc_jaxpr.eqns) == 3
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qp.PauliZ._primitive
 
 
 class TestDynamicWiresControlFlowPrimitivesIntegration:
@@ -868,22 +865,22 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
         def circuit(x, w):
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
-            qml.H(op_wires)
+            qp.H(op_wires)
 
-            @qml.cond(x < 2)
+            @qp.cond(x < 2)
             def cond_fn():
                 if embedding_location == "cond":
-                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-                qml.H(0)
+                    qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qp.H(0)
 
             @cond_fn.otherwise
             def _():
-                qml.Y(0)
+                qp.Y(0)
 
             cond_fn()
             if embedding_location == "after":
-                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-            return qml.expval(qml.Z(0))
+                qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(1.5, 0)
@@ -898,16 +895,16 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
 
-            @qml.cond(x < 2)
+            @qp.cond(x < 2)
             def cond_fn():
-                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
 
             @cond_fn.otherwise
             def _():
-                qml.Y(op_wires)
+                qp.Y(op_wires)
 
             cond_fn()
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         # No error should be raised
         _ = jax.make_jaxpr(circuit)(1.5, 0)
@@ -922,13 +919,13 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
 
-            @qml.cond(x < 2)
+            @qp.cond(x < 2)
             def cond_fn():
-                qml.H(op_wires)
+                qp.H(op_wires)
 
             cond_fn()
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(1.5, 0)
@@ -943,18 +940,18 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
         def circuit(n, w):
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
-            qml.H(op_wires)
+            qp.H(op_wires)
 
-            @qml.for_loop(n)
+            @qp.for_loop(n)
             def loop_fn(i):  # pylint: disable=unused-argument
                 if embedding_location == "loop":
-                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-                qml.H(0)
+                    qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qp.H(0)
 
             loop_fn()
             if embedding_location == "after":
-                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-            return qml.expval(qml.Z(0))
+                qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(5, 0)
@@ -969,13 +966,13 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
 
-            @qml.for_loop(n)
+            @qp.for_loop(n)
             def loop_fn(i):  # pylint: disable=unused-argument
-                qml.H(op_wires)
+                qp.H(op_wires)
 
             loop_fn()
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(5, 0)
@@ -990,19 +987,19 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
         def circuit(x, w):
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
-            qml.H(op_wires)
+            qp.H(op_wires)
 
-            @qml.while_loop(lambda arg: arg < 2)
+            @qp.while_loop(lambda arg: arg < 2)
             def loop_fn(arg):
                 if embedding_location == "loop":
-                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-                qml.H(0)
+                    qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qp.H(0)
                 return arg - 1
 
             loop_fn(x)
             if embedding_location == "after":
-                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
-            return qml.expval(qml.Z(0))
+                qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(1.5, 0)
@@ -1017,14 +1014,14 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             op_wires = w if dynamic_wires in ("op", "both") else 0
             embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
 
-            @qml.while_loop(lambda arg: arg < 2)
+            @qp.while_loop(lambda arg: arg < 2)
             def loop_fn(arg):
-                qml.H(op_wires)
+                qp.H(op_wires)
                 return arg - 1
 
             loop_fn(x)
-            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(1.5, 0)
@@ -1036,45 +1033,45 @@ class TestExpandPlxprTransformIntegration:
     def test_example(self):
         """Test that the transform works with expand_plxpr_transform"""
 
-        @qml.transforms.optimization.merge_amplitude_embedding
+        @qp.transforms.optimization.merge_amplitude_embedding
         def qfunc():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.Hadamard(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.Hadamard(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert jaxpr.eqns[0].primitive == transform_prim
         assert (
             jaxpr.eqns[0].params["transform"]
-            == qml.transforms.optimization.merge_amplitude_embedding
+            == qp.transforms.optimization.merge_amplitude_embedding
         )
 
-        transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
+        transformed_qfunc = qp.capture.expand_plxpr_transforms(qfunc)
         transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
         assert len(transformed_jaxpr.eqns) == 4
-        assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
-        assert transformed_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert transformed_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert transformed_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert transformed_jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
+        assert transformed_jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert transformed_jaxpr.eqns[2].primitive == qp.PauliZ._primitive
+        assert transformed_jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     def test_decorator(self):
         """Test that the transform works with the decorator"""
 
-        @qml.capture.expand_plxpr_transforms
-        @qml.transforms.optimization.merge_amplitude_embedding
+        @qp.capture.expand_plxpr_transforms
+        @qp.transforms.optimization.merge_amplitude_embedding
         def qfunc():
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
-            qml.Hadamard(wires=0)
-            qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
-            return qml.expval(qml.Z(0))
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=0)
+            qp.Hadamard(wires=0)
+            qp.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 4
-        assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert jaxpr.eqns[0].primitive == qp.AmplitudeEmbedding._primitive
+        assert qp.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
+        assert jaxpr.eqns[1].primitive == qp.Hadamard._primitive
+        assert jaxpr.eqns[2].primitive == qp.PauliZ._primitive
+        assert jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 """
-This module contains the qml.var measurement.
+This module contains the qp.var measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math
@@ -132,28 +133,28 @@ def var(op: Operator | MeasurementValue) -> VarianceMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Y(0))
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.Y(0))
 
     Executing this QNode:
 
-    >>> circuit(0.5)
-    0.7701511529340698
+    >>> print(circuit(0.5))
+    0.770...
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
 
     if isinstance(op, Sequence):
         raise ValueError(
-            "qml.var does not support measuring sequences of measurements or observables"
+            "qp.var does not support measuring sequences of measurements or observables"
         )
 
     return VarianceMP(obs=op)
