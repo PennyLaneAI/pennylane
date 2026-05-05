@@ -711,6 +711,9 @@
   - :class:`~.Projector`
   - :class:`~.BasisStateProjector`
 
+  as well as the operator-like objects `ParametrizedHamiltonian`, `HardwareHamiltonian`, and
+  `ParametrizedEvolution` in the `pulse` module.
+
   All operators are de-queued when used to construct new operators, so the following example
   does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
 
