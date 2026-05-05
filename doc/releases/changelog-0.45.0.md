@@ -225,6 +225,7 @@
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+  [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
 
 <h3>Improvements 🛠</h3>
 
