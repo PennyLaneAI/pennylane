@@ -220,14 +220,14 @@ class Resources:
     __rmul__ = __mul__
 
     def __str__(self):
-        keys = ["num_wires", "num_gates", "depth"]
-        vals = [self.num_wires, self.num_gates, self.depth]
-        items = "\n".join([str(i) for i in zip(keys, vals)])
-        items = items.replace("('", "")
-        items = items.replace("',", ":")
-        items = items.replace(")", "")
-
-        items += f"\nshots: {str(self.shots)}"
+        items = "\n".join(
+            [
+                f"num_wires: {self.num_wires}"
+                f"num_gates: {self.num_gates}"
+                f"depth: {self.depth}"
+                f"shots: {self.shots}"
+            ]
+        )
 
         gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
@@ -551,7 +551,7 @@ class CircuitSpecs:
         """Helper for printing tabular format, flattens all resources across levels into a single
         dictionary with string keys."""
         flat_resources = {}
-        for level, res in zip(self.level.keys(), self.resources.values()):
+        for level, res in zip(self.level.keys(), self.resources.values(), strict=True):
             if isinstance(res, SpecsResources):
                 flat_resources[str(level)] = res
             elif isinstance(res, list):
