@@ -90,13 +90,15 @@ class IQP(Operation):
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
     def __init__(
-        self, weights, num_wires, pattern, spin_sym=False, id=None
+        self, weights, wires, pattern, spin_sym=False, id=None
     ):  # pylint: disable=too-many-arguments
         if len(pattern) != len(weights):
             raise ValueError(
                 "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
                 f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
             )
+
+        num_wires = len(wires)
 
         if num_wires == 0:
             raise ValueError("At least one valid wire is required.")
@@ -105,7 +107,7 @@ class IQP(Operation):
             "spin_sym": spin_sym,
             "weights": weights,
             "pattern": pattern,
-            "num_wires": num_wires,
+            "num_wires": len(wires),
         }
         super().__init__(wires=range(num_wires), id=id)
 
@@ -113,7 +115,6 @@ class IQP(Operation):
     @staticmethod
     def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
         layers = []
-        wires = list(range(num_wires))
 
         if spin_sym:
             pauli_mat = PauliRot.compute_matrix(2 * np.pi / 4, "Y" + "X" * (num_wires - 1))
@@ -122,7 +123,7 @@ class IQP(Operation):
         for par, gate in zip(weights, pattern):
             for gen in gate:
                 x_mat = reduce(math.kron, [PauliX.compute_matrix() for _ in gen])
-                rx_mat = math.expm(-1j * par * expand_matrix(x_mat, gen, wires))
+                rx_mat = math.expm(-1j * par * expand_matrix(x_mat, gen, list(range(num_wires))))
                 layers.append(rx_mat)
 
         return reduce(math.matmul, layers[::-1])
@@ -166,17 +167,17 @@ def _instantaneous_quantum_polynomial_decomposition(
     num_wires = len(wires)
 
     if spin_sym:
-        PauliRot(2 * np.pi / 4, "Y" + "X" * (num_wires - 1), wires=range(num_wires))
+        PauliRot(2 * np.pi / 4, "Y" + "X" * (num_wires - 1), wires=wires)
 
     for i in range(num_wires):
-        Hadamard(i)
+        Hadamard(wires[i])
 
     for par, gate in zip(weights, pattern):
         for gen in gate:
-            MultiRZ(2 * par, wires=gen)
+            MultiRZ(2 * par, wires=[wires[g] for g in gen])
 
     for i in range(num_wires):
-        Hadamard(i)
+        Hadamard(wires[i])
 
 
 add_decomps(IQP, _instantaneous_quantum_polynomial_decomposition)
