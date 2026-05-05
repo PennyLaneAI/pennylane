@@ -434,7 +434,7 @@ def _(op: qops.QubitUnitary):
 
 @_map_to_resource_op.register
 def _(op: qops.BasisState):
-    return re_temps.BasisState(num_wires=len(op.wires), wires=op.wires)
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
