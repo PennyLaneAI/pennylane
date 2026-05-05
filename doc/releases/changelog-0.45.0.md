@@ -1145,26 +1145,29 @@
   [(#9397)](https://github.com/PennyLaneAI/pennylane/pull/9397)
 
 * Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
-  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
+  after the transform has been applied as opposed to just the numeric simulation result. The improved
+  transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
-* The :mod:`pennylane.transforms` module has been reorganized to allow for
-  easier indexing through available transforms in PennyLane.
+* The :mod:`pennylane.transforms` module has been reorganized to allow for easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
-* Documentation has been added to :func:`~.transforms.cancel_inverses` and
-  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
+* The docstring for :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`,
+  and :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
+  to outline what the transform does when used with Catalyst.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
 
-* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+* Docstring examples in the Pauli-based computation module have been updated to reflect the QEC-to-PBC
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
-* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
+* Two warning notes have been removed from the :func:`~.transforms.gridsynth` docstring as we now issue
+  a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
   [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
 * The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
@@ -1176,24 +1179,23 @@
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
-* Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
+* Wide-spread changes have been made to our documentation to recommend using program capture with ``qjit``
   only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qp.capture.enable()``).
   [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
 
-* Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+* A note has been added to the documentation of :func:`~.estimator.estimate.estimate` to clarify
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
-  a resource decomposition defined and is not in the provided ``gate_set``.
+  a resource decomposition defined and it is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
-  for achieving reproducible results with the seed keyword argument.
+* The documentation of :func:~.shadow_expval measurement has been refined to clarify the role of the
+  ``seed`` keyword argument and include instructions for achieving reproducible results with this argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
-  was clarified in its documentation.
+* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
-* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+* A typo in the type of a parameter in the docstring of :class:`~.templates.layers.BasicEntanglerLayers` has been fixed.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 * Infrastructure has been put in place for features that should be accessible from both PennyLane and
@@ -1201,16 +1203,12 @@
   experience when consulting our documentation.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
-  The process for Catalyst frontend features to be automatically accessible from PennyLane while
+  The process for Catalyst frontend features to be automatically accessible from PennyLane, while
   ensuring that such features' documentation is properly sourced from Catalyst and hosted on
-  PennyLane's documentation is outlined in the
+  PennyLane's documentation, has been outlined in the
   :doc:`documentation development guide <../development/guide/documentation>` under the section
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
-
-* The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
-  to outline what the transform does when used with Catalyst.
-  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
@@ -1223,7 +1221,8 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
-* Fixed broken documentation links to external demos and tutorials.
+* Broken documentation links to external demos and tutorials have been fixed by replacing hardcoded URLs
+  with proper ``:doc:`` cross references.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
 <h3>Bug fixes 🐛</h3>
