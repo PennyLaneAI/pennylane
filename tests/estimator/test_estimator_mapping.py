@@ -109,6 +109,10 @@ class TestMapToResourceOp:
             (qp.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.MultiRZ(num_wires=3)),
             (qp.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.PauliRot("XYZ")),
             (
+                qp.PCPhase(0.1, dim=3, wires=[0, 1, 2]),
+                re_ops.PCPhase(num_wires=3, dim=3, wires=[0, 1, 2]),
+            ),
+            (
                 qp.MultiControlledX(wires=[0, 1, 2]),
                 re_ops.MultiControlledX(num_ctrl_wires=2, num_zero_ctrl=0),
             ),
@@ -141,6 +145,10 @@ class TestMapToResourceOp:
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
+            ),
+            (
+                qtemps.IQP(weights=[0.1, 0.2], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False),
+                re_temps.IQP(num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False, wires=[0, 1]),
             ),
             (
                 qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),

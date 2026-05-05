@@ -198,6 +198,12 @@ def _(op: qops.PauliRot):
 
 
 @_map_to_resource_op.register
+def _(op: qops.PCPhase):
+    dim = op.hyperparameters["dimension"][0]
+    return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qops.SingleExcitation):
     return re_ops.SingleExcitation(wires=op.wires)
 
@@ -306,6 +312,17 @@ def _(op: qtemps.AQFT):
     return re_temps.AQFT(
         order=op.hyperparameters["order"],
         num_wires=len(op.wires),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.IQP):
+    h = op.hyperparameters
+    return re_temps.IQP(
+        num_wires=h["num_wires"],
+        pattern=h["pattern"],
+        spin_sym=h["spin_sym"],
         wires=op.wires,
     )
 
