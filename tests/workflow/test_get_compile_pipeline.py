@@ -65,29 +65,33 @@ class TestValidation:
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
 
+@pytest.mark.parametrize("use_qjit", [False, True])
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
-    def test_user_level_pipeline(self):
+    def test_user_level_pipeline(self, use_qjit):
         """Tests the contents of a user level pipeline."""
 
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
-        @qp.transforms.merge_rotations(atol=1e-5)
+        @qp.transforms.merge_rotations
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
         assert len(cp) == 2
         assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
         assert cp[1].tape_transform == qp.transforms.merge_rotations.tape_transform
 
-    def test_user_level_with_final_transform(self):
+    def test_user_level_with_final_transform(self, use_qjit):
         """Tests that a final transform is correctly re-appended."""
 
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
         @qp.gradients.metric_tensor
         @qp.transforms.merge_rotations(atol=1e-5)
@@ -95,6 +99,9 @@ class TestUserLevel:
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 
@@ -104,13 +111,16 @@ class TestUserLevel:
         assert cp[2].tape_transform == qp.gradients.metric_tensor.expand_transform
         assert cp[3].tape_transform == qp.gradients.metric_tensor.tape_transform
 
-    def test_no_user_levels(self):
+    def test_no_user_levels(self, use_qjit):
         """Ensures an empty compile pipeline if no user transforms."""
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 

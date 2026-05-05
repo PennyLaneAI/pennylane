@@ -31,6 +31,11 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 
 
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+
+
 def _find_level(program: CompilePipeline, level: str) -> int:
     """Retrieve the numerical level associated to a marker."""
     found_level = program.get_marker_level(level)
@@ -48,6 +53,7 @@ def _resolve_level(
     full_pipeline: CompilePipeline,
     num_user: int,
     config: ExecutionConfig,
+    is_qjit_qnode: bool,
 ) -> slice:
     """Resolve level to a slice."""
 
@@ -56,13 +62,26 @@ def _resolve_level(
     elif level == "user":
         level = slice(0, num_user)
     elif level == "gradient":
+        if is_qjit_qnode:
+            raise NotImplementedError("This level is not valid for QJIT'd QNodes.")
         level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
+        if is_qjit_qnode:
+            raise NotImplementedError("This level is not valid for QJIT'd QNodes.")
         # Captures everything: user + gradient + device
         level = slice(0, None)
     elif isinstance(level, str):
-        level = slice(0, _find_level(full_pipeline, level))
+        stop = _find_level(full_pipeline, level)
+        if is_qjit_qnode and stop > num_user:
+            raise NotImplementedError(
+                "This level is higher than the number of transforms available."
+            )
+        level = slice(0, stop)
     elif isinstance(level, int):
+        if is_qjit_qnode and level > num_user:
+            raise NotImplementedError(
+                "This level is higher than the number of transforms available."
+            )
         level = slice(0, level)
 
     return level
@@ -70,13 +89,13 @@ def _resolve_level(
 
 def get_compile_pipeline(
     qnode: QNode,
-    level: str | int | slice = "device",
+    level: str | int | slice = "user",
 ) -> Callable[P, CompilePipeline]:
     """Create a function that produces the compilation pipeline at the designated level.
 
     Args:
         qnode (:class:`~.QNode`): The QNode to get the compilation pipeline for.
-        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"device"``.
+        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"user"``.
 
             - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
             - ``"user"``: Only includes transformations that are manually applied by the user.
@@ -108,17 +127,10 @@ def get_compile_pipeline(
             return qp.expval(qp.Z(0))
 
     >>> args = (3.14,)
-    >>> print(get_compile_pipeline(circuit)(*args)) # or level="device"
+    >>> print(get_compile_pipeline(circuit)(*args)) # or level="user"
     CompilePipeline(
       [1] cancel_inverses(),
       [2] merge_rotations(),
-      [3] defer_measurements(allow_postselect=True),
-      [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-      [5] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-      [6] validate_device_wires(None, name=default.qubit),
-      [7] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-      [8] _conditional_broadcast_expand(),
-      [9] no_sampling(name=backprop + default.qubit)
     )
 
     .. details::
@@ -239,19 +251,25 @@ def get_compile_pipeline(
             f"'level={level}' of type '{type(level)}' is not supported. Please provide an integer, slice or a string as input."
         )
 
+    is_qjit_qnode = False
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
+        is_qjit_qnode = True
+
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
-        resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
         # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
+        resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         if not qnode.compile_pipeline.is_informative:
             outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
             full_compile_pipeline += outer_pipeline + inner_pipeline
 
         num_user = len(qnode.compile_pipeline)
-        level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
+        level_slice: slice = _resolve_level(
+            level, full_compile_pipeline, num_user, resolved_config, is_qjit_qnode
+        )
         resolved_pipeline = full_compile_pipeline[level_slice]
 
         return resolved_pipeline
