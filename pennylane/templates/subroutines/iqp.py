@@ -109,7 +109,7 @@ class IQP(Operation):
             "pattern": pattern,
             "num_wires": len(wires),
         }
-        super().__init__(wires=range(num_wires), id=id)
+        super().__init__(wires=wires, id=id)
 
     # pylint: disable=arguments-differ
     @staticmethod
