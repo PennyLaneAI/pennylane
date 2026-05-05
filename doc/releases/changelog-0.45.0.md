@@ -51,10 +51,9 @@
 
 <h4>Workflow Inspection 🔍</h4>
 
-* When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
-  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
-  for convenient comparison of circuit specifications between compilation passes.
-  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``)
+* :func:`~.specs` now displays a table which allows you to easily see how circuit resources evolve with each stage of compilation!
+  This functionality is available when using :func:`~.specs` pass-by-pass with Catalyst (e.g. ``level="all"``),
+  where printing the returned :class:`~.resource.CircuitSpecs` object dislays a table detailing information at each requested level.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
 
   ```python
@@ -91,16 +90,16 @@
   - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
-
   ```
 
-* When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
-  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
-  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless
-  of how many markers are present.
-  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
-  pipeline's string representation now shows both transforms and markers.
-  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+* When inspecting a circuit with an integer ``level`` argument in :func:`~.specs` or :func:`~.draw`,
+  markers placed in a :class:`~.CompilePipeline` are now accessible exclusively via their ``label``
+  rather than a ``level`` integer, making inspection more intuitive.
+  ``level`` integers now corespond to stages of compilation and are unaffected by the use of markers.
+  In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
+  and the pipeline's string representation now displays both transforms and markers.
+  The `CompilePipeline` object also now has an improved display
+  with updated ``__str__``, ``__repr__`` and ``_ipython_display_`` methods.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -131,18 +130,16 @@
     [1] cancel_inverses()
      └─▶ after-cancel-inverses
   )
-
   ```
 
-  As usual, marker labels can be used as an argument to `level` in `draw`
-  and `specs`, showing the cumulative result of applying transforms up to said marker:
+  As usual, marker labels can be used as an argument to ``level`` in :func:`~.specs`
+  and :func:`~.draw`, showing the cumulative result of compilation up to said marker:
 
   ```pycon
   >>> print(qp.draw(circuit, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
   >>> print(qp.draw(circuit, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
-
   ```
 
 * :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
