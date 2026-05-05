@@ -1228,7 +1228,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings
+* Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
   [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
