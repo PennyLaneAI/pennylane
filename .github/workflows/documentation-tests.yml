@@ -141,10 +141,7 @@ jobs:
 
           pytest doc ${IGNORE}
 
-        # NOTE: Suppress pytest exit code 5 (No Tests Collected).
-        # This avoids CI breakage when the changelog is reset after a RC
-        # branch is cut and hasn't yet accumulated any code snippets to test.
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-          pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 
+          pytest doc/releases/changelog-dev.md
