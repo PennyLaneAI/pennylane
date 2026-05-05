@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import re
 import time
 import warnings
@@ -102,7 +103,7 @@ def _specs_qjit_device_level_tracking(
     if compute_depth is None:
         compute_depth = True
 
-    filepath = Path(f"{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
+    filepath = Path(f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_{time.time_ns()}.json")
 
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
@@ -377,7 +378,7 @@ def _specs_from_analysis_pass(
 
     # Add a unique suffix to the filename prefix to prevent conflicts with other runs of specs in
     # the same directory which can cause issues with parallel execution
-    fname_prefix = f"{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_"
+    fname_prefix = f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_{time.time_ns()}_"
 
     if num_tape_levels > 0:
         # Account for the inserted lowering pass which comes after all tape transforms
