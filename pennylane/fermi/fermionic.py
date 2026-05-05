@@ -136,15 +136,7 @@ class FermiWord(dict):
 
         symbol_map = {"+": "\u207a", "-": ""}
 
-        string = " ".join(
-            [
-                "a" + symbol_map[j] + "(" + i + ")"
-                for i, j in zip(
-                    [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
-                )
-            ]
-        )
-        return string
+        return " ".join((f"a{symbol_map[j]}({i[1]})" for i, j in self.sorted_dic.items()))
 
     def __str__(self):
         r"""String representation of a FermiWord."""
@@ -193,7 +185,7 @@ class FermiWord(dict):
             return self_fs + FermiSentence({other: -1.0})
 
         if isinstance(other, FermiSentence):
-            other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            other_fs = FermiSentence({key: -val for key, val in other.items()})
             return self_fs + other_fs
 
         if not isinstance(other, TensorLike):
@@ -513,7 +505,7 @@ class FermiSentence(dict):
             return self.__add__(other)
 
         if isinstance(other, FermiSentence):
-            other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
+            other = FermiSentence({key: -val for key, val in other.items()})
             return self.__add__(other)
 
         if not isinstance(other, TensorLike):
@@ -542,7 +534,7 @@ class FermiSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        self_fs = FermiSentence({key: -val for key, val in self.items()})
         other_fs = FermiSentence({FermiWord({}): other})  # constant * I
         return self_fs + other_fs
 
@@ -573,8 +565,7 @@ class FermiSentence(dict):
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
             )
-        vals = [i * other for i in self.values()]
-        return FermiSentence(dict(zip(self.keys(), vals)))
+        return FermiSentence({key: val * other for key, val in self.items()})
 
     def __rmul__(self, other):
         r"""Reverse multiply a FermiSentence
@@ -593,8 +584,7 @@ class FermiSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        vals = [i * other for i in self.values()]
-        return FermiSentence(dict(zip(self.keys(), vals)))
+        return FermiSentence({key: val * other for key, val in self.items()})
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""

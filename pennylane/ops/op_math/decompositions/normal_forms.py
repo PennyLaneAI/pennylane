@@ -90,7 +90,7 @@ def _clifford_group_to_SO3() -> dict:
     ]
 
     # Zip the sequences with SO(3) matrices
-    return {gate: SO3Matrix(su2) for gate, su2 in zip(gate_sequences, su2_matrices)}
+    return {gate: SO3Matrix(su2) for gate, su2 in zip(gate_sequences, su2_matrices, strict=True)}
 
 
 def _clifford_gates_to_SU2() -> dict:

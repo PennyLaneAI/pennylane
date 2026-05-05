@@ -51,13 +51,13 @@ class PurityMP(StateMeasurement):
         return ()
 
     def process_state(self, state: TensorLike, wire_order: Wires):
-        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         indices = [wire_map[w] for w in self.wires]
         state = dm_from_state_vector(state)
         return math_purity(state, indices=indices, c_dtype=state.dtype)
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         indices = [wire_map[w] for w in self.wires]
         return math_purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
 

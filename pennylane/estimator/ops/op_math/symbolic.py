@@ -651,7 +651,8 @@ class Prod(ResourceOperator):
         counts = []
 
         ops, counts = zip(
-            *(item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops)
+            *(item if isinstance(item, (list, tuple)) else (item, 1) for item in res_ops),
+            strict=True,
         )
 
         _dequeue(op_to_remove=ops)
@@ -664,7 +665,7 @@ class Prod(ResourceOperator):
                 "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts))
+        self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts, strict=True))
 
         if wires:  # User defined wires take precedent
             self.wires = Wires(wires)

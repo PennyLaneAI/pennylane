@@ -151,7 +151,9 @@ class LinearCombination(Sum):
 
         with qp.QueuingManager.stop_recording():
             # type.__call__ valid when capture is enabled and creating an instance
-            operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
+            operands = tuple(
+                type.__call__(SProd, c, op) for c, op in zip(coeffs, observables, strict=True)
+            )
 
         super().__init__(
             *operands,
@@ -168,7 +170,7 @@ class LinearCombination(Sum):
 
         if all(pauli_reps := [op.pauli_rep for op in observables]):
             new_rep = qp.pauli.PauliSentence()
-            for c, ps in zip(coeffs, pauli_reps):
+            for c, ps in zip(coeffs, pauli_reps, strict=True):
                 for pw, coeff in ps.items():
                     new_rep[pw] += coeff * c
             return new_rep

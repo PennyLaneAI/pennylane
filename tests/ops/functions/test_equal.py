@@ -2361,7 +2361,7 @@ class TestSymbolicOpComparison:
 
         assert qp.equal(op1, op2, check_interface=False, check_trainability=False) is True
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
-        with pytest.raises(AssertionError, match="Parameters have different interfaces."):
+        with pytest.raises(AssertionError, match="Scalars have different interfaces."):
             assert_equal(op1, op2)
 
     def test_s_prod_comparison_with_trainability(self):
@@ -2371,7 +2371,7 @@ class TestSymbolicOpComparison:
 
         assert qp.equal(op1, op2, check_interface=False, check_trainability=False) is True
         assert qp.equal(op1, op2, check_interface=False, check_trainability=True) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability."):
+        with pytest.raises(AssertionError, match="Scalars have different trainability."):
             assert_equal(op1, op2)
 
     def test_s_prod_base_op_comparison_with_interface(self):
