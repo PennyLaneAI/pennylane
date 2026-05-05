@@ -36,9 +36,9 @@ if TYPE_CHECKING:
     from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_PREFIX = "qp_specs_qjit_resources"
+_RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
-_RESOURCE_ANALYSIS_PREFIX = "qp_specs_analysis_pass"
+_RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
