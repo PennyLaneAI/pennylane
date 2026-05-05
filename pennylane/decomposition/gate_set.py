@@ -42,7 +42,7 @@ class GateSet(Mapping):
     >>> from pennylane.decomposition import GateSet
     >>> gateset = GateSet({"X", qp.RX, "Adjoint(RX)"})
     >>> gateset
-    GateSet({RX, PauliX, Adjoint(RX)})
+    GateSet({Adjoint(RX), PauliX, RX})
     >>> qp.X in gateset
     True
     >>> "RX" in gateset
@@ -59,16 +59,16 @@ class GateSet(Mapping):
     Gate sets can be combined with ``|``:
 
     >>> gateset | {qp.RX, qp.RY, qp.RZ}
-    GateSet({RX, PauliX, Adjoint(RX), RY, RZ})
+    GateSet({Adjoint(RX), PauliX, RX, RY, RZ})
 
     Items can be removed with ``-``:
 
-    >>> gateset - {qp.RX, qml.RY}
-    GateSet({PauliX, Adjoint(RX)})
+    >>> gateset - {qp.RX, qp.RY}
+    GateSet({Adjoint(RX), PauliX})
     >>> gateset - qp.RX
-    GateSet({PauliX, Adjoint(RX)})
+    GateSet({Adjoint(RX), PauliX})
     >>> gateset - "RX"
-    GateSet({PauliX, Adjoint(RX)})
+    GateSet({Adjoint(RX), PauliX})
 
     Weights can also be provided for use in calculating costs and choosing optimal decompositions:
 
@@ -77,10 +77,8 @@ class GateSet(Mapping):
 
     If not provided, weights default to ``1``:
 
-    >>> print('\n'.join(f'{k}={v}' for k, v in gateset.items()))
-    RX=1.0
-    PauliX=1.0
-    Adjoint(RX)=1.0
+    >>> dict(gateset)
+    {'Adjoint(RX)': 1.0, 'PauliX': 1.0, 'RX': 1.0}
 
     """
 
@@ -90,7 +88,9 @@ class GateSet(Mapping):
         if any(v < 0 for v in gate_set.values()):
             raise ValueError("Negative weights are not supported in the gate_set.")
         self.name = name
-        self._gate_set = {to_name(op): weight for op, weight in gate_set.items()}
+        to_name_generator = ((to_name(op), weight) for op, weight in gate_set.items())
+        sorted_gs = sorted(to_name_generator, key=lambda item: (item[1], item[0]))
+        self._gate_set = dict(sorted_gs)
 
     def __eq__(self, value: object, /) -> bool:
         if not isinstance(value, GateSet):

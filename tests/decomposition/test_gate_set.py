@@ -46,6 +46,11 @@ class TestGateSet:
         assert gate_set[qp.RX] == 1
         assert gate_set["CNOT"] == 2
 
+    def test_sort_on_initialization(self):
+        """Test that gates are sorted by weight and then alphabetically."""
+        gateset = GateSet({"RX": 1, "Adjoint(RX)": 1, qp.CNOT: 3.0, qp.CZ: 3.0, "I": 0.0})
+        assert list(gateset) == ["Identity", "Adjoint(RX)", "RX", "CNOT", "CZ"]
+
     def test_gate_set_eq(self):
         """Tests comparing gate sets."""
 
