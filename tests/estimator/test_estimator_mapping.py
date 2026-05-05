@@ -35,9 +35,9 @@ class TestMapToResourceOp:
 
     def test_all_operators_with_resource_ops_mapped(self):
         """Test that everything with both an Operator and a ResourceOperator version
-        have a registered mapping.  Bypasses Qubitization and GQSP for the moment."""
+        have a registered mapping.  Bypasses Qubitization for the moment."""
 
-        special_cases = {"GQSP", "Qubitization", "QSVT"}
+        special_cases = {"Qubitization", "QSVT"}
 
         for estimator_entry in dir(qp.estimator):
             estimator_val = getattr(qp.estimator, estimator_entry)
@@ -424,6 +424,10 @@ class TestMapToResourceOp:
                     select_swap_depths=1,
                     wires=[0, 1, 2, 3],
                 ),
+            ),
+            (
+                qtemps.GQSP(qp.RX(0.3, 0), qp.poly_to_angles([0.1, 0.2j, 0.3], "GQSP"), control=1),
+                qp.estimator.GQSP(qp.estimator.RX(), d_plus=2, wires=(0, 1)),
             ),
         ],
     )
