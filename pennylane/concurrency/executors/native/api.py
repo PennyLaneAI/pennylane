@@ -88,6 +88,6 @@ class PyNativeExec(IntExec, abc.ABC):
     def starmap(self, fn: Callable, args: Sequence[tuple], **kwargs):
         exec_be = self._get_backend()
         if not hasattr(exec_be, "starmap"):
-            return list(self.map(fn, *list(zip(*args))), **kwargs)
+            return list(self.map(fn, *list(zip(*args, strict=True))), **kwargs)
         fn_p = partial(fn, **kwargs)
         return list(exec_be.starmap(fn_p, args))

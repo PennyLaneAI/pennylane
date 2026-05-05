@@ -130,7 +130,7 @@ class TestOutOfPlaceIntegerComparator:
     def test_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct."""
         result = qre.OutOfPlaceIntegerComparator.resource_decomp(value, register_size, geq)
-        for r, e in zip(result, expected_res):
+        for r, e in zip(result, expected_res, strict=True):
             if hasattr(r, "equal"):
                 assert r.equal(e)
             else:
@@ -208,7 +208,7 @@ class TestOutOfPlaceIntegerComparator:
         result = qre.OutOfPlaceIntegerComparator.adjoint_resource_decomp(
             {"value": value, "register_size": register_size, "geq": geq}
         )
-        for r, e in zip(result, expected_res):
+        for r, e in zip(result, expected_res, strict=True):
             if hasattr(r, "equal"):
                 assert r.equal(e)
             else:
@@ -299,7 +299,7 @@ class TestRegisterEquality:
     def test_resources(self, register_size, expected_res):
         """Test that the resources are correct."""
         result = qre.RegisterEquality.resource_decomp(register_size)
-        for r, e in zip(result, expected_res):
+        for r, e in zip(result, expected_res, strict=True):
             if hasattr(r, "equal"):
                 assert r.equal(e)
             else:

@@ -224,7 +224,9 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     H_ops = []
     for _coeffs in coeffs:
         ids = qp.math.where(qp.math.abs(_coeffs) > tol)[0]
-        sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
+        sentence = PauliSentence(
+            {_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids, strict=True)}
+        )
         if pauli:
             H_ops.append(sentence)
         else:

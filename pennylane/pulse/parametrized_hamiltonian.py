@@ -235,7 +235,7 @@ class ParametrizedHamiltonian:
         self.ops_fixed = []
         self.ops_parametrized = []
 
-        for coeff, obs in zip(coeffs, observables):
+        for coeff, obs in zip(coeffs, observables, strict=True):
             if callable(coeff):
                 self.coeffs_parametrized.append(coeff)
                 self.ops_parametrized.append(obs)
@@ -265,11 +265,13 @@ class ParametrizedHamiltonian:
     def __repr__(self):
         terms = []
 
-        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
+        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed, strict=True):
             term = f"{coeff} * {op}"
             terms.append(term)
 
-        for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
+        for i, (coeff, op) in enumerate(
+            zip(self.coeffs_parametrized, self.ops_parametrized, strict=True)
+        ):
             op_repr = f"({op})" if isinstance(op, Sum) else str(op)
             named_coeff = coeff if callable(coeff) and hasattr(coeff, "__name__") else type(coeff)
             term = f"{named_coeff.__name__}(params_{i}, t) * {op_repr}"
@@ -302,7 +304,10 @@ class ParametrizedHamiltonian:
         """
         with QueuingManager.stop_recording():
             if self.coeffs_fixed:
-                return sum(op_math.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
+                return sum(
+                    op_math.s_prod(c, o)
+                    for c, o in zip(self.coeffs_fixed, self.ops_fixed, strict=True)
+                )
         return 0
 
     def H_parametrized(self, params, t):
@@ -316,10 +321,12 @@ class ParametrizedHamiltonian:
             Operator: a ``Sum`` of ``SProd`` operators (or a single
             ``SProd`` operator in the event that there is only one term in ``H_parametrized``).
         """
-        coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
+        coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params, strict=True)]
         if coeffs:
             with QueuingManager.stop_recording():
-                return sum(op_math.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized))
+                return sum(
+                    op_math.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized, strict=True)
+                )
         return 0
 
     @property

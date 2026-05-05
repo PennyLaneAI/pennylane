@@ -227,9 +227,9 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             continue
 
         observables = (
-            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != I]
             if hide_identity and not all(t == I for t in pauli_rep)
-            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+            else [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True)]
         )
         if observables:
             coeffs.append(coefficient)
@@ -325,7 +325,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     rows, cols, data = sparse_matrix.row, sparse_matrix.col, sparse_matrix.data
 
     # Decompose each nonzero matrix entry into Pauli word contributions
-    for row, col, value in zip(rows, cols, data):
+    for row, col, value in zip(rows, cols, data, strict=True):
         contributions = [("", complex(value))]
 
         # Process each qubit position (MSB first)
@@ -361,9 +361,11 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         if math.allclose(coeff, 0):
             continue
         if hide_identity and not all(char == I for char in word):
-            observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
+            observables = [
+                (char, wire) for wire, char in zip(wire_order, word, strict=True) if char != I
+            ]
         else:
-            observables = [(char, wire) for wire, char in zip(wire_order, word)]
+            observables = [(char, wire) for wire, char in zip(wire_order, word, strict=True)]
         coeffs.append(coeff)
         obs_terms.append(observables)
 
@@ -556,7 +558,7 @@ def pauli_decompose(
         return PauliSentence(
             {
                 PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(coeffs, obs)
+                for coeff, obs_n_wires in zip(coeffs, obs, strict=True)
             }
         )
 
