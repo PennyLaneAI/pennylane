@@ -444,19 +444,18 @@ def _square_hamiltonian_terms(
         Tuple[List[float], List[qp.operation.Operator]]: The list of coefficients and list of observables
         of the squared Hamiltonian.
     """
-    squared_coeffs, squared_ops = [], []
-    pairs = [(coeff, op) for coeff, op in zip(coeffs, ops)]
-    products = itertools.product(pairs, repeat=2)
+    combs = itertools.combinations(zip(coeffs, ops, strict=True), repeat=2)
 
-    for (coeff1, op1), (coeff2, op2) in products:
-        squared_coeffs.append(coeff1 * coeff2)
+    # Initialize with diagonal terms
+    squared_coeffs = [sum(c**2 for c in coeffs)]
+    squared_ops = [Identity(0)]
+    for (coeff1, op1), (coeff2, op2) in combs:
+        squared_coeffs.append(2 * coeff1 * coeff2)
 
         if isinstance(op1, Identity):
             squared_ops.append(op2)
         elif isinstance(op2, Identity):
             squared_ops.append(op1)
-        elif op1.wires == op2.wires and isinstance(op1, type(op2)):
-            squared_ops.append(Identity(0))
         elif op2.wires[0] < op1.wires[0]:
             squared_ops.append(op2 @ op1)
         else:
