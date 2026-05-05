@@ -141,13 +141,9 @@ jobs:
 
           pytest doc ${IGNORE}
 
+        # NOTE: If no tests are found (say after a fresh changelog-dev.md is created after RCs are cut)
+        # then 'pytest' raises an exit code 5, which fails on CI.
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-          pytest doc/releases/changelog-dev.md 
-          ret=$?
-          if [ "$ret" = 5 ]; then
-              echo "No tests collected in changelog-dev.md. Exiting with 0."
-              exit 0
-          fi 
-          exit "$ret"
+          pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 
