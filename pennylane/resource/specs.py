@@ -18,6 +18,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable
@@ -33,9 +34,9 @@ if TYPE_CHECKING:
     from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_FILEPATH = "__qp_specs_qjit_resources.json"
+_RESOURCE_TRACKING_PREFIX = "__qp_specs_qjit_resources"
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
-_RESOURCE_ANALYSIS_PREFIX = "__qp_specs_analysis_pass_level_"
+_RESOURCE_ANALYSIS_PREFIX = "__qp_specs_analysis_pass_level"
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
@@ -101,6 +102,8 @@ def _specs_qjit_device_level_tracking(
     if compute_depth is None:
         compute_depth = True
 
+    filepath = Path(f"{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
+
     # When running at the device level, execute on null.qubit directly with resource tracking,
     # which will give resource usage information for after all compiler passes have completed
     # TODO: Find a way to inherit all devices args from input
@@ -109,14 +112,12 @@ def _specs_qjit_device_level_tracking(
         target_device=original_device,
         wires=original_device.wires,
         track_resources=True,
-        resources_filename=_RESOURCE_TRACKING_FILEPATH,
+        resources_filename=str(filepath),
         compute_depth=compute_depth,
     )
 
     new_qnode = qjit.original_function.update(device=spoofed_dev)
     new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
-
-    filepath = Path(_RESOURCE_TRACKING_FILEPATH)
 
     if filepath.exists():
         warnings.warn(
@@ -374,6 +375,10 @@ def _specs_from_analysis_pass(
     max_legal_level = len(iter_pipeline)
     fname_to_level = {}
 
+    # Add a unique suffix to the filename prefix to prevent conflicts with other runs of specs in
+    # the same directory which can cause issues with parallel execution
+    fname_prefix = f"{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_"
+
     if num_tape_levels > 0:
         # Account for the inserted lowering pass which comes after all tape transforms
         max_legal_level += 1
@@ -387,7 +392,7 @@ def _specs_from_analysis_pass(
         raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
     if num_tape_levels in level:
-        fname = f"{_RESOURCE_ANALYSIS_PREFIX}before.json"
+        fname = f"{fname_prefix}before.json"
         fname_to_level[fname] = num_tape_levels  # num_tape_levels == the level of the lowering pass
         level_to_name[num_tape_levels] = (
             ", ".join(level_to_markers[num_tape_levels])
@@ -403,7 +408,7 @@ def _specs_from_analysis_pass(
             break
         new_compile_pipeline += comp_pass
         if i in level:
-            fname = f"{_RESOURCE_ANALYSIS_PREFIX}{i}.json"
+            fname = f"{fname_prefix}{i}.json"
             level_name = (
                 ", ".join(level_to_markers[i])
                 if i in level_to_markers
