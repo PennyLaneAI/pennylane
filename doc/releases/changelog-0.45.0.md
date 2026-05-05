@@ -764,6 +764,7 @@
   outside of the quantum circuit.
   [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
   [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
+  [(#9423)](https://github.com/PennyLaneAI/pennylane/pull/9423)
 
 * Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
@@ -1227,6 +1228,11 @@
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where `ParametrizedHamiltonian`, `HardwareHamiltonian`, and `ParametrizedEvolution`
+  did not follow PennyLane's queuing convention. They have been updated to de-queue their input
+  operators and queue themselves like other PennyLane gate objects (that derive from `Operator`).
+  [(#9423)](https://github.com/PennyLaneAI/pennylane/pull/9423)
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
