@@ -19,6 +19,7 @@ import copy
 import json
 import os
 import re
+import tempfile
 import time
 import warnings
 from collections import defaultdict
@@ -35,9 +36,9 @@ if TYPE_CHECKING:
     from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_PREFIX = "__qp_specs_qjit_resources"
+_RESOURCE_TRACKING_PREFIX = "qp_specs_qjit_resources"
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
-_RESOURCE_ANALYSIS_PREFIX = "__qp_specs_analysis_pass_level"
+_RESOURCE_ANALYSIS_PREFIX = "qp_specs_analysis_pass"
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
@@ -103,32 +104,34 @@ def _specs_qjit_device_level_tracking(
     if compute_depth is None:
         compute_depth = True
 
-    filepath = Path(f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_{time.time_ns()}.json")
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
 
-    # When running at the device level, execute on null.qubit directly with resource tracking,
-    # which will give resource usage information for after all compiler passes have completed
-    # TODO: Find a way to inherit all devices args from input
-    original_device = original_qnode.device
-    spoofed_dev = NullQubit(
-        target_device=original_device,
-        wires=original_device.wires,
-        track_resources=True,
-        resources_filename=str(filepath),
-        compute_depth=compute_depth,
-    )
-
-    new_qnode = qjit.original_function.update(device=spoofed_dev)
-    new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
-
-    if filepath.exists():
-        warnings.warn(
-            "While running, specs encountered past result data that had not been cleaned up. "
-            "This may indicate that a previous call to specs was interrupted or failed to run.",
-            UserWarning,
+        # When running at the device level, execute on null.qubit directly with resource tracking,
+        # which will give resource usage information for after all compiler passes have completed
+        # TODO: Find a way to inherit all devices args from input
+        original_device = original_qnode.device
+        spoofed_dev = NullQubit(
+            target_device=original_device,
+            wires=original_device.wires,
+            track_resources=True,
+            resources_filename=str(filepath),
+            compute_depth=compute_depth,
         )
-        filepath.unlink()
 
-    try:
+        new_qnode = qjit.original_function.update(device=spoofed_dev)
+        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+
+        if filepath.exists():
+            warnings.warn(
+                "While running, specs encountered past result data that had not been cleaned up. "
+                "This may indicate that a previous call to specs was interrupted or failed to run.",
+                UserWarning,
+            )
+            filepath.unlink()
+
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
@@ -142,10 +145,6 @@ def _specs_qjit_device_level_tracking(
             num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
-    finally:
-        # Ensure we clean up the resource tracking file
-        if filepath.exists():
-            filepath.unlink()
 
 
 def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
@@ -376,63 +375,65 @@ def _specs_from_analysis_pass(
     max_legal_level = len(iter_pipeline)
     fname_to_level = {}
 
-    # Add a unique suffix to the filename prefix to prevent conflicts with other runs of specs in
-    # the same directory which can cause issues with parallel execution
-    fname_prefix = f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_{time.time_ns()}_"
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
 
-    if num_tape_levels > 0:
-        # Account for the inserted lowering pass which comes after all tape transforms
-        max_legal_level += 1
+        if num_tape_levels > 0:
+            # Account for the inserted lowering pass which comes after all tape transforms
+            max_legal_level += 1
 
-        # Add all tape transforms first, which come before any MLIR passes
-        new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
-        iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
+            # Add all tape transforms first, which come before any MLIR passes
+            new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
+            iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
 
-    if max_level > max_legal_level:
-        bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
-        raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
+        if max_level > max_legal_level:
+            bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
+            raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
-    if num_tape_levels in level:
-        fname = f"{fname_prefix}before.json"
-        fname_to_level[fname] = num_tape_levels  # num_tape_levels == the level of the lowering pass
-        level_to_name[num_tape_levels] = (
-            ", ".join(level_to_markers[num_tape_levels])
-            if num_tape_levels in level_to_markers
-            else "Before MLIR Passes"
-        )
-        new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
-            output_json=True, output_fname=fname
-        )
-
-    for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
-        if i > max_level:
-            break
-        new_compile_pipeline += comp_pass
-        if i in level:
-            fname = f"{fname_prefix}{i}.json"
-            level_name = (
-                ", ".join(level_to_markers[i])
-                if i in level_to_markers
-                else comp_pass.pass_name or f"Level {i}"
+        if num_tape_levels in level:
+            fname = f"{fname_prefix}before.json"
+            fname_to_level[fname] = (
+                num_tape_levels  # num_tape_levels == the level of the lowering pass
             )
-            level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
-            fname_to_level[fname] = i
-            level_to_name[i] = level_name
+            level_to_name[num_tape_levels] = (
+                ", ".join(level_to_markers[num_tape_levels])
+                if num_tape_levels in level_to_markers
+                else "Before MLIR Passes"
+            )
             new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
 
-    new_qnode._compile_pipeline = new_compile_pipeline
-    compile_options = copy.deepcopy(qjit.compile_options)
-    compile_options.target = "mlir"
-    compile_options.lower_to_llvm = False
-    if compile_options.pipelines is None:
-        # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
-        # limiting which passes are applied to just the necessary ones. In this case, only
-        # the set of user-specified transforms (the quantum-compilation-stage) are run
-        compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+        for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
+            if i > max_level:
+                break
+            new_compile_pipeline += comp_pass
+            if i in level:
+                fname = f"{fname_prefix}{i}.json"
+                level_name = (
+                    ", ".join(level_to_markers[i])
+                    if i in level_to_markers
+                    else comp_pass.pass_name or f"Level {i}"
+                )
+                level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
+                fname_to_level[fname] = i
+                level_to_name[i] = level_name
+                new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                    output_json=True, output_fname=fname
+                )
 
-    try:
+        new_qnode._compile_pipeline = new_compile_pipeline
+        compile_options = copy.deepcopy(qjit.compile_options)
+        compile_options.target = "mlir"
+        compile_options.lower_to_llvm = False
+        if compile_options.pipelines is None:
+            # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
+            # limiting which passes are applied to just the necessary ones. In this case, only
+            # the set of user-specified transforms (the quantum-compilation-stage) are run
+            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+
         # Partially compile the QNode, producing JSON data with resource info
         _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
 
@@ -455,13 +456,6 @@ def _specs_from_analysis_pass(
                 cur_level_resources = cur_level_resources[0]
 
             results[level_to_name[curr_level]] = cur_level_resources
-    finally:
-        # Ensure all files get cleaned up even if something goes wrong during compilation or file reading
-        for res_file in fname_to_level:
-            res_file = Path(res_file)
-
-            if res_file.exists():
-                res_file.unlink()  # Clean up the resource tracking file
 
     return results
 
