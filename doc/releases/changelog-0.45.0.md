@@ -686,23 +686,26 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``num_x_wires`` and ``num_work_wires`` were added to the ``resource_keys`` and ``resource_params`` of
-  :class:`~.SemiAdder`.
+* The ``num_x_wires`` and ``num_work_wires`` arguments were added to the ``resource_keys`` and
+  ``resource_params`` of :class:`~.SemiAdder`.
   [(#9293)](https://github.com/PennyLaneAI/pennylane/pull/9293)
 
   With this breaking change, please note the following:
 
-   - Decomposition rules for ``SemiAdder`` now require those arguments.
-   - When registering a resource function (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an operator that contains ``SemiAdder``, the resource representation of ``SemiAdder`` must also receive these new arguments.
+  - Decomposition rules for :class:`~.SemiAdder` now require those arguments.
+  - When registering a resource function
+    (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an
+    operator that contains :class:`~.SemiAdder`, the resource representation of :class:`~.SemiAdder`
+    must also receive these new arguments.
 
    These changes are relevant only with :func:`~decomposition.enable_graph`.
 
-* All operator classes are now queued by default, unless they implement a custom ``queue``
+* All ``Operator`` classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
+  [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
+  [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
 
-  ** Operator math**
-
-  This change also affects operators commonly used for operator math, such as
+  This change also affects operators commonly used for operator math:
 
   - :class:`~.Hermitian`
   - :class:`~.ops.op_math.SProd`
@@ -711,8 +714,9 @@
   - :class:`~.Projector`
   - :class:`~.BasisStateProjector`
 
-  All operators are de-queued when used to construct new operators, so the following example
-  does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
+  Note, however, that all ``Operator`` classes that are used to construct new operators are
+  de-queued, so the following example does *not* illustrate the changed behaviour (i.e., creating
+  ``B`` removes ``A`` from the queue in the example below):
 
   ```python
   import pennylane as qp
@@ -732,12 +736,11 @@
   0: ───────────┤ ╭<𝓗(0.20,0.10)>
   1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
   2: ───────────┤ ╰<𝓗(0.20,0.10)>
-
   ```
 
-  However, if we convert an operator ``A`` to numerical data, from which a new
-  operator ``B`` is constructed, the chain of operator dependencies is broken and de-queuing will
-  not work as expected:
+  However, if we convert an operator ``A`` to numerical data, from which a new operator ``B`` is
+  constructed, the chain of operator dependencies is broken and de-queuing will not work as
+  previously expected:
 
   ```python
   coeff = np.array([0.2, 0.1])
@@ -756,71 +759,71 @@
   0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
   1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │
   2: ─────────────────────────┤ ╰<𝓗(M0)>
-
   ```
 
-  As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
+  As we can see, the ``Hamiltonian`` instance assigned to ``A`` remained in the queue.
   In cases where such a conversion to numerical data is unavoidable, perform the conversion
   outside of the quantum circuit.
-  [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
-  [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
 
-* Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
+* Support for NumPy 1.x has been dropped following its end-of-life. NumPy 2.0 or higher is now
+  required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
   [(#9017)](https://github.com/PennyLaneAI/pennylane/pull/9017)
   [(#9167)](https://github.com/PennyLaneAI/pennylane/pull/9167)
 
-* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
-  and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from
+  :class:`~.Operator` and all subclasses that implemented them. The graph decomposition system
+  (:func:`~.decomposition.enable_graph`) should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
 
-* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
-  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
-  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
-  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and
-  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform has been removed.
+  Instead, the device should determine which MCM method to use, and explicitly include
+  :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
+  in its preprocess transforms if necessary. See
+  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
+  and
+  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>`
+  for an example.
   [(#8926)](https://github.com/PennyLaneAI/pennylane/pull/8926)
 
-* The ``custom_decomps`` keyword argument to ``qp.device`` has been removed in 0.45. Instead,
-  with ``qp.decomposition.enable_graph()``, new decomposition rules can be defined as
-  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+* The ``custom_decomps`` keyword argument to ``qp.device`` has been removed. Instead, with the graph
+  decomposition system (:func:`~.decomposition.enable_graph`), new decomposition rules can be
+  defined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for
+  more details.
   [(#8928)](https://github.com/PennyLaneAI/pennylane/pull/8928)
 
-  As an example, consider the case of running the following circuit on a device that does not natively support ``CNOT`` gates:
+  As an example, consider the case of running the following circuit, where we wish to convert
+  ``CNOT`` gates into ``Hadamard`` and ``CZ`` gates.
 
   ```python
   def circuit():
-    qp.CNOT(wires=[0, 1])
-    return qp.expval(qp.X(1))
+      qp.CNOT(wires=[0, 1])
+      return qp.expval(qp.X(1))
   ```
 
-  Instead of defining the ``CNOT`` decomposition as:
+  Instead of defining the ``CNOT`` decomposition as follows with ``custom_decomps``,
 
   ```py
   def custom_cnot(wires):
-    return [
-      qp.Hadamard(wires=wires[1]),
-      qp.CZ(wires=[wires[0], wires[1]]),
-      qp.Hadamard(wires=wires[1])
-    ]
+      return [
+          qp.Hadamard(wires=wires[1]),
+          qp.CZ(wires=[wires[0], wires[1]]),
+          qp.Hadamard(wires=wires[1])
+      ]
 
   dev = qp.device('default.qubit', wires=2, custom_decomps={"CNOT" : custom_cnot})
   qnode = qp.QNode(circuit, dev)
-  print(qp.draw(qnode, level="device")())
   ```
 
-  The same result would now be obtained using:
+  the same result would now be obtained using:
 
   ```python
-  @qp.decomposition.register_resources({
-    qp.H: 2,
-    qp.CZ: 1
-  })
+  @qp.decomposition.register_resources({qp.H: 2, qp.CZ: 1})
   def _custom_cnot_decomposition(wires, **_):
-    qp.Hadamard(wires=wires[1])
-    qp.CZ(wires=[wires[0], wires[1]])
-    qp.Hadamard(wires=wires[1])
+      qp.Hadamard(wires=wires[1])
+      qp.CZ(wires=[wires[0], wires[1]])
+      qp.Hadamard(wires=wires[1])
 
   qp.decomposition.add_decomps(qp.CNOT, _custom_cnot_decomposition)
 
@@ -828,8 +831,8 @@
 
   @qp.transforms.decompose(gate_set={qp.CZ, qp.H})
   def circuit():
-    qp.CNOT(wires=[0, 1])
-    return qp.expval(qp.X(1))
+      qp.CNOT(wires=[0, 1])
+      return qp.expval(qp.X(1))
 
   dev = qp.device('default.qubit', wires=2)
   qnode = qp.QNode(circuit, dev)
@@ -839,111 +842,114 @@
   >>> print(qp.draw(qnode, level="device")())
   0: ────╭●────┤
   1: ──H─╰Z──H─┤  <X>
-
   ```
 
-* The `pennylane.operation.Operator.is_hermitian` property has been removed and replaced
-  with `pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
-  Alternatively, consider using the `pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
-  Please be aware that it comes with a higher computational cost.
+* The :func:`pennylane.operation.Operator.is_hermitian` property has been removed and replaced with
+  :func:`pennylane.operation.Operator.is_verified_hermitian`, as it better reflects the
+  functionality of this property. Alternatively, consider using the :func:`pennylane.is_hermitian`
+  function instead as it provides a more reliable check for hermiticity. Please be aware that it
+  comes with a higher computational cost.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-* Passing a function to the `gate_set` argument in the `pennylane.transforms.decompose` transform
-  is removed. The `gate_set` argument expects a static iterable of operator type and/or operator names,
-  and the function should be passed to the `stopping_condition` argument instead.
+* Passing a function to the ``gate_set`` argument in :func:`pennylane.decompose` has been removed.
+  The ``gate_set`` argument expects a static iterable of operator type and/or operator names, and the
+  function should be passed to the ``stopping_condition`` argument instead.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-* `argnum` has been renamed `argnums` in `qp.grad`, `qp.jacobian`, `qp.jvp`, and `qp.vjp`
-  to better match Catalyst and JAX.
+* ``argnum`` has been renamed ``argnums`` in ``qp.grad``, ``qp.jacobian``, ``qp.jvp``, and
+  ``qp.vjp`` to better match Catalyst and JAX.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-* Access to the following functions and classes from the `pennylane.resources` module has
-  been removed. Instead, these functions must be imported from the `pennylane.estimator` module.
+* Access to the following functions and classes from the :mod:`pennylane.resources` module has been
+  removed. Instead, these functions must be imported from the :mod:`pennylane.estimator` module.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-    - `qp.estimator.estimate_shots` in favor of `qp.resources.estimate_shots`
-    - `qp.estimator.estimate_error` in favor of `qp.resources.estimate_error`
-    - `qp.estimator.FirstQuantization` in favor of `qp.resources.FirstQuantization`
-    - `qp.estimator.DoubleFactorization` in favor of `qp.resources.DoubleFactorization`
+  - `qp.estimator.estimate_shots` in favor of `qp.resources.estimate_shots`
+  - `qp.estimator.estimate_error` in favor of `qp.resources.estimate_error`
+  - `qp.estimator.FirstQuantization` in favor of `qp.resources.FirstQuantization`
+  - `qp.estimator.DoubleFactorization` in favor of `qp.resources.DoubleFactorization`
 
 <h3>Deprecations 👋</h3>
 
-* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+* The :func:`pennylane.workflow.get_transform_program` function has been deprecated and will be
+  removed in v0.46. Instead, please use the improved
+  :func:`pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline of a QNode.
   [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
 
-* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46.
-  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
-
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46.
-  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
-
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46.
-  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
-
-* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46.
+* The ``id`` keyword argument to several classes has been renamed or removed entirely, and those
+  changes will be official in v0.46.
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
   [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)
 
-  The ``id`` argument previously served two purposes: (1) adding custom labels
-  to operator instances which were rendered in circuit drawings and (2)
-  tagging encoding gates for Fourier spectrum analysis.
+  - The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has
+    been renamed to ``node_uid``.
+  - The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``.
+  - The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` will be removed.
+  - The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed.
+
+  The ``id`` argument previously served two purposes: (1) adding custom labels to operator instances
+  which were rendered in circuit drawings and (2) tagging encoding gates for Fourier spectrum
+  analysis.
 
   These are now handled by dedicated functions:
 
   .. warning::
-    Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
-    as the original behaviour was never supported.
 
-  - Use :func:`~.drawer.label` to attach a custom label to an operator instance
-  for circuit drawing:
+    Neither of these functions are supported in a :func:`~.qjit`-compiled circuit, as the original
+    behaviour was never supported.
 
-      ```python
-      # Legacy method (deprecated):
-      qp.RX(0.5, wires=0, id="my-rx")
+  - Use :func:`~.drawer.label` to attach a custom label to an operator instance for circuit drawing:
 
-      # New method:
-      qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
-      ```
+    ```python
+    # Legacy method (deprecated):
+    qp.RX(0.5, wires=0, id="my-rx")
 
-  - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
-    for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
+    # New method:
+    qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
+    ```
 
-      ```py
-      # Legacy method (deprecated):
-      qp.RX(0.5, wires=0, id="x0")
+  - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate for
+    :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-      # New method:
-      qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
-      ```
+    ```py
+    # Legacy method (deprecated):
+    qp.RX(0.5, wires=0, id="x0")
 
-* Setting `_queue_category=None` in an operator class in order to deactivate its instances being
-  queued has been deprecated. Implement a custom `queue` method for the respective class instead.
-  Operator classes that used to have `_queue_category=None` have been updated
-  to `_queue_category="_ops"`, so that they are queued now.
+    # New method:
+    qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
+    ```
+
+* Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
+  queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
+  Operator classes that used to have ``_queue_category=None`` have been updated to
+  ``_queue_category="_ops"``, so that they are queued now.
   [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
 
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+* The ``BoundTransform.transform`` property has been deprecated. Use
+  ``BoundTransform.tape_transform`` instead.
   [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
 
-* :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
-  function for decomposing circuits.
+* :func:`~pennylane.tape.qscript.expand` and related functions
+  (:func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and
+  :func:`~pennylane.tape.create_expand_trainable_multipar`) have been deprecated and will be
+  removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
+  transform for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with
+  ``mode="reversed"`` or ``mode="standard"`` has been deprecated and will no longer be supported in
+  v0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
 
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46. Instead,
+  please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing
+  circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
   [(#8977)](https://github.com/PennyLaneAI/pennylane/pull/8977)
   [(#9006)](https://github.com/PennyLaneAI/pennylane/pull/9006)
 
-* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+* The ``transform_program`` property of QNodes has been renamed to ``compile_pipeline``. The
+  deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
