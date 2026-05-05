@@ -338,6 +338,8 @@ def _equal_operators(
     if any(math.is_abstract(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
+    if len(op1.data) != len(op2.data):
+        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
     if not all(
         math.allclose(d1, d2, rtol=rtol, atol=atol)
         for d1, d2 in zip(op1.data, op2.data, strict=True)
@@ -608,24 +610,22 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     )
 
     if check_interface:
-        for params1, params2 in zip(op1.data, op2.data, strict=True):
-            params1_interface = math.get_interface(params1)
-            params2_interface = math.get_interface(params2)
-            if params1_interface != params2_interface:
-                return (
-                    "Parameters have different interfaces.\n "
-                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
-                )
+        scalar1_interface = math.get_interface(op1.scalar)
+        scalar2_interface = math.get_interface(op2.scalar)
+        if scalar1_interface != scalar2_interface:
+            return (
+                "Scalars have different interfaces.\n "
+                f"{op1.scalar} interface is {scalar1_interface} and {op2.scalar} interface is {scalar2_interface}"
+            )
 
     if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data, strict=True):
-            params1_train = math.requires_grad(params1)
-            params2_train = math.requires_grad(params2)
-            if params1_train != params2_train:
-                return (
-                    "Parameters have different trainability.\n "
-                    f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
-                )
+        scalar1_train = math.requires_grad(op1.scalar)
+        scalar2_train = math.requires_grad(op2.scalar)
+        if scalar1_train != scalar2_train:
+            return (
+                "Scalars have different trainability.\n "
+                f"{op1.scalar} trainability is {scalar1_train} and {op2.scalar} trainability is {scalar2_train}"
+            )
 
     if qp.math.is_abstract(op1.scalar) or qp.math.is_abstract(op2.scalar):
         if op1.scalar is not op2.scalar:
@@ -826,6 +826,8 @@ def _equal_hilbert_schmidt(
     rtol=1e-5,
     atol=1e-9,
 ):
+    if len(op1.data) != len(op2.data):
+        return False
     if not all(
         math.allclose(d1, d2, rtol=rtol, atol=atol)
         for d1, d2 in zip(op1.data, op2.data, strict=True)
