@@ -1225,7 +1225,7 @@
   with proper ``:doc:`` cross references.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
-<h3>Bug Fixed 🐛</h3>
+<h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
