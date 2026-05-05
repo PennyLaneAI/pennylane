@@ -147,7 +147,8 @@ def _pl_op_to_stim(op):
         stim_op += f"({op.parameters[-1]})"  # get the probability
         if op.name == "PauliError":
             stim_tg = [
-                pauli + wire for pauli, wire in zip(op.hyperparameters["operators"], stim_tg)
+                pauli + wire
+                for pauli, wire in zip(op.hyperparameters["operators"], stim_tg, strict=True)
             ]
 
     return stim_op, " ".join(stim_tg)
@@ -535,7 +536,8 @@ class DefaultClifford(Device):
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))
             return tuple(
-                self.simulate(c, seed=s, debugger=self._debugger) for c, s in zip(circuits, seeds)
+                self.simulate(c, seed=s, debugger=self._debugger)
+                for c, s in zip(circuits, seeds, strict=True)
             )
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
@@ -692,7 +694,7 @@ class DefaultClifford(Device):
         samples = []
         for pauli, wire in paulis:
             stim_circ = stim_circuit.copy()
-            for op, wr in zip(pauli, wire):
+            for op, wr in zip(pauli, wire, strict=True):
                 if op != "I":
                     stim_circ.append(meas_dict[op], wr)
             sampler = stim_circ.compile_sampler(seed=sample_seed)
@@ -807,7 +809,7 @@ class DefaultClifford(Device):
         expecs = math.zeros_like(coeffs)
         for idx, (pauli, wire) in enumerate(paulis):
             pauli_term = ["I"] * max(np.max(list(wire)) + 1, tableau_simulator.num_qubits)
-            for op, wr in zip(pauli, wire):
+            for op, wr in zip(pauli, wire, strict=True):
                 pauli_term[wr] = op
             stim_pauli = stim.PauliString("".join(pauli_term))
             expecs[idx] = tableau_simulator.peek_observable_expectation(stim_pauli)
@@ -994,7 +996,9 @@ class DefaultClifford(Device):
         # Worst case complexity O(B * M * N), where N is #measured_qubits and B is #basis_states.
         visited_probs = []
         prob_res = np.ones(tgt_states.shape[0])
-        for tgt_index, (tgt_integ, tgt_state) in enumerate(zip(tgt_integs, tgt_states)):
+        for tgt_index, (tgt_integ, tgt_state) in enumerate(
+            zip(tgt_integs, tgt_states, strict=True)
+        ):
             if tgt_integ in visited_probs:
                 continue
             prob_sim = circuit_simulator.copy()
