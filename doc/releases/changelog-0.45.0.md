@@ -606,6 +606,7 @@
 * Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  [(#9425)](https://github.com/PennyLaneAI/pennylane/pull/9425)
 
 * No unnecessary classical registers will be created now when using `qp.to_openqasm` with `measure_all=False`.
   [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
