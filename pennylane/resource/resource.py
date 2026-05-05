@@ -220,13 +220,11 @@ class Resources:
     __rmul__ = __mul__
 
     def __str__(self):
-        items = "\n".join(
-            [
-                f"num_wires: {self.num_wires}"
-                f"num_gates: {self.num_gates}"
-                f"depth: {self.depth}"
-                f"shots: {self.shots}"
-            ]
+        items = (
+            f"num_wires: {self.num_wires}"
+            f"\nnum_gates: {self.num_gates}"
+            f"\ndepth: {self.depth}"
+            f"\nshots: {self.shots}"
         )
 
         gate_type_str = ", ".join(
