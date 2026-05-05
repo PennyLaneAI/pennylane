@@ -217,6 +217,7 @@
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
   [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
+  [(#9417)](https://github.com/PennyLaneAI/pennylane/pull/9417)
 
 <h4>Resource Estimation Templates 📏</h4>
 
