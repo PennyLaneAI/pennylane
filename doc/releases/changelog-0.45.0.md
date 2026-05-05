@@ -910,7 +910,7 @@
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate for
     :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-    
+    ```python
     # Legacy method (deprecated):
     qp.RX(0.5, wires=0, id="x0")
 
