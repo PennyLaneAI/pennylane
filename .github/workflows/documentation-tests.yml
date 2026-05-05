@@ -144,4 +144,10 @@ jobs:
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-          pytest doc/releases/changelog-dev.md
+          pytest doc/releases/changelog-dev.md 
+          ret=$?
+          if [ "$ret" = 5 ]; then
+              echo "No tests collected in changelog-dev.md. Exiting with 0."
+              exit 0
+          fi 
+          exit "$ret"
