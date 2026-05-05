@@ -18,7 +18,7 @@ Contains the Superposition template.
 from collections import Counter
 from functools import reduce
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
@@ -109,13 +109,13 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     """
 
     ops = []
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1))
+    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1))
 
     for i, b in enumerate(basis1):
         if b != basis2[i]:
-            ops.append(qml.CNOT(wires=work_wire + wires[i]))
+            ops.append(qp.CNOT(wires=work_wire + wires[i]))
 
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
+    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2))
 
     return ops
 
@@ -131,20 +131,20 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
     """
 
-    qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1)
+    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1)
 
     @for_loop(len(basis1))
     def apply_cnots(i):
         b = basis1[i]
 
         def apply_cnot():
-            qml.CNOT(wires=work_wire + wires[i])
+            qp.CNOT(wires=work_wire + wires[i])
 
-        qml.cond(b != basis2[i], apply_cnot)()
+        qp.cond(b != basis2[i], apply_cnot)()
 
     apply_cnots()  # pylint: disable=no-value-for-parameter
 
-    qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2)
+    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2)
 
 
 class Superposition(Operation):
@@ -170,7 +170,7 @@ class Superposition(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
 
         coeffs = np.sqrt(np.array([1/3, 1/3, 1/3]))
@@ -178,11 +178,11 @@ class Superposition(Operation):
         wires = [0, 1, 2]
         work_wire = 3
 
-        dev = qml.device('default.qubit')
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit')
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(coeffs, bases, wires, work_wire)
-            return qml.probs(wires)
+            qp.Superposition(coeffs, bases, wires, work_wire)
+            return qp.probs(wires)
 
     >>> print(circuit()) # doctest: +SKIP
     [0.3333 0.     0.3333 0.     0.     0.     0.     0.3333]
@@ -242,7 +242,7 @@ class Superposition(Operation):
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
         if not all(
-            all(qml.math.isclose(i, 0.0) or qml.math.isclose(i, 1.0) for i in b) for b in bases
+            all(qp.math.isclose(i, 0.0) or qp.math.isclose(i, 1.0) for i in b) for b in bases
         ):
             raise ValueError("The elements of the basis states must be either 0 or 1.")
 
@@ -250,19 +250,19 @@ class Superposition(Operation):
         if len(basis_lengths) > 1:
             raise ValueError("All basis states must have the same length.")
 
-        if not qml.math.is_abstract(coeffs):
-            coeffs_norm = qml.math.linalg.norm(coeffs)
-            if not qml.math.allclose(coeffs_norm, qml.math.array(1.0)):
+        if not qp.math.is_abstract(coeffs):
+            coeffs_norm = qp.math.linalg.norm(coeffs)
+            if not qp.math.allclose(coeffs_norm, qp.math.array(1.0)):
                 raise ValueError("The input superposition must be normalized.")
 
-        unique_basis = qml.math.unique(qml.math.array([tuple(b) for b in bases]), axis=0)
+        unique_basis = qp.math.unique(qp.math.array([tuple(b) for b in bases]), axis=0)
 
         if len(unique_basis) != len(bases):
             raise ValueError("The basis states must be unique.")
 
         self.hyperparameters["bases"] = tuple(tuple(int(i) for i in b) for b in bases)
-        self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["target_wires"] = qp.wires.Wires(wires)
+        self.hyperparameters["work_wire"] = qp.wires.Wires(work_wire)
 
         all_wires = self.hyperparameters["target_wires"] + self.hyperparameters["work_wire"]
 
@@ -318,7 +318,7 @@ class Superposition(Operation):
 
         **Example**
 
-        >>> ops = qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
+        >>> ops = qp.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
         >>> from pprint import pprint
         >>> pprint(ops)
         [StatePrep(array([0.707..., 0.707...]), wires=[1]),
@@ -341,15 +341,15 @@ class Superposition(Operation):
 
         op_list = []
         op_list.append(
-            qml.StatePrep(
-                qml.math.stack(sorted_coefficients),
-                wires=wires[-qml.math.ceil_log2(len(coeffs)) :],
+            qp.StatePrep(
+                qp.math.stack(sorted_coefficients),
+                wires=wires[-qp.math.ceil_log2(len(coeffs)) :],
                 pad_with=0,
             )
         )
 
         for basis2, basis1 in perms.items():
-            if not qml.math.allclose(basis1, basis2):
+            if not qp.math.allclose(basis1, basis2):
                 op_list += _permutation_operator(basis1, basis2, wires, work_wire)
 
         return op_list
@@ -388,20 +388,20 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
     resources = Counter()
 
-    resources[resource_rep(qml.StatePrep, num_wires=qml.math.ceil_log2(num_coeffs))] += 1
+    resources[resource_rep(qp.StatePrep, num_wires=qp.math.ceil_log2(num_coeffs))] += 1
 
     for basis2, basis1 in perms.items():
-        if not qml.math.allclose(basis1, basis2):
+        if not qp.math.allclose(basis1, basis2):
             resources[
                 controlled_resource_rep(
-                    base_class=qml.PauliX,
+                    base_class=qp.PauliX,
                     base_params={},
                     num_control_wires=num_wires,
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
                 )
             ] += 1
 
-            resources[qml.CNOT] += reduce(
+            resources[qp.CNOT] += reduce(
                 lambda acc, ib: acc
                 + int(ib[1] != basis2[ib[0]]),  # pylint: disable=cell-var-from-loop
                 enumerate(basis1),
@@ -410,7 +410,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
             resources[
                 controlled_resource_rep(
-                    base_class=qml.PauliX,
+                    base_class=qp.PauliX,
                     base_params={},
                     num_control_wires=num_wires,
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
@@ -435,9 +435,9 @@ def _superposition_decomposition(
         )
     ]
 
-    qml.StatePrep(
-        qml.math.stack(sorted_coefficients),
-        wires=target_wires[-qml.math.ceil_log2(len(coeffs)) :],
+    qp.StatePrep(
+        qp.math.stack(sorted_coefficients),
+        wires=target_wires[-qp.math.ceil_log2(len(coeffs)) :],
         pad_with=0,
     )
 
@@ -446,7 +446,7 @@ def _superposition_decomposition(
     @for_loop(len(list(perms.keys())))
     def apply_permutations(i):
         basis2, basis1 = bas[i][0], bas[i][1]
-        if not qml.math.allclose(basis1, basis2):
+        if not qp.math.allclose(basis1, basis2):
             _permutation_operator_qfunc(basis1, basis2, target_wires, work_wire)
 
     apply_permutations()  # pylint: disable=no-value-for-parameter

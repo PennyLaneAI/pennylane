@@ -1,4 +1,6 @@
 name: Formatting check
+permissions:
+  contents: read
 on:
   merge_group:
     types:

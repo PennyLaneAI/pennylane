@@ -16,14 +16,14 @@
 import functools
 from string import ascii_letters as alphabet
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 
 alphabet_array = math.array(list(alphabet))
 
 
 def get_einsum_mapping(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
 ):

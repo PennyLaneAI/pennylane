@@ -18,7 +18,7 @@ Unit tests for Hartree-Fock functions.
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -215,7 +215,7 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
     correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = qml.grad(qchem.hf_energy(mol))(*args)
+    g = qp.grad(qchem.hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
@@ -269,7 +269,7 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     r"""Test that nuclear energy gradients are correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = qml.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    g = qp.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)
 
 
@@ -298,11 +298,11 @@ class TestJax:
     )
     def test_nuclear_energy_jax(self, symbols, geometry, e_ref):
         r"""Test that nuclear_energy returns the correct energy when using jax."""
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates]
         e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-        assert qml.math.allclose(e, e_ref)
+        assert qp.math.allclose(e, e_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
@@ -324,13 +324,13 @@ class TestJax:
         r"""Test that nuclear energy gradients are correct for jax."""
         import jax
 
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
         g = jax.jacobian(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(
             *args
         )
-        assert qml.math.allclose(g, g_ref)
+        assert qp.math.allclose(g, g_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
@@ -354,9 +354,9 @@ class TestJax:
         correct with jax."""
         import jax
 
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
 
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
         g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)[0]
-        assert qml.math.allclose(g, g_ref)
+        assert qp.math.allclose(g, g_ref)

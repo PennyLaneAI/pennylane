@@ -11,6 +11,8 @@ env:
 
 jobs:
   setup:
+    permissions:
+      contents: write
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:

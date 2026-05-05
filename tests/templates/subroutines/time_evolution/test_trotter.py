@@ -22,7 +22,7 @@ from functools import partial, reduce
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -36,14 +36,12 @@ from pennylane.templates.subroutines.time_evolution.trotter import (
 )
 
 test_hamiltonians = (
-    qml.dot([1.0, 1.0, 1.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
-    qml.dot(
-        [1.23, -0.45], [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1))]
+    qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
+    qp.dot(
+        [1.23, -0.45], [qp.s_prod(0.1, qp.PauliX(0)), qp.prod(qp.PauliX(0), qp.PauliZ(1))]
     ),  # op arith
-    qml.dot(
-        [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
-    ),  # H = Identity
-    qml.dot([2.0, 2.0, 2.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
+    qp.dot([1, -0.5, 0.5], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(0)]),  # H = Identity
+    qp.dot([2.0, 2.0, 2.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -54,171 +52,171 @@ p6_comp = 1 - (4 * p_6)
 test_decompositions = (
     {  # (hamiltonian_index, order): decomposition assuming t = 4.2, computed by hand
         (0, 1): [
-            qml.evolve(qml.PauliX(0), -4.2),
-            qml.evolve(qml.PauliY(0), -4.2),
-            qml.evolve(qml.PauliZ(1), -4.2),
+            qp.evolve(qp.PauliX(0), -4.2),
+            qp.evolve(qp.PauliY(0), -4.2),
+            qp.evolve(qp.PauliZ(1), -4.2),
         ],
         (0, 2): [
-            qml.evolve(qml.PauliX(0), -4.2 / 2),
-            qml.evolve(qml.PauliY(0), -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), -4.2 / 2),
-            qml.evolve(qml.PauliY(0), -4.2 / 2),
-            qml.evolve(qml.PauliX(0), -4.2 / 2),
+            qp.evolve(qp.PauliX(0), -4.2 / 2),
+            qp.evolve(qp.PauliY(0), -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), -4.2 / 2),
+            qp.evolve(qp.PauliY(0), -4.2 / 2),
+            qp.evolve(qp.PauliX(0), -4.2 / 2),
         ],
         (0, 4): [
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),  # S_2((1 - 4p) * t)
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),  # S_2((1 - 4p) * t)
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
         ],
         (1, 1): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2),
         ],
         (1, 2): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2 / 2),
         ],
         (1, 4): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
         ],
         (2, 1): [
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2),
         ],
         (2, 2): [
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2 / 2),
         ],
         (2, 4): [
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
         ],
         (3, 1): [
-            qml.evolve(qml.PauliX(0), -8.4),
-            qml.evolve(qml.PauliY(0), -8.4),
-            qml.evolve(qml.PauliZ(1), -8.4),
+            qp.evolve(qp.PauliX(0), -8.4),
+            qp.evolve(qp.PauliY(0), -8.4),
+            qp.evolve(qp.PauliZ(1), -8.4),
         ],
         (3, 2): [
-            qml.evolve(qml.PauliX(0), -8.4 / 2),
-            qml.evolve(qml.PauliY(0), -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), -8.4 / 2),
-            qml.evolve(qml.PauliY(0), -8.4 / 2),
-            qml.evolve(qml.PauliX(0), -8.4 / 2),
+            qp.evolve(qp.PauliX(0), -8.4 / 2),
+            qp.evolve(qp.PauliY(0), -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), -8.4 / 2),
+            qp.evolve(qp.PauliY(0), -8.4 / 2),
+            qp.evolve(qp.PauliX(0), -8.4 / 2),
         ],
         (3, 4): [
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),  # S_2((1 - 4p) * t)
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),  # S_2((1 - 4p) * t)
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
         ],
     }
 )
@@ -312,13 +310,13 @@ test_resources_data = {
 }
 
 
-@qml.QueuingManager.stop_recording()
+@qp.QueuingManager.stop_recording()
 def _generate_simple_decomp(coeffs, ops, time, order, n):
     """Given coeffs, ops and a time argument in a given framework, generate the
     Trotter product for order and number of trotter steps."""
     decomp = []
     if order == 1:
-        decomp.extend(qml.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops))
+        decomp.extend(qp.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops))
 
     coeffs_ops = zip(coeffs, ops)
 
@@ -330,20 +328,20 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
         coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1])
 
     if order == 2:
-        decomp.extend(qml.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops)
-        decomp.extend(qml.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops_reversed)
+        decomp.extend(qp.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops)
+        decomp.extend(qp.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops_reversed)
 
     if order == 4:
         s_2 = []
         s_2_p = []
 
         for coeff, op in coeffs_ops:
-            s_2.append(qml.evolve(op, -(p_4 * coeff) * (time / n) / 2))
-            s_2_p.append(qml.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
+            s_2.append(qp.evolve(op, -(p_4 * coeff) * (time / n) / 2))
+            s_2_p.append(qp.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
 
         for coeff, op in coeffs_ops_reversed:
-            s_2.append(qml.evolve(op, -(p_4 * coeff) * (time / n) / 2))
-            s_2_p.append(qml.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
+            s_2.append(qp.evolve(op, -(p_4 * coeff) * (time / n) / 2))
+            s_2_p.append(qp.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
 
         decomp = (s_2 * 2) + s_2_p + (s_2 * 2)
 
@@ -356,10 +354,10 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "hamiltonian, raise_error",
         (
-            (qml.PauliX(0), True),
-            (qml.prod(qml.PauliX(0), qml.PauliZ(1)), True),
-            (qml.Hamiltonian([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
-            (qml.dot([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
+            (qp.PauliX(0), True),
+            (qp.prod(qp.PauliX(0), qp.PauliZ(1)), True),
+            (qp.Hamiltonian([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
+            (qp.dot([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
         ),
     )
     def test_error_type(self, hamiltonian, raise_error):
@@ -369,17 +367,17 @@ class TestInitialization:
                 TypeError,
                 match="The given operator must be a PennyLane ~.Sum or ~.SProd",
             ):
-                qml.TrotterProduct(hamiltonian, time=1.23)
+                qp.TrotterProduct(hamiltonian, time=1.23)
 
         else:
-            qml.TrotterProduct(hamiltonian, time=1.23)
+            qp.TrotterProduct(hamiltonian, time=1.23)
 
     @pytest.mark.parametrize(
         "hamiltonian",
         (
-            qml.Hamiltonian([1.23, 4 + 5j], [qml.PauliX(0), qml.PauliZ(1)]),
-            qml.dot([1.23, 4 + 5j], [qml.PauliX(0), qml.PauliZ(1)]),
-            qml.dot([1.23, 0.5], [qml.RY(1.23, 0), qml.RZ(3.45, 1)]),
+            qp.Hamiltonian([1.23, 4 + 5j], [qp.PauliX(0), qp.PauliZ(1)]),
+            qp.dot([1.23, 4 + 5j], [qp.PauliX(0), qp.PauliZ(1)]),
+            qp.dot([1.23, 0.5], [qp.RY(1.23, 0), qp.RZ(3.45, 1)]),
         ),
     )
     def test_error_hermiticity(self, hamiltonian):
@@ -390,18 +388,18 @@ class TestInitialization:
             ValueError,
             match="One or more of the terms in the Hamiltonian are not verified to be Hermitian.",
         ):
-            qml.TrotterProduct(hamiltonian, time=0.5)
+            qp.TrotterProduct(hamiltonian, time=0.5)
 
         try:
-            qml.TrotterProduct(hamiltonian, time=0.5, check_hermitian=False)
+            qp.TrotterProduct(hamiltonian, time=0.5, check_hermitian=False)
         except ValueError:
             assert False  # No error should be raised if the check_hermitian flag is disabled
 
     @pytest.mark.parametrize(
         "hamiltonian",
         (
-            qml.Hamiltonian([1.0], [qml.PauliX(0)]),
-            qml.dot([2.0], [qml.PauliY(0)]),
+            qp.Hamiltonian([1.0], [qp.PauliX(0)]),
+            qp.dot([2.0], [qp.PauliY(0)]),
         ),
     )
     def test_error_hamiltonian(self, hamiltonian):
@@ -409,26 +407,26 @@ class TestInitialization:
         with pytest.raises(
             ValueError, match="There should be at least 2 terms in the Hamiltonian."
         ):
-            qml.TrotterProduct(hamiltonian, 1.23, n=2, order=4)
+            qp.TrotterProduct(hamiltonian, 1.23, n=2, order=4)
 
     @pytest.mark.parametrize("order", (-1, 0, 0.5, 3, 7.0))
     def test_error_order(self, order):
         """Test that an error is raised if 'order' is not one or positive even number."""
         time = 0.5
-        hamiltonian = qml.dot([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)])
+        hamiltonian = qp.dot([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)])
 
         with pytest.raises(
             ValueError, match="The order of a TrotterProduct must be 1 or a positive even integer,"
         ):
-            qml.TrotterProduct(hamiltonian, time, order=order)
+            qp.TrotterProduct(hamiltonian, time, order=order)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_init_correctly(self, hamiltonian):
         """Test that all of the attributes are initialized correctly."""
         time, n, order = (4.2, 10, 4)
-        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
+        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
 
-        if isinstance(hamiltonian, qml.ops.op_math.SProd):
+        if isinstance(hamiltonian, qp.ops.op_math.SProd):
             hamiltonian = hamiltonian.simplify()
 
         assert op.wires == hamiltonian.wires
@@ -447,7 +445,7 @@ class TestInitialization:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_copy(self, hamiltonian, time, n, order):
         """Test that we can make deep and shallow copies of TrotterProduct correctly."""
-        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
+        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
         new_op = copy.copy(op)
 
         assert op.wires == new_op.wires
@@ -461,8 +459,8 @@ class TestInitialization:
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
-        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.jax
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
@@ -470,47 +468,45 @@ class TestInitialization:
     def test_standard_validity_with_differentiation(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
-        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op)
+        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
+        qp.ops.functions.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
     @pytest.mark.parametrize("time", (0.5, 1.2))
     def test_convention_approx_time_evolv(self, time, n):
         """Test that TrotterProduct matches ApproxTimeEvolution"""
-        hamiltonian = qml.Hamiltonian(
-            [1.23, -0.45, 6], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        )
-        op1 = qml.TrotterProduct(hamiltonian, time, order=1, n=n)
-        op2 = qml.adjoint(qml.ApproxTimeEvolution(hamiltonian, time, n=n))
+        hamiltonian = qp.Hamiltonian([1.23, -0.45, 6], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)])
+        op1 = qp.TrotterProduct(hamiltonian, time, order=1, n=n)
+        op2 = qp.adjoint(qp.ApproxTimeEvolution(hamiltonian, time, n=n))
 
         assert qnp.allclose(
-            qml.matrix(op1, wire_order=hamiltonian.wires),
-            qml.matrix(op2, wire_order=hamiltonian.wires),
+            qp.matrix(op1, wire_order=hamiltonian.wires),
+            qp.matrix(op2, wire_order=hamiltonian.wires),
         )
 
-        op1 = qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
-        op2 = qml.ApproxTimeEvolution(hamiltonian, time, n=n)
+        op1 = qp.adjoint(qp.TrotterProduct(hamiltonian, time, order=1, n=n))
+        op2 = qp.ApproxTimeEvolution(hamiltonian, time, n=n)
 
         assert qnp.allclose(
-            qml.matrix(op1, wire_order=hamiltonian.wires),
-            qml.matrix(op2, wire_order=hamiltonian.wires),
+            qp.matrix(op1, wire_order=hamiltonian.wires),
+            qp.matrix(op2, wire_order=hamiltonian.wires),
         )
 
     @pytest.mark.parametrize(
         "make_H",
         [
-            lambda: qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]),
-            lambda: qml.sum(qml.PauliX(0), qml.PauliY(1)),
-            lambda: qml.s_prod(1.2, qml.PauliX(0) + qml.PauliY(1)),
+            lambda: qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(1)]),
+            lambda: qp.sum(qp.PauliX(0), qp.PauliY(1)),
+            lambda: qp.s_prod(1.2, qp.PauliX(0) + qp.PauliY(1)),
         ],
     )
     def test_queuing(self, make_H):
         """Test that the target operator is removed from the queue."""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             H = make_H()
-            op = qml.TrotterProduct(H, time=2)
+            op = qp.TrotterProduct(H, time=2)
 
         assert len(q.queue) == 1
         assert q.queue[0] is op
@@ -534,63 +530,63 @@ class TestPrivateFunctions:
 
     expected_expansions = (  # for H = X0 + Y0 + Z1, t = 1.23, computed by hand
         [  # S_1(t)
-            qml.evolve(qml.PauliX(0), -1.23),
-            qml.evolve(qml.PauliY(0), -1.23),
-            qml.evolve(qml.PauliZ(1), -1.23),
+            qp.evolve(qp.PauliX(0), -1.23),
+            qp.evolve(qp.PauliY(0), -1.23),
+            qp.evolve(qp.PauliZ(1), -1.23),
         ],
         [  # S_2(t)
-            qml.evolve(qml.PauliX(0), -1.23 / 2),
-            qml.evolve(qml.PauliY(0), -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), -1.23 / 2),
-            qml.evolve(qml.PauliY(0), -1.23 / 2),
-            qml.evolve(qml.PauliX(0), -1.23 / 2),
+            qp.evolve(qp.PauliX(0), -1.23 / 2),
+            qp.evolve(qp.PauliY(0), -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), -1.23 / 2),
+            qp.evolve(qp.PauliY(0), -1.23 / 2),
+            qp.evolve(qp.PauliX(0), -1.23 / 2),
         ],
         [  # S_4(t)
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),  # S_2(p * t) ^ 2
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -1.23 / 2),  # S_2((1 - 4p) * t)
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -1.23 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -1.23 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -1.23 / 2),  # S_2((1 - 4p) * t)
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -1.23 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -1.23 / 2),  # S_2(p * t) ^ 2
         ],
     )
 
     @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
     def test_recursive_expression_no_queue(self, order, expected_expansion):
         """Test the _recursive_expression function correctly generates the decomposition"""
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             decomp = _recursive_expression(1.23, order, ops)
 
         assert len(q) == 0  # No queuing!
         for op1, op2 in zip(decomp, expected_expansion):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
 
 class TestError:
@@ -600,13 +596,13 @@ class TestError:
     def test_invalid_method(self, fast):
         """Test that passing an invalid method raises an error."""
         method = "crazy"
-        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), 1.23)
+        op = qp.TrotterProduct(qp.sum(qp.X(0), qp.Y(0)), 1.23)
         with pytest.raises(ValueError, match=f"The '{method}' method is not supported"):
             _ = op.error(method, fast=fast)
 
     def test_one_norm_error_method(self):
         """Test that the one-norm error method works as expected."""
-        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=4)
+        op = qp.TrotterProduct(qp.sum(qp.X(0), qp.Y(0)), time=0.05, order=4)
         expected_error = ((10**5 + 1) / 120) * (0.1**5)
 
         for computed_error in (
@@ -618,7 +614,7 @@ class TestError:
 
     def test_commutator_error_method(self):
         """Test that the commutator error method works as expected."""
-        op = qml.TrotterProduct(qml.sum(qml.X(0), qml.Y(0)), time=0.05, order=2, n=10)
+        op = qp.TrotterProduct(qp.sum(qp.X(0), qp.Y(0)), time=0.05, order=2, n=10)
         expected_error = (32 / 3) * (0.05**3) * (1 / 100)
 
         for computed_error in (
@@ -636,28 +632,28 @@ class TestError:
     def test_error_interfaces(self, method, interface, expected_error):
         """Test that the error method works with all interfaces"""
 
-        time = qml.math.array(0.1, like=interface)
-        coeffs = qml.math.array([1.0, 0.5], like=interface)
+        time = qp.math.array(0.1, like=interface)
+        coeffs = qp.math.array([1.0, 0.5], like=interface)
 
-        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+        hamiltonian = qp.dot(coeffs, [qp.X(0), qp.Y(0)])
 
-        op = qml.TrotterProduct(hamiltonian, time, n=2, order=2)
+        op = qp.TrotterProduct(hamiltonian, time, n=2, order=2)
         computed_error = op.error(method=method)
 
         assert isinstance(computed_error, SpectralNormError)
-        assert qml.math.get_interface(computed_error.error) == interface
+        assert qp.math.get_interface(computed_error.error) == interface
 
-        assert qnp.isclose(computed_error.error, qml.math.array(expected_error, like=interface))
+        assert qnp.isclose(computed_error.error, qp.math.array(expected_error, like=interface))
 
     @pytest.mark.tf
     def test_tensorflow_interface(self):
         """Test that an error is raised if a TrotterProduct with
         tensorflow parameters is used to compute error."""
 
-        coeffs = qml.math.array([1.0, 0.5], like="tensorflow")
-        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
+        coeffs = qp.math.array([1.0, 0.5], like="tensorflow")
+        hamiltonian = qp.dot(coeffs, [qp.X(0), qp.Y(0)])
 
-        op = qml.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
+        op = qp.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
         with pytest.raises(TypeError, match="Calculating error bound for Tensorflow objects"):
             _ = op.error()
 
@@ -668,10 +664,10 @@ class TestResources:
     def test_resources_no_queuing(self):
         """Test that no operations are queued when computing resources."""
         time = 0.5
-        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
-        op = qml.TrotterProduct(hamiltonian, time, n=5, order=2)
+        hamiltonian = qp.sum(qp.PauliX(0), qp.PauliZ(0))
+        op = qp.TrotterProduct(hamiltonian, time, n=5, order=2)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _ = op.resources()
 
         assert len(q.queue) == 0
@@ -680,7 +676,7 @@ class TestResources:
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
     def test_resources(self, hamiltonian, hamiltonian_index, order):
         """Test that the resources are tracked accurately."""
-        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
+        op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
 
         tracked_resources = op.resources()
         expected_resources = test_resources_data[(hamiltonian_index, order)]
@@ -693,7 +689,7 @@ class TestResources:
         order = 2
         hamiltonian_index = 0
 
-        op = qml.TrotterProduct(test_hamiltonians[hamiltonian_index], 0.5, order=order, n=n)
+        op = qp.TrotterProduct(test_hamiltonians[hamiltonian_index], 0.5, order=order, n=n)
         tracked_resources = op.resources()
 
         expected_resources = Resources(
@@ -707,17 +703,17 @@ class TestResources:
         assert expected_resources == tracked_resources
 
     def test_resources_integration(self):
-        """Test that the resources integrate well with qml.tracker and qml.specs
+        """Test that the resources integrate well with qp.tracker and qp.specs
         resource tracking."""
         time = 0.5
-        hamiltonian = qml.sum(qml.X(0), qml.Y(0), qml.Z(1))
+        hamiltonian = qp.sum(qp.X(0), qp.Y(0), qp.Z(1))
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.TrotterProduct(hamiltonian, time, n=5, order=2)
-            return qml.expval(qml.Z(0))
+            qp.TrotterProduct(hamiltonian, time, n=5, order=2)
+            return qp.expval(qp.Z(0))
 
         expected_resources = SpecsResources(
             num_allocs=2,
@@ -727,10 +723,10 @@ class TestResources:
             depth=20,
         )
 
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             circ()
 
-        spec_resources = qml.specs(circ)()["resources"]
+        spec_resources = qp.specs(circ)()["resources"]
         tracker_resources = tracker.history["resources"][0]
 
         assert expected_resources == spec_resources
@@ -744,18 +740,18 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
     def test_compute_decomposition(self, hamiltonian, hamiltonian_index, order):
         """Test the decomposition is correct and queues"""
-        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
-        with qml.tape.QuantumTape() as tape:
+        op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
+        with qp.tape.QuantumTape() as tape:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
 
-        decomp = [qml.simplify(op) for op in decomp]
+        decomp = [qp.simplify(op) for op in decomp]
         true_decomp = [
-            qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
+            qp.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
         ]
         for op1, op2 in zip(decomp, true_decomp):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
@@ -763,8 +759,8 @@ class TestDecomposition:
         self, hamiltonian, hamiltonian_index, order
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
-        for rule in qml.list_decomps(qml.TrotterProduct):
+        op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
+        for rule in qp.list_decomps(qp.TrotterProduct):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("order", (1, 2))
@@ -772,29 +768,29 @@ class TestDecomposition:
     def test_compute_decomposition_n_steps(self, num_steps, order):
         """Test the decomposition is correct when we set the number of trotter steps"""
         time = 0.5
-        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+        hamiltonian = qp.sum(qp.PauliX(0), qp.PauliZ(0))
 
         if order == 1:
             base_decomp = [
-                qml.evolve(qml.PauliZ(0), -0.5 / num_steps),
-                qml.evolve(qml.PauliX(0), -0.5 / num_steps),
+                qp.evolve(qp.PauliZ(0), -0.5 / num_steps),
+                qp.evolve(qp.PauliX(0), -0.5 / num_steps),
             ]
         elif order == 2:
             base_decomp = [
-                qml.evolve(qml.PauliX(0), -0.25 / num_steps),
-                qml.evolve(qml.PauliZ(0), -0.25 / num_steps),
-                qml.evolve(qml.PauliZ(0), -0.25 / num_steps),
-                qml.evolve(qml.PauliX(0), -0.25 / num_steps),
+                qp.evolve(qp.PauliX(0), -0.25 / num_steps),
+                qp.evolve(qp.PauliZ(0), -0.25 / num_steps),
+                qp.evolve(qp.PauliZ(0), -0.25 / num_steps),
+                qp.evolve(qp.PauliX(0), -0.25 / num_steps),
             ]
         else:
             assert False, "Order must be 1 or 2"
 
         true_decomp = base_decomp * num_steps
 
-        op = qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
+        op = qp.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
         for op1, op2 in zip(decomp, true_decomp):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -808,12 +804,12 @@ class TestIntegration:
     def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
         """Test that the gate executes correctly in a circuit."""
         wires = hamiltonian.wires
-        dev = qml.device("reference.qubit", wires=wires)
+        dev = qp.device("reference.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.TrotterProduct(hamiltonian, time=4.2, order=order)
-            return qml.state()
+            qp.TrotterProduct(hamiltonian, time=4.2, order=order)
+            return qp.state()
 
         initial_state = qnp.zeros(2 ** (len(wires)))
         initial_state[0] = 1
@@ -822,7 +818,7 @@ class TestIntegration:
             reduce(
                 lambda x, y: x @ y,
                 [
-                    qml.matrix(op, wire_order=wires)
+                    qp.matrix(op, wire_order=wires)
                     for op in test_decompositions[(hamiltonian_index, order)]
                 ],
             )
@@ -837,19 +833,19 @@ class TestIntegration:
     def test_execute_circuit_n_steps(self, num_steps, order):
         """Test that the circuit executes as expected when we set the number of trotter steps"""
         time = 0.5
-        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+        hamiltonian = qp.sum(qp.PauliX(0), qp.PauliZ(0))
 
         if order == 1:
             base_decomp = [
-                qml.exp(qml.PauliZ(0), 0.5j / num_steps),
-                qml.exp(qml.PauliX(0), 0.5j / num_steps),
+                qp.exp(qp.PauliZ(0), 0.5j / num_steps),
+                qp.exp(qp.PauliX(0), 0.5j / num_steps),
             ]
         elif order == 2:
             base_decomp = [
-                qml.exp(qml.PauliX(0), 0.25j / num_steps),
-                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
-                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
-                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+                qp.exp(qp.PauliX(0), 0.25j / num_steps),
+                qp.exp(qp.PauliZ(0), 0.25j / num_steps),
+                qp.exp(qp.PauliZ(0), 0.25j / num_steps),
+                qp.exp(qp.PauliX(0), 0.25j / num_steps),
             ]
         else:
             assert False, "Order must be 1 or 2"
@@ -857,19 +853,19 @@ class TestIntegration:
         true_decomp = base_decomp * num_steps
 
         wires = hamiltonian.wires
-        dev = qml.device("reference.qubit", wires=wires)
+        dev = qp.device("reference.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
-            return qml.state()
+            qp.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
+            return qp.state()
 
         initial_state = qnp.zeros(2 ** (len(wires)))
         initial_state[0] = 1
 
         expected_state = (
             reduce(
-                lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[::-1]]
+                lambda x, y: x @ y, [qp.matrix(op, wire_order=wires) for op in true_decomp[::-1]]
             )
             @ initial_state
         )
@@ -884,15 +880,15 @@ class TestIntegration:
 
         time = jnp.array(time)
         coeffs = jnp.array([1.23, -0.45])
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=2)
+        dev = qp.device("reference.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=2, order=2)
-            return qml.state()
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=2, order=2)
+            return qp.state()
 
         initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
 
@@ -901,7 +897,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
             )
             @ initial_state
         )
@@ -919,19 +915,19 @@ class TestIntegration:
         time = jnp.array(time)
         c1 = jnp.array(1.23)
         c2 = jnp.array(-0.45)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=2)
+        dev = qp.device("reference.qubit", wires=2)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circ(time, c1, c2):
-            h = qml.sum(
-                qml.s_prod(c1, terms[0]),
-                qml.s_prod(c2, terms[1]),
+            h = qp.sum(
+                qp.s_prod(c1, terms[0]),
+                qp.s_prod(c2, terms[1]),
             )
-            qml.TrotterProduct(h, time, n=2, order=2, check_hermitian=False)
-            return qml.state()
+            qp.TrotterProduct(h, time, n=2, order=2, check_hermitian=False)
+            return qp.state()
 
         initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
 
@@ -940,7 +936,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
             )
             @ initial_state
         )
@@ -956,19 +952,19 @@ class TestIntegration:
 
         time = tf.Variable(time, dtype=tf.complex128)
         coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=2)
+        dev = qp.device("reference.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.sum(
-                qml.s_prod(coeffs[0], terms[0]),
-                qml.s_prod(coeffs[1], terms[1]),
+            h = qp.sum(
+                qp.s_prod(coeffs[0], terms[0]),
+                qp.s_prod(coeffs[1], terms[1]),
             )
-            qml.TrotterProduct(h, time, n=2, order=2)
+            qp.TrotterProduct(h, time, n=2, order=2)
 
-            return qml.state()
+            return qp.state()
 
         initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
 
@@ -977,7 +973,7 @@ class TestIntegration:
         expected_state = tf.linalg.matvec(
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
             ),
             initial_state,
         )
@@ -993,15 +989,15 @@ class TestIntegration:
 
         time = torch.tensor(time, dtype=torch.complex64, requires_grad=True)
         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=2)
+        dev = qp.device("reference.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=2, order=2)
-            return qml.state()
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=2, order=2)
+            return qp.state()
 
         initial_state = torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.complex64)
 
@@ -1010,7 +1006,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
             )
             @ initial_state
         )
@@ -1024,15 +1020,15 @@ class TestIntegration:
         """Test that the gate executes correctly in the autograd interface."""
         time = qnp.array(time)
         coeffs = qnp.array([1.23, -0.45])
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=2)
+        dev = qp.device("reference.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=2, order=2)
-            return qml.state()
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=2, order=2)
+            return qp.state()
 
         initial_state = qnp.array([1.0, 0.0, 0.0, 0.0])
 
@@ -1041,7 +1037,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
             )
             @ initial_state
         )
@@ -1055,27 +1051,27 @@ class TestIntegration:
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)
         coeffs = qnp.array([1.23, -0.45])
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=1)
+        dev = qp.device("reference.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=n, order=order)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=n, order=order)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
             decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
-        measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
-        reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
+        measured_time_grad, measured_coeff_grad = qp.grad(circ)(time, coeffs)
+        reference_time_grad, reference_coeff_grad = qp.grad(reference_circ)(time, coeffs)
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
@@ -1089,24 +1085,24 @@ class TestIntegration:
         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
         time_reference = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
         coeffs_reference = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=n, order=order)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=n, order=order)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
             decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         res_circ = circ(time, coeffs)
         res_circ.backward()
@@ -1129,27 +1125,27 @@ class TestIntegration:
 
         time = tf.Variable(1.5, dtype=tf.complex128)
         coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.sum(
-                qml.s_prod(coeffs[0], terms[0]),
-                qml.s_prod(coeffs[1], terms[1]),
+            h = qp.sum(
+                qp.s_prod(coeffs[0], terms[0]),
+                qp.s_prod(coeffs[1], terms[1]),
             )
-            qml.TrotterProduct(h, time, n=n, order=order)
-            return qml.expval(qml.Hadamard(0))
+            qp.TrotterProduct(h, time, n=n, order=order)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
             decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         with tf.GradientTape() as tape:
             result = circ(time, coeffs)
@@ -1172,24 +1168,24 @@ class TestIntegration:
 
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("reference.qubit", wires=1)
+        dev = qp.device("reference.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.TrotterProduct(h, time, n=n, order=order)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.TrotterProduct(h, time, n=n, order=order)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
             decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         measured_time_grad, measured_coeff_grad = jax.grad(circ, argnums=[0, 1])(time, coeffs)
         reference_time_grad, reference_coeff_grad = jax.grad(reference_circ, argnums=[0, 1])(
@@ -1204,12 +1200,12 @@ class TestTrotterizedQfuncInitialization:
 
     @staticmethod
     def my_qfunc(time, arg1, arg2, wires, kwarg1=None, kwarg2=0):  # Dummy qfunc for testing
-        qml.RX(time * arg1, wires[0])
-        qml.RY(time * arg2, wires[0])
+        qp.RX(time * arg1, wires[0])
+        qp.RY(time * arg2, wires[0])
 
         if kwarg1:
-            qml.CNOT(wires)
-            qml.RZ(time * kwarg2, wires[1])
+            qp.CNOT(wires)
+            qp.RZ(time * kwarg2, wires[1])
 
     def test_error_qfunc(self):
         """Test that an error is raised if a qfunc is not provided."""
@@ -1227,7 +1223,7 @@ class TestTrotterizedQfuncInitialization:
         kwargs = {"kwarg1": True, "kwarg2": 78.9}
 
         op = TrotterizedQfunc(time, *args, qfunc=self.my_qfunc, **kwargs)
-        assert op.wires == qml.wires.Wires(["a", "b"])
+        assert op.wires == qp.wires.Wires(["a", "b"])
 
     @pytest.mark.parametrize("order", [0, -1, 3])
     def test_error_order(self, order):
@@ -1280,7 +1276,7 @@ class TestTrotterizedQfuncInitialization:
         expected_hyperparams["reverse"] = reverse
         expected_hyperparams["qfunc"] = self.my_qfunc
 
-        assert op.wires == qml.wires.Wires(wires)
+        assert op.wires == qp.wires.Wires(wires)
         assert op.data == (time,) + qfunc_args
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
@@ -1292,7 +1288,7 @@ class TestTrotterizedQfuncInitialization:
         self, time, qfunc_args, wires, n, order, reverse, qfunc_kwargs
     ):
         """Test that the parameters and hyperparameters are set correctly"""
-        op = qml.trotterize(self.my_qfunc, n=n, order=order, reverse=reverse)(
+        op = qp.trotterize(self.my_qfunc, n=n, order=order, reverse=reverse)(
             time,
             *qfunc_args,
             wires=wires,
@@ -1305,7 +1301,7 @@ class TestTrotterizedQfuncInitialization:
         expected_hyperparams["reverse"] = reverse
         expected_hyperparams["qfunc"] = self.my_qfunc
 
-        assert op.wires == qml.wires.Wires(wires)
+        assert op.wires == qp.wires.Wires(wires)
         assert op.data == (time,) + qfunc_args
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
@@ -1315,22 +1311,22 @@ class TestTrotterizedQfuncInitialization:
         names of the kwargs of the TrotterizedQfunc class."""
 
         def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
-            qml.RZ(time, wires[0])
+            qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:
             with pytest.raises(ValueError, match="Cannot use any of the specailized names:"):
                 kwargs = {special_key: 1}
-                qml.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
+                qp.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
 
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 
         def first_order_expansion(time, theta, phi, wires=(0, 1, 2), flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time * theta, wires[0])
-            qml.RY(time * phi, wires[1])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * phi, wires[1])
             if flip:
-                qml.CNOT(wires=wires[:2])
+                qp.CNOT(wires=wires[:2])
 
         op = TrotterizedQfunc(
             0.1,
@@ -1341,265 +1337,265 @@ class TestTrotterizedQfuncInitialization:
             wires=["a", "b", "c"],
             flip=True,
         )
-        qml.ops.functions.assert_valid(op, skip_pickle=True)
+        qp.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 class TestTrotterizedQfuncIntegration:
     """Test the TrotterizedQfunc decomposes correctly."""
 
     expected_decomps_order_reverse = (  # computed by hand assuming t = 0.1
-        (False, 1, [qml.RX(0.1 * 1.23, "a"), qml.RY(0.1 * 1.23, "a"), qml.CNOT(["a", "b"])]),
+        (False, 1, [qp.RX(0.1 * 1.23, "a"), qp.RY(0.1 * 1.23, "a"), qp.CNOT(["a", "b"])]),
         (
             False,
             2,
             [
-                qml.RX((0.1 / 2) * 1.23, "a"),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.RX((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
             ],
         ),
         (
             False,
             4,
             [
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
             ],
         ),
         (
             False,
             6,
             [
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
             ],
         ),
-        (True, 1, [qml.CNOT(["a", "b"]), qml.RY(0.1 * 1.23, "a"), qml.RX(0.1 * 1.23, "a")]),
+        (True, 1, [qp.CNOT(["a", "b"]), qp.RY(0.1 * 1.23, "a"), qp.RX(0.1 * 1.23, "a")]),
         (
             True,
             2,
             [
-                qml.CNOT(["a", "b"]),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.RX((0.1 / 2) * 1.23, "a"),
-                qml.RX((0.1 / 2) * 1.23, "a"),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
             ],
         ),
         (
             True,
             4,
             [
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
             ],
         ),
     )
@@ -1610,10 +1606,10 @@ class TestTrotterizedQfuncIntegration:
 
         def first_order_expansion(time, theta, wires, flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time * theta, wires[0])
-            qml.RY(time * theta, wires[0])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * theta, wires[0])
             if flip:
-                qml.CNOT(wires)
+                qp.CNOT(wires)
 
         op = TrotterizedQfunc(
             0.1,
@@ -1633,10 +1629,10 @@ class TestTrotterizedQfuncIntegration:
 
         def first_order_expansion(time, theta, wires, flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time * theta, wires[0])
-            qml.RY(time * theta, wires[0])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * theta, wires[0])
             if flip:
-                qml.CNOT(wires)
+                qp.CNOT(wires)
 
         theta = 1.23
         wires = ["a", "b"]
@@ -1650,34 +1646,34 @@ class TestTrotterizedQfuncIntegration:
         (
             1,
             [
-                qml.RX((0.1 / 2) * 1.23, "a"),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((0.1 / 2) * 1.23, "a"),
-                qml.RX((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, "a"),
             ],
         ),
         (
             2,
             [
-                qml.RX((0.1 / 4) * 1.23, "a"),
-                qml.RY((0.1 / 4) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((0.1 / 4) * 1.23, "a"),
-                qml.RX((0.1 / 4) * 1.23, "a"),
+                qp.RX((0.1 / 4) * 1.23, "a"),
+                qp.RY((0.1 / 4) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((0.1 / 4) * 1.23, "a"),
+                qp.RX((0.1 / 4) * 1.23, "a"),
             ],
         ),
         (
             10,
             [
-                qml.RX((0.1 / 20) * 1.23, "a"),
-                qml.RY((0.1 / 20) * 1.23, "a"),
-                qml.CNOT(["a", "b"]),
-                qml.CNOT(["a", "b"]),
-                qml.RY((0.1 / 20) * 1.23, "a"),
-                qml.RX((0.1 / 20) * 1.23, "a"),
+                qp.RX((0.1 / 20) * 1.23, "a"),
+                qp.RY((0.1 / 20) * 1.23, "a"),
+                qp.CNOT(["a", "b"]),
+                qp.CNOT(["a", "b"]),
+                qp.RY((0.1 / 20) * 1.23, "a"),
+                qp.RX((0.1 / 20) * 1.23, "a"),
             ],
         ),
     )
@@ -1688,10 +1684,10 @@ class TestTrotterizedQfuncIntegration:
 
         def first_order_expansion(time, theta, wires, flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time * theta, wires[0])
-            qml.RY(time * theta, wires[0])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * theta, wires[0])
             if flip:
-                qml.CNOT(wires)
+                qp.CNOT(wires)
 
         op = TrotterizedQfunc(
             0.1,
@@ -1706,19 +1702,19 @@ class TestTrotterizedQfuncIntegration:
         expected_decomp = expected_decomp * n
         assert op.decomposition() == expected_decomp
 
-    @qml.QueuingManager.stop_recording()
+    @qp.QueuingManager.stop_recording()
     def _generate_simple_decomp_trotterize(self, time, order, reverse, args, wires):
         arg1, arg2 = args
 
         if order == 1:
             expected_decomp = [
-                qml.RX(time * arg1, wires=wires[0]),
-                qml.RY(time * arg2, wires=wires[0]),
-                qml.MultiRZ(arg1, wires=wires),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qp.RX(time * arg1, wires=wires[0]),
+                qp.RY(time * arg2, wires=wires[0]),
+                qp.MultiRZ(arg1, wires=wires),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.QFT(wires=wires[1:-1]),
             ]
 
             if reverse:
@@ -1726,13 +1722,13 @@ class TestTrotterizedQfuncIntegration:
 
         if order == 2:
             expected_decomp = [
-                qml.RX((time / 2) * arg1, wires=wires[0]),
-                qml.RY((time / 2) * arg2, wires=wires[0]),
-                qml.MultiRZ(arg1, wires=wires),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qp.RX((time / 2) * arg1, wires=wires[0]),
+                qp.RY((time / 2) * arg2, wires=wires[0]),
+                qp.MultiRZ(arg1, wires=wires),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.QFT(wires=wires[1:-1]),
             ]
 
             if reverse:
@@ -1742,13 +1738,13 @@ class TestTrotterizedQfuncIntegration:
 
         if order == 4:
             expected_decomp1 = [
-                qml.RX((p_4 * time / 2) * arg1, wires=wires[0]),
-                qml.RY((p_4 * time / 2) * arg2, wires=wires[0]),
-                qml.MultiRZ(arg1, wires=wires),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qp.RX((p_4 * time / 2) * arg1, wires=wires[0]),
+                qp.RY((p_4 * time / 2) * arg2, wires=wires[0]),
+                qp.MultiRZ(arg1, wires=wires),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.QFT(wires=wires[1:-1]),
             ]
 
             expected_decomp1 = (
@@ -1758,13 +1754,13 @@ class TestTrotterizedQfuncIntegration:
             )
 
             expected_decomp2 = [
-                qml.RX((p4_comp * time / 2) * arg1, wires=wires[0]),
-                qml.RY((p4_comp * time / 2) * arg2, wires=wires[0]),
-                qml.MultiRZ(arg1, wires=wires),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
-                qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qp.RX((p4_comp * time / 2) * arg1, wires=wires[0]),
+                qp.RY((p4_comp * time / 2) * arg2, wires=wires[0]),
+                qp.MultiRZ(arg1, wires=wires),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qp.CNOT([wires[0], wires[1]]),
+                qp.QFT(wires=wires[1:-1]),
             ]
 
             expected_decomp2 = (
@@ -1792,17 +1788,17 @@ class TestTrotterizedQfuncIntegration:
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
-            qml.RX(time * arg1, wires=wires[0])
-            qml.RY(time * arg2, wires=wires[0])
-            qml.MultiRZ(arg1, wires=wires)
+            qp.RX(time * arg1, wires=wires[0])
+            qp.RY(time * arg2, wires=wires[0])
+            qp.MultiRZ(arg1, wires=wires)
 
             if kwarg1:
-                qml.CNOT([wires[0], wires[1]])
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
-                qml.CNOT([wires[0], wires[1]])
+                qp.CNOT([wires[0], wires[1]])
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qp.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qp.QFT(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1810,7 +1806,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qp.qnode(qp.device("default.qubit", wires=wires))
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -1823,7 +1819,7 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.state()
+            return qp.state()
 
         initial_state = qnp.zeros(2 ** (len(wires)))
         initial_state[0] = 1
@@ -1831,7 +1827,7 @@ class TestTrotterizedQfuncIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -1856,17 +1852,17 @@ class TestTrotterizedQfuncIntegration:
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
-            qml.RX(time * arg1, wires=wires[0])
-            qml.RY(time * arg2, wires=wires[0])
-            qml.MultiRZ(arg1, wires=wires)
+            qp.RX(time * arg1, wires=wires[0])
+            qp.RY(time * arg2, wires=wires[0])
+            qp.MultiRZ(arg1, wires=wires)
 
             if kwarg1:
-                qml.CNOT([wires[0], wires[1]])
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
-                qml.CNOT([wires[0], wires[1]])
+                qp.CNOT([wires[0], wires[1]])
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qp.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qp.QFT(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1874,7 +1870,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qp.qnode(qp.device("default.qubit", wires=wires))
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -1887,7 +1883,7 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.state()
+            return qp.state()
 
         initial_state = qnp.zeros(2 ** (len(wires)))
         initial_state[0] = 1
@@ -1897,7 +1893,7 @@ class TestTrotterizedQfuncIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -1924,17 +1920,17 @@ class TestTrotterizedQfuncIntegration:
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
-            qml.RX(time * arg1, wires=wires[0])
-            qml.RY(time * arg2, wires=wires[0])
-            qml.MultiRZ(arg1, wires=wires)
+            qp.RX(time * arg1, wires=wires[0])
+            qp.RY(time * arg2, wires=wires[0])
+            qp.MultiRZ(arg1, wires=wires)
 
             if kwarg1:
-                qml.CNOT([wires[0], wires[1]])
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
-                qml.CNOT([wires[0], wires[1]])
+                qp.CNOT([wires[0], wires[1]])
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qp.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qp.QFT(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1943,7 +1939,7 @@ class TestTrotterizedQfuncIntegration:
         expected_decomp = expected_decomp * n
 
         @partial(jax.jit, static_argnames=["wires", "kwarg1", "kwarg2"])
-        @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax", diff_method=method)
+        @qp.qnode(qp.device("default.qubit", wires=wires), interface="jax", diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -1956,7 +1952,7 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.state()
+            return qp.state()
 
         initial_state = qnp.zeros(2 ** (len(wires)))
         initial_state[0] = 1
@@ -1966,7 +1962,7 @@ class TestTrotterizedQfuncIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -1989,19 +1985,19 @@ class TestTrotterizedQfuncIntegration:
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
-            qml.RX(time * arg1, wires=wires[0])
-            qml.RY(time * arg2, wires=wires[0])
-            qml.MultiRZ(arg1, wires=wires)
+            qp.RX(time * arg1, wires=wires[0])
+            qp.RY(time * arg2, wires=wires[0])
+            qp.MultiRZ(arg1, wires=wires)
 
             if kwarg1:
-                qml.CNOT([wires[0], wires[1]])
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
-                qml.CNOT([wires[0], wires[1]])
+                qp.CNOT([wires[0], wires[1]])
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qp.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qp.QFT(wires=wires[1:-1])
 
-        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
+        @qp.qnode(qp.device("default.qubit", wires=wires), diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -2014,9 +2010,9 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.expval(qml.Hadamard(wires[0]))
+            return qp.expval(qp.Hadamard(wires[0]))
 
-        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
+        @qp.qnode(qp.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
             expected_t = time / n
             expected_decomp = self._generate_simple_decomp_trotterize(
@@ -2025,14 +2021,14 @@ class TestTrotterizedQfuncIntegration:
             expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(wires[0]))
+            return qp.expval(qp.Hadamard(wires[0]))
 
-        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qml.grad(circ)(
+        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qp.grad(circ)(
             time, arg1, arg2, wires, **kwargs
         )
-        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qml.grad(reference_circ)(
+        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qp.grad(reference_circ)(
             time, arg1, arg2, wires
         )
         assert allclose(measured_time_grad, reference_time_grad)
@@ -2058,17 +2054,17 @@ class TestTrotterizedQfuncIntegration:
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
-            qml.RX(time * arg1, wires=wires[0])
-            qml.RY(time * arg2, wires=wires[0])
-            qml.MultiRZ(arg1, wires=wires)
+            qp.RX(time * arg1, wires=wires[0])
+            qp.RY(time * arg2, wires=wires[0])
+            qp.MultiRZ(arg1, wires=wires)
 
             if kwarg1:
-                qml.CNOT([wires[0], wires[1]])
-                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
-                qml.CNOT([wires[0], wires[1]])
+                qp.CNOT([wires[0], wires[1]])
+                qp.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qp.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qp.QFT(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -2076,7 +2072,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
+        @qp.qnode(qp.device("default.qubit", wires=wires), diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -2089,9 +2085,9 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.expval(qml.Hadamard(wires[0]))
+            return qp.expval(qp.Hadamard(wires[0]))
 
-        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
+        @qp.qnode(qp.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
             expected_t = time / n
             expected_decomp = self._generate_simple_decomp_trotterize(
@@ -2100,9 +2096,9 @@ class TestTrotterizedQfuncIntegration:
             expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(wires[0]))
+            return qp.expval(qp.Hadamard(wires[0]))
 
         measured_time_grad, measured_arg1_grad, measured_arg2_grad = jax.grad(
             circ, argnums=[0, 1, 2]

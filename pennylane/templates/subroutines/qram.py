@@ -166,8 +166,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -175,19 +175,19 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.BBQRAM(
+            qp.BBQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
@@ -440,8 +440,8 @@ class HybridQRAM(Operation):
         num_control_wires = 3
         num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -456,20 +456,20 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def hybrid_qram():
             # prepare an address, e.g., |010> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.HybridQRAM(
+            qp.HybridQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work"],
                 k=k
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(hybrid_qram()))
@@ -901,8 +901,8 @@ class SelectOnlyQRAM(Operation):
         num_select_wires = 1
         select_value = 0
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -917,20 +917,20 @@ class SelectOnlyQRAM(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def select_only_qram():
             # prepare an address, e.g., |010> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.SelectOnlyQRAM(
+            qp.SelectOnlyQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 select_wires=reg["select"],
                 select_value=select_value,
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(select_only_qram()))

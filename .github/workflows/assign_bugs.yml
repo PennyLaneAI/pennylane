@@ -6,6 +6,9 @@ on:
 jobs:
   autoassign:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
     steps:
       - uses: Naturalclar/issue-action@v2.0.2
         with:

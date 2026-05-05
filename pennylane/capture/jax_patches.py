@@ -149,7 +149,7 @@ def _add_make_eqn_helper():
         # We pass the equation as the parent parameter (4th argument to __init__)
         out_tracers = [
             DynamicJaxprTracer(self, aval, v, source_info, eqn)
-            for aval, v in zip(out_avals, outvars)
+            for aval, v in zip(out_avals, outvars, strict=True)
         ]
 
         return eqn, out_tracers
@@ -191,6 +191,52 @@ def _patch_dyn_shape_staging_rule():
     # Return just the core patch - the wrappers will call the patched version
     return [
         (lax, "_dyn_shape_staging_rule", patched_dyn_shape_staging_rule),
+    ]
+
+
+def _patch_pjit_infer_params():
+    """
+    Patch ``_infer_params_internal`` to fix type mismatch in dynamic shapes path.
+
+    JAX 0.7.x bug: when ``dynamic_shapes=True`` and ``_create_pjit_jaxpr`` produces
+    tracer consts, ``PjitParams.consts`` is a tuple (from ``unzip2`` in ``to_jaxpr2``),
+    but ``args_flat`` is a list. The concatenation ``p.consts + args_flat`` fails with
+    ``TypeError: can only concatenate tuple (not "list") to tuple``.
+
+    This manifests when nested ``make_jaxpr`` calls occur (e.g., nested PennyLane
+    transforms with dynamic shots).
+
+    Returns:
+        list: List of patch tuples.
+    """
+
+    # in case infinite recursion
+    original_infer_params_internal = pjit._infer_params_internal
+
+    def patched_infer_params_internal(fun, ji, args, kwargs):
+        """Patched version: re-implement the dynamic_shapes path with list coercion."""
+        if not jax_config.dynamic_shapes.value:  # pragma: no cover
+            # Then we just fallback to the original jax pjit
+            return original_infer_params_internal(fun, ji, args, kwargs)
+
+        # Dynamic shapes path — replicate the original but fix the type mismatch
+        ctx_mesh = pjit.mesh_lib.get_concrete_mesh()
+        dbg = pjit.debug_info(
+            "jit",
+            fun,
+            args,
+            kwargs,
+            static_argnums=ji.static_argnums,
+            static_argnames=ji.static_argnames,
+            sourceinfo=ji.fun_sourceinfo,
+            signature=ji.fun_signature,
+        )
+        p, args_flat = pjit._infer_params_impl(fun, ji, ctx_mesh, dbg, args, kwargs, in_avals=None)
+        # Fix: ensure list + list, not tuple + list
+        return p, list(p.consts) + args_flat
+
+    return [
+        (pjit, "_infer_params_internal", patched_infer_params_internal),
     ]
 
 
@@ -289,6 +335,7 @@ def get_jax_patches():
     # Get all patches from the helper functions
     patches.append(_add_make_eqn_helper())
     patches.extend(_patch_dyn_shape_staging_rule())
+    patches.extend(_patch_pjit_infer_params())
     patches.extend(_patch_pjit_staging_rule())
 
     return tuple(patches)

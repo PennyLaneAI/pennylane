@@ -19,7 +19,7 @@ Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.io.qualtran_io import (
     _get_op_call_graph,
@@ -42,10 +42,10 @@ def test_to_bloq_error():
         import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
-            qml.io.ToBloq(qml.H(0))
+            qp.io.ToBloq(qp.H(0))
 
         with pytest.raises(ImportError, match="The `to_bloq` function requires Qualtran "):
-            qml.to_bloq(qml.H(0))
+            qp.to_bloq(qp.H(0))
 
 
 @pytest.fixture
@@ -76,9 +76,9 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
+        assert repr(qp.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
-            qml.FromBloq("123", 1)
+            qp.FromBloq("123", 1)
 
     def test_matrix_error(self):
         """Tests that FromBloq's matrix raises error as intended"""
@@ -88,7 +88,7 @@ class TestFromBloq:
         from pennylane.exceptions import MatrixUndefinedError
 
         with pytest.raises(MatrixUndefinedError):
-            qml.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
+            qp.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
 
     @pytest.mark.xfail(reason="Fails due to overly broad assertion")
     def test_assert_valid(self):
@@ -109,9 +109,9 @@ class TestFromBloq:
 
         cbloq = bb.finalize(p1=w1, p2=w2, q1=w3, q2=w4, p1p2=p1p2, p1p2_plus_q1q2=p1p2_plus_q1q2)
 
-        op = qml.FromBloq(cbloq, wires=range(24))
+        op = qp.FromBloq(cbloq, wires=range(24))
 
-        qml.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
+        qp.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
 
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
@@ -119,14 +119,14 @@ class TestFromBloq:
         from qualtran.bloqs.basic_gates import Hadamard
 
         with pytest.raises(ValueError, match="The length of wires must"):
-            qml.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
+            qp.FromBloq(Hadamard(), wires=[1, 2, 3]).decomposition()
 
     def test_allocated_and_freed_wires(self):
         """Tests that FromBloq properly handles bloqs that have allocate and free qubits"""
 
         from qualtran.bloqs.basic_gates import CZPowGate, ZPowGate
 
-        assert qml.FromBloq(CZPowGate(), wires=range(2)).decomposition()[1] == qml.FromBloq(
+        assert qp.FromBloq(CZPowGate(), wires=range(2)).decomposition()[1] == qp.FromBloq(
             ZPowGate(), wires=["alloc_free_2"]
         )
 
@@ -141,7 +141,7 @@ class TestFromBloq:
 
         assert (
             len(
-                qml.FromBloq(
+                qp.FromBloq(
                     qroam_clean_multi_data, wires=range(qroam_clean_multi_data.signature.n_qubits())
                 ).decomposition()
             )
@@ -170,14 +170,14 @@ class TestFromBloq:
         cbloq = bb.finalize(p1=w1, p2=w2, q1=w3, q2=w4, p1p2=p1p2, p1p2_plus_q1q2=p1p2_plus_q1q2)
 
         expected = [
-            qml.FromBloq(Product(3, 3), wires=Wires([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17])),
-            qml.FromBloq(Product(3, 3), wires=Wires([6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23])),
-            qml.FromBloq(
+            qp.FromBloq(Product(3, 3), wires=Wires([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17])),
+            qp.FromBloq(Product(3, 3), wires=Wires([6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23])),
+            qp.FromBloq(
                 Add(QUInt(bitsize=6), QUInt(bitsize=6)),
                 wires=Wires([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]),
             ),
         ]
-        assert qml.FromBloq(cbloq, wires=range(24)).decomposition() == expected
+        assert qp.FromBloq(cbloq, wires=range(24)).decomposition() == expected
 
     def test_composite_bloq(self):
         """Tests that a simple composite bloq has the correct decomposition after wrapped with `FromBloq`"""
@@ -204,29 +204,29 @@ class TestFromBloq:
 
         circuit_bloq = bb.finalize(wire1=w1, wire2=w2, aux_wires=aux_wires)
 
-        decomp = qml.FromBloq(circuit_bloq, wires=list(range(4))).decomposition()
+        decomp = qp.FromBloq(circuit_bloq, wires=list(range(4))).decomposition()
         expected_decomp = [
-            qml.H(0),
-            qml.H(1),
-            qml.CNOT([0, 2]),
-            qml.CNOT([1, 3]),
-            qml.Toffoli([2, 3, 0]),
-            qml.Toffoli([2, 3, 1]),
+            qp.H(0),
+            qp.H(1),
+            qp.CNOT([0, 2]),
+            qp.CNOT([1, 3]),
+            qp.Toffoli([2, 3, 0]),
+            qp.Toffoli([2, 3, 1]),
         ]
         assert decomp == expected_decomp
 
-        mapped_decomp = qml.FromBloq(circuit_bloq, wires=[3, 0, 1, 2]).decomposition()
+        mapped_decomp = qp.FromBloq(circuit_bloq, wires=[3, 0, 1, 2]).decomposition()
         mapped_expected_decomp = [
-            qml.H(3),
-            qml.H(0),
-            qml.CNOT([3, 1]),
-            qml.CNOT([0, 2]),
-            qml.Toffoli([1, 2, 3]),
-            qml.Toffoli([1, 2, 0]),
+            qp.H(3),
+            qp.H(0),
+            qp.CNOT([3, 1]),
+            qp.CNOT([0, 2]),
+            qp.Toffoli([1, 2, 3]),
+            qp.Toffoli([1, 2, 0]),
         ]
         assert mapped_decomp == mapped_expected_decomp
         assert np.allclose(
-            qml.FromBloq(circuit_bloq, wires=list(range(4))).matrix(),
+            qp.FromBloq(circuit_bloq, wires=list(range(4))).matrix(),
             circuit_bloq.tensor_contract(),
         )
 
@@ -234,18 +234,18 @@ class TestFromBloq:
         """Tests that atomic bloqs have the correct PennyLane equivalent after wrapped with `FromBloq`"""
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
 
-        assert Hadamard().as_pl_op(0) == qml.Hadamard(0)
-        assert CNOT().as_pl_op([0, 1]) == qml.CNOT([0, 1])
-        assert Toffoli().as_pl_op([0, 1, 2]) == qml.Toffoli([0, 1, 2])
+        assert Hadamard().as_pl_op(0) == qp.Hadamard(0)
+        assert CNOT().as_pl_op([0, 1]) == qp.CNOT([0, 1])
+        assert Toffoli().as_pl_op([0, 1, 2]) == qp.Toffoli([0, 1, 2])
 
-        assert qml.FromBloq(Hadamard(), 0).has_matrix is True
+        assert qp.FromBloq(Hadamard(), 0).has_matrix is True
         with pytest.raises(DecompositionUndefinedError):
-            qml.FromBloq(Hadamard(), wires=[1]).decomposition()
+            qp.FromBloq(Hadamard(), wires=[1]).decomposition()
 
-        assert np.allclose(qml.FromBloq(Hadamard(), 0).matrix(), qml.Hadamard(0).matrix())
-        assert np.allclose(qml.FromBloq(CNOT(), [0, 1]).matrix(), qml.CNOT([0, 1]).matrix())
+        assert np.allclose(qp.FromBloq(Hadamard(), 0).matrix(), qp.Hadamard(0).matrix())
+        assert np.allclose(qp.FromBloq(CNOT(), [0, 1]).matrix(), qp.CNOT([0, 1]).matrix())
         assert np.allclose(
-            qml.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qml.Toffoli([0, 1, 2]).matrix()
+            qp.FromBloq(Toffoli(), [0, 1, 2]).matrix(), qp.Toffoli([0, 1, 2]).matrix()
         )
 
     def test_to_pl_op(self):  # Correctness is also validated in Qualtran's tests
@@ -268,21 +268,21 @@ class TestFromBloq:
 
         to_pl = _get_to_pl_op()
 
-        assert to_pl(GlobalPhase(exponent=1), 0) == qml.GlobalPhase(
+        assert to_pl(GlobalPhase(exponent=1), 0) == qp.GlobalPhase(
             GlobalPhase(exponent=1).exponent * np.pi, 0
         )
-        assert to_pl(Identity(), 0) == qml.Identity(0)
-        assert to_pl(Ry(angle=np.pi / 2), 0) == qml.RY(np.pi / 2, 0)
-        assert to_pl(Rx(angle=np.pi / 4), 0) == qml.RX(np.pi / 4, 0)
-        assert to_pl(Rz(angle=np.pi / 3), 0) == qml.RZ(np.pi / 3, 0)
-        assert to_pl(SGate(), 0) == qml.S(0)
-        assert to_pl(TwoBitCSwap(), [0, 1, 2]) == qml.CSWAP([0, 1, 2])
-        assert to_pl(TGate(), 0) == qml.T(0)
-        assert to_pl(XGate(), 0) == qml.PauliX(0)
-        assert to_pl(YGate(), 0) == qml.PauliY(0)
-        assert to_pl(CYGate(), [0, 1]) == qml.CY([0, 1])
-        assert to_pl(ZGate(), 0) == qml.PauliZ(0)
-        assert to_pl(CZ(), [0, 1]) == qml.CZ([0, 1])
+        assert to_pl(Identity(), 0) == qp.Identity(0)
+        assert to_pl(Ry(angle=np.pi / 2), 0) == qp.RY(np.pi / 2, 0)
+        assert to_pl(Rx(angle=np.pi / 4), 0) == qp.RX(np.pi / 4, 0)
+        assert to_pl(Rz(angle=np.pi / 3), 0) == qp.RZ(np.pi / 3, 0)
+        assert to_pl(SGate(), 0) == qp.S(0)
+        assert to_pl(TwoBitCSwap(), [0, 1, 2]) == qp.CSWAP([0, 1, 2])
+        assert to_pl(TGate(), 0) == qp.T(0)
+        assert to_pl(XGate(), 0) == qp.PauliX(0)
+        assert to_pl(YGate(), 0) == qp.PauliY(0)
+        assert to_pl(CYGate(), [0, 1]) == qp.CY([0, 1])
+        assert to_pl(ZGate(), 0) == qp.PauliZ(0)
+        assert to_pl(CZ(), [0, 1]) == qp.CZ([0, 1])
 
     def test_bloqs(self):
         """Tests that bloqs with decompositions have the correct PennyLane decompositions after
@@ -290,10 +290,10 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import Swap
 
-        assert qml.FromBloq(Swap(3), wires=range(6)).decomposition() == [
-            qml.SWAP(wires=[0, 3]),
-            qml.SWAP(wires=[1, 4]),
-            qml.SWAP(wires=[2, 5]),
+        assert qp.FromBloq(Swap(3), wires=range(6)).decomposition() == [
+            qp.SWAP(wires=[0, 3]),
+            qp.SWAP(wires=[1, 4]),
+            qp.SWAP(wires=[2, 5]),
         ]
 
         from qualtran.bloqs.basic_gates import ZPowGate
@@ -301,12 +301,12 @@ class TestFromBloq:
 
         textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.FromBloq(textbook_qpe_small, wires=list(range(4)))
-            return qml.state()
+            qp.FromBloq(textbook_qpe_small, wires=list(range(4)))
+            return qp.state()
 
         # Expected value computed via the qualtran bloq's tensor_contract()
         assert np.allclose(
@@ -343,7 +343,7 @@ class TestFromBloq:
         from pennylane.wires import Wires
 
         with pytest.raises(TypeError, match="bloq must be an instance of"):
-            qml.bloq_registers("123")
+            qp.bloq_registers("123")
 
         bb = BloqBuilder()
 
@@ -368,7 +368,7 @@ class TestFromBloq:
             "p1p2": Wires([12, 13, 14, 15, 16, 17]),
             "p1p2_plus_q1q2": Wires([18, 19, 20, 21, 22, 23]),
         }
-        actual = qml.bloq_registers(circuit_bloq)
+        actual = qp.bloq_registers(circuit_bloq)
 
         assert actual == expected
 
@@ -385,33 +385,33 @@ class TestToBloqDecomposition:
     def test_to_bloq_init(self):
         """Tests that ToBloq's __init__() functions as intended"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
+            qp.H(0)
 
-        assert repr(qml.io.ToBloq(qml.Hadamard(0))) == "ToBloq(Hadamard)"
-        assert repr(qml.io.ToBloq(circuit)) == "ToBloq(QNode)"
-        assert str(qml.io.ToBloq(qml.H(0))) == "PLHadamard"
+        assert repr(qp.io.ToBloq(qp.Hadamard(0))) == "ToBloq(Hadamard)"
+        assert repr(qp.io.ToBloq(circuit)) == "ToBloq(QNode)"
+        assert str(qp.io.ToBloq(qp.H(0))) == "PLHadamard"
         with pytest.raises(TypeError, match="Input must be either an instance of"):
-            qml.io.ToBloq("123")
+            qp.io.ToBloq("123")
 
     def test_invalid_call_graph_value(self):
         """Tests that ToBloq and to_bloq raise ValueError for invalid call_graph values"""
 
         with pytest.raises(ValueError, match="call_graph must be 'estimator' or 'decomposition'"):
-            qml.io.ToBloq(qml.H(0), call_graph="invalid")
+            qp.io.ToBloq(qp.H(0), call_graph="invalid")
 
         with pytest.raises(ValueError, match="call_graph must be 'estimator' or 'decomposition'"):
-            qml.to_bloq(qml.H(0), call_graph="something_else")
+            qp.to_bloq(qp.H(0), call_graph="something_else")
 
     def test_equivalence(self):
         """Tests that ToBloq's __eq__ functions as expected"""
 
-        assert qml.io.ToBloq(qml.H(0)) == qml.io.ToBloq(qml.H(0))
-        assert qml.io.ToBloq(qml.H(0)) != qml.io.ToBloq(qml.H(1))
-        assert qml.io.ToBloq(qml.H(0)) != "Hadamard"
+        assert qp.io.ToBloq(qp.H(0)) == qp.io.ToBloq(qp.H(0))
+        assert qp.io.ToBloq(qp.H(0)) != qp.io.ToBloq(qp.H(1))
+        assert qp.io.ToBloq(qp.H(0)) != "Hadamard"
 
     def test_allocate_and_free(self):
         """Tests that ToBloq functions on a FromBloq that has ghost wires"""
@@ -420,13 +420,13 @@ class TestToBloqDecomposition:
         from qualtran.bloqs.bookkeeping import Allocate, Free
 
         assert (
-            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+            qp.to_bloq(qp.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
                 Allocate(QAny(bitsize=1))
             ]
             == 3
         )
         assert (
-            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+            qp.to_bloq(qp.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
                 Free(QBit())
             ]
             == 3
@@ -437,61 +437,61 @@ class TestToBloqDecomposition:
 
         from qualtran.bloqs.basic_gates import Hadamard
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
+            qp.H(0)
             return (
-                qml.expval(qml.Y(0)),
-                qml.probs(op=qml.X(0)),
-                qml.state(),
-                qml.sample(qml.X(0)),
-                qml.var(qml.X(0)),
-                qml.counts(qml.X(0)),
+                qp.expval(qp.Y(0)),
+                qp.probs(op=qp.X(0)),
+                qp.state(),
+                qp.sample(qp.X(0)),
+                qp.var(qp.X(0)),
+                qp.counts(qp.X(0)),
             )
 
         def qfunc():
-            qml.H(0)
+            qp.H(0)
 
-        assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
-        assert repr(qml.to_bloq(circuit)) == "ToBloq(QNode)"
-        assert repr(qml.to_bloq(qfunc)) == "ToBloq(Qfunc)"
-        assert str(qml.to_bloq(qfunc)) == "PLQfunc"
-        assert repr(qml.to_bloq(qml.Hadamard(0), map_ops=False)) == "Hadamard()"
-        assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
-        assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
+        assert qp.to_bloq(qp.Hadamard(0)) == Hadamard()
+        assert repr(qp.to_bloq(circuit)) == "ToBloq(QNode)"
+        assert repr(qp.to_bloq(qfunc)) == "ToBloq(Qfunc)"
+        assert str(qp.to_bloq(qfunc)) == "PLQfunc"
+        assert repr(qp.to_bloq(qp.Hadamard(0), map_ops=False)) == "Hadamard()"
+        assert qp.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+        assert qp.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
         with pytest.raises(
             ValueError, match="Custom mappings are not possible for basic operations"
         ):
-            qml.to_bloq(qml.X(0), custom_mapping={qml.X(0): qml.Y(0)})
+            qp.to_bloq(qp.X(0), custom_mapping={qp.X(0): qp.Y(0)})
 
     def test_to_bloq_circuits(self):
         """Tests that to_bloq functions as intended for complex circuits"""
 
         from qualtran.bloqs.basic_gates import CNOT, Hadamard
 
-        dev = qml.device("default.qubit", wires=6)
+        dev = qp.device("default.qubit", wires=6)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+            qp.H(0)
+            qp.QuantumPhaseEstimation(unitary=qp.RX(0.1, wires=5), estimation_wires=range(5))
 
-        mapped_circuit = qml.to_bloq(circuit, call_graph="decomposition")
+        mapped_circuit = qp.to_bloq(circuit, call_graph="decomposition")
         mapped_circuit_cg = mapped_circuit.call_graph()[1]
-        custom_mapped_circuit = qml.to_bloq(
+        custom_mapped_circuit = qp.to_bloq(
             circuit,
             call_graph="decomposition",
             custom_mapping={
-                qml.QuantumPhaseEstimation(
-                    unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
+                qp.QuantumPhaseEstimation(
+                    unitary=qp.RX(0.1, wires=5), estimation_wires=range(5)
                 ): Hadamard()
             },
         )
         custom_mapped_circuit_cg = custom_mapped_circuit.call_graph()[1]
-        wrapped_circuit = qml.to_bloq(circuit, map_ops=False, call_graph="decomposition")
+        wrapped_circuit = qp.to_bloq(circuit, map_ops=False, call_graph="decomposition")
         wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
 
         assert mapped_circuit_cg[Hadamard()] == 11
@@ -503,23 +503,23 @@ class TestToBloqDecomposition:
     def test_from_bloq_to_bloq(self):
         """Tests that FromBloq and to_bloq functions as intended"""
 
-        qpe_op = qml.QuantumPhaseEstimation(
-            unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        qpe_op = qp.QuantumPhaseEstimation(
+            unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
         )
-        qpe_bloq = qml.to_bloq(qpe_op, map_ops=False)
+        qpe_bloq = qp.to_bloq(qpe_op, map_ops=False)
 
-        decomp_ops = qml.FromBloq(qpe_bloq, wires=range(5)).decomposition()
+        decomp_ops = qp.FromBloq(qpe_bloq, wires=range(5)).decomposition()
         expected_decomp_ops = qpe_op.decomposition()
         assert decomp_ops == [
-            qml.H(1),
-            qml.H(2),
-            qml.H(3),
-            qml.H(4),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[4]), wires=[1, 0]),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[5]), wires=[2, 0]),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[6]), wires=[3, 0]),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[7]), wires=[4, 0]),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[8], map_ops=False), wires=range(1, 5)),
+            qp.H(1),
+            qp.H(2),
+            qp.H(3),
+            qp.H(4),
+            qp.FromBloq(_map_to_bloq(expected_decomp_ops[4]), wires=[1, 0]),
+            qp.FromBloq(_map_to_bloq(expected_decomp_ops[5]), wires=[2, 0]),
+            qp.FromBloq(_map_to_bloq(expected_decomp_ops[6]), wires=[3, 0]),
+            qp.FromBloq(_map_to_bloq(expected_decomp_ops[7]), wires=[4, 0]),
+            qp.FromBloq(_map_to_bloq(expected_decomp_ops[8], map_ops=False), wires=range(1, 5)),
         ]
 
     def test_circuit_to_bloq_kwargs(self):
@@ -527,21 +527,21 @@ class TestToBloqDecomposition:
 
         from qualtran.bloqs.basic_gates import GlobalPhase, Rx
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(angle):
-            qml.RX(phi=angle, wires=[0])
-            qml.GlobalPhase(angle)
+            qp.RX(phi=angle, wires=[0])
+            qp.GlobalPhase(angle)
 
-        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {
+        assert qp.to_bloq(circuit, angle=0).call_graph()[1] == {
             Rx(angle=0.0, eps=1e-11): 1,
             GlobalPhase(exponent=0): 1,
         }
         with pytest.raises(TypeError):
-            qml.to_bloq(circuit).call_graph()
+            qp.to_bloq(circuit).call_graph()
 
-        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1] == {
+        assert qp.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1] == {
             Rx(angle=0.0, eps=1e-11): 1,
             GlobalPhase(exponent=0): 1,
         }
@@ -551,26 +551,24 @@ class TestToBloqDecomposition:
         import qualtran as qt
 
         with pytest.raises(qt.DecomposeTypeError):
-            qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
+            qp.to_bloq(qp.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
 
     def test_call_graph(self):
         """Tests that build_call_graph calls build_call_graph as expected"""
         from qualtran.resource_counting import SympySymbolAllocator as ssa
 
-        cg = qml.to_bloq(
-            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+        cg = qp.to_bloq(
+            qp.QuantumPhaseEstimation(unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)),
             False,
             call_graph="decomposition",
         ).build_call_graph(ssa=ssa())
 
         assert cg == {
-            qml.to_bloq(qml.Hadamard(0), True, call_graph="decomposition"): 4,
-            qml.to_bloq(
-                qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True, call_graph="decomposition"
+            qp.to_bloq(qp.Hadamard(0), True, call_graph="decomposition"): 4,
+            qp.to_bloq(
+                qp.ctrl(qp.RX(0.1, wires=0), control=[1]), True, call_graph="decomposition"
             ): 15,
-            qml.to_bloq(
-                qml.adjoint(qml.QFT(wires=range(1, 5))), False, call_graph="decomposition"
-            ): 1,
+            qp.to_bloq(qp.adjoint(qp.QFT(wires=range(1, 5))), False, call_graph="decomposition"): 1,
         }
 
     def test_map_to_bloq(self):
@@ -595,43 +593,43 @@ class TestToBloqDecomposition:
         )
 
         assert GlobalPhase(exponent=1) == _map_to_bloq(
-            qml.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
+            qp.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
         )
-        assert Identity() == _map_to_bloq(qml.Identity(0))
-        assert Ry(angle=np.pi / 2) == _map_to_bloq(qml.RY(np.pi / 2, 0))
-        assert Rx(angle=np.pi / 4) == _map_to_bloq(qml.RX(np.pi / 4, 0))
-        assert Rz(angle=np.pi / 3) == _map_to_bloq(qml.RZ(np.pi / 3, 0))
-        assert SGate() == _map_to_bloq(qml.S(0))
-        assert TwoBitSwap() == _map_to_bloq(qml.SWAP([0, 1]))
-        assert TwoBitCSwap() == _map_to_bloq(qml.CSWAP([0, 1, 2]))
-        assert TGate() == _map_to_bloq(qml.T(0))
-        assert XGate() == _map_to_bloq(qml.PauliX(0))
-        assert YGate() == _map_to_bloq(qml.PauliY(0))
-        assert CYGate() == _map_to_bloq(qml.CY([0, 1]))
-        assert ZGate() == _map_to_bloq(qml.PauliZ(0))
-        assert CZ() == _map_to_bloq(qml.CZ([0, 1]))
-        assert CNOT() == _map_to_bloq(qml.CNOT([0, 1]))
-        assert Toffoli() == _map_to_bloq(qml.Toffoli([0, 1, 2]))
+        assert Identity() == _map_to_bloq(qp.Identity(0))
+        assert Ry(angle=np.pi / 2) == _map_to_bloq(qp.RY(np.pi / 2, 0))
+        assert Rx(angle=np.pi / 4) == _map_to_bloq(qp.RX(np.pi / 4, 0))
+        assert Rz(angle=np.pi / 3) == _map_to_bloq(qp.RZ(np.pi / 3, 0))
+        assert SGate() == _map_to_bloq(qp.S(0))
+        assert TwoBitSwap() == _map_to_bloq(qp.SWAP([0, 1]))
+        assert TwoBitCSwap() == _map_to_bloq(qp.CSWAP([0, 1, 2]))
+        assert TGate() == _map_to_bloq(qp.T(0))
+        assert XGate() == _map_to_bloq(qp.PauliX(0))
+        assert YGate() == _map_to_bloq(qp.PauliY(0))
+        assert CYGate() == _map_to_bloq(qp.CY([0, 1]))
+        assert ZGate() == _map_to_bloq(qp.PauliZ(0))
+        assert CZ() == _map_to_bloq(qp.CZ([0, 1]))
+        assert CNOT() == _map_to_bloq(qp.CNOT([0, 1]))
+        assert Toffoli() == _map_to_bloq(qp.Toffoli([0, 1, 2]))
 
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",  # Computed by resources from labs or decompositions
+            "qp_call_graph",  # Computed by resources from labs or decompositions
         ),
         [
             (
-                qml.QuantumPhaseEstimation(
-                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                qp.QuantumPhaseEstimation(
+                    unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
                 # ResourceQPE
                 {
-                    (qml.Hadamard(0), True): 4,
-                    (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
+                    (qp.Hadamard(0), True): 4,
+                    (qp.ctrl(qp.RX(0.1, wires=0), control=[1]), True): 15,
+                    (qp.adjoint(qp.QFT(wires=range(1, 5))), False): 1,
                 },
             ),
             (
-                qml.Superposition(
+                qp.Superposition(
                     coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
                     bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
                     wires=[0, 1, 2],
@@ -640,32 +638,32 @@ class TestToBloqDecomposition:
                 # Inspired by Resource Superposition
                 {
                     (
-                        qml.StatePrep(
+                        qp.StatePrep(
                             np.array([0.57735027, 0.57735027, 0.57735027]), wires=[2, 3], pad_with=0
                         ),
                         False,
                     ): 1,
-                    (qml.CNOT([0, 1]), True): 2,
-                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), True): 4,
+                    (qp.CNOT([0, 1]), True): 2,
+                    (qp.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), True): 4,
                 },
             ),
-            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
+            (qp.BasisState(np.array([1, 1]), wires=[0, 1]), {(qp.X(0), True): 2}),
             (
-                qml.QFT(wires=range(5)),
+                qp.QFT(wires=range(5)),
                 # From ResourceQFT
                 {
-                    (qml.H(0), True): 5,
-                    (qml.ControlledPhaseShift(1, [0, 1]), True): 10,
-                    (qml.SWAP([0, 1]), True): 2,
+                    (qp.H(0), True): 5,
+                    (qp.ControlledPhaseShift(1, [0, 1]), True): 10,
+                    (qp.SWAP([0, 1]), True): 2,
                 },
             ),
             (
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
                     (
-                        qml.QROM(
+                        qp.QROM(
                             data=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
@@ -675,8 +673,8 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.adjoint(
-                            qml.QROM(
+                        qp.adjoint(
+                            qp.QROM(
                                 data=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
@@ -687,7 +685,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.QROM(
+                        qp.QROM(
                             data=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
@@ -697,8 +695,8 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.adjoint(
-                            qml.QROM(
+                        qp.adjoint(
+                            qp.QROM(
                                 data=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
@@ -708,11 +706,11 @@ class TestToBloqDecomposition:
                         ),
                         True,
                     ): 1,
-                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                    (qp.CRY(0.0, wires=[0, 1]), True): 6,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -721,19 +719,19 @@ class TestToBloqDecomposition:
                 ),
                 # From ResourceQROM
                 {
-                    (qml.CNOT([0, 1]), True): 1,
+                    (qp.CNOT([0, 1]), True): 1,
                     (
-                        qml.MultiControlledX(
+                        qp.MultiControlledX(
                             wires=[0, 1], control_values=[True], work_wires=range(2, 3)
                         ),
                         True,
                     ): 4,
-                    (qml.X(0), True): 4,
-                    (qml.CSWAP([0, 1, 2]), True): 0.0,
+                    (qp.X(0), True): 4,
+                    (qp.CSWAP([0, 1, 2]), True): 0.0,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
@@ -742,11 +740,11 @@ class TestToBloqDecomposition:
                 ),
                 # From ResourceQROM
                 {
-                    (qml.X(0), True): 1,
+                    (qp.X(0), True): 1,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -755,23 +753,23 @@ class TestToBloqDecomposition:
                 ),
                 # From ResourceQROM
                 {
-                    (qml.Hadamard(0), True): 6,
-                    (qml.CNOT([0, 1]), True): 1,
+                    (qp.Hadamard(0), True): 6,
+                    (qp.CNOT([0, 1]), True): 1,
                     (
-                        qml.MultiControlledX(
+                        qp.MultiControlledX(
                             wires=[0, 1], control_values=[True], work_wires=range(2, 3)
                         ),
                         True,
                     ): 8,
-                    (qml.X(0), True): 8,
-                    (qml.CSWAP([0, 1, 2]), True): 0.0,
+                    (qp.X(0), True): 8,
+                    (qp.CSWAP([0, 1, 2]), True): 0.0,
                 },
             ),
             (
-                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                qp.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
                     (
-                        qml.QROM(
+                        qp.QROM(
                             data=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
@@ -781,8 +779,8 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.adjoint(
-                            qml.QROM(
+                        qp.adjoint(
+                            qp.QROM(
                                 data=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
@@ -793,7 +791,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.QROM(
+                        qp.QROM(
                             data=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
@@ -803,8 +801,8 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.adjoint(
-                            qml.QROM(
+                        qp.adjoint(
+                            qp.QROM(
                                 data=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
@@ -815,7 +813,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.QROM(
+                        qp.QROM(
                             data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                             control_wires=[4, 5],
                             target_wires=[1, 2, 3],
@@ -825,8 +823,8 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qml.adjoint(
-                            qml.QROM(
+                        qp.adjoint(
+                            qp.QROM(
                                 data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                                 control_wires=[4, 5],
                                 target_wires=[1, 2, 3],
@@ -836,10 +834,10 @@ class TestToBloqDecomposition:
                         ),
                         True,
                     ): 1,
-                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                    (qp.CRY(0.0, wires=[0, 1]), True): 6,
                     (
-                        qml.ctrl(
-                            qml.GlobalPhase((2 * np.pi), wires=[1]),
+                        qp.ctrl(
+                            qp.GlobalPhase((2 * np.pi), wires=[1]),
                             control=0,
                         ),
                         True,
@@ -847,7 +845,7 @@ class TestToBloqDecomposition:
                 },
             ),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1],
                     output_wires=[2, 3, 4],
                     base=2,
@@ -855,13 +853,13 @@ class TestToBloqDecomposition:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), False): 1,
-                    (qml.ctrl(qml.QFT(range(4)), control=[4]), False): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 6,
+                    (qp.ctrl(qp.adjoint(qp.QFT(range(4))), control=[4]), False): 1,
+                    (qp.ctrl(qp.QFT(range(4)), control=[4]), False): 1,
+                    (qp.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1, 2],
                     output_wires=[3, 4, 5],
                     base=3,
@@ -869,31 +867,31 @@ class TestToBloqDecomposition:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.ctrl(qml.QFT(range(3)), control=[4]), False): 1,
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), False): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 21,
+                    (qp.ctrl(qp.QFT(range(3)), control=[4]), False): 1,
+                    (qp.ctrl(qp.adjoint(qp.QFT(range(3))), control=[4]), False): 1,
+                    (qp.Toffoli([0, 1, 2]), True): 21,
                 },
             ),
             (
-                qml.QSVT(
-                    UA=qml.H(0),
-                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                qp.QSVT(
+                    UA=qp.H(0),
+                    projectors=[qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
                 ),
                 {
-                    (qml.RZ(phi=-2.46, wires=0), True): 1,
-                    (qml.RZ(phi=1.0, wires=0), True): 1,
-                    (qml.Hadamard(0), True): 2,
-                    (qml.RZ(phi=0.6, wires=0), True): 1,
+                    (qp.RZ(phi=-2.46, wires=0), True): 1,
+                    (qp.RZ(phi=1.0, wires=0), True): 1,
+                    (qp.Hadamard(0), True): 2,
+                    (qp.RZ(phi=0.6, wires=0), True): 1,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=2,
@@ -901,19 +899,19 @@ class TestToBloqDecomposition:
                     flip=True,
                 ),
                 {
-                    (qml.RX(phi=0.012, wires=[0]), True): 2,
-                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
-                    (qml.CNOT(wires=[0, 1]), True): 2,
+                    (qp.RX(phi=0.012, wires=[0]), True): 2,
+                    (qp.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
+                    (qp.CNOT(wires=[0, 1]), True): 2,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=1,
@@ -921,31 +919,31 @@ class TestToBloqDecomposition:
                     flip=True,
                 ),
                 {
-                    (qml.RX(phi=0.012, wires=[0]), True): 1,
-                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 1,
-                    (qml.CNOT(wires=[0, 1]), True): 1,
+                    (qp.RX(phi=0.012, wires=[0]), True): 1,
+                    (qp.RY(phi=-0.34500000000000003, wires=[0]), True): 1,
+                    (qp.CNOT(wires=[0, 1]), True): 1,
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
-                    (qml.X(wires=[2]), True): 2,
-                    (qml.ctrl(qml.X(2), control=[0]), True): 1,
-                    (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
+                    (qp.X(wires=[2]), True): 2,
+                    (qp.ctrl(qp.X(2), control=[0]), True): 1,
+                    (qp.ctrl(qp.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),
             (
-                qml.StatePrep(state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25], wires=range(3)),
-                {(qml.RZ(0, wires=[0]), True): 27, (qml.CNOT([0, 1]), True): 16},
+                qp.StatePrep(state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25], wires=range(3)),
+                {(qp.RZ(0, wires=[0]), True): 27, (qp.CNOT([0, 1]), True): 16},
             ),
         ],
     )
-    def test_build_call_graph(self, op, qml_call_graph):
+    def test_build_call_graph(self, op, qp_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
@@ -957,14 +955,14 @@ class TestToBloqDecomposition:
         ),
         [
             (
-                qml.QuantumPhaseEstimation(
-                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                qp.QuantumPhaseEstimation(
+                    unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
                 "qpe_bloq",
             ),
-            (qml.QFT(wires=range(4)), "qft_bloq"),
+            (qp.QFT(wires=range(4)), "qft_bloq"),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1],
                     output_wires=[2, 3, 4],
                     base=2,
@@ -974,7 +972,7 @@ class TestToBloqDecomposition:
                 "modexp_bloq",
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
@@ -983,7 +981,7 @@ class TestToBloqDecomposition:
                 "qrom_bloq_clean",
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
@@ -1008,7 +1006,7 @@ class TestToBloqDecomposition:
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=RectangularWindowState(4),
                 ),
                 "qft_bloq": QFTTextBook(4),
@@ -1019,7 +1017,7 @@ class TestToBloqDecomposition:
 
             return qualtran_bloqs[qt_bloq]
 
-        qt_qpe = qml.to_bloq(op, map_ops=True)
+        qt_qpe = qp.to_bloq(op, map_ops=True)
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     @pytest.mark.parametrize(
@@ -1030,21 +1028,21 @@ class TestToBloqDecomposition:
         ),
         [
             (
-                qml.QuantumPhaseEstimation(
-                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                qp.QuantumPhaseEstimation(
+                    unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
                 "qpe_custom_mapping",
                 "qpe_custom_bloq",
             ),
             # Tests the behaviour of using custom mapping for ops without default mappings
             (
-                qml.QSVT(qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]),
+                qp.QSVT(qp.H(0), [qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]),
                 "qsvt_custom_mapping",
                 "qsvt_custom_bloq",
             ),
-            (qml.QFT(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
+            (qp.QFT(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1],
                     output_wires=[2, 3, 4],
                     base=2,
@@ -1055,7 +1053,7 @@ class TestToBloqDecomposition:
                 "modexp_custom_bloq",
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
@@ -1076,23 +1074,23 @@ class TestToBloqDecomposition:
 
             qualtran_bloqs = {
                 "qpe_custom_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "qsvt_custom_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "qft_custom_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "modexp_custom_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "qrom_custom_bloq": TextbookQPE(
-                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
             }
@@ -1106,47 +1104,47 @@ class TestToBloqDecomposition:
 
             custom_mapping = {
                 "qpe_custom_mapping": {
-                    qml.QuantumPhaseEstimation(
-                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                    qp.QuantumPhaseEstimation(
+                        unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
                     ): TextbookQPE(
-                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
                 },
                 "qsvt_custom_mapping": {
-                    qml.QSVT(
-                        qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
+                    qp.QSVT(
+                        qp.H(0), [qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
                     ): TextbookQPE(
-                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
                 },
                 "qft_custom_mapping": {
-                    qml.QFT(wires=range(4)): TextbookQPE(
-                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    qp.QFT(wires=range(4)): TextbookQPE(
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
                 },
                 "modexp_custom_mapping": {
-                    qml.ModExp(
+                    qp.ModExp(
                         x_wires=[0, 1],
                         output_wires=[2, 3, 4],
                         base=2,
                         mod=7,
                         work_wires=[5, 6, 7, 8, 9],
                     ): TextbookQPE(
-                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
                 },
                 "qrom_custom_mapping": {
-                    qml.QROM(
+                    qp.QROM(
                         data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                         control_wires=[0, 1],
                         target_wires=[2, 3, 4],
                         work_wires=[5, 6, 7],
                     ): TextbookQPE(
-                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
                 },
@@ -1154,7 +1152,7 @@ class TestToBloqDecomposition:
 
             return custom_mapping[custom_map]
 
-        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
+        qt_qpe = qp.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     # pylint: disable=redefined-outer-name, protected-access
@@ -1262,25 +1260,25 @@ class TestToBloqEstimator:
 
         from qualtran.bloqs.basic_gates import CNOT, Hadamard
 
-        dev = qml.device("default.qubit", wires=6)
+        dev = qp.device("default.qubit", wires=6)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+            qp.H(0)
+            qp.QuantumPhaseEstimation(unitary=qp.RX(0.1, wires=5), estimation_wires=range(5))
 
-        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit = qp.to_bloq(circuit)
         mapped_circuit_cg = mapped_circuit.call_graph()[1]
-        custom_mapped_circuit = qml.to_bloq(
+        custom_mapped_circuit = qp.to_bloq(
             circuit,
             custom_mapping={
-                qml.QuantumPhaseEstimation(
-                    unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
+                qp.QuantumPhaseEstimation(
+                    unitary=qp.RX(0.1, wires=5), estimation_wires=range(5)
                 ): Hadamard()
             },
         )
         custom_mapped_circuit_cg = custom_mapped_circuit.call_graph()[1]
-        wrapped_circuit = qml.to_bloq(circuit, map_ops=False, call_graph="estimator")
+        wrapped_circuit = qp.to_bloq(circuit, map_ops=False, call_graph="estimator")
         wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
 
         assert mapped_circuit_cg[Hadamard()] == 11
@@ -1293,63 +1291,63 @@ class TestToBloqEstimator:
         """Tests that build_call_graph calls build_call_graph as expected"""
         from qualtran.resource_counting import SympySymbolAllocator as ssa
 
-        cg = qml.to_bloq(
-            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+        cg = qp.to_bloq(
+            qp.QuantumPhaseEstimation(unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)),
             False,
             call_graph="estimator",
         ).build_call_graph(ssa=ssa())
 
         assert cg == {
-            qml.to_bloq(qml.Hadamard(0)): 16,
-            qml.to_bloq(qml.CNOT([0, 1])): 26,
-            qml.to_bloq(qml.T(0)): 1144,
+            qp.to_bloq(qp.Hadamard(0)): 16,
+            qp.to_bloq(qp.CNOT([0, 1])): 26,
+            qp.to_bloq(qp.T(0)): 1144,
         }
 
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",
+            "qp_call_graph",
         ),
         [
             (
-                qml.Superposition(
+                qp.Superposition(
                     coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
                     bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
                     wires=[0, 1, 2],
                     work_wire=3,
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
-                    (qml.X([0]), True): 4,
-                    (qml.Toffoli([0, 1, 2]), True): 4,
-                    (qml.H(0), True): 6,
+                    (qp.T(0), True): 132,
+                    (qp.CNOT([0, 1]), True): 6,
+                    (qp.X([0]), True): 4,
+                    (qp.Toffoli([0, 1, 2]), True): 4,
+                    (qp.H(0), True): 6,
                 },
             ),
-            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
+            (qp.BasisState(np.array([1, 1]), wires=[0, 1]), {(qp.X(0), True): 2}),
             (
-                qml.QFT(wires=range(5)),
+                qp.QFT(wires=range(5)),
                 {
-                    (qml.H(0), True): 5,
-                    (qml.CNOT([0, 1]), True): 26,
-                    (qml.T(0), True): 1320,
+                    (qp.H(0), True): 5,
+                    (qp.CNOT([0, 1]), True): 26,
+                    (qp.T(0), True): 1320,
                 },
             ),
             (
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 7,
-                    (qml.CNOT([0, 1]), True): 32,
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 40,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (qp.X([0]), True): 7,
+                    (qp.CNOT([0, 1]), True): 32,
+                    (qp.Toffoli([0, 1, 2]), True): 8,
+                    (qp.H(0), True): 40,
+                    (qp.S(0), True): 6,
+                    (qp.Z(0), True): 3,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -1357,14 +1355,14 @@ class TestToBloqEstimator:
                     clean=False,
                 ),
                 {
-                    (qml.CNOT([0, 1]), True): 3,
-                    (qml.X(0), True): 1,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.H(0), True): 0,
+                    (qp.CNOT([0, 1]), True): 3,
+                    (qp.X(0), True): 1,
+                    (qp.Toffoli([0, 1, 2]), True): 0,
+                    (qp.H(0), True): 0,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
@@ -1372,11 +1370,11 @@ class TestToBloqEstimator:
                     clean=False,
                 ),
                 {
-                    (qml.X(0), True): 1,
+                    (qp.X(0), True): 1,
                 },
             ),
             (
-                qml.QROM(
+                qp.QROM(
                     data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -1384,25 +1382,25 @@ class TestToBloqEstimator:
                     clean=True,
                 ),
                 {
-                    (qml.X(0), True): 1,
-                    (qml.CNOT([0, 1]), True): 3,
-                    (qml.Toffoli([0, 1, 2]), True): 0,
-                    (qml.H(0), True): 0,
+                    (qp.X(0), True): 1,
+                    (qp.CNOT([0, 1]), True): 3,
+                    (qp.Toffoli([0, 1, 2]), True): 0,
+                    (qp.H(0), True): 0,
                 },
             ),
             (
-                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                qp.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 19,
-                    (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 62,
-                    (qml.Hadamard(0), True): 69,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (qp.X(0), True): 19,
+                    (qp.Toffoli([0, 1, 2]), True): 16,
+                    (qp.CNOT([0, 1]), True): 62,
+                    (qp.Hadamard(0), True): 69,
+                    (qp.S(0), True): 6,
+                    (qp.Z(0), True): 3,
                 },
             ),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1],
                     output_wires=[2, 3, 4],
                     base=2,
@@ -1410,15 +1408,15 @@ class TestToBloqEstimator:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 2865,
-                    (qml.CNOT([0, 1]), True): 5232,
-                    (qml.Hadamard(0), True): 2316,
-                    (qml.T(0), True): 268224,
-                    (qml.X(0), True): 42,
+                    (qp.Toffoli([0, 1, 2]), True): 2865,
+                    (qp.CNOT([0, 1]), True): 5232,
+                    (qp.Hadamard(0), True): 2316,
+                    (qp.T(0), True): 268224,
+                    (qp.X(0), True): 42,
                 },
             ),
             (
-                qml.ModExp(
+                qp.ModExp(
                     x_wires=[0, 1, 2],
                     output_wires=[3, 4, 5],
                     base=3,
@@ -1426,30 +1424,30 @@ class TestToBloqEstimator:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 609,
-                    (qml.CNOT([0, 1]), True): 882,
-                    (qml.Hadamard(0), True): 84,
-                    (qml.T(0), True): 49896,
+                    (qp.Toffoli([0, 1, 2]), True): 609,
+                    (qp.CNOT([0, 1]), True): 882,
+                    (qp.Hadamard(0), True): 84,
+                    (qp.T(0), True): 49896,
                 },
             ),
             (
-                qml.QSVT(
-                    UA=qml.H(0),
-                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                qp.QSVT(
+                    UA=qp.H(0),
+                    projectors=[qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.Hadamard(0), True): 2,
+                    (qp.T(0), True): 132,
+                    (qp.Hadamard(0), True): 2,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=2,
@@ -1457,18 +1455,18 @@ class TestToBloqEstimator:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 176,
-                    (qml.CNOT(wires=[0, 1]), True): 2,
+                    (qp.T(0), True): 176,
+                    (qp.CNOT(wires=[0, 1]), True): 2,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=1,
@@ -1476,36 +1474,36 @@ class TestToBloqEstimator:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 88,
-                    (qml.CNOT(wires=[0, 1]), True): 1,
+                    (qp.T(0), True): 88,
+                    (qp.CNOT(wires=[0, 1]), True): 1,
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.CNOT([0, 1]), True): 14,
-                    (qml.Hadamard(0), True): 9,
-                    (qml.T(0), True): 660,
-                    (qml.X(0), True): 2,
+                    (qp.Toffoli([0, 1, 2]), True): 8,
+                    (qp.CNOT([0, 1]), True): 14,
+                    (qp.Hadamard(0), True): 9,
+                    (qp.T(0), True): 660,
+                    (qp.X(0), True): 2,
                 },
             ),
             (
-                qml.StatePrep(
+                qp.StatePrep(
                     state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
                     wires=range(3),
                     normalize=True,
                 ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+                {(qp.CNOT([0, 1]), True): 6, (qp.T(0), True): 132},
             ),
         ],
     )
-    def test_build_call_graph(self, op, qml_call_graph):
+    def test_build_call_graph(self, op, qp_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph_estimator(op)
         assert dict(call_graph) == bloq_call_graph
@@ -1513,66 +1511,66 @@ class TestToBloqEstimator:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",
+            "qp_call_graph",
         ),
         [
             (
-                qml.Superposition(
+                qp.Superposition(
                     coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
                     bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
                     wires=[0, 1, 2],
                     work_wire=3,
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
-                    (qml.X([0]), True): 4,
-                    (qml.Toffoli([0, 1, 2]), True): 4,
-                    (qml.H(0), True): 6,
+                    (qp.T(0), True): 132,
+                    (qp.CNOT([0, 1]), True): 6,
+                    (qp.X([0]), True): 4,
+                    (qp.Toffoli([0, 1, 2]), True): 4,
+                    (qp.H(0), True): 6,
                 },
             ),
             (
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 7,
-                    (qml.CNOT([0, 1]), True): 32,
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 40,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (qp.X([0]), True): 7,
+                    (qp.CNOT([0, 1]), True): 32,
+                    (qp.Toffoli([0, 1, 2]), True): 8,
+                    (qp.H(0), True): 40,
+                    (qp.S(0), True): 6,
+                    (qp.Z(0), True): 3,
                 },
             ),
             (
-                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                qp.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 19,
-                    (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 62,
-                    (qml.Hadamard(0), True): 69,
-                    (qml.S(0), True): 6,
-                    (qml.Z(0), True): 3,
+                    (qp.X(0), True): 19,
+                    (qp.Toffoli([0, 1, 2]), True): 16,
+                    (qp.CNOT([0, 1]), True): 62,
+                    (qp.Hadamard(0), True): 69,
+                    (qp.S(0), True): 6,
+                    (qp.Z(0), True): 3,
                 },
             ),
             (
-                qml.QSVT(
-                    UA=qml.H(0),
-                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                qp.QSVT(
+                    UA=qp.H(0),
+                    projectors=[qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.Hadamard(0), True): 2,
+                    (qp.T(0), True): 132,
+                    (qp.Hadamard(0), True): 2,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=2,
@@ -1580,18 +1578,18 @@ class TestToBloqEstimator:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 176,
-                    (qml.CNOT(wires=[0, 1]), True): 2,
+                    (qp.T(0), True): 176,
+                    (qp.CNOT(wires=[0, 1]), True): 2,
                 },
             ),
             (
-                qml.TrotterizedQfunc(
+                qp.TrotterizedQfunc(
                     0.1,
                     *(0.12, -3.45),
                     qfunc=lambda time, theta, phi, wires, flip: (
-                        qml.RX(time * theta, wires[0]),
-                        qml.RY(time * phi, wires[1]),
-                        qml.CNOT(wires=wires[:2]) if flip else None,
+                        qp.RX(time * theta, wires[0]),
+                        qp.RY(time * phi, wires[1]),
+                        qp.CNOT(wires=wires[:2]) if flip else None,
                     ),
                     n=1,
                     order=1,
@@ -1599,36 +1597,36 @@ class TestToBloqEstimator:
                     flip=True,
                 ),
                 {
-                    (qml.T(0), True): 88,
-                    (qml.CNOT(wires=[0, 1]), True): 1,
+                    (qp.T(0), True): 88,
+                    (qp.CNOT(wires=[0, 1]), True): 1,
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.CNOT([0, 1]), True): 14,
-                    (qml.Hadamard(0), True): 9,
-                    (qml.T(0), True): 660,
-                    (qml.X(0), True): 2,
+                    (qp.Toffoli([0, 1, 2]), True): 8,
+                    (qp.CNOT([0, 1]), True): 14,
+                    (qp.Hadamard(0), True): 9,
+                    (qp.T(0), True): 660,
+                    (qp.X(0), True): 2,
                 },
             ),
             (
-                qml.StatePrep(
+                qp.StatePrep(
                     state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25],
                     wires=range(3),
                     normalize=True,
                 ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+                {(qp.CNOT([0, 1]), True): 6, (qp.T(0), True): 132},
             ),
         ],
     )
-    def test_to_bloq_call_graph(self, op, qml_call_graph):
+    def test_to_bloq_call_graph(self, op, qp_call_graph):
         """Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
+            bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
-        to_bloq_call_graph = qml.to_bloq(op, call_graph="estimator").call_graph()[1]
+        to_bloq_call_graph = qp.to_bloq(op, call_graph="estimator").call_graph()[1]
         assert bloq_call_graph == to_bloq_call_graph

@@ -89,23 +89,23 @@ class AmplitudeAmplification(Operation):
 
     .. code-block:: python
 
-        @qml.prod
+        @qp.prod
         def generator(wires):
             for wire in wires:
-                qml.Hadamard(wires=wire)
+                qp.Hadamard(wires=wire)
 
         U = generator(wires=range(3))
-        O = qml.FlipSign(2, wires=range(3))
+        O = qp.FlipSign(2, wires=range(3))
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
 
             generator(wires=range(3))
-            qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+            qp.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
 
-            return qml.probs(wires=range(3))
+            return qp.probs(wires=range(3))
 
     >>> print(np.round(circuit(),3))
     [0.013 0.013 0.91  0.013 0.013 0.013 0.013 0.013]

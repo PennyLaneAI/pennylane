@@ -19,7 +19,7 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.op_math.symbolic import Adjoint
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
@@ -40,22 +40,22 @@ from pennylane.exceptions import ResourcesUndefinedError
 
 def _circuit_w_expval(circ):
     circ()
-    return qml.expval(qml.Z(0))
+    return qp.expval(qp.Z(0))
 
 
 def _circuit_w_sample(circ):
     circ()
-    return qml.sample(wires=[0])
+    return qp.sample(wires=[0])
 
 
 def _circuit_w_probs(circ):
     circ()
-    return qml.probs()
+    return qp.probs()
 
 
 def _circuit_w_state(circ):
     circ()
-    return qml.state()
+    return qp.state()
 
 
 class DummyCNOT(ResourceOperator):
@@ -234,19 +234,19 @@ class TestEstimateResources:
     def test_estimate_with_unsupported_dispatch(self):
         """Test that a TypeError is raised when an unsupported type is passed to the estimate function."""
         with pytest.raises(TypeError, match="Could not obtain resources for workflow of type"):
-            estimate(({1, 2, 3}))
+            estimate({1, 2, 3})
 
     def test_estimate_qnode(self):
         """Test that a QNode can be estimated."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(precision):
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
             X()
             RX(precision=precision, wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         resources = estimate(circuit, gate_set={"Hadamard", "X", "RX"})(1e-3)
 
@@ -388,7 +388,7 @@ class TestEstimateResources:
         """Test that a ValueError is raised for unsupported objects in the queue."""
 
         def my_circuit():
-            qml.QueuingManager.append(0)  # Arbitrarily queue something
+            qp.QueuingManager.append(0)  # Arbitrarily queue something
 
         with pytest.raises(
             ValueError,
@@ -401,8 +401,8 @@ class TestEstimateResources:
         when processing a qfunc."""
 
         def my_circuit():
-            qml.Hadamard(0)
-            qml.PauliX(1)
+            qp.Hadamard(0)
+            qp.PauliX(1)
 
         actual_resources = estimate(my_circuit, gate_set={"Hadamard", "X"})()
 
@@ -421,7 +421,7 @@ class TestEstimateResources:
     def test_estimate_resources_from_pl_op_dispatch(self):
         """Test that the dispatch for PennyLane operators correctly maps to a
         ResourceOperator without further decomposition."""
-        op = qml.PauliX(0)
+        op = qp.PauliX(0)
 
         actual_resources = estimate(op)
 
@@ -508,10 +508,10 @@ class TestEstimateResources:
         """Test that the estimate function ignores measurement processes"""
 
         def circ():
-            qml.Hadamard(wires=[0])
-            qml.X(wires=[1])
-            qml.RX(1.23, wires=[0])
-            qml.CNOT(wires=[0, 1])
+            qp.Hadamard(wires=[0])
+            qp.X(wires=[1])
+            qp.RX(1.23, wires=[0])
+            qp.CNOT(wires=[0, 1])
 
         assert estimate(circ)() == estimate(circ_w_measurement)(circ)
 
@@ -525,7 +525,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_adj_RZ, decomp_type="adj")
 
         res = estimate(Adjoint(RZ(0.1, wires=0)), config=rc)
-        pl_res = estimate(qml.adjoint(qml.RZ(0.1, wires=0)), config=rc)
+        pl_res = estimate(qp.adjoint(qp.RZ(0.1, wires=0)), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(Z): 1})
         expected_resources = Resources(
@@ -546,7 +546,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_pow_RZ, decomp_type="pow")
 
         res = estimate(Pow(RZ(0.1, wires=0), pow_z=3), config=rc)
-        pl_res = estimate(qml.pow(qml.RZ(0.1, wires=0)), config=rc)
+        pl_res = estimate(qp.pow(qp.RZ(0.1, wires=0)), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(Hadamard): 2})
         expected_resources = Resources(
@@ -569,7 +569,7 @@ class TestEstimateResources:
         rc.set_decomp(RZ, custom_ctrl_RZ, decomp_type="ctrl")
 
         res = estimate(Controlled(RZ(0.1, wires=0), num_ctrl_wires=1, num_zero_ctrl=0), config=rc)
-        pl_res = estimate(qml.ctrl(qml.RZ(0.1, wires=0), control=1, control_values=0), config=rc)
+        pl_res = estimate(qp.ctrl(qp.RZ(0.1, wires=0), control=1, control_values=0), config=rc)
 
         expected_gates = defaultdict(int, {resource_rep(X): 3})
         expected_resources = Resources(

@@ -21,7 +21,7 @@ from copy import copy
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
 from pennylane.drawer._add_obj import (
@@ -40,12 +40,12 @@ from pennylane.tape import QuantumScript
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.ops.MidMeasure(0, meas_uid="1")
-default_mid_measure_2 = qml.ops.MidMeasure(0, meas_uid="2")
-default_mid_measure_3 = qml.ops.MidMeasure(0, meas_uid="3")
-default_measurement_value_1 = qml.ops.MeasurementValue([default_mid_measure_1], lambda v: v)
-default_measurement_value_2 = qml.ops.MeasurementValue([default_mid_measure_2], lambda v: v)
-default_measurement_value_3 = qml.ops.MeasurementValue([default_mid_measure_3], lambda v: v)
+default_mid_measure_1 = qp.ops.MidMeasure(0, meas_uid="1")
+default_mid_measure_2 = qp.ops.MidMeasure(0, meas_uid="2")
+default_mid_measure_3 = qp.ops.MidMeasure(0, meas_uid="3")
+default_measurement_value_1 = qp.ops.MeasurementValue([default_mid_measure_1], lambda v: v)
+default_measurement_value_2 = qp.ops.MeasurementValue([default_mid_measure_2], lambda v: v)
+default_measurement_value_3 = qp.ops.MeasurementValue([default_mid_measure_3], lambda v: v)
 cond_bit_map_1 = {default_mid_measure_1: 0}
 cond_bit_map_2 = {default_mid_measure_1: 0, default_mid_measure_2: 1}
 stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_mid_measure_3: 2}
@@ -54,19 +54,19 @@ stats_bit_map_1 = {default_mid_measure_1: 0, default_mid_measure_2: 1, default_m
 def get_conditional_op(mv, true_fn, *args, **kwargs):
     """Helper to get conditional operator."""
 
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.cond(mv, true_fn)(*args, **kwargs)
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.cond(mv, true_fn)(*args, **kwargs)
 
     return q.queue[0]
 
 
-with qml.queuing.AnnotatedQueue() as q_tape:
-    qml.RX(1.23456, wires=0)
-    qml.RY(2.3456, wires="a")
-    qml.RZ(3.4567, wires=1.234)
+with qp.queuing.AnnotatedQueue() as q_tape:
+    qp.RX(1.23456, wires=0)
+    qp.RY(2.3456, wires="a")
+    qp.RZ(3.4567, wires=1.234)
 
 
-tape = qml.tape.QuantumScript.from_queue(q_tape)
+tape = qp.tape.QuantumScript.from_queue(q_tape)
 
 
 def test_error_if_unsupported_object_in_tape():
@@ -74,12 +74,12 @@ def test_error_if_unsupported_object_in_tape():
 
     # pylint: disable=too-few-public-methods
     class DummyObj:
-        wires = qml.wires.Wires(2)
+        wires = qp.wires.Wires(2)
 
-    _tape = qml.tape.QuantumScript([DummyObj()], [])
+    _tape = qp.tape.QuantumScript([DummyObj()], [])
 
     with pytest.raises(NotImplementedError, match="unable to draw object"):
-        qml.drawer.tape_text(_tape)
+        qp.drawer.tape_text(_tape)
 
 
 class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -88,9 +88,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize(
         "op, out",
         [
-            (qml.PauliX(0), ["", "", "", ""]),
-            (qml.CNOT(wires=(0, 2)), ["╭", "│", "╰", ""]),
-            (qml.CSWAP(wires=(0, 2, 3)), ["╭", "│", "├", "╰"]),
+            (qp.PauliX(0), ["", "", "", ""]),
+            (qp.CNOT(wires=(0, 2)), ["╭", "│", "╰", ""]),
+            (qp.CSWAP(wires=(0, 2, 3)), ["╭", "│", "├", "╰"]),
         ],
     )
     def test_add_grouping_symbols(self, op, out):
@@ -126,9 +126,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_subroutine_mcm_grouping(self):
         """Unit test the _subroutine_mcm_grouping_symbols helper."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            return [2] + [qml.measure(w) for w in wires]
+            return [2] + [qp.measure(w) for w in wires]
 
         op = f.operator((0, 1, 2))
         config = _Config(
@@ -144,7 +144,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         "cond_op, args, kwargs, out, bit_map, mv, cur_layer",
         [
             (
-                qml.PauliX,
+                qp.PauliX,
                 [],
                 {"wires": 0},
                 ["─", "─║", "─║", "─║", "═╩"],
@@ -153,7 +153,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 1,
             ),
             (
-                qml.MultiRZ,
+                qp.MultiRZ,
                 [0.5],
                 {"wires": [0, 1]},
                 ["─", "─", "─║", "─║", "═╩"],
@@ -162,7 +162,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 1,
             ),
             (
-                qml.Toffoli,
+                qp.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
                 ["─", "─", "─", "─║", " ║", "═╝"],
@@ -171,7 +171,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 1,
             ),
             (
-                qml.Toffoli,
+                qp.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
                 ["─", "─", "─", "─║", "═╬", "═╝"],
@@ -180,7 +180,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 1,
             ),
             (
-                qml.Toffoli,
+                qp.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
                 ["─", "─", "─", "─║", "═╣", "═╩"],
@@ -232,17 +232,17 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         "mp, bit_map, out",
         [
             (
-                qml.sample([default_measurement_value_1]),
+                qp.sample([default_measurement_value_1]),
                 stats_bit_map_1,
                 [" "] * len(default_wire_map) + [" Sample[MCM]", " ", " "],
             ),
             (
-                qml.expval(default_measurement_value_1 * default_measurement_value_3),
+                qp.expval(default_measurement_value_1 * default_measurement_value_3),
                 stats_bit_map_1,
                 [" "] * len(default_wire_map) + ["╭<MCM>", "│", "╰<MCM>"],
             ),
             (
-                qml.counts(
+                qp.counts(
                     default_measurement_value_1
                     + default_measurement_value_2
                     - default_measurement_value_3
@@ -261,14 +261,14 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize(
         "op, out",
         [
-            (qml.expval(qml.PauliX(0)), ["<X>", "", "", ""]),
-            (qml.probs(wires=(0, 2)), ["╭Probs", "│", "╰Probs", ""]),
-            (qml.var(qml.PauliX(1)), ["", "Var[X]", "", ""]),
-            (qml.state(), ["State", "State", "State", "State"]),
-            (qml.sample(), ["Sample", "Sample", "Sample", "Sample"]),
-            (qml.purity(0), ["purity", "", "", ""]),
-            (qml.vn_entropy([2, 1]), ["", "╭vnentropy", "╰vnentropy", ""]),
-            (qml.mutual_info(3, 1), ["", "╭mutualinfo", "│", "╰mutualinfo"]),
+            (qp.expval(qp.PauliX(0)), ["<X>", "", "", ""]),
+            (qp.probs(wires=(0, 2)), ["╭Probs", "│", "╰Probs", ""]),
+            (qp.var(qp.PauliX(1)), ["", "Var[X]", "", ""]),
+            (qp.state(), ["State", "State", "State", "State"]),
+            (qp.sample(), ["Sample", "Sample", "Sample", "Sample"]),
+            (qp.purity(0), ["purity", "", "", ""]),
+            (qp.vn_entropy([2, 1]), ["", "╭vnentropy", "╰vnentropy", ""]),
+            (qp.mutual_info(3, 1), ["", "╭mutualinfo", "│", "╰mutualinfo"]),
         ],
     )
     def test_add_measurements(self, op, out):
@@ -281,7 +281,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_measurements_cache(self):
         """Test private _add_measurement function with a matrix cache."""
         cache = {"matrices": []}
-        op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        op = qp.expval(qp.Hermitian(np.eye(2), wires=0))
         config = _Config(
             wire_map={0: 0, 1: 1},
             bit_map=default_bit_map,
@@ -291,25 +291,25 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         )
         assert _add_measurement(op, ["", ""], config) == ["<𝓗(M0)>", ""]
 
-        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
+        assert qp.math.allclose(cache["matrices"][0], np.eye(2))
 
-        op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
+        op2 = qp.expval(qp.Hermitian(np.eye(2), wires=1))
         # new op with same matrix, should have same M0 designation
         assert _add_measurement(op2, ["", ""], config) == ["", "<𝓗(M0)>"]
 
     @pytest.mark.parametrize(
         "op, out",
         [
-            (qml.PauliX(0), ["─X", "─", "─", "─"]),
-            (qml.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
-            (qml.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
-            (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
-            (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
-            (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
-            (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
-            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
-            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
-            (qml.ctrl(qml.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
+            (qp.PauliX(0), ["─X", "─", "─", "─"]),
+            (qp.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
+            (qp.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
+            (qp.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
+            (qp.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
+            (qp.Barrier(), ["─||", "─||", "─||", "─||"]),
+            (qp.S(0) @ qp.T(0), ["─S@T", "─", "─", "─"]),
+            (qp.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
+            (qp.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
+            (qp.ctrl(qp.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
         ],
     )
     def test_add_obj(self, op, out):
@@ -346,7 +346,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         "cond_op, args, kwargs, out, bit_map, mv",
         [
             (
-                qml.MultiRZ,
+                qp.MultiRZ,
                 [0.5],
                 {"wires": [0, 1]},
                 ["╭MultiRZ", "╰MultiRZ", "─║", "─║", "═╩"],
@@ -354,7 +354,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 default_measurement_value_1,
             ),
             (
-                qml.Toffoli,
+                qp.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
                 ["╭●", "├●", "╰X", "─║", "═╩"],
@@ -362,7 +362,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
                 default_measurement_value_1,
             ),
             (
-                qml.PauliX,
+                qp.PauliX,
                 [],
                 {"wires": 1},
                 ["─", "─X", "─║", "─║", " ║", "═╝"],
@@ -388,9 +388,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_subroutine_op_with_output(self):
         """Test that classical wires are drawn for subroutines with mcm outputs."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            return [2] + [qml.measure(w) for w in wires]
+            return [2] + [qp.measure(w) for w in wires]
 
         op = f.operator((0, 1, 2))
         config = _Config(
@@ -406,9 +406,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize(
         "op, out",
         [
-            (qml.PauliY(1), ["─X", "─Y", "─", "─"]),
-            (qml.CNOT(wires=(1, 2)), ["─X", "╭●", "╰X", "─"]),
-            (qml.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭●", "╰RX"]),
+            (qp.PauliY(1), ["─X", "─Y", "─", "─"]),
+            (qp.CNOT(wires=(1, 2)), ["─X", "╭●", "╰X", "─"]),
+            (qp.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭●", "╰RX"]),
         ],
     )
     def test_add_second_op(self, op, out):
@@ -416,13 +416,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         config = _Config(
             wire_map=default_wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1
         )
-        start = _add_obj(qml.PauliX(0), ["─"] * 4, config)
+        start = _add_obj(qp.PauliX(0), ["─"] * 4, config)
         assert out == _add_obj(op, start, config)
 
     def test_add_obj_cache(self):
         """Test private _add_obj method functions with a matrix cache."""
         cache = {"matrices": []}
-        op1 = qml.QubitUnitary(np.eye(2), wires=0)
+        op1 = qp.QubitUnitary(np.eye(2), wires=0)
         config = _Config(
             wire_map={0: 0, 1: 1},
             bit_map=default_bit_map,
@@ -432,13 +432,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         )
         assert _add_obj(op1, ["", ""], config) == ["U(M0)", ""]
 
-        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
-        op2 = qml.QubitUnitary(np.eye(2), wires=1)
+        assert qp.math.allclose(cache["matrices"][0], np.eye(2))
+        op2 = qp.QubitUnitary(np.eye(2), wires=1)
         assert _add_obj(op2, ["", ""], config) == ["", "U(M0)"]
 
     @pytest.mark.parametrize("wires", [tuple(), (0, 1), (0, 1, 2, 3)])
     @pytest.mark.parametrize("wire_map", [default_wire_map, {0: 0, 1: 1}])
-    @pytest.mark.parametrize("cls, label", [(qml.GlobalPhase, "GlobalPhase"), (qml.Identity, "I")])
+    @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
     def test_add_global_op(self, wires, wire_map, cls, label):
         """Test that adding a global op works as expected."""
         data = [0.5124][: cls.num_params]
@@ -463,12 +463,12 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         ],
     )
     @pytest.mark.parametrize("wire_map", [default_wire_map, {i: i for i in range(6)}])
-    @pytest.mark.parametrize("cls, label", [(qml.GlobalPhase, "GlobalPhase"), (qml.Identity, "I")])
+    @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
     def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
         """Test that adding a controlled global op works as expected."""
         expected = copy(expected)
         data = [0.5124][: cls.num_params]
-        op = qml.ctrl(cls(*data, wires=wires), control=control_wires)
+        op = qp.ctrl(cls(*data, wires=wires), control=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]
@@ -547,10 +547,10 @@ class TestDecimals:
     def test_decimals_multiparameters(self):
         """Tests decimals also displays parameters when the operation has multiple parameters."""
 
-        with qml.queuing.AnnotatedQueue() as q_tape_rot:
-            qml.Rot(1.2345, 2.3456, 3.4566, wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape_rot:
+            qp.Rot(1.2345, 2.3456, 3.4566, wires=0)
 
-        tape_rot = qml.tape.QuantumScript.from_queue(q_tape_rot)
+        tape_rot = qp.tape.QuantumScript.from_queue(q_tape_rot)
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_rot, decimals=2) == expected
 
@@ -566,10 +566,10 @@ class TestDecimals:
         """Test torch parameters in tape display as normal numbers."""
         import torch
 
-        with qml.queuing.AnnotatedQueue() as q_tape_torch:
-            qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape_torch:
+            qp.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
-        tape_torch = qml.tape.QuantumScript.from_queue(q_tape_torch)
+        tape_torch = qp.tape.QuantumScript.from_queue(q_tape_torch)
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_torch, decimals=2) == expected
 
@@ -578,10 +578,10 @@ class TestDecimals:
         """Test tensorflow parameters display as normal numbers."""
         import tensorflow as tf
 
-        with qml.queuing.AnnotatedQueue() as q_tape_tf:
-            qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape_tf:
+            qp.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
 
-        tape_tf = qml.tape.QuantumScript.from_queue(q_tape_tf)
+        tape_tf = qp.tape.QuantumScript.from_queue(q_tape_tf)
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_tf, decimals=2) == expected
 
@@ -590,10 +590,10 @@ class TestDecimals:
         """Test jax parameters in tape display as normal numbers."""
         import jax.numpy as jnp
 
-        with qml.queuing.AnnotatedQueue() as q_tape_jax:
-            qml.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
+        with qp.queuing.AnnotatedQueue() as q_tape_jax:
+            qp.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
 
-        tape_jax = qml.tape.QuantumScript.from_queue(q_tape_jax)
+        tape_jax = qp.tape.QuantumScript.from_queue(q_tape_jax)
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_jax, decimals=2) == expected
 
@@ -603,15 +603,15 @@ class TestMaxLength:
 
     def test_max_length_default(self):
         """Test max length defaults to 100."""
-        with qml.queuing.AnnotatedQueue() as q_tape_ml:
+        with qp.queuing.AnnotatedQueue() as q_tape_ml:
             for _ in range(50):
-                qml.PauliX(0)
-                qml.PauliY(1)
+                qp.PauliX(0)
+                qp.PauliY(1)
 
             for _ in range(3):
-                qml.sample()
+                qp.sample()
 
-        tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
+        tape_ml = qp.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml)
 
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
@@ -622,15 +622,15 @@ class TestMaxLength:
     def test_setting_max_length(self, ml):
         """Test several custom max_length parameters change the wrapping length."""
 
-        with qml.queuing.AnnotatedQueue() as q_tape_ml:
+        with qp.queuing.AnnotatedQueue() as q_tape_ml:
             for _ in range(50):
-                qml.PauliX(0)
-                qml.PauliY(1)
+                qp.PauliX(0)
+                qp.PauliY(1)
 
             for _ in range(3):
-                qml.sample()
+                qp.sample()
 
-        tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
+        tape_ml = qp.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml, max_length=ml)
 
         assert max(len(s) for s in out.split("\n")) <= ml
@@ -638,83 +638,83 @@ class TestMaxLength:
 
 single_op_tests_data = [
     (
-        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
+        qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
         # pylint:disable=no-member
-        qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
+        qp.ops.op_math.Controlled(qp.PauliY(3), (0, 1, 2), [0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
     ),
-    (qml.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
-    (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
-    (qml.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
-    (qml.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
+    (qp.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
+    (qp.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qp.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
+    (qp.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
     (
-        qml.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
+        qp.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
         "0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  ",
     ),
-    (qml.QubitUnitary(qml.numpy.eye(4), wires=(0, 1)), "0: ─╭U(M0)─┤  \n1: ─╰U(M0)─┤  "),
-    (qml.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
-    (qml.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
+    (qp.QubitUnitary(qp.numpy.eye(4), wires=(0, 1)), "0: ─╭U(M0)─┤  \n1: ─╰U(M0)─┤  "),
+    (qp.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
+    (qp.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
     (
-        qml.StatePrep([0, 1, 0, 0], wires=(0, 1)),
+        qp.StatePrep([0, 1, 0, 0], wires=(0, 1)),
         "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
     ),
-    (qml.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
+    (qp.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
-        qml.GroverOperator(wires=(0, 1, 2)),
+        qp.GroverOperator(wires=(0, 1, 2)),
         "0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  ",
     ),
     (
-        qml.adjoint(qml.RX(1.234, wires=0)),
+        qp.adjoint(qp.RX(1.234, wires=0)),
         "0: ──RX(1.23)†─┤  ",
     ),
     (
-        qml.RX(1.234, wires=0) ** -1,
+        qp.RX(1.234, wires=0) ** -1,
         "0: ──RX(1.23)⁻¹─┤  ",
     ),
-    (qml.expval(qml.PauliZ(0)), "0: ───┤  <Z>"),
-    (qml.var(qml.PauliZ(0)), "0: ───┤  Var[Z]"),
-    (qml.probs(wires=0), "0: ───┤  Probs"),
-    (qml.probs(op=qml.PauliZ(0)), "0: ───┤  Probs[Z]"),
-    (qml.sample(wires=0), "0: ───┤  Sample"),
-    (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
+    (qp.expval(qp.PauliZ(0)), "0: ───┤  <Z>"),
+    (qp.var(qp.PauliZ(0)), "0: ───┤  Var[Z]"),
+    (qp.probs(wires=0), "0: ───┤  Probs"),
+    (qp.probs(op=qp.PauliZ(0)), "0: ───┤  Probs[Z]"),
+    (qp.sample(wires=0), "0: ───┤  Sample"),
+    (qp.sample(op=qp.PauliX(0)), "0: ───┤  Sample[X]"),
     (
-        qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)),
+        qp.expval(0.1 * qp.PauliX(0) @ qp.PauliY(1)),
         "0: ───┤ ╭<(0.10*X)@Y>\n1: ───┤ ╰<(0.10*X)@Y>",
     ),
     (
-        qml.expval(
-            0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
+        qp.expval(
+            0.1 * qp.PauliX(0) + 0.2 * qp.PauliY(1) + 0.3 * qp.PauliZ(0) + 0.4 * qp.PauliZ(1)
         ),
         "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
-    (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
-    (qml.ctrl(qml.CNOT(wires=[1, 2]), control=0), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qp.ctrl(qp.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qp.ctrl(qp.CNOT(wires=[1, 2]), control=0), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
     (
-        qml.ctrl(qml.CRZ(0.2, wires=[1, 2]), control=[3, 0]),
+        qp.ctrl(qp.CRZ(0.2, wires=[1, 2]), control=[3, 0]),
         "3: ─╭●────────┤  \n0: ─├●────────┤  \n1: ─├●────────┤  \n2: ─╰RZ(0.20)─┤  ",
     ),
     (
-        qml.ctrl(qml.CH(wires=[0, 3]), control=[2, 1], control_values=[False, True]),
+        qp.ctrl(qp.CH(wires=[0, 3]), control=[2, 1], control_values=[False, True]),
         "2: ─╭○─┤  \n1: ─├●─┤  \n0: ─├●─┤  \n3: ─╰H─┤  ",
     ),
     (
-        qml.ctrl(
-            qml.ctrl(qml.CY(wires=[3, 4]), control=[1, 2], control_values=[True, False]),
+        qp.ctrl(
+            qp.ctrl(qp.CY(wires=[3, 4]), control=[1, 2], control_values=[True, False]),
             control=0,
             control_values=[False],
         ),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─├●─┤  \n4: ─╰Y─┤  ",
     ),
     (
-        qml.TemporaryAND([3, 0, 2], control_values=(1, 0)),
+        qp.TemporaryAND([3, 0, 2], control_values=(1, 0)),
         "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰⊕─┤  ",
     ),
     (
-        qml.adjoint(qml.TemporaryAND([3, 0, 2], control_values=(0, 1))),
+        qp.adjoint(qp.TemporaryAND([3, 0, 2], control_values=(0, 1))),
         "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ──⊕╯─┤  ",
     ),
 ]
@@ -724,10 +724,10 @@ single_op_tests_data = [
 def test_single_ops(op, expected):
     """Tests a variety of different single operation tapes render as expected."""
 
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.apply(op)
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.apply(op)
 
-    _tape = qml.tape.QuantumScript.from_queue(q)
+    _tape = qp.tape.QuantumScript.from_queue(q)
     assert tape_text(_tape, decimals=2, show_matrices=False) == expected
 
 
@@ -737,46 +737,46 @@ class TestLayering:
     def test_adjacent_ops(self):
         """Test non-blocking gates end up on same layer."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(0)
-            qml.PauliX(1)
-            qml.PauliX(2)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliX(0)
+            qp.PauliX(1)
+            qp.PauliX(2)
 
-        _tape = qml.tape.QuantumScript.from_queue(q)
+        _tape = qp.tape.QuantumScript.from_queue(q)
         assert tape_text(_tape) == "0: ──X─┤  \n1: ──X─┤  \n2: ──X─┤  "
 
     def test_blocking_ops(self):
         """Test single qubit gates on same wire line up."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(0)
-            qml.PauliX(0)
-            qml.PauliX(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliX(0)
+            qp.PauliX(0)
+            qp.PauliX(0)
 
-        _tape = qml.tape.QuantumScript.from_queue(q)
+        _tape = qp.tape.QuantumScript.from_queue(q)
         assert tape_text(_tape) == "0: ──X──X──X─┤  "
 
     def test_blocking_multiwire_gate(self):
         """Tests gate gets blocked by multi-wire gate."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(0)
-            qml.IsingXX(1.2345, wires=(0, 2))
-            qml.PauliX(1)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliX(0)
+            qp.IsingXX(1.2345, wires=(0, 2))
+            qp.PauliX(1)
 
-        _tape = qml.tape.QuantumScript.from_queue(q)
+        _tape = qp.tape.QuantumScript.from_queue(q)
         expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
 
         assert tape_text(_tape, wire_order=[0, 1, 2]) == expected
 
     def test_multiple_elbows(self):
         """Test that multiple elbows are drawn correctly."""
-        _tape = qml.tape.QuantumScript(
+        _tape = qp.tape.QuantumScript(
             [
-                qml.TemporaryAND(["a", "b", "c"]),
-                qml.adjoint(qml.TemporaryAND(["f", "d", "e"])),
-                qml.adjoint(qml.TemporaryAND(["a", "d", "b"], control_values=(0, 0))),
-                qml.TemporaryAND(["e", "h", "f"], control_values=(0, 1)),
+                qp.TemporaryAND(["a", "b", "c"]),
+                qp.adjoint(qp.TemporaryAND(["f", "d", "e"])),
+                qp.adjoint(qp.TemporaryAND(["a", "d", "b"], control_values=(0, 0))),
+                qp.TemporaryAND(["e", "h", "f"], control_values=(0, 1)),
             ]
         )
         expected = (
@@ -795,9 +795,9 @@ class TestLayering:
         assert out == expected
 
 
-tape_matrices = qml.tape.QuantumScript(
-    ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(np.eye(2), wires=0)],
-    measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
+tape_matrices = qp.tape.QuantumScript(
+    ops=[qp.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qp.QubitUnitary(np.eye(2), wires=0)],
+    measurements=[qp.expval(qp.Hermitian(np.eye(2), wires=0))],
 )
 
 
@@ -842,15 +842,15 @@ def test_nested_tapes():
     """Test nested tapes inside the qnode."""
 
     def circ():
-        with qml.tape.QuantumTape():
-            qml.PauliX(0)
-            with qml.tape.QuantumTape():
-                qml.PauliY(0)
-        with qml.tape.QuantumTape():
-            qml.PauliZ(0)
-            with qml.tape.QuantumTape():
-                qml.PauliX(0)
-        return qml.expval(qml.PauliZ(0))
+        with qp.tape.QuantumTape():
+            qp.PauliX(0)
+            with qp.tape.QuantumTape():
+                qp.PauliY(0)
+        with qp.tape.QuantumTape():
+            qp.PauliZ(0)
+            with qp.tape.QuantumTape():
+                qp.PauliX(0)
+        return qp.expval(qp.PauliZ(0))
 
     expected = (
         "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
@@ -860,4 +860,4 @@ def test_nested_tapes():
         "Tape:3\n0: ──X─┤  "
     )
 
-    assert qml.draw(circ)() == expected
+    assert qp.draw(circ)() == expected

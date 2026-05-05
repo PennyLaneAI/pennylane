@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import (
     FermiA,
@@ -756,6 +756,22 @@ class TestFermiSentence:
         assert copy_fs is not fs
         assert deep_copy_fs is not fs
 
+    def test_prune(self):
+        """Test that prune removes terms in the FermiSentence with coefficient less than the
+        threshold."""
+        un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+
+        expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+        expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
+        expected_simplified_fs2 = FermiSentence({fw3: 1})
+
+        un_simplified_fs.prune()
+        assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
+        un_simplified_fs.prune(tol=1e-2)
+        assert un_simplified_fs == expected_simplified_fs1
+        un_simplified_fs.prune(tol=1e-1)
+        assert un_simplified_fs == expected_simplified_fs2
+
     def test_simplify(self):
         """Test that simplify removes terms in the FermiSentence with coefficient less than the
         threshold."""
@@ -1256,7 +1272,7 @@ class TestFermiSentenceArithmetic:
 
     def test_to_string_type(self):
         """Test if to_string throws error if wrong type is given."""
-        pl_op = qml.X(0)
+        pl_op = qp.X(0)
         with pytest.raises(ValueError, match=f"fermi_op must be a FermiWord, got: {type(pl_op)}"):
             _to_string(pl_op)
 
