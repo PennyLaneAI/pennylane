@@ -62,7 +62,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     .. code-block:: python
 
         import pennylane as qp
-        import jax.numpy as jnp
+        import pennyjax.numpy as jnp
 
         dev = qp.device("lightning.qubit", wires=2)
 

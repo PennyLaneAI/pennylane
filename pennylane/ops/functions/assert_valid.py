@@ -434,7 +434,7 @@ def _check_pytree(op):
             "metadata and data must be able to reproduce the original operation"
         ) from e
     try:
-        import jax
+        import pennyjax as jax
     except ImportError:
         return
     leaves, struct = jax.tree_util.tree_flatten(op)
@@ -451,7 +451,7 @@ def _check_capture(op):
     if isinstance(op, qp.templates.SubroutineOp):
         return
     try:
-        import jax
+        import pennyjax as jax
     except ImportError:
         return
 

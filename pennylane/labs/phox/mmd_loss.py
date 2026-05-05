@@ -17,10 +17,10 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
 
-import jax
-import jax.numpy as jnp
+import pennyjax as jax
+import pennyjax.numpy as jnp
 import numpy as np
-from jax.typing import ArrayLike
+from pennyjax.typing import ArrayLike
 
 from .expval_functions import CircuitConfig, build_expval_func
 

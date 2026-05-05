@@ -118,7 +118,7 @@ def _create_pauli_measure_primitive():
     """Create a primitive corresponding to a Pauli product measurement."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
+    import pennyjax as jax
 
     from pennylane.capture.custom_primitives import QpPrimitive
 

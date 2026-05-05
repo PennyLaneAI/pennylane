@@ -16,10 +16,10 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import jax
-import jax.numpy as jnp
-from jax.experimental import sparse
-from jax.tree_util import register_pytree_node_class
+import pennyjax as jax
+import pennyjax.numpy as jnp
+from pennyjax.experimental import sparse
+from pennyjax.tree_util import register_pytree_node_class
 
 from .hardware_hamiltonian import HardwareHamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian

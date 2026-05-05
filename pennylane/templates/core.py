@@ -55,7 +55,7 @@ from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("pennyjax") is not None
 
 
 @dataclass(frozen=True)
@@ -273,7 +273,7 @@ def _default_setup_inputs(*args, **kwargs):
 @lru_cache
 def _get_array_types():
     if has_jax:
-        import jax  # pylint: disable=import-outside-toplevel
+        import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
         return (jax.numpy.ndarray, np.ndarray)
     return (np.ndarray,)
@@ -823,7 +823,7 @@ class Subroutine:
         for wire_argname in self.wire_argnames:
             register = _setup_wires(bound_args.arguments[wire_argname])
             if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
+                import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # don't stack if already a jax array
