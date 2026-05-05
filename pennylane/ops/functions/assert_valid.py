@@ -65,11 +65,25 @@ def _check_decomposition(op, skip_wire_mapping):
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
         assert op not in decomp, "an operator should not be included in its own decomposition"
+        compute_decomp_msg = "decomposition must match compute_decomposition"
+        queue_msg = "decomposition must match queued operations"
+        assert len(decomp) == len(compute_decomp), compute_decomp_msg
+        assert len(decomp) == len(processed_queue), queue_msg
 
         for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue, strict=True):
-            assert o1 == o2, "decomposition must match compute_decomposition"
-            assert o1 == o3, "decomposition must match queued operations"
-            assert isinstance(o1, qp.operation.Operator), "decomposition must contain operators"
+            if isinstance(o1, qp.ops.MidMeasure):
+                for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
+                    assert isinstance(other_op, qp.ops.MidMeasure), msg
+                    assert o1.wires == other_op.wires, msg
+                    assert o1.reset == other_op.reset, msg
+                    assert o1.postselect == other_op.postselect, msg
+            else:
+                assert isinstance(o1, qp.operation.Operator), "decomposition must contain operators"
+                for other_op, msg in [(o2, compute_decomp_msg), (o3, queue_msg)]:
+                    try:
+                        assert_equal(o1, other_op)
+                    except AssertionError as e:
+                        raise AssertionError(msg) from e
 
         if skip_wire_mapping:
             return
@@ -166,6 +180,39 @@ def _check_reconstructor(op):
     qp.assert_equal(reconstructed_op, pow_op)
 
 
+def _assert_counts_match(counts_0, counts_1):
+    if counts_0 == counts_1:
+        return
+
+    miscounts = [
+        (op, val, counts_0[op])
+        for op, val in counts_1.items()
+        if op in counts_0 and val != counts_0[op]
+    ]
+    if miscounts:
+        op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
+        miscounts_str = (
+            f"\nThe numbers are off for following ops:"
+            f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
+        )
+        miscounts_str += "\n".join(
+            f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
+            for op, val0, val1 in miscounts
+        )
+    else:
+        miscounts_str = ""
+    assertion_error_string = (
+        f"\nGate counts expected from resource function:\n{counts_0}"
+        f"\nActual gate counts:\n{dict(counts_1)}"
+        f"{miscounts_str}"
+        "\nMissing entirely in gate counts from resource function:\n"
+        f"{[op for op in counts_1 if op not in counts_0]}\n"
+        "Missing entirely in actual gate counts:\n"
+        f"{[op for op in counts_0 if op not in counts_1]}"
+    )
+    raise AssertionError(assertion_error_string)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -198,10 +245,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        assert non_zero_gate_counts == actual_gate_counts, (
-            f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
-            f"\nActual gate counts:\n{dict(actual_gate_counts)}"
-        )
+        _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.

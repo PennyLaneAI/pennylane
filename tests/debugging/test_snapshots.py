@@ -106,10 +106,10 @@ class TestSnapshotTape:
         _, fn_no_meas = qp.snapshots(tape_no_meas)
 
         expected_keys.remove("execution_results")
-        assert "snapshot_tags" in fn.keywords
+        assert "snapshot_tags" in fn_no_meas.keywords
         assert len(fn_no_meas.keywords["snapshot_tags"]) == num_snapshots
         assert all(key in fn_no_meas.keywords["snapshot_tags"] for key in expected_keys)
-        assert fn(["a", 1, 2]) == {
+        assert fn_no_meas(["a", 1, 2]) == {
             0: "a",
             "very_important_state": 1,
             2: 2,
