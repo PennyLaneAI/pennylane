@@ -91,7 +91,7 @@ class TemporaryAND(Operation):
     >>> print(circuit())
     [[1 1 0 1]]
 
-    There also is a decomposition of ``TemporaryAND`` into a standard ``Toffoli`` gate, in order
+    There is also a decomposition of ``TemporaryAND`` into a standard ``Toffoli`` gate, in order
     to provide a compilation path into gate sets like Clifford + Toffoli:
 
     .. code-block:: python
