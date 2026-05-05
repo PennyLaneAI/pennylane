@@ -54,7 +54,10 @@
 * :func:`~.specs` now displays a table which allows you to easily see how circuit resources evolve with each stage of compilation!
   This functionality is available when using :func:`~.specs` pass-by-pass with Catalyst (e.g. ``level="all"``),
   where printing the returned :class:`~.resource.CircuitSpecs` object dislays a table detailing information at each requested level.
+  In addition, :func:`~.specs` now supports setting ``level="user"`` for workflows compiled with :func:`~.qjit`,
+  returning circuit specifications after all user-specified transforms have been applied.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
+  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
 
   ```python
   @qp.qjit
@@ -92,13 +95,33 @@
   - probs(all wires) |  1 |  1 |  1
   ```
 
+  We can also observe the specifications after all user-applied transforms using ``level="user"``:
+
+  ```pycon
+  >>> print(qp.specs(circuit, level="user")())
+  Device: lightning.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: merge-rotations
+
+  Wire allocations: 2
+  Total gates: 2
+  Gate counts:
+  - PauliX: 1
+  - RX: 1
+  Measurements:
+  - probs(all wires): 1
+  Depth: Not computed
+  ```
+
 * When inspecting a circuit with an integer ``level`` argument in :func:`~.specs` or :func:`~.draw`,
-  markers placed in a :class:`~.CompilePipeline` are now accessible exclusively via their ``label``
+  ``level`` integers correspond to stages of compilation and are now unaffected by the use of markers,
+  so you can add them as you like without needing to track shifting ``level`` values.
+  Markers placed in a :class:`~.CompilePipeline` are now accessible exclusively via their ``label``
   rather than a ``level`` integer, making inspection more intuitive.
-  ``level`` integers now corespond to stages of compilation and are unaffected by the use of markers.
   In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
   and the pipeline's string representation now displays both transforms and markers.
-  The `CompilePipeline` object also now has an improved display
+  The :class:`~.CompilePipeline` object also now has an improved display,
   with updated ``__str__``, ``__repr__`` and ``_ipython_display_`` methods.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
@@ -142,27 +165,11 @@
   0: ──X─┤  Probs
   ```
 
-* :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
-  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
-
-* :func:`~.specs` can now return measurement information for :func:`~.qjit` workloads when using ``level="device"``.
-  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
-
-* When using :func:`~.specs` with Catalyst and with multiple levels,
-  the returned :class:`~.resource.CircuitSpecs` will no longer display a
-  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
-  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
-  In scenarios with at least one tape transform,
-  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
-  is the level after all tape transforms but before the first MLIR pass.
-  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
-  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
-
 * :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
-  @qp.qjit(target="mlir")
+  @qp.qjit
   @qp.transforms.to_ppr
   @qp.qnode(qp.device("null.qubit", wires=2))
   def circuit():
@@ -174,7 +181,7 @@
   ```
 
   ```pycon
-  >>> print(qp.specs(circuit, level=1)())
+  >>> print(qp.specs(circuit, level="user")())
   Device: null.qubit
   Device wires: 2
   Shots: Shots(total=None)
@@ -194,10 +201,23 @@
 
   ```
 
-* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
-  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
+* :func:`~.specs` has been upgraded with significantly faster processing of large workflows with many gates or measurements,
+  for :func:`~.qjit` compiled workflows in pass-by-pass mode.
+  This is achieved using Catalyst's ``ResourceAnalysis`` pass behind the scenes, improving upon the former implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
 
+* :func:`~.specs` now returns measurement information for :func:`~.qjit` workloads when using ``level="device"``.
+  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
+
+* When using :func:`~.specs` pass-by-pass with Catalyst,
+  the returned :class:`~.resource.CircuitSpecs` will no longer display a
+  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
+  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
+  In scenarios with at least one tape transform,
+  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
+  is the level after all tape transforms but before the first MLIR pass.
+  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
 
 <h4>QSVT Angle Solver 📐</h4>
 
