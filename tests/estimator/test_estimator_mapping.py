@@ -98,7 +98,7 @@ class TestMapToResourceOp:
             (qp.GlobalPhase(0), re_ops.GlobalPhase()),
             (
                 qp.BasisState([0, 1, 0], wires=[0, 1, 2]),
-                re_temps.BasisState(num_wires=3, wires=[0, 1, 2]),
+                re_ops.BasisState(num_wires=3, wires=[0, 1, 2]),
             ),
             (
                 qp.BasisEmbedding([0, 1, 0], wires=[0, 1, 2]),

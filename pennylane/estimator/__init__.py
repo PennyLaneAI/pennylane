@@ -47,6 +47,7 @@ from .ops.qubit import (
     MultiRZ,
     PauliRot,
     SingleExcitation,
+    BasisState,
     QubitUnitary,
     PCPhase,
 )
@@ -78,7 +79,6 @@ from .templates import (
     IQP,
     HybridQRAM,
     SelectOnlyQRAM,
-    BasisState,
     BasisEmbedding,
     BBQRAM,
     PhaseGradient,
