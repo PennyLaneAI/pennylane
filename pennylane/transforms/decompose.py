@@ -511,10 +511,14 @@ def decompose(
             )
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=0))())
-    0: ──H─╭QuantumPhaseEstimation─┤
-    1: ────├QuantumPhaseEstimation─┤
-    2: ────├QuantumPhaseEstimation─┤
-    3: ────╰QuantumPhaseEstimation─┤
+    0: ──H─╭QuantumPhaseEstimation(M0)─┤
+    1: ────├QuantumPhaseEstimation(M0)─┤
+    2: ────├QuantumPhaseEstimation(M0)─┤
+    3: ────╰QuantumPhaseEstimation(M0)─┤
+    <BLANKLINE>
+    M0 =
+    [[0.877...+0.j         0.        -0.479...j]
+     [0.        -0.479...j 0.877...+0.j        ]]
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
