@@ -77,7 +77,7 @@ class GateSet(Mapping):
 
     If not provided, weights default to ``1``:
 
-    >>> print("\n".join(f"{k}={v}" for k, v in gateset.items()))
+    >>> print('\n'.join(f'{k}={v}' for k, v in gateset.items()))
     RX=1.0
     PauliX=1.0
     Adjoint(RX)=1.0
