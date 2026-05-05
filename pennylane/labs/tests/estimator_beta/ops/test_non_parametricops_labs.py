@@ -85,7 +85,7 @@ class TestHadamard:
             num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
         )
 
-        for r, e in zip(result, expected_res):
+        for r, e in zip(result, expected_res, strict=True):
             if hasattr(r, "equal"):
                 assert r.equal(e)
             else:
@@ -236,7 +236,7 @@ class TestHadamard:
             num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_ctrl_values
         )
 
-        for r, e in zip(result, expected_res):
+        for r, e in zip(result, expected_res, strict=True):
             if hasattr(r, "equal"):
                 assert r.equal(e)
             else:

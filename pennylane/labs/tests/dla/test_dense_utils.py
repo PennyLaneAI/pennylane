@@ -206,7 +206,7 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
                 e.simplify()
                 assert isinstance(_op, PauliSentence)
@@ -214,7 +214,7 @@ class TestPauliDecompose:
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)
                 assert qp.equal(_op, e)
 
@@ -274,7 +274,7 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
                 e.simplify()
                 assert isinstance(_op, PauliSentence)
@@ -282,7 +282,7 @@ class TestPauliDecompose:
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)
                 assert qp.equal(_op, e)
 

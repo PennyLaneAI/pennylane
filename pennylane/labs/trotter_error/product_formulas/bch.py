@@ -309,7 +309,7 @@ def _remove_redundancies(
             if len(x) < len(y):
                 return True
 
-            for a, b in zip(x, y):
+            for a, b in zip(x, y, strict=False):
                 if a == b:
                     continue
 

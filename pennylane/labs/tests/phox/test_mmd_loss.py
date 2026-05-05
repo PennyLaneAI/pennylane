@@ -49,7 +49,7 @@ def _iqp_probs_pennylane(generators, params, n_qubits):
     def circuit():
         for i in range(n_qubits):
             qp.Hadamard(i)
-        for param, gen in zip(params, generators):
+        for param, gen in zip(params, generators, strict=True):
             qp.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
             qp.Hadamard(i)
@@ -73,7 +73,7 @@ def _iqp_expval_pennylane(generators, params, obs_ints, n_qubits):
     def circuit():
         for i in range(n_qubits):
             qp.Hadamard(i)
-        for param, gen in zip(params, generators):
+        for param, gen in zip(params, generators, strict=True):
             qp.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
             qp.Hadamard(i)

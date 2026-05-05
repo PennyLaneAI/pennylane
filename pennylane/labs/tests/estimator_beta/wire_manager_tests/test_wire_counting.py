@@ -380,7 +380,7 @@ class TestProcessCircuitLst:
         actual_processed_circ, actual_circ_wires = _process_circuit_lst(circ)
 
         assert actual_circ_wires == expected_circ_wires
-        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ):
+        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ, strict=True):
             assert (
                 elem1[0].equal(elem2[0])
                 if isinstance(elem1[0], MarkClean)
