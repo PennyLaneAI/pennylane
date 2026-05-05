@@ -24,3 +24,7 @@
   [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
 
 <h3>Contributors ✍️</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Daniel Casota.
