@@ -672,28 +672,9 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Removed all of the resource estimation functionality from the `labs.resource_estimation`
-  module. Users can now directly access a more stable version of this functionality using the
-  `estimator` module. All experimental development of resource estimation
-  will be added to `labs.estimator_beta`.
-  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
-
-* The integration test for computing perturbation error of a compressed double-factorized (CDF)
-  Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
-  a more reliable reference error.
-  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
-
-* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
-  operations in ``labs.estimator_beta`` to get optimal numbers.
-  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
-
-* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
-  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
-  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
-
-* Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
-  operations in ``labs.estimator_beta`` to get optimal numbers.
-  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
+* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
+  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
 * Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
@@ -708,10 +689,6 @@
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
 
-* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
-  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
-  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
-
 * Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
   decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
   [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
@@ -720,10 +697,18 @@
   - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
   - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
 
-* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
-  for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
-  Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
-  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
+
+* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
+  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
+  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
+
+* Added alternate controlled decompositions for :class:`~.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot`
+  and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
 
 * Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
   and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
@@ -732,6 +717,23 @@
 * Added various alternate resource decomposition functions for operators which make use of the phase
   gradient trick to accurately track auxiliary qubits using the new qubit management features.
   [(#9391)](https://github.com/PennyLaneAI/pennylane/pull/9391)
+
+* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/)
+  :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp` for :class:`~.RZ`
+  and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
+  Their outputs can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
+  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+
+* The integration test for computing perturbation error of a compressed double-factorized (CDF)
+  Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
+  a more reliable reference error.
+  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
+* Removed existing resource estimation functionality from the `labs.resource_estimation`
+  module. Users can now directly access a more stable version of this functionality using the
+  :mod:`~.estimator` module. All experimental development of resource estimation
+  will be added to `labs.estimator_beta`.
+  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
 <h3>Breaking changes 💔</h3>
 
