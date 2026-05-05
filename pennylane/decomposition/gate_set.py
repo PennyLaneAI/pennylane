@@ -72,7 +72,8 @@ class GateSet(Mapping):
 
     Weights can also be provided for use in calculating costs and choosing optimal decompositions:
 
-    >>> weighted_gateset = GateSet({qp.I: 0, qp.RX: 1, qp.CNOT: 3})
+    >>> GateSet({qp.I: 0, qp.RX: 1, qp.CNOT: 3})
+    GateSet({Identity=0, RX, CNOT=3})
 
     If not provided, weights default to ``1``:
 
