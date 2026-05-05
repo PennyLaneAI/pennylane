@@ -33,6 +33,33 @@ from pennylane.operation import Operation
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
 
+    def test_all_operators_with_resource_ops_mapped(self):
+        """Test that everything with both an Operator and a ResourceOperator version
+        have a registered mapping.  Bypasses Qubitization and GQSP for the moment."""
+
+        special_cases = {"GQSP", "Qubitization", "QSVT"}
+
+        for estimator_entry in dir(qp.estimator):
+            estimator_val = getattr(qp.estimator, estimator_entry)
+
+            if (
+                estimator_entry not in special_cases
+                and isinstance(estimator_val, type)
+                and issubclass(estimator_val, re_ops.ResourceOperator)
+                and estimator_entry in dir(qp)
+            ):
+                qp_val = getattr(qp, estimator_entry)
+
+                if (
+                    isinstance(qp_val, type)
+                    and issubclass(qp_val, qp.operation.Operator)
+                    and qp_val not in _map_to_resource_op.registry
+                ):
+                    raise ValueError(
+                        f"{estimator_entry} has both a estimator rep {estimator_val} and"
+                        f"an operator rep {qp_val} but no mapping in _map_to_resource_op"
+                    )
+
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
         """Test that a TypeError is raised if the input is not an Operation."""
         with pytest.raises(TypeError, match="is not a valid operation"):
