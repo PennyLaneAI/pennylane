@@ -124,14 +124,6 @@ def _specs_qjit_device_level_tracking(
         new_qnode = qjit.original_function.update(device=spoofed_dev)
         new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
-        if filepath.exists():
-            warnings.warn(
-                "While running, specs encountered past result data that had not been cleaned up. "
-                "This may indicate that a previous call to specs was interrupted or failed to run.",
-                UserWarning,
-            )
-            filepath.unlink()
-
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
