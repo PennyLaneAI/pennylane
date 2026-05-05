@@ -158,7 +158,7 @@ class CompilePipeline:
             qp.transforms.cancel_inverses(recursive=True),
             qp.transforms.merge_rotations,
         )
-        # Add a marker for inspectibility
+        # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
         @pipeline
