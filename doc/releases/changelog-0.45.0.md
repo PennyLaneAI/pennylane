@@ -212,11 +212,37 @@
 
 <h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
 
-* Decomposition rules can now be assigned custom names using the ``name`` argument in :func:`qp.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
-  [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
+New tools dedicated to accessible inspectability of PennyLane's experimental graph decomposition system
+are now available! With this release, you can query the solutions of the graph-based system to 
+understand how PennyLane decomposed down a circuit, and why specific rules where chosen when the graph system is enabled.
+[(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
+[(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
+[(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+[(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+[(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+[(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
+[(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
+[(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
-* The :func:`~pennylane.list_decomps` now returns a new ``DecompCollection`` that allows users to access decomposition rules by index or by name.
-  [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
+* The name of a decomposition rule is by default that of the function that defines the rule, but now
+  it is possible to assign custom names to decomposition rules  using the ``name`` argument in
+  :func:`qp.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
+
+  ```python
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2}, name='my_custom_decomp_rule')
+  def my_cz(wires):
+      qp.H(wires[1])
+      qp.CNOT(wires)
+      qp.H(wires[1])
+  ```
+  ```pycon
+  >>> my_cz.name
+  'my_custom_decomp_rule'
+  ```
+
+* Operators in PennyLane can accommodate multiple decompositions which can be queried with
+  the function :func:`~pennylane.list_decomps`. This function now returns a new ``DecompCollection``
+  allowing more intuitive access to decomposition rules by index or by name.
 
   ```pycon
   >>> import pennylane as qp
@@ -227,20 +253,26 @@
   1: _crx_to_rz_ry
   2: _crx_to_h_crz
   3: _crx_to_ppr
+
   >>> collection[0]
   DecompositionRule(name=_crx_to_rx_cz)
+
   >>> collection['_crx_to_ppr']
   DecompositionRule(name=_crx_to_ppr)
+
   >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
   ```
 
-* A new function :func:`~.decomposition.inspect_decomps` allows users to visualize and inspect the available decomposition rules
-  for a concrete operator instance.
-  [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
-  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+* "When an operator within a circuit needs to be decomposed (e.g., when 
+  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen
+decomposition rule is that which is most resource efficient (results in the smallest gate count)."
+  A new function :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
+  of all the possible decomposition paths the graph system can take for a concrete operator instance.
+  <!-- [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359) -->
 
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
@@ -265,15 +297,32 @@
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
   ```
 
-* A new :mod:`~.gate_sets` moduke contains pre-defined gate sets such as ``qp.gate_sets.CLIFFORD_T_PLUS_RZ``
+* A new :mod:`~.gate_sets` module contains pre-defined gate sets
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
-  [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+  These pre-defined gate sets can be easily accessed and integrated into decompositions workflows. Including, but not limited to:
+  <!-- [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
-  [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
+  [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259) -->
 
-* A new function :func:`~.transforms.decomp_inspector` that allows users to inspect how the decomposition
-  graph is choosing decomposition rules for each operator in the circuit has been added.
-  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  - ``qp.gate_sets.CLIFFORD_T`` which contains the Clifford+T gate set and ``qp.gate_sets.CLIFFORD_T_PLUS_RZ`` with an additional RZ gate.
+  - ``qp.gate_sets.IDENTITY`` which contains the Identity and the GlobalPhase gates.
+  - ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` which contains single-qubit rotations and CNOT.
+
+"When an operator within a circuit needs to be decomposed (e.g., when 
+  :func:`qml.transforms.decompose <pennylane.transforms.decompose>` is present), the chosen
+decomposition rule is that which is most resource efficient (results in the smallest gate count)."
+
+* To verify how the the decomposition graph is choosing decomposition rules for each operator instance in the
+  circuit the new function :func:`~.transforms.decomp_inspector` can be used. 
+  <!-- [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359) -->
+
+  This function required that the graph decompositions system is enabled by adding
+  :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>` to the top of your 
+  program.
+
+  :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator and
+  it returns an ``inspector`` object that allows to interactivelly query a given operator to identify which
+  decomposition rule was “CHOSEN” among those that were considered.
 
   ```python
   qp.decomposition.enable_graph()
@@ -314,6 +363,32 @@
   Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
   Weighted Cost: 196.0
   ```
+
+  In addition to the operators at the top level of the circuit, we can also inspect the graph for how
+  intermediate operators are decomposed:
+
+  ```pycon
+  inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1)
+  Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+  Not applicable (provided operator instance does not meet all conditions for this rule).
+
+  Decomposition 1 (name: to_controlled_qubit_unitary)
+  Not applicable (provided operator instance does not meet all conditions for this rule).
+
+  CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+  0: ─╭X─╭RZ(0.50)─╭X─┤
+  1: ─├●─│─────────├●─┤
+  2: ─╰●─╰●────────╰●─┤
+  First-Level Expansion Gates: {CRZ: 1, Toffoli: 2}
+  Full Expansion Gates: {RZ: 20, CNOT: 14, GlobalPhase: 18, RY: 4}
+  Weighted Cost: 38.0
+  ```
+
+  "Similar to the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
+  transform, the function :func:`~.transforms.decomp_inspector` offers the ability to inject new
+  decomposition rules via the keyword arguments `fixed_decomps` and `alt_decomps`. Details
+  about what `fixed_decomps` and `alt_decomps` do can be found in the usage details section
+  in the :func:`qp.transforms.decomp_inspector <pennylane.transforms.decomp_inspector>` documentation."
 
 <h4>Resource Estimation Templates 📏</h4>
 
