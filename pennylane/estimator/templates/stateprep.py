@@ -81,7 +81,9 @@ class BasisState(ResourceOperator):
             number of times it appears in the decomposition.
         """
         return [
-            GateCount(resource_rep(qre.X), num_wires / 2),
+            GateCount(resource_rep(qre.X), num_wires - 1 or num_wires),
+            GateCount(resource_rep(qre.RX), 1),
+            GateCount(resource_rep(qre.GlobalPhase), 1),
         ]
 
 
