@@ -130,7 +130,7 @@ def get_compile_pipeline(
     >>> print(get_compile_pipeline(circuit)(*args)) # or level="user"
     CompilePipeline(
       [1] cancel_inverses(),
-      [2] merge_rotations(),
+      [2] merge_rotations()
     )
 
     .. details::
@@ -156,10 +156,9 @@ def get_compile_pipeline(
                 qp.RX(x, wires=0)
                 return qp.expval(qp.Z(0))
 
-        By default, without specifying a ``level`` we will get the full compile pipeline that is used
-        during execution on this device. Note that this can also be retrieved by manually specifying ``level="device"``,
+        To get the full compile pipeline that is used during execution on this device we can specify ``level="device"``,
 
-        >>> print(get_compile_pipeline(circuit)(3.14)) # or level="device"
+        >>> print(get_compile_pipeline(circuit, level="device")(3.14))
         CompilePipeline(
           [1] cancel_inverses(),
            ├─▶ checkpoint
