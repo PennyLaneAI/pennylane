@@ -63,25 +63,16 @@ def _resolve_level(
         level = slice(0, num_user)
     elif level == "gradient":
         if is_qjit_qnode:
-            raise NotImplementedError("This level is not valid for QJIT'd QNodes.")
+            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
         level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
         if is_qjit_qnode:
-            raise NotImplementedError("This level is not valid for QJIT'd QNodes.")
+            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
         # Captures everything: user + gradient + device
         level = slice(0, None)
     elif isinstance(level, str):
-        stop = _find_level(full_pipeline, level)
-        if is_qjit_qnode and stop > num_user:
-            raise NotImplementedError(
-                "This level is higher than the number of transforms available."
-            )
-        level = slice(0, stop)
+        level = slice(0, _find_level(full_pipeline, level))
     elif isinstance(level, int):
-        if is_qjit_qnode and level > num_user:
-            raise NotImplementedError(
-                "This level is higher than the number of transforms available."
-            )
         level = slice(0, level)
 
     return level

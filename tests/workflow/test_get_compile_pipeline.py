@@ -30,6 +30,27 @@ class TestValidation:
     @pytest.mark.parametrize(
         "unsupported_level",
         (
+            "device",
+            "gradient",
+        ),
+    )
+    def test_unsupported_levels_qjit(self, unsupported_level):
+        """Tests unsupported levels when the input is QJIT'd QNode."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"'level={unsupported_level}' is not supported for QJIT'd QNodes."),
+        ):
+            _ = get_compile_pipeline(circuit, level=unsupported_level)()
+
+    @pytest.mark.parametrize(
+        "unsupported_level",
+        (
             [0],
             [0, 1],
             (0,),
