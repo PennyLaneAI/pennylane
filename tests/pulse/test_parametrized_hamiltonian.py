@@ -64,11 +64,15 @@ class TestInitialization:
         """Test that adding combinations of operators and numbers/callables initializes
         a ParametrizedHamiltonian"""
 
-        XX = qp.PauliX(0) @ qp.PauliX(1)
-        YY = qp.PauliY(0) @ qp.PauliY(1)
-        ZZ = qp.PauliZ(0) @ qp.PauliZ(1)
+        with qp.queuing.AnnotatedQueue() as q:
+            XX = qp.PauliX(0) @ qp.PauliX(1)
+            YY = qp.PauliY(0) @ qp.PauliY(1)
+            ZZ = qp.PauliZ(0) @ qp.PauliZ(1)
 
-        H = 2 * XX + f1 * YY + f2 * ZZ
+            H = 2 * XX + f1 * YY + f2 * ZZ
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == H
 
         coeffs = [2, f1, f2]
         ops = [XX, YY, ZZ]
@@ -284,11 +288,15 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed
         """
-        pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
+        with qp.queuing.AnnotatedQueue() as q:
+            pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
+            # Adding on the right
+            new_pH = pH + H
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_pH
+
         pH_fixed = qp.s_prod(2, qp.PauliZ(2))
         params = [1, 2]
-        # Adding on the right
-        new_pH = pH + H
         qp.assert_equal(pH.H_fixed(), pH_fixed)
         qp.assert_equal(new_pH.H_fixed(), sum((pH_fixed, qp.s_prod(coeff, qp.PauliZ(0)))))
         assert new_pH.coeffs_fixed == [2, coeff]
@@ -296,8 +304,14 @@ class TestInteractionWithOperators:
             new_pH(params, t=0.5).matrix(),
             qp.matrix(pH(params, t=0.5) + H, wire_order=new_pH.wires),
         )
-        # Adding on the left
-        new_pH = H + pH
+
+        with qp.queuing.AnnotatedQueue() as q:
+            pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
+            # Adding on the left
+            new_pH = H + pH
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_pH
+
         qp.assert_equal(pH.H_fixed(), pH_fixed)
         qp.assert_equal(new_pH.H_fixed(), sum((qp.s_prod(coeff, qp.PauliZ(0)), pH_fixed)))
         assert new_pH.coeffs_fixed == [coeff, 2]
@@ -310,16 +324,24 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
-        pH_fixed = qp.s_prod(2, qp.PauliZ(2))
+        with qp.queuing.AnnotatedQueue() as q:
+            pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
 
-        # Adding on the right
-        new_pH = pH + op
+            # Adding on the right
+            new_pH = pH + op
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_pH
+        pH_fixed = qp.s_prod(2, qp.PauliZ(2))
         qp.assert_equal(pH.H_fixed(), pH_fixed)
         qp.assert_equal(new_pH.H_fixed(), sum((pH_fixed, qp.s_prod(1, op))))
 
-        # Adding on the left
-        new_pH = op + pH
+        with qp.queuing.AnnotatedQueue() as q:
+            pH = ParametrizedHamiltonian([f1, f2, 2], [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)])
+            # Adding on the left
+            new_pH = op + pH
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_pH
         qp.assert_equal(pH.H_fixed(), pH_fixed)
         qp.assert_equal(new_pH.H_fixed(), sum((qp.s_prod(1, op), pH_fixed)))
 
@@ -336,8 +358,12 @@ class TestInteractionWithOperators:
 
     def test_multiply_with_scalar(self):
         """Test the __mul__ dunder method with a scalar."""
-        H = ParametrizedHamiltonian([f1, f2], [qp.PauliX(0), qp.PauliY(1)])
-        new_H = 3 * H
+        with qp.queuing.AnnotatedQueue() as q:
+            H = ParametrizedHamiltonian([f1, f2], [qp.PauliX(0), qp.PauliY(1)])
+            new_H = 3 * H
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_H
+
         expected_H = ParametrizedHamiltonian(
             [lambda p, t: 3 * f1(p, t), lambda p, t: 3 * f2(p, t)], [qp.PauliX(0), qp.PauliY(1)]
         )
@@ -358,11 +384,15 @@ class TestInteractionWithOperators:
     def test_adding_two_parametrized_hamiltonians(self):
         """Test that two ParametrizedHamiltonians can be added together and
         the H_fixed and H_parametrized terms are correctly combined."""
-        pH1 = ParametrizedHamiltonian([1.2, f2], [qp.PauliX(0), qp.PauliY(1)])
-        pH2 = ParametrizedHamiltonian([2.3, f1], [qp.Hadamard(2), qp.PauliZ(3)])
+        with qp.queuing.AnnotatedQueue() as q:
+            pH1 = ParametrizedHamiltonian([1.2, f2], [qp.PauliX(0), qp.PauliY(1)])
+            pH2 = ParametrizedHamiltonian([2.3, f1], [qp.Hadamard(2), qp.PauliZ(3)])
+            new_pH = pH1 + pH2
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == new_pH
 
         # H_fixed now contains the fixed terms from both pH1 and pH2
-        new_pH = pH1 + pH2
         qp.assert_equal(new_pH.H_fixed()[0], pH1.H_fixed())
         qp.assert_equal(new_pH.H_fixed()[1], pH2.H_fixed())
 
@@ -374,7 +404,10 @@ class TestInteractionWithOperators:
     def test_fn_times_observable_creates_parametrized_hamiltonian(self):
         """Test a ParametrizedHamiltonian can be created by multiplying a
         function and an Observable"""
-        pH = f1 * qp.PauliX(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            pH = f1 * qp.PauliX(0)
+        assert len(q.queue) == 1
+        assert q.queue[0] == pH
         assert isinstance(pH, ParametrizedHamiltonian)
         assert len(pH.coeffs_fixed) == 0
         assert isinstance(pH.H_parametrized(param, 0.5), qp.ops.SProd)
