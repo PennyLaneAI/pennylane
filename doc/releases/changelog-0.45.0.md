@@ -227,6 +227,18 @@
   same-degree polynomial with different coefficients.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
+  ```python
+  import optax
+
+  poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
+  qsvt_angles = qp.poly_to_angles(poly, routine="QSVT", angle_solver="iterative-optax")
+  ```
+
+  ```pycon
+  >>> print(qsvt_angles)
+  [-4.74724627  1.51868559  0.57952342  0.57952342  1.51868559 -0.03485729]
+  ```
+
 <h4>Pre-defined Gate Sets 📠</h4>
 
 * A new :mod:`~.gate_sets` moduke contains pre-defined gate sets such as ``qp.gate_sets.CLIFFORD_T_PLUS_RZ``
@@ -238,10 +250,30 @@
 <h4>Resource Estimation Templates 📏</h4>
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
-  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
+  been added for fast and efficient resource estimation. These are available in the :mod:`~.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+
+  ```python
+  import pennylane.estimator as qre
+
+  embed = qre.BasisEmbedding(num_wires=100)
+  ```
+
+  ```pycon
+  >>> qre.estimate(embed)
+  --- Resources: ---
+  Total wires: 100
+    algorithmic wires: 100
+    allocated wires: 0
+      zero state: 0
+      any state: 0
+  Total gates : 143
+    'T': 44,
+    'X': 99
+  ```
+
 
 <h3>Improvements 🛠</h3>
 
