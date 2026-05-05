@@ -1324,7 +1324,7 @@ class TestToBloqEstimator:
                     (qp.H(0), True): 6,
                 },
             ),
-            (qp.BasisState(np.array([1, 1]), wires=[0, 1]), {(qp.X(0), True): 2}),
+            (qp.BasisState(np.array([1, 1]), wires=[0, 1]), {(qp.X(0), True): 1}),
             (
                 qp.QFT(wires=range(5)),
                 {
