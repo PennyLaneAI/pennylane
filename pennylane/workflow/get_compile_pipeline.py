@@ -259,11 +259,18 @@ def get_compile_pipeline(
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
-        # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
-        resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-        if not qnode.compile_pipeline.is_informative:
-            outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-            full_compile_pipeline += outer_pipeline + inner_pipeline
+
+        # NOTE: Anything past user applied transforms
+        # doesn't make sense for a QJIT'd QNode.
+        resolved_config = None
+        if not is_qjit_qnode:
+            # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
+            resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
+            if not qnode.compile_pipeline.is_informative:
+                outer_pipeline, inner_pipeline = _setup_transform_program(
+                    qnode.device, resolved_config
+                )
+                full_compile_pipeline += outer_pipeline + inner_pipeline
 
         num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(
