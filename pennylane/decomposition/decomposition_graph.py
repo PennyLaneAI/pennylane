@@ -124,7 +124,7 @@ class _OperatorNode:
 
 
 @dataclass
-class _DecompositionNode:
+class _DecompositionNode:  # pylint: disable=too-many-instance-attributes
     """A node that represents a decomposition rule."""
 
     rule: DecompositionRule
@@ -134,6 +134,7 @@ class _DecompositionNode:
     work_wire_dependent: bool = False
     min_work_wires: int = 0
     reachable: bool = True
+    applicable: bool = True
 
     def __post_init__(self):
         self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
@@ -234,7 +235,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        operations: list[Operator | CompressedResourceOp],
+        operations: Iterable[Operator | CompressedResourceOp],
         gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
@@ -326,11 +327,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         use_reconstructor = decomps_use_reconstructor(op.op_type, op.params)
 
-        rules = [
-            rule
-            for rule in self._get_decompositions(op, use_reconstructor)
-            if rule.is_applicable(**op.params)
-        ]
+        rules = self._get_decompositions(op, use_reconstructor)
 
         # Treat ops that do not have a decomposition as supported if strict=False
         if not rules and not self._strict:
@@ -345,7 +342,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in rules:
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
-            if not d_node or not d_node.reachable:
+            if not d_node.applicable or not d_node.reachable:
                 continue
             # If a decomposition is reachable, the operator is also reachable
             op_reachable = True
@@ -386,11 +383,23 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_node: _OperatorNode,
         op_idx: int,
         num_used_work_wires: int,
-    ) -> _DecompositionNode | None:
+    ) -> _DecompositionNode:
         """Adds a decomposition rule to the graph and returns whether it depends on work wires."""
 
+        # If the decomposition rule is not applicable to the given operator node, we do not
+        # try to explore it, but we still add it to the graph because later we may need to
+        # inspect the graph to check which decomposition rules were considered but excluded.
         if not rule.is_applicable(**op_node.op.params):
-            return None  # skip the decomposition rule if it is not applicable
+            d_node = _DecompositionNode(
+                rule,
+                Resources({}),
+                WorkWireSpec(),
+                num_used_work_wires,
+                applicable=False,
+            )
+            d_node_idx = self._graph.add_node(d_node)
+            self._graph.add_edge(d_node_idx, op_idx, 0)
+            return d_node
 
         decomp_resource = rule.compute_resources(**op_node.op.params)
         work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
@@ -787,6 +796,11 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         self._lazy = lazy
         # maps node indices to the optimal resource estimates
         self.distances: dict[int, Resources] = {}
+        # We only mark decomposition rule as discovered if all its incoming edges (from the
+        # operators that it contains) are explored. When we examine each incoming edge, we
+        # accumulate the cost of this decomposition rule in _temp_distances, and when the last
+        # edge is examined, we take the final value in _temp_distances and store it in distances
+        self._temp_distances: dict[int, Resources] = {}
         # maps operator nodes to the optimal decomposition nodes
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
@@ -823,17 +837,18 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
 
-        if target_idx not in self.distances:
-            self.distances[target_idx] = Resources()  # initialize with empty resource
-
         if src_node is None:
+            self.distances[target_idx] = Resources()  # initialize with empty resource
             return  # special case for when the decomposition produces nothing
 
         # Check if this decomposition is feasible under the work wire constraint
         if not target_node.is_feasible(self.num_available_work_wires):
             raise PruneSearch
 
-        self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
+        if target_idx not in self._temp_distances:
+            self._temp_distances[target_idx] = Resources()  # initialize with empty resource
+
+        self._temp_distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
         self._n_edges_examined[target_idx] += 1
 
         # Update the number of work wires required for this decomposition to be valid
@@ -848,6 +863,8 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             # examined before it can be discovered (each incoming edge represents a different
             # operator that this decomposition depends on).
             raise PruneSearch
+
+        self.distances[target_idx] = self._temp_distances[target_idx]
 
     def edge_relaxed(self, edge):
         """Triggered when an edge is relaxed during the Dijkstra search."""

@@ -11,13 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains classes which integrate arithmetic operators with
-resource estimation."""
+"""
+Shared helpers for testing estimator_beta test_suite
+"""
 
-from .controlled_ops import (
-    ch_resource_decomp,
-    ch_toffoli_based_resource_decomp,
-    mcx_one_clean_aux_resource_decomp,
-    mcx_one_dirty_aux_resource_decomp,
-    mcx_many_clean_aux_resource_decomp,
-)
+import pennylane.labs.estimator_beta as qre
+
+
+def decomp_equal(decomp1, decomp2):
+    """Tests the equality of two decompositions"""
+    if len(decomp1) != len(decomp2):
+        return False
+
+    for op1, op2 in zip(decomp1, decomp2):
+        if isinstance(op1, (qre.Allocate, qre.Deallocate)):
+            ops_equal = op1.equal(op2)
+        else:
+            ops_equal = op1 == op2
+
+        if not ops_equal:
+            return False
+
+    return True

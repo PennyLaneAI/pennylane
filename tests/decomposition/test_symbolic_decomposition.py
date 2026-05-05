@@ -883,7 +883,7 @@ class TestControlledDecomposition:
                 _resource_fn,
                 work_wires=inner_decomp._work_wire_spec,
                 exact=inner_decomp.exact_resources,
-                name=f"flip_zero_ctrl_values({inner_decomp.name})",
+                name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
                 zero_control_wires = [
