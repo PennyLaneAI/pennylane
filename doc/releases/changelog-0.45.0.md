@@ -1225,7 +1225,7 @@
   with proper ``:doc:`` cross references.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
-<h3>Bug fixes 🐛</h3>
+<h3>Bug Fixed 🐛</h3>
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
   structure of their data:
@@ -1251,7 +1251,8 @@
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
 
 * :class:`~.MultiControlledX` is now compatible with ``qjit``.
-  Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
+  An issue with ``jax.jit`` tracing for controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions`
+  has been fixed by ensuring consistent return types across conditional branches and casting wires to JAX-friendly types during tracing.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
 * Fixed a warning of casting complex values to reals within `qp.math.givens_decomposition`.
@@ -1335,28 +1336,28 @@
 * Improves the error messages when the inputs and outputs to a `qp.for_loop` function do not match.
   [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
-* Fixes a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
+* Fixed a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
   This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
   [(#8933)](https://github.com/PennyLaneAI/pennylane/pull/8933)
 
-* Fixes an issue when binding a transform when the first positional arg
+* Fixed an issue when binding a transform when the first positional arg
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
-* Fixes a bug with `qp.estimator.templates.QSVT` which allows users to instantiate the class without
+* Fixed a bug with `qp.estimator.templates.QSVT` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
 
-* Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
+* Fixed a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
   [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
-* Fixes a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
+* Fixed a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
-* Fixes a bug where `qp.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
+* Fixed a bug where `qp.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
-* Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
+* Fixed various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
 * The `decompose` transform no longer warns about being unable to decompose `Barrier` and `Snapshot`.
@@ -1366,39 +1367,39 @@
   is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
-* Fixes a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
+* Fixed a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
+* Fixed a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+* Fixed a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
   [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
-* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+* Fixed a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
 
-* Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+* Fixed a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
-* Fixed various small bugs within :mod:`pennylane.estimator`.
+* Fixed various small bugs within :mod:`pennylane.estimator`, including:
   [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
 
-    - Fixed the resource decomposition of `~.estimator.QubitUnitary` to match the results from literature
-    - Fixed the resource decomposition of `~.estimator.OutMultiplier` to match the results from literature
+    - The resource decompositions for `~.estimator.QubitUnitary` and `~.estimator.OutMultiplier` so
+      that they match the results from literature
+    - Incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
     - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
-    - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
 
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
   [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
 
-* Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
-  when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
-  [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
+* Fixed a bug where the `DecompositionGraph` would underestimate the minimum number of work wires required to solve for a particular operator.
+  This occurred when rules with lower wire requirements existed but were unreachable within the provided gate set.
+  [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298) 
 
-* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
-  making ``base`` argument optional in ``Controlled.__new__``
+* Fixed a bug that prevented instances of controlled composite operators such as ``Controlled(2.0 * qp.X(0))``
+  from being unpickled.
   [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
