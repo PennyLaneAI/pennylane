@@ -656,7 +656,7 @@ def specs(
             qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=4)
             return qp.probs(wires=(0,1))
 
-    >>> qp.specs(circuit)(x, add_ry=False)
+    >>> print(qp.specs(circuit)(x, add_ry=False))
     Device: default.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -705,7 +705,7 @@ def specs(
         First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level="top"`` would
         return the same results:
 
-        >>> qp.specs(circuit, level=0)(0.1).resources
+        >>> print(qp.specs(circuit, level=0)(0.1).resources)
         Wire allocations: 2
         Total gates: 6
         Gate counts:
@@ -721,7 +721,7 @@ def specs(
         (:func:`~pennylane.transforms.cancel_inverses` and :func:`~pennylane.transforms.undo_swaps`) by setting
         ``level=2``. The result will show that ``SWAP`` and ``PauliX`` are not present in the circuit:
 
-        >>> qp.specs(circuit, level=2)(0.1).resources
+        >>> print(qp.specs(circuit, level=2)(0.1).resources)
         Wire allocations: 2
         Total gates: 3
         Gate counts:
@@ -734,7 +734,7 @@ def specs(
         We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
         would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
 
-        >>> qp.specs(circuit, level="user")(0.1).resources
+        >>> print(qp.specs(circuit, level="user")(0.1).resources)
         Wire allocations: 2
         Total gates: 1
         Gate counts:
@@ -747,7 +747,7 @@ def specs(
         resources after all transforms are applied, we can use ``level="device"``. In this case, ``RandomLayers`` is not
         device-compatible and is further decomposed before handing the circuit off to the device:
 
-        >>> qp.specs(circuit, level="device")(0.1).resources
+        >>> print(qp.specs(circuit, level="device")(0.1).resources)
         Wire allocations: 2
         Total gates: 2
         Gate counts:
@@ -772,7 +772,7 @@ def specs(
                 qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qp.expval(H)
 
-        >>> qp.specs(circuit, level="user")()
+        >>> print(qp.specs(circuit, level="user")())
         Device: default.qubit
         Device wires: None
         Shots: Shots(total=None)
@@ -827,7 +827,7 @@ def specs(
                 qp.CNOT([0, 1])
                 return qp.probs()
 
-        >>> qp.specs(circuit, level="device")(1.23)
+        >>> print(qp.specs(circuit, level="device")(1.23))
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
