@@ -178,7 +178,7 @@ def _add_controlled(
         return _add_controlled_global_op(obj, layer_str, config)
 
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
     return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
 
@@ -188,7 +188,7 @@ def _add_controlled_global_op(obj, layer_str, config):
     but a manually managed dispatch."""
     layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
 
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
 
     label = obj.base.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
@@ -293,7 +293,7 @@ def _add_mid_measure_op(
     op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
+    ``qp.ops.MidMeasure`` or a ``qp.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
     layer_str = _add_grouping_symbols(op.wires, layer_str, config)
     label_kwargs = {"decimals": config.decimals, "cache": config.cache}

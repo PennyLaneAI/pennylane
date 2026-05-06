@@ -53,17 +53,17 @@ class AQFT(Operation):
     .. code-block:: python
 
         wires = 3
-        dev = qml.device('default.qubit', wires=wires)
+        dev = qp.device('default.qubit', wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_aqft():
-            qml.X(0)
-            qml.Hadamard(1)
-            qml.AQFT(order=1,wires=range(wires))
-            return qml.state()
+            qp.X(0)
+            qp.Hadamard(1)
+            qp.AQFT(order=1,wires=range(wires))
+            return qp.state()
 
 
-    >>> circuit_aqft()
+    >>> np.round(circuit_aqft(), 8)
     array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
         -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 
@@ -85,14 +85,14 @@ class AQFT(Operation):
 
             .. code-block:: python
 
-                @qml.qnode(qml.device('default.qubit'))
+                @qp.qnode(qp.device('default.qubit'))
                 def circ():
-                    qml.AQFT(order=0, wires=range(6))
-                    return qml.probs()
+                    qp.AQFT(order=0, wires=range(6))
+                    return qp.probs()
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, level='device')()) # doctest: +SKIP
+            >>> print(qp.draw(circ, level='device')()) # doctest: +SKIP
             UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
             0: ──H─╭SWAP─────────────┤ ╭Probs
             1: ──H─│─────╭SWAP───────┤ ├Probs
@@ -106,14 +106,14 @@ class AQFT(Operation):
 
             .. code-block:: python
 
-                @qml.qnode(qml.device('default.qubit'))
+                @qp.qnode(qp.device('default.qubit'))
                 def circ():
-                    qml.AQFT(order=2, wires=range(4))
-                    return qml.probs()
+                    qp.AQFT(order=2, wires=range(4))
+                    return qp.probs()
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, level='device')())
+            >>> print(qp.draw(circ, level='device')())
             0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤  Probs
             1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤  Probs
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤  Probs
@@ -175,7 +175,7 @@ class AQFT(Operation):
 
         **Example:**
 
-        >>> qml.AQFT.compute_decomposition((0, 1, 2), order=1)
+        >>> qp.AQFT.compute_decomposition((0, 1, 2), order=1)
         [H(0), ControlledPhaseShift(1.57..., wires=Wires([1, 0])), H(1), ControlledPhaseShift(1.57..., wires=Wires([2, 1])), H(2), SWAP(wires=[0, 2])]
 
         """

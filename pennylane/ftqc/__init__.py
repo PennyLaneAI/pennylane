@@ -25,6 +25,7 @@ Modules
     :toctree: api
 
 """
+
 from .operations import RotXZX
 from .decomposition import (
     convert_to_mbqc_formalism,

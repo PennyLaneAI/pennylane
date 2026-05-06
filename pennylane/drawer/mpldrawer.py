@@ -81,7 +81,7 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = qml.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
+        drawer = qp.drawer.MPLDrawer(wire_map={i: i for i in range(5)}, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
@@ -125,12 +125,12 @@ class MPLDrawer:
     **Formatting**
 
     PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
-    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-    Any available string can then be passed to ``qml.drawer.use_style``.
+    All available styles can be determined by evaluating ``qp.drawer.available_styles()``.
+    Any available string can then be passed to ``qp.drawer.use_style``.
 
     .. code-block:: python
 
-        qml.drawer.use_style('black_white')
+        qp.drawer.use_style('black_white')
 
     .. figure:: ../../_static/drawer/black_white_style.png
             :align: center
@@ -684,7 +684,7 @@ class MPLDrawer:
         else:
             if len(control_values) != len(wires_ctrl):
                 raise ValueError("`control_values` must be the same length as `wires`")
-            for wire, control_on in zip(wires_ctrl, control_values):
+            for wire, control_on in zip(wires_ctrl, control_values, strict=True):
                 if control_on:
                     self._ctrl_circ(layer, wire, options=options)
                 else:
@@ -1001,7 +1001,7 @@ class MPLDrawer:
         }
         text_options.update(user_text_options)
         text_x = main_box_x + main_box_width / 2
-        for symbol, wire in zip(pauli_word, wires):
+        for symbol, wire in zip(pauli_word, wires, strict=True):
             self._ax.text(text_x, wire, symbol, **text_options)
 
         measure_icon_x, measure_icon_y = notch_x + notch_width / 2 + self._notch_pad, box_center

@@ -5,7 +5,7 @@ on:
       - main
 
 concurrency:
-  group: qml-labs-${{ github.workflow }}-${{ github.ref }}
+  group: qp-labs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -14,13 +14,16 @@ jobs:
   # Instead, this workflow will run on all pull requests, but if `pennylane/labs/*` was not touched within the PR, it will
   # exit early with a successful status (no tests will get run).
   determine_if_workflow_should_run:
-    name: Determine if QML Labs Unit-Tests need to run
+    name: Determine if QP Labs Unit-Tests need to run
     runs-on: ubuntu-24.04
     if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout PR
         uses: actions/checkout@v6
-        
+
       - name: Assess changed files
         id: changed-files
         uses: tj-actions/changed-files@v46
@@ -33,6 +36,8 @@ jobs:
   determine_runner:
     name: Determine runner type to use
     if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    permissions:
+      contents: read
     needs:
       - determine_if_workflow_should_run
     uses: ./.github/workflows/determine-workflow-runner.yml
@@ -45,6 +50,8 @@ jobs:
       - determine_if_workflow_should_run
       - determine_runner
     if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    permissions:
+      contents: read
     uses: ./.github/workflows/interface-dependency-versions.yml
     with:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
@@ -56,6 +63,9 @@ jobs:
       - determine_runner
       - default-dependency-versions
     if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    permissions:
+      contents: read
+      artifact-metadata: write
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: labs-tests

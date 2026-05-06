@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions and variables to be utilized by qutrit mixed state simulator."""
+
 import functools
 from string import ascii_letters as alphabet
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 
@@ -24,7 +25,7 @@ QUDIT_DIM = 3  # specifies qudit dimension
 
 
 def get_einsum_mapping(
-    op: qml.operation.Operator, state, map_indices, is_state_batched: bool = False
+    op: qp.operation.Operator, state, map_indices, is_state_batched: bool = False
 ):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
 
@@ -38,7 +39,7 @@ def get_einsum_mapping(
         str: Indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(qp.math.shape(state)) - is_state_batched) / 2)
     rho_dim = 2 * num_wires
 
     # Tensor indices of the state. For each qutrit, need an index for rows *and* columns

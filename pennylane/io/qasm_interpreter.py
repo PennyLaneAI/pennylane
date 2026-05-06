@@ -218,7 +218,7 @@ class Variable:
 
 def _rotate(var: Variable | int, n: int, dir="left"):
     """
-    Rotates a BitType variable left by n bits. Not we need a Variable b/c we need to know
+    Rotates a BitType variable left by n bits. Note we need a Variable because we need to know
     the size of the register.
 
     Args:
@@ -374,11 +374,15 @@ class Context:
     def update_var(self, value: any, name: str, operator: str, line: int):
         """
         Updates a variable, or raises if it is constant.
+
         Args:
             value (any): the value to set.
             name (str): the name of the variable.
             operator (str): the assignment operator.
             line (int): the line number at which we encountered the assignment node.
+
+        Raises:
+            ValueError: if the variable we are trying to update is a constant.
         """
         if name not in self.vars:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
@@ -431,8 +435,10 @@ class Context:
     def __getitem__(self, item):
         """
         Allows accessing items on the context by subscripting.
+
         Args:
             item: the name of the key to retrieve.
+
         Returns:
             Any: the value corresponding to the key.
         """
@@ -536,6 +542,9 @@ class QasmInterpreter:
         Args:
             node_list (list): the list of QASMNodes to visit.
             context (Context): the current context.
+
+        Raises:
+            NotImplementedError: if an end statement is encountered in an unsupported context.
         """
         for sub_node in node_list:
             try:
@@ -559,11 +568,11 @@ class QasmInterpreter:
             context (dict): The initial context populated with the name of the program (the outermost scope).
             inputs (dict): Additional inputs to the OpenQASM 3.0 program.
 
-        Raises:
-            ValueError: If the wrong parameters are provided in **inputs.
-
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
+
+        Raises:
+            ValueError: If the wrong parameters are provided in **inputs.
         """
         context = Context(context)
         self.inputs = inputs
@@ -632,6 +641,9 @@ class QasmInterpreter:
         Args:
             node (BreakStatement): the break QASMNode.
             context (Context): the current context.
+
+        Raises:
+            BreakException: the exception facilitates interrupting the corresponding loop execution.
         """
 
         raise BreakException(f"Break statement encountered in {context.name}")
@@ -644,6 +656,9 @@ class QasmInterpreter:
         Args:
             node (ContinueStatement): the continue QASMNode.
             context (Context): the current context.
+
+        Raises:
+            ContinueException: the exception facilitates interrupting the corresponding loop execution.
         """
 
         raise ContinueException(f"Continue statement encountered in {context.name}")
@@ -651,7 +666,7 @@ class QasmInterpreter:
     @visit.register(ast.BranchingStatement)
     def visit_branching_statement(self, node: ast.BranchingStatement, context: Context):
         """
-        Registers a branching statement. Like switches, uses qml.cond.
+        Registers a branching statement. Like switches, uses qp.cond.
 
         Args:
             node (BranchingStatement): the branch QASMNode.
@@ -740,6 +755,9 @@ class QasmInterpreter:
         Args:
             node (QASMNode): the loop node.
             context (Context): the current context.
+
+        Raises:
+            ValueError: if a mid circuit measurement outcome is used as a condition to a loop.
         """
 
         def _check_for_mcm(node: ast.WhileLoop, curr_context: Context):
@@ -780,6 +798,9 @@ class QasmInterpreter:
         Args:
             node (QASMNode): the loop node.
             context (Context): the current context.
+
+        Raises:
+            TypeError: if we are trying to loop over something not iterable and not a range.
         """
 
         # We need custom logic here for handling ast.Identifiers in case they are of BitType.
@@ -1026,6 +1047,9 @@ class QasmInterpreter:
 
         Returns:
             The indexed slice of the variable.
+
+        Raises:
+            NotImplementedError: if the array index is not a single range or literal.
         """
         if not isinstance(var, Iterable):
             var = _get_bit_type_val(var) if var.ty == "BitType" else var.val
@@ -1039,11 +1063,14 @@ class QasmInterpreter:
     @visit.register(ast.IODeclaration)
     def visit_io_declaration(self, node: ast.IODeclaration, context: Context):
         """
-        Registers an input declaration (outputs to come in a future PR).
+        Registers an input or output declaration.
 
         Args:
             node (IODeclaration): The IODeclaration QASMNode.
             context (Context): the current context.
+
+        Raises:
+            ValueError: if an input is missing.
         """
         if node.io_identifier == ast.IOKeyword.input:
             name = _resolve_name(node.identifier)
@@ -1070,9 +1097,13 @@ class QasmInterpreter:
     def visit_end_statement(self, node: ast.EndStatement, context: Context):
         """
         Ends the program.
+
         Args:
             node (EndStatement): The end statement QASMNode.
             context (Context): the current context.
+
+        Raises:
+            EndProgram: facilitates interrupting the program execution.
         """
         raise EndProgram(
             f"The QASM program was terminated on line {node.span.start_line}. "
@@ -1105,6 +1136,7 @@ class QasmInterpreter:
     def visit_classical_assignment(self, node: ast.ClassicalAssignment, context: Context):
         """
         Registers a classical assignment.
+
         Args:
             node (ClassicalAssignment): the assignment QASMNode.
             context (Context): the current context.
@@ -1118,6 +1150,7 @@ class QasmInterpreter:
     def visit_alias_statement(self, node: ast.AliasStatement, context: Context):
         """
         Registers an alias statement.
+
         Args:
             node (AliasStatement): the alias QASMNode.
             context (Context): the current context.
@@ -1155,6 +1188,7 @@ class QasmInterpreter:
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
+
         Args:
             node (ClassicalDeclaration): The ClassicalDeclaration QASMNode.
             context (Context): The current context.
@@ -1254,6 +1288,7 @@ class QasmInterpreter:
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
         its parameters.
+
         Args:
             node (SubroutineDefinition): the subroutine node.
             context (Context): the current context.
@@ -1278,8 +1313,27 @@ class QasmInterpreter:
                     )
                 )
 
-    @visit.register(ast.QuantumGate)
-    def visit_quantum_gate(self, node: ast.QuantumGate, context: Context):
+    @visit.register(ast.QuantumPhase)  # pragma: no cover
+    def visit_quantum_phase(self, node: ast.QuantumPhase, context: Context):  # pragma: no cover
+        """
+        Registers a global phase application.
+
+        Args:
+            node (QuantumPhase): The QuantumPhase QASMNode.
+            context (Context): The current context.
+        """
+        gate, arg, wires = self._phase_setup_helper(node, context)
+
+        num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+        control_wires = wires[:num_control]
+
+        op = gate(arg)
+
+        for mod in reversed(node.modifiers):
+            op, control_wires = self.apply_modifier(mod, op, context, control_wires)
+
+    @visit.register(ast.QuantumGate)  # pragma: no cover
+    def visit_quantum_gate(self, node: ast.QuantumGate, context: Context):  # pragma: no cover
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
@@ -1325,6 +1379,10 @@ class QasmInterpreter:
             QuantumGate: The gate to execute.
             list: The list of arguments to the QuantumGate.
             list: The wires the gate applies to.
+
+        Raises:
+            IndexError: if the index is out of bounds.
+            NotImplementedError: if the index is not a single range or literal.
         """
         # setup arguments
         args = [self.visit(arg, context) for arg in node.arguments]
@@ -1333,6 +1391,27 @@ class QasmInterpreter:
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
+        wires = self._setup_wires(node, context)
+
+        return gate, args, wires
+
+    def _setup_wires(  # pragma: no cover
+        self, node: ast.QuantumPhase | ast.QuantumGate, context: Context  # pragma: no cover
+    ):  # pragma: no cover
+        """
+        Sets up wires for a QuantumGate or QuantumPhase application.
+
+        Args:
+            node (QuantumPhase | QuantumGate): The QuantumGate or QuantumPhase QASMNode.
+            context (Context): The current context.
+
+        Returns:
+            list: The wires.
+
+        Raises:
+            IndexError: if the index is out of bounds.
+            NotImplementedError: if the index is not a single range or literal.
+        """
         wires = []
         require_wires = []
         for qubit in node.qubits:
@@ -1369,9 +1448,33 @@ class QasmInterpreter:
 
         context.require_wires(require_wires)
 
-        return gate, args, wires
+        return wires
 
-    def apply_modifier(
+    def _phase_setup_helper(self, node: ast.QuantumPhase, context: Context):  # pragma: no cover
+        """
+        Helper to setup the global phase call, also resolving arguments and wires.
+
+        Args:
+            node (QuantumPhase): The QuantumPhase QASMNode.
+            context (Context): the current context.
+
+        Returns:
+            QuantumPhase: The gate to execute.
+            Any: The argument to the QuantumPhase.
+            list: The wires the gate applies to.
+        """
+        # setup arguments
+        arg = self.visit(node.argument, context)
+
+        # gate method
+        gate = ops.GlobalPhase
+
+        # setup wires
+        wires = self._setup_wires(node, context)
+
+        return gate, arg, wires
+
+    def apply_modifier(  # pragma: no cover
         self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list
     ):
         """
@@ -1411,6 +1514,7 @@ class QasmInterpreter:
     def visit_expression_statement(self, node: ast.ExpressionStatement, context: Context):
         """
         Registers an expression statement.
+
         Args:
             node (ExpressionStatement): The expression statement.
             context (Context): The current context.
@@ -1518,6 +1622,9 @@ class QasmInterpreter:
 
         Returns:
             The de-referenced alias.
+
+        Raises:
+            TypeError: if an attempt is made to alias an undeclared variable.
         """
         try:
             return (
@@ -1542,6 +1649,9 @@ class QasmInterpreter:
 
         Returns:
             The de-referenced identifier.
+
+        Raises:
+            TypeError: if we have a reference to an undeclared variable.
         """
         if aliasing:  # we are registering an alias
             return partial(self._alias, node)

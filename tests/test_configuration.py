@@ -14,12 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
+
 import os
 
 import pytest
 import tomlkit as toml
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import Configuration
 
 config_filename = "default_config.toml"
@@ -221,7 +222,7 @@ class TestPennyLaneInit:
 
     def test_device_load(self, default_config):
         """Test loading a device with a configuration."""
-        dev = qml.device("default.gaussian", wires=2, config=default_config)
+        dev = qp.device("default.gaussian", wires=2, config=default_config)
 
         assert dev.hbar == 2
         assert not dev.shots

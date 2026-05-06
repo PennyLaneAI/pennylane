@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Mapping PL operations to their associated ResourceOperator."""
+
 from __future__ import annotations
 
 import math
@@ -309,8 +310,8 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_register_subroutine(qtemps.BasisRotation)
-def _handle_basis_rotation(op):
+@_map_to_resource_op.register
+def _handle_basis_rotation(op: qtemps.BasisRotation):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 

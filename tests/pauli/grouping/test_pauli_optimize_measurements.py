@@ -14,6 +14,7 @@
 """
 Unit tests for ``optimize_measurements`` function in ``/pauli/grouping/optimize_measurements.py``.
 """
+
 import numpy as np
 import pytest
 

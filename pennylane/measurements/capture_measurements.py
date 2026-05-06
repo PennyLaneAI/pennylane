@@ -109,7 +109,7 @@ def _get_abstract_measurement():
 
 
 def create_measurement_obs_primitive(
-    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qp.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator.
 
@@ -128,7 +128,7 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(name + "_obs")
+    primitive = capture.QpPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -146,7 +146,7 @@ def create_measurement_obs_primitive(
 
 
 def create_measurement_mcm_primitive(
-    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qp.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
     mid circuit measurement results.
@@ -165,7 +165,7 @@ def create_measurement_mcm_primitive(
 
     if not has_jax:
         return None
-    primitive = capture.QmlPrimitive(name + "_mcm")
+    primitive = capture.QpPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -201,7 +201,7 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    primitive = capture.QmlPrimitive(name + "_wires")
+    primitive = capture.QpPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl

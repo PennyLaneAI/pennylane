@@ -5,13 +5,12 @@ TensorFlow interface
 
 .. warning::
 
-    Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
-    Future versions of PennyLane are not guaranteed to work with TensorFlow.
-    Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
+    As of PennyLane v0.44, TensorFlow support is no longer maintained.
+    We recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
     machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
     a comprehensive guide on JAX and PyTorch: 
-    `Turning quantum nodes into Torch Layers <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`_ and 
-    `How to optimize a QML model using JAX and Optax <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
+    :doc:`Turning quantum nodes into Torch Layers <demo:demos/tutorial_qnn_module_torch>` and 
+    :doc:`How to optimize a QML model using JAX and Optax <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
@@ -25,7 +24,7 @@ Tensorflow is imported as follows:
 
 .. code::
 
-    import pennylane as qml
+    import pennylane as qp
     import tensorflow as tf
 
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
@@ -43,15 +42,15 @@ QNode is to specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qp.qnode(dev, interface='tf')
     def circuit(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
 The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` and
 ``tf.Tensor`` objects as input, and returning ``tf.Tensor`` objects.
@@ -70,18 +69,18 @@ TensorFlow-capable QNodes can also be created using the
 
 .. code-block:: python
 
-    dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('default.mixed', wires=2)
+    dev1 = qp.device('default.qubit', wires=2)
+    dev2 = qp.device('default.mixed', wires=2)
 
     def circuit1(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit1, dev1)
-    qnode2 = qml.QNode(circuit1, dev2, interface='tf')
+    qnode1 = qp.QNode(circuit1, dev1)
+    qnode2 = qp.QNode(circuit1, dev2, interface='tf')
 
 ``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a TensorFlow-capable
 QNode:
@@ -103,15 +102,15 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qp.qnode(dev, interface='tf')
     def circuit(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     phi = tf.Variable([0.5, 0.1])
     theta = tf.Variable(0.2)
@@ -133,14 +132,14 @@ To include non-differentiable data arguments, simply use ``tf.constant``:
 
 .. code-block:: python
 
-    @qml.qnode(dev, interface='tf')
+    @qp.qnode(dev, interface='tf')
     def circuit3(weights, data):
-        qml.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(weights[2], wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(weights[2], wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     weights = tf.Variable([0.1, 0.2, 0.3])
     rng = np.random.default_rng(seed=111)
@@ -171,15 +170,15 @@ result in an expectation value of 0.5, we can do the following:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tf')
+    @qp.qnode(dev, interface='tf')
     def circuit4(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     phi = tf.Variable([0.5, 0.1], dtype=tf.float64)
     theta = tf.Variable(0.2, dtype=tf.float64)

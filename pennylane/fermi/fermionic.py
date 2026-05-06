@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The fermionic representation classes and functions."""
+
 import re
 from copy import copy
 
@@ -29,7 +30,7 @@ class FermiWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`a^{\dagger}_0 a_1` can then be constructed as
 
-    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> print(w)
     a⁺(0) a(1)
     """
@@ -40,8 +41,13 @@ class FermiWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator):
-        self.sorted_dic = dict(sorted(operator.items()))
+    __slots__ = ("_hashval", "sorted_dic")
+
+    def __init__(self, operator, _skip_sorting: bool = False):
+        if _skip_sorting:
+            self.sorted_dic = dict(operator)
+        else:
+            self.sorted_dic = dict(sorted(operator.items()))
 
         indices = [i[0] for i in self.sorted_dic.keys()]
 
@@ -50,6 +56,8 @@ class FermiWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
+
+        self._hashval = None
 
         super().__init__(operator)
 
@@ -95,7 +103,9 @@ class FermiWord(dict):
 
     def __copy__(self):
         r"""Copy the FermiWord instance."""
-        return FermiWord(dict(self.items()))
+        res = FermiWord(self.sorted_dic, _skip_sorting=True)
+        res._hashval = self._hashval
+        return res
 
     def __deepcopy__(self, memo):
         r"""Deep copy the FermiWord instance."""
@@ -105,14 +115,19 @@ class FermiWord(dict):
 
     def __hash__(self):
         r"""Hash value of a FermiWord."""
-        return hash(frozenset(self.items()))
+        # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
+
+        if self._hashval is None:
+            self._hashval = hash(frozenset(self.items()))
+
+        return self._hashval
 
     def to_string(self):
         r"""Return a compact string representation of a FermiWord. Each operator in the word is
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'a⁺(0) a(1)'
         """
@@ -210,30 +225,22 @@ class FermiWord(dict):
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a constant.
 
-        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         a⁺(0) a(1) a⁺(0) a(1)
         """
 
         if isinstance(other, FermiWord):
             if len(self) == 0:
-                return copy(other)
+                return other
 
             if len(other) == 0:
-                return copy(self)
+                return self
 
-            order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
-            other_wires = [i[1] for i in other.sorted_dic.keys()]
-
-            dict_other = dict(
-                zip(
-                    [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
-                    other.values(),
-                )
+            dict_self = dict(self)
+            dict_self.update(
+                ((order + len(self), wire), value) for (order, wire), value in other.items()
             )
-            dict_self = dict(zip(self.keys(), self.values()))
-
-            dict_self.update(dict_other)
 
             return FermiWord(dict_self)
 
@@ -264,7 +271,7 @@ class FermiWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Fermi word to an integer power.
 
-        >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         a⁺(0) a(1) a⁺(0) a(1) a⁺(0) a(1)
         """
@@ -295,7 +302,7 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qp.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> w.to_mat()
         array([[0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
                [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
@@ -348,7 +355,7 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = qml.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w = qp.FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> print(w.shift_operator(0, 1))
         -1 * a(1) a⁺(0)
         """
@@ -420,12 +427,12 @@ class FermiWord(dict):
 
 
 class FermiSentence(dict):
-    r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
-    as FermiWord instances and the values correspond to coefficients.
+    r"""Dictionary-based representation of a linear combination of ``FermiWord`` instances.
+    Each key is a unique ``FermiWord`` and its corresponding value is its coefficient in the sentence.
 
-    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qp.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qp.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
@@ -601,13 +608,35 @@ class FermiSentence(dict):
 
         return operator
 
-    def simplify(self, tol=1e-8):
-        r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
-        tolerance."""
+    def prune(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        **Examples**
+
+        >>> w1 = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w2 = qp.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+        >>> s = qp.FermiSentence({w1 : 0, w2: 3.1})
+        >>> s
+        FermiSentence({FermiWord({(0, 0): '+', (1, 1): '-'}): 0, FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+        >>> s.prune()
+        >>> s
+        FermiSentence({FermiWord({(0, 1): '+', (1, 2): '-'}): 3.1})
+
+        """
         items = list(self.items())
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+    def simplify(self, tol=1e-8) -> None:
+        """Remove any FermiWord with coefficients less than the threshold tolerance.
+
+        This method mutates the ``FermiSentence`` in place, and does not return anything.
+
+        .. seealso:: :meth:`~.prune`
+
+        """
+        self.prune(tol)
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
@@ -625,9 +654,9 @@ class FermiSentence(dict):
 
         **Example**
 
-        >>> fw1 = qml.FermiWord({(0, 0): "+", (1, 1): "-"})
-        >>> fw2 = qml.FermiWord({(0, 0): "+", (1, 0): "-"})
-        >>> fs = qml.FermiSentence({fw1: 1.2, fw2: 3.1})
+        >>> fw1 = qp.FermiWord({(0, 0): "+", (1, 1): "-"})
+        >>> fw2 = qp.FermiWord({(0, 0): "+", (1, 0): "-"})
+        >>> fs = qp.FermiSentence({fw1: 1.2, fw2: 3.1})
         >>> fs.to_mat()
         array([[0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
                [0. +0.j, 0. +0.j, 0. +0.j, 0. +0.j],
@@ -675,7 +704,7 @@ def from_string(fermi_string):
     >>> print(from_string('0^ 1 0^ 1'))
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> op1 = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> op1 = qp.FermiC(0) * qp.FermiA(1) * qp.FermiC(2) * qp.FermiA(3)
     >>> op2 = from_string('0+ 1- 2+ 3-')
     >>> op1 == op2
     True
@@ -709,11 +738,11 @@ def _to_string(fermi_op, of=False):
 
     **Example**
 
-    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w)
     '0+ 1-'
 
-    >>> w = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> _to_string(w, of=True)
     '0^ 1'
     """
@@ -741,7 +770,7 @@ class FermiC(FermiWord):
     r"""FermiC(orbital)
     The fermionic creation operator :math:`a^{\dagger}`
 
-    For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^{\dagger}_2`. This operator applied
+    For instance, the operator ``qp.FermiC(2)`` denotes :math:`a^{\dagger}_2`. This operator applied
     to :math:`\ket{0000}` gives :math:`\ket{0010}`.
 
     Args:
@@ -755,14 +784,14 @@ class FermiC(FermiWord):
 
     To construct the operator :math:`a^{\dagger}_0`:
 
-    >>> w = qml.FermiC(0)
+    >>> w = qp.FermiC(0)
     >>> print(w)
     a⁺(0)
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qp.FermiC(0) * qp.FermiA(1) * qp.FermiC(2) * qp.FermiA(3)
     >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """
@@ -785,7 +814,7 @@ class FermiA(FermiWord):
     r"""FermiA(orbital)
     The fermionic annihilation operator :math:`a`
 
-    For instance, the operator ``qml.FermiA(2)`` denotes :math:`a_2`. This operator applied
+    For instance, the operator ``qp.FermiA(2)`` denotes :math:`a_2`. This operator applied
     to :math:`\ket{0010}` gives :math:`\ket{0000}`.
 
     Args:
@@ -799,14 +828,14 @@ class FermiA(FermiWord):
 
     To construct the operator :math:`a_0`:
 
-    >>> w = qml.FermiA(0)
+    >>> w = qp.FermiA(0)
     >>> print(w)
     a(0)
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
     :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
-    >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    >>> w = qp.FermiC(0) * qp.FermiA(1) * qp.FermiC(2) * qp.FermiA(3)
     >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
     """

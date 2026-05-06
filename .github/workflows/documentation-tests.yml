@@ -58,34 +58,37 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group docs --group dev -e . 
+          pip install --group doctest -e . 
 
       - name: Print Dependencies
         run: |
-          python -c "import pennylane as qml; qml.about()"
+          python -c "import pennylane as qp; qp.about()"
           python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
-      - name: Run documentation tests
+      - name: Test 'pennylane' folder
         run: |
           WONT_FIX="
           --ignore=pennylane/labs
+          --ignore=pennylane/logging
           --ignore=pennylane/workflow/interfaces/tensorflow.py
+          --ignore=pennylane/devices/_legacy_device.py
+          --ignore=pennylane/devices/_qubit_device.py
+          --ignore=pennylane/devices/_qutrit_device.py
           "
 
           TO_DO="
+          --ignore=pennylane/pauli/pauli_sparse_matrices.md
           --ignore=pennylane/control_flow
           --ignore=pennylane/math
           --ignore=pennylane/compiler
           --ignore=pennylane/capture
-          --ignore=pennylane/devices
           --ignore=pennylane/shadows
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
           --ignore=pennylane/pulse
           --ignore=pennylane/io
-          --ignore=pennylane/logging
           --ignore=pennylane/qnn
           --ignore=pennylane/qaoa
           --ignore=pennylane/data
@@ -100,3 +103,48 @@ jobs:
           "
 
           pytest pennylane $IGNORE --ignore-glob='*tests*'
+
+      - name: Test 'doc' folder
+        if: always()
+        run: |
+          WONT_FIX="
+          --ignore=doc/code
+          --ignore=doc/releases
+          --ignore=doc/_static
+          --ignore=doc/_templates
+          "
+          TO_DO="
+          --ignore=doc/development
+          --ignore=doc/news
+          --ignore=doc/introduction/chemistry.rst
+          --ignore=doc/introduction/compiling_circuits.rst
+          --ignore=doc/introduction/compiling_workflows.rst
+          --ignore=doc/introduction/circuits.rst
+          --ignore=doc/introduction/configuration.rst
+          --ignore=doc/introduction/data.rst
+          --ignore=doc/introduction/dynamic_quantum_circuits.rst
+          --ignore=doc/introduction/importing_workflows.rst
+          --ignore=doc/introduction/inspecting_circuits.rst
+          --ignore=doc/introduction/interfaces.rst
+          --ignore=doc/introduction/interfaces
+          --ignore=doc/introduction/logging.rst
+          --ignore=doc/introduction/measurements.rst
+          --ignore=doc/introduction/pennylane.rst
+          --ignore=doc/introduction/templates.rst
+          --ignore=doc/introduction/unsupported_gradients.rst
+          "
+
+          IGNORE="
+          ${WONT_FIX}
+          ${TO_DO}
+          "
+
+          pytest doc ${IGNORE}
+
+        # NOTE: Suppress pytest exit code 5 (No Tests Collected).
+        # This avoids CI breakage when the changelog is reset after a RC
+        # branch is cut and hasn't yet accumulated any code snippets to test.
+      - name: Test `changelog-dev.md` file
+        if: always()
+        run: |
+          pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 

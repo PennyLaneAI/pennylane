@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The bosonic representation classes and functions."""
+
 from copy import copy
 
 from pennylane import math
@@ -28,7 +29,7 @@ class BoseWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`b^{\dagger}_0 b_1` can then be constructed as
 
-    >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qp.BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> print(w)
     b⁺(0) b(1)
     """
@@ -110,7 +111,7 @@ class BoseWord(dict):
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'b⁺(0) b(1)'
         """
@@ -123,7 +124,9 @@ class BoseWord(dict):
             [
                 "b" + symbol_map[j] + "(" + i + ")"
                 for i, j in zip(
-                    [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
+                    [str(i[1]) for i in self.sorted_dic.keys()],
+                    self.sorted_dic.values(),
+                    strict=True,
                 )
             ]
         )
@@ -176,7 +179,9 @@ class BoseWord(dict):
             return self_bs + BoseSentence({other: -1.0})
 
         if isinstance(other, BoseSentence):
-            other_bs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            other_bs = BoseSentence(
+                dict(zip(other.keys(), [-v for v in other.values()], strict=True))
+            )
             return self_bs + other_bs
 
         if not isinstance(other, TensorLike):
@@ -207,7 +212,7 @@ class BoseWord(dict):
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
-        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -226,9 +231,10 @@ class BoseWord(dict):
                 zip(
                     [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
                     other.values(),
+                    strict=True,
                 )
             )
-            dict_self = dict(zip(self.keys(), self.values()))
+            dict_self = dict(zip(self.keys(), self.values(), strict=True))
 
             dict_self.update(dict_other)
 
@@ -261,7 +267,7 @@ class BoseWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Bose word to an integer power.
 
-        >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qp.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -278,7 +284,7 @@ class BoseWord(dict):
     def normal_order(self):
         r"""Convert a BoseWord to its normal-ordered form.
 
-        >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bw = qp.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
         2.0 * I
         + 4.0 * b⁺(0) b(0)
@@ -417,9 +423,9 @@ class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
-    >>> w1 = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.BoseWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> s = qml.BoseSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qp.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qp.BoseWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qp.BoseSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * b⁺(0) b(1)
     + 3.1 * b⁺(1) b(2)
@@ -501,7 +507,9 @@ class BoseSentence(dict):
             return self.__add__(other)
 
         if isinstance(other, BoseSentence):
-            other = BoseSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
+            other = BoseSentence(
+                dict(zip(other.keys(), [-1 * v for v in other.values()], strict=True))
+            )
             return self.__add__(other)
 
         if not isinstance(other, TensorLike):
@@ -528,7 +536,7 @@ class BoseSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        self_bs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        self_bs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()], strict=True)))
         other_bs = BoseSentence({BoseWord({}): other})  # constant * I
         return self_bs + other_bs
 
@@ -560,7 +568,7 @@ class BoseSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
         vals = [i * other for i in self.values()]
-        return BoseSentence(dict(zip(self.keys(), vals)))
+        return BoseSentence(dict(zip(self.keys(), vals, strict=True)))
 
     def __rmul__(self, other):
         r"""Reverse multiply a BoseSentence
@@ -580,7 +588,7 @@ class BoseSentence(dict):
             )
 
         vals = [i * other for i in self.values()]
-        return BoseSentence(dict(zip(self.keys(), vals)))
+        return BoseSentence(dict(zip(self.keys(), vals, strict=True)))
 
     def __pow__(self, value):
         r"""Exponentiate a Bose sentence to an integer power."""
@@ -605,8 +613,8 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form.
 
-        >>> bw = qml.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
-        >>> bs = qml.BoseSentence({bw: 1})
+        >>> bw = qp.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bs = qp.BoseSentence({bw: 1})
         >>> print(bs.normal_order())
         2.0 * I
         + 4.0 * b⁺(0) b(0)

@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import execute
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
@@ -32,22 +33,22 @@ pytestmark = pytest.mark.jax
 def get_device(device_name, seed):
     if device_name == "param_shift.qubit":
         return ParamShiftDerivativesDevice(seed=seed)
-    return qml.device(device_name, seed=seed)
+    return qp.device(device_name, seed=seed)
 
 
 def test_jit_execution():
-    """Test that qml.execute can be directly jitted."""
-    dev = qml.device("default.qubit")
+    """Test that qp.execute can be directly jitted."""
+    dev = qp.device("default.qubit")
 
-    tape = qml.tape.QuantumScript(
-        [qml.RX(jax.numpy.array(0.1), 0)], [qml.expval(qml.s_prod(2.0, qml.PauliZ(0)))]
+    tape = qp.tape.QuantumScript(
+        [qp.RX(jax.numpy.array(0.1), 0)], [qp.expval(qp.s_prod(2.0, qp.PauliZ(0)))]
     )
 
-    out = jax.jit(qml.execute, static_argnames=("device", "diff_method"))(
-        (tape,), device=dev, diff_method=qml.gradients.param_shift
+    out = jax.jit(qp.execute, static_argnames=("device", "diff_method"))(
+        (tape,), device=dev, diff_method=qp.gradients.param_shift
     )
     expected = 2.0 * jax.numpy.cos(jax.numpy.array(0.1))
-    assert qml.math.allclose(out[0], expected)
+    assert qp.math.allclose(out[0], expected)
 
 
 # pylint: disable=too-few-public-methods
@@ -66,23 +67,23 @@ class TestCaching:
         N = len(params)
 
         def cost(x, cache):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
 
                 for i in range(2, num_params):
-                    qml.RZ(x[i], wires=[i % 2])
+                    qp.RZ(x[i], wires=[i % 2])
 
-                qml.CNOT(wires=[0, 1])
-                qml.var(qml.prod(qml.PauliZ(0), qml.PauliX(1)))
+                qp.CNOT(wires=[0, 1])
+                qp.var(qp.prod(qp.PauliZ(0), qp.PauliX(1)))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute(
-                [tape], device, diff_method=qml.gradients.param_shift, cache=cache, max_diff=2
+            tape = qp.tape.QuantumScript.from_queue(q)
+            return qp.execute(
+                [tape], device, diff_method=qp.gradients.param_shift, cache=cache, max_diff=2
             )[0]
 
         # No caching: number of executions is not ideal
-        with qml.Tracker(device) as tracker:
+        with qp.Tracker(device) as tracker:
             hess1 = jax.jacobian(jax.grad(cost))(params, cache=False)
 
         if num_params == 2:
@@ -113,7 +114,7 @@ class TestCaching:
 
         # Use caching: number of executions is ideal
 
-        with qml.Tracker(device) as tracker2:
+        with qp.Tracker(device) as tracker2:
             hess2 = jax.jacobian(jax.grad(cost))(params, cache=True)
         assert np.allclose(hess1, hess2)
 
@@ -163,11 +164,11 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, b):
-            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+            ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
+            tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
@@ -187,8 +188,8 @@ class TestJaxExecuteIntegration:
             assert res[0].shape == ()
             assert res[1].shape == ()
 
-        assert qml.math.allclose(res[0], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
-        assert qml.math.allclose(res[1], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
+        assert qp.math.allclose(res[0], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
+        assert qp.math.allclose(res[1], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test scalar jacobian calculation"""
@@ -197,14 +198,14 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a):
-            tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape = qp.tape.QuantumScript([qp.RY(a, 0)], [qp.expval(qp.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         res = jax.jacobian(cost)(a)
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
 
-        expected = -qml.math.sin(a)
+        expected = -qp.math.sin(a)
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
@@ -219,9 +220,9 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, b):
-            ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
-            m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
+            ops = [qp.RY(a, wires=0), qp.RX(b, wires=1), qp.CNOT(wires=[0, 1])]
+            m = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         res = cost(a, b)
@@ -256,24 +257,22 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(params):
-            tape1 = qml.tape.QuantumScript(
-                [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
-            )
+            tape1 = qp.tape.QuantumScript([qp.Hadamard(0)], [qp.expval(qp.PauliX(0))], shots=shots)
 
-            tape2 = qml.tape.QuantumScript(
-                [qml.RY(jnp.array(0.5), wires=0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape2 = qp.tape.QuantumScript(
+                [qp.RY(jnp.array(0.5), wires=0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
 
-            tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape3 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
 
-            tape4 = qml.tape.QuantumScript(
-                [qml.RY(jnp.array(0.5), 0)], [qml.probs(wires=[0, 1])], shots=shots
+            tape4 = qp.tape.QuantumScript(
+                [qp.RY(jnp.array(0.5), 0)], [qp.probs(wires=[0, 1])], shots=shots
             )
             res = execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
             res = jax.tree_util.tree_leaves(res)
@@ -301,22 +300,22 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(params):
-            tape1 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))],
+            tape1 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))],
                 shots=shots,
             )
 
-            tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5), 0)], [qml.expval(qml.PauliZ(0))], shots=shots
+            tape2 = qp.tape.QuantumScript(
+                [qp.RY(np.array(0.5), 0)], [qp.expval(qp.PauliZ(0))], shots=shots
             )
 
-            tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape3 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
-            res = qml.execute([tape1, tape2, tape3], device, **execute_kwargs)
+            res = qp.execute([tape1, tape2, tape3], device, **execute_kwargs)
             leaves = jax.tree_util.tree_leaves(res)
             return jnp.hstack(leaves)
 
@@ -382,9 +381,9 @@ class TestJaxExecuteIntegration:
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
-        tape = qml.tape.QuantumScript(
-            [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
-            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))],
+        tape = qp.tape.QuantumScript(
+            [qp.RY(a, 0), qp.RX(b, 1), qp.CNOT((0, 1))],
+            [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))],
             shots=shots,
         )
         assert tape.trainable_params == [0, 1]
@@ -436,12 +435,12 @@ class TestJaxExecuteIntegration:
 
         def cost(a, b, c):
             ops = [
-                qml.RY(a * c, wires=0),
-                qml.RZ(b, wires=0),
-                qml.RX(c + c**2 + jnp.sin(a), wires=0),
+                qp.RY(a * c, wires=0),
+                qp.RZ(b, wires=0),
+                qp.RX(c + c**2 + jnp.sin(a), wires=0),
             ]
 
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         res = jax.jacobian(cost, argnums=[0, 2])(a, b, c)
@@ -463,8 +462,8 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, U):
-            ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
+            ops = [qp.QubitUnitary(U, wires=0), qp.RY(a, wires=0)]
+            tape = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         res = cost(a, U)
@@ -482,7 +481,7 @@ class TestJaxExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class MyU3(qml.U3):
+        class MyU3(qp.U3):
             """Dummy operator."""
 
             name = "MyU3"
@@ -491,26 +490,26 @@ class TestJaxExecuteIntegration:
                 theta, phi, lam = self.data
                 wires = self.wires
                 return [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
+                    qp.Rot(lam, theta, -lam, wires=wires),
+                    qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
         def cost_fn(a, p):
-            tape = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), MyU3(*p, wires=0)],
-                [qml.expval(qml.PauliX(0))],
+            tape = qp.tape.QuantumScript(
+                [qp.RX(a, wires=0), MyU3(*p, wires=0)],
+                [qp.expval(qp.PauliX(0))],
                 shots=shots,
             )
             return execute([tape], device, **execute_kwargs)[0]
 
-        with qml.decomposition.local_decomps():
+        with qp.decomposition.local_decomps():
 
-            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
             def _decomp(theta, phi, lam, wires):
-                qml.Rot(lam, theta, -lam, wires)
-                qml.PhaseShift(phi + lam, wires)
+                qp.Rot(lam, theta, -lam, wires)
+                qp.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(MyU3, _decomp)
+            qp.add_decomps(MyU3, _decomp)
 
             a = jnp.array(0.1)
             p = jnp.array([0.1, 0.2, 0.3])
@@ -546,9 +545,9 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(x, y):
-            ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
-            m = [qml.probs(wires=0), qml.probs(wires=1)]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
+            ops = [qp.RX(x, 0), qp.RY(y, 1), qp.CNOT((0, 1))]
+            m = [qp.probs(wires=0), qp.probs(wires=1)]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
             return jnp.hstack(jnp.array(execute([tape], device, **execute_kwargs)[0]))
 
         x = jnp.array(0.543)
@@ -611,10 +610,10 @@ class TestJaxExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(x, y):
-            ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
-            m = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            res = qml.execute([tape], device, **execute_kwargs)[0]
+            ops = [qp.RX(x, wires=0), qp.RY(y, 1), qp.CNOT((0, 1))]
+            m = [qp.expval(qp.PauliZ(0)), qp.probs(wires=1)]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
+            res = qp.execute([tape], device, **execute_kwargs)[0]
             return jnp.hstack(jax.tree_util.tree_leaves(res))
 
         x = jnp.array(0.543)
@@ -667,11 +666,11 @@ class TestHigherOrderDerivatives:
         dev = DefaultQubit()
 
         def cost_fn(x):
-            ops1 = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))])
+            ops1 = [qp.RX(x[0], 0), qp.RY(x[1], 1), qp.CNOT((0, 1))]
+            tape1 = qp.tape.QuantumScript(ops1, [qp.var(qp.PauliZ(0) @ qp.PauliX(1))])
 
-            ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
+            ops2 = [qp.RX(x[0], 0), qp.RY(x[0], 1), qp.CNOT((0, 1))]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.probs(wires=1)])
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
@@ -702,13 +701,11 @@ class TestHigherOrderDerivatives:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(
-                ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))], shots=50000
-            )
+            ops = [qp.RX(x[0], 0), qp.RY(x[1], 1), qp.CNOT((0, 1))]
+            tape1 = qp.tape.QuantumScript(ops, [qp.var(qp.PauliZ(0) @ qp.PauliX(1))], shots=50000)
 
-            ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)], shots=50000)
+            ops2 = [qp.RX(x[0], 0), qp.RY(x[0], 1), qp.CNOT((0, 1))]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.probs(wires=1)], shots=50000)
 
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
@@ -730,7 +727,7 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
-@pytest.mark.parametrize("constructor", (qml.Hamiltonian, qml.dot, "dunders"))
+@pytest.mark.parametrize("constructor", (qp.Hamiltonian, qp.dot, "dunders"))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -744,26 +741,24 @@ class TestHamiltonianWorkflows:
 
         def _cost_fn(weights, coeffs1, coeffs2):
             if constructor == "dunders":
-                H1 = (
-                    coeffs1[0] * qml.Z(0) + coeffs1[1] * qml.Z(0) @ qml.X(1) + coeffs1[2] * qml.Y(0)
-                )
-                H2 = coeffs2[0] * qml.Z(0)
+                H1 = coeffs1[0] * qp.Z(0) + coeffs1[1] * qp.Z(0) @ qp.X(1) + coeffs1[2] * qp.Y(0)
+                H2 = coeffs2[0] * qp.Z(0)
             else:
 
-                obs1 = [qml.Z(0), qml.Z(0) @ qml.X(1), qml.Y(0)]
+                obs1 = [qp.Z(0), qp.Z(0) @ qp.X(1), qp.Y(0)]
                 H1 = constructor(coeffs1, obs1)
 
-                obs2 = [qml.PauliZ(0)]
+                obs2 = [qp.PauliZ(0)]
                 H2 = constructor(coeffs2, obs2)
 
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(weights[0], wires=0)
-                qml.RY(weights[1], wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(H1)
-                qml.expval(H2)
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(weights[0], wires=0)
+                qp.RY(weights[1], wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.expval(H1)
+                qp.expval(H2)
 
-            tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+            tape = qp.tape.QuantumScript.from_queue(q, shots=shots)
             res = execute([tape], device, **execute_kwargs)[0]
             if shots.has_partitioned_shots:
                 return jnp.hstack(res[0] + res[1])

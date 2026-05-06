@@ -57,7 +57,7 @@ def add_noise(tape, noise_model, level="user"):
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
-        Transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        Transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ValueError: argument ``noise_model`` is not a valid noise model.
@@ -75,37 +75,37 @@ def add_noise(tape, noise_model, level="user"):
 
     .. code-block:: python
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
-        noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+        fcond1 = qp.noise.op_eq(qp.RX) & qp.noise.wires_in([0, 1])
+        noise1 = qp.noise.partial_wires(qp.PhaseDamping, 0.4)
 
-        fcond2 = qml.noise.op_in([qml.RX, qml.RZ])
+        fcond2 = qp.noise.op_in([qp.RX, qp.RZ])
         def noise2(op, **kwargs):
-            qml.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
+            qp.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
 
-        fcond3 = qml.noise.meas_eq(qml.expval) & qml.noise.wires_in([0, 1])
-        noise3 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
+        fcond3 = qp.noise.meas_eq(qp.expval) & qp.noise.wires_in([0, 1])
+        noise3 = qp.noise.partial_wires(qp.PhaseFlip, 0.2)
 
-        noise_model = qml.NoiseModel(
+        noise_model = qp.NoiseModel(
             {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
         )
 
-        @qml.noise.add_noise(noise_model=noise_model)
-        @qml.qnode(dev)
+        @qp.noise.add_noise(noise_model=noise_model)
+        @qp.qnode(dev)
         def circuit(w, x, y, z):
-            qml.RX(w, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RY(y, wires=0)
-            qml.RX(z, wires=1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(w, wires=0)
+            qp.RY(x, wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RY(y, wires=0)
+            qp.RX(z, wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
     Executions of this circuit will differ from the noise-free value:
 
     >>> circuit(0.9, 0.4, 0.5, 0.6)
     np.float64(0.5440530007721438)
-    >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
+    >>> print(qp.draw(circuit)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50) ···
     1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60) ···
     <BLANKLINE>
@@ -122,22 +122,22 @@ def add_noise(tape, noise_model, level="user"):
 
         .. code-block:: python
 
-            dev = qml.device("default.mixed", wires=3)
+            dev = qp.device("default.mixed", wires=3)
 
-            @qml.metric_tensor
-            @qml.transforms.undo_swaps
-            @qml.transforms.merge_rotations
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev)
+            @qp.metric_tensor
+            @qp.transforms.undo_swaps
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
             def circuit(w, x, y, z):
-                qml.RX(w, wires=0)
-                qml.RY(x, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(y, wires=0)
-                qml.RX(z, wires=1)
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                qp.RX(w, wires=0)
+                qp.RY(x, wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(y, wires=0)
+                qp.RX(z, wires=1)
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
-            noisy_circuit = qml.noise.add_noise(circuit, noise_model)
+            noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
         >>> from pennylane.workflow import get_compile_pipeline
         >>> print(get_compile_pipeline(circuit)(1,2,3,4))
@@ -175,7 +175,7 @@ def add_noise(tape, noise_model, level="user"):
         transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
         :func:`get_compile_pipeline<pennylane.workflow.get_compile_pipeline>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -195,12 +195,12 @@ def add_noise(tape, noise_model, level="user"):
         to an empty compile pipeline, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level="top").compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="top").compile_pipeline)
         CompilePipeline(
           [1] add_noise(..., level=top)
         )
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level="user").compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="user").compile_pipeline)
          CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -210,7 +210,7 @@ def add_noise(tape, noise_model, level="user"):
           [6] add_noise(..., level=user)
         )
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -228,14 +228,14 @@ def add_noise(tape, noise_model, level="user"):
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level=2).compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level=2).compile_pipeline)
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] add_noise(..., level=2)
         )
 
-        >>> print(qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline)
+        >>> print(qp.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline)
         CompilePipeline(
           [1] merge_rotations(),
           [2] undo_swaps(),
@@ -410,14 +410,14 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit')
+            dev = qp.device('default.qubit')
 
-            @qml.metric_tensor # final transform
-            @qml.transforms.merge_rotations # transform 2
-            @qml.transforms.cancel_inverses # transform 1
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            @qp.metric_tensor # final transform
+            @qp.transforms.merge_rotations # transform 2
+            @qp.transforms.cancel_inverses # transform 1
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit():
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 

@@ -13,5 +13,15 @@
 # limitations under the License.
 r"""This module contains resource operators for basic PennyLane Operators"""
 
-from .op_math import ch_resource_decomp, ch_toffoli_based_resource_decomp
-from .qubit import hadamard_controlled_resource_decomp, hadamard_toffoli_based_controlled_decomp
+from .qubit import (
+    paulirot_controlled_resource_decomp,
+    hadamard_controlled_resource_decomp,
+    hadamard_toffoli_based_controlled_decomp,
+)
+from .op_math import (
+    ch_resource_decomp,
+    ch_toffoli_based_resource_decomp,
+    mcx_one_clean_aux_resource_decomp,
+    mcx_one_dirty_aux_resource_decomp,
+    mcx_many_clean_aux_resource_decomp,
+)

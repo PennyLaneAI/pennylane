@@ -15,6 +15,7 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+
 import warnings
 
 from pennylane import exceptions
@@ -38,6 +39,7 @@ from pennylane.decomposition import (
     register_condition,
     add_decomps,
     list_decomps,
+    inspect_decomps,
     resource_rep,
 )
 from pennylane import templates
@@ -113,6 +115,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     decompose,
+    decomp_inspector,
     defer_measurements,
     dynamic_one_shot,
     quantum_monte_carlo,
@@ -203,7 +206,9 @@ from pennylane import qnn
 
 from pennylane import estimator
 
+# pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version
+
 from importlib.util import find_spec as _find_spec
 from packaging.version import Version as _Version
 
@@ -220,16 +225,12 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
+from ._entry_points_utils import _setup_entry_points  # pylint:disable=wrong-import-position
 
-def __getattr__(name):
+# add to _entry_point_groups as new groups are added and desired to be accessed top-level
+_entry_point_groups = ["pennylane.drawer"]
 
-    if name == "plugin_devices":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.devices.device_constructor import plugin_devices
-
-        return plugin_devices
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
+__all__, __getattr__, __dir__ = _setup_entry_points(__name__, _entry_point_groups)
 
 
 def version():

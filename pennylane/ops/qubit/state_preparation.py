@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+
 from importlib.util import find_spec
 
 # pylint: disable=too-many-branches,arguments-differ
@@ -24,7 +25,7 @@ import numpy as np
 import scipy as sp
 from scipy.sparse import csr_array, csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
@@ -73,11 +74,11 @@ class BasisState(StatePrepBase):
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=2)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.BasisState(np.array([1, 1]), wires=range(2))
-    ...     return qml.state()
+    ...     qp.BasisState(np.array([1, 1]), wires=range(2))
+    ...     return qp.state()
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
@@ -86,6 +87,11 @@ class BasisState(StatePrepBase):
 
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
     @property
@@ -96,19 +102,19 @@ class BasisState(StatePrepBase):
 
         wires = Wires(wires)
         if isinstance(state, list):
-            state = qml.math.stack(state)
+            state = qp.math.stack(state)
 
-        tracing = qml.math.is_abstract(state)
+        tracing = qp.math.is_abstract(state)
 
-        if not qml.math.shape(state):
+        if not qp.math.shape(state):
             if not tracing and state >= 2 ** len(wires):
                 raise ValueError(
                     f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
                 )
             bin = 2 ** math.arange(len(wires))[::-1]
-            state = qml.math.where((state & bin) > 0, 1, 0)
+            state = qp.math.where((state & bin) > 0, 1, 0)
 
-        shape = qml.math.shape(state)
+        shape = qp.math.shape(state)
 
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
@@ -120,10 +126,10 @@ class BasisState(StatePrepBase):
             )
 
         if not tracing:
-            state_list = list(qml.math.toarray(state))
+            state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-        state = qml.math.cast(state, int)
+        state = qp.math.cast(state, int)
         super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
@@ -153,19 +159,19 @@ class BasisState(StatePrepBase):
 
         **Example:**
 
-        >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
+        >>> qp.BasisState.compute_decomposition([1,0], wires=(0,1))
         [X(0)]
 
         """
 
-        if not qml.math.is_abstract(state):
-            return [qml.X(wire) for wire, basis in zip(wires, state) if basis == 1]
+        if not qp.math.is_abstract(state):
+            return [qp.X(wire) for wire, basis in zip(wires, state) if basis == 1]
 
         op_list = []
         for wire, basis in zip(wires, state):
-            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
-            op_list.append(qml.RX(basis * np.pi, wire))
-            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
+            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
+            op_list.append(qp.RX(basis * np.pi, wire))
+            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
 
         return op_list
 
@@ -185,7 +191,7 @@ class BasisState(StatePrepBase):
             for base_wire_label, value in zip(self.wires, prep_vals_int):
                 indices[wire_order.index(base_wire_label)] = value
 
-        if qml.math.get_interface(prep_vals_int) == "jax":
+        if qp.math.get_interface(prep_vals_int) == "jax":
             ket = math.array(math.zeros((2,) * num_wires), like="jax")
             ket = ket.at[tuple(indices)].set(1)
 
@@ -198,52 +204,52 @@ class BasisState(StatePrepBase):
 
 def _jax_jit_basis_state_resources(num_wires):
     resources = {
-        pow_resource_rep(qml.X, base_params={}, z=0): num_wires // 2,
-        pow_resource_rep(qml.X, base_params={}, z=1): num_wires - num_wires // 2,
+        pow_resource_rep(qp.X, base_params={}, z=0): num_wires // 2,
+        pow_resource_rep(qp.X, base_params={}, z=1): num_wires - num_wires // 2,
     }
     return resources
 
 
 def _jax_jit_basis_state_cond(**_):
-    if qml.capture.enabled() or qml.compiler.active():
+    if qp.capture.enabled() or qp.compiler.active():
         return False
 
     if find_spec("jax") is None:
         return False
 
-    x = qml.math.array(0.2, like="jax")
+    x = qp.math.array(0.2, like="jax")
     # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
-    return qml.math.is_abstract(x)
+    return qp.math.is_abstract(x)
 
 
 @register_condition(_jax_jit_basis_state_cond)
 @register_resources(_jax_jit_basis_state_resources, exact=False)
 def _jax_jit_basis_state_decomp(state, wires, **__):
-    _ = [qml.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
 
 
 def _basis_state_decomp_resources(num_wires):
-    return {qml.X: num_wires - num_wires // 2}
+    return {qp.X: num_wires - num_wires // 2}
 
 
 @register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    if qml.capture.enabled() or qml.compiler.active():
+    if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
         import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
-        if not qml.math.is_abstract(state):
+        if not qp.math.is_abstract(state):
             state = jnp.array(state)
 
-        if not qml.math.is_abstract(wires):
+        if not qp.math.is_abstract(wires):
             wires = jnp.array(wires)
 
-    @qml.for_loop(len(state))
+    @qp.for_loop(len(state))
     def _loop(i):
-        qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
+        qp.cond(qp.math.allclose(state[i], 1), qp.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -292,14 +298,14 @@ class StatePrep(StatePrepBase):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(state=None):
-                qml.StatePrep(state, wires=range(2))
-                return qml.expval(qml.Z(0)), qml.state()
+                qp.StatePrep(state, wires=range(2))
+                return qp.expval(qp.Z(0)), qp.state()
 
             res, state = circuit([1/2, 1/2, 1/2, 1/2])
 
@@ -323,10 +329,10 @@ class StatePrep(StatePrepBase):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(state=None):
-                qml.StatePrep(state, wires=range(2), normalize=True)
-                return qml.expval(qml.Z(0)), qml.state()
+                qp.StatePrep(state, wires=range(2), normalize=True)
+                return qp.expval(qp.Z(0)), qp.state()
 
             res, state = circuit([15, 15, 15, 15])
 
@@ -342,10 +348,10 @@ class StatePrep(StatePrepBase):
 
             from math import sqrt
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(state=None):
-                qml.StatePrep(state, wires=range(2), pad_with=0.)
-                return qml.expval(qml.Z(0)), qml.state()
+                qp.StatePrep(state, wires=range(2), pad_with=0.)
+                return qp.expval(qp.Z(0)), qp.state()
 
             res, state = circuit([1/sqrt(2), 1/sqrt(2)])
 
@@ -359,7 +365,7 @@ class StatePrep(StatePrepBase):
         .. code-block:: pycon
 
             >>> init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
-            >>> qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+            >>> qsv_op = qp.StatePrep(init_state, wires=[1, 2])
             >>> wire_order = [0, 1, 2]
             >>> ket = qsv_op.state_vector(wire_order=wire_order)
             >>> print(ket)  # Sparse representation
@@ -372,7 +378,7 @@ class StatePrep(StatePrepBase):
 
             # Normalization also works with sparse inputs:
             >>> init_state_sparse = sp.sparse.csr_matrix([1, 1, 1, 1]) # Unnormalized
-            >>> qsv_op_norm = qml.StatePrep(init_state_sparse, wires=range(2), normalize=True)
+            >>> qsv_op_norm = qp.StatePrep(init_state_sparse, wires=range(2), normalize=True)
             >>> ket_norm = qsv_op_norm.state_vector()
             >>> print(ket_norm.toarray().flatten()) # Normalized dense representation
             [0.5 0.5 0.5 0.5]
@@ -391,6 +397,15 @@ class StatePrep(StatePrepBase):
 
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
+
+    @classmethod
+    def _primitive_bind_call(cls, state, wires, **kwargs):
+        if isinstance(state, (tuple, list)):
+            if any(qp.math.is_abstract(x) for x in state):
+                state = qp.math.asarray(state, like="jax")
+            else:
+                state = qp.math.asarray(state)
+        return super()._primitive_bind_call(state, wires, **kwargs)
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
@@ -447,7 +462,7 @@ class StatePrep(StatePrepBase):
 
         **Example:**
 
-        >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
+        >>> qp.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
         [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
@@ -624,12 +639,12 @@ class StatePrep(StatePrepBase):
 
 
 def _stateprep_resources(num_wires):
-    return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
+    return {qp.resource_rep(qp.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
 @register_resources(_stateprep_resources)
 def _state_prep_decomp(state, wires, **_):
-    qml.MottonenStatePreparation(state, wires)
+    qp.MottonenStatePreparation(state, wires)
 
 
 add_decomps(StatePrep, _state_prep_decomp)
@@ -666,16 +681,16 @@ class QubitDensityMatrix(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             nr_wires = 2
             rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
             rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
 
-            dev = qml.device("default.mixed", wires=2)
-            @qml.qnode(dev)
+            dev = qp.device("default.mixed", wires=2)
+            @qp.qnode(dev)
             def circuit():
-                qml.QubitDensityMatrix(rho, wires=[0, 1])
-                return qml.state()
+                qp.QubitDensityMatrix(rho, wires=[0, 1])
+                return qp.state()
 
         Running this circuit:
 
