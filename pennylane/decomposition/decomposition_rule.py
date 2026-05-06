@@ -491,13 +491,64 @@ class DecompositionRule:
 
 
 class DecompCollection:
-    """A collection of decomposition rules.
+    """An ordered, name-addressable collection of :class:`~pennylane.DecompositionRule` objects.
 
-    The :func:`~pennylane.list_decomps` function returns a ``DecompCollection`` for an operator,
-    which is an ordered sequence of decomposition rules. Individual decomposition rules within a
-    collection can be accessed by index or by name.
+    A ``DecompCollection`` is most commonly returned by :func:`~pennylane.list_decomps`, which
+    retrieves all registered decomposition rules for a given operator. Each rule in the collection
+    has a unique name (derived from the decorated function name by default, or explicitly set via
+    :func:`~pennylane.register_resources` with ``name="..."``).
 
-    .. seealso:: :func:`~pennylane.list_decomps`
+    Individual rules can be accessed by integer index or by string name. The collection supports
+    :func:`len`, iteration, membership checks (by name or by :class:`~pennylane.DecompositionRule`
+    instance), :meth:`copy`, :meth:`append`, :meth:`extend`, ``+``, and ``+=``.  Duplicate names
+    within a collection are rejected with a ``ValueError``.
+
+    .. important::
+
+        A ``DecompCollection`` returned by :func:`~pennylane.list_decomps` is a **copy** of the
+        internally registered rules.  Mutating it (e.g. with :meth:`append` or :meth:`extend`)
+        does **not** update the global decomposition registry.  Use :func:`~pennylane.add_decomps`
+        to register new decomposition rules globally.
+
+    .. seealso::
+
+        :class:`~pennylane.DecompositionRule`,
+        :func:`~pennylane.register_resources`,
+        :func:`~pennylane.list_decomps`,
+        :func:`~pennylane.add_decomps`,
+        :func:`~pennylane.inspect_decomps`
+
+    **Examples**
+
+    Retrieve and explore decomposition rules for an operator:
+
+    >>> import pennylane as qp
+    >>> decomps = qp.list_decomps(qp.CRX)
+    >>> len(decomps)
+    4
+    >>> print(decomps)
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
+
+    Access rules by index or by name:
+
+    >>> decomps[0]
+    DecompositionRule(name=_crx_to_rx_cz)
+    >>> decomps["_crx_to_ppr"]
+    DecompositionRule(name=_crx_to_ppr)
+
+    Check membership:
+
+    >>> "_crx_to_ppr" in decomps
+    True
+
+    Iterate through rule names:
+
+    >>> [rule.name for rule in decomps]
+    ['_crx_to_rx_cz', '_crx_to_rz_ry', '_crx_to_h_crz', '_crx_to_ppr']
 
     """
 
@@ -673,6 +724,9 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
+            The returned :class:`~pennylane.DecompCollection` is a **copy** of the registered
+            rules.  Mutating it does not update the global decomposition registry; use
+            :func:`~pennylane.add_decomps` to register rules globally.
 
     **Example**
 
