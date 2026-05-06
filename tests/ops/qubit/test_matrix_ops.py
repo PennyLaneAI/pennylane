@@ -907,7 +907,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
-
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             fn = qp.qjit(qp.matrix(rule, wire_order=op.wires), static_argnums=[1])
             mat = fn(*op.data, op.wires, **op.hyperparameters)
