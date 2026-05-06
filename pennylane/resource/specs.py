@@ -888,7 +888,7 @@ def specs(
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
         >>> all_specs = qp.specs(circuit, level="all")(1.23)
-        >>> all_specs
+        >>> prtin(all_specs)
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -913,7 +913,7 @@ def specs(
         :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. The resources
         associated with a particular level can be accessed using the returned level name as follows:
 
-        >>> all_specs.resources['merge-rotations']
+        >>> print(all_specs.resources['merge-rotations'])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -927,7 +927,7 @@ def specs(
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
-        >>> qp.specs(circuit, level="user")(1.23).resources
+        >>> print(qp.specs(circuit, level="user")(1.23).resources)
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -955,7 +955,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
-        >>> qp.specs(circuit, level="all")()
+        >>> print(qp.specs(circuit, level="all")())
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
