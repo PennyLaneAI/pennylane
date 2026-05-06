@@ -203,7 +203,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
             for w in op.wires:
                 waiting_dynamic_wires[w] = queue
         elif _dynamic_wires and all(w in waiting_dynamic_wires for w in op.wires):
-            print(op)
             op_layer = 0
             for w in op.wires:
                 waiting_dynamic_wires[w].append(op)
@@ -245,14 +244,9 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
                         inner_layers = drawable_layers(
                             queue, wire_map=wire_map, bit_map=bit_map, _dynamic_wires=False
                         )
-                        print("inner_lyaers")
-                        for l in inner_layers:
-                            print(l)
-                        print()
                         for i, layer in enumerate(reversed(inner_layers)):
                             insert_layer = op_layer - i - 1
                             if insert_layer < 0:
-                                print("inserting things")
                                 ops_in_layer.insert(0, [])
                                 op_layer += 1
                                 max_layer += 1

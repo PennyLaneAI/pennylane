@@ -28,25 +28,27 @@ from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 
 
-def wire_extent(layers: list[list], wire_map: dict) -> dict:
+def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
     """Determine the extent of wires."""
     extent = {}
     for layer_idx, layer in enumerate(layers):
         for op in layer:
             if isinstance(op, Allocate):
                 for w in op.wires:
-                    extent[w] = (layer_idx,)
+                    extent[wire_map[w]] = [layer_idx]
             if isinstance(op, Deallocate):
                 for w in op.wires:
-                    extent[w] = (extent[w][0], layer_idx)
+                    extent[wire_map[w]].append(layer_idx)
     for w in wire_map:
-        if w not in extent:
+        if wire_map[w] not in extent:
             if isinstance(w, DynamicWire):
-                extent[w] = (-2, -2)
+                extent[wire_map[w]] = [-2, -2]
             else:
-                extent[w] = (-1, len(layers))
+                extent[wire_map[w]] = [-1, len(layers)]
 
-    return {wire_map[w]: v for w, v in extent.items()}
+    print(extent)
+    wire_map, connected_layers, _ = _try_line_reuse(wire_map, extent, None)
+    return wire_map, connected_layers
 
 
 def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
@@ -301,49 +303,58 @@ def cwire_connections(layers, bit_map):
                 if con_wire is not None:
                     connected_wires[cwire].append(con_wire)
 
-    bit_map, connected_layers, connected_wires = _try_reusing_cwires(
+    print(connected_layers)
+    bit_map, connected_layers, connected_wires = _try_line_reuse(
         bit_map, connected_layers, connected_wires
     )
 
     return bit_map, connected_layers, connected_wires
 
 
-def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
+def _try_line_reuse(order_map, connected_layers, connected_wires):
     # Extract (start, end) tuples (incl end) where each cwire is occupied with old bit map
     occupation = {
         cwire: (min(con_layer), max(con_layer)) for cwire, con_layer in connected_layers.items()
     }
     # Mark until where each cwire is currently occupied during the following loop.
     # Start with -1 for each cwire
-    occ_ends = -np.ones(len(bit_map))
+    occ_ends = -np.ones(len(order_map))
     # Write a map from old cwires to new cwires
-    cwire_map = {}
+    squash_map = {}
     for cwire, occ in occupation.items():
-        # Find the first cwire that is currently not occupied, i.e. that has its occupation end
-        # before the current occ starts (first entry of occ)
-        new_cwire = int(np.where(occ_ends < occ[0])[0][0])
-        # allocate a new (or the old) cwire based on the first one that was free above
-        cwire_map[cwire] = new_cwire
-        # Update the occupation end of the newly allocated cwire
-        occ_ends[new_cwire] = occ[1]
+        print(cwire, occ)
+        if occ[0] < 0:
+            squash_map[cwire] = cwire
+            occ_ends[cwire] = occ[-1]
+        else:
+            # Find the first cwire that is currently not occupied, i.e. that has its occupation end
+            # before the current occ starts (first entry of occ)
+            new_cwire = int(np.where(occ_ends < occ[0])[0][0])
+            # allocate a new (or the old) cwire based on the first one that was free above
+            squash_map[cwire] = new_cwire
+            # Update the occupation end of the newly allocated cwire
+            occ_ends[new_cwire] = occ[1]
     # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
-    inv_cwire_map = {new_cwire: [] for new_cwire in cwire_map.values()}
-    for old_cwire in bit_map.values():
-        inv_cwire_map[cwire_map[old_cwire]].append(old_cwire)
+    inv_squash_map = {new_cwire: [] for new_cwire in squash_map.values()}
+    print(squash_map)
+    print(inv_squash_map)
+    for old_cwire in order_map.values():
+        inv_squash_map[squash_map[old_cwire]].append(old_cwire)
 
     # Collect the connected layers from all old cwires that are being mapped to the same new cwire
     connected_layers = {
         new_cwire: [connected_layers[w] for w in old_cwires]
-        for new_cwire, old_cwires in inv_cwire_map.items()
+        for new_cwire, old_cwires in inv_squash_map.items()
     }
     # Collect the connected wires from all old cwires that are being mapped to the same new cwire
-    connected_wires = {
-        new_cwire: [connected_wires[w] for w in old_cwires]
-        for new_cwire, old_cwires in inv_cwire_map.items()
-    }
+    if connected_wires:
+        connected_wires = {
+            new_cwire: [connected_wires[w] for w in old_cwires]
+            for new_cwire, old_cwires in inv_squash_map.items()
+        }
     # Update bit map according to the condensed/reused cwires
-    bit_map = {op: cwire_map[cwire] for op, cwire in bit_map.items()}
-    return bit_map, connected_layers, connected_wires
+    new_order_map = {op: squash_map[cwire] for op, cwire in order_map.items()}
+    return new_order_map, connected_layers, connected_wires
 
 
 def transform_deferred_measurements_tape(tape):

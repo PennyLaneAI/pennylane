@@ -25,8 +25,8 @@ from .utils import (
     convert_wire_order,
     cwire_connections,
     default_bit_map,
+    dynamic_wire_connections,
     transform_deferred_measurements_tape,
-    wire_extent,
 )
 
 
@@ -62,15 +62,17 @@ class _Config:
     cache: dict | None = None
     """dictionary that carries information between label calls in the same drawing"""
 
-    wire_extent: dict = field(default_factory=dict)
+    wire_layers: dict = field(default_factory=dict)
     """A map from the wire to a tuple of their start layer and stop layer."""
 
     def wire_filler(self, row: int, next_layer: bool = False) -> str:
         """The filler character for wires at the current"""
         layer = self.cur_layer + 1 if next_layer else self.cur_layer
-        extent = self.wire_extent[row]
-        if extent[0] < layer <= extent[1]:
-            return "─" if layer < (self.num_op_layers) else " "
+        if layer >= self.num_op_layers:
+            return " "
+        for layer_stretch in self.wire_layers[row]:
+            if layer_stretch[0] < layer <= layer_stretch[-1]:
+                return "─"
         return " "
 
     def bit_filler(self, bit, next_layer: bool = False) -> str:
@@ -91,7 +93,7 @@ class _Config:
     @property
     def n_wires(self) -> int:
         """The number of wires."""
-        return len(self.wire_map)
+        return len(set(self.wire_map.values()))
 
 
 def _initialize_wire_and_bit_totals(
@@ -218,7 +220,7 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
 def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     """Add ending characters to separate the operation layers from the measurement layers"""
     for row, s in enumerate(totals.wire_totals):
-        if config.cur_layer < config.wire_extent[row][1]:
+        if config.cur_layer < config.wire_layers[row][-1][-1]:
             totals.wire_totals[row] = f"{s}─┤"
         else:
             totals.wire_totals[row] = f"{s}  "
@@ -439,12 +441,12 @@ def tape_text(
         return ""
 
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
-    print(layers)
     num_op_layers = len(layers)
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
     bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
+    wire_map, wire_layers = dynamic_wire_connections(layers, wire_map)
     # Collect information needed for drawing layers
     config = _Config(
         wire_map=wire_map,
@@ -453,7 +455,7 @@ def tape_text(
         cwire_layers=cwire_layers,
         decimals=decimals,
         cache=cache,
-        wire_extent=wire_extent(layers, wire_map),
+        wire_layers=wire_layers,
     )
 
     totals = _CurrentTotals([], *(_initialize_wire_and_bit_totals(config, show_wire_labels)))
