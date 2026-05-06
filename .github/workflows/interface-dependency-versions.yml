@@ -65,11 +65,11 @@ jobs:
       
       - name: Nightly Catalyst Version
         id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst<=0.15.0" >> $GITHUB_OUTPUT
+        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst>=0.15.0rc0,<=0.15.0" >> $GITHUB_OUTPUT
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
-        run: echo "latest=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Lightning PennyLane-Lightning<=0.45.0" >> $GITHUB_OUTPUT
+        run: echo "latest=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Lightning PennyLane-Lightning>=0.45.0rc0,<=0.45.0" >> $GITHUB_OUTPUT
     
     outputs:
       catalyst-jax-version: jax==${{ steps.catalyst-jax.outputs.version }} jaxlib==${{ steps.catalyst-jax.outputs.version }}
