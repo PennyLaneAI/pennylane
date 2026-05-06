@@ -27,6 +27,44 @@ from pennylane.workflow import get_compile_pipeline
 class TestValidation:
     """Tests for validation errors."""
 
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_input_is_not_qjit_qnode(self):
+        """Tests when the input is QJIT'd but not a qnode."""
+
+        @qp.qjit
+        def inc(x):
+            return x + 1
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Can only retrieve the compilation pipeline of a QJIT'd QNode object."),
+        ):
+            _ = get_compile_pipeline(inc)()
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "unsupported_level",
+        (
+            "device",
+            "gradient",
+        ),
+    )
+    def test_unsupported_levels_qjit(self, unsupported_level):
+        """Tests unsupported levels when the input is QJIT'd QNode."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(f"'level={unsupported_level}' is not supported for QJIT'd QNodes."),
+        ):
+            _ = get_compile_pipeline(circuit, level=unsupported_level)()
+
     @pytest.mark.parametrize(
         "unsupported_level",
         (
@@ -65,29 +103,35 @@ class TestValidation:
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
 
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
-    def test_user_level_pipeline(self):
+    def test_user_level_pipeline(self, use_qjit):
         """Tests the contents of a user level pipeline."""
 
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
-        @qp.transforms.merge_rotations(atol=1e-5)
+        @qp.transforms.merge_rotations
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
         assert len(cp) == 2
         assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
         assert cp[1].tape_transform == qp.transforms.merge_rotations.tape_transform
 
-    def test_user_level_with_final_transform(self):
+    def test_user_level_with_final_transform(self, use_qjit):
         """Tests that a final transform is correctly re-appended."""
 
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
         @qp.gradients.metric_tensor
         @qp.transforms.merge_rotations(atol=1e-5)
@@ -95,6 +139,9 @@ class TestUserLevel:
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 
@@ -104,13 +151,16 @@ class TestUserLevel:
         assert cp[2].tape_transform == qp.gradients.metric_tensor.expand_transform
         assert cp[3].tape_transform == qp.gradients.metric_tensor.tape_transform
 
-    def test_no_user_levels(self):
+    def test_no_user_levels(self, use_qjit):
         """Ensures an empty compile pipeline if no user transforms."""
-        dev = qp.device("reference.qubit")
+        dev = qp.device("null.qubit")
 
         @qp.qnode(dev)
         def circuit():
             return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
 
         cp = get_compile_pipeline(circuit, level="user")()
 
@@ -252,50 +302,68 @@ class TestDeviceLevel:
         assert cp[2:] == expected_cp[2:]
 
 
-def test_marker_level():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_marker_level(use_qjit):
     """Tests that a string corresponding to a marker level can be used."""
 
-    dev = qp.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
     @qp.transforms.merge_rotations
     @qp.marker("blah")
     @qp.transforms.cancel_inverses
-    @qp.qnode(dev, diff_method="parameter-shift")
+    @qp.qnode(dev)
     def circuit():
         return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level="blah")()
     assert len(cp) == 1
     assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
 
 
-def test_level_is_top():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_level_is_top(use_qjit):
     """Tests that level is top returns an empty pipeline."""
 
-    dev = qp.device("reference.qubit")
-
-    @qp.transforms.merge_rotations(atol=1e-5)
-    @qp.transforms.cancel_inverses
-    @qp.qnode(dev)
-    def circuit():
-        return qp.expval(qp.Z(0))
-
-    cp = get_compile_pipeline(circuit, level="top")()
-    assert cp == CompilePipeline()
-
-
-@pytest.mark.parametrize("level", [0, 1, 2])
-def test_level_is_integer(level):
-    """Tests that levels can be integers corresponding to their position
-    in the compile pipeline."""
-
-    dev = qp.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
     @qp.transforms.merge_rotations
     @qp.transforms.cancel_inverses
     @qp.qnode(dev)
     def circuit():
         return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
+
+    cp = get_compile_pipeline(circuit, level="top")()
+    assert cp == CompilePipeline()
+
+
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+@pytest.mark.parametrize("level", [0, 1, 2])
+def test_level_is_integer(level, use_qjit):
+    """Tests that levels can be integers corresponding to their position
+    in the compile pipeline."""
+
+    dev = qp.device("null.qubit")
+
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def circuit():
+        return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level=level)()
 
@@ -305,6 +373,32 @@ def test_level_is_integer(level):
         assert cp == CompilePipeline(qp.transforms.cancel_inverses)
     elif level == 2:
         assert cp == CompilePipeline(qp.transforms.cancel_inverses, qp.transforms.merge_rotations)
+
+
+@pytest.mark.external
+@pytest.mark.catalyst
+@pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
+def test_level_is_slice_qjit(level_slice):
+    """Tests level is slice when using qjit."""
+
+    user_pipeline = CompilePipeline(
+        qp.decompose,
+        qp.transforms.cancel_inverses,
+        qp.transforms.merge_rotations,
+    )
+
+    @qp.qjit
+    @user_pipeline
+    @qp.qnode(
+        qp.device("null.qubit"),
+    )
+    def circuit():
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+    sliced_cp = get_compile_pipeline(circuit, level=level_slice)()
+    full_cp = user_pipeline
+    assert full_cp[level_slice] == sliced_cp
 
 
 @pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])

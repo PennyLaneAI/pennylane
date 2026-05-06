@@ -140,7 +140,7 @@ def add_noise(tape, noise_model, level="user"):
             noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
         >>> from pennylane.workflow import get_compile_pipeline
-        >>> print(get_compile_pipeline(circuit)(1,2,3,4))
+        >>> print(get_compile_pipeline(circuit, level="device")(1,2,3,4))
          CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -155,7 +155,7 @@ def add_noise(tape, noise_model, level="user"):
           [11] validate_observables(stopping_condition=..., name=default.mixed)
         )
 
-        >>> print(get_compile_pipeline(noisy_circuit)(1,2,3,4))
+        >>> print(get_compile_pipeline(noisy_circuit, level="device")(1,2,3,4))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
