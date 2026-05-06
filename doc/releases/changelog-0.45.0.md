@@ -237,29 +237,6 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   'my_cz_rule'
   ```
 
-* The :func:`~pennylane.list_decomps` function now returns an object that is easier to interact with,
-  including better legibility when printing the entire set of available decomposition rules and when
-  printing individual ones.
-  Specific decomposition rules can be accessed by index or by name.
-  [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
-
-  ```pycon
-  >>> collection = qp.list_decomps(qp.CRX)
-  >>> print(collection)
-  Available Decomposition Rules:
-  0: _crx_to_rx_cz
-  1: _crx_to_rz_ry
-  2: _crx_to_h_crz
-  3: _crx_to_ppr
-  >>> collection[0]
-  DecompositionRule(name=_crx_to_rx_cz)
-  >>> collection['_crx_to_ppr']
-  DecompositionRule(name=_crx_to_ppr)
-  >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
-  0: ───────────╭●────────────╭●─┤
-  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
-  ```
-
 * A new function called :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
   of all possible decomposition paths the graph system can take for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
@@ -287,19 +264,20 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   1: ──RX(0.25)─╰RZX(-0.25)─┤
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
   ```
+  
+  For each decomposition rule applicable to the operator instance, the output includes its name, circuit
+  diagram, gate count, and wire allocation (if any).
 
 * To verify how the the decomposition graph is choosing decomposition rules for each operator instance in the
   circuit the new function :func:`~.transforms.decomp_inspector` can be used.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
-  When the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform is used to
-  decompose the operators in a circuit, and the graph-based decomposition system is enabled
-  via :func:`~.decomposition.enable_graph`, the most resource efficient decomposition will be chosen (minimizing gate count or weighted cost).
   The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
   It returns an ``inspector`` object that allows to interactivelly query a given operator to identify which
-  decomposition rule were considered and which one was “CHOSEN”.
+  decomposition rule were considered and which one was chosen as the most resource-efficient one.
 
-  Consider a circuit where we want to efficiently decompose a ``MultiRZ`` into single-qubit rotations and ``CNOT``:
+  Consider the following example where we want to efficiently decompose a ``MultiRZ`` into single-qubit
+  rotations and ``CNOT``s:
 
   ```python
   qp.decomposition.enable_graph()
@@ -343,14 +321,36 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   Weighted Cost: 196.0
   ```
 
-  For each applicable decomposition rule the inspector provides a summary of its weighted cost,
-  wire allocations, and the "Full Expansion" (the final gate counts produced after decomposing all
-  the way down to the target gate set, ``qp.gate_sets.ROTATIONS_PLUS_CNOT``).
+  For each decomposition rule applicable to the controlled ``MultiRZ`` operator instance, the
+  inspector provides a summary of its weighted cost, wire allocations, and the "Full Expansion"
+  (the final gate counts produced after decomposing all the way down to the target gate set).
 
-  Similar to the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` 
+  Similar to the :func:`qp.transforms.decompose <pennylane.transforms.decompose>` 
   transform, the :func:`~.transforms.decomp_inspector` provides the ability to inject new
   decomposition rules via the keyword arguments `fixed_decomps` and `alt_decomps`.
   For more details on the inspection capabilities please consult the documentation for :func:`~.transforms.decomp_inspector`.
+
+* The :func:`~pennylane.list_decomps` function now returns an object that is easier to interact with,
+  including better legibility when printing the entire set of available decomposition rules and when
+  printing individual ones. The object returned supports accessing a specific rule by index or by name.
+  [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
+
+  ```pycon
+  >>> collection = qp.list_decomps(qp.CRX)
+  >>> print(collection)
+  Available Decomposition Rules:
+  0: _crx_to_rx_cz
+  1: _crx_to_rz_ry
+  2: _crx_to_h_crz
+  3: _crx_to_ppr
+  >>> collection[0]
+  DecompositionRule(name=_crx_to_rx_cz)
+  >>> collection['_crx_to_ppr']
+  DecompositionRule(name=_crx_to_ppr)
+  >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  ```
 
   * A new :mod:`~.gate_sets` module contains pre-defined gate sets
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
@@ -363,7 +363,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   - ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` which contains single-qubit rotations and ``CNOT``.
   - ``qp.gate_sets.IDENTITY`` which contains the ``Identity`` and the ``GlobalPhase`` gates.
 
-  Using our previous ``MultiRZ`` circuit example, we can now conveniently replace the gate set by the ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` set:
+  Using the previous ``MultiRZ`` circuit example, we can now conveniently specify the
+  ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` set as the gate target:
 
   ```python
   qp.decomposition.enable_graph()
