@@ -268,6 +268,19 @@ def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
     return is_valid, has_valid
 
 
+def collect_all_mcms_in_circuit(circuit: qp.tape.QuantumScript, all_mcms: list):
+    """
+    Recursively collect all MCMs in a QuantumTape, and in all nested tapes within it.
+    """
+    for op in circuit.operations:
+        if is_mcm(op):
+            all_mcms.append(op)
+        if hasattr(op, "regions"):
+            for region in op.regions:
+                if hasattr(region, "quantum_tape") and region.quantum_tape:
+                    collect_all_mcms_in_circuit(region.quantum_tape, all_mcms)
+
+
 def parse_native_mid_circuit_measurements(
     circuit: qp.tape.QuantumScript,
     _removed_arg=None,  # need to not break catalyst
@@ -291,7 +304,8 @@ def parse_native_mid_circuit_measurements(
     interface = "numpy" if interface == "builtins" else interface
     interface = "tensorflow" if interface == "tf" else interface
 
-    all_mcms = [op for op in circuit.operations if is_mcm(op)]
+    all_mcms = []
+    collect_all_mcms_in_circuit(circuit, all_mcms)
     mcm_samples = math.hstack(
         tuple(math.reshape(math.vstack(res), (-1, 1)) for res in results[-len(all_mcms) :])
     )
