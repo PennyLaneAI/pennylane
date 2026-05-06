@@ -26,8 +26,14 @@ from typing import Union
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import math
+from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
+from pennylane.decomposition import (
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    resource_rep,
+)
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -499,6 +505,135 @@ def _prod_decomp(*_, wires=None, operands, **__):
 
 
 qp.add_decomps(Prod, _prod_decomp)
+
+
+def _ctrl_prod_resources(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]
+    tand_rep = resource_rep(qp.TemporaryAND)
+
+    resources = Counter()
+    resources[tand_rep] += num_control_wires - 1
+    resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources)
+def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+def _ctrl_prod_resources_with_one_work_wire(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    multicx_rep = resource_rep(
+        qp.MultiControlledX,
+        num_control_wires=num_control_wires,
+        num_work_wires=0,
+        num_zero_control_values=0,
+        work_wire_type="borrowed",
+    )
+
+    resources = Counter()
+    resources[multicx_rep] += 2
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with a single zeroed work wire.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires[:1])
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+
+
+qp.add_decomps(
+    "C(Prod)",
+    flip_zero_control(_controlled_product_with_work_wires),
+    flip_zero_control(_controlled_product_with_one_work_wire),
+)
+
+
+def _multi_temporary_and_all_ones(
+    control,
+    work_wires,
+):
+    """Controlled decomposition using a ``TemporaryAND`` ladder.
+
+    Assumes all control values are 1 and returns the last ancilla as the
+    effective control target. Compatible with QJIT: the ladder is expressed
+    via ``control_flow.for_loop`` when running under tracing.
+    """
+    num_needed = len(control) - 1
+
+    if compiler.active() or qp.capture.enabled():
+        control = math.array(control, like="jax")
+        work_wires = math.array(work_wires, like="jax")
+
+    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+
+    @control_flow.for_loop(1, num_needed, 1)
+    def _ladder(i):
+        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+
+    _ladder()  # pylint: disable = no-value-for-parameter
+
+    return work_wires[num_needed - 1]
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
