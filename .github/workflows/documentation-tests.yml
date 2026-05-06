@@ -13,7 +13,7 @@ on:
       - synchronize
       - ready_for_review
   workflow_call:
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -58,7 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group doctest -e . 
+          pip install --group doctest -e .
 
       - name: Print Dependencies
         run: |
@@ -141,19 +141,12 @@ jobs:
 
           pytest doc ${IGNORE}
 
-<<<<<<< HEAD
-        # NOTE: Only run if the file exists (invert result to ensure exit code 0). 
+        # NOTE: Only run if the file exists (invert result to ensure exit code 0).
         # This avoids CI breakage when RC wranches don't have the 'changelog-dev.md' file.
-=======
->>>>>>> 0735a7242 (fix: suppress `pytest` exit code 5 for changelog doctesting (#9411))
         # NOTE: Suppress pytest exit code 5 (No Tests Collected).
         # This avoids CI breakage when the changelog is reset after a RC
         # branch is cut and hasn't yet accumulated any code snippets to test.
       - name: Test `changelog-dev.md` file
         if: always()
         run: |
-<<<<<<< HEAD
-          ! [ -f "doc/releases/changelog-dev.md" ] || pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 
-=======
-          pytest doc/releases/changelog-dev.md || [ $? -eq 5 ] 
->>>>>>> 0735a7242 (fix: suppress `pytest` exit code 5 for changelog doctesting (#9411))
+          ! [ -f "doc/releases/changelog-dev.md" ] || pytest doc/releases/changelog-dev.md || [ $? -eq 5 ]
