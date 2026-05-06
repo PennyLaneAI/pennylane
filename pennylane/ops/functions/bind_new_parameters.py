@@ -39,6 +39,7 @@ from pennylane.templates.subroutines import (
     CommutingEvolution,
     ControlledSequence,
     FermionicDoubleExcitation,
+    MultiTemporaryAND,
     QDrift,
     TrotterProduct,
 )
@@ -174,6 +175,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 @bind_new_parameters.register(ops.CNOT)
 @bind_new_parameters.register(ops.Toffoli)
 @bind_new_parameters.register(ops.MultiControlledX)
+@bind_new_parameters.register(MultiTemporaryAND)
 def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
     return copy.copy(op)
 
