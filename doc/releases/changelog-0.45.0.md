@@ -116,7 +116,7 @@
   markers placed in a :class:`~.CompilePipeline` (with :func:`~.marker`) are now accessible exclusively via their ``label``,
   making it much easier to track levels of compilation without having to track shifting integer ``level`` values.
   In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
-  and printing a ``CompilePipeline``now legibly distinguishes transforms and markers.
+  and printing a ``CompilePipeline`` now legibly distinguishes transforms and markers.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
