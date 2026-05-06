@@ -111,7 +111,10 @@ class MultiplexerStatePreparation(Operation):
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
-        [resource_rep(qp.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
+        [
+            resource_rep(qp.SelectPauliRot, num_wires=i, rot_axis="Y")
+            for i in range(1, num_wires + 1)
+        ],
         1,
     )
 
@@ -137,11 +140,15 @@ def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
     phases = math.angle(state_vector)
     n = len(wires)
 
-    @qp.for_loop(n, 0, -1)
+    # Disable for_loop for now because _get_alpha_y is not compatible with traced third argument
+    # (causes dynamic shape)
+    # @qp.for_loop(n, 0, -1)
     def y_loop(k):
         qp.SelectPauliRot(_get_alpha_y(a, n, k), wires[: n - k], wires[n - k], rot_axis="Y")
 
-    y_loop()  # pylint: disable=no-value-for-parameter
+    # y_loop()  # pylint: disable=no-value-for-parameter
+    for k in range(n, 0, -1):
+        y_loop(k)
 
     # If necessary, apply RZ multiplexers to prepare correct phases of amplitudes
     if math.is_abstract(phases) or math.requires_grad(phases) or not math.allclose(phases, 0):

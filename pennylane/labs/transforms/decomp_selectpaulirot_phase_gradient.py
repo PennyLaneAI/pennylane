@@ -56,14 +56,15 @@ def _select_pauli_rot_phase_gradient(
             binary_int,
             control_wires,
             angle_wires,
-            work_wires=work_wires[len(angle_wires) - 1 :],
-            clean=False,
+            work_wires=work_wires,
+            clean=True,
         )
     ] + cnots
 
     pg_op = qp.change_op_basis(
         qp.prod(*ops[::-1]),
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1]),
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires),
+        qp.prod(*ops),
     )
 
     match rot_axis:
@@ -178,11 +179,11 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
             qp.QROM,
-            clean=False,
+            clean=True,
             num_bitstrings=2**num_control_wires,
             num_control_wires=num_control_wires,
             num_target_wires=len(angle_wires),
-            num_work_wires=len(work_wires) - len(angle_wires) + 1,
+            num_work_wires=len(work_wires),  # - len(angle_wires) + 1,
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
@@ -203,7 +204,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SemiAdder,
             num_x_wires=len(angle_wires),
             num_y_wires=len(phase_grad_wires),
-            num_work_wires=len(angle_wires) - 1,
+            num_work_wires=len(work_wires),  # len(angle_wires) - 1,
         )
 
         # 5. change_op_basis(compute_op, target_op)
@@ -212,6 +213,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         change_basis_rep = change_op_basis_resource_rep(
             compute_op=prod_rep,
             target_op=semi_adder_rep,
+            uncompute_op=prod_rep,
         )
 
         # 6. Basis adaptation depending on rot_axis

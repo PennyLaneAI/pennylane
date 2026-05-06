@@ -1108,6 +1108,7 @@ def _sos_state_prep(
         enumeration_wires = qp.math.array(enumeration_wires, like="jax")
         b_bits = qp.math.array(b_bits, like="jax")
         mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
+        elbow_triples = qp.math.array(elbow_triples, like="jax")
 
     @for_loop(d)
     def cnot_loop(j, k):
@@ -1136,6 +1137,7 @@ def _sos_state_prep(
 
     last_bits = uncompute_enumeration(np.ones(m, dtype=int))
 
+    @for_loop(m)
     def last_flip(i):
         qp.cond(~last_bits[i], qp.X)(mcx_ctrl_wires[i])
 
