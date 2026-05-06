@@ -212,7 +212,7 @@
 
 <h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
 
-New tools dedicated to accessible inspectability of PennyLane's experimental graph decomposition system
+New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
 are now available! With this release, you can query the solutions of the graph-based system to 
 understand how PennyLane decomposed down a circuit, and why specific rules where chosen when the graph system is enabled.
 [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
