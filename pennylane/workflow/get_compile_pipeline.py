@@ -79,6 +79,11 @@ def get_compile_pipeline(
 ) -> Callable[P, CompilePipeline]:
     """Create a function that produces the compilation pipeline at the designated level.
 
+    .. note::
+
+        If used on a QJIT'd QNode, only user applied transforms are accessible.
+        Consequently, ``level="gradient"`` and ``level="device"`` are not supported.
+
     Args:
         qnode (:class:`~.QNode`): The QNode to get the compilation pipeline for.
         level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"user"``.
