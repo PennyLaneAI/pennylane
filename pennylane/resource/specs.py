@@ -613,7 +613,7 @@ def specs(
             When set to ``None`` (the default), this is treated as ``"device"`` for ``qjit``-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
-            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis for ``qjit``-compiled workflows present.
+            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis for ``qjit``-compiled workflows.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -873,7 +873,7 @@ def specs(
         * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
-            The level arguments is based on user-applied transforms and compilation passes.
+            The ``level`` argument is based on user-applied transforms and compilation passes.
             Level ``0`` always corresponds to the original circuit before any user-specified
             tape transforms or compilation passes have been applied,
             and incremental levels correspond to the aggregate of user-specified transforms and passes
