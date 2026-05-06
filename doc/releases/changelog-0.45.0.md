@@ -224,9 +224,9 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
 [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
-* The name of a decomposition rule is by default that of the function that defines the rule, but now
-  it is possible to assign custom names to decomposition rules  using the ``name`` argument in
-  :func:`qp.register_resources <pennylane.decomposition.register_resources>`. This makes it easier to identify specific rules.
+* It is now possible to assign custom names to decomposition rules using the ``name`` argument in
+   :func:`qp.register_resources <pennylane.decomposition.register_resources>`, making it easier to
+   identify specific decomposition rules.
 
   ```python
   import pennylane as qp
