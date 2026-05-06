@@ -29,6 +29,21 @@ class TestValidation:
 
     @pytest.mark.external
     @pytest.mark.catalyst
+    def test_input_is_not_qjit_qnode(self):
+        """Tests when the input is QJIT'd but not a qnode."""
+
+        @qp.qjit
+        def inc(x):
+            return x + 1
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Can only retrieve the compilation pipeline of a QJIT'd QNode object."),
+        ):
+            _ = get_compile_pipeline(inc)()
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "unsupported_level",
         (

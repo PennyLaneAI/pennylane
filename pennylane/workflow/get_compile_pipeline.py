@@ -31,9 +31,9 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 
 
-def catalyst_qjit(qnode):
-    """A method checking whether a qnode is compiled by catalyst.qjit"""
-    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+def _is_qjit(obj):
+    """A method checking whether the object is compiled by catalyst.qjit"""
+    return obj.__class__.__name__ == "QJIT" and hasattr(obj, "user_function")
 
 
 def _find_level(program: CompilePipeline, level: str) -> int:
@@ -52,8 +52,7 @@ def _resolve_level(
     level: str | int | slice,
     full_pipeline: CompilePipeline,
     num_user: int,
-    config: ExecutionConfig,
-    is_qjit_qnode: bool,
+    config: ExecutionConfig | None,
 ) -> slice:
     """Resolve level to a slice."""
 
@@ -62,12 +61,8 @@ def _resolve_level(
     elif level == "user":
         level = slice(0, num_user)
     elif level == "gradient":
-        if is_qjit_qnode:
-            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
         level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
-        if is_qjit_qnode:
-            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
         # Captures everything: user + gradient + device
         level = slice(0, None)
     elif isinstance(level, str):
@@ -242,8 +237,10 @@ def get_compile_pipeline(
         )
 
     is_qjit_qnode = False
-    if catalyst_qjit(qnode):
+    if _is_qjit(qnode):
         qnode = qnode.user_function
+        if not hasattr(qnode, "compile_pipeline"):
+            raise ValueError("Can only retrieve the compilation pipeline of a QJIT'd QNode object.")
         is_qjit_qnode = True
 
     @wraps(qnode)
@@ -263,12 +260,11 @@ def get_compile_pipeline(
                 )
                 full_compile_pipeline += outer_pipeline + inner_pipeline
 
-        num_user = len(qnode.compile_pipeline)
-        level_slice: slice = _resolve_level(
-            level, full_compile_pipeline, num_user, resolved_config, is_qjit_qnode
-        )
-        resolved_pipeline = full_compile_pipeline[level_slice]
+        if is_qjit_qnode and isinstance(level, str) and level in ("gradient", "device"):
+            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
 
-        return resolved_pipeline
+        num_user = len(qnode.compile_pipeline)
+        level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
+        return full_compile_pipeline[level_slice]
 
     return wrapper
