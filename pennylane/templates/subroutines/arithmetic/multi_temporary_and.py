@@ -36,7 +36,8 @@ from .temporary_and import TemporaryAND
 
 class MultiTemporaryAND(ControlledOp):
     r"""A multi-controlled ``X`` gate whose decomposition is realised through a ladder of
-    :class:`~.TemporaryAND` operations when enough work wires are available.
+    :class:`~.TemporaryAND` operations when enough work wires are available, leaving work wires
+    behind in a dirty state.
 
     The circuit with four control and two work wires has the following repeating structure:
 
@@ -48,7 +49,7 @@ class MultiTemporaryAND(ControlledOp):
         control3: ─│──│──╭●─┤
            work0: ─╰⊕─├●─│──┤
            work1: ────╰⊕─├●─┤
-         target0: ───────╰⊕─┤
+          target: ───────╰⊕─┤
 
     .. note::
 
@@ -257,7 +258,7 @@ class MultiTemporaryAND(ControlledOp):
 
 def _multi_temporary_and_resources(num_control_wires, **__):
     if num_control_wires == 1:
-        return {resource_rep(X): 1}
+        return {controlled_resource_rep(X, {}, num_control_wires=1): 1}
     return {resource_rep(TemporaryAND): num_control_wires - 1}
 
 
