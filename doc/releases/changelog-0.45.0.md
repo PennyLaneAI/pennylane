@@ -230,17 +230,57 @@
 
 <h4>Decompositions 🍏</h4>
 
-* `qp.transforms.decompose` is now imported top level as `qp.decompose`.
+* `qp.transforms.decompose` is now conveniently accessible from the top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
-* :class:`~.TemporaryAND` can now be decomposed into the equivalent (although slightly more expensive) :class:`~.Toffoli` gate.
-  If the :class:`~.Toffoli` gate is in the decomposition gate set and :class:`~.TemporaryAND` is not,
-  this decomposition rule allows to conveniently replace :class:`~.TemporaryAND` by :class:`~.Toffoli`
-  in a circuit.
-  Note that this
-  decomposition only is valid if `TemporaryAND` is used as intended - on zeroed input target qubits
-  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
-  [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+* It is now possible to locally add decomposition rules to an operator via a `qp.decomposition.local_decomps` context
+  manager. These rules will only take effect within the context.
+  [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
+  [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
+
+  ```python
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2})
+  def custom_decomp(wires):
+      qp.H(wires[1])
+      qp.CNOT(wires)
+      qp.H(wires[1])
+  ```
+  ```pycon
+  >>> with qp.decomposition.local_decomps():
+  >>>    qp.add_decomps(qp.CZ, custom_decomp)
+  >>>    print(qp.list_decomps(qp.CZ))
+  Available Decomposition Rules:
+  0: _cz_to_cps
+  1: _cz_to_cnot
+  2: _cz_to_ppr
+  3: my_cz_rule
+  ```
+  ```
+  >>> print(qp.list_decomps(qp.CZ))
+  Available Decomposition Rules:
+  0: _cz_to_cps
+  1: _cz_to_cnot
+  2: _cz_to_ppr
+  ```
+
+* Several gates decompositions have been optimized for better performance:
+  
+  - The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
+  [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
+
+  - :class:`~.CSWAP` is now decomposed more efficiently, using ``change_op_basis`` with two ``CNOT``
+    gates and a single ``Toffoli`` gate.
+    [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
+  
+  - `MultiControlledX` has a new decomposition into a pair of `TemporaryAND` and a `CNOT`.
+  It takes two control wires and at least one `zeroed` work wire that has been passed explicitly.
+  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
+
+  - :class:`~.TemporaryAND` can now be decomposed into the equivalent (although slightly more expensive) :class:`~.Toffoli` gate.
+    Note that this
+    decomposition only is valid if `TemporaryAND` is used as intended - on zeroed input target qubits
+    or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+    [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
 * A new decomposition of `Evolution` into `qp.PauliRot` has been added which is compatible with the
   new graph-based decomposition system. Similarly, a decomposition of `qp.RZ`
@@ -253,17 +293,6 @@
   ``ControlledQutritUnitary``, and ``TRZ``.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
-* A decomposition of `MultiControlledX` into a pair of `TemporaryAND` and a `CNOT` has been added.
-  It takes two control wires and at least one `zeroed` work wire that has been passed explicitly.
-  [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
-
-* The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
-  [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
-
-* :class:`~.CSWAP` is now decomposed more efficiently, using ``change_op_basis`` with two ``CNOT``
-  gates and a single ``Toffoli`` gate.
-  [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
-
 * The decomposition of :class:`~.QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
@@ -272,8 +301,8 @@
   transform no longer raises duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
-* A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
-  for an operator, instead of a general `UserWarning`.
+* A new `DecompositionWarning` is now raised instead of a general `UserWarning` if the decomposition graph is unable to find a solution
+  for an operator.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
 * With the new graph-based decomposition system enabled, the :func:`~pennylane.transforms.decompose` transform no longer raises
@@ -291,11 +320,6 @@
   even if it is not in the defined ``gate_set``.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Added a `qp.decomposition.local_decomps` context
-  manager that allows one to add decomposition rules to an operator, only taking effect within the context.
-  [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
-  [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
-
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set. This
   prevents the decomposition graph from erroring out by keeping these operators in the circuit.
@@ -312,7 +336,7 @@
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * The decomposition of :class:`~.BasisState` is now compatible with ``qjit`` and ``jax.jit`` for static wires and/or states. Additionally, the parametric
-  decomposition for traced states without `qjit` was updated to use powers of `X` rather than `RX`.
+  decomposition for traced states without `qjit` was updated to use powers of ``X`` rather than ``RX``.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
   [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
