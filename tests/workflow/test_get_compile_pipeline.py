@@ -375,6 +375,32 @@ def test_level_is_integer(level, use_qjit):
         assert cp == CompilePipeline(qp.transforms.cancel_inverses, qp.transforms.merge_rotations)
 
 
+@pytest.mark.external
+@pytest.mark.catalyst
+@pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
+def test_level_is_slice_qjit(level_slice):
+    """Tests level is slice when using qjit."""
+
+    user_pipeline = CompilePipeline(
+        qp.decompose,
+        qp.transforms.cancel_inverses,
+        qp.transforms.merge_rotations,
+    )
+
+    @qp.qjit
+    @user_pipeline
+    @qp.qnode(
+        qp.device("null.qubit"),
+    )
+    def circuit():
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+    sliced_cp = get_compile_pipeline(circuit, level=level_slice)()
+    full_cp = user_pipeline
+    assert full_cp[level_slice] == sliced_cp
+
+
 @pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
 def test_level_is_slice(level_slice):
     """Tests that slice levels are correctly handled."""
