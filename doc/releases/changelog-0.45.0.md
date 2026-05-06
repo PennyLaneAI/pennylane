@@ -1233,6 +1233,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
+  [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
+
 * Fixed a bug where `ParametrizedHamiltonian`, `HardwareHamiltonian`, and `ParametrizedEvolution`
   did not follow PennyLane's queuing convention. They have been updated to de-queue their input
   operators and queue themselves like other PennyLane gate objects (that derive from `Operator`).
