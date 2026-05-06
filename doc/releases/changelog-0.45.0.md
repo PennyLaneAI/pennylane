@@ -51,9 +51,7 @@
 
 <h4>Workflow Inspection 🔍</h4>
 
-* :func:`~.specs` now displays a table which allows you to easily see how circuit resources evolve with each stage of compilation!
-  This functionality is available when using :func:`~.specs` pass-by-pass with Catalyst (e.g. ``level="all"``),
-  where printing the returned :class:`~.resource.CircuitSpecs` object dislays a table detailing information at each requested level.
+* The output of :func:`~.specs` with ``level="all"`` now displays a table, which allows you to easily see how circuit resources evolve with each stage of compilation.
   In addition, :func:`~.specs` now supports setting ``level="user"`` for workflows compiled with :func:`~.qjit`,
   returning circuit specifications after all user-specified transforms have been applied.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
@@ -114,15 +112,11 @@
   Depth: Not computed
   ```
 
-* When inspecting a circuit with an integer ``level`` argument in :func:`~.specs` or :func:`~.draw`,
-  ``level`` integers correspond to stages of compilation and are now unaffected by the use of markers,
-  so you can add them as you like without needing to track shifting ``level`` values.
-  Markers placed in a :class:`~.CompilePipeline` are now accessible exclusively via their ``label``
-  rather than a ``level`` integer, making inspection more intuitive.
+* When inspecting a circuit via the ``level`` argument in :func:`~.specs` or :func:`~.draw`,
+  markers placed in a :class:`~.CompilePipeline` (with :func:`~.marker`) are now accessible exclusively via their ``label``,
+  making it much easier to track levels of compilation without having to track shifting integer ``level`` values.
   In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
-  and the pipeline's string representation now displays both transforms and markers.
-  The :class:`~.CompilePipeline` object also now has an improved display,
-  with updated ``__str__``, ``__repr__`` and ``_ipython_display_`` methods.
+  and printing a ``CompilePipeline``now legibly distinguishes transforms and markers.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -156,7 +150,7 @@
   ```
 
   As usual, marker labels can be used as an argument to ``level`` in :func:`~.specs`
-  and :func:`~.draw`, showing the cumulative result of compilation up to said marker:
+  and :func:`~.draw`, showing the cumulative result of compilation up to the provided marker:
 
   ```pycon
   >>> print(qp.draw(circuit, level="no-transforms")()) # or level=0
@@ -165,7 +159,7 @@
   0: ──X─┤  Probs
   ```
 
-* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs in workflows compiled with ``qjit``.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
@@ -201,7 +195,7 @@
 
   ```
 
-* :func:`~.specs` has been upgraded with significantly faster processing of large workflows with many gates or measurements,
+* :func:`~.specs` has been upgraded with significantly faster processing of large workflows with many gates and/or measurements
   for :func:`~.qjit` compiled workflows in pass-by-pass mode.
   This is achieved using Catalyst's ``ResourceAnalysis`` pass behind the scenes, improving upon the former implementation.
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
@@ -209,8 +203,8 @@
 * :func:`~.specs` now returns measurement information for :func:`~.qjit` workloads when using ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
-* When using :func:`~.specs` pass-by-pass with Catalyst,
-  the returned :class:`~.resource.CircuitSpecs` will no longer display a
+* When using pass-by-pass :func:`~.specs` with Catalyst,
+  the output will no longer display a
   ``"Before Tape Transforms"`` level if no tape transforms have been applied.
   In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
   In scenarios with at least one tape transform,
@@ -223,12 +217,12 @@
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
   This can be accessed by setting `angle_solver = 'iterative-optax'` in `qp.qsvt` and
-  `qp.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
+This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.qsvt` and
+:func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
   same-degree polynomial with different coefficients.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
   ```python
-  import optax
 
   poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
   qsvt_angles = qp.poly_to_angles(poly, routine="QSVT", angle_solver="iterative-optax")
@@ -672,7 +666,7 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
+* A new ``labs.estimator_beta.estimate()`` function has been created, which extends the functionality of
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
