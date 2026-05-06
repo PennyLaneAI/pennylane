@@ -15,7 +15,7 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import WireError
@@ -109,28 +109,28 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     def _resource_fn():
         # rz decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qml.resource_rep(
-            qml.SemiAdder,
+        target_op = qp.resource_rep(
+            qp.SemiAdder,
             num_x_wires=len(angle_wires),
             num_y_wires=len(phase_grad_wires),
             num_work_wires=len(work_wires),
         )
         compute_op = uncompute_op = controlled_resource_rep(
-            qml.BasisEmbedding,
+            qp.BasisEmbedding,
             base_params={"num_wires": len(angle_wires)},
             num_control_wires=1,
             num_zero_control_values=0,
         )
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
-        return {change_basis_rep: 1, qml.resource_rep(qml.GlobalPhase): 1}
+        return {change_basis_rep: 1, qp.resource_rep(qp.GlobalPhase): 1}
 
-    @qml.register_resources(_resource_fn)
+    @qp.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):
         target_wire = wires
-        qml.GlobalPhase(phi / 2)
+        qp.GlobalPhase(phi / 2)
 
         pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
-        qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
+        qp.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
 
     return _decomp_fn
