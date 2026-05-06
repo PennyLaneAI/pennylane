@@ -254,17 +254,13 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   1: _crx_to_rz_ry
   2: _crx_to_h_crz
   3: _crx_to_ppr
-
   >>> collection[0]
   DecompositionRule(name=_crx_to_rx_cz)
-
   >>> collection['_crx_to_ppr']
   DecompositionRule(name=_crx_to_ppr)
-
   >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
   0: ───────────╭●────────────╭●─┤
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
-
   ```
 
 * A new function :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
