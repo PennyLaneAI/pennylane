@@ -161,7 +161,7 @@ class MultiTemporaryAND(ControlledOp):
         self,
         control_wires: WiresLike,
         target_wire: WiresLike,
-        control_values=None,
+        control_values: None | bool | list[bool] | int | list[int] | str = None,
         work_wires: WiresLike = (),
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         id=None,
