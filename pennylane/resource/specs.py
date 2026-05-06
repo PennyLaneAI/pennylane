@@ -609,8 +609,8 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
-            on the available levels without qjit. For ``qjit``-compiled workflows, see the sections below for more information.
-            Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
+            on the available levels without ``qjit``. For ``qjit``-compiled workflows, see the sections below for more information.
+            When set to ``None`` (the default), this is treated as ``"device"`` for ``qjit``-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
             depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
@@ -628,7 +628,7 @@ def specs(
     .. note::
 
         The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
+        There are 2 broad ways to use ``specs`` on ``qjit``-compiled QNodes:
 
         * Runtime resource tracking via mock circuit execution
         * Pass-by-pass resource collection for user applied compilation passes
@@ -672,7 +672,7 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
-    The :class:`~.resource.SpecsResources` can be accessed using the `.resources` attribute, and provides more direct
+    The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, and provides more direct
     access to the data fields, for example:
 
     >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
@@ -976,8 +976,8 @@ def specs(
         - expval(PauliX) |    1 |    0 |    1 |    0 |    1 |    0 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
-        which are labeled as ``1-a`` and ``1-b`` in the output. The resources for these executions are shown
-        separately, and the level name for both is the same, since they come from the same transform.
+        which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
+        returned and displayed separately, though the level name for both is the same, since they come from the same transform.
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
