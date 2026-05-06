@@ -862,7 +862,7 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument:
+        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument when the ``qnode`` argument is a ``qjit``-compiled QNode:
 
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` pass
