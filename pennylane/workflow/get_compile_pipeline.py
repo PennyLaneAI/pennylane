@@ -265,6 +265,8 @@ def get_compile_pipeline(
 
         num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
-        return full_compile_pipeline[level_slice]
+        resolved_pipeline = full_compile_pipeline[level_slice]
+
+        return resolved_pipeline
 
     return wrapper
