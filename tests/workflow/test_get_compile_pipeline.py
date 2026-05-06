@@ -27,6 +27,8 @@ from pennylane.workflow import get_compile_pipeline
 class TestValidation:
     """Tests for validation errors."""
 
+    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "unsupported_level",
         (
@@ -86,7 +88,9 @@ class TestValidation:
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
 
-@pytest.mark.parametrize("use_qjit", [False, True])
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
