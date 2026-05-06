@@ -1121,10 +1121,6 @@
 
 <h3>Documentation 📝</h3>
 
-* Made description of numpy array slicing used to get the subspace of a density matrix more clear in 
-  the docs of `_phase_shift`.
-  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
-
 * Updated the README to better introduce PennyLane.
   [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
 
@@ -1238,6 +1234,10 @@
 
 * Fixed broken documentation links to external demos and tutorials.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
+* Made description of numpy array slicing used to get the subspace of a density matrix more clear in 
+  the docs of `_phase_shift`.
+  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
 
 <h3>Bug fixes 🐛</h3>
 
