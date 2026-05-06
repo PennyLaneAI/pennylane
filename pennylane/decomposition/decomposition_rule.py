@@ -522,7 +522,6 @@ class DecompCollection:
 
     Retrieve and explore decomposition rules for an operator:
 
-    >>> import pennylane as qp
     >>> decomps = qp.list_decomps(qp.CRX)
     >>> len(decomps)
     4
