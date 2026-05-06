@@ -13,19 +13,27 @@
 # limitations under the License.
 """This module contains data structures to represent abstract arrays."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from math import prod
 from numbers import Number
+from typing import Any
 
 import numpy as np
 
 
 @dataclass(frozen=True)
 class AbstractArray:
-    """Abstract array type."""
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar
+        dtype (type): the data type of the array
+    """
 
     shape: tuple[int, ...]
-    dtype: np.dtype | type[Number] = np.int64
+    dtype: np.dtype | type[Number]
 
     def __post_init__(self):
         object.__setattr__(self, "shape", tuple(self.shape))
@@ -57,7 +65,7 @@ class AbstractArray:
             raise TypeError("len() of unsized object.")
         return self.shape[0]
 
-    def __eq__(self, other: "AbstractArray") -> bool:
+    def __eq__(self, other) -> bool:
         # This should probably just raise an error
         if isinstance(other, AbstractArray):
             return self.shape == other.shape and self.dtype == other.dtype
@@ -75,16 +83,17 @@ AbstractComplex = AbstractArray((), complex)
 
 
 @dataclass(frozen=True)
-class AbstractWires(AbstractArray):
-    """Abstract wires."""
+class AbstractWires:
+    """An abstract representation of a sequence of wires that contains the number
+    of wires, useful for resource calculations.
+
+    Args:
+        num_wires (int): The number of wires
+    """
 
     num_wires: int
 
-    def __post_init__(self):
-        object.__setattr__(self, "shape", (self.num_wires,))
-        object.__setattr__(self, "dtype", int)
-
-    def __eq__(self, other: "AbstractWires"):
+    def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
             return self.num_wires == other.num_wires
 
@@ -92,3 +101,17 @@ class AbstractWires(AbstractArray):
 
     def __hash__(self):
         return hash(("AbstractWires", self.num_wires))
+
+    def __len__(self) -> int:
+        return self.num_wires
+
+    @classmethod
+    def from_wires(cls, wires: Sequence[Any]) -> "AbstractWires":
+        """Create an AbstractWires instance from a concrete sequence of wires."""
+        if not isinstance(wires, Sequence):
+            raise TypeError(f"Cannot create AbstractWires from {wires}.")
+
+        if type(wires).__name__ == "Wires":
+            return cls(len(wires))
+
+        return cls(len(set(wires)))
