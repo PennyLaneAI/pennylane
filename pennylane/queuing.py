@@ -574,7 +574,7 @@ def process_queue(
             )
         if obj._queue_category is None:
             warnings.warn(
-                "Preventing an object to get queued with `_queue_category=None` is deprecated.",
+                "Preventing an object from being queued via `_queue_category=None` is deprecated.",
                 PennyLaneDeprecationWarning,
             )
             continue
