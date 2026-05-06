@@ -182,13 +182,12 @@ TensorFlow
 
 .. warning::
 
-    Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
-    Future versions of PennyLane are not guaranteed to work with TensorFlow.
-    Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
+    As of PennyLane v0.44, TensorFlow support is no longer maintained.
+    We recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
     machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
     a comprehensive guide on JAX and PyTorch: 
-    `Turning quantum nodes into Torch Layers <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`_ and 
-    `How to optimize a QML model using JAX and Optax <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
+    :doc:`Turning quantum nodes into Torch Layers <demo:demos/tutorial_qnn_module_torch>` and 
+    :doc:`How to optimize a QML model using JAX and Optax <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
 When using the :ref:`PennyLane TensorFlow framework <tf_interf>`, you will need to leverage one of
 the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_
@@ -243,7 +242,7 @@ gradients; a well-known example of this approach is backpropagation. These metho
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
-`quantum backpropagation <https://pennylane.ai/qml/demos/tutorial_backprop>`__ demonstration.
+:doc:`quantum backpropagation <demo:demos/tutorial_backprop>` demonstration.
 
 * ``"backprop"``: Use standard backpropagation.
 
@@ -266,7 +265,7 @@ Hardware-compatible differentiation
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
 However, when using a simulator, you may notice that the number of circuit executions required to
-compute the gradients with these methods `scales linearly <https://pennylane.ai/qml/demos/tutorial_backprop>`__
+compute the gradients with these methods :doc:`scales linearly <demo:demos/tutorial_backprop>`
 with the number of trainable circuit parameters.
 
 * ``"parameter-shift"``: Use the analytic `parameter-shift rule
