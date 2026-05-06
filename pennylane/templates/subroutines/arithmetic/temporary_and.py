@@ -54,11 +54,11 @@ class TemporaryAND(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
-            third one is the target wire.
-        control_values (tuple[bool or int]): The values on the control wires for which
-            the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
+        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the
+            control wires and the third one is the target wire.
+        control_values (tuple[bool or int]): The values on the control wires for which the target
+            operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
 
     .. seealso:: The alias :class:`~Elbow`.
@@ -66,6 +66,8 @@ class TemporaryAND(Operation):
     **Example**
 
     .. code-block:: python
+
+        import pennylane as qp
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit"))
@@ -88,6 +90,29 @@ class TemporaryAND(Operation):
     3: ───────╰X─────┤ ╰Sample
     >>> print(circuit())
     [[1 1 0 1]]
+
+    There is also a decomposition of ``TemporaryAND`` into a standard ``Toffoli`` gate, in order
+    to provide a compilation path into gate sets like Clifford + Toffoli:
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.decomposition.enable_graph()
+
+        @qp.decompose(gate_set={qp.Toffoli, qp.X})
+        def circuit():
+            qp.TemporaryAND((0, 1, 2))
+            return qp.expval(qp.Z(2))
+
+    >>> print(qp.draw(circuit)())
+    0: ─╭●─┤
+    1: ─├●─┤
+    2: ─╰X─┤  <Z>
+
+    Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
+    decomposition may contain bit flips on the control qubits, depending on potentially dynamic
+    control values.
     """
 
     num_wires = 3
