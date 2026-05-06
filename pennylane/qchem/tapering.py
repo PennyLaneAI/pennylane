@@ -28,7 +28,15 @@ from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
 # Global Variables
+#: Chunk size for splitting large PauliSentence objects during tapering.
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
+
+#: Tolerance for identifying numerically real Hamiltonian coefficients.
+_IMAGINARY_PART_TOLERANCE = 1e-8
+
+
+#: Relative tolerance for identifying numerically zero generator values.
+_GENERATOR_ZERO_RTOL = 1e-8
 
 
 def _kernel(binary_matrix):
@@ -269,7 +277,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     if interface == "jax" and qp.math.is_abstract(coeffs):
         tapered_ham = qp.sum(*(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True)))
     else:
-        if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= 1e-8):
+        if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):
             coeffs = qp.math.real(coeffs)
         tapered_ham = qp.simplify(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
 
@@ -711,7 +719,7 @@ def taper_operation(
 
         gen_tapered = PauliSentence({})
         if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qp.math.allclose(
-            list(op_gen.values()), 0.0, rtol=1e-8
+            list(op_gen.values()), 0.0, rtol=_GENERATOR_ZERO_RTOL
         ):
             gen_tapered = qp.taper(op_gen, generators, paulixops, paulix_sector)
             gen_tapered = pauli_sentence(gen_tapered)

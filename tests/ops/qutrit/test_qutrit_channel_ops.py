@@ -204,9 +204,9 @@ class TestQutritAmplitudeDamping:
         "gamma_10,gamma_20,gamma_21",
         (
             (1.5, 0.0, 0.0),
-            (0.0, 1.0 + math.eps, 0.0),
+            (0.0, 1.0 + 1e-14, 0.0),
             (0.0, 0.0, 1.1),
-            (0.0, 0.33, 0.67 + math.eps),
+            (0.0, 0.33, 0.67 + 1e-14),
         ),
     )
     def test_gamma_invalid_parameter(self, gamma_10, gamma_20, gamma_21):
@@ -316,7 +316,7 @@ class TestTritFlip:
 
     @pytest.mark.parametrize(
         "p_01,p_02,p_12",
-        [(1.2, 0, 0), (0, -0.3, 0.5), (0, 0, 1 + math.eps), (1, math.eps, 0), (0.3, 0.4, 0.4)],
+        [(1.2, 0, 0), (0, -0.3, 0.5), (0, 0, 1 + 1e-14), (1, 1e-14, 0), (0.3, 0.4, 0.4)],
     )
     def test_p_invalid_parameter(self, p_01, p_02, p_12):
         """Ensures that error is thrown when p_01, p_02, p_12, or their sum are outside [0,1]"""

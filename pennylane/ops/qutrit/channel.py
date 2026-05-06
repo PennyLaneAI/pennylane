@@ -24,6 +24,9 @@ from pennylane.operation import Channel
 
 QUDIT_DIM = 3
 
+#: Small constant to avoid negative sqrt from floating point errors during normalization
+_SQRT_STABILITY_EPS = 1e-14
+
 
 class QutritDepolarizingChannel(Channel):
     r"""
@@ -219,9 +222,9 @@ class QutritDepolarizingChannel(Channel):
             [[z, z, w], [one, z, z], [z, w2, z]],
         ]
 
-        normalization = math.sqrt(p / 8 + math.eps)
+        normalization = math.sqrt(p / 8 + _SQRT_STABILITY_EPS)
         Ks = [normalization * math.array(m, like=interface) for m in depolarizing_mats]
-        identity = math.sqrt(1 - p + math.eps) * math.array(
+        identity = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.array(
             math.eye(QUDIT_DIM, dtype=complex), like=interface
         )
 
@@ -331,15 +334,19 @@ class QutritAmplitudeDamping(Channel):
             [0. , 0. , 0. ]])]
         """
         K0 = math.diag(
-            [1, math.sqrt(1 - gamma_10 + math.eps), math.sqrt(1 - gamma_20 - gamma_21 + math.eps)]
+            [
+                1,
+                math.sqrt(1 - gamma_10 + _SQRT_STABILITY_EPS),
+                math.sqrt(1 - gamma_20 - gamma_21 + _SQRT_STABILITY_EPS),
+            ]
         )
-        K1 = math.sqrt(gamma_10 + math.eps) * math.convert_like(
+        K1 = math.sqrt(gamma_10 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [0, 0, 0], [0, 0, 0]]), gamma_10), gamma_10
         )
-        K2 = math.sqrt(gamma_20 + math.eps) * math.convert_like(
+        K2 = math.sqrt(gamma_20 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_20), gamma_20
         )
-        K3 = math.sqrt(gamma_21 + math.eps) * math.convert_like(
+        K3 = math.sqrt(gamma_21 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[0, 0, 0], [0, 0, 1], [0, 0, 0]]), gamma_21), gamma_21
         )
         return [K0, K1, K2, K3]
@@ -446,16 +453,16 @@ class TritFlip(Channel):
             [0.        , 0.        , 0.31622777],
             [0.        , 0.31622777, 0.        ]])]
         """
-        K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + math.eps) * math.convert_like(
+        K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(np.eye(3), p_01), p_01
         )
-        K1 = math.sqrt(p_01 + math.eps) * math.convert_like(
+        K1 = math.sqrt(p_01 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), p_01), p_01
         )
-        K2 = math.sqrt(p_02 + math.eps) * math.convert_like(
+        K2 = math.sqrt(p_02 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), p_02), p_02
         )
-        K3 = math.sqrt(p_12 + math.eps) * math.convert_like(
+        K3 = math.sqrt(p_12 + _SQRT_STABILITY_EPS) * math.convert_like(
             math.cast_like(math.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]]), p_12), p_12
         )
         return [K0, K1, K2, K3]

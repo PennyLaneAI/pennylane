@@ -34,9 +34,6 @@ from ._qutrit_device import QutritDevice
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-# tolerance for numerical errors
-tolerance = 1e-10
-
 OMEGA = qp.math.exp(2 * np.pi * 1j / 3)
 
 
