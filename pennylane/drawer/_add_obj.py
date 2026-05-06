@@ -167,8 +167,9 @@ def _add_obj(
 
 @_add_obj.register(Allocate)
 def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    label = "|0>├" if obj.state.value == "zero" else "├"
     for w in obj.wires:
-        layer_str[config.wire_map[w]] += "├"
+        layer_str[config.wire_map[w]] += label
     return layer_str
 
 

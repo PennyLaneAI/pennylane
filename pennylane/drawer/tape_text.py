@@ -439,6 +439,7 @@ def tape_text(
         return ""
 
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
+    print(layers)
     num_op_layers = len(layers)
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
     # Update bit map and collect information about connections between mid-circuit measurements,

@@ -148,7 +148,7 @@ def _handle_cond(op: Conditional, wire_map, bit_map):
     return set(range(min_wire, max_wire + 1))
 
 
-def drawable_layers(operations, wire_map=None, bit_map=None):
+def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True):
     """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
     Args:
@@ -197,12 +197,12 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     # loop over operations
     for op in operations:
-        if isinstance(op, Allocate):
+        if _dynamic_wires and isinstance(op, Allocate):
             op_layer = 0
             queue = [op]
             for w in op.wires:
                 waiting_dynamic_wires[w] = queue
-        elif all(w in waiting_dynamic_wires for w in op.wires):
+        elif _dynamic_wires and all(w in waiting_dynamic_wires for w in op.wires):
             print(op)
             op_layer = 0
             for w in op.wires:
@@ -240,10 +240,27 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
                 op_occupied_cwires = set()
 
                 for w in op.wires:
-                    if w in waiting_dynamic_wires:
-                        allocation = waiting_dynamic_wires[w][0]
-                        ops_in_layer[op_layer - 1].append(allocation)
-                        for w in allocation.wires:
+                    if _dynamic_wires and w in waiting_dynamic_wires:
+                        queue = waiting_dynamic_wires[w]
+                        inner_layers = drawable_layers(
+                            queue, wire_map=wire_map, bit_map=bit_map, _dynamic_wires=False
+                        )
+                        print("inner_lyaers")
+                        for l in inner_layers:
+                            print(l)
+                        print()
+                        for i, layer in enumerate(reversed(inner_layers)):
+                            insert_layer = op_layer - i - 1
+                            if insert_layer < 0:
+                                print("inserting things")
+                                ops_in_layer.insert(0, [])
+                                op_layer += 1
+                                max_layer += 1
+                                insert_layer = op_layer - i - 1
+                                occupied_wires_per_layer.insert(0, set())
+                                used_cwires_per_layer.insert(0, set())
+                            ops_in_layer[insert_layer].extend(layer)
+                        for w in inner_layers[0][0].wires:
                             del waiting_dynamic_wires[w]
 
             # see if need to add new layer
