@@ -411,6 +411,8 @@ class ParametrizedEvolution(Operation):
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
         self.dense = len(self.wires) < 3 if dense is None else dense
+        if QueuingManager.recording():
+            QueuingManager.remove(H)
 
     def __call__(
         self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
