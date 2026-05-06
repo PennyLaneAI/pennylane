@@ -224,7 +224,6 @@
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
   ```python
-
   poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
   qsvt_angles = qp.poly_to_angles(poly, routine="QSVT", angle_solver="iterative-optax")
   ```
@@ -253,20 +252,51 @@
   ```python
   import pennylane.estimator as qre
 
-  embed = qre.BasisEmbedding(num_wires=100)
+  data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+  bitstring_size = 3
+
+  k = 2
+  num_control_wires = 3
+  num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
+
+  reg = qp.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work": num_work_wires
+      }
+  )
+
+  dev = qp.device("null.qubit")
+  @qp.qnode(dev)
+  def hybrid_qram():
+      # prepare an address, e.g., |010> (index 2)
+      qp.BasisEmbedding(2, wires=reg["control"])
+
+      qp.HybridQRAM(
+          data,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work"],
+          k=k
+      )
+      return qp.probs(wires=reg["target"])
   ```
 
   ```pycon
-  >>> qre.estimate(embed)
+  >>> qre.estimate(hybrid_qram)()
   --- Resources: ---
-  Total wires: 100
-    algorithmic wires: 100
-    allocated wires: 0
-      zero state: 0
+  Total wires: 12
+    algorithmic wires: 11
+    allocated wires: 1
+      zero state: 1
       any state: 0
-  Total gates : 143
-    'T': 44,
-    'X': 99
+  Total gates : 2.797E+3
+    'Toffoli': 142,
+    'T': 2.112E+3,
+    'CNOT': 262,
+    'X': 65,
+    'Hadamard': 216
   ```
 
 
