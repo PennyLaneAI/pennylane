@@ -306,3 +306,17 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {GlobalPhase: 1, RZ: 4, RX: 1}
             Weighted Cost: 6.0
             """).strip()
+
+    def test_gate_set(self):
+        """Tests that the output is correct when querying an op in the gate set."""
+
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "GlobalPhase"})
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.CNOT([0, 1])
+            return qp.probs()
+
+        inspector = circuit()
+
+        msg = "The operator does not have decompositions as it is in the target gate set."
+        assert str(inspector.inspect_decomps(qp.CNOT([0, 1]))) == msg
