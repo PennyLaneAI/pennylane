@@ -808,7 +808,7 @@ def specs(
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
-        after all compilation steps, and should be highly accurate to the final gatecounts of running on
+        after all compilation steps, and should be highly accurate to the final gate counts of running on
         a real device.
 
         .. code-block:: python
@@ -857,7 +857,7 @@ def specs(
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
             possible to determine exact resource usage from intermediate representations.
-            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
+            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will be counted as if only one iteration occurred.
             Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
