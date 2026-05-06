@@ -21,10 +21,12 @@ from typing import Literal
 
 from pennylane.decomposition import (
     add_decomps,
+    controlled_resource_rep,
     register_condition,
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import MatrixUndefinedError
 from pennylane.ops import X, ctrl
 from pennylane.ops.op_math.controlled import ControlledOp
@@ -51,18 +53,10 @@ class MultiTemporaryAND(ControlledOp):
            work1: ────╰⊕─├●─┤
           target: ───────╰⊕─┤
 
-    .. note::
-
-        Unlike :class:`~.MultiControlledX`, the control and target wires are passed as two
-        **separate** arguments (rather than one concatenated ``wires`` list whose last entry
-        is implicitly the target). The decomposition is registered against this class and
-        emits ``len(control_wires) - 2`` :class:`~.TemporaryAND` gates (plus at most one
-        final :class:`~.CNOT`) when ``len(work_wires) >= len(control_wires) - 2``.
-
     **Details:**
 
     * Number of wires: ``len(control_wires) + 1 + len(work_wires)`` (at least 2 qubits
-      are involved in the operation itself, plus any optional work wires).
+      are involved in the operation itself, plus required work wires).
     * Number of parameters: 0
 
     Args:
@@ -75,7 +69,7 @@ class MultiTemporaryAND(ControlledOp):
             as ``int(bool(x))``. Strings of the form ``"101"`` are also accepted.
             Defaults to ``None``, which corresponds to controlling on the
             :math:`|1\rangle` state of every control wire.
-        work_wires (Union[Wires, Sequence[int], int]): optional work wires that enable
+        work_wires (Union[Wires, Sequence[int], int]): required work wires that enable
             the efficient :class:`~.TemporaryAND` ladder decomposition. At least
             ``len(control_wires) - 1`` work wires are required to trigger that rule.
         work_wire_type (str): whether the work wires are ``"zeroed"`` (in the
@@ -83,6 +77,14 @@ class MultiTemporaryAND(ControlledOp):
             Defaults to ``"borrowed"``.
 
     .. seealso:: :class:`~.MultiControlledX`, :class:`~.TemporaryAND`.
+
+    .. note::
+
+        Unlike :class:`~.MultiControlledX`, the control and target wires are passed as two
+        **separate** arguments (rather than one concatenated ``wires`` list whose last entry
+        is implicitly the target). The decomposition is registered against this class and
+        emits ``len(control_wires) - 2`` :class:`~.TemporaryAND` gates (plus at most one
+        final :class:`~.CNOT`) when ``len(work_wires) >= len(control_wires) - 2``.
 
     **Example**
 
@@ -316,5 +318,5 @@ def _multi_temporary_and_decomp_with_work_wires(  # pylint: disable=unused-argum
 
 add_decomps(
     MultiTemporaryAND,
-    _multi_temporary_and_decomp_with_work_wires,
+    flip_zero_control(_multi_temporary_and_decomp_with_work_wires),
 )
