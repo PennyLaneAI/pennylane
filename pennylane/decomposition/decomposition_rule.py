@@ -491,7 +491,7 @@ class DecompositionRule:
 
 
 class DecompCollection:
-    """An ordered, name-addressable collection of :class:`~pennylane.DecompositionRule` objects.
+    """An ordered, name-addressable collection of :class:`~.DecompositionRule` objects.
 
     A ``DecompCollection`` is most commonly returned by :func:`~pennylane.list_decomps`, which
     retrieves all registered decomposition rules for a given operator. Each rule in the collection
@@ -499,7 +499,7 @@ class DecompCollection:
     :func:`~pennylane.register_resources` with ``name="..."``).
 
     Individual rules can be accessed by integer index or by string name. The collection supports
-    :func:`len`, iteration, membership checks (by name or by :class:`~pennylane.DecompositionRule`
+    :func:`len`, iteration, membership checks (by name or by :class:`~.DecompositionRule`
     instance), :meth:`copy`, :meth:`append`, :meth:`extend`, ``+``, and ``+=``.  Duplicate names
     within a collection are rejected with a ``ValueError``.
 
