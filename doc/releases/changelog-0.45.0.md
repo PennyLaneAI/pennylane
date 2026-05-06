@@ -4,50 +4,65 @@
 
 <h4>Sum of Slaters State Preparation 🆘</h4>
 
-* A new state preparation method called :class:`~.SumOfSlatersPrep` is now available.
-  It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and
-  reversible bit encodings.
+* A new state preparation method called :class:`~.SumOfSlatersPrep` is now available. This state
+  preparation routine introduced in
+  [Fomichev et al., PRX Quantum 5, 040339](https://doi.org/10.1103/PRXQuantum.5.040339) is a
+  state-of-the-art technique for algorithms that require a high-quality initial state, like in
+  ground-state energy estimation algorithms of chemical systems.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
   [(#9323)](https://github.com/PennyLaneAI/pennylane/pull/9323)
 
-  Consider a sparse state on five qubits, specified by normalized coefficients and statevector
+  Consider this sparse state on three qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
   ```python
-  import numpy as np
   import pennylane as qp
-  coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
-  coefficients = np.array(coefficients)
-  indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
-  wires = range(5)
+  import numpy as np
+
+  coefficients = np.array([1, -1j, 1j, 1]) / np.sqrt(4)
+  indices = (0, 1, 2, 4)
+  num_wires = 3
+  wires = list(range(num_wires))
   ```
 
-  And this is all the information we require to create the state
-  preparation: ``coefficients``, ``indices``, and ``wires``.
+  The :class:`~.SumOfSlatersPrep` operation requires the ``coefficients``, ``indices``, and
+  ``wires`` as input. It efficiently prepares sparse states using auxiliary wires,
+  :class:`~.QROM`\ s, reversible bit encodings, and a dense-state preparation on a smaller
+  subspace. Its implementation can be inspected by using PennyLane's graph-based decomposition
+  algorithm (:func:`~decomposition.enable_graph`) with the following gate set and five auxiliary
+  wires (``work_wires``).
 
   ```python
   qp.decomposition.enable_graph()
+
   gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "StatePrep", "CNOT", "X"}
 
-  @qp.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-  @qp.decompose(gate_set=gate_set, num_work_wires=11)
-  @qp.qnode(qp.device("lightning.qubit", wires=16))
+  num_work_wires = 5
+
+  @qp.decompose(gate_set=gate_set, num_work_wires=num_work_wires)
+  @qp.qnode(qp.device("lightning.qubit", wires=num_work_wires+num_wires))
   def circuit():
       qp.SumOfSlatersPrep(coefficients, wires, indices)
       return qp.state()
   ```
+
   ```pycon
-  >>> prepared_state = circuit()[::2**11] # Slice the state, as there are eleven work wires
-  >>> where = np.where(np.abs(prepared_state) > 1e-12)
-  >>> print(where)
-  (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
-  >>> with np.printoptions(precision=2, suppress=True): # doctest: +SKIP
-  ...   print(prepared_state[where])
-  [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
-    0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+  >>> print(qp.draw(circuit, show_matrices=False, max_length=180)())
+              0: ────────────────╭QROM(M0)──X─╭●────────────●╮────╭●────────────●╮──X─╭●───────────────●╮─────────────┤  State
+              1: ────────────────├QROM(M0)──X─├●────────────●┤──X─├●────────────●┤──X─├●───────────────●┤──X──────────┤  State
+              2: ────────────────├QROM(M0)────│──╭●─────●╮───│──X─│──╭●─────●╮───│────│──╭●────────●╮───│──X──────────┤  State
+  <DynamicWire>: ─╭Allocate─╭|Ψ⟩─├QROM(M0)────│──│───────│───│────│──│──╭X───│───│────│──│──╭X──────│───│─╭Deallocate─┤  State
+  <DynamicWire>: ─├Allocate─╰|Ψ⟩─├QROM(M0)────│──│──╭X───│───│────│──│──│────│───│────│──│──│──╭X───│───│─├Deallocate─┤  State
+  <DynamicWire>: ─├Allocate──────╰QROM(M0)────│──│──│────│───│────│──│──│────│───│────│──│──│──│────│───│─├Deallocate─┤  State
+  <DynamicWire>: ─├Allocate───────────────────╰⊕─├●─│───●┤──⊕╯────╰⊕─├●─│───●┤──⊕╯────╰⊕─├●─│──│───●┤──⊕╯─├Deallocate─┤  State
+  <DynamicWire>: ─╰Allocate──────────────────────╰⊕─╰●──⊕╯───────────╰⊕─╰●──⊕╯───────────╰⊕─╰●─╰●──⊕╯─────╰Deallocate─┤  State
   ```
+
+  The smaller dense state preparation is represented by ``|Ψ⟩``, which is on two wires, and the
+  ``<DynamicWire>`` labels represent dynamically allocated wires (with :func:`~.allocate`) used in
+  its decomposition.
 
 <h4>Workflow Inspection 🔍</h4>
 
