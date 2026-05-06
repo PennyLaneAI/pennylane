@@ -16,13 +16,21 @@
 Provides a transform to combine all ``qp.GlobalPhase`` gates in a circuit into a single one applied at the end.
 """
 
+from functools import partial
+
 import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-@transform
+def _combine_global_phases_setup_inputs():
+    return (), {}
+
+
+@partial(
+    transform, pass_name="combine-global-phases", setup_inputs=_combine_global_phases_setup_inputs
+)
 def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Combine all ``qp.GlobalPhase`` gates into a single ``qp.GlobalPhase`` operation.
 
@@ -75,13 +83,12 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         .. code-block:: python
 
             import pennylane as qp
-            from catalyst.debug import get_compilation_stage
 
             n = 3
             dev = qp.device('null.qubit', wires=n)
 
             @qp.qjit(keep_intermediate=True, capture=True)
-            @qp.transform(pass_name="combine-global-phases")
+            @qp.transforms.combine_global_phases
             @qp.qnode(dev)
             def circuit():
                 qp.GlobalPhase(0.1, wires = 2)
