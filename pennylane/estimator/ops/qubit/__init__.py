@@ -35,3 +35,5 @@ from .parametric_ops_multi_qubit import MultiRZ, PauliRot, PCPhase
 from .qchem_ops import SingleExcitation
 
 from .matrix_ops import QubitUnitary
+
+from .state_preparation import BasisState

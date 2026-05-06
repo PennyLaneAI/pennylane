@@ -198,6 +198,12 @@ def _(op: qops.PauliRot):
 
 
 @_map_to_resource_op.register
+def _(op: qops.PCPhase):
+    dim = op.hyperparameters["dimension"][0]
+    return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qops.SingleExcitation):
     return re_ops.SingleExcitation(wires=op.wires)
 
@@ -311,6 +317,17 @@ def _(op: qtemps.AQFT):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.IQP):
+    h = op.hyperparameters
+    return re_temps.IQP(
+        num_wires=h["num_wires"],
+        pattern=h["pattern"],
+        spin_sym=h["spin_sym"],
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
 def _handle_basis_rotation(op: qtemps.BasisRotation):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
@@ -416,6 +433,16 @@ def _(op: qops.QubitUnitary):
 
 
 @_map_to_resource_op.register
+def _(op: qops.BasisState):
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.BasisEmbedding):
+    return re_temps.BasisEmbedding(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
     res_base = _map_to_resource_op(op.hyperparameters["base"])
     num_control_wires = len(op.hyperparameters["control_wires"])
@@ -503,6 +530,20 @@ def _(op: qtemps.Reflection):
         alpha=op.alpha,
         wires=ref_wires,
     )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.GQSP):
+    be_op = op.hyperparameters["unitary"]
+    mapped_be_op = _map_to_resource_op(be_op)
+
+    ctrl_wire = op.hyperparameters["control"]
+    target_wires = mapped_be_op.wires
+    total_wires = target_wires + Wires(ctrl_wire)
+
+    d_plus = len(op.parameters[0]) - 1
+
+    return re_temps.GQSP(mapped_be_op, d_plus, wires=total_wires)
 
 
 # Symbolic Ops:

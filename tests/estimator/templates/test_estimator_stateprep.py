@@ -58,17 +58,13 @@ class TestBasisStatePrep:
             (
                 10,
                 [
-                    GateCount(resource_rep(qre.X), 9),
-                    GateCount(resource_rep(qre.RX), 1),
-                    GateCount(resource_rep(qre.GlobalPhase), 1),
+                    GateCount(resource_rep(qre.X), 5),
                 ],
             ),
             (
                 6,
                 [
-                    GateCount(resource_rep(qre.X), 5),
-                    GateCount(resource_rep(qre.RX), 1),
-                    GateCount(resource_rep(qre.GlobalPhase), 1),
+                    GateCount(resource_rep(qre.X), 3),
                 ],
             ),
         ],
@@ -452,7 +448,7 @@ class TestQROMStatePrep:
     )
     def test_resource_params(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource params are as expected"""
-        if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
+        if all(_ is None for _ in (precision, positive_and_real, selswap_depths)):
             op = qre.QROMStatePreparation(num_state_qubits)  # check default values
             expected_params = {
                 "num_state_qubits": num_state_qubits,
@@ -486,7 +482,7 @@ class TestQROMStatePrep:
     )
     def test_resource_rep(self, num_state_qubits, precision, positive_and_real, selswap_depths):
         """Test that the resource rep is constructed as expected"""
-        if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
+        if all(_ is None for _ in (precision, positive_and_real, selswap_depths)):
             actual_resource_rep = qre.QROMStatePreparation.resource_rep(num_state_qubits)
             expected = qre.CompressedResourceOp(
                 qre.QROMStatePreparation,
@@ -1825,12 +1821,12 @@ class TestPrepTHC:
         "Test that an error is raised when wrong type is provided for precision."
         with pytest.raises(
             TypeError,
-            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`coeff_precision` must be an integer, but type {float} was provided.",
         ):
             qre.PrepTHC(qre.THCHamiltonian(58, 160), coeff_precision=2.5)
 
         with pytest.raises(
             TypeError,
-            match=f"`coeff_precision` must be an integer, but type {type(2.5)} was provided.",
+            match=f"`coeff_precision` must be an integer, but type {float} was provided.",
         ):
             qre.PrepTHC.resource_rep(qre.THCHamiltonian(58, 160), coeff_precision=2.5)

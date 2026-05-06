@@ -16,6 +16,7 @@ r"""This module contains resource operators for PennyLane Operators"""
 from .identity import GlobalPhase, Identity
 
 from .qubit import (
+    BasisState,
     Hadamard,
     S,
     SWAP,
