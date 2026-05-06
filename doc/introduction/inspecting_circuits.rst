@@ -53,26 +53,27 @@ For example:
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
 details and resource information:
 
->>> x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
->>> y = np.array(0.4, requires_grad=False)
+>>> x = qp.numpy.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+>>> y = qp.numpy.array(0.4, requires_grad=False)
 >>> specs_func = qp.specs(circuit)
 >>> specs_func(x, y)
-{'resources': Resources(num_wires=3, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}), depth=4, shots=0),
- 'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
- 'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
- 'num_operations': 4,
- 'num_observables': 2,
- 'num_diagonalizing_gates': 1,
- 'num_used_wires': 3,
- 'num_trainable_params': 4,
- 'depth': 4,
- 'num_device_wires': 4,
- 'device_name': 'default.qubit',
- 'gradient_options': {},
- 'interface': 'auto',
- 'diff_method': 'parameter-shift',
- 'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
- 'num_gradient_executions': 10}
+Device: default.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: gradient
+<BLANKLINE>
+Wire allocations: 3
+Total gates: 4
+Gate counts:
+- RX: 1
+- Toffoli: 1
+- CRY: 1
+- Rot: 1
+Measurements:
+- expval(PauliZ): 1
+- expval(PauliX): 1
+Depth: 4
+
 
 Circuit drawing
 ---------------
