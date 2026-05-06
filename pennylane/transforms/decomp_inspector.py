@@ -163,6 +163,9 @@ class DecompGraphInspector:
 
         op_node_idx = self._decomp_graph._all_op_indices[op_node]
         decomp_indices = self._raw_graph.predecessor_indices(op_node_idx)
+        if decomp_indices == [0]:
+            msg = "The operator does not have decompositions as it is in the target gate set."
+            return _DecompInGraphInfoCollection([], override_txt=msg)
 
         chosen_idx = None
         rule_infos = []

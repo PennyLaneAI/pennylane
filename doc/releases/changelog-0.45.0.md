@@ -394,6 +394,7 @@
 * A new function :func:`~.transforms.decomp_inspector` that allows users to inspect how the decomposition
   graph is choosing decomposition rules for each operator in the circuit has been added.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9436)](https://github.com/PennyLaneAI/pennylane/pull/9436)
 
   ```python
   qp.decomposition.enable_graph()
