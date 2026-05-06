@@ -50,7 +50,7 @@ jobs:
 
       - name: Install Catalyst and Lightning (dev)
         run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps "pennylane-catalyst<=0.15.0" "pennylane-lightning<=0.45.0"
 
       - name: Install dependencies of Catalyst and Lightning
         run: |
