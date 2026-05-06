@@ -263,8 +263,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
 
-* A new function :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
-  of all the possible decomposition paths the graph system can take for a concrete operator instance.
+* A new function called :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
+  of all possible decomposition paths the graph system can take for a concrete operator instance.
 
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
