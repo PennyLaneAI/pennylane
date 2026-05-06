@@ -66,11 +66,11 @@
 
 <h4>Workflow Inspection 🔍</h4>
 
-* When using :func:`~.specs` with Catalyst and with multiple levels, printing the returned
-  :class:`~.resource.CircuitSpecs` object will provide a table detailing relevant information at each requested level,
-  for convenient comparison of circuit specifications between compilation passes.
-  This display format is enabled by default when using multiple levels in :func:`~.specs` (e.g. in pass-by-pass mode with ``level="all"``)
+* The output of :func:`~.specs` with ``level="all"`` now displays a table, which allows you to easily see how circuit resources evolve with each stage of compilation.
+  In addition, :func:`~.specs` now supports setting ``level="user"`` for workflows compiled with :func:`~.qjit`,
+  returning circuit specifications after all user-specified transforms have been applied.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
+  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
 
   ```python
   @qp.qjit
@@ -106,16 +106,32 @@
   - RX               |  2 |  2 |  1
   Measurements:      |
   - probs(all wires) |  1 |  1 |  1
-
   ```
 
-* When inspecting a circuit with an integer ``level`` argument in `qp.draw` or `qp.specs`,
-  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive.
-  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless
-  of how many markers are present.
-  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
-  pipeline's string representation now shows both transforms and markers.
-  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  We can also observe the specifications after all user-applied transforms using ``level="user"``:
+
+  ```pycon
+  >>> print(qp.specs(circuit, level="user")())
+  Device: lightning.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: merge-rotations
+
+  Wire allocations: 2
+  Total gates: 2
+  Gate counts:
+  - PauliX: 1
+  - RX: 1
+  Measurements:
+  - probs(all wires): 1
+  Depth: Not computed
+  ```
+
+* When inspecting a circuit via the ``level`` argument in :func:`~.specs` or :func:`~.draw`,
+  markers placed in a :class:`~.CompilePipeline` (with :func:`~.marker`) are now accessible exclusively via their ``label``,
+  making it much easier to track levels of compilation without having to track shifting integer ``level`` values.
+  In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
+  and printing a ``CompilePipeline`` now legibly distinguishes transforms and markers.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -146,41 +162,23 @@
     [1] cancel_inverses()
      └─▶ after-cancel-inverses
   )
-
   ```
 
-  As usual, marker labels can be used as an argument to `level` in `draw`
-  and `specs`, showing the cumulative result of applying transforms up to said marker:
+  As usual, marker labels can be used as an argument to ``level`` in :func:`~.specs`
+  and :func:`~.draw`, showing the cumulative result of compilation up to the provided marker:
 
   ```pycon
   >>> print(qp.draw(circuit, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
   >>> print(qp.draw(circuit, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
-
   ```
 
-* :func:`~.specs` now supports ``level="user"`` for workflows compiled with :func:`~.qjit`. This returns circuit specifications after all user-specified transforms have been applied.
-  [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
-
-* :func:`~.specs` can now return measurement information for :func:`~.qjit` workloads when using ``level="device"``.
-  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
-
-* When using :func:`~.specs` with Catalyst and with multiple levels,
-  the returned :class:`~.resource.CircuitSpecs` will no longer display a
-  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
-  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
-  In scenarios with at least one tape transform,
-  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
-  is the level after all tape transforms but before the first MLIR pass.
-  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
-  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
-
-* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+* :func:`~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs in workflows compiled with ``qjit``.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
 
   ```python
-  @qp.qjit(target="mlir")
+  @qp.qjit
   @qp.transforms.to_ppr
   @qp.qnode(qp.device("null.qubit", wires=2))
   def circuit():
@@ -192,7 +190,7 @@
   ```
 
   ```pycon
-  >>> print(qp.specs(circuit, level=1)())
+  >>> print(qp.specs(circuit, level="user")())
   Device: null.qubit
   Device wires: 2
   Shots: Shots(total=None)
@@ -212,18 +210,43 @@
 
   ```
 
-* :func:`~.specs` has been upgraded for :func:`~.qjit` compiled workflows in pass-by-pass mode, with significantly faster processing of large workflows with many gates or measurements.
-  This is done using Catalyst's ``ResourceAnalysis`` pass behind the scenes, replacing the existing implementation.
+* :func:`~.specs` has been upgraded with significantly faster processing of large workflows with many gates and/or measurements
+  for :func:`~.qjit` compiled workflows in pass-by-pass mode.
+  This is achieved using Catalyst's ``ResourceAnalysis`` pass behind the scenes, improving upon the former implementation.
+  For more details, check out the
+  [Catalyst v0.15 release notes](https://docs.pennylane.ai/projects/catalyst/en/latest/dev/release_notes.html#release-0-15-0).
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
 
+* :func:`~.specs` now returns measurement information for :func:`~.qjit` workloads when using ``level="device"``.
+  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
+
+* When using pass-by-pass :func:`~.specs` with Catalyst,
+  the output will no longer display a
+  ``"Before Tape Transforms"`` level if no tape transforms have been applied.
+  In particular, for scenarios where no tape transforms are present, the ``"Before MLIR passes"`` level becomes level ``0``.
+  In scenarios with at least one tape transform,
+  level ``0`` corresponds to ``"Before Tape Transforms"`` and ``"Before MLIR passes"``
+  is the level after all tape transforms but before the first MLIR pass.
+  [(#9091)](https://github.com/PennyLaneAI/pennylane/pull/9091)
+  [(#9166)](https://github.com/PennyLaneAI/pennylane/pull/9166)
 
 <h4>QSVT Angle Solver 📐</h4>
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
-  This can be accessed by setting `angle_solver = 'iterative-optax'` in `qp.qsvt` and
-  `qp.poly_to_angles` and provides a significant advantage when repeatedly evaluating the
-  same-degree polynomial with different coefficients.
+  This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.qsvt` and
+  :func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
+  same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
+
+  ```python
+  poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
+  qsvt_angles = qp.poly_to_angles(poly, routine="QSVT", angle_solver="iterative-optax")
+  ```
+
+  ```pycon
+  >>> print(qsvt_angles)
+  [-4.74724627  1.51868559  0.57952342  0.57952342  1.51868559 -0.03485729]
+  ```
 
 <h4>Pre-defined Gate Sets 📠</h4>
 
@@ -236,10 +259,61 @@
 <h4>Resource Estimation Templates 📏</h4>
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
-  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
+  been added for fast and efficient resource estimation. These are available in the :mod:`~.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+
+  ```python
+  import pennylane.estimator as qre
+
+  data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+  bitstring_size = 3
+
+  k = 2
+  num_control_wires = 3
+  num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
+
+  reg = qp.registers(
+      {
+          "control": num_control_wires,
+          "target": bitstring_size,
+          "work": num_work_wires
+      }
+  )
+
+  dev = qp.device("null.qubit")
+  @qp.qnode(dev)
+  def hybrid_qram():
+      # prepare an address, e.g., |010> (index 2)
+      qp.BasisEmbedding(2, wires=reg["control"])
+
+      qp.HybridQRAM(
+          data,
+          control_wires=reg["control"],
+          target_wires=reg["target"],
+          work_wires=reg["work"],
+          k=k
+      )
+      return qp.probs(wires=reg["target"])
+  ```
+
+  ```pycon
+  >>> qre.estimate(hybrid_qram)()
+  --- Resources: ---
+  Total wires: 12
+    algorithmic wires: 11
+    allocated wires: 1
+      zero state: 1
+      any state: 0
+  Total gates : 2.797E+3
+    'Toffoli': 142,
+    'T': 2.112E+3,
+    'CNOT': 262,
+    'X': 65,
+    'Hadamard': 216
+  ```
+
 
 <h3>Improvements 🛠</h3>
 
@@ -638,32 +712,13 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Removed all of the resource estimation functionality from the `labs.resource_estimation`
-  module. Users can now directly access a more stable version of this functionality using the
-  `estimator` module. All experimental development of resource estimation
-  will be added to `labs.estimator_beta`.
-  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
-
-* The integration test for computing perturbation error of a compressed double-factorized (CDF)
-  Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
-  a more reliable reference error.
-  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
-
-* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
-  operations in ``labs.estimator_beta`` to get optimal numbers.
-  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
-
-* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
-  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
-  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
-
-* Added alternate controlled decompositions for :class:`~.pennylane.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot` and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
-  operations in ``labs.estimator_beta`` to get optimal numbers.
-  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
-
-* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+* Added a new ``labs.estimator_beta`` for experimental development of resource estimation tools.
+  Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
+  Removed existing resource estimation functionality from the `labs.resource_estimation`
+  module.
   [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
   - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
   - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
@@ -674,11 +729,11 @@
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
 
-* Created a new ``labs.estimator_beta.estimate()`` function which extends the functionality of
+* A new ``labs.estimator_beta.estimate()`` function has been created, which extends the functionality of
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
-* Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
+* Created a new :class:`~.labs.estimator_beta.LabsQROM` resource operator in labs and added multiple alternate
   decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
   [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
 
@@ -686,18 +741,40 @@
   - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
   - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
 
-* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp`
-  for :class:`~.RZ` and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
-  Their output can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
-  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
-* Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
+* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
+  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
+  [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
+
+* Added alternate controlled decompositions for :class:`~.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot`
+  and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
+  operations in ``labs.estimator_beta`` to get optimal numbers.
+  [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
+
+* Added resource templates for state preparation operators,
+  which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
   and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
 * Added various alternate resource decomposition functions for operators which make use of the phase
   gradient trick to accurately track auxiliary qubits using the new qubit management features.
   [(#9391)](https://github.com/PennyLaneAI/pennylane/pull/9391)
+
+* Added custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) for :class:`~.RZ` and :class:`~.SelectPauliRot`.
+
+  - :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp` for :class:`~.RZ`
+  - :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`
+
+  Their outputs can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
+  [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
+
+* The integration test for computing perturbation error of a compressed double-factorized (CDF)
+  Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
+  a more reliable reference error.
+  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
 <h3>Breaking changes 💔</h3>
 
