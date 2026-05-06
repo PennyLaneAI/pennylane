@@ -147,8 +147,11 @@ class TestInitialization:
     def test_init(self, params, coeffs):
         """Test the initialization."""
         ops = [qp.PauliX(0), qp.PauliY(1)]
-        H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=params, t=2, dense=True)
+        with qp.queuing.AnnotatedQueue() as q:
+            H = ParametrizedHamiltonian(coeffs, ops)
+            ev = ParametrizedEvolution(H=H, params=params, t=2, dense=True)
+        assert len(q.queue) == 1
+        assert q.queue[0] == ev
 
         assert ev.H is H
         assert qp.math.allequal(ev.t, [0, 2])
@@ -291,9 +294,9 @@ class TestInitialization:
         operator is removed from the queue."""
         ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
-        H = ParametrizedHamiltonian(coeffs, ops)
 
         with QuantumTape() as tape:
+            H = ParametrizedHamiltonian(coeffs, ops)
             op = qp.evolve(H)
             op2 = op(params=[], t=6)
 
