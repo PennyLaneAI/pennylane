@@ -949,25 +949,27 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Added permissions to all GitHub Actions workflows.
+* Read and write permissions have been added to all GitHub Actions workflows.
   [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
 
-* Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
+* The ``doctest`` group has been added in the ``pyproject.toml`` to easily maintain dependencies of the
+  documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
-* Add documentation tests for various modules.
+* Documentation tests have been added for various modules such as the decomposition, measurements and
+  devices modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
   [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
   [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
-* Added a new `qp.templates.Subroutine` class for adding a layer of abstraction for
+* A new ``qp.templates.Subroutine`` class has been added as a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
-  and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
+  and are compatible with Program Capture Catalyst. Any ``Operator`` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
-  at a higher, algorithmic layer of abstraction should switch to using this class instead
-  of `Operator`/ `Operation`.
+  at a higher, algorithmic layer of abstraction could switch to using this class instead
+  of ``Operator``/ ``Operation``.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
@@ -1005,13 +1007,13 @@
   The following classes have been ported over:
   - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
-  following `SymbolicOps` have been re-written.
+* Decomposition rules have been re-written in a ``qjit`` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
+  following ``SymbolicOps`` have been re-written:
 
   - :class:`qp.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
   - :class:`qp.ops.Adjoint` [(#9190)](https://github.com/PennyLaneAI/pennylane/pull/9190)
 
-* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+* ``qp.pytrees.PyTreeStructure`` is now frozen and hashable. ``PyTreeStructure.children`` should now
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
@@ -1019,93 +1021,103 @@
   Additionally, several internal comments have been updated to bring ``specs`` in line with the new ``CompilePipeline`` class.
   [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
 
-* When using :func:`~.specs` with Catalyst and with multiple levels,
-  with the ``split-non-commuting`` MLIR pass applied,
-  the returned :class:`.resource.CircuitSpecs` object will include
+* When using :func:`~.specs` with Catalyst and with multiple levels, with the ``split-non-commuting``
+  MLIR pass applied, the returned :class:`.resource.CircuitSpecs` object will include
   a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
   [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
-* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant
-  as a result.
+* Largely unused PLxPR code was recently removed in Lightning. Consequently, tests from PennyLane that are no longer relevant
+  have been removed.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
 
-* Patched `jax._src.pjit._infer_params_internal` for dynamic shapes to correctly handle the concatenation of closure variables and arguments before return.
+* Patched ``jax._src.pjit._infer_params_internal`` for dynamic shapes to correctly handle the concatenation
+  of closure variables and arguments before return.
   [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
 
-* Removed docker files and workflow.
+* Docker files and workflow have been removed given that the PennyLane Docker image is no longer being built and managed in
+  the repo.
   [(#9273)](https://github.com/PennyLaneAI/pennylane/pull/9273)
 
-* Remove requirements file from docs folder.
+* The requirements file has been removed from the ``docs`` folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
-* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+* A transform's ``setup_inputs`` is no longer called twice when applied on a ``QNode``.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
 
-* Upper bound `pyzx<0.10` dependency to ensure compatibility.
+* The ``pyzx`` dependency has been upper bounded to ``pyzx<0.10`` to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
 
-* Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+* The internal ``PassPipelineWrapper`` in Catalyst was `removed <https://github.com/PennyLaneAI/catalyst/pull/2525>`_
+  in favour of PennyLane's new unified transforms API. Consequently, usage of ``PassPipelineWrapper`` has been removed
+  in PennyLane.
   [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
-
-* Updated the `diastatic-malt` dependency to version v2.15.3.
+  
+* Updated the ``diastatic-malt`` dependency to version ``v2.15.3``.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
-* Workflow created to sync the `main` branch to `master`. Workflow deleted after master branch was deleted.
+* A workflow was created to sync the ``main`` branch to ``master`` and latter on deleted, after
+  ``master`` branch was deleted.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
   [(#9316)](https://github.com/PennyLaneAI/pennylane/pull/9316)
 
-* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
+* Removed ``pytest-benchmark`` from the ``pyproject.toml`` ``dev`` dependency group. Benchmarking is
+  no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
-* References to the `master` branch are changed to the new default branch `main`.
+* References to the ``master`` branch have been changed to the new default branch ``main``.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
 
-* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane.
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be
+  triggered in the order Lightning —> Catalyst —> Pennylane.
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
 
-* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+* Duplicate transforms found in both ``ftqc/catalyst_pass_aliases.py`` and ``transforms/decompositions/pauli_based_computation.py``
+  have been removed.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
-* Update PennyLane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
+* PennyLane has been updated to use a uv lockfile for package dependency tracking. Added
+  ``UV_SYSTEM_PYTHON`` to the repository's nightly sync workflows. Removed stable dependency folder and files.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
   [(#9218)](https://github.com/PennyLaneAI/pennylane/pull/9218)
 
-* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+* ``sybil`` has been added to the ``dev`` dependency group in ``pyproject.toml``.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
-* Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
+* Seeded a test ``tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution``
+  to fix stochastic failures by adding a ``seed`` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
-* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
-  Bumped `rng_salt` to `v0.45.0`.
+* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical
+  variance and number of shots, reducing spurious failures. This includes ``TestHamiltonianSamples::test_multi_wires``, ``TestSampling::test_complex_hamiltonian``, and ``TestBroadcastingPRNG::test_nonsample_measure``.
+  Bumped ``rng_salt`` to ``v0.45.0``.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
   [(#8908)](https://github.com/PennyLaneAI/pennylane/pull/8908)
   [(#8963)](https://github.com/PennyLaneAI/pennylane/pull/8963)
 
-* Updated test helper `get_device` to correctly seed lightning devices.
+* The test helper ``get_device`` has been updated to correctly seed Lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
-* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.32.2).
+* Updated internal dependencies: ``autoray`` (to 0.8.4) and ``tach`` (to 0.32.2).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
   [(#8962)](https://github.com/PennyLaneAI/pennylane/pull/8962)
   [(#9030)](https://github.com/PennyLaneAI/pennylane/pull/9030)
 
-* Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
+* The ``torch`` dependency has been relaxed from ``==2.9.0`` to ``~=2.9.0`` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
-* Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
+* Internal calls to the ``decompose`` transform have been updated to provide a ``target_gates`` argument so that
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
-* Added a `qp.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
-  decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
-  and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
+* A ``qp.decomposition.toggle_graph_ctx`` context manager has been added to temporarily enable or disable graph-based
+  decompositions in a thread-safe way. The fixtures ``"enable_graph_decomposition"``, ``"disable_graph_decomposition"``,
+  and ``"enable_and_disable_graph_decomp"`` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
-* Added specialized gate kernels for `RX`, `RY`, `RZ`, and `Hadamard` in the `default.qubit` device.
+* Specialized gate kernels have been added for ``RX``, ``RY``, ``RZ``, and ``Hadamard`` in the ``default.qubit`` device.
   These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
   states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
