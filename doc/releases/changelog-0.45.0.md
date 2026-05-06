@@ -30,9 +30,9 @@
   The :class:`~.SumOfSlatersPrep` operation requires the ``coefficients``, ``indices``, and
   ``wires`` as input. It efficiently prepares sparse states using auxiliary wires,
   :class:`~.QROM`\ s, reversible bit encodings, and a dense-state preparation on a smaller
-  subspace. Its implementation can be inspected by decomposing it using PennyLane's graph-based
-  decomposition algorithm (:func:`~decomposition.enable_graph`) with the following gate set and
-  five auxiliary wires (``work_wires``).
+  subspace. Its implementation can be inspected by using PennyLane's graph-based decomposition
+  algorithm (:func:`~decomposition.enable_graph`) with the following gate set and five auxiliary
+  wires (``work_wires``).
 
   ```python
   qp.decomposition.enable_graph()
@@ -60,7 +60,7 @@
   <DynamicWire>: ─╰Allocate──────────────────────╰⊕─╰●──⊕╯───────────╰⊕─╰●──⊕╯───────────╰⊕─╰●─╰●──⊕╯─────╰Deallocate─┤  State
   ```
 
-  The small dense state preparation is represented by ``|Ψ⟩``, which is on two wires, and the
+  The smaller dense state preparation is represented by ``|Ψ⟩``, which is on two wires, and the
   ``<DynamicWire>`` labels represent dynamically allocated wires (with :func:`~.allocate`) used in
   its decomposition.
 
