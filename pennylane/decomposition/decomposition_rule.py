@@ -493,7 +493,7 @@ class DecompositionRule:
 class DecompCollection:
     """An ordered, name-addressable collection of :class:`~.DecompositionRule` objects.
 
-    A ``DecompCollection`` is most commonly returned by :func:`~pennylane.list_decomps`, which
+    A ``DecompCollection`` is exclusively returned by :func:`~pennylane.list_decomps`, which
     retrieves all registered decomposition rules for a given operator. Each rule in the collection
     has a unique name (derived from the decorated function name by default, or explicitly set via
     :func:`~pennylane.register_resources` with ``name="..."``).
