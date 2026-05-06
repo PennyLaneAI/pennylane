@@ -922,7 +922,7 @@ def inspect_decomps(
             which puts no constraint on the maximum number of work wires.
 
     Returns:
-        _DecompInfoCollection: a displayable object with information about decomposition rules.
+        a displayable object with information about decomposition rules.
 
     **Example**
 
