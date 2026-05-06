@@ -443,9 +443,9 @@
     The :func:`~.transforms.disentangle_cnot` and :func:`~.transforms.disentangle_swap` are
     compilation passes that are only compatible with :func:`~.qjit` workflows.
 
-  Both compilation passes are meant to recognize patterns that include ``CNOT`` and ``SWAP`` gates
+  Both compilation passes are designed to recognize patterns that include ``CNOT`` and ``SWAP`` gates
   that are redundant. In the case of :func:`~.transforms.disentangle_cnot`, ``CNOT`` gates are
-  replaced when the control wire is preceded by an ``X`` gate (the control wire is guaranteed to be
+  replaced when the control wire is preceded by an ``X`` gate (and the control wire is guaranteed to be
   in the :math:`\vert 1 \rangle` state). This is illustrated in the example below, where no ``CNOT``
   gates remain after the compilation pass is applied.
 
@@ -471,7 +471,7 @@
 <h4>Drawing ✏️</h4>
 
 * The :func:`~.draw_graph` function is now accessible from PennyLane, not just from Catalyst. This
-  function allows for compact graphical inspection of ``qjit``-compiled circuits by preserving
+  function allows for compact graphical inspection of ``qjit``-compiled circuits, preserving
   structured control flow.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
@@ -584,7 +584,7 @@
 
 <h4>Catalyst Compatibility 🤝</h4>
 
-* ``BasisEmbedding`` is now captured as ``BasisState`` so that it works with Catalyst and program
+* ``BasisEmbedding`` is now captured as ``BasisState`` for compatibility with Catalyst and program
   capture.
   [(#9183)](https://github.com/PennyLaneAI/pennylane/pull/9183)
 
