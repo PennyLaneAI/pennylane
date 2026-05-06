@@ -833,6 +833,10 @@ class QuantumScript:
     ) -> "QuantumScript":
         """Expand all operations to a specific depth.
 
+        .. warning::
+            The ``expand`` method is deprecated in PennyLane v0.45 and will be removed in v0.46.
+            Please use the ``qp.decompose`` function for decomposing circuits.
+
         Args:
             depth (int): the depth the script should be expanded
             stop_at (Callable): A function which accepts a queue object,
