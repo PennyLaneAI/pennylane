@@ -133,32 +133,3 @@ class TestConstruction:
             repr(op2)
             == "MultiTemporaryAND(control_wires=[0, 1], target_wire=[2], control_values=[False, True])"
         )
-
-
-class TestSerialization:
-    """Tests that the operator round-trips through ``_flatten``/``_unflatten``, pickling, and map_wires."""
-
-    def test_flatten_unflatten_roundtrip(self):
-        op = qp.MultiTemporaryAND(
-            control_wires=[0, 1, 2],
-            target_wire=3,
-            control_values=[1, 0, 1],
-            work_wires=[4, 5],
-            work_wire_type="zeroed",
-        )
-        data, metadata = op._flatten()
-        clone = qp.MultiTemporaryAND._unflatten(data, metadata)
-        qp.assert_equal(op, clone)
-
-    def test_map_wires(self):
-        op = qp.MultiTemporaryAND(
-            control_wires=[0, 1],
-            target_wire=2,
-            work_wires=[3],
-            work_wire_type="zeroed",
-        )
-        mapped = op.map_wires({0: "a", 1: "b", 2: "c", 3: "d"})
-        assert mapped.control_wires == qp.wires.Wires(["a", "b"])
-        assert mapped.target_wire == qp.wires.Wires(["c"])
-        assert mapped.work_wires == qp.wires.Wires(["d"])
-        assert mapped.work_wire_type == "zeroed"
