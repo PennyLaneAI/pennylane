@@ -888,7 +888,7 @@ def specs(
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
         >>> all_specs = qp.specs(circuit, level="all")(1.23)
-        >>> prtin(all_specs)
+        >>> print(all_specs)
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
