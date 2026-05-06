@@ -302,50 +302,68 @@ class TestDeviceLevel:
         assert cp[2:] == expected_cp[2:]
 
 
-def test_marker_level():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_marker_level(use_qjit):
     """Tests that a string corresponding to a marker level can be used."""
 
-    dev = qp.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
     @qp.transforms.merge_rotations
     @qp.marker("blah")
     @qp.transforms.cancel_inverses
-    @qp.qnode(dev, diff_method="parameter-shift")
+    @qp.qnode(dev)
     def circuit():
         return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level="blah")()
     assert len(cp) == 1
     assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
 
 
-def test_level_is_top():
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+def test_level_is_top(use_qjit):
     """Tests that level is top returns an empty pipeline."""
 
-    dev = qp.device("reference.qubit")
-
-    @qp.transforms.merge_rotations(atol=1e-5)
-    @qp.transforms.cancel_inverses
-    @qp.qnode(dev)
-    def circuit():
-        return qp.expval(qp.Z(0))
-
-    cp = get_compile_pipeline(circuit, level="top")()
-    assert cp == CompilePipeline()
-
-
-@pytest.mark.parametrize("level", [0, 1, 2])
-def test_level_is_integer(level):
-    """Tests that levels can be integers corresponding to their position
-    in the compile pipeline."""
-
-    dev = qp.device("reference.qubit")
+    dev = qp.device("null.qubit")
 
     @qp.transforms.merge_rotations
     @qp.transforms.cancel_inverses
     @qp.qnode(dev)
     def circuit():
         return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
+
+    cp = get_compile_pipeline(circuit, level="top")()
+    assert cp == CompilePipeline()
+
+
+@pytest.mark.parametrize(
+    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
+)
+@pytest.mark.parametrize("level", [0, 1, 2])
+def test_level_is_integer(level, use_qjit):
+    """Tests that levels can be integers corresponding to their position
+    in the compile pipeline."""
+
+    dev = qp.device("null.qubit")
+
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def circuit():
+        return qp.expval(qp.Z(0))
+
+    if use_qjit:
+        circuit = qp.qjit(circuit)
 
     cp = get_compile_pipeline(circuit, level=level)()
 
