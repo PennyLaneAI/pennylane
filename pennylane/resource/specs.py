@@ -601,11 +601,11 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
-            on the available levels. For ``qjit``-compiled workflows, see the sections below for more information.
-            Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
+            on the available levels without ``qjit``. For ``qjit``-compiled workflows, see the sections below for more information.
+            When set to ``None`` (the default), this is treated as ``"device"`` for ``qjit``-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
-            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
+            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis for ``qjit``-compiled workflows.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -616,6 +616,16 @@ def specs(
 
         Computing circuit depth is computationally expensive and can lead to slower ``specs`` calculations.
         If circuit depth is not needed, set ``compute_depth=False``.
+
+    .. note::
+
+        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+        There are 2 broad ways to use ``specs`` on ``qjit``-compiled QNodes:
+
+        * Runtime resource tracking via mock circuit execution
+        * Pass-by-pass resource collection for user applied compilation passes
+
+        See related sections below for details regarding use with Catalyst.
 
     **Example**
 
@@ -654,13 +664,11 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
-    .. note::
+    The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, and provides more direct
+    access to the data fields, for example:
 
-        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
-
-        * Runtime resource tracking via mock circuit execution
-        * Pass-by-pass resource collection for user applied compilation passes
+    >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
+    {'RX': 1, 'CNOT': 1, 'Evolution': 96}
 
     .. details::
         :title: Specs with Tape Transforms
@@ -686,7 +694,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.X(0) + qp.Y(1))
 
-        First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level=top`` would
+        First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level="top"`` would
         return the same results:
 
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
@@ -715,7 +723,21 @@ def specs(
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Depth: 3
 
-        We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
+        We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
+        would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
+
+        >>> print(qp.specs(circuit, level="user")(0.1).resources)
+        Wire allocations: 2
+        Total gates: 1
+        Gate counts:
+        - RandomLayers: 1
+        Measurements:
+        - expval(Sum(num_wires=2, num_terms=2)): 1
+        Depth: 1
+
+        After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
+        resources after all transforms are applied, we can use ``level="device"``. In this case, ``RandomLayers`` is not
+        device-compatible and is further decomposed before handing the circuit off to the device:
 
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
         Wire allocations: 2
@@ -727,9 +749,8 @@ def specs(
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Depth: 1
 
-        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
-        desired transforms, the specs output's resources field is instead returned as a list with a
-        :class:`~.resource.SpecsResources` for each resulting tape:
+        If a QNode with a tape-splitting transform is supplied to the function, the output will provide
+        separate resource information for each tape:
 
         .. code-block:: python
 
@@ -743,29 +764,43 @@ def specs(
                 qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qp.expval(H)
 
-        >>> from pprint import pprint
-        >>> pprint(qp.specs(circuit, level="user")())
-        CircuitSpecs(device_name='default.qubit',
-                     num_device_wires=None,
-                     shots=Shots(total_shots=None, shot_vector=()),
-                     level='user',
-                     resources=[SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=2,
-                                               depth=1),
-                                SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=3,
-                                               depth=1)])
+        >>> print(qp.specs(circuit, level="user")())
+        Device: default.qubit
+        Device wires: None
+        Shots: Shots(total=None)
+        Level: user
+        <BLANKLINE>
+        Batched tape a:
+            Wire allocations: 2
+            Total gates: 1
+            Gate counts:
+            - RandomLayers: 1
+            Measurements:
+            - expval(Prod(num_wires=2, num_terms=2)): 1
+            Depth: 1
+        <BLANKLINE>
+        Batched tape b:
+            Wire allocations: 3
+            Total gates: 1
+            Gate counts:
+            - RandomLayers: 1
+            Measurements:
+            - expval(Prod(num_wires=2, num_terms=2)): 1
+            Depth: 1
+
+        In this case, the specs output's resources field is instead returned as a list with a
+        :class:`~.resource.SpecsResources` for each resulting tape:
+
+        >>> qp.specs(circuit, level="user")().resources
+        [SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
+         SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
-        after all compilation steps, and should be highly accurate to the final gatecounts of running on
+        after all compilation steps, and should be highly accurate to the final gate counts of running on
         a real device.
 
         .. code-block:: python
@@ -799,6 +834,12 @@ def specs(
         - probs(all wires): 1
         Depth: 2
 
+        .. note::
+
+            The resources shown when using ``level="device"`` may reflect changes to the circuit beyond those applied
+            by the user transforms added to the QNode. Theses changes are a result of additional passes applied to ensure
+            compatibility with lowering to MLIR and/or execution on the chosen device.
+
     .. details::
         :title: Pass-by-pass Specs with Catalyst
 
@@ -808,12 +849,12 @@ def specs(
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
             possible to determine exact resource usage from intermediate representations.
-            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
+            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will be counted as if only one iteration occurred.
             Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument:
+        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument when the ``qnode`` argument is a ``qjit``-compiled QNode:
 
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` pass
@@ -824,15 +865,17 @@ def specs(
         * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
-            The level arguments only take into account user-applied transforms and compilation passes.
+            The ``level`` argument is based on user-applied transforms and compilation passes.
             Level ``0`` always corresponds to the original circuit before any user-specified
             tape transforms or compilation passes have been applied,
             and incremental levels correspond to the aggregate of user-specified transforms and passes
             in the order in which they are applied.
 
-            This may include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
+            This will also include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
             further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
-            but before all other MLIR passes.
+            but before all other MLIR passes. In some cases, this pass will include applying additional transforms to the circuit
+            to ensure compatibility with the MLIR representation and/or with the device, so resources may change as a result
+            of this pass.
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
@@ -859,28 +902,10 @@ def specs(
 
         When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
         object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
-        :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. To use the int
-        level name directly, use the ``level`` attribute of the returned :class:`~.resource.CircuitSpecs` object, which
-        maps int levels to their associated transform or pass name. For example, the level names for the above example
-
-        >>> print(all_specs.level)
-        {0: 'Before MLIR Passes', 1: 'cancel-inverses', 2: 'merge-rotations'}
-
-        The resources associated with a particular level can be accessed using the returned level name as follows:
+        :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. The resources
+        associated with a particular level can be accessed using the returned level name as follows:
 
         >>> print(all_specs.resources['merge-rotations'])
-        Wire allocations: 3
-        Total gates: 2
-        Gate counts:
-        - CNOT: 1
-        - RX: 1
-        Measurements:
-        - probs(all wires): 1
-        Depth: Not computed
-
-        Or, equivalently, by using the int level directly:
-
-        >>> print(all_specs.resources[all_specs.level[2]])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
@@ -905,7 +930,7 @@ def specs(
         Depth: Not computed
 
         .. warning::
-            Certain transforms, like the ``split-non-commuting`` transform, can result in multiple output tapes.
+            Certain transforms, like the ``split_non_commuting`` transform, can result in multiple output tapes.
             In this case, the resources for that level will be returned as a list of :class:`~.resource.SpecsResources`
             objects. When printed, these split tapes will be shown as individual columns.
 
@@ -932,20 +957,19 @@ def specs(
         - 2: Before MLIR Passes
         - 3: cancel-inverses
         <BLANKLINE>
-        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  2-c |  3-a |  3-b |  3-c
-        -------------------------------------------------------------------------------
-        Wire allocations |    1 |    1 |    1 |    0 |    3 |    3 |    0 |    3 |    3
-        Total gates      |    2 |    2 |    2 |    0 |    2 |    2 |    0 |    0 |    0
+        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
+        -----------------------------------------------------------------
+        Wire allocations |    1 |    1 |    1 |    3 |    3 |    3 |    3
+        Total gates      |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Gate counts:     |
-        - PauliX         |    2 |    2 |    2 |    0 |    2 |    2 |    0 |    0 |    0
+        - PauliX         |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Measurements:    |
-        - expval(PauliZ) |    1 |    1 |    0 |    0 |    1 |    0 |    0 |    1 |    0
-        - expval(PauliX) |    1 |    0 |    1 |    0 |    0 |    1 |    0 |    0 |    1
+        - expval(PauliZ) |    1 |    1 |    0 |    1 |    0 |    1 |    0
+        - expval(PauliX) |    1 |    0 |    1 |    0 |    1 |    0 |    1
 
-        Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
-        ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
-        both tapes is the same since they come from the same transform. Multiple tapes may not display as separate
-        columns for MLIR passes since MLIR passes do not operate on tapes directly.
+        Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
+        which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
+        returned and displayed separately, though the level name for both is the same, since they come from the same transform.
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
