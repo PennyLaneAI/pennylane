@@ -600,6 +600,44 @@ def test_forward_tuple(num_qubits, weight_shapes):
     assert isinstance(qlayer.forward(x), torch.Tensor)
 
 
+def test_forward_tuple_batched_expval():
+    """Test that TorchLayer produces correct shape and gradient flow when the
+    QNode returns a tuple of expval measurements with batched inputs.
+
+    This is a regression test for a bug where TorchLayer._evaluate_qnode fails
+    with 'shape is invalid for input of size N' when the QNode returns multiple
+    qp.expval as a tuple and receives batched inputs. The output should have
+    shape (batch_size, n_measurements) so it can feed into nn.Linear downstream.
+    """
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev, interface="torch")
+    def circuit(inputs, weights):
+        qp.templates.AngleEmbedding(inputs, wires=range(2))
+        qp.RY(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+    weight_shapes = {"weights": 2}
+    qlayer = qp.qnn.TorchLayer(circuit, weight_shapes)
+    batch = torch.rand(5, 2, requires_grad=True)
+
+    result = qlayer(batch)
+
+    assert isinstance(result, torch.Tensor)
+    assert result.shape == (5, 2), (
+        f"Expected shape (5, 2) but got {result.shape}. "
+        "TorchLayer must produce (batch_size, n_measurements) for tuple expval returns."
+    )
+
+    # Verify gradient flow through the layer
+    loss = result.sum()
+    loss.backward()
+    for param in qlayer.parameters():
+        assert param.grad is not None, "Gradient did not flow to TorchLayer weights"
+
+
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax"])
 def test_invalid_interface_error(interface):
