@@ -214,7 +214,7 @@
 
 New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
 are now available! With this release, you can query the solutions of the graph-based system to 
-understand how PennyLane decomposed down a circuit, and why specific rules where chosen when the graph system is enabled.
+understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
 [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
