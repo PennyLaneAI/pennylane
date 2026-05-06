@@ -198,6 +198,8 @@
 * :func:`~.specs` has been upgraded with significantly faster processing of large workflows with many gates and/or measurements
   for :func:`~.qjit` compiled workflows in pass-by-pass mode.
   This is achieved using Catalyst's ``ResourceAnalysis`` pass behind the scenes, improving upon the former implementation.
+  For more details, check out the
+  [Catalyst v0.15 release notes](https://docs.pennylane.ai/projects/catalyst/en/latest/dev/release_notes.html#release-0-15-0).
   [(#9279)](https://github.com/PennyLaneAI/pennylane/pull/9279)
 
 * :func:`~.specs` now returns measurement information for :func:`~.qjit` workloads when using ``level="device"``.
@@ -216,10 +218,9 @@
 <h4>QSVT Angle Solver 📐</h4>
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
-  This can be accessed by setting `angle_solver = 'iterative-optax'` in `qp.qsvt` and
-This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.qsvt` and
-:func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
-  same-degree polynomial with different coefficients.
+  This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.qsvt` and
+  :func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
+  same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
   ```python
@@ -666,13 +667,13 @@ This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.q
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A new ``labs.estimator_beta.estimate()`` function has been created, which extends the functionality of
-  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
-  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
-
-* Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
+* Added a new ``labs.estimator_beta`` for experimental development of resource estimation tools.
+  Added various classes and functions to ``labs.estimator_beta`` to support advanced qubit management
   for resource estimation.
+  Removed existing resource estimation functionality from the `labs.resource_estimation`
+  module.
   [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
+  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
   - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
   - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
@@ -683,7 +684,11 @@ This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.q
   - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
     from a :class:`~.estimator.Resources` object.
 
-* Created a new ``~.labs.estimator_beta.LabsQROM`` resource operator in labs and added multiple alternate
+* A new ``labs.estimator_beta.estimate()`` function has been created, which extends the functionality of
+  ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
+  [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
+
+* Created a new :class:`~.labs.estimator_beta.LabsQROM` resource operator in labs and added multiple alternate
   decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
   [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
 
@@ -704,7 +709,8 @@ This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.q
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
 
-* Added resource templates for state preparation operators, which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
+* Added resource templates for state preparation operators,
+  which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
   and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
@@ -712,9 +718,11 @@ This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.q
   gradient trick to accurately track auxiliary qubits using the new qubit management features.
   [(#9391)](https://github.com/PennyLaneAI/pennylane/pull/9391)
 
-* Created factories for custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/)
-  :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp` for :class:`~.RZ`
-  and :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`.
+* Added custom [phase gradient decomposition rules](https://pennylane.ai/compilation/phase-gradient/) for :class:`~.RZ` and :class:`~.SelectPauliRot`.
+
+  - :func:`~.labs.transforms.make_rz_to_phase_gradient_decomp` for :class:`~.RZ`
+  - :func:`~.labs.transforms.make_selectpaulirot_to_phase_gradient_decomp` for :class:`~.SelectPauliRot`
+
   Their outputs can be passed as ``fixed_decomps`` in ``qp.decompose`` and are necessary for efficient discretization strategies in application algorithms.
   [(#9115)](https://github.com/PennyLaneAI/pennylane/pull/9115)
 
@@ -722,12 +730,6 @@ This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.q
   Hamiltonian in `labs.trotter_error` is upgraded to use a more realistic molecular geometry and
   a more reliable reference error.
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
-
-* Removed existing resource estimation functionality from the `labs.resource_estimation`
-  module. Users can now directly access a more stable version of this functionality using the
-  :mod:`~.estimator` module. All experimental development of resource estimation
-  will be added to `labs.estimator_beta`.
-  [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
 <h3>Breaking changes 💔</h3>
 
