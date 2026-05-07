@@ -480,7 +480,7 @@ def test_queue_category_none_deprecation():
 
     q = AnnotatedQueue()
     q.append(DummyOp(wires=[0]))
-    match = "an object to get queued with `_queue_category=None` is deprecated"
+    match = "an object from being queued via `_queue_category=None` is deprecated"
 
     with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning, match=match):
         qp.queuing.process_queue(q)
