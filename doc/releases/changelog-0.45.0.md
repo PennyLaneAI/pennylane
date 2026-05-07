@@ -302,8 +302,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
   The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
-  It returns an ``inspector`` object that allows to interactivelly query a given operator to identify which
-  decomposition rule were considered and which one was chosen as the most resource-efficient one.
+  It returns an object that allows for interactively querying a given operator to identify which
+  decomposition rules was considered and which one was chosen.
 
   Consider the following example where we want to efficiently decompose a ``MultiRZ`` into single-qubit
   rotations and ``CNOT``s:
