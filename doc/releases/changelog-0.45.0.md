@@ -1007,7 +1007,7 @@
   The following classes have been ported over:
   - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
-* Decomposition rules have been re-written in a ``qjit`` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
+* Decomposition rules have been re-written for ``qjit`` compatibility, so that they can be lowered to Catalyst/MLIR. Rules for the
   following ``SymbolicOps`` have been re-written:
 
   - :class:`qp.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
