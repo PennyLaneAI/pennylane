@@ -253,6 +253,9 @@ def get_compile_pipeline(
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
 
+        if level == "user":
+            return full_compile_pipeline
+
         # NOTE: Anything past user applied transforms
         # doesn't make sense for a QJIT'd QNode.
         resolved_config = None
