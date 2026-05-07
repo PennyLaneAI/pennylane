@@ -333,6 +333,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         return f"HardwareHamiltonian: terms={math.shape(self.coeffs)[0]}"
 
     def __add__(self, other):  # pylint: disable=too-many-return-statements
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
+            QueuingManager.remove(other)
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
@@ -390,8 +393,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                     coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
                 )
             new_coeffs = coeffs + [other]
-            with QueuingManager.stop_recording():
-                new_ops = ops + [Identity(self.wires[0])]
+            new_ops = ops + [Identity(self.wires[0])]
 
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
@@ -408,6 +410,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         returns a HardwareHamiltonian where the call expects params = [params_PH] + [params_RH]
         """
         if isinstance(other, ParametrizedHamiltonian):
+            if QueuingManager.recording():
+                QueuingManager.remove(self)
+                QueuingManager.remove(other)
             ops = self.ops.copy()
             coeffs = self.coeffs.copy()
 
