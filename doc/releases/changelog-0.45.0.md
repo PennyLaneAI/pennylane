@@ -1351,8 +1351,14 @@
   [(#9384)](https://github.com/PennyLaneAI/pennylane/pull/9384)
   [(#9397)](https://github.com/PennyLaneAI/pennylane/pull/9397)
 
-* Docstrings for several optimization transforms have been improved by showing the drawing of the circuit
-  after the transform has been applied as opposed to just the numeric simulation result. The improved transform docstrings include ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``, ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and ``undo_swaps``, ``combine_global_phases``, ``compile``, ``decompose``, ``transpile``, and ``unitary_to_rot``.
+* Docstrings for several optimization transforms have been improved by showing the drawing of the
+  circuit after the transform has been applied as opposed to just the numeric simulation result,
+  making it clearer that they can be applied to both QNodes and quantum functions, and clarifying
+  discrepancies when using with qjit where applicable. The improved transform docstrings include
+  ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``,
+  ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and
+  ``undo_swaps``, ``combine_global_phases``, ``compile``, ``decompose``, ``transpile``, and
+  ``unitary_to_rot``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
   [(#9441)](https://github.com/PennyLaneAI/pennylane/pull/9441)
 
