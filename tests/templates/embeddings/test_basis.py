@@ -100,6 +100,10 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    def test_equivalent_to_basis_state(self):
+        """Tests that BasisEmbedding has the same decomposition rules as BasisState."""
+        assert list(qp.list_decomps(qp.BasisEmbedding)) == list(qp.list_decomps(qp.BasisState))
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
