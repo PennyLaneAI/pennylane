@@ -230,8 +230,8 @@
 
 <h4>Decompositions 🍏</h4>
 
-* :func:`~pennylane.transforms.decompose` is now conveniently accessible from the top level as :func:`~pennylane.decompose`.
-  [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
+* :func:`pennylane.transforms.decompose` is now conveniently accessible from the top level as :func:`qp.decompose <pennylane.decompose>`.
+[(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
 * It is now possible to locally add decomposition rules to an operator via a `qp.decomposition.local_decomps` context
   manager. These rules will only take effect within the context.
