@@ -22,6 +22,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
@@ -487,8 +488,19 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 tape_transform.register = _dummy_register
                 return tape_transform
             if setup_inputs:
-                setup_inputs.custom_qnode_transform = lambda x: x
-                setup_inputs.register = _dummy_register
+                # NOTE: Prepend "qnode" as an argument to the docstring
+                # so that it's consistent with tape based signatures.
+                @wraps(setup_inputs)
+                def _sphinx_wrapper(qnode, *args, **kwargs):  # pylint: disable=unused-argument
+                    return setup_inputs(*args, **kwargs)
+
+                orig_sig = signature(setup_inputs)
+                qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
+                _sphinx_wrapper.__signature__ = orig_sig.replace(
+                    parameters=[qnode_param, *orig_sig.parameters.values()]
+                )
+                _sphinx_wrapper.custom_qnode_transform = lambda x: x
+                _sphinx_wrapper.register = _dummy_register
                 return setup_inputs
             raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
