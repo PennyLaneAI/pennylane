@@ -364,7 +364,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 
 * The :func:`~pennylane.list_decomps` function now returns an object that is easier to interact with,
   including better legibility when printing the entire set of available decomposition rules and when
-  printing individual ones. The object returned supports accessing a specific rule by index or by name.
+  printing individual ones. Additionally, object returned supports accessing a specific rule by index 
+  or by name.
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
   ```pycon
