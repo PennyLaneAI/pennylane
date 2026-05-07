@@ -1339,7 +1339,7 @@
 * The README has been updated to better introduce PennyLane.
   [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
 
-* Updated TensorFlow related documentation to clarify that maintenance support has been dropped since
+* TensorFlow related documentation has been updated to clarify that maintenance support has been dropped since
   PennyLane v0.44.
   [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
 
