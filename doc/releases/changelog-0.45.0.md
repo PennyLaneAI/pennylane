@@ -1339,10 +1339,6 @@
 * The README has been updated to better introduce PennyLane.
   [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
 
-* TensorFlow related documentation has been updated to clarify that maintenance support has been dropped since
-  PennyLane v0.44.
-  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
-
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
   [(#9317)](https://github.com/PennyLaneAI/pennylane/pull/9317)
@@ -1373,7 +1369,7 @@
   making it clearer that they can be applied to both QNodes and quantum functions, and clarifying
   discrepancies when using with qjit where applicable. The improved transform docstrings include
   ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``,
-  ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and
+  ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``,
   ``undo_swaps``, ``combine_global_phases``, ``compile``, ``decompose``, ``transpile``, and
   ``unitary_to_rot``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
@@ -1381,6 +1377,14 @@
 
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
+
+* Wide-spread changes have been made to our documentation to recommend using program capture with ``qjit``
+  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qp.capture.enable()``).
+  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
+
+* TensorFlow related documentation has been updated to clarify that maintenance support has been dropped since
+  PennyLane v0.44.
+  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
 
 * The :mod:`pennylane.transforms` module has been reorganized to allow for easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
@@ -1408,10 +1412,6 @@
 
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
-
-* Wide-spread changes have been made to our documentation to recommend using program capture with ``qjit``
-  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qp.capture.enable()``).
-  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
 
 * A note has been added to the documentation of :func:`~.estimator.estimate.estimate` to clarify
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
