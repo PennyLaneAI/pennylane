@@ -320,8 +320,11 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
       return qp.probs()
 
   inspector = circuit()
-
   ```
+
+  We can then call the ``inspector``'s ``inspect_decomps`` method and provide the ``MultiRZ`` 
+  instance of interest to see which decomposition rules were considered.
+
   ```pycon
   >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
   CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
