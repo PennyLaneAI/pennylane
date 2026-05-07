@@ -503,7 +503,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 )
                 _modified_setup_inputs.custom_qnode_transform = lambda x: x
                 _modified_setup_inputs.register = _dummy_register
-                return setup_inputs
+                return _modified_setup_inputs
             raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
         return super().__new__(cls)
