@@ -1223,6 +1223,7 @@
 * The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
   to outline what the transform does when used with Catalyst.
   [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
+  [(#9438)](https://github.com/PennyLaneAI/pennylane/pull/9438)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
