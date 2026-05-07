@@ -1608,7 +1608,7 @@
   graph-based system is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
 
-* Fixed a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+* Fixed a bug where the decomposition graph was unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
 * Fixed various small bugs within :mod:`pennylane.estimator`, including:
