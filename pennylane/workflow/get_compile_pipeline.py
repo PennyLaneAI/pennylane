@@ -239,6 +239,13 @@ def get_compile_pipeline(
             f"'level={level}' of type '{type(level)}' is not supported. Please provide an integer, slice or a string as input."
         )
 
+    is_qjit_qnode = False
+    if _is_qjit(qnode):
+        qnode = qnode.user_function
+        if not hasattr(qnode, "compile_pipeline"):
+            raise ValueError("Can only retrieve the compilation pipeline if the QJIT'd object is a QNode.")
+        is_qjit_qnode = True
+
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
