@@ -1198,7 +1198,7 @@
   a resource decomposition defined and is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
+* Refined the documentation of :func:`~.shadow_expval` measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
