@@ -245,9 +245,9 @@ are now available! With this release, you can query the solutions of the graph-b
 understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
 
 * It is now possible to assign custom names to decomposition rules using the ``name`` argument in
-   :func:`qp.register_resources <pennylane.decomposition.register_resources>`, making it easier to
-   identify specific decomposition rules.
-   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
+  :func:`qp.register_resources <pennylane.decomposition.register_resources>`, making it easier to
+  identify specific decomposition rules.
+  [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
   ```python
   import pennylane as qp
