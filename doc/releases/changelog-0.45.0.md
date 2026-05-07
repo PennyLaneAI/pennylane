@@ -356,7 +356,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   inspector provides a summary of its weighted cost, wire allocations, and the "Full Expansion"
   (the final gate counts produced after decomposing all the way down to the target gate set).
 
-  Similar to the :func:`qp.transforms.decompose <pennylane.transforms.decompose>` 
+  Similar to the :func:`qp.decompose <pennylane.transforms.decompose>` 
   transform, the :func:`~.transforms.decomp_inspector` provides the ability to inject new
   decomposition rules via the keyword arguments `fixed_decomps` and `alt_decomps`.
   For more details on the inspection capabilities please consult the documentation for :func:`~.transforms.decomp_inspector`.
@@ -409,7 +409,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   ```
 
   ```pycon
-  >>> print(qp.specs(circuit, level="device")().resources.gate_counts
+  >>> print(qp.specs(circuit, level="device")().resources.gate_counts)
   {'RZ': 54, 'RY': 14, 'GlobalPhase': 52, 'CNOT': 36, 'CRZ': 4, 'CRY': 4, 'C(GlobalPhase)': 4, 'Toffoli': 2}
   ```
 
