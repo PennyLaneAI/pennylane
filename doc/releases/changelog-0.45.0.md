@@ -297,8 +297,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   diagram, gate count, and wire allocation (if any).
 
 * A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
-   the decomposition graph chooses decomposition rules for each operator instance in a
-  circuit.
+  the decomposition graph chooses decomposition rules for each operator instance in a circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
   The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
