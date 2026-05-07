@@ -393,7 +393,7 @@
   even if it is not in the defined ``gate_set``.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
+* A `strict` keyword argument was added to the :func:`~pennylane.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set. This
   prevents the decomposition graph from erroring out by keeping these operators in the circuit.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
