@@ -65,9 +65,9 @@ def _get_slice(index, axis, num_axes):
 
 def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     """
-    Applies a phase factor to the ``|1⟩`` component along a single axis of a density matrix.
+    Applies a phase factor to the ``|1⟩`` component (the ``[1,:]`` slice) of a density matrix along a single axis.
 
-    This is a low-level helper that multiplies the ``|1⟩`` slice of ``state`` along
+    This is a low-level helper that multiplies the ``[1,:]`` slice of ``state`` along
     ``axis`` by ``phase_factor``.  It does **not** perform the full unitary conjugation
     ρ → U ρ U†.  Callers that need the complete transformation must invoke this
     function twice: once on the bra axis with ``phase_factor`` and once on the
@@ -77,7 +77,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         state (array-like): The density matrix in tensor form, e.g. shape ``(2,) * 2n``
             for an ``n``-qubit system (with an optional leading batch dimension).
         axis (int): The axis along which the phase is applied.
-        phase_factor (complex, optional): The phase to multiply onto the ``|1⟩`` slice.
+        phase_factor (complex, optional): The phase to multiply onto the ``[1,:]`` slice.
             Defaults to ``-1``.
         debugger: Unused.
         **_: Additional unused keyword arguments.
