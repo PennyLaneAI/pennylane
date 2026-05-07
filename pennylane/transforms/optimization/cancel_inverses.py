@@ -344,18 +344,12 @@ def cancel_inverses(
 
     **Example**
 
-    You can apply the cancel inverses transform directly on :class:`~.QNode`.
 
+    You can also apply it on quantum functions:
 
     .. code-block:: python
 
-        import pennylane as qp
-
-        dev = qp.device('default.qubit', wires=3)
-
-        @qp.transforms.cancel_inverses
-        @qp.qnode(device=dev)
-        def circuit(x, y, z):
+        def qfunc(x, y, z):
             qp.Hadamard(wires=0)
             qp.Hadamard(wires=1)
             qp.Hadamard(wires=0)
@@ -368,10 +362,25 @@ def cancel_inverses(
             qp.X(1)
             return qp.expval(qp.Z(0))
 
-    >>> print(qp.draw(circuit)(0.1, 0.2, 0.3))
-    0: ──RZ(0.30)───────────╭●─┤  <Z>
-    1: ──H─────────RY(0.20)─│──┤
-    2: ──RX(0.10)──RX(0.20)─╰X─┤
+    The circuit before optimization:
+
+    >>> qnode = qp.QNode(qfunc, dev)
+    >>> print(qp.draw(qnode)(1, 2, 3))
+    0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
+    1: ──H─────────RY(2.00)──X────────│───X─┤
+    2: ──RX(1.00)──RX(2.00)───────────╰X────┤
+
+    We can see that there are two adjacent Hadamards on the first qubit that
+    should cancel each other out. Similarly, there are two ``X`` gates on the
+    second qubit that should cancel. We can obtain a simplified circuit by running
+    the ``cancel_inverses`` transform:
+
+    >>> optimized_qfunc = qp.transforms.cancel_inverses(qfunc)
+    >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+    >>> print(qp.draw(optimized_qnode)(1, 2, 3))
+    0: ──RZ(3.00)───────────╭●─┤  <Z>
+    1: ──H─────────RY(2.00)─│──┤
+    2: ──RX(1.00)──RX(2.00)─╰X─┤
 
     .. details::
         :title: Usage with qjit
