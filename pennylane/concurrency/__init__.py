@@ -49,7 +49,7 @@ Support functions to query supported backends and initialize them are provided t
 
 .. currentmodule:: pennylane.concurrency.executors
 .. automodule:: pennylane.concurrency.executors
-    :noindex:
+    :members: get_supported_backends, create_executor, get_executor, ExecBackends
 
 
 Supported executors
