@@ -1397,9 +1397,9 @@
 * Fixed various small bugs within :mod:`pennylane.estimator`, including:
   [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
 
-    - The resource decompositions for `~.estimator.QubitUnitary` and `~.estimator.OutMultiplier` so
+    - The resource decompositions for ``estimator.QubitUnitary`` and ``estimator.OutMultiplier`` so
       that they match the results from literature
-    - Incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
+    - Incorrect wire mapping when converting ``QuantumPhaseEstimation`` to ``estimator.QPE``
     - Added support for mapping ``Barrier`` and ``SnapShot`` to ``estimator.Identity``
 
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
