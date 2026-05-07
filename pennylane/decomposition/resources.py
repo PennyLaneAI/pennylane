@@ -312,6 +312,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
+    if op_type is qp.BasisEmbedding:
+        op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
 
 

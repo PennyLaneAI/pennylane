@@ -226,6 +226,7 @@
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+  [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
 
 <h3>Improvements 🛠</h3>
 
@@ -1201,7 +1202,7 @@
   a resource decomposition defined and is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
+* Refined the documentation of :func:`~.shadow_expval` measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
