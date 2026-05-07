@@ -364,6 +364,7 @@ def cancel_inverses(
 
     The circuit before optimization:
 
+    >>> dev = qp.device("default.qubit")
     >>> qnode = qp.QNode(qfunc, dev)
     >>> print(qp.draw(qnode)(1, 2, 3))
     0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
