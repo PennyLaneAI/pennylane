@@ -47,6 +47,10 @@ Local and remote function execution through an instantiated ``executor`` is avai
 
 Support functions to query supported backends and initialize them are provided through the following functions.
 
+.. currentmodule:: pennylane.concurrency.executors
+.. automodule:: pennylane.concurrency.executors
+    :noindex:
+
 
 Supported executors
 ===================
