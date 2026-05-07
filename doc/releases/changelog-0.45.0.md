@@ -233,8 +233,12 @@
 
 * Added a decomposition of :class:`~.TemporaryAND` into :class:`~.Toffoli`. Note that this
   decomposition only is valid if `TemporaryAND` is used as intended--on zeroed input target qubits
-  or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+  or zeroed output target qubits for `Adjoint(TemporaryAND)`. Also note that as it treats the
+  control values of `TemporaryAND` as non-static data, the decomposition rule is only used if
+  `PauliX` bit flips (or operators that constitute bit flips) are present in the gate set of
+  the `decompose` call.
   [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+  [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
 * `qp.transforms.decompose` is now imported top level as `qp.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
@@ -1232,7 +1236,14 @@
 * Fixed broken documentation links to external demos and tutorials.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
+* Made description of numpy array slicing used to get the subspace of a density matrix more clear in 
+  the docs of `_phase_shift`.
+  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
+  [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
 
 * Fixed a bug where `ParametrizedHamiltonian`, `HardwareHamiltonian`, and `ParametrizedEvolution`
   did not follow PennyLane's queuing convention. They have been updated to de-queue their input
