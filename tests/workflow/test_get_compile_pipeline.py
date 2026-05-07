@@ -38,7 +38,9 @@ class TestValidation:
 
         with pytest.raises(
             ValueError,
-            match=re.escape("Can only retrieve the compilation pipeline of a QJIT'd QNode object."),
+            match=re.escape(
+                "Can only retrieve the compilation pipeline if the QJIT'd object is a QNode."
+            ),
         ):
             _ = get_compile_pipeline(inc)()
 
