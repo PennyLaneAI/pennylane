@@ -771,7 +771,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   ``qp.qjit``.
   [(#9129)](https://github.com/PennyLaneAI/pennylane/pull/9129)
 
-* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept
+* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM` and :class:`~.QROM` now accept
   their classical data as a 2-dimensional array data type, which increases compatibility with
   Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
