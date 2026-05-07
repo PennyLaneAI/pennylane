@@ -226,7 +226,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Inspect the decomposition graph solved with a given circuit.
+    """Returns a :class:`DecompGraphInspector` for querying the decomposition decisions made
+    for a given circuit and target gate set.
 
     .. note::
 
