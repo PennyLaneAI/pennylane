@@ -279,7 +279,7 @@ def merge_rotations(
 
     **Example**
 
-    You can also apply ``merge_rotations`` to a quantum function.
+    You can apply ``merge_rotations`` to a quantum function.
 
     .. code-block:: python
 
