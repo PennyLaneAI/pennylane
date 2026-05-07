@@ -20,6 +20,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.decomposition.decomposition_graph import DecompositionGraph
+from pennylane.operation import Operator
 
 
 @pytest.mark.jax
@@ -100,9 +102,26 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_equivalent_to_basis_state(self):
         """Tests that BasisEmbedding has the same decomposition rules as BasisState."""
+
         assert list(qp.list_decomps(qp.BasisEmbedding)) == list(qp.list_decomps(qp.BasisState))
+
+        class _CustomOp(Operator):
+            pass
+
+        @qp.register_resources({qp.resource_rep(qp.BasisEmbedding, num_wires=3): 1})
+        def _custom_decomp(wires):
+            qp.BasisState([1, 0, 0], wires)
+
+        graph = DecompositionGraph(
+            [_CustomOp(wires=[0, 1, 2])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={_CustomOp: [_custom_decomp]},
+        )
+        solution = graph.solve()
+        assert solution.is_solved_for(qp.BasisState([1, 0, 0], wires=[0, 1, 2]))
 
 
 class TestInputs:
