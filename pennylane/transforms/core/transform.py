@@ -489,7 +489,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 return tape_transform
             if setup_inputs:
                 # NOTE: Prepend "qnode" as an argument to the docstring
-                # so that it's consistent with tape based signatures.
+                # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
                 def _modified_setup_inputs(
                     qnode, *args, **kwargs
