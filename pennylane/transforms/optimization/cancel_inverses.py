@@ -390,7 +390,7 @@ def cancel_inverses(
 
         * ``cancel_inverses`` must be applied to a QNode. Quantum functions are not supported as input.
 
-        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
+        * The ``recursive`` argument is not supported, and an error will be raised if a value for ``recursive`` is specified.
 
         * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
 
