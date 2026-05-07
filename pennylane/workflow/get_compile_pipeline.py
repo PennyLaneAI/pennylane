@@ -245,7 +245,9 @@ def get_compile_pipeline(
     if _is_qjit(qnode):
         qnode = qnode.user_function
         if not hasattr(qnode, "compile_pipeline"):
-            raise ValueError("Can only retrieve the compilation pipeline if the QJIT'd object is a QNode.")
+            raise ValueError(
+                "Can only retrieve the compilation pipeline if the QJIT'd object is a QNode."
+            )
         is_qjit_qnode = True
 
     @wraps(qnode)
