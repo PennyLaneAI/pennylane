@@ -76,7 +76,7 @@ jobs:
           pre-build-command: >
             apt install -y graphviz
             && python -m pip install --upgrade pip
-            && pip3 install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
+            && pip3 install --extra-index-url https://test.pypi.org/simple/ "pennylane-catalyst>=0.15.0rc0,<=0.15.0" --pre
             && pip3 install --group docs
             && pip3 install .
           build-command: "sphinx-build -b html . _build -W --keep-going"
