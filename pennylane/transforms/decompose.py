@@ -687,7 +687,8 @@ def decompose(
         .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-        certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
+        certain operators if they need to be decomposed (i.e., when they're not in the target gate
+        set), whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
         In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``
