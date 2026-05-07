@@ -338,8 +338,8 @@
   To prevent this, stricter conditions have been applied on these decompositions.
   [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
-* Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
-  wires elsewhere in PennyLane, and that was not taken into account in the resource functions
+* Removed some wire reusage in :class:`~.Select` that was not consistent with the approach to work
+wires elsewhere in PennyLane, and that was not taken into account in the resource functions
   for the graph-based decomposition system (leading to decompositions not being resolved correctly).
   Also simplified the resource calculation of one decomposition of :class:`~.Select`.
   [(#9222)](https://github.com/PennyLaneAI/pennylane/pull/9222)
