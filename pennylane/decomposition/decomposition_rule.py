@@ -512,7 +512,7 @@ class DecompCollection:
 
     .. seealso::
 
-        :class:`~pennylane.DecompositionRule`,
+        :class:`~.DecompositionRule`,
         :func:`~pennylane.register_resources`,
         :func:`~pennylane.list_decomps`,
         :func:`~pennylane.add_decomps`,
@@ -723,9 +723,12 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
-            The returned :class:`~pennylane.DecompCollection` is a **copy** of the registered
-            rules.  Mutating it does not update the global decomposition registry; use
-            :func:`~pennylane.add_decomps` to register rules globally.
+
+    .. important::
+
+        The returned :class:`~.DecompCollection` is a **copy** of the registered
+        rules.  Mutating it does not update the global decomposition registry; use
+        :func:`~pennylane.add_decomps` to register rules globally.
 
     **Example**
 
