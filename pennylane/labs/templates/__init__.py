@@ -1,4 +1,4 @@
-# Copyright 2024-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,34 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
+"""
+This module contains templates, which are pre-coded routines that can be used in a quantum node.
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.templates
 
 .. autosummary::
     :toctree: api
 
-    dla
-    estimator_beta
-    phox
-    templates
-    transforms
-    trotter_error
-
+    ~LeftQuantumComparator
 """
 
-from pennylane.labs import dla
-from pennylane.labs import estimator_beta
-from pennylane.labs import phox
-from pennylane.labs import templates
-from pennylane.labs import transforms
-from pennylane.labs import trotter_error
-
-__all__ = []
+from .left_quantum_comparator import LeftQuantumComparator
