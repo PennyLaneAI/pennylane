@@ -385,7 +385,7 @@
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 * The decomposition of :class:`~.QSVT` has been updated to be consistent with or without the graph-based
-  decomposition system enabled.
+  decomposition system enabled (:func:`~.decomposition.enable_graph`).
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
 
 * Now, when the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
