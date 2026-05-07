@@ -1,4 +1,6 @@
 name: Validate module imports
+permissions:
+  contents: read
 
 on:
   merge_group:

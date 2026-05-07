@@ -42,18 +42,18 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
 
     .. code-block:: python
 
-        @qml.marker("after-merge-rotations")
-        @qml.transforms.merge_rotations
-        @qml.marker("after-cancel-inverses")
-        @qml.transforms.cancel_inverses
-        @qml.marker("nothing-applied")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker("after-merge-rotations")
+        @qp.transforms.merge_rotations
+        @qp.marker("after-cancel-inverses")
+        @qp.transforms.cancel_inverses
+        @qp.marker("nothing-applied")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            qml.RX(0.5, 0)
-            qml.H(0)
-            qml.H(0)
-            qml.RX(0.5, 0)
-            return qml.probs()
+            qp.RX(0.5, 0)
+            qp.H(0)
+            qp.H(0)
+            qp.RX(0.5, 0)
+            return qp.probs()
 
     We can identify where each marker sits relative to the applied transforms by printing the pipeline,
 
@@ -71,7 +71,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     These markers are then recognized by a few of our inspectability features.
     For example, we can verify the circuit resources after the ``Hadamard`` gates  have been cancelled by using ``level="after-cancel-inverses"`` with :func:`~.specs`:
 
-    >>> print(qml.specs(c, level="after-cancel-inverses")()) # or level=1
+    >>> print(qp.specs(c, level="after-cancel-inverses")()) # or level=1
     Device: null.qubit
     Device wires: None
     Shots: Shots(total=None)
@@ -87,12 +87,12 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
 
     Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:
 
-    >>> print(qml.draw(c, level="after-merge-rotations")()) # or level=2
+    >>> print(qp.draw(c, level="after-merge-rotations")()) # or level=2
     0: ──RX(1.00)─┤  Probs
 
     or even display our circuit before any transformations,
 
-    >>> print(qml.draw(c, level="nothing-applied")()) # or level=0
+    >>> print(qp.draw(c, level="nothing-applied")()) # or level=0
     0: ──RX(0.50)──H──H──RX(0.50)─┤  Probs
 
     """
@@ -101,7 +101,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         obj.compile_pipeline.add_marker(label)
         return obj
 
-    # NOTE: In order to use as decorator: @qml.marker(label="blah")
+    # NOTE: In order to use as decorator: @qp.marker(label="blah")
     if isinstance(obj, str):
         label = obj
         obj = None

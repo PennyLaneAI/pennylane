@@ -14,6 +14,7 @@
 """
 Tests for select resource operators.
 """
+
 import re
 
 import pytest

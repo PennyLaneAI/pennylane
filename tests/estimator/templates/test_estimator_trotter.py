@@ -14,6 +14,7 @@
 """
 Test the Resource classes for Trotterization
 """
+
 from collections import defaultdict
 
 import pytest

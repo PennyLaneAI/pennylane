@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   tests:
+    permissions:
+      contents: read  
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
@@ -46,6 +48,8 @@ jobs:
          }}
 
   update-lock-files:
+    permissions:
+      contents: read  
     needs: tests
     runs-on: ubuntu-latest
     steps:
@@ -70,6 +74,9 @@ jobs:
           path: uv.lock
 
   upload-stable-deps:
+    permissions:
+      contents: write
+      pull-requests: write
     needs: [tests, update-lock-files]
     uses: ./.github/workflows/check_in_artifact.yml
     if: github.event_name == 'schedule'

@@ -15,6 +15,7 @@
 Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
+
 import warnings
 
 # pylint: disable=not-callable
@@ -68,15 +69,15 @@ def _set_shots(device, shots):
 
     As a standard context manager:
 
-    >>> with _set_shots(dev, shots=100):
+    >>> with _set_shots(dev, shots=100):  # doctest: +SKIP
     ...     print(dev.shots)
     100
-    >>> print(dev.shots)
+    >>> print(dev.shots)  # doctest: +SKIP
     None
 
     Or as a decorator that acts on a function that uses the device:
 
-    >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
+    >>> _set_shots(dev, shots=100)(lambda: dev.shots)()  # doctest: +SKIP
     100
     """
     shots = Shots(shots)
@@ -148,22 +149,38 @@ def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
 @single_tape_support
 class LegacyDeviceFacade(Device):
     """
-    A Facade that converts a device from the old ``qml.Device`` interface into the new interface.
+    A Facade that converts a device from the old ``qp.Device`` interface into the new interface.
 
     Args:
-        device (qml.device.LegacyDevice): a device that follows the legacy device interface.
+        device (qp.device.LegacyDevice): a device that follows the legacy device interface.
 
+    >>> import pennylane as qp
     >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
     >>> legacy_dev = DefaultQutrit(wires=2)
     >>> new_dev = LegacyDeviceFacade(legacy_dev)
-    >>> new_dev.preprocess()
-    (CompilePipeline(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
-    ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
-    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=<Interface.NUMPY: 'numpy'>,
-    derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
+    >>> pipeline, config = new_dev.preprocess()
+    >>> print(pipeline)
+    CompilePipeline(
+      [1] defer_measurements(allow_postselect=False),
+      [2] legacy_device_batch_transform(device=...),
+      [3] legacy_device_expand_fn(device=...)
+    )
+    >>> import pprint
+    >>> pprint.pprint(config)
+    ExecutionConfig(grad_on_execution=None,
+                    use_device_gradient=None,
+                    use_device_jacobian_product=None,
+                    gradient_method=None,
+                    gradient_keyword_arguments={},
+                    device_options={},
+                    interface=<Interface.NUMPY: 'numpy'>,
+                    derivative_order=1,
+                    mcm_config=MCMConfig(mcm_method='deferred', postselect_mode=None),
+                    convert_to_numpy=True,
+                    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
     >>> new_dev.shots
     Shots(total_shots=None, shot_vector=())
-    >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
+    >>> tape = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
     array([[0],
        [0],
@@ -180,7 +197,7 @@ class LegacyDeviceFacade(Device):
 
         if not isinstance(device, LegacyDevice):
             raise ValueError(
-                "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
+                "The LegacyDeviceFacade only accepts a device of type qp.devices.LegacyDevice."
             )
 
         self._device = device

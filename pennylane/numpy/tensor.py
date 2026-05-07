@@ -14,6 +14,7 @@
 """
 This module provides the PennyLane :class:`~.tensor` class.
 """
+
 import numpy as onp
 from autograd import numpy as _np
 from autograd.core import VSpace

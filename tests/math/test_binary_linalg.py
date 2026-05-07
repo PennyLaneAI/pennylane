@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for binary linear algebra functions in qml.math"""
+"""Unit tests for binary linear algebra functions in qp.math"""
+
 import numpy as np
 import pytest
 
@@ -126,7 +127,7 @@ class TestIntToBinary:
 
 
 class TestBinaryDecimals:
-    """Test ``qml.math.binary_decimals``."""
+    """Test ``qp.math.binary_decimals``."""
 
     @pytest.mark.parametrize(
         "phi, p, expected, unit",

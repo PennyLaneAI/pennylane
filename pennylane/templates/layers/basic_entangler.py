@@ -14,6 +14,7 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -65,16 +66,16 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from math import pi
 
             n_wires = 3
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights):
-                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
         [np.float64(1.0), np.float64(1.0), np.float64(-1.0)]
@@ -87,7 +88,7 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            shape = qml.BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
+            shape = qp.BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
@@ -98,12 +99,12 @@ class BasicEntanglerLayers(Operation):
         .. code-block:: python
 
             n_wires = 2
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights):
-                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
         [np.float64(-1.0), np.float64(1.0)]
@@ -115,10 +116,10 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights):
-                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
-                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+                qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qp.RZ)
+                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
@@ -181,7 +182,7 @@ class BasicEntanglerLayers(Operation):
         **Example**
 
         >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
-        >>> qml.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qml.RX)
+        >>> qp.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qp.RX)
         [RX(tensor(1.2000), wires=['a']), RX(tensor(-0.4000), wires=['b']),
         CNOT(wires=['a', 'b']),
         RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),

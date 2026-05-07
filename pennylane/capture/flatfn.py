@@ -14,6 +14,7 @@
 """
 Defines a utility for capturing higher order primitives that return pytrees.
 """
+
 from functools import update_wrapper
 
 has_jax = True

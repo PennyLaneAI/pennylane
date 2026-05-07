@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural SPSA optimizer"""
+
 import warnings
 
 from scipy.linalg import sqrtm
@@ -80,7 +81,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
+    You can also find a walkthrough of the implementation in this :doc:`tutorial <demo:demos/qnspsa>`.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
@@ -102,12 +103,12 @@ class QNSPSAOptimizer:
     For VQE/VQE-like problems, the objective function can be defined within a qnode:
 
     >>> num_qubits = 2
-    >>> dev = qml.device("default.qubit", wires=num_qubits)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=num_qubits)
+    >>> @qp.qnode(dev)
     ... def cost(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.CRY(params[1], wires=[0, 1])
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.CRY(params[1], wires=[0, 1])
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.

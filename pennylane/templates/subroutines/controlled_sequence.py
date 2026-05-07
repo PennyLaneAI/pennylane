@@ -14,6 +14,7 @@
 r"""
 Contains the ControlledSequence template.
 """
+
 from copy import copy
 
 from pennylane.control_flow import for_loop
@@ -25,7 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
-from pennylane.ops.op_math import pow as qml_pow
+from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
 
 
@@ -57,19 +58,19 @@ class ControlledSequence(SymbolicOp, Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires = 4)
+        dev = qp.device("default.qubit", wires = 4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
 
             for i in range(3):
-                qml.Hadamard(wires = i)
+                qp.Hadamard(wires = i)
 
-            qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            qml.adjoint(qml.QFT)(wires = range(3))
+            qp.adjoint(qp.QFT)(wires = range(3))
 
-            return qml.probs(wires = range(3))
+            return qp.probs(wires = range(3))
 
     >>> print(circuit()) # doctest: +SKIP
     [0.9206 0.0264 0.0073 0.0042 0.0036 0.0042 0.0073 0.0264]
@@ -168,15 +169,15 @@ class ControlledSequence(SymbolicOp, Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
-            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            dev = qp.device("default.qubit")
+            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 op.decomposition()
-                return qml.state()
+                return qp.state()
 
-        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
         0: ─╭●────────────────────────────┤  State
         1: ─│─────────╭●──────────────────┤  State
         2: ─│─────────│─────────╭●────────┤  State
@@ -187,15 +188,15 @@ class ControlledSequence(SymbolicOp, Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
-            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            dev = qp.device("default.qubit")
+            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 op.compute_decomposition(base=op.base, control_wires=op.control, lazy=True)
-                return qml.state()
+                return qp.state()
 
-        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
         0: ─╭(RX(0.25))⁴───────────────────────────┤  State
         1: ─│────────────╭(RX(0.25))²──────────────┤  State
         2: ─│────────────│────────────╭(RX(0.25))¹─┤  State
@@ -207,7 +208,7 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
+            ops.append(qp_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
 
@@ -239,7 +240,7 @@ def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
         j = len(powers_of_two) - 1 - i
         ctrl_wire = control_wires[j]
         z = powers_of_two[i]
-        qml_pow(ctrl(base, control=ctrl_wire), z=z)
+        qp_pow(ctrl(base, control=ctrl_wire), z=z)
 
     _powers_loop()
 

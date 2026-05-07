@@ -16,23 +16,23 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.trotter_error import ProductFormula, generic_fragments, perturbation_error
 from pennylane.qchem import fermionic_observable
 
 symbols = ["H", "H", "H", "H"]
-geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]])
+geometry = qp.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]])
 
-mol = qml.qchem.Molecule(symbols, geometry, unit="angstrom")
-core_constant, one_body, two_body = qml.qchem.electron_integrals(mol)()
+mol = qp.qchem.Molecule(symbols, geometry, unit="angstrom")
+core_constant, one_body, two_body = qp.qchem.electron_integrals(mol)()
 
-two_chem = qml.math.swapaxes(two_body, 1, 3)  # V_pqrs
-one_chem = one_body - 0.5 * qml.math.einsum("pqss", two_body)  # T_pq
+two_chem = qp.math.swapaxes(two_body, 1, 3)  # V_pqrs
+one_chem = one_body - 0.5 * qp.math.einsum("pqss", two_body)  # T_pq
 
-_, two_body_cores, two_body_leaves = qml.qchem.factorize(two_chem, tol_factor=1e-2)
+_, two_body_cores, two_body_leaves = qp.qchem.factorize(two_chem, tol_factor=1e-2)
 
-one_body_eigvals, one_body_eigvecs = qml.math.linalg.eigh(one_chem)
-one_body_cores = qml.math.diag(one_body_eigvals)
+one_body_eigvals, one_body_eigvecs = qp.math.linalg.eigh(one_chem)
+one_body_cores = qp.math.diag(one_body_eigvals)
 one_body_leaves = one_body_eigvecs
 
 # CDF Hamiltonian
@@ -43,7 +43,7 @@ Z = two_body_cores
 
 eri = np.einsum("tpk,tqk,tkl,trl,tsl->tpqrs", U, U, Z, U, U)  # regenerate V_pqrs
 h1e = U0 @ Z0 @ U0.T
-h1e = h1e + 0.5 * qml.math.einsum("pqss", two_body)  # regenerate h_pq
+h1e = h1e + 0.5 * qp.math.einsum("pqss", two_body)  # regenerate h_pq
 
 h_ferm = [fermionic_observable(constant=core_constant, one=h1e)]
 for frag in eri:

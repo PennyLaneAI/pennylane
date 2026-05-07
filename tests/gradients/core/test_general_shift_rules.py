@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.general_shift_rules module."""
+
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.gradients.general_shift_rules import (
     _get_shift_rule,
     _iterate_shift_rule_with_multipliers,
@@ -393,14 +394,14 @@ class TestGenerateShiftedTapes:
     def test_behaviour(self):
         """Test that the function behaves as expected"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.RX(1.0, wires=0)
+            qp.CNOT(wires=[0, 2])
+            qp.Rot(2.0, 3.0, 4.0, wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         shifts = [0.1, -0.2, 1.6]
         res = generate_shifted_tapes(tape, 1, shifts)
@@ -413,14 +414,14 @@ class TestGenerateShiftedTapes:
     def test_multipliers(self):
         """Test that the function behaves as expected when multipliers are used"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.RX(1.0, wires=0)
+            qp.CNOT(wires=[0, 2])
+            qp.Rot(2.0, 3.0, 4.0, wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         shifts = [0.3, 0.6]
         multipliers = [0.2, 0.5]
@@ -437,14 +438,14 @@ class TestGenerateMultishiftedTapes:
     def test_with_single_par(self):
         """Test that the function shifts a single tape parameter as expected"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.RX(1.0, wires=0)
+            qp.CNOT(wires=[0, 2])
+            qp.Rot(2.0, 3.0, 4.0, wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         shifts = [[0.1], [-0.2], [1.6]]
         res = generate_multishifted_tapes(tape, [1], shifts)
@@ -457,14 +458,14 @@ class TestGenerateMultishiftedTapes:
     def test_with_multiple_pars(self):
         """Test that the function shifts multiple tape parameters as expected"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.RX(1.0, wires=0)
+            qp.CNOT(wires=[0, 2])
+            qp.Rot(2.0, 3.0, 4.0, wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2, 3}
         shifts = [[0.1, -0.5], [-0.2, 0.9], [1.6, 0.1]]
         res = generate_multishifted_tapes(tape, [0, 2], shifts)
@@ -477,14 +478,14 @@ class TestGenerateMultishiftedTapes:
     def test_with_multipliers(self):
         """Test that the function behaves as expected when multipliers are used"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.RX(1.0, wires=0)
+            qp.CNOT(wires=[0, 2])
+            qp.Rot(2.0, 3.0, 4.0, wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         shifts = [[0.3, -0.6], [0.2, 0.6], [0.6, 0.0]]
         multipliers = [[0.2, 0.5], [-0.3, 0], [1.0, 1]]

@@ -53,7 +53,7 @@ class CH(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CH.resource_decomp()
+    >>> qp.estimator.CH.resource_decomp()
     [(2 x Hadamard), (2 x RY), (1 x CNOT)]
 
     """
@@ -213,7 +213,7 @@ class CY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CY.resource_decomp()
+    >>> qp.estimator.CY.resource_decomp()
     [(1 x CNOT), (1 x S), (1 x Adjoint(S))]
     """
 
@@ -364,7 +364,7 @@ class CZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CZ.resource_decomp()
+    >>> qp.estimator.CZ.resource_decomp()
     [(1 x CNOT), (2 x Hadamard)]
     """
 
@@ -522,7 +522,7 @@ class CSWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CSWAP.resource_decomp()
+    >>> qp.estimator.CSWAP.resource_decomp()
     [(1 x Toffoli), (2 x CNOT)]
     """
 
@@ -676,7 +676,7 @@ class CCZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CCZ.resource_decomp()
+    >>> qp.estimator.CCZ.resource_decomp()
     [(1 x Toffoli), (2 x Hadamard)]
     """
 
@@ -962,7 +962,7 @@ class TemporaryAND(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.TemporaryAND.resource_decomp()
+    >>> qp.estimator.TemporaryAND.resource_decomp()
     [(1 x Toffoli)]
     """
 
@@ -1096,7 +1096,7 @@ class Toffoli(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.Toffoli.resource_decomp()
+    >>> qp.estimator.Toffoli.resource_decomp()
     [Allocate(2), (9 x CNOT), (3 x Hadamard), (1 x S), (1 x CZ), (2 x T), (2 x Adjoint(T)), Deallocate(2)]
     """
 
@@ -1375,7 +1375,7 @@ class MultiControlledX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
+    >>> qp.estimator.MultiControlledX.resource_decomp(num_ctrl_wires=5, num_zero_ctrl=2)
     [(4 x X), Allocate(3), (3 x TemporaryAND), (3 x Adjoint(TemporaryAND)), (1 x Toffoli), Deallocate(3)]
     """
 
@@ -1604,7 +1604,7 @@ class CRX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CRX.resource_decomp()
+    >>> qp.estimator.CRX.resource_decomp()
     [(2 x CNOT), (2 x RZ), (2 x Hadamard)]
     """
 
@@ -1773,7 +1773,7 @@ class CRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CRY.resource_decomp()
+    >>> qp.estimator.CRY.resource_decomp()
     [(2 x CNOT), (2 x RY)]
     """
 
@@ -1939,7 +1939,7 @@ class CRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CRZ.resource_decomp()
+    >>> qp.estimator.CRZ.resource_decomp()
     [(2 x CNOT), (2 x RZ)]
     """
 
@@ -2115,7 +2115,7 @@ class CRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.CRot.resource_decomp()
+    >>> qp.estimator.CRot.resource_decomp()
     [(2 x CNOT), (3 x RZ), (2 x RY)]
     """
 
@@ -2292,7 +2292,7 @@ class ControlledPhaseShift(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.ControlledPhaseShift.resource_decomp()
+    >>> qp.estimator.ControlledPhaseShift.resource_decomp()
     [(2 x CNOT), (3 x RZ)]
     """
 
@@ -2358,7 +2358,7 @@ class ControlledPhaseShift(ResourceOperator):
 
         The resources for this operation are computed using:
 
-        >>> qml.estimator.ControlledPhaseShift.resource_decomp()
+        >>> qp.estimator.ControlledPhaseShift.resource_decomp()
         [(2 x CNOT), (3 x RZ)]
         """
         cnot = resource_rep(CNOT)

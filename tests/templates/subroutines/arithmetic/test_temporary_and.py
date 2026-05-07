@@ -15,70 +15,101 @@
 Tests for the TemporaryAND template.
 """
 
+import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_TemporaryAND
+from pennylane.templates.subroutines.arithmetic.temporary_and import (
+    _adjoint_temporary_and,
+    _adjoint_temporary_and_to_toffoli,
+    _temporary_and_to_toffoli,
+)
 
 
 class TestTemporaryAND:
     """Tests specific to the TemporaryAND operation"""
 
+    def compare_to_toffoli_on_zero(self, matrix, zeroed, cvals=None):
+        """Compare a given matrix to the matrix of Toffoli on a constrained subspace.
+        The constraint is either that the input state is |0> on the target qubit, or that the
+        output is |0>. This is determined by the argument ``zeroed``.
+        """
+        cvals = cvals or [1, 1]
+        toffoli_mat = qp.matrix(qp.Toffoli(wires=[0, 1, 2]))
+        if not cvals[0]:
+            x_mat = qp.matrix(qp.X(0), wire_order=[0, 1, 2])
+            toffoli_mat = x_mat @ toffoli_mat @ x_mat
+        if not cvals[1]:
+            x_mat = qp.matrix(qp.X(1), wire_order=[0, 1, 2])
+            toffoli_mat = x_mat @ toffoli_mat @ x_mat
+        if zeroed == "input":
+            # When the third qubit starts in |0>, we only check the odd columns
+            isometry = matrix[:, ::2]
+            isometry_toffoli = toffoli_mat[:, ::2]
+
+        # When the third qubit ends in |0>, we only check the odd rows
+        else:
+            isometry = matrix[::2, :]
+            isometry_toffoli = toffoli_mat[::2, :]
+
+        assert qp.math.allclose(isometry, isometry_toffoli)
+
     def test_repr(self):
         """Test the repr of TemporaryAND."""
-        assert repr(qml.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
+        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
         assert (
-            repr(qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
+            repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
             == "TemporaryAND(wires=Wires([0, 'a', 2]), control_values=(0, 1))"
         )
 
     def test_alias(self):
         """Test that Elbow is an alias of TemporaryAND"""
-        op1 = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
-        op2 = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
-        qml.assert_equal(op1, op2)
+        op1 = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        op2 = qp.Elbow(wires=[0, "a", 2], control_values=(0, 0))
+        qp.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
-
-        op = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
-        qml.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        op = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
+        # to mcm + cond(CZ) do not reproduce the matrix of the op.
+        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
 
     def test_correctness(self):
         """Tests the correctness of the TemporaryAND operator.
         This is done by comparing the results with the Toffoli operator
         """
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        qs_and = qml.tape.QuantumScript(
+        qs_and = qp.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.TemporaryAND([0, 1, 2], control_values=[0, 1]),
-                qml.CNOT([2, 3]),
-                qml.RX(1.2, 3),
-                qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[0, 1])),
+                qp.RY(-2.6321, 0),
+                qp.RY(0.612, 1),
+                qp.TemporaryAND([0, 1, 2], control_values=[0, 1]),
+                qp.CNOT([2, 3]),
+                qp.RX(1.2, 3),
+                qp.adjoint(qp.TemporaryAND([0, 1, 2], control_values=[0, 1])),
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
-        qs_toffoli = qml.tape.QuantumScript(
+        qs_toffoli = qp.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.X(0),
-                qml.Toffoli([0, 1, 2]),
-                qml.X(0),
-                qml.CNOT([2, 3]),
-                qml.RX(1.2, 3),
-                qml.X(0),
-                qml.Toffoli([0, 1, 2]),
-                qml.X(0),
+                qp.RY(-2.6321, 0),
+                qp.RY(0.612, 1),
+                qp.X(0),
+                qp.Toffoli([0, 1, 2]),
+                qp.X(0),
+                qp.CNOT([2, 3]),
+                qp.RX(1.2, 3),
+                qp.X(0),
+                qp.Toffoli([0, 1, 2]),
+                qp.X(0),
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
@@ -87,140 +118,130 @@ class TestTemporaryAND:
 
         tape = program([qs_toffoli])
         output_toffoli = dev.execute(tape[0])[0]
-        assert qml.math.allclose(output_toffoli, output_and)
+        assert qp.math.allclose(output_toffoli, output_and)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
-        M_and = qml.matrix(qml.TemporaryAND(wires=[0, 1, 2]))
-        M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAND(wires=[0, 1, 2])))
-        M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
-
-        # When the third qubit starts in |0>, we only check the odd columns
-        iso_and = M_and[:, ::2]
-        iso_toffoli = M_toffoli[:, ::2]
-
-        # When the third qubit ends in |0>, we only check the odd rows
-        iso_M_and_adj = M_and_adj[::2, :]
-        iso_toffoli_adj = M_toffoli[::2, :]
-
-        assert qml.math.allclose(iso_and, iso_toffoli)
-        assert qml.math.allclose(iso_M_and_adj, iso_toffoli_adj)
+        matrix_and = qp.matrix(qp.TemporaryAND(wires=[0, 1, 2]))
+        matrix_and_adj = qp.matrix(qp.adjoint(qp.TemporaryAND(wires=[0, 1, 2])))
+        self.compare_to_toffoli_on_zero(matrix_and, "input")
+        self.compare_to_toffoli_on_zero(matrix_and_adj, "output")
 
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 0), (1, 1)])
-    def test_and_decompositions(self, cvals):
+    def test_temporary_and_decompositions(self, cvals):
         """Tests that TemporaryAND is decomposed properly."""
-        for rule in qml.list_decomps(qml.TemporaryAND):
-            _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=cvals), rule)
+        wires = [0, 1, 2]
+        for rule in qp.list_decomps(qp.TemporaryAND):
+            _test_decomposition_rule(
+                qp.TemporaryAND(wires, control_values=cvals), rule, skip_decomp_matrix_check=True
+            )
+            matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
+            self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
+    @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
-    def test_adjoint_temporary_and_decomposition(self, control_values):
+    def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """
         Validate the MCM-based decomposition of Adjoint(TemporaryAND).
         """
         sys_wires = [0, 1, 2]
         work_wires = [3]  # auxiliary qubit for deferred measure
-        dev = qml.device("default.qubit", wires=sys_wires + work_wires)
+        dev = qp.device("default.qubit", wires=sys_wires + work_wires)
 
-        @qml.qnode(dev)
-        def circuit(a, b):
-            qml.BasisState(qml.math.array([a, b, 0], dtype=int), wires=sys_wires)
-            qml.TemporaryAND(wires=sys_wires, control_values=control_values)
-            _adjoint_TemporaryAND(wires=sys_wires)
-            return qml.probs(wires=sys_wires)
+        @qp.qnode(dev)
+        def circuit(state):
+            # Prepare control state
+            qp.StatePrep(state, wires=sys_wires[:2])
+            op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
+            rule(sys_wires, base=op)
+            # Unprepare control state
+            qp.adjoint(qp.StatePrep)(state, wires=sys_wires[:2])
+            return qp.probs(wires=sys_wires)
 
-        for a in (0, 1):
-            for b in (0, 1):
-                probs = circuit(a, b)
-                idx = (a << 2) | (b << 1)
-                assert qml.math.allclose(
-                    probs[idx], 1.0
-                ), f"Failed for a={a}, b={b}, cv={control_values}"
+        rng = np.random.default_rng(seed)
+        state = rng.random(4) + 1j * rng.random(4)
+        state /= np.linalg.norm(state)
+        probs = circuit(state)
+        assert qp.math.allclose(probs, np.eye(8)[0])
 
+    @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_adjoint_temporary_and_integration(self):
+    def test_adjoint_temporary_and_integration(self, rule):
         wires = [0, 1, "aux0", 2]
-        gate_set = {"X", "T", "Adjoint(T)", "Hadamard", "CX", "CZ", "MidMeasureMP", "Adjoint(S)"}
+        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli"}
 
-        @qml.set_shots(1)
-        @qml.qnode(qml.device("default.qubit", wires=wires), interface=None)
-        @qml.transforms.decompose(
+        @qp.set_shots(1)
+        @qp.qnode(qp.device("default.qubit", wires=wires), interface=None)
+        @qp.transforms.decompose(
             gate_set=gate_set,
             fixed_decomps={
-                qml.Select: qml.templates.subroutines.select._select_decomp_unary  # pylint: disable=protected-access
+                qp.Select: qp.templates.subroutines.select._select_decomp_unary,  # pylint: disable=protected-access
+                "Adjoint(TemporaryAND)": rule,
+                "TemporaryAND": _temporary_and_to_toffoli,
             },
         )
         def circuit():
-            ops = [qml.Z(2) for _ in range(4)]
-            qml.Select(ops, control=[0, 1], work_wires=["aux0"], partial=True)
-            return qml.sample(wires=wires)
+            ops = [qp.Z(2) for _ in range(4)]
+            qp.Select(ops, control=[0, 1], work_wires=["aux0"], partial=True)
+            return qp.sample(wires=wires)
 
-        tape = qml.workflow.construct_tape(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
         expected_operators = [
-            qml.X(0),
-            qml.X(1),
-            qml.H("aux0"),
-            qml.T("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.adjoint(qml.T("aux0")),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.T("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.adjoint(qml.T("aux0")),
-            qml.H("aux0"),
-            qml.adjoint(qml.S("aux0")),
-            qml.X(0),
-            qml.X(1),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.X("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.H("aux0"),
-            qml.CZ(wires=[1, "aux0"]),
-            qml.H("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.CZ(wires=[0, "aux0"]),
-            qml.H("aux0"),
-            qml.CZ(wires=["aux0", 2]),
-            qml.H("aux0"),
-            qml.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
-            "ConditionalCZ",
+            # Start of left elbow with cval [0, 0]
+            qp.X(0),
+            qp.X(1),
+            qp.Toffoli([0, 1, "aux0"]),
+            qp.X(0),
+            qp.X(1),
+            # End of left elbow
+            qp.CZ(wires=["aux0", 2]),  # First target op
+            # Merged right and left elbow (cvals [0, 0] to [0, 1])
+            qp.CNOT(wires=[0, "aux0"]),
+            qp.X("aux0"),
+            qp.CZ(wires=["aux0", 2]),  # Second target op
+            # Merged right and left elbow (cvals [0, 1] to [1, 0])
+            qp.CNOT(wires=[0, "aux0"]),
+            qp.CNOT(wires=[1, "aux0"]),
+            qp.CZ(wires=["aux0", 2]),  # Third target op
+            # Merged right and left elbow (cvals [1, 0] to [1, 1])
+            qp.CNOT(wires=[0, "aux0"]),
+            qp.CZ(wires=["aux0", 2]),  # Fourth target op
         ]
+        if rule == _adjoint_temporary_and:
+            expected_operators += [
+                qp.H("aux0"),
+                qp.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
+                "ConditionalCZ",
+            ]
+        elif rule == _adjoint_temporary_and_to_toffoli:
+            expected_operators += [qp.Toffoli([0, 1, "aux0"])]
+
+        else:
+            raise NotImplementedError(f"Please add expected operators for rule {rule}")
 
         for op, exp_op in zip(tape.operations, expected_operators):
             # manual check: each MidMeasure has a unique ID, which prevents
-            # qml.equal from treating two MidMeasure as equal.
-            if isinstance(op, qml.measurements.MidMeasureMP):
+            # qp.equal from treating two MidMeasure as equal.
+            if isinstance(op, qp.measurements.MidMeasureMP):
                 assert op.wires == exp_op.wires
                 assert op.postselect == exp_op.postselect
                 assert op.reset == exp_op.reset
 
             # manual check for the conditional operator
-            elif isinstance(op, qml.ops.op_math.condition.Conditional):
+            elif isinstance(op, qp.ops.op_math.condition.Conditional):
                 assert exp_op == "ConditionalCZ"
-                assert isinstance(op.base, qml.CZ)
+                assert isinstance(op.base, qp.CZ)
                 assert list(op.base.wires) == [0, 1]
-                meas = op.meas_val  # same as the expr passed to qml.cond
+                meas = op.meas_val  # same as the expr passed to qp.cond
                 assert list(meas.wires) == ["aux0"]
 
             else:
-                qml.assert_equal(op, exp_op)
+                qp.assert_equal(op, exp_op)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
         """Tests that the matrix of the TemporaryAND operator is correct."""
 
-        matrix_base = qml.math.array(
+        matrix_base = qp.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -234,14 +255,14 @@ class TestTemporaryAND:
             dtype=complex,
         )
 
-        eye = qml.math.eye(2)
-        single_qubit = [qml.math.array([[0, 1], [1, 0]]), eye]
-        X_matrix = qml.math.kron(
-            single_qubit[control_values[0]], qml.math.kron(single_qubit[control_values[1]], eye)
+        eye = qp.math.eye(2)
+        single_qubit = [qp.math.array([[0, 1], [1, 0]]), eye]
+        X_matrix = qp.math.kron(
+            single_qubit[control_values[0]], qp.math.kron(single_qubit[control_values[1]], eye)
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             X_matrix @ matrix_base @ X_matrix,
-            qml.matrix(qml.TemporaryAND([0, 1, 2], control_values)),
+            qp.matrix(qp.TemporaryAND([0, 1, 2], control_values)),
         )
 
     @pytest.mark.jax
@@ -249,21 +270,21 @@ class TestTemporaryAND:
         """Tests that TemporaryAND works with jax and jit"""
         import jax
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            qml.TemporaryAND(wires=[0, 1, 2], control_values=[0, 1])
-            qml.CNOT(wires=[2, 3])
-            qml.RY(1.2, 3)
-            qml.adjoint(qml.TemporaryAND([0, 1, 2]))
-            return qml.probs([0, 1, 2, 3])
+            qp.Hadamard(0)
+            qp.Hadamard(1)
+            qp.TemporaryAND(wires=[0, 1, 2], control_values=[0, 1])
+            qp.CNOT(wires=[2, 3])
+            qp.RY(1.2, 3)
+            qp.adjoint(qp.TemporaryAND([0, 1, 2]))
+            return qp.probs([0, 1, 2, 3])
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(), jit_circuit())
+        assert qp.math.allclose(circuit(), jit_circuit())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.external
@@ -271,21 +292,21 @@ class TestTemporaryAND:
     def test_jax_qjit_control_values(self, cvals):
         """Tests that TemporaryAND works with jax and jit"""
 
-        dev = qml.device("lightning.qubit")
+        dev = qp.device("lightning.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(values):
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            qml.TemporaryAND(wires=[0, 1, 2], control_values=values)
-            return qml.probs([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(1)
+            qp.TemporaryAND(wires=[0, 1, 2], control_values=values)
+            return qp.probs([0, 1, 2])
 
-        exp_probs = qml.math.array([1, 0, 1, 0, 1, 0, 1, 0]) / 4
+        exp_probs = qp.math.array([1, 0, 1, 0, 1, 0, 1, 0]) / 4
         flip = 2 * int(cvals[0]) + int(cvals[1])
         exp_probs[2 * flip : 2 * flip + 2] = [0, 0.25]
-        qjit_circuit = qml.qjit(circuit)
-        values = qml.math.array(cvals, like="jax")
+        qjit_circuit = qp.qjit(circuit)
+        values = qp.math.array(cvals, like="jax")
         out = circuit(values)
         qjit_out = qjit_circuit(values)
-        assert qml.math.allclose(out, exp_probs)
-        assert qml.math.allclose(out, qjit_out)
+        assert qp.math.allclose(out, exp_probs)
+        assert qp.math.allclose(out, qjit_out)

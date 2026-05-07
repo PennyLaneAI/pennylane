@@ -14,7 +14,6 @@
 """Contains an DatasetAttribute that allows for heterogenous dictionaries
 of Dataset attributes."""
 
-
 from collections.abc import Iterator, Mapping, MutableMapping
 from typing import Generic
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module provides classes for algebraic prerequisites for Clifford+T decompositions"""
 
-
 from __future__ import annotations
 
 import math

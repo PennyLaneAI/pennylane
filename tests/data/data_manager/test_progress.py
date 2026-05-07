@@ -14,6 +14,7 @@
 """
 Tests for :class:`pennylane.data.progress`
 """
+
 import shutil
 
 import pytest

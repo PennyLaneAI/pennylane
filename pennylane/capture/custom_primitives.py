@@ -54,7 +54,7 @@ def _make_hashable(obj: Any) -> Any:
 
 
 # pylint: disable=abstract-method,too-few-public-methods
-class QmlPrimitive(Primitive):
+class QpPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives and automatically makes parameters hashable for JAX 0.7.0+."""
 
@@ -68,7 +68,7 @@ class QmlPrimitive(Primitive):
 
     @prim_type.setter
     def prim_type(self, value: str | PrimitiveType):
-        """Setter for QmlPrimitive.prim_type."""
+        """Setter for QpPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
 
     def bind(self, *args, **params):

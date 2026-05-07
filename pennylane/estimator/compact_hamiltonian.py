@@ -14,6 +14,7 @@
 """
 Contains classes used to compactly store the metadata of various Hamiltonians which are relevant for resource estimation.
 """
+
 import copy
 from dataclasses import dataclass
 from typing import Iterable

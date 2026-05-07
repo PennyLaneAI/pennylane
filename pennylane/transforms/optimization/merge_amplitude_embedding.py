@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from copy import copy
 from functools import lru_cache, partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import AmplitudeEmbedding
 from pennylane.exceptions import DeviceError, TransformError
 from pennylane.math import flatten, is_abstract, reshape
@@ -100,19 +100,19 @@ def _get_plxpr_merge_amplitude_embedding():
 
             if self.state["dynamic_wires_found"]:
                 raise TransformError(
-                    "Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires as it "
+                    "Cannot apply qp.AmplitudeEmbedding after operators with dynamic wires as it "
                     "is indeterminable if the wires overlap."
                 )
 
             if self.state["ops_found"] and any(is_abstract(w) for w in op.wires):
                 raise TransformError(
-                    "Cannot apply qml.AmplitudeEmbedding with dynamic wires after other operators "
+                    "Cannot apply qp.AmplitudeEmbedding with dynamic wires after other operators "
                     "as it is indeterminable if the wires overlap."
                 )
 
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
                 raise TransformError(
-                    "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
+                    "qp.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
 
             self.input_wires.append(op.wires)
@@ -141,8 +141,8 @@ def _get_plxpr_merge_amplitude_embedding():
                 else:
                     final_vector = flatten(final_vector)
 
-            with qml.capture.pause():
-                self.previous_ops.insert(0, qml.AmplitudeEmbedding(final_vector, wires=final_wires))
+            with qp.capture.pause():
+                self.previous_ops.insert(0, qp.AmplitudeEmbedding(final_vector, wires=final_wires))
             # Clear history of amplitude embedding gates since we've merged
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
@@ -331,25 +331,32 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=4)
-
-    You can apply the transform directly on :class:`QNode`:
+    You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
 
-        @qml.transforms.merge_amplitude_embedding
-        @qml.qnode(device=dev)
-        def circuit():
-            qml.CNOT(wires = [0,1])
-            qml.AmplitudeEmbedding([0,1], wires = 2)
-            qml.AmplitudeEmbedding([0,1], wires = 3)
-            return qml.state()
+        import pennylane as qp
 
+        dev = qp.device('default.qubit', wires=4)
+
+        @qp.transforms.merge_amplitude_embedding
+        @qp.qnode(device=dev)
+        def circuit():
+            qp.CNOT(wires = [0,1])
+            qp.AmplitudeEmbedding([0, 1], wires = 2)
+            qp.AmplitudeEmbedding([0, 1], wires = 3)
+            return qp.state()
+
+    >>> print(qp.draw(circuit)())
+    0: ─╭●───┤  State
+    1: ─╰X───┤  State
+    2: ─╭|Ψ⟩─┤  State
+    3: ─╰|Ψ⟩─┤  State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
@@ -357,23 +364,44 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply the transform on a quantum function:
 
         .. code-block:: python
 
             def qfunc():
-                qml.CNOT(wires = [0,1])
-                qml.AmplitudeEmbedding([0,1], wires = 2)
-                qml.AmplitudeEmbedding([0,1], wires = 3)
-                return qml.state()
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
 
         The circuit before compilation will not work because of using two amplitude embedding.
 
         Using the transformation we can join the different amplitude embedding into a single one:
 
-        >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)())
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
+
+        You can also apply this transform on quantum functions:
+
+        .. code-block:: python
+
+            def qfunc():
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
+
+        This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
+        Using the transformation we can join the different instances into a single one:
+
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
         0: ─╭●───┤  State
         1: ─╰X───┤  State
         2: ─╭|Ψ⟩─┤  State

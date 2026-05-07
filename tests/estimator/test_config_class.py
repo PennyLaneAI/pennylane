@@ -14,6 +14,7 @@
 """
 Test the resource configuration class.
 """
+
 import pytest
 
 from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ

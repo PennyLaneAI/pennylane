@@ -14,6 +14,7 @@
 """
 Unit tests for the :func:`pennylane.template.subroutines.qram` class.
 """
+
 import re
 
 import numpy as np

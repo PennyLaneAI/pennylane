@@ -15,6 +15,7 @@
 This module contains the functions needed for resource estimation with the double factorization
 method.
 """
+
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
 import numpy as np
 
@@ -51,9 +52,9 @@ class DoubleFactorization(Operation):
     >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
     ...                      [0.00000000,  1.45278171, -1.00662237],
     ...                      [0.00000000, -1.45278171, -1.00662237]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> algo = qml.estimator.DoubleFactorization(one, two)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> algo = qp.estimator.DoubleFactorization(one, two)
     >>> algo.lamb # the 1-Norm of the Hamiltonian
     np.float64(53.6...)
     >>> algo.gates # estimated number of non-Clifford gates
@@ -164,7 +165,7 @@ class DoubleFactorization(Operation):
             self.beta,
         )
 
-        super().__init__(wires=range(self._qubits))
+        super().__init__(self.one_electron, self.two_electron, wires=range(self._qubits))
 
     def _flatten(self):
         return (self.one_electron, self.two_electron), (
@@ -256,7 +257,7 @@ class DoubleFactorization(Operation):
 
         >>> lamb = 72.49779513025341
         >>> error = 0.001
-        >>> qml.estimator.DoubleFactorization.estimation_cost(lamb, error)
+        >>> qp.estimator.DoubleFactorization.estimation_cost(lamb, error)
         113880
         """
         if error <= 0.0:
@@ -301,7 +302,7 @@ class DoubleFactorization(Operation):
         **Example**
 
         >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
-        >>> qml.estimator.DoubleFactorization._qrom_cost(constants)
+        >>> qp.estimator.DoubleFactorization._qrom_cost(constants)
         (168, 4)
         """
         a, b, c, d, e = constants
@@ -341,7 +342,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.estimator.DoubleFactorization.unitary_cost(**kwargs)
+        >>> qp.estimator.DoubleFactorization.unitary_cost(**kwargs)
         2007
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -428,7 +429,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.estimator.DoubleFactorization.gate_cost(**kwargs)
+        >>> qp.estimator.DoubleFactorization.gate_cost(**kwargs)
         167048631
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -498,7 +499,7 @@ class DoubleFactorization(Operation):
         ...           'alpha': 10,
         ...           'beta': 20,
         ...         }
-        >>> qml.estimator.DoubleFactorization.qubit_cost(**kwargs)
+        >>> qp.estimator.DoubleFactorization.qubit_cost(**kwargs)
         292
         """
         if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
@@ -596,11 +597,11 @@ class DoubleFactorization(Operation):
         >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
         ...                      [0.00000000,  1.45278171, -1.00662237],
         ...                      [0.00000000, -1.45278171, -1.00662237]])
-        >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        >>> core, one, two = qml.qchem.electron_integrals(mol)()
+        >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        >>> core, one, two = qp.qchem.electron_integrals(mol)()
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
-        >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
-        >>> print(qml.estimator.DoubleFactorization.norm(one, two, eigvals))
+        >>> _, eigvals, _ = qp.qchem.factorize(two, 1e-5)
+        >>> print(qp.estimator.DoubleFactorization.norm(one, two, eigvals))
         369.4...
         """
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)

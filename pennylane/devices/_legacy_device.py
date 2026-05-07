@@ -14,6 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
+
 # pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import warnings
@@ -51,9 +52,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qml.devices.DefaultQutrit)", the overridden
+    checking "isinstance(dev, qp.devices.DefaultQutrit)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qml.devices.DefaultQutrit)"
+    "isinstance(dev.target_device, qp.devices.DefaultQutrit)"
     """
 
     def __instancecheck__(cls, instance):
@@ -245,7 +246,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = qml.device("default.mixed", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qp.device("default.mixed", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -649,7 +650,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             This method will be tracked by autodifferentiation libraries,
             such as Autograd, JAX, TensorFlow, and Torch. Please make sure
-            to use ``qml.math`` for autodiff-agnostic tensor processing
+            to use ``qp.math`` for autodiff-agnostic tensor processing
             if required.
 
         Args:
@@ -906,7 +907,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             ):
                 raise DeviceError(
                     f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
-                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "Apply the @qp.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
 

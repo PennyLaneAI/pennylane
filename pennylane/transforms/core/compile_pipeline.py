@@ -153,26 +153,26 @@ class CompilePipeline:
 
     .. code-block:: python
 
-        pipeline = qml.CompilePipeline(
-            qml.transforms.commute_controlled,
-            qml.transforms.cancel_inverses(recursive=True),
-            qml.transforms.merge_rotations,
+        pipeline = qp.CompilePipeline(
+            qp.transforms.commute_controlled,
+            qp.transforms.cancel_inverses(recursive=True),
+            qp.transforms.merge_rotations,
         )
         # Add a marker for inspectibility
         pipeline.add_marker("no-transforms", 0)
 
         @pipeline
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x, y):
-            qml.CNOT([1, 0])
-            qml.X(0)
-            qml.CNOT([1, 0])
-            qml.H(0)
-            qml.H(0)
-            qml.X(0)
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            return qml.expval(qml.Z(1))
+            qp.CNOT([1, 0])
+            qp.X(0)
+            qp.CNOT([1, 0])
+            qp.H(0)
+            qp.H(0)
+            qp.X(0)
+            qp.RX(x, wires=0)
+            qp.RX(y, wires=0)
+            return qp.expval(qp.Z(1))
 
     >>> print(circuit.compile_pipeline)
     CompilePipeline(
@@ -181,10 +181,10 @@ class CompilePipeline:
       [2] cancel_inverses(recursive=True),
       [3] merge_rotations()
     )
-    >>> print(qml.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
+    >>> print(qp.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
     0: ─╭X──X─╭X──H──H──X──RX(0.10)──RX(0.20)─┤
     1: ─╰●────╰●──────────────────────────────┤  <Z>
-    >>> print(qml.draw(circuit)(0.1, 0.2))
+    >>> print(qp.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
@@ -194,7 +194,7 @@ class CompilePipeline:
         Alternatively, the compilation pipeline can be constructed intuitively by combining multiple transforms. For
         example, the transforms can be added together with ``+``:
 
-        >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+        >>> pipeline = qp.transforms.merge_rotations + qp.transforms.cancel_inverses(recursive=True)
         >>> print(pipeline)
         CompilePipeline(
           [1] merge_rotations(),
@@ -203,7 +203,7 @@ class CompilePipeline:
 
         Or multiplied by a scalar via ``*``:
 
-        >>> pipeline += 2 * qml.transforms.commute_controlled
+        >>> pipeline += 2 * qp.transforms.commute_controlled
         >>> print(pipeline)
         CompilePipeline(
           [1] merge_rotations(),
@@ -215,7 +215,7 @@ class CompilePipeline:
         A compilation pipeline can also be easily modified using operations similar to Python lists, including
         ``insert``, ``append``, ``extend`` and ``pop``:
 
-        >>> pipeline.insert(0, qml.transforms.remove_barrier)
+        >>> pipeline.insert(0, qp.transforms.remove_barrier)
         >>> print(pipeline)
         CompilePipeline(
           [1] remove_barrier(),
@@ -227,7 +227,7 @@ class CompilePipeline:
 
         Additionally, multiple compilation pipelines can be concatenated:
 
-        >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+        >>> another_pipeline = qp.decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
         >>> print(another_pipeline + pipeline)
         CompilePipeline(
           [1] decompose(gate_set=...),
@@ -241,7 +241,7 @@ class CompilePipeline:
 
         We can create a new pipeline that will do multiple passes of the original with multiplication:
 
-        >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+        >>> original = qp.transforms.merge_rotations + qp.transforms.cancel_inverses
         >>> print(2 * original)
         CompilePipeline(
           [1] merge_rotations(),
@@ -255,7 +255,7 @@ class CompilePipeline:
 
         Let's create a simple pipeline to inspect,
 
-        >>> pipeline = qml.transforms.commute_controlled + qml.transforms.cancel_inverses + qml.transforms.merge_rotations
+        >>> pipeline = qp.transforms.commute_controlled + qp.transforms.cancel_inverses + qp.transforms.merge_rotations
 
         We can inspect the original pipeline by simply printing it,
 
@@ -338,7 +338,7 @@ class CompilePipeline:
           [5] <cancel_inverses()>,
           [6] <merge_rotations()>
         )
-        >>> pipeline + qml.transforms.undo_swaps
+        >>> pipeline + qp.transforms.undo_swaps
         CompilePipeline(
           [1] <commute_controlled()>,
            ├─▶ after-commute-controlled
@@ -753,7 +753,7 @@ class CompilePipeline:
         **Example:**
 
         >>> pipeline = CompilePipeline()
-        >>> pipeline += qml.transforms.merge_rotations
+        >>> pipeline += qp.transforms.merge_rotations
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
@@ -799,7 +799,7 @@ class CompilePipeline:
         """Add a transform to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transform``, and not a ``BoundTransform``.
+        ``qp.transform``, and not a ``BoundTransform``.
 
         Args:
             transform (Transform): The transform to add to the compile pipeline.

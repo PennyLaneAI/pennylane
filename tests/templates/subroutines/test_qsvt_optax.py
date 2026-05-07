@@ -27,7 +27,7 @@ pytest.importorskip("optax")
 
 from numpy.polynomial.chebyshev import Chebyshev
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
@@ -87,20 +87,20 @@ class TestOptaxAngleSolver:
         """Tests that angles generate desired poly with iterative-optax solver"""
         jax.config.update("jax_enable_x64", True)
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver="iterative-optax")
+        angles = qp.poly_to_angles(list(poly), "QSP", angle_solver="iterative-optax")
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit_qsp():
-            qml.RX(2 * angles[0], wires=0)
+            qp.RX(2 * angles[0], wires=0)
             for angle in angles[1:]:
-                qml.RZ(-2 * np.arccos(x), wires=0)
-                qml.RX(2 * angle, wires=0)
+                qp.RZ(-2 * np.arccos(x), wires=0)
+                qp.RX(2 * angle, wires=0)
 
-            return qml.state()
+            return qp.state()
 
-        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        output = qp.matrix(circuit_qsp, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
@@ -116,21 +116,21 @@ class TestOptaxAngleSolver:
         """Tests that angles generate desired poly with iterative-optax solver"""
         jax.config.update("jax_enable_x64", True)
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver="iterative-optax")
+        angles = qp.poly_to_angles(list(poly), "QSVT", angle_solver="iterative-optax")
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
-        block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
-        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
+        block_encoding = qp.RX(-2 * np.arccos(x), wires=0)
+        projectors = [qp.PCPhase(angle, dim=1, wires=0) for angle in angles]
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit_qsvt():
-            qml.QSVT(block_encoding, projectors)
-            return qml.state()
+            qp.QSVT(block_encoding, projectors)
+            return qp.state()
 
-        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+        output = qp.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-        assert qml.math.isclose(output.real, expected.real)
+        assert qp.math.isclose(output.real, expected.real)
 
 
 class TestOptaxInternalFunctions:
@@ -166,7 +166,7 @@ class TestOptaxInternalFunctions:
             )
         )
 
-        assert qml.math.isclose(
+        assert qp.math.isclose(
             _qsp_iterate_broadcast(phis, x_point, "jax"),
             _poly_func_optax(coeffs=jnp.array(target_polynomial_coeffs), x=x_point),
             atol=tolerance,
@@ -191,14 +191,14 @@ class TestOptaxInternalFunctions:
     @pytest.mark.parametrize("interface", ["jax"])
     def test_z_rotation_optax(self, angle, interface):
         """Test internal function _z_rotation_optax"""
-        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, interface), qp.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_qsp_iterate_optax(self, phi, interface):
         """Test internal function _qsp_iterate_optax"""
         mtx = _qsp_iterate(0.0, phi, interface)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
+        ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
     @pytest.mark.parametrize(
@@ -212,7 +212,7 @@ class TestOptaxInternalFunctions:
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
-        ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
+        ref = qp.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
@@ -220,7 +220,7 @@ class TestOptaxInternalFunctions:
     def test_W_of_x_optax(self, x, interface):
         """Test internal function _W_of_x_optax"""
         mtx = _W_of_x(x, interface)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(x))
+        ref = qp.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
     @pytest.mark.parametrize("degree", [4, 5, 10])

@@ -14,6 +14,7 @@
 r"""
 Contains the SimplifiedTwoDesign template.
 """
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -73,16 +74,16 @@ class SimplifiedTwoDesign(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from math import pi
 
             n_wires = 3
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(init_weights, weights):
-                qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+                qp.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
+                return [qp.expval(qp.Z(i)) for i in range(n_wires)]
 
             init_weights = [pi, pi, pi]
             weights_layer1 = [[0., pi],
@@ -97,12 +98,12 @@ class SimplifiedTwoDesign(Operation):
         **Parameter shapes**
 
         A list of shapes for the two weights arguments can be computed with the static method
-        :meth:`~.qml.SimplifiedTwoDesign.shape` and used when creating randomly
+        :meth:`~.qp.SimplifiedTwoDesign.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shapes = qml.SimplifiedTwoDesign.shape(n_layers=2, n_wires=2)
+            shapes = qp.SimplifiedTwoDesign.shape(n_layers=2, n_wires=2)
             weights = [np.random.random(size=shape) for shape in shapes]
 
     """
@@ -172,7 +173,7 @@ class SimplifiedTwoDesign(Operation):
         >>> weights_layer2 = [[pi, 0.],
         ...                   [pi, 0.]]
         >>> weights = np.array([weights_layer1, weights_layer2])
-        >>> ops = qml.SimplifiedTwoDesign.compute_decomposition(init_weights, weights, wires=["a", "b", "c"])
+        >>> ops = qp.SimplifiedTwoDesign.compute_decomposition(init_weights, weights, wires=["a", "b", "c"])
         >>> from pprint import pprint
         >>> pprint(ops)
         [RY(3.141592653589793, wires=['a']),

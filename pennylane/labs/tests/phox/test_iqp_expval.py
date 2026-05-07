@@ -14,10 +14,11 @@
 """
 Tests for the IQP expectation value calculator.
 """
+
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -72,18 +73,18 @@ def _prepare_pennylane_state(n_qubits, init_state_spec):
 
 
 def _prepare_jax_state(init_state_spec):
-    """Convert spec into JAX (X, P) tuple format."""
+    """Convert spec into JAX state elements (X) and amplitudes (P)."""
     if init_state_spec is None:
-        return None
+        return None, None
 
     is_single_bitstring = isinstance(init_state_spec, list) and (
         not init_state_spec or not isinstance(init_state_spec[0], (list, tuple))
     )
 
     if is_single_bitstring:
-        return (jnp.array([init_state_spec]), jnp.array([1.0]))
+        return jnp.array([init_state_spec]), jnp.array([1.0])
 
-    return (jnp.array(init_state_spec[0]), jnp.array(init_state_spec[1]))
+    return jnp.array(init_state_spec[0]), jnp.array(init_state_spec[1])
 
 
 def _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch_ints, init_state):
@@ -102,32 +103,32 @@ def iqp_circuit_pl(generators, params, obs_ints, init_state):
     expval_ops = []
     for i, op in enumerate(obs_ints):
         if op == 1:
-            expval_ops.append(qml.X(i))
+            expval_ops.append(qp.X(i))
         elif op == 2:
-            expval_ops.append(qml.Y(i))
+            expval_ops.append(qp.Y(i))
         elif op == 3:
-            expval_ops.append(qml.Z(i))
+            expval_ops.append(qp.Z(i))
         elif op == 0:
-            expval_ops.append(qml.Identity(i))
+            expval_ops.append(qp.Identity(i))
 
-    expval_op = qml.prod(*expval_ops)
+    expval_op = qp.prod(*expval_ops)
 
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qp.device("default.qubit", wires=n_qubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.StatePrep(np.array(init_state), wires=range(n_qubits))
+        qp.StatePrep(np.array(init_state), wires=range(n_qubits))
 
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
         for param, gen in zip(params, generators):
-            qml.MultiRZ(2 * -param, wires=gen)
+            qp.MultiRZ(2 * -param, wires=gen)
 
         for i in range(n_qubits):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
-        return qml.expval(expval_op)
+        return qp.expval(expval_op)
 
     return circuit
 
@@ -170,7 +171,7 @@ class TestIQPExpval:
         # pylint: disable=too-many-arguments
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
-        jax_state = _prepare_jax_state(init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params, obs_batch, pl_state)
 
@@ -186,7 +187,8 @@ class TestIQPExpval:
             n_samples=n_samples,
             key=key,
             n_qubits=n_qubits,
-            init_state=jax_state,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
         )
         expval_func = build_expval_func(config)
         approx_val, _ = expval_func(params_jax)
@@ -224,7 +226,7 @@ class TestIQPExpval:
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
-        jax_state = _prepare_jax_state(init_state_spec)
+        jax_state_elems, jax_state_amps = _prepare_jax_state(init_state_spec)
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
 
@@ -238,7 +240,8 @@ class TestIQPExpval:
             n_samples=n_samples,
             key=key,
             n_qubits=n_qubits,
-            init_state=jax_state,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
         )
         expval_func = build_expval_func(config)
         approx_val, _ = expval_func(np.array(params))
@@ -293,30 +296,32 @@ class TestIQPExpval:
         generators_pl = [[0], [1], [0, 1]]
         params = [0.37, 0.95, 0.73]
         pl_state = [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]
-        jax_state = (jnp.array([[0, 0], [1, 1]]), jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)]))
+
+        jax_state_elems = jnp.array([[0, 0], [1, 1]])
+        jax_state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
         n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        expval_ops = [qml.Z(0), qml.Y(1)]
-        expval_op = qml.prod(*expval_ops)
+        expval_ops = [qp.Z(0), qp.Y(1)]
+        expval_op = qp.prod(*expval_ops)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StatePrep(np.array(pl_state), wires=range(n_qubits))
+            qp.StatePrep(np.array(pl_state), wires=range(n_qubits))
 
             for i in range(n_qubits):
-                qml.Hadamard(i)
+                qp.Hadamard(i)
 
             for param, gen in zip(params, generators_pl):
-                qml.MultiRZ(2 * -param, wires=gen)
+                qp.MultiRZ(2 * -param, wires=gen)
 
-            qml.DiagonalQubitUnitary(diagonal, wires=[0, 1])
+            qp.DiagonalQubitUnitary(diagonal, wires=[0, 1])
 
             for i in range(n_qubits):
-                qml.Hadamard(i)
+                qp.Hadamard(i)
 
-            return qml.expval(expval_op)
+            return qp.expval(expval_op)
 
         exact_val = circuit()
 
@@ -327,8 +332,9 @@ class TestIQPExpval:
             n_qubits=n_qubits,
             gates=gates,
             observables=obs_batch,
-            init_state=jax_state,
-            phase_layer=compute_phase,
+            init_state_elems=jax_state_elems,
+            init_state_amps=jax_state_amps,
+            phase_fn=compute_phase,
             n_samples=50000,
             key=jax.random.PRNGKey(42),
         )

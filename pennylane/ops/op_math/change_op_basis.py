@@ -14,9 +14,10 @@
 """
 This submodule defines a class for compute-uncompute patterns.
 """
+
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from functools import reduce
-from typing import Callable
 
 from pennylane import capture, math, pytrees, queuing
 from pennylane.decomposition import (
@@ -84,7 +85,7 @@ def change_op_basis(
         compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
         target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
         uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
-            operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
+            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
@@ -99,28 +100,28 @@ def change_op_basis(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from functools import partial
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.CNOT([1,2])
-            qml.ctrl(
-                qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+            qp.H(0)
+            qp.CNOT([1,2])
+            qp.ctrl(
+                qp.change_op_basis(qp.QFT([1,2]), qp.PhaseAdder(1, x_wires=[1,2])),
                 control=0
             )
-            return qml.state()
+            return qp.state()
 
-        circuit2 = qml.decompose(circuit, max_expansion=1)
+        circuit2 = qp.decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
-    >>> print(qml.draw(circuit2)())
+    >>> print(qp.draw(circuit2)())
     0: ──H──────╭●────────────────┤  State
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
@@ -132,25 +133,25 @@ def change_op_basis(
     .. code-block:: python
 
         def my_compute_op(a, reg1, reg2):
-            qml.BasisState(np.zeros(len(reg2)), reg2)
-            qml.QFT(reg1)
-            qml.RX(a, reg1[0])
+            qp.BasisState(np.zeros(len(reg2)), reg2)
+            qp.QFT(reg1)
+            qp.RX(a, reg1[0])
 
         def my_target_op(wires):
-            qml.PauliX(wires[0])
+            qp.PauliX(wires[0])
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def circuit():
             # Use partial to absorb any input parameters
             compute = partial(my_compute_op, 0.1, [0], [1])
             target = partial(my_target_op, [0])
-            qml.change_op_basis(compute, target)
-            return qml.state()
+            qp.change_op_basis(compute, target)
+            return qp.state()
 
-        circuit3 = qml.decompose(circuit, max_expansion=1)
+        circuit3 = qp.decompose(circuit, max_expansion=1)
 
-    >>> print(qml.draw(circuit3)())
+    >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
     1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
 
@@ -181,7 +182,7 @@ class ChangeOpBasis(CompositeOp):
         compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
         uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qml.adjoint(compute_op).
+            Default is uncompute_op=qp.adjoint(compute_op).
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.

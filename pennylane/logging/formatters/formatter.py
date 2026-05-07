@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The PennyLane log-level formatters are defined here with default options, and ANSI-terminal color-codes."""
+
 import inspect
 import logging
 from logging import Formatter

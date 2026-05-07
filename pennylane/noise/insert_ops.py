@@ -14,6 +14,7 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
+
 from collections.abc import Callable, Sequence
 from types import FunctionType
 
@@ -88,7 +89,7 @@ def insert(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     Raises:
@@ -102,23 +103,23 @@ def insert(
 
     .. code-block:: python
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        @qml.noise.insert(op=qml.AmplitudeDamping, op_args=0.2, position="end")
-        @qml.qnode(dev)
+        @qp.noise.insert(op=qp.AmplitudeDamping, op_args=0.2, position="end")
+        @qp.qnode(dev)
         def f(w, x, y, z):
-            qml.RX(w, wires=0)
-            qml.RY(x, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RY(y, wires=0)
-            qml.RX(z, wires=1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(w, wires=0)
+            qp.RY(x, wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RY(y, wires=0)
+            qp.RX(z, wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
     Executions of this circuit will differ from the noise-free value:
 
     >>> f(0.9, 0.4, 0.5, 0.6)
     np.float64(0.7548469968854761)
-    >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+    >>> print(qp.draw(f)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
@@ -133,28 +134,28 @@ def insert(
         .. code-block:: python
 
             def op(x, y, wires):
-                qml.RX(x, wires=wires)
-                qml.PhaseShift(y, wires=wires)
+                qp.RX(x, wires=wires)
+                qp.PhaseShift(y, wires=wires)
 
         This operation can be inserted into the following circuit:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
-            @qml.noise.insert(op=op, op_args=[0.2, 0.3], position="end")
+            @qp.qnode(dev)
+            @qp.noise.insert(op=op, op_args=[0.2, 0.3], position="end")
             def f(w, x, y, z):
-                qml.RX(w, wires=0)
-                qml.RY(x, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(y, wires=0)
-                qml.RX(z, wires=1)
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                qp.RX(w, wires=0)
+                qp.RY(x, wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(y, wires=0)
+                qp.RX(z, wires=1)
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
         To check this, let's print out the circuit:
 
-        >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+        >>> print(qp.draw(f)(0.9, 0.4, 0.5, 0.6))
         0: ──RX(0.90)─╭●──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──RX(0.20)──Rϕ(0.30)─┤ ╰<Z@Z>
 
@@ -165,20 +166,20 @@ def insert(
         .. code-block:: python
 
             ops = [
-                qml.RX(0.9, wires=0),
-                qml.RY(0.4, wires=1),
-                qml.CNOT((0,1)),
-                qml.RY(0.5, wires=0),
-                qml.RX(0.6, wires=1)
+                qp.RX(0.9, wires=0),
+                qp.RY(0.4, wires=1),
+                qp.CNOT((0,1)),
+                qp.RY(0.5, wires=0),
+                qp.RX(0.6, wires=1)
             ]
-            measurements = [qml.expval(qml.Z(0) @ qml.Z(1))]
-            tape = qml.tape.QuantumTape(ops, measurements)
+            measurements = [qp.expval(qp.Z(0) @ qp.Z(1))]
+            tape = qp.tape.QuantumTape(ops, measurements)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.noise import insert
-        >>> [noisy_tape], _ = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
-        >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
+        >>> [noisy_tape], _ = insert(tape, qp.AmplitudeDamping, 0.05, position="end")
+        >>> print(qp.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
 
@@ -188,17 +189,17 @@ def insert(
 
         .. code-block:: python
 
-            dev = qml.device("default.mixed", wires=2)
+            dev = qp.device("default.mixed", wires=2)
 
             def f(w, x, y, z):
-                qml.RX(w, wires=0)
-                qml.RY(x, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(y, wires=0)
-                qml.RX(z, wires=1)
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                qp.RX(w, wires=0)
+                qp.RY(x, wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(y, wires=0)
+                qp.RX(z, wires=1)
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
-            qnode = qml.QNode(f, dev)
+            qnode = qp.QNode(f, dev)
 
         Execution of the circuit on ``dev`` will be noise-free:
 
@@ -207,8 +208,8 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.noise.insert(dev, qml.AmplitudeDamping, 0.2)
-        >>> qnode_noisy = qml.QNode(f, dev_noisy)
+        >>> dev_noisy = qp.noise.insert(dev, qp.AmplitudeDamping, 0.2)
+        >>> qnode_noisy = qp.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         np.float64(0.7294543367428854)
     """

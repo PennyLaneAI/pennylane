@@ -19,7 +19,6 @@ patching system and allows for controlled, scoped modifications without
 global side effects.
 """
 
-
 from copy import deepcopy
 
 

@@ -92,15 +92,15 @@ class PhaseAdder(Operation):
         x_wires =[0,1,2,3]
         work_wire=[5]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.QFT(wires=x_wires)
-            qml.PhaseAdder(k, x_wires, mod, work_wire)
-            qml.adjoint(qml.QFT)(wires=x_wires)
-            return qml.sample(wires=x_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.QFT(wires=x_wires)
+            qp.PhaseAdder(k, x_wires, mod, work_wire)
+            qp.adjoint(qp.QFT)(wires=x_wires)
+            return qp.sample(wires=x_wires)
 
     >>> print(circuit())
     [[1 1 0 1]]
@@ -230,7 +230,7 @@ class PhaseAdder(Operation):
 
         **Example**
 
-        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
+        >>> qp.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
         [PhaseShift(6.28..., wires=[0]), PhaseShift(3.141..., wires=[1]), PhaseShift(1.57..., wires=[2])]
         """
         op_list = []

@@ -14,6 +14,7 @@
 """
 Tests for quantum algorithmic subroutines resource operators.
 """
+
 import pytest
 
 import pennylane.estimator as qre

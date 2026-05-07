@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
+
 import math
 
 import pennylane.estimator as qre

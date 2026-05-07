@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the basic functions in qml.math"""
+"""Unit tests for the basic functions in qp.math"""
+
 import numpy as onp
 import pytest
 
@@ -29,7 +30,7 @@ jnp = pytest.importorskip("jax.numpy")
     "n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10)]
 )
 class TestCeilLog2:
-    """Tests for ``qml.math.ceil_log2``."""
+    """Tests for ``qp.math.ceil_log2``."""
 
     def test_ceil_log2_basic(self, n, exp):
         """Test ``ceil_log2``, which computes the ceiling of log2, cast to a builtin integer."""

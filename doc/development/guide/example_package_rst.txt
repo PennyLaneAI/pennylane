@@ -1,4 +1,4 @@
-qml.package_name
+qp.package_name
 ================
 
 .. rubric:: Modules

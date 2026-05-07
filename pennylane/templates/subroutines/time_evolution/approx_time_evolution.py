@@ -14,6 +14,7 @@
 r"""
 Contains the ApproxTimeEvolution template.
 """
+
 # pylint: disable=protected-access
 import copy
 from collections import defaultdict
@@ -38,7 +39,7 @@ class ApproxTimeEvolution(Operation):
         matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
         taking the adjoint:
 
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
+        >>> qp.adjoint(qp.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
 
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
@@ -100,22 +101,22 @@ class ApproxTimeEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import ApproxTimeEvolution
 
             n_wires = 2
             wires = range(n_wires)
 
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
             coeffs = [1, 1]
-            obs = [qml.X(0), qml.X(1)]
-            hamiltonian = qml.Hamiltonian(coeffs, obs)
+            obs = [qp.X(0), qp.X(1)]
+            hamiltonian = qp.Hamiltonian(coeffs, obs)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(time):
                 ApproxTimeEvolution(hamiltonian, time, 1)
-                return [qml.expval(qml.Z(i)) for i in wires]
+                return [qp.expval(qp.Z(i)) for i in wires]
 
         >>> circuit(1)
         [np.float64(-0.416...), np.float64(-0.416...)]
@@ -199,13 +200,13 @@ class ApproxTimeEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import ApproxTimeEvolution
 
             num_qubits = 2
 
-            hamiltonian = qml.Hamiltonian(
-                [0.1, 0.2, 0.3], [qml.Z(0) @ qml.Z(1), qml.X(0), qml.X(1)]
+            hamiltonian = qp.Hamiltonian(
+                [0.1, 0.2, 0.3], [qp.Z(0) @ qp.Z(1), qp.X(0), qp.X(1)]
             )
 
             evolution_time = 0.5

@@ -15,6 +15,7 @@
 """
 This submodule contains the template for the Reflection operation.
 """
+
 import copy
 
 import numpy as np
@@ -28,7 +29,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 
@@ -58,33 +59,33 @@ class Reflection(Operation):
 
     .. code-block:: python
 
-        U = qml.Hadamard(wires=0)
-        dev = qml.device('default.qubit')
+        U = qp.Hadamard(wires=0)
+        dev = qp.device('default.qubit')
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(wires=0)
-            qml.Reflection(U)
-            return qml.state()
+            qp.PauliX(wires=0)
+            qp.Reflection(U)
+            return qp.state()
 
     >>> circuit() # doctest: +SKIP
     array([1.+6.123234e-17j, 0.-6.123234e-17j])
 
     For cases when :math:`U` comprises many operations, you can create a quantum
     function containing each operation, one per line, then decorate the quantum
-    function with ``@qml.prod``:
+    function with ``@qp.prod``:
 
     .. code-block:: python
 
-        @qml.prod
+        @qp.prod
         def U(wires):
-            qml.Hadamard(wires=wires[0])
-            qml.RY(0.1, wires=wires[1])
+            qp.Hadamard(wires=wires[0])
+            qp.RY(0.1, wires=wires[1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Reflection(U([0, 1]))
-            return qml.state()
+            qp.Reflection(U([0, 1]))
+            return qp.state()
 
     >>> circuit() # doctest: +SKIP
     array([-0.0025-6.1385e-17j,  0.0499+3.0565e-18j,  0.9975+6.1079e-17j,
@@ -209,6 +210,9 @@ class Reflection(Operation):
             decomp_ops.append(ops.X(wires=wires))
             decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
             decomp_ops.append(ops.X(wires=wires))
+
+        if QueuingManager.recording():
+            apply(U)
 
         decomp_ops.append(U)
 

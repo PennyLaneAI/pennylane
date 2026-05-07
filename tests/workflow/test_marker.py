@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.core.compile_pipeline import ProtectedLevel
 
 jax = pytest.importorskip("jax")
@@ -30,21 +30,21 @@ class TestMarkerQNode:
         """Test exception when applied on something that's not a QNode."""
 
         def qn():
-            qml.H(0)
-            return qml.state()
+            qp.H(0)
+            return qp.state()
 
         with pytest.raises(ValueError, match="Object to mark must be a QNode."):
-            qml.marker(qn, "marker0")
+            qp.marker(qn, "marker0")
 
     def test_function(self):
         """Tests that it can be used functionally."""
 
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
-        qml.marker(c, "marker0")
-        qml.marker(c, label="marker1")
+        qp.marker(c, "marker0")
+        qp.marker(c, label="marker1")
 
         assert len(c.compile_pipeline.markers) == 2
 
@@ -56,12 +56,12 @@ class TestMarkerQNode:
             match="Found multiple markers for level 'something'. Markers must be unique.",
         ):
 
-            @qml.marker(label="something")
-            @qml.transforms.merge_rotations
-            @qml.marker(label="something")
-            @qml.qnode(qml.device("null.qubit"))
+            @qp.marker(label="something")
+            @qp.transforms.merge_rotations
+            @qp.marker(label="something")
+            @qp.qnode(qp.device("null.qubit"))
             def c():
-                return qml.state()
+                return qp.state()
 
     @pytest.mark.parametrize("protected_level_str", [level.value for level in ProtectedLevel])
     def test_protected_levels(self, protected_level_str):
@@ -71,21 +71,21 @@ class TestMarkerQNode:
             ValueError, match=f"Found marker for protected level '{protected_level_str}'"
         ):
 
-            @qml.marker(label=protected_level_str)
-            @qml.qnode(qml.device("null.qubit"))
+            @qp.marker(label=protected_level_str)
+            @qp.qnode(qp.device("null.qubit"))
             def c():
-                return qml.state()
+                return qp.state()
 
     def test_simple_qnode(self):
         """Tests that markers are placed in the qnode's compilation pipeline."""
 
-        @qml.marker(label="after-cancel-inverses")
-        @qml.transforms.cancel_inverses
-        @qml.marker("after-merge-rotations")
-        @qml.transforms.merge_rotations
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker(label="after-cancel-inverses")
+        @qp.transforms.cancel_inverses
+        @qp.marker("after-merge-rotations")
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         assert c.compile_pipeline.markers == ["after-merge-rotations", "after-cancel-inverses"]
         assert c.compile_pipeline.get_marker_level("after-merge-rotations") == 1
@@ -96,23 +96,23 @@ class TestMarkerQNode:
 
         with pytest.raises(ValueError, match="marker requires a 'label' argument."):
 
-            @qml.marker()
-            @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device("null.qubit"))
+            @qp.marker()
+            @qp.transforms.cancel_inverses
+            @qp.qnode(qp.device("null.qubit"))
             def c():
-                return qml.state()
+                return qp.state()
 
     def test_marker_is_first_decorator(self):
         """Tests when the marker is the first decorator."""
 
-        @qml.marker("after-cancel-inverses")
-        @qml.transforms.cancel_inverses
-        @qml.marker("after-merge-rotations")
-        @qml.transforms.merge_rotations
-        @qml.marker("nothing-applied")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker("after-cancel-inverses")
+        @qp.transforms.cancel_inverses
+        @qp.marker("after-merge-rotations")
+        @qp.transforms.merge_rotations
+        @qp.marker("nothing-applied")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         assert c.compile_pipeline.markers == [
             "nothing-applied",
@@ -126,19 +126,19 @@ class TestMarkerQNode:
     def test_marker_embedded_before_pipeline_decorator(self):
         """Tests that markers applied before the pipeline decorator are included."""
 
-        pipeline = qml.CompilePipeline()
-        pipeline += qml.transforms.cancel_inverses
+        pipeline = qp.CompilePipeline()
+        pipeline += qp.transforms.cancel_inverses
         pipeline.add_marker("after-cancel-inverses")
 
         assert pipeline.markers == ["after-cancel-inverses"]
         assert pipeline.get_marker_level("after-cancel-inverses") == 1
 
-        @qml.marker("after-pipeline")
+        @qp.marker("after-pipeline")
         @pipeline
-        @qml.marker("before-pipeline")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker("before-pipeline")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         assert c.compile_pipeline.markers == [
             "before-pipeline",

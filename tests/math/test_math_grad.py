@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the qml.math.grad and qml.math.jacobian functions.
+Test the qp.math.grad and qp.math.jacobian functions.
 """
 
 import numpy as np
@@ -33,7 +33,7 @@ def test_no_interface_error_numpy(grad_fn):
 
 @pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
 class TestGrad:
-    """Tests for qml.math.grad"""
+    """Tests for qp.math.grad"""
 
     def test_differentiate_first_arg(self, interface):
         """Test that we just differentiate the first argument by default."""
