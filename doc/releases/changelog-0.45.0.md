@@ -1594,7 +1594,7 @@
   is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
-* Fixed a bug where the graph-based decomposition system is unable to find a decomposition for a
+* Fixed a bug where the graph-based decomposition system was unable to find a decomposition for a
   `ControlledQubitUnitary` with more than two target wires.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
