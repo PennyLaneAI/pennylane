@@ -884,8 +884,25 @@ def specs(
             to ensure compatibility with the MLIR representation and/or with the device, so resources may change as a result
             of this pass.
 
-        Here is an example using ``level="all"`` on the circuit from the previous code example:
+        Consider the following circuit:
 
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=3)
+
+            @qp.qjit
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
+            def circuit(x):
+                qp.RX(x, wires=0)
+                qp.RX(x, wires=0)
+                qp.X(0)
+                qp.X(0)
+                qp.CNOT([0, 1])
+                return qp.probs()
+
+        We can get a pass-by-pass overview of the resources using ``level="all"``:
         >>> all_specs = qp.specs(circuit, level="all")(1.23)
         >>> print(all_specs)
         Device: lightning.qubit
