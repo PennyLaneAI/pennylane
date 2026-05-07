@@ -68,7 +68,29 @@ class TestValidation:
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
-    def test_user_level_pipeline(self):
+    def test_user_level_pipeline_with_markers(self, use_qjit):
+        """Tests that markers are properly retained."""
+
+        dev = qp.device("null.qubit")
+
+        pipeline = CompilePipeline()
+        pipeline += qp.transforms.merge_rotations
+        pipeline.add_marker("after-merge-rotations")
+        pipeline += qp.transforms.cancel_inverses
+        pipeline.add_marker("after-cancel-inverses")
+
+        @pipeline
+        @qp.qnode(dev)
+        def circuit():
+            return qp.expval(qp.Z(0))
+
+        if use_qjit:
+            circuit = qp.qjit(circuit)
+
+        cp = get_compile_pipeline(circuit, level="user")()
+        assert cp == pipeline
+
+    def test_user_level_pipeline(self, use_qjit):
         """Tests the contents of a user level pipeline."""
 
         dev = qp.device("reference.qubit")
