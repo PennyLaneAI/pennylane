@@ -108,7 +108,7 @@ class TestDecomposition:
 
         assert list(qp.list_decomps(qp.BasisEmbedding)) == list(qp.list_decomps(qp.BasisState))
 
-        class _CustomOp(Operator):
+        class _CustomOp(Operator):  # pylint: disable=too-few-public-method
             pass
 
         @qp.register_resources({qp.resource_rep(qp.BasisEmbedding, num_wires=3): 1})
