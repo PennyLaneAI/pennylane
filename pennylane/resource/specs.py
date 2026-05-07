@@ -702,8 +702,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.X(0) + qp.Y(1))
 
-        First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level="top"`` would
-        return the same results:
+        First, we can inspect the unmodified QNode by setting ``level=0``. Note that ``level="top"`` is equivalent:
 
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
         Wire allocations: 2
@@ -758,7 +757,7 @@ def specs(
         Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, the output will provide
-        separate resource information for each tape:
+        resource information separately for each tape:
 
         .. code-block:: python
 
@@ -796,7 +795,7 @@ def specs(
             - expval(Prod(num_wires=2, num_terms=2)): 1
             Depth: 1
 
-        In this case, the specs output's resources field is instead returned as a list with a
+        In this case, the returned :class:`~.resource.CircuitSpecs` resources field is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
         >>> qp.specs(circuit, level="user")().resources
