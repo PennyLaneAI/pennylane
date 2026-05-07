@@ -491,16 +491,18 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based signatures.
                 @wraps(setup_inputs)
-                def _sphinx_wrapper(qnode, *args, **kwargs):  # pylint: disable=unused-argument
+                def _modified_setup_inputs(
+                    qnode, *args, **kwargs
+                ):  # pylint: disable=unused-argument
                     return setup_inputs(*args, **kwargs)
 
                 orig_sig = signature(setup_inputs)
                 qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
-                _sphinx_wrapper.__signature__ = orig_sig.replace(
+                _modified_setup_inputs.__signature__ = orig_sig.replace(
                     parameters=[qnode_param, *orig_sig.parameters.values()]
                 )
-                _sphinx_wrapper.custom_qnode_transform = lambda x: x
-                _sphinx_wrapper.register = _dummy_register
+                _modified_setup_inputs.custom_qnode_transform = lambda x: x
+                _modified_setup_inputs.register = _dummy_register
                 return setup_inputs
             raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
