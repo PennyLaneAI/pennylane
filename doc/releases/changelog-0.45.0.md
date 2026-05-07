@@ -396,17 +396,21 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   - ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` which contains single-qubit rotations and ``CNOT``.
   - ``qp.gate_sets.IDENTITY`` which contains the ``Identity`` and the ``GlobalPhase`` gates.
 
-  Using the previous ``MultiRZ`` circuit example, we can now conveniently specify the
-  ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` set as the gate target:
-
+  Here is an example using the ``ROTATIONS_PLUS_CNOT`` gate set to decompose a controlled ``MultiRZ`` gate:
+  
   ```python
   qp.decomposition.enable_graph()
 
-  @qp.decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+  @qp.decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
   @qp.qnode(qp.device("default.qubit"))
   def circuit():
       qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
-      return qp.probs()
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(circuit, level="device")().resources.gate_counts
+  {'RZ': 54, 'RY': 14, 'GlobalPhase': 52, 'CNOT': 36, 'CRZ': 4, 'CRY': 4, 'C(GlobalPhase)': 4, 'Toffoli': 2}
   ```
 
 <h4>Resource Estimation Templates 📏</h4>
