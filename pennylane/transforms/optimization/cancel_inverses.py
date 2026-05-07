@@ -345,7 +345,7 @@ def cancel_inverses(
     **Example**
 
 
-    You can also apply it on quantum functions:
+    You can apply it on quantum functions:
 
     .. code-block:: python
 
