@@ -331,7 +331,7 @@ def cancel_inverses(
     (self-)inverses or adjoint.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
 
             .. note::
@@ -374,49 +374,11 @@ def cancel_inverses(
     2: ──RX(0.10)──RX(0.20)─╰X─┤
 
     .. details::
-        :title: Usage Details
-
-        You can also apply it on quantum functions:
-
-        .. code-block:: python
-
-            def qfunc(x, y, z):
-                qp.Hadamard(wires=0)
-                qp.Hadamard(wires=1)
-                qp.Hadamard(wires=0)
-                qp.RX(x, wires=2)
-                qp.RY(y, wires=1)
-                qp.X(1)
-                qp.RZ(z, wires=0)
-                qp.RX(y, wires=2)
-                qp.CNOT(wires=[0, 2])
-                qp.X(1)
-                return qp.expval(qp.Z(0))
-
-        The circuit before optimization:
-
-        >>> qnode = qp.QNode(qfunc, dev)
-        >>> print(qp.draw(qnode)(1, 2, 3))
-        0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
-        1: ──H─────────RY(2.00)──X────────│───X─┤
-        2: ──RX(1.00)──RX(2.00)───────────╰X────┤
-
-        We can see that there are two adjacent Hadamards on the first qubit that
-        should cancel each other out. Similarly, there are two Pauli-X gates on the
-        second qubit that should cancel. We can obtain a simplified circuit by running
-        the ``cancel_inverses`` transform:
-
-        >>> optimized_qfunc = qp.transforms.cancel_inverses(qfunc)
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)(1, 2, 3))
-        0: ──RZ(3.00)───────────╭●─┤  <Z>
-        1: ──H─────────RY(2.00)─│──┤
-        2: ──RX(1.00)──RX(2.00)─╰X─┤
-
-    .. details::
         :title: Usage with qjit
 
-        There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
+        There are three key differences to note when using ``cancel_inverses`` with ``qjit``:
+
+        * ``cancel_inverses`` must be applied to a QNode. Quantum functions are not supported as input.
 
         * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
 

@@ -261,7 +261,7 @@ def merge_rotations(
     neither gate will be applied.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         atol (float):
             After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -372,7 +372,9 @@ def merge_rotations(
     .. details::
         :title: Usage with qjit
 
-        There are two key differences to note when using ``merge_rotations`` with ``qjit``:
+        There are three key differences to note when using ``merge_rotations`` with ``qjit``:
+
+        * ``merge_rotations`` must be applied to a QNode. Quantum functions are not supported as input.
 
         * The ``atol`` and ``include_gates`` arguments are not available with ``merge_rotations``
           when used with ``qjit``, and an error will be raised if either arguments are specified.

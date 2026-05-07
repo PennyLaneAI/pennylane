@@ -66,9 +66,13 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     .. details::
         :title: Usage with qjit
 
-        When used with ``qjit``, the ``combine_global_phases`` compilation pass will merge
-        operations surrounding control flow together, while those within the control flow are merged
-        together separately (i.e., no formal loop-boundary optimizations).
+        There are two key differences to note when using ``combine_global_phases`` with ``qjit``:
+
+        * ``combine_global_phases`` must be applied to a QNode. Quantum functions are not supported as input.
+
+        * When used with ``qjit``, the ``combine_global_phases`` compilation pass will merge
+          operations surrounding control flow together, while those within the control flow are merged
+          together separately (i.e., no formal loop-boundary optimizations).
 
         Consider the following example:
 

@@ -381,7 +381,7 @@ def decompose(
         :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
 
     Args:
-        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
         gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
@@ -615,7 +615,6 @@ def decompose(
         0: ────╭●───────────╭●─┤  <Z>
         1: ──H─╰RZ(0.10)──H─├●─┤
         2: ─────────────────╰X─┤
-
 
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
         *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
