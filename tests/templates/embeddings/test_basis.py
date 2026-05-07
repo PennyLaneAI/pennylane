@@ -111,6 +111,9 @@ class TestDecomposition:
         class _CustomOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
+        # we're constructing a decomposition rule which says that it produces a `BasisEmbedding`
+        # but actually contains a `BasisState`, and testing that the graph is able to find a rule for
+        # the `BasisState` even though it was constructed with `BasisEmbedding`.
         @qp.register_resources({qp.resource_rep(qp.BasisEmbedding, num_wires=3): 1})
         def _custom_decomp(wires):
             qp.BasisState([1, 0, 0], wires)
