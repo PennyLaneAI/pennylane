@@ -1604,7 +1604,7 @@
 * Fixed a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
   [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
-* Fixed a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when the
+* Fixed a bug where a controlled `ChangeOpBasis` was sometimes decomposed inefficiently when the
   graph-based system is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
 
