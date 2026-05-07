@@ -385,7 +385,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
   ```
 
-  * A new :mod:`~.gate_sets` module contains pre-defined gate sets
+* A new :mod:`~.gate_sets` module contains pre-defined gate sets
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   These pre-defined gate sets can be easily accessed and integrated into decompositions workflows. Key gate sets include:
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
