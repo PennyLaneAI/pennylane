@@ -1215,7 +1215,7 @@
 
   ```
 
-  * **REVERTED** `qp.BasisRotation` has been ported to be a ``Subroutine``.
+  * qp.BasisRotation` was initially ported to be a ``Subroutine``, but this change was reverted.
   [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
   [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
