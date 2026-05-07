@@ -607,7 +607,7 @@ def specs(
         qnode (:class:`~pennylane.QNode` | :class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
+        level (str | int | slice | iter[int | str] | None): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
             on the available levels without ``qjit``. For ``qjit``-compiled workflows, see the sections below for more information.
             When set to ``None`` (the default), this is treated as ``"device"`` for ``qjit``-compiled workflows or ``"gradient"`` otherwise.
