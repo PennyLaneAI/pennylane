@@ -1379,7 +1379,7 @@
 * The :mod:`pennylane.transforms` module has been reorganized to allow for easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
-* The docstring for :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`,
+* The docstrings for :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`,
   and :func:`~.transforms.combine_global_phases` now has a "Usage with qjit" section
   to outline what the transform does when used with Catalyst.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
