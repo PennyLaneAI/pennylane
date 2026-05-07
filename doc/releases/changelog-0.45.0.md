@@ -621,6 +621,10 @@
 * Ensure `"subroutines"` and `"custom_gates"` are always initialized in the QASM interpreter.
   [(#9201)](https://github.com/PennyLaneAI/pennylane/pull/9201)
 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -1004,8 +1008,9 @@
 
   ```
 
-  The following classes have been ported over:
-  - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
+  * **REVERTED** `qp.BasisRotation` has been ported to be a ``Subroutine``.
+  [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) 
+  [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
 * Decomposition rules have been re-written for ``qjit`` compatibility, so that they can be lowered to Catalyst/MLIR. Rules for the
   following ``SymbolicOps`` have been re-written:
@@ -1022,7 +1027,7 @@
   [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
 
 * When using :func:`~.specs` with Catalyst and with multiple levels, with the ``split-non-commuting``
-  MLIR pass applied, the returned :class:`.resource.CircuitSpecs` object will include
+  MLIR pass applied, the returned :class:`~.resource.CircuitSpecs` object will include
   a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
   [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
@@ -1127,7 +1132,7 @@
 * Updated the README to better introduce PennyLane.
   [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
 
-* Update TensorFlow related documentation to clarify that maintenance support has been dropped since
+* Updated TensorFlow related documentation to clarify that maintenance support has been dropped since
   PennyLane v0.44.
   [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
 
@@ -1240,13 +1245,8 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
-  structure of their data:
-
-  - `Pow`
-  - `QPE`
-  - `GQSP`
-  - `estimator.qpe_resources.FirstQuantization`
-  - `estimator.qpe_resources.DoubleFactorization`
+  structure of their data: `Pow`, `QPE`, `GQSP`, `estimator.qpe_resources.FirstQuantization`,
+  and `estimator.qpe_resources.DoubleFactorization`.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
@@ -1270,7 +1270,7 @@
 * Fixed a warning of casting complex values to reals within `qp.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
-* Fixed a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+* Fixed a bug with program capture when a transform is applied to a QNode with a dynamic number of shots
   and return `qp.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
@@ -1308,13 +1308,9 @@
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
   [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
 
-* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+* Jacobian-level caching is now unconditionally enabled for the ``autograd`` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
-
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
-  can be interpreted.
-  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
 * Fixed a bug where `qp.transforms.transpile` would fail when `qp.GlobalPhase` gates
   were present in a circuit.
@@ -1329,23 +1325,23 @@
   ``Controlled.map_wires`` to preserve ``work_wires``.
   [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
-* Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
-  1 in Default Qubit.
+* The tolerance used in determining whether the norm of the probabilities is sufficiently close to 1 in
+  ``default.qubit`` has been increased to ``1e-6``.
   [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)
 
-* Removed automatic unpacking of inner product resources in the resource representation of
-  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
-  prevents decompositions in this system from using nested operator products while reporting their
-  resources accurately.
+* A bug was fixed that prevents decompositions in the graph-based system from using nested operator
+  products while reporting their resources accurately.
   [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
 
-* Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
+* ``decomp_int_to_powers_of_two`` now adheres to standard 64-bit C integer bounds, fixing runtime
+  warnings associated with integer overflow.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
 
-* Improves the error messages when the inputs and outputs to a `qp.for_loop` function do not match.
+* The error message was improved for when the number of inputs to a `qp.for_loop`-decorated function
+  is not one greated than the number of outputs.
   [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
 * Fixed a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
@@ -1363,7 +1359,7 @@
 * Fixed a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
   [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
-* Fixed a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
+* Fixed a bug where the `DecomposeInterpreter` cannot be applied on a QNode with the new graph-based decomposition system enabled.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
 * Fixed a bug where `qp.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
@@ -1379,7 +1375,8 @@
   is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
-* Fixed a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
+* Fixed a bug where the graph-based decomposition system is unable to find a decomposition for a
+  `ControlledQubitUnitary` with more than two target wires.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
 * Fixed a discontinuity in the gradient of the single-qubit unitary decompositions.
@@ -1388,7 +1385,8 @@
 * Fixed a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
   [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
-* Fixed a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+* Fixed a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when the
+  graph-based system is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
 
 * Fixed a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
