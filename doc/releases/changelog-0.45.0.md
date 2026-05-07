@@ -230,7 +230,7 @@
 
 <h4>Decompositions 🍏</h4>
 
-* `qp.transforms.decompose` is now conveniently accessible from the top level as `qp.decompose`.
+* :func:`~pennylane.transforms.decompose` is now conveniently accessible from the top level as :func:`~pennylane.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
 * It is now possible to locally add decomposition rules to an operator via a `qp.decomposition.local_decomps` context
@@ -263,57 +263,41 @@
   2: _cz_to_ppr
   ```
 
-* Several gates decompositions have been optimized for better performance:
+* The following gate decompositions have been optimized for resource efficiency:
   
-  - The `QROM` decompositions now has a smarter allocation of the work wires achieving better decompositions.
+  - The :class:`~.QROM` decomposition now has a more efficient allocation of work wires.
   [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
 
   - :class:`~.CSWAP` is now decomposed more efficiently, using ``change_op_basis`` with two ``CNOT``
     gates and a single ``Toffoli`` gate.
     [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
-  
-  - `MultiControlledX` has a new decomposition into a pair of `TemporaryAND` and a `CNOT`.
-  It takes two control wires and at least one `zeroed` work wire that has been passed explicitly.
+
+* Several new decomposition rules have been added that can be accessed with :func:`~.decomposition.enable_graph`:
+
+  - :class:`~.MultiControlledX` has a new decomposition into a pair of ``TemporaryAND`` gates and one ``CNOT``.
+  It takes two control wires and at least one ``zeroed`` work wire that has been passed explicitly.
   [(#9291)](https://github.com/PennyLaneAI/pennylane/pull/9291)
 
   - :class:`~.TemporaryAND` can now be decomposed into the equivalent (although slightly more expensive) :class:`~.Toffoli` gate.
     Note that this
-    decomposition only is valid if `TemporaryAND` is used as intended - on zeroed input target qubits
-    or zeroed output target qubits for `Adjoint(TemporaryAND)`.
+    decomposition only is valid if ``TemporaryAND`` is used as intended - on zeroed input target qubits
+    or zeroed output target qubits for ``Adjoint(TemporaryAND)``.
     [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
 
-* A new decomposition of `Evolution` into `qp.PauliRot` has been added which is compatible with the
-  new graph-based decomposition system. Similarly, a decomposition of `qp.RZ`
-  into `qp.PhaseShift`, including a global phase, has been added.
-  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
-  [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
+  - A new decomposition of `Evolution` into `qp.PauliRot` has been added which is compatible with the
+    new graph-based decomposition system. Similarly, a decomposition of `qp.RZ`
+    into `qp.PhaseShift`, including a global phase, has been added.
+    [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+    [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
 * The graph-based decompositions system, enabled via :func:`~.decomposition.enable_graph`, now 
-  additionally supports the custom `adjoint` method of qutrit operators such as ``QutritUnitary``,
-  ``ControlledQutritUnitary``, and ``TRZ``.
+  additionally supports the custom `adjoint` method of qutrit operators such as :class:`~.QutritUnitary`,
+  :class:`~.ControlledQutritUnitary`, and :class:`~.TRZ`.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 * The decomposition of :class:`~.QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
-
-* When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
-  transform no longer raises duplicate warnings about operators that cannot be decomposed.
-  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
-
-* A new `DecompositionWarning` is now raised instead of a general `UserWarning` if the decomposition graph is unable to find a solution
-  for an operator.
-  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
-
-* With the new graph-based decomposition system enabled, the :func:`~pennylane.transforms.decompose` transform no longer raises
-  warnings when the graph is unable to find a decomposition for an operator in the following scenarios:
-  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
-
-  - When the device is `null.qubit`.
-  - With `qp.compile`.
-  - Within the `expand_transform` of `hadamard_grad` and `param_shift`.
-
-  In these cases the operators will be treated as supported.
 
 * Now, when the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer tries to find a decomposition for an operator that meets a provided ``stopping_condition``,
@@ -330,36 +314,54 @@
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 
-* The device preprocessing function :func:`~.devices.preprocess.decompose` now supports ``num_work_wires``,
-  ``alt_decomps`` and ``fixed_decomps`` keyword arguments, whose  parameters can then be passed through to
-  the graph-based decomposition system.
+* Decomposition that occurs during device preprocessing now leverages graph-based decompositions
+  (when enabled), supporting the arguments ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps``.
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
-* The decomposition of :class:`~.BasisState` is now compatible with ``qjit`` and ``jax.jit`` for static wires and/or states. Additionally, the parametric
-  decomposition for traced states without `qjit` was updated to use powers of ``X`` rather than ``RX``.
+* The decomposition of :class:`~.BasisState` is now compatible with ``qjit`` and ``jax.jit`` for static
+  wires and/or states. Additionally, the parametric decomposition for traced states without `qjit` was
+  updated to use powers of ``X`` rather than ``RX``.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
   [(#9124)](https://github.com/PennyLaneAI/pennylane/pull/9124)
   [(#9339)](https://github.com/PennyLaneAI/pennylane/pull/9339)
 
 * The decompositions of :class:`~.TemporaryAND`, :class:`~.MultiRZ`, and :class:`~.DiagonalQubitUnitary`
-  are now compatible with traced control values, traced wires, and traced data respectively
-  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
-  [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
+  are now compatible with Catalyst.
   [(#9157)](https://github.com/PennyLaneAI/pennylane/pull/9157)
 
 * The :func:`~pennylane.ops.sk_decomposition` now accepts `"Adjoint(T)"` and `"Adjoint(S)"` in the `basis_set` as a
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
-* Some decomposition rules for ``MultiControlledX`` (e.g., ``_mcx_two_borrowed_workers`` and ``_mcx_one_borrowed_worker``)
-  became identical for instances of this operator on less than 6 wires. To prevent this, stricter conditions have been applied on these decomposition.
+* Some decomposition rules for :class:`~.MultiControlledX` (e.g., `_mcx_two_borrowed_workers` and
+  `_mcx_one_borrowed_worker`) became identical for instances of this operator on less than 6 wires.
+  To prevent this, stricter conditions have been applied on these decompositions.
   [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
 * Removed some wire reusage in :class:`~.Select` that is not consistent with the approach to work
   wires elsewhere in PennyLane, and that was not taken into account in the resource functions
   for the graph-based decomposition system (leading to decompositions not being resolved correctly).
-  Also simplified the resource calculation of one decomposition of `Select`.
+  Also simplified the resource calculation of one decomposition of :class:`~.Select`.
   [(#9222)](https://github.com/PennyLaneAI/pennylane/pull/9222)
+
+* When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
+  transform no longer raises duplicate warnings about operators that cannot be decomposed.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* A new `DecompositionWarning` is now raised instead of a general `UserWarning` if the decomposition graph is unable to find a solution
+  for an operator.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* With the new graph-based decomposition system enabled, internal use of the :func:`~pennylane.transforms.decompose`
+  transform no longer raises warnings when the graph is unable to find a decomposition for an operator
+  in the following scenarios:
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+  - circuit execution in the `null.qubit` device.
+  - compilation with ``qp.compile``.
+  - gradient transforms within the ``expand_transform`` of ``hadamard_grad`` and ``param_shift``.
+
+  In these cases the operators will be treated as supported.
 
 <h4>Disentangling Transforms 🧶</h4>
 
