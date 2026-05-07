@@ -296,8 +296,9 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   For each decomposition rule applicable to the operator instance, the output includes its name, circuit
   diagram, gate count, and wire allocation (if any).
 
-* To verify how the the decomposition graph is choosing decomposition rules for each operator instance in the
-  circuit the new function :func:`~.transforms.decomp_inspector` can be used.
+* A new function called :func:`~.transforms.decomp_inspector` is available for verifying how the 
+   the decomposition graph chooses decomposition rules for each operator instance in a
+  circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
   The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
