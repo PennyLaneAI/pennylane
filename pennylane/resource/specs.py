@@ -805,6 +805,10 @@ def specs(
     .. details::
         :title: Runtime Specs with Catalyst
 
+        .. note::
+
+            This documentation is specific to workflows with `qjit`.
+
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
         after all compilation steps, and should be highly accurate to the final gate counts of running on
@@ -850,6 +854,10 @@ def specs(
     .. details::
         :title: Pass-by-pass Specs with Catalyst
 
+        .. note::
+
+            This documentation is specific to workflows with `qjit`.
+
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
 
@@ -861,7 +869,7 @@ def specs(
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
 
-        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument when the ``qnode`` argument is a ``qjit``-compiled QNode:
+        Pass-by-pass specs can be obtained by providing one of the following values for the ``level`` argument:
 
         * An ``int``: the desired pass level of a user-applied pass, see the note below
         * A marker name (str): The name of an applied :func:`qp.marker <pennylane.marker>` pass
