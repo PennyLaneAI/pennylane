@@ -886,11 +886,12 @@ def specs(
             and incremental levels correspond to the aggregate of user-specified transforms and passes
             in the order in which they are applied.
 
-            This will also include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
-            further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
-            but before all other MLIR passes. In some cases, this pass will include applying additional transforms to the circuit
-            to ensure compatibility with the MLIR representation and/or with the device, so resources may change as a result
-            of this pass.
+            In addition to the user-passes, the pass-by-pass inspection will indicate where the MLIR
+            "lowering" occurs with the ``Before MLIR Passes`` stage. This will be placed after all tape
+            transforms, but before all other MLIR passes. In some cases, the pass to lower to MLIR will
+            apply additional transforms to the circuit to ensure compatibility with the MLIR representation
+            and/or with the device, so resources may change as a result of this pass.
+
 
         Consider the following circuit:
 
