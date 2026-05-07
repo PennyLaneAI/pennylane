@@ -1416,7 +1416,7 @@
   ``seed`` keyword argument and include instructions for achieving reproducible results with this argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile` was clarified in its documentation.
+* The definition of the ``pipeline`` argument for :func:`~.compile` was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
 * A typo in the type of a parameter in the docstring of :class:`~.templates.layers.BasicEntanglerLayers` has been fixed.
