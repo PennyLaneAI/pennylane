@@ -807,7 +807,7 @@ def specs(
 
         .. note::
 
-            This documentation is specific to workflows with `qjit`.
+            This documentation is specific to workflows with ``qjit``.
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -856,7 +856,7 @@ def specs(
 
         .. note::
 
-            This documentation is specific to workflows with `qjit`.
+            This documentation is specific to workflows with ``qjit``.
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
