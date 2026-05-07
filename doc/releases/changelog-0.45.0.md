@@ -362,6 +362,7 @@
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9427)](https://github.com/PennyLaneAI/pennylane/pull/9427)
 
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
