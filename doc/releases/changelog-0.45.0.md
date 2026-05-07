@@ -238,24 +238,180 @@
   same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
+<h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
+
+New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
+are now available! With this release, you can query the solutions of the graph-based system to 
+understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
+
+* It is now possible to assign custom names to decomposition rules using the ``name`` argument in
+  :func:`qp.register_resources <pennylane.decomposition.register_resources>`, making it easier to
+  identify specific decomposition rules.
+  [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
+
   ```python
-  poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
-  qsvt_angles = qp.poly_to_angles(poly, routine="QSVT", angle_solver="iterative-optax")
+  import pennylane as qp
+
+  qp.decomposition.enable_graph()
+
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2}, name='my_cz_rule')
+  def cz_to_h_cnot(wires):
+      qp.H(wires[1])
+      qp.CNOT(wires)
+      qp.H(wires[1])
   ```
+  ```pycon
+  >>> cz_to_h_cnot.name
+  'my_cz_rule'
+  ```
+
+* A new function called :func:`~.decomposition.inspect_decomps` allows for the visualization and inspection
+  of all possible decomposition paths the graph system can take for a concrete operator instance.
+  [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
+  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
   ```pycon
-  >>> print(qsvt_angles)
-  [-4.74724627  1.51868559  0.57952342  0.57952342  1.51868559 -0.03485729]
+  >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
+  Decomposition 0 (name: _crx_to_rx_cz)
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  Gate Count: {RX: 2, CZ: 2}
+
+  Decomposition 1 (name: _crx_to_rz_ry)
+  0: ─────────────────────╭●────────────╭●────────────┤
+  1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
+  Gate Count: {RZ: 2, RY: 2, CNOT: 2}
+
+  Decomposition 2 (name: _crx_to_h_crz)
+  0: ────╭●───────────┤
+  1: ──H─╰RZ(0.50)──H─┤
+  Gate Count: {Hadamard: 2, CRZ: 1}
+
+  Decomposition 3 (name: _crx_to_ppr)
+  0: ───────────╭RZX(-0.25)─┤
+  1: ──RX(0.25)─╰RZX(-0.25)─┤
+  Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
+  ```
+  
+  For each decomposition rule applicable to the operator instance, the output includes its name, circuit
+  diagram, gate count, and wire allocation (if any).
+
+* A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
+  the decomposition graph chooses decomposition rules for each operator instance in a circuit.
+  [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+
+  The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
+  It returns an object that allows for interactively querying a given operator to identify which
+  decomposition rules were considered and which one was chosen.
+
+  Consider the following example where we want to efficiently decompose a ``MultiRZ`` into single-qubit
+  rotations and ``CNOT``s:
+
+  ```python
+  qp.decomposition.enable_graph()
+
+  gate_sets = {"CNOT", "RX", "RY", "RZ", "Identity", "GlobalPhase", "MidMeasureMP"}
+
+  @qp.decomp_inspector(gate_set=gate_sets, num_work_wires=2)
+  @qp.qnode(qp.device("default.qubit"))
+  def circuit():
+      qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+      return qp.probs()
+
+  inspector = circuit()
   ```
 
-<h4>Pre-defined Gate Sets 📠</h4>
+  We can then call the ``inspector``'s ``inspect_decomps`` method and provide the ``MultiRZ`` 
+  instance of interest to see which decomposition rules were considered.
 
-* A new :mod:`~.gate_sets` moduke contains pre-defined gate sets such as ``qp.gate_sets.CLIFFORD_T_PLUS_RZ``
+  ```pycon
+  >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
+  CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
+  <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
+              3: ───────────├●─│──────────────├●─────────────┤
+              4: ───────────├●─│──────────────├●─────────────┤
+              5: ───────────╰●─│──────────────╰●─────────────┤
+              0: ──────────────├MultiRZ(0.50)────────────────┤
+              1: ──────────────╰MultiRZ(0.50)────────────────┤
+  First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
+  Wire Allocations: {'zero': 1}
+  Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
+  Weighted Cost: 120.0
+
+  Decomposition 1 (name: to_controlled_qubit_unitary)
+  Not applicable (provided operator instance does not meet all conditions for this rule).
+
+  Decomposition 2 (name: controlled(_multi_rz_decomposition))
+  0: ─╭X─╭RZ(0.50)─╭X─┤
+  1: ─├●─│─────────├●─┤
+  3: ─├●─├●────────├●─┤
+  4: ─├●─├●────────├●─┤
+  5: ─╰●─╰●────────╰●─┤
+  First-Level Expansion Gates: {Controlled(RZ, num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
+  Full Expansion Gates: {GlobalPhase: 76, RX: 16, MidMeasure: 4, RY: 24, RZ: 80, CNOT: 72}
+  Weighted Cost: 196.0
+  ```
+
+  For each decomposition rule applicable to the controlled ``MultiRZ`` operator instance, the
+  inspector provides a summary of its weighted cost, wire allocations, and the "Full Expansion"
+  (the final gate counts produced after decomposing all the way down to the target gate set).
+
+  Similar to the :func:`qp.decompose <pennylane.transforms.decompose>` 
+  transform, the :func:`~.transforms.decomp_inspector` provides the ability to inject new
+  decomposition rules via the keyword arguments `fixed_decomps` and `alt_decomps`.
+  For more details on the inspection capabilities please consult the documentation for :func:`~.transforms.decomp_inspector`.
+
+* The :func:`~pennylane.list_decomps` function now returns an object that is easier to interact with,
+  including better legibility when printing the entire set of available decomposition rules and when
+  printing individual ones. Additionally, the object returned supports accessing a specific rule by index 
+  or by name.
+  [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
+
+  ```pycon
+  >>> collection = qp.list_decomps(qp.CRX)
+  >>> print(collection)
+  Available Decomposition Rules:
+  0: _crx_to_rx_cz
+  1: _crx_to_rz_ry
+  2: _crx_to_h_crz
+  3: _crx_to_ppr
+  >>> collection[0]
+  DecompositionRule(name=_crx_to_rx_cz)
+  >>> collection['_crx_to_ppr']
+  DecompositionRule(name=_crx_to_ppr)
+  >>> print(qp.draw(collection[0])(0.5, wires=[0, 1]))
+  0: ───────────╭●────────────╭●─┤
+  1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+  ```
+
+* A new :mod:`~.gate_sets` module contains pre-defined gate sets
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
+  These pre-defined gate sets can be easily accessed and integrated into decompositions workflows. Key gate sets include:
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
   [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
   [(#9259)](https://github.com/PennyLaneAI/pennylane/pull/9259)
   [(#9417)](https://github.com/PennyLaneAI/pennylane/pull/9417)
+
+  - ``qp.gate_sets.CLIFFORD_T`` which contains the Clifford+T gate set and ``qp.gate_sets.CLIFFORD_T_PLUS_RZ`` with an additional ``RZ`` gate.
+  - ``qp.gate_sets.ROTATIONS_PLUS_CNOT`` which contains single-qubit rotations and ``CNOT``.
+  - ``qp.gate_sets.IDENTITY`` which contains the ``Identity`` and the ``GlobalPhase`` gates.
+
+  Here is an example using the ``ROTATIONS_PLUS_CNOT`` gate set to decompose a controlled ``MultiRZ`` gate:
+  
+  ```python
+  qp.decomposition.enable_graph()
+
+  @qp.decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+  @qp.qnode(qp.device("default.qubit"))
+  def circuit():
+      qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(circuit, level="device")().resources.gate_counts)
+  {'RZ': 54, 'RY': 14, 'GlobalPhase': 52, 'CNOT': 36, 'CRZ': 4, 'CRY': 4, 'C(GlobalPhase)': 4, 'Toffoli': 2}
+  ```
 
 <h4>Resource Estimation Templates 📏</h4>
 
@@ -384,6 +540,11 @@
   :class:`~.ControlledQutritUnitary`, and :class:`~.TRZ`.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+<<<<<<< v0.45.0-changelog-decomp-inspection
+* The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
+  new graph-based decomposition system.
+  [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
+=======
 * The decomposition of :class:`~.QSVT` has been updated to be consistent with or without the graph-based
   decomposition system enabled (:func:`~.decomposition.enable_graph`).
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
@@ -397,14 +558,21 @@
   allows the decomposition graph to treat operators without a decomposition as part of the gate set. This
   prevents the decomposition graph from erroring out by keeping these operators in the circuit.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+>>>>>>> v0.45-changelog
 
 * The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
 
+<<<<<<< v0.45.0-changelog-decomp-inspection
+* Allowed the passing of ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device
+  preprocessing function :func:`~.devices.preprocess.decompose`, which are then passed through
+  to the graph-based decomposition system.
+=======
 * Decomposition that occurs during device preprocessing now leverages graph-based decompositions
   (when enabled), supporting the arguments ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps``.
+>>>>>>> v0.45-changelog
   [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
 
 * The decomposition of :class:`~.BasisState` is now compatible with ``qjit`` and ``jax.jit`` for static
@@ -433,6 +601,15 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   Also simplified the resource calculation of one decomposition of :class:`~.Select`.
   [(#9222)](https://github.com/PennyLaneAI/pennylane/pull/9222)
 
+<<<<<<< v0.45.0-changelog-decomp-inspection
+* :class:`~.CSWAP` is now decomposed more efficiently, using ``change_op_basis`` with
+  two ``CNOT`` gates and a single ``Toffoli`` gate.
+  [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
+
+* The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
+  decomposition system enabled.
+  [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+=======
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raises duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
@@ -451,6 +628,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   - gradient transforms within the ``expand_transform`` of ``hadamard_grad`` and ``param_shift``.
 
   In these cases the operators will be treated as supported.
+>>>>>>> v0.45-changelog
 
 <h4>Disentangling Transforms 🧶</h4>
 
