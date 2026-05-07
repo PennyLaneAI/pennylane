@@ -324,7 +324,7 @@
 [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
 * It is now possible to locally add decomposition rules to an operator via a :func:`qp.decomposition.local_decomps <pennylane.decomposition.local_decomps>` context
-  manager. These rules will only take effect within the context.
+  manager. These rules will only be available within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
