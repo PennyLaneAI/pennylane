@@ -584,7 +584,7 @@
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
 
-* Operations involving ``FermiWord`` objects are now much significantly faster due to various performance enhancements
+* Operations involving ``FermiWord`` objects are now significantly faster due to various performance enhancements
   made to the class.
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
