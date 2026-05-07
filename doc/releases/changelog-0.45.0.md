@@ -1400,7 +1400,7 @@
     - The resource decompositions for `~.estimator.QubitUnitary` and `~.estimator.OutMultiplier` so
       that they match the results from literature
     - Incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
-    - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
+    - Added support for mapping ``Barrier`` and ``SnapShot`` to ``estimator.Identity``
 
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
