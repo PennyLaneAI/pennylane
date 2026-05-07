@@ -819,6 +819,10 @@
 * The ``default.qubit`` device now supports parameter-broadcasted ``GlobalPhase`` operations.
   [(#9148)](https://github.com/PennyLaneAI/pennylane/pull/9148)
 
+* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
+  can be interpreted.
+  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a new ``labs.estimator_beta`` for experimental development of resource estimation tools.
@@ -1156,25 +1160,27 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Added permissions to all GitHub Actions workflows.
+* Read and write permissions have been added to all GitHub Actions workflows.
   [(#9377)](https://github.com/PennyLaneAI/pennylane/pull/9377)
 
-* Added the `doctest` group in `pyproject.toml` to easily maintain dependencies of the documentation tests workflow.
+* The ``doctest`` group has been added in the ``pyproject.toml`` to easily maintain dependencies of the
+  documentation tests workflow.
   [(#9237)](https://github.com/PennyLaneAI/pennylane/pull/9237)
 
-* Add documentation tests for various modules.
+* Documentation tests have been added for various modules such as the decomposition, measurements and
+  devices modules.
   [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
   [(#9206)](https://github.com/PennyLaneAI/pennylane/pull/9206)
   [(#8653)](https://github.com/PennyLaneAI/pennylane/pull/8653)
   [(#9062)](https://github.com/PennyLaneAI/pennylane/pull/9062)
   [(#9236)](https://github.com/PennyLaneAI/pennylane/pull/9236)
 
-* Added a new `qp.templates.Subroutine` class for adding a layer of abstraction for
+* A new ``qp.templates.Subroutine`` class has been added as a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
-  and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
+  and are compatible with Program Capture Catalyst. Any ``Operator`` with a single definition
   in terms of its implementation, a more complicated call signature, and that exists
-  at a higher, algorithmic layer of abstraction should switch to using this class instead
-  of `Operator`/ `Operation`.
+  at a higher, algorithmic layer of abstraction could switch to using this class instead
+  of ``Operator``/ ``Operation``.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
@@ -1209,16 +1215,17 @@
 
   ```
 
-  The following classes have been ported over:
-  - **REVERTED**`qp.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026) [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
+  * qp.BasisRotation` was initially ported to be a ``Subroutine``, but this change was reverted.
+  [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
+  [(#9252)](https://github.com/PennyLaneAI/pennylane/pull/9252)
 
-* Decomposition rules are re-written in a `qjit` compatible way so that they can be lowered to Catalyst/MLIR. Rules for the
-  following `SymbolicOps` have been re-written.
+* Decomposition rules have been re-written for ``qjit`` compatibility, so that they can be lowered to Catalyst/MLIR. Rules for the
+  following ``SymbolicOps`` have been re-written:
 
   - :class:`qp.ops.op_math.Pow` [(#9199)](https://github.com/PennyLaneAI/pennylane/pull/9199) [(#9213)](https://github.com/PennyLaneAI/pennylane/pull/9213)
   - :class:`qp.ops.Adjoint` [(#9190)](https://github.com/PennyLaneAI/pennylane/pull/9190)
 
-* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+* ``qp.pytrees.PyTreeStructure`` is now frozen and hashable. ``PyTreeStructure.children`` should now
   be a tuple instead of a list.
   [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
@@ -1226,105 +1233,111 @@
   Additionally, several internal comments have been updated to bring ``specs`` in line with the new ``CompilePipeline`` class.
   [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
 
-* When using :func:`~.specs` with Catalyst and with multiple levels,
-  with the ``split-non-commuting`` MLIR pass applied,
-  the returned :class:`.resource.CircuitSpecs` object will include
+* When using :func:`~.specs` with Catalyst and with multiple levels, with the ``split-non-commuting``
+  MLIR pass applied, the returned :class:`~.resource.CircuitSpecs` object will include
   a list of :class:`~.resource.SpecsResources` objects for the associated ``level``.
   [(#9120)](https://github.com/PennyLaneAI/pennylane/pull/9120)
 
-* Largely unused PLxPR was recently removed in lightning. Removed tests from PennyLane that are no longer relevant
-  as a result.
+* Largely unused PLxPR code was recently removed in Lightning. Consequently, tests from PennyLane that are no longer relevant
+  have been removed.
   [(#9345)](https://github.com/PennyLaneAI/pennylane/pull/9345)
 
-* Patched `jax._src.pjit._infer_params_internal` for dynamic shapes to correctly handle the concatenation of closure variables and arguments before return.
+* Patched ``jax._src.pjit._infer_params_internal`` for dynamic shapes to correctly handle the concatenation
+  of closure variables and arguments before return.
   [(#9250)](https://github.com/PennyLaneAI/pennylane/pull/9250)
 
-* Removed docker files and workflow.
+* Docker files and workflow have been removed given that the PennyLane Docker image is no longer being built and managed in
+  the repo.
   [(#9273)](https://github.com/PennyLaneAI/pennylane/pull/9273)
 
-* Remove requirements file from docs folder.
+* The requirements file has been removed from the ``docs`` folder.
   [(#9242)](https://github.com/PennyLaneAI/pennylane/pull/9242)
 
-* A transform's `setup_inputs` is no longer called twice when applied on a `QNode`.
+* A transform's ``setup_inputs`` is no longer called twice when applied on a ``QNode``.
   [(#9189)](https://github.com/PennyLaneAI/pennylane/pull/9189)
 
-* Upper bound `pyzx<0.10` dependency to ensure compatibility.
+* The ``pyzx`` dependency has been upper bounded to ``pyzx<0.10`` to ensure compatibility.
   [(#9175)](https://github.com/PennyLaneAI/pennylane/pull/9175)
 
-* Remove usage of `PassPipelineWrapper` due to `removal <https://github.com/PennyLaneAI/catalyst/pull/2525>`) in Catalyst.
+* The internal ``PassPipelineWrapper`` in Catalyst was `removed <https://github.com/PennyLaneAI/catalyst/pull/2525>`_
+  in favour of PennyLane's new unified transforms API. Consequently, usage of ``PassPipelineWrapper`` has been removed
+  in PennyLane.
   [(#9123)](https://github.com/PennyLaneAI/pennylane/pull/9123)
 
-* Updated the `diastatic-malt` dependency to version v2.15.3.
+* Updated the ``diastatic-malt`` dependency to version ``v2.15.3``.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
-* Workflow created to sync the `main` branch to `master`. Workflow deleted after master branch was deleted.
+* A workflow was created to sync the ``main`` branch to ``master`` and latter on deleted, after
+  ``master`` branch was deleted.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
   [(#9316)](https://github.com/PennyLaneAI/pennylane/pull/9316)
 
-* Removed `pytest-benchmark` from the `pyproject.toml` `dev` dependency group. Benchmarking is no longer internally performed in our test suite.
+* Removed ``pytest-benchmark`` from the ``pyproject.toml`` ``dev`` dependency group. Benchmarking is
+  no longer internally performed in our test suite.
   [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
-* References to the `master` branch are changed to the new default branch `main`.
+* References to the ``master`` branch have been changed to the new default branch ``main``.
   [(#9128)](https://github.com/PennyLaneAI/pennylane/pull/9128)
 
-* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be triggered in the order Lightning —> Catalyst —> Pennylane.
+* Update nightly RC builds to not be a schedule triggered in Pennylane anymore. Instead, it will be
+  triggered in the order Lightning —> Catalyst —> Pennylane.
   [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
 
-* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_computation.py`.
+* Duplicate transforms found in both ``ftqc/catalyst_pass_aliases.py`` and ``transforms/decompositions/pauli_based_computation.py``
+  have been removed.
   [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
 
-* Update PennyLane to use a uv lockfile for package dependency tracking. Added `UV_SYSTEM_PYTHON` to the repository's nightly sync workflows. Removed stable dependency folder and files.
+* PennyLane has been updated to use a uv lockfile for package dependency tracking. Added
+  ``UV_SYSTEM_PYTHON`` to the repository's nightly sync workflows. Removed stable dependency folder and files.
   [(#8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
   [(#9110)](https://github.com/PennyLaneAI/pennylane/pull/9110)
   [(#9218)](https://github.com/PennyLaneAI/pennylane/pull/9218)
 
-* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+* ``sybil`` has been added to the ``dev`` dependency group in ``pyproject.toml``.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
-* Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
+* Seeded a test ``tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution``
+  to fix stochastic failures by adding a ``seed`` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
-* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
-  Bumped `rng_salt` to `v0.45.0`.
+* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical
+  variance and number of shots, reducing spurious failures. This includes ``TestHamiltonianSamples::test_multi_wires``, ``TestSampling::test_complex_hamiltonian``, and ``TestBroadcastingPRNG::test_nonsample_measure``.
+  Bumped ``rng_salt`` to ``v0.45.0``.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
   [(#8908)](https://github.com/PennyLaneAI/pennylane/pull/8908)
   [(#8963)](https://github.com/PennyLaneAI/pennylane/pull/8963)
 
-* Updated test helper `get_device` to correctly seed lightning devices.
+* The test helper ``get_device`` has been updated to correctly seed Lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
-* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.32.2).
+* Updated internal dependencies: ``autoray`` (to 0.8.4) and ``tach`` (to 0.32.2).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
   [(#8962)](https://github.com/PennyLaneAI/pennylane/pull/8962)
   [(#9030)](https://github.com/PennyLaneAI/pennylane/pull/9030)
 
-* Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
+* The ``torch`` dependency has been relaxed from ``==2.9.0`` to ``~=2.9.0`` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
-* Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
+* Internal calls to the ``decompose`` transform have been updated to provide a ``target_gates`` argument so that
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
-* Added a `qp.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
-  decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
-  and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
+* A ``qp.decomposition.toggle_graph_ctx`` context manager has been added to temporarily enable or disable graph-based
+  decompositions in a thread-safe way. The fixtures ``"enable_graph_decomposition"``, ``"disable_graph_decomposition"``,
+  and ``"enable_and_disable_graph_decomp"`` have been updated to use this method so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
-* Added specialized gate kernels for `RX`, `RY`, `RZ`, and `Hadamard` in the `default.qubit` device.
+* Specialized gate kernels have been added for ``RX``, ``RY``, ``RZ``, and ``Hadamard`` in the ``default.qubit`` device.
   These bypass generic einsum/tensordot dispatches and use direct contractions for NumPy
   states, with correct fallbacks for autodiff interfaces (Autograd, Torch, JAX).
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
 
 <h3>Documentation 📝</h3>
 
-* Updated the README to better introduce PennyLane.
+* The README has been updated to better introduce PennyLane.
   [(#9370)](https://github.com/PennyLaneAI/pennylane/pull/9370)
-
-* Update TensorFlow related documentation to clarify that maintenance support has been dropped since
-  PennyLane v0.44.
-  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
 
 * The `qml` alias as in `import pennylane as qml` has been updated to `qp` in our source code and documentation.
   [(#9310)](https://github.com/PennyLaneAI/pennylane/pull/9310)
@@ -1356,7 +1369,7 @@
   making it clearer that they can be applied to both QNodes and quantum functions, and clarifying
   discrepancies when using with qjit where applicable. The improved transform docstrings include
   ``cancel_inverses``, ``commute_controlled``, ``merge_amplitude_embedding``, ``merge_rotations``,
-  ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``, and
+  ``pattern_matching_optimization``, ``remove_barrier``, ``single_qubit_fusion``,
   ``undo_swaps``, ``combine_global_phases``, ``compile``, ``decompose``, ``transpile``, and
   ``unitary_to_rot``.
   [(#9381)](https://github.com/PennyLaneAI/pennylane/pull/9381)
@@ -1365,20 +1378,30 @@
 * A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
   [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
-* The :mod:`pennylane.transforms` module has been reorganized to allow for
-  easier indexing through available transforms in PennyLane.
+* Wide-spread changes have been made to our documentation to recommend using program capture with ``qjit``
+  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qp.capture.enable()``).
+  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
+
+* TensorFlow related documentation has been updated to clarify that maintenance support has been dropped since
+  PennyLane v0.44.
+  [(#9362)](https://github.com/PennyLaneAI/pennylane/pull/9362)
+
+* The :mod:`pennylane.transforms` module has been reorganized to allow for easier indexing through available transforms in PennyLane.
   [(#9130)](https://github.com/PennyLaneAI/pennylane/pull/9130)
 
-* Documentation has been added to :func:`~.transforms.cancel_inverses` and
-  :func:`~.transforms.merge_rotations` that details their usage within a ``qjit`` workflow.
+* The docstrings for :func:`~.transforms.cancel_inverses`, :func:`~.transforms.merge_rotations`,
+  and :func:`~.transforms.combine_global_phases` now has a "Usage with qjit" section
+  to outline what the transform does when used with Catalyst.
   [(#9134)](https://github.com/PennyLaneAI/pennylane/pull/9134)
+  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
 
-* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+* Docstring examples in the Pauli-based computation module have been updated to reflect the QEC-to-PBC
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
-* Updated documentation for :func:`~.transforms.gridsynth` as we now issue a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
+* Two warning notes have been removed from the :func:`~.transforms.gridsynth` docstring as we now issue
+  a warning when users provide epsilon smaller than ``1e-6``, and simulation of PPRs is now possible.
   [(#9221)](https://github.com/PennyLaneAI/pennylane/pull/9221)
 
 * The documentation of the QASM interpreter class has been updated to include `Raises` error sections for its methods.
@@ -1390,24 +1413,19 @@
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
-* Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
-  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qp.capture.enable()``).
-  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
-
-* Added a note to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+* A note has been added to the documentation of :func:`~.estimator.estimate.estimate` to clarify
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
-  a resource decomposition defined and is not in the provided ``gate_set``.
+  a resource decomposition defined and it is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
-  for achieving reproducible results with the seed keyword argument.
+* The documentation of the :func:`~.shadow_expval` measurement has been refined to clarify the role of the
+  ``seed`` keyword argument and include instructions for achieving reproducible results with this argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
-* The definition of the ``pipeline`` argument for :func:`~.transforms.compile`
-  was clarified in its documentation.
+* The definition of the ``pipeline`` argument for :func:`~.compile` was clarified in its documentation.
   [(#9159)](https://github.com/PennyLaneAI/pennylane/pull/9159)
 
-* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+* A typo in the type of a parameter in the docstring of :class:`~.templates.layers.BasicEntanglerLayers` has been fixed.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 * Infrastructure has been put in place for features that should be accessible from both PennyLane and
@@ -1415,16 +1433,12 @@
   experience when consulting our documentation.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
-  The process for Catalyst frontend features to be automatically accessible from PennyLane while
+  The process for Catalyst frontend features to be automatically accessible from PennyLane, while
   ensuring that such features' documentation is properly sourced from Catalyst and hosted on
-  PennyLane's documentation is outlined in the
+  PennyLane's documentation, has been outlined in the
   :doc:`documentation development guide <../development/guide/documentation>` under the section
   titled "Making Catalyst functionality callable from PennyLane". Related work in Catalyst can be
   found in [(#2409)](https://github.com/PennyLaneAI/catalyst/pull/2409).
-
-* The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
-  to outline what the transform does when used with Catalyst.
-  [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
@@ -1437,10 +1451,11 @@
 * Fixed a typo in the documentation for `qre.SelectPauli`.
   [(#9373)](https://github.com/PennyLaneAI/pennylane/pull/9373)
 
-* Fixed broken documentation links to external demos and tutorials.
+* Broken documentation links to external demos and tutorials have been fixed by replacing hardcoded URLs
+  with proper ``:doc:`` cross references.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
-* Made description of numpy array slicing used to get the subspace of a density matrix more clear in
+* The description of NumPy array slicing used to get the subspace of a density matrix is now more clear in
   the docs of `_phase_shift`.
   [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
 
@@ -1455,13 +1470,8 @@
   [(#9423)](https://github.com/PennyLaneAI/pennylane/pull/9423)
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
-  structure of their data:
-
-  - `Pow`
-  - `QPE`
-  - `GQSP`
-  - `estimator.qpe_resources.FirstQuantization`
-  - `estimator.qpe_resources.DoubleFactorization`
+  structure of their data: `Pow`, `QPE`, `GQSP`, `estimator.qpe_resources.FirstQuantization`,
+  and `estimator.qpe_resources.DoubleFactorization`.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
@@ -1478,13 +1488,14 @@
   [(#9344)](https://github.com/PennyLaneAI/pennylane/pull/9344)
 
 * :class:`~.MultiControlledX` is now compatible with ``qjit``.
-  Fixed ``jax.jit`` tracing of controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions` by avoiding returns with inconsistent types from branches, and wires are cast to JAX-friendly types during tracing where the compiler expects them.
+  An issue with ``jax.jit`` tracing for controlled single-qubit unitary decompositions in :mod:`pennylane.ops.op_math.decompositions.controlled_decompositions`
+  has been fixed by ensuring consistent return types across conditional branches and casting wires to JAX-friendly types during tracing.
   [(#9306)](https://github.com/PennyLaneAI/pennylane/pull/9306)
 
 * Fixed a warning of casting complex values to reals within `qp.math.givens_decomposition`.
   [(#9155)](https://github.com/PennyLaneAI/pennylane/pull/9155)
 
-* Fixed a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+* Fixed a bug with program capture when a transform is applied to a QNode with a dynamic number of shots
   and return `qp.sample`.
   [(#9342)](https://github.com/PennyLaneAI/pennylane/pull/9342)
 
@@ -1522,13 +1533,9 @@
   decomposition system were sensitive to the insertion order of keyword arguments/hyperparameters.
   [(#9137)](https://github.com/PennyLaneAI/pennylane/pull/9137)
 
-* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+* Jacobian-level caching is now unconditionally enabled for the ``autograd`` interface,
   preventing redundant derivative tape executions during the backward pass.
   [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
-
-* Global phases are now supported in `from_qasm3` so that QASM including the `gphase` instruction
-  can be interpreted.
-  [(#9247)](https://github.com/PennyLaneAI/pennylane/pull/9247)
 
 * Fixed a bug where `qp.transforms.transpile` would fail when `qp.GlobalPhase` gates
   were present in a circuit.
@@ -1543,47 +1550,47 @@
   ``Controlled.map_wires`` to preserve ``work_wires``.
   [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
-* Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
-  1 in Default Qubit.
+* The tolerance used in determining whether the norm of the probabilities is sufficiently close to 1 in
+  ``default.qubit`` has been increased to ``1e-6``.
   [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)
 
-* Removes automatic unpacking of inner product resources in the resource representation of
-  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
-  prevents decompositions in this system from using nested operator products while reporting their
-  resources accurately.
+* A bug was fixed that prevents decompositions in the graph-based system from using nested operator
+  products while reporting their resources accurately.
   [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
 
-* Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
+* ``decomp_int_to_powers_of_two`` now adheres to standard 64-bit C integer bounds, fixing runtime
+  warnings associated with integer overflow.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
 
-* Improves the error messages when the inputs and outputs to a `qp.for_loop` function do not match.
+* The error message was improved for when the number of inputs to a `qp.for_loop`-decorated function
+  is not one greated than the number of outputs.
   [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
-* Fixes a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
+* Fixed a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
   This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
   [(#8933)](https://github.com/PennyLaneAI/pennylane/pull/8933)
 
-* Fixes an issue when binding a transform when the first positional arg
+* Fixed an issue when binding a transform when the first positional arg
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
-* Fixes a bug with `qp.estimator.templates.QSVT` which allows users to instantiate the class without
+* Fixed a bug with `qp.estimator.templates.QSVT` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
 
-* Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
+* Fixed a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
   [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
-* Fixes a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
+* Fixed a bug where the `DecomposeInterpreter` cannot be applied on a QNode with the new graph-based decomposition system enabled.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
-* Fixes a bug where `qp.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
+* Fixed a bug where `qp.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
-* Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
+* Fixed various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
 * The `decompose` transform no longer warns about being unable to decompose `Barrier` and `Snapshot`.
@@ -1593,39 +1600,41 @@
   is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
-* Fixes a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
+* Fixed a bug where the graph-based decomposition system was unable to find a decomposition for a
+  `ControlledQubitUnitary` with more than two target wires.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
+* Fixed a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
-* Fixes a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
+* Fixed a `MemoryError` in `default.clifford` when preparing a :class:`~.BasisState` with a large number of wires.
   [(#9018)](https://github.com/PennyLaneAI/pennylane/pull/9018)
 
-* Fixes a bug where a controlled `ChangeOpBasis` is sometimes not decomposed optimally when graph is enabled.
+* Fixed a bug where a controlled `ChangeOpBasis` was sometimes decomposed inefficiently when the
+  graph-based system is enabled.
   [(#9161)](https://github.com/PennyLaneAI/pennylane/pull/9161)
 
-* Fixes a bug where the decomposition graph is unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
+* Fixed a bug where the decomposition graph was unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
-* Fixed various small bugs within :mod:`pennylane.estimator`.
+* Fixed various small bugs within :mod:`pennylane.estimator`, including:
   [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
 
-    - Fixed the resource decomposition of `~.estimator.QubitUnitary` to match the results from literature
-    - Fixed the resource decomposition of `~.estimator.OutMultiplier` to match the results from literature
-    - Added support for mapping `~.Barrier` and `~.SnapShot` to `~.labs.estimator_beta.Identity`
-    - Fixed incorrect wire mapping when converting `~.QuantumPhaseEstimation` to `~.estimator.QPE`
+    - The resource decompositions for ``estimator.QubitUnitary`` and ``estimator.OutMultiplier`` so
+      that they match the results from literature
+    - Incorrect wire mapping when converting ``QuantumPhaseEstimation`` to ``estimator.QPE``
+    - Added support for mapping ``Barrier`` and ``SnapShot`` to ``estimator.Identity``
 
 * Fixed a bug in the `C(SemiAdder)` decomposition where incorrect results were
   produced for a specific wire configuration.
   [(#9270)](https://github.com/PennyLaneAI/pennylane/pull/9270)
 
-* Fixes a bug where the `DecompositionGraph` underestimates the minimum number of work wires required to solve for a particular operator
-  when it has decomposition rules with a lower work wire budget but is unrecheable from the provided gate set.
+* Fixed a bug where the `DecompositionGraph` would underestimate the minimum number of work wires required to solve for a particular operator.
+  This occurred when rules with lower wire requirements existed but were unreachable within the provided gate set.
   [(#9298)](https://github.com/PennyLaneAI/pennylane/pull/9298)
 
-* Fixes the bug that ``Controlled(CompositeOp)`` cannot be unpickled by
-  making ``base`` argument optional in ``Controlled.__new__``
+* Fixed a bug that prevented instances of controlled composite operators such as ``Controlled(2.0 * qp.X(0))``
+  from being unpickled.
   [(#9366)](https://github.com/PennyLaneAI/pennylane/pull/9366)
 
 <h3>Contributors ✍️</h3>
