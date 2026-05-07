@@ -100,7 +100,7 @@
   of how many markers are present.
   Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
   pipeline's string representation now shows both transforms and markers.
-  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectability.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -285,7 +285,7 @@
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
-* The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
+* The inspectability of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
@@ -366,6 +366,7 @@
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9427)](https://github.com/PennyLaneAI/pennylane/pull/9427)
 
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
@@ -394,6 +395,7 @@
 * A new function :func:`~.transforms.decomp_inspector` that allows users to inspect how the decomposition
   graph is choosing decomposition rules for each operator in the circuit has been added.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9436)](https://github.com/PennyLaneAI/pennylane/pull/9436)
 
   ```python
   qp.decomposition.enable_graph()
@@ -1235,6 +1237,10 @@
 
 * Fixed broken documentation links to external demos and tutorials.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
+
+* Made description of numpy array slicing used to get the subspace of a density matrix more clear in 
+  the docs of `_phase_shift`.
+  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
 
 <h3>Bug fixes 🐛</h3>
 
