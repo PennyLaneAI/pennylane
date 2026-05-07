@@ -610,10 +610,7 @@
   >>> fig.savefig('path_to_file.png', dpi=300, bbox_inches="tight")
   ```
 
-  .. figure:: /_static/0.45-draw-graph-changelog-example.png
-      :width: 35%
-      :alt: Graphical representation of circuit
-      :align: left
+  ![Graphical representation of circuit](/_static/0.45-draw-graph-changelog-example.png)
 
 * A new function called :func:`~.drawer.label` has been added, which allows for attaching custom
   labels to operator instances for circuit drawing.
@@ -1436,7 +1433,7 @@
 * Fixed broken documentation links to external demos and tutorials.
   [(#9356)](https://github.com/PennyLaneAI/pennylane/pull/9356)
 
-* Made description of numpy array slicing used to get the subspace of a density matrix more clear in 
+* Made description of numpy array slicing used to get the subspace of a density matrix more clear in
   the docs of `_phase_shift`.
   [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
 
