@@ -42,7 +42,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Added usage of the `strict` keyword argument throughout the codebase.
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   
 
