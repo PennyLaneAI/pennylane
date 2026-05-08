@@ -204,7 +204,7 @@ class SProd(ScalarSymbolicOp):
         if not self.base.is_verified_hermitian:
             return False
         if math.is_abstract(self.scalar):
-            return "complex" not in math.get_dtype_name(self.scalar)
+            return not math.get_dtype_name(obj).startswith("complex")
         return not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
