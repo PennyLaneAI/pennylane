@@ -512,6 +512,7 @@
   :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
   [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+  [(#9444)](https://github.com/PennyLaneAI/pennylane/pull/9444)
 
   The source code for these passes in PennyLane has been removed as part of this change.  However,
   all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
