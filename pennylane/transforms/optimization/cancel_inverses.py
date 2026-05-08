@@ -376,8 +376,7 @@ def cancel_inverses(
     second qubit that should cancel. We can obtain a simplified circuit by running
     the ``cancel_inverses`` transform:
 
-    >>> optimized_qfunc = qp.transforms.cancel_inverses(qfunc)
-    >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+    >>> optimized_qnode = qp.transforms.cancel_inverses(qnode)
     >>> print(qp.draw(optimized_qnode)(1, 2, 3))
     0: ──RZ(3.00)───────────╭●─┤  <Z>
     1: ──H─────────RY(2.00)─│──┤
