@@ -13,7 +13,16 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane subroutines and templates"""
 
-from .subroutines import selectpaulirot_controlled_resource_decomp, LabsQROM
+from .subroutines import (
+    LabsQROM,
+    selectpaulirot_controlled_resource_decomp,
+    aqft_resource_decomp,
+    qft_phase_grad_resource_decomp,
+    qrom_state_preparation_resource_decomp,
+    qrom_state_preparation_phase_grad_resource_decomp,
+    select_thc_resource_decomp,
+    select_thc_controlled_resource_decomp,
+)
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
 
 from .state_prep import (

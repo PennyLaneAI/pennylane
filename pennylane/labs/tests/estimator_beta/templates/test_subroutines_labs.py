@@ -22,12 +22,13 @@ import pytest
 
 import pennylane as qp
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator import GateCount, ResourceConfig, resource_rep
+from pennylane.estimator import GateCount, resource_rep
+from pennylane.labs.estimator_beta import Allocate, Deallocate
 from pennylane.labs.estimator_beta.templates import LabsQROM
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.math import ceil_log2
 
-# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access
+# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access, undefined-variable, unused-variable
 
 
 class TestLabsSelectPauliRot:
@@ -106,7 +107,7 @@ class TestLabsSelectPauliRot:
     ):
         """Test that the controlled resources are correct."""
         if precision is None:
-            config = ResourceConfig()
+            config = qre.LabsResourceConfig()
             kwargs = config.resource_op_precisions[qp.estimator.SelectPauliRot]
             assert (
                 qre.selectpaulirot_controlled_resource_decomp(
@@ -192,6 +193,1231 @@ class TestLabsSelectPauliRot:
             num_zero_ctrl=num_zero_ctrl,
         )
         assert qre.estimate(op) == expected_res
+
+
+class TestLabsQFT:
+    """Test the resource decompositions for QFT"""
+
+    @pytest.mark.parametrize(
+        "num_wires, expected_res",
+        (
+            (
+                1,
+                [GateCount(resource_rep(qre.Hadamard))],
+            ),
+            (
+                2,
+                [
+                    phase_grad_reg := qre.Allocate(1, "any", True),
+                    GateCount(resource_rep(qre.Hadamard), 2),
+                    GateCount(resource_rep(qre.SWAP)),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(max_register_size=1),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        )
+                    ),
+                    qre.Deallocate(allocated_register=phase_grad_reg),
+                ],
+            ),
+            (
+                3,
+                [
+                    phase_grad_reg := qre.Allocate(2, "any", True),
+                    GateCount(resource_rep(qre.Hadamard), 3),
+                    GateCount(resource_rep(qre.SWAP)),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(max_register_size=1),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        )
+                    ),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.SemiAdder.resource_rep(max_register_size=2),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        )
+                    ),
+                    qre.Deallocate(allocated_register=phase_grad_reg),
+                ],
+            ),
+        ),
+    )
+    def test_resources_phasegrad(self, num_wires, expected_res):
+        """Test that the resources are correct for phase gradient method."""
+        actual_decomp = qre.qft_phase_grad_resource_decomp(num_wires)
+        assert decomp_equal(actual_decomp, expected_res)
+
+
+class TestLabsAQFT:
+    """Test the resource decompositions for AQFT"""
+
+    @pytest.mark.parametrize(
+        "num_wires, order, expected_res",
+        (
+            (
+                5,
+                1,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 5),
+                ],
+            ),
+            (
+                5,
+                3,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 5),
+                    phase_grad := Allocate(2, "any", True),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=resource_rep(qre.S),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        4,
+                    ),
+                    load_reg := Allocate(1, restored=True),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
+                    GateCount(qre.SemiAdder.resource_rep(1)),
+                    GateCount(resource_rep(qre.Hadamard)),
+                    GateCount(
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        1,
+                    ),
+                    Deallocate(allocated_register=load_reg),
+                    load_reg := Allocate(2, restored=True),
+                    GateCount(resource_rep(qre.TemporaryAND), 2 * 2),
+                    GateCount(qre.SemiAdder.resource_rep(2), 2),
+                    GateCount(resource_rep(qre.Hadamard), 2),
+                    GateCount(
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        2 * 2,
+                    ),
+                    Deallocate(allocated_register=load_reg),
+                    GateCount(resource_rep(qre.SWAP), 2),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+            (
+                5,
+                5,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 5),
+                    phase_grad := Allocate(3, "any", True),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=resource_rep(qre.S),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        4,
+                    ),
+                    data_reg := Allocate(1, restored=True),
+                    GateCount(resource_rep(qre.TemporaryAND), 1),
+                    GateCount(qre.SemiAdder.resource_rep(1)),
+                    GateCount(resource_rep(qre.Hadamard)),
+                    GateCount(
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        1,
+                    ),
+                    Deallocate(allocated_register=data_reg),
+                    data_reg := Allocate(2, restored=True),
+                    GateCount(resource_rep(qre.TemporaryAND), 2),
+                    GateCount(qre.SemiAdder.resource_rep(2)),
+                    GateCount(resource_rep(qre.Hadamard)),
+                    GateCount(
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        2,
+                    ),
+                    Deallocate(allocated_register=data_reg),
+                    data_reg := Allocate(3, restored=True),
+                    GateCount(resource_rep(qre.TemporaryAND), 3),
+                    GateCount(qre.SemiAdder.resource_rep(3)),
+                    GateCount(resource_rep(qre.Hadamard)),
+                    GateCount(
+                        qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
+                        3,
+                    ),
+                    Deallocate(allocated_register=data_reg),
+                    GateCount(resource_rep(qre.SWAP), 2),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, order, num_wires, expected_res):
+        """Test that the resources are correct."""
+        assert decomp_equal(qre.aqft_resource_decomp(order, num_wires), expected_res)
+
+
+class TestLabsSelectTHC:
+    """Test the resource decompositions for SelectTHC"""
+
+    # The Toffoli and qubit costs are compared here
+    # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
+    @pytest.mark.parametrize(
+        "thc_ham, num_batches, rotation_prec, selswap_depth, expected_res",
+        (
+            (
+                qre.THCHamiltonian(58, 160),
+                1,
+                13,
+                1,
+                {"algo_wires": 138, "auxiliary_wires": 764, "toffoli_gates": 5671},
+            ),
+            (
+                qre.THCHamiltonian(10, 50),
+                1,
+                15,
+                None,
+                {"algo_wires": 38, "auxiliary_wires": 162, "toffoli_gates": 1104},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                1,
+                15,
+                2,
+                {"algo_wires": 24, "auxiliary_wires": 107, "toffoli_gates": 450},
+            ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
+            (
+                qre.THCHamiltonian(58, 160),
+                2,
+                13,
+                None,
+                {"algo_wires": 138, "auxiliary_wires": 400, "toffoli_gates": 6044},
+            ),
+        ),
+    )
+    def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
+        """Test that the resource decompostion for SelectTHC is correct."""
+
+        select_cost = qre.estimate(
+            qre.SelectTHC(
+                thc_ham,
+                num_batches=num_batches,
+                rotation_precision=rotation_prec,
+                select_swap_depth=selswap_depth,
+            )
+        )
+        assert select_cost.algo_wires == expected_res["algo_wires"]
+        assert (
+            select_cost.zeroed_wires + select_cost.any_state_wires
+            == expected_res["auxiliary_wires"]
+        )
+        assert select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+    # The Toffoli and qubit costs are compared here
+    # Expected number of Toffolis and wires were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
+    @pytest.mark.parametrize(
+        "thc_ham, num_batches, rotation_prec, selswap_depth, num_ctrl_wires, num_zero_ctrl, expected_res",
+        (
+            (
+                qre.THCHamiltonian(58, 160),
+                1,
+                13,
+                1,
+                1,
+                1,
+                {"algo_wires": 139, "auxiliary_wires": 764, "toffoli_gates": 5672},
+            ),
+            (
+                qre.THCHamiltonian(10, 50),
+                1,
+                15,
+                None,
+                2,
+                0,
+                {"algo_wires": 40, "auxiliary_wires": 163, "toffoli_gates": 1107},
+            ),
+            (
+                qre.THCHamiltonian(4, 20),
+                1,
+                15,
+                2,
+                3,
+                2,
+                {"algo_wires": 27, "auxiliary_wires": 108, "toffoli_gates": 457},
+            ),
+            # These numbers were obtained manually for batched rotations based on the technique described in arXiv:2501.06165
+            (
+                qre.THCHamiltonian(58, 160),
+                2,
+                13,
+                None,
+                1,
+                1,
+                {"algo_wires": 139, "auxiliary_wires": 400, "toffoli_gates": 6045},
+            ),
+        ),
+    )
+    def test_controlled_resources(
+        self,
+        thc_ham,
+        num_batches,
+        rotation_prec,
+        selswap_depth,
+        num_ctrl_wires,
+        num_zero_ctrl,
+        expected_res,
+    ):
+        """Test that the controlled resource decompostion for SelectTHC is correct."""
+
+        ctrl_select_cost = qre.estimate(
+            qre.Controlled(
+                num_ctrl_wires=num_ctrl_wires,
+                num_zero_ctrl=num_zero_ctrl,
+                base_op=qre.SelectTHC(
+                    thc_ham,
+                    num_batches=num_batches,
+                    rotation_precision=rotation_prec,
+                    select_swap_depth=selswap_depth,
+                ),
+            )
+        )
+        assert ctrl_select_cost.algo_wires == expected_res["algo_wires"]
+        assert (
+            ctrl_select_cost.zeroed_wires + ctrl_select_cost.any_state_wires
+            == expected_res["auxiliary_wires"]
+        )
+        assert ctrl_select_cost.gate_counts["Toffoli"] == expected_res["toffoli_gates"]
+
+
+class TestLabsQROMStatePreparation:
+    """Test the update resource decomposition functions for QROMStatePrep"""
+
+    @pytest.mark.parametrize(
+        "num_state_qubits, precision, positive_and_real, selswap_depths, expected_res",
+        (
+            (
+                5,
+                None,
+                False,
+                1,
+                [
+                    load := Allocate(32, restored=True),
+                    phase_grad := Allocate(32, "any", True),
+                    GateCount(qre.Hadamard.resource_rep(), 32),
+                    GateCount(qre.S.resource_rep(), 32),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=32,
+                                num_bit_flips=16,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=64,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=32,
+                                num_bit_flips=32,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=65,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=32,
+                                num_bit_flips=64,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=66,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=32,
+                                num_bit_flips=128,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=67,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=16,
+                                size_bitstring=32,
+                                num_bit_flips=256,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=68,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=32,
+                                size_bitstring=32,
+                                num_bit_flips=512,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(32),
+                                1,
+                                0,
+                            ),
+                            num_wires=69,
+                        ),
+                    ),
+                    GateCount(qre.Hadamard.resource_rep(), 32),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
+                        32,
+                    ),
+                    Deallocate(allocated_register=load),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+            (
+                4,
+                1e-5,
+                False,
+                1,
+                [
+                    load := Allocate(19, restored=True),
+                    phase_grad := Allocate(19, "any", True),
+                    GateCount(qre.Hadamard.resource_rep(), 19),
+                    GateCount(qre.S.resource_rep(), 19),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=19,
+                                num_bit_flips=9,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(19),
+                                1,
+                                0,
+                            ),
+                            num_wires=38,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=19,
+                                num_bit_flips=19,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(19),
+                                1,
+                                0,
+                            ),
+                            num_wires=39,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=19,
+                                num_bit_flips=38,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(19),
+                                1,
+                                0,
+                            ),
+                            num_wires=40,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=19,
+                                num_bit_flips=76,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(19),
+                                1,
+                                0,
+                            ),
+                            num_wires=41,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=16,
+                                size_bitstring=19,
+                                num_bit_flips=152,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(19),
+                                1,
+                                0,
+                            ),
+                            num_wires=42,
+                        ),
+                    ),
+                    GateCount(qre.Hadamard.resource_rep(), 19),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
+                        19,
+                    ),
+                    Deallocate(allocated_register=load),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                False,
+                2,
+                [
+                    load := Allocate(15, restored=True),
+                    phase_grad := Allocate(15, "any", True),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(qre.S.resource_rep(), 15),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=30,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=31,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=32,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=15,
+                                num_bit_flips=60,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=33,
+                        ),
+                    ),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
+                        15,
+                    ),
+                    Deallocate(allocated_register=load),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                True,
+                [1, 2, 2],
+                [
+                    load := Allocate(15, restored=True),
+                    phase_grad := Allocate(15, "any", True),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(qre.S.resource_rep(), 15),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=30,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=31,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=32,
+                        ),
+                    ),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
+                        15,
+                    ),
+                    Deallocate(allocated_register=load),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                False,
+                [None, 1, None, 4],
+                [
+                    load := Allocate(15, restored=True),
+                    phase_grad := Allocate(15, "any", True),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(qre.S.resource_rep(), 15),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=None,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=30,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=31,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=None,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=32,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=15,
+                                num_bit_flips=60,
+                                borrow_qubits=True,
+                                select_swap_depth=4,
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(
+                                qre.SemiAdder.resource_rep(15),
+                                1,
+                                0,
+                            ),
+                            num_wires=33,
+                        ),
+                    ),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.S.resource_rep()),
+                        15,
+                    ),
+                    Deallocate(allocated_register=load),
+                    Deallocate(allocated_register=phase_grad),
+                ],
+            ),
+        ),
+    )
+    def test_default_resources(
+        self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
+    ):
+        """Test that the resources are as expected for the default decomposition"""
+
+        if precision is None:
+            config = qre.LabsResourceConfig()
+            kwargs = config.resource_op_precisions[qre.QROMStatePreparation]
+            actual_resources = qre.qrom_state_preparation_phase_grad_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+                **kwargs,
+            )
+        else:
+            actual_resources = qre.qrom_state_preparation_phase_grad_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                precision=precision,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+            )
+
+        assert decomp_equal(actual_resources, expected_res)
+
+    @pytest.mark.parametrize(
+        "num_state_qubits, precision, positive_and_real, selswap_depths, expected_res",
+        (
+            (
+                5,
+                None,
+                False,
+                1,
+                [
+                    load := Allocate(32, restored=True),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=32,
+                                num_bit_flips=16,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 32),),
+                                num_wires=33,
+                            ),
+                            num_wires=33,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=32,
+                                num_bit_flips=32,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 32),),
+                                num_wires=33,
+                            ),
+                            num_wires=34,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=32,
+                                num_bit_flips=64,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 32),),
+                                num_wires=33,
+                            ),
+                            num_wires=35,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=32,
+                                num_bit_flips=128,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 32),),
+                                num_wires=33,
+                            ),
+                            num_wires=36,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=16,
+                                size_bitstring=32,
+                                num_bit_flips=256,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 32),),
+                                num_wires=33,
+                            ),
+                            num_wires=37,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=32,
+                                size_bitstring=32,
+                                num_bit_flips=512,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 32),),
+                                num_wires=32,
+                            ),
+                            num_wires=37,
+                        ),
+                    ),
+                    Deallocate(allocated_register=load),
+                ],
+            ),
+            (
+                4,
+                1e-5,
+                False,
+                1,
+                [
+                    load := Allocate(19, restored=True),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=19,
+                                num_bit_flips=9,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 19),),
+                                num_wires=20,
+                            ),
+                            num_wires=20,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=19,
+                                num_bit_flips=19,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 19),),
+                                num_wires=20,
+                            ),
+                            num_wires=21,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=19,
+                                num_bit_flips=38,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 19),),
+                                num_wires=20,
+                            ),
+                            num_wires=22,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=19,
+                                num_bit_flips=76,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 19),),
+                                num_wires=20,
+                            ),
+                            num_wires=23,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=16,
+                                size_bitstring=19,
+                                num_bit_flips=152,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 19),),
+                                num_wires=19,
+                            ),
+                            num_wires=23,
+                        ),
+                    ),
+                    Deallocate(allocated_register=load),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                False,
+                2,
+                [
+                    load := Allocate(15, restored=True),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=16,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=17,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=18,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=15,
+                                num_bit_flips=60,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 15),),
+                                num_wires=15,
+                            ),
+                            num_wires=18,
+                        ),
+                    ),
+                    Deallocate(allocated_register=load),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                True,
+                [1, 2, 2],
+                [
+                    load := Allocate(15, restored=True),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=16,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=17,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=2,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=18,
+                        ),
+                    ),
+                    Deallocate(allocated_register=load),
+                ],
+            ),
+            (
+                3,
+                1e-4,
+                False,
+                [None, 1, None, 4],
+                [
+                    load := Allocate(15, restored=True),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=1,
+                                size_bitstring=15,
+                                num_bit_flips=7,
+                                borrow_qubits=True,
+                                select_swap_depth=None,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=16,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=2,
+                                size_bitstring=15,
+                                num_bit_flips=15,
+                                borrow_qubits=True,
+                                select_swap_depth=1,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=17,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=4,
+                                size_bitstring=15,
+                                num_bit_flips=30,
+                                borrow_qubits=True,
+                                select_swap_depth=None,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.CRY.resource_rep(), 15),),
+                                num_wires=16,
+                            ),
+                            num_wires=18,
+                        ),
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=LabsQROM.resource_rep(
+                                num_bitstrings=8,
+                                size_bitstring=15,
+                                num_bit_flips=60,
+                                borrow_qubits=True,
+                                select_swap_depth=4,
+                            ),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 15),),
+                                num_wires=15,
+                            ),
+                            num_wires=18,
+                        ),
+                    ),
+                    Deallocate(allocated_register=load),
+                ],
+            ),
+        ),
+    )
+    def test_control_ry_resources(
+        self, num_state_qubits, precision, positive_and_real, selswap_depths, expected_res
+    ):
+        """Test that the resources are as expected for the controlled-RY decomposition"""
+        if precision is None:
+            config = qre.LabsResourceConfig()
+            kwargs = config.resource_op_precisions[qre.QROMStatePreparation]
+            actual_resources = qre.qrom_state_preparation_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+                **kwargs,
+            )
+        else:
+            actual_resources = qre.qrom_state_preparation_resource_decomp(
+                num_state_qubits=num_state_qubits,
+                precision=precision,
+                positive_and_real=positive_and_real,
+                selswap_depths=selswap_depths,
+            )
+
+        assert decomp_equal(actual_resources, expected_res)
 
 
 class TestLabsQROM:

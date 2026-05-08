@@ -77,6 +77,621 @@ def selectpaulirot_controlled_resource_decomp(
     return gate_lst
 
 
+def qft_phase_grad_resource_decomp(num_wires) -> list[GateCount]:
+    r"""Returns a list representing the resources of the operator. Each object in the list
+    represents a gate and the number of times it occurs in the circuit.
+
+    .. note::
+
+        This decomposition assumes an appropriately sized phase gradient state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
+        See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+
+    Resources:
+        The resources are obtained as presented in the article
+        `Turning Gradients into Additions into QFTs <https://algassert.com/post/1620>`_.
+        Specifically, following the figure titled "8 qubit Quantum Fourier Transform with gradient shifts"
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+        represents a specific quantum gate and the number of times it appears
+        in the decomposition.
+    """
+    hadamard = resource_rep(qre.Hadamard)
+    swap = resource_rep(qre.SWAP)
+
+    if num_wires == 1:
+        return [GateCount(hadamard)]
+
+    # Use qubits from phase gradient register
+    phase_grad_reg = Allocate(num_wires=num_wires - 1, state="any", restored=True)
+
+    gate_types = [
+        phase_grad_reg,
+        GateCount(hadamard, num_wires),
+        GateCount(swap, num_wires // 2),
+    ]
+
+    for size_reg in range(1, num_wires):
+        ctrl_add = qre.Controlled.resource_rep(
+            qre.SemiAdder.resource_rep(max_register_size=size_reg),
+            num_ctrl_wires=1,
+            num_zero_ctrl=0,
+        )
+        gate_types.append(GateCount(ctrl_add))
+
+    gate_types.append(Deallocate(allocated_register=phase_grad_reg))
+    return gate_types
+
+
+def aqft_resource_decomp(order, num_wires) -> list[GateCount]:
+    r"""Returns a list representing the resources of the operator. Each object in the list
+    represents a gate and the number of times it occurs in the circuit.
+
+    Args:
+        order (int): the maximum number of controlled phase shifts to which the operation is truncated
+        num_wires (int): the number of qubits the operation acts upon
+
+    Resources:
+        The resources are obtained from (Fig. 4) `arXiv:1803.04933 <https://arxiv.org/abs/1803.04933>`_
+        excluding the gate cost of preparing the phase gradient state. The phased Toffoli gates and the
+        classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND` operations.
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+        represents a specific quantum gate and the number of times it appears
+        in the decomposition.
+    """
+    hadamard = resource_rep(qre.Hadamard)
+    swap = resource_rep(qre.SWAP)
+    cs = qre.Controlled.resource_rep(
+        base_cmpr_op=resource_rep(qre.S),
+        num_ctrl_wires=1,
+        num_zero_ctrl=0,
+    )
+
+    if order >= num_wires:
+        order = num_wires - 1
+
+    gate_types = [
+        GateCount(hadamard, num_wires),
+    ]
+
+    if order > 1:
+        # Use qubits from the phase gradient register
+        phase_grad_register = Allocate(order - 1, state="any", restored=True)
+        gate_types.append(phase_grad_register)
+
+        if num_wires > 1:
+            gate_types.append(GateCount(cs, num_wires - 1))
+
+            for index in range(2, order):
+                addition_reg_size = index - 1
+                temp_and_register = Allocate(addition_reg_size, state="zero", restored=True)
+
+                temp_and = resource_rep(qre.TemporaryAND)
+                temp_and_dag = qre.Adjoint.resource_rep(temp_and)
+                in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
+
+                cost_iter = [
+                    temp_and_register,
+                    GateCount(temp_and, addition_reg_size),
+                    GateCount(in_place_add),
+                    GateCount(hadamard),
+                    GateCount(temp_and_dag, addition_reg_size),
+                    Deallocate(allocated_register=temp_and_register),
+                ]
+                gate_types.extend(cost_iter)
+
+            addition_reg_size = order - 1
+            temp_and_register = Allocate(addition_reg_size, state="zero", restored=True)
+            repetitions = num_wires - order
+
+            temp_and = resource_rep(qre.TemporaryAND)
+            temp_and_dag = qre.Adjoint.resource_rep(temp_and)
+            in_place_add = qre.SemiAdder.resource_rep(addition_reg_size)
+
+            cost_iter = [
+                temp_and_register,
+                GateCount(temp_and, addition_reg_size * repetitions),
+                GateCount(in_place_add, repetitions),
+                GateCount(hadamard, repetitions),
+                GateCount(temp_and_dag, addition_reg_size * repetitions),
+                Deallocate(allocated_register=temp_and_register),
+            ]
+            gate_types.extend(cost_iter)
+
+            gate_types.append(GateCount(swap, num_wires // 2))
+
+        gate_types.append(Deallocate(allocated_register=phase_grad_register))
+
+    return gate_types
+
+
+def select_thc_resource_decomp(
+    thc_ham: qre.THCHamiltonian,
+    num_batches: int = 1,
+    rotation_precision: int = 15,
+    select_swap_depth: int | None = None,
+) -> list[GateCount]:
+    r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+    and the number of times it occurs in the decomposition.
+
+    .. note::
+
+        This decomposition assumes that an appropriately sized phase gradient state is available.
+        Users should ensure that the cost of constructing this state has been accounted for.
+        See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+
+    Args:
+        thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
+            Hamiltonian on which this ``Select`` operator is being applied.
+        num_batches (int): The number of batches for loading Givens rotation angles
+            into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
+            The default value of ``1`` loads all angles in one batch.
+        rotation_precision (int): The number of bits used to represent the precision for loading
+            the rotation angles for basis rotation. The default value is set to ``15`` bits.
+        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+            used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
+            ``T``-gate count.
+
+    Resources:
+        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_ and
+        Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+        represents a specific quantum gate and the number of times it appears
+        in the decomposition.
+    """
+
+    num_orb = thc_ham.num_orbitals
+    tensor_rank = thc_ham.tensor_rank
+
+    gate_list = []
+    # Total select cost from Eq. 43 in arXiv:2011.03494
+
+    # access the phase gradient register:
+    phase_grad_reg = Allocate(rotation_precision - 1, state="any", restored=True)
+    gate_list.append(phase_grad_reg)
+
+    # 4 swaps on state registers controlled on spin qubits
+    cswap = resource_rep(qre.CSWAP)
+    gate_list.append(GateCount(cswap, 4 * num_orb))
+
+    restore_qrom = num_batches != 1
+
+    batched_rotations = int(math.ceil((num_orb - 1) / num_batches))
+
+    # Data output for rotations
+    data_reg = Allocate(rotation_precision * batched_rotations, state="zero", restored=True)
+    gate_list.append(data_reg)
+
+    # QROM to load rotation angles for both 1-body and 2-body integrals
+    qrom_full = resource_rep(
+        qre.QROM,
+        {
+            "num_bitstrings": tensor_rank + num_orb,
+            "size_bitstring": rotation_precision * batched_rotations,
+            "borrow_qubits": restore_qrom,
+            "select_swap_depth": select_swap_depth,
+        },
+    )
+    gate_list.append(GateCount(qrom_full, num_batches))
+
+    # Cost for rotations by adding the rotations into the phase gradient state
+    semiadder = resource_rep(
+        qre.Controlled,
+        {
+            "base_cmpr_op": resource_rep(
+                qre.SemiAdder,
+                {"max_register_size": rotation_precision - 1},
+            ),
+            "num_ctrl_wires": 1,
+            "num_zero_ctrl": 0,
+        },
+    )
+    gate_list.append(GateCount(semiadder, num_orb - 1))
+
+    # Adjoint of QROM for loading both 1-body and 2-body integrals Eq. 34 in arXiv:2011.03494
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_full})))
+    # Adjoint of semiadder for 1-body and 2-body integrals
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1))
+
+    # QROM to load rotation angles for two body integrals
+    qrom_twobody = resource_rep(
+        qre.QROM,
+        {
+            "num_bitstrings": tensor_rank,
+            "size_bitstring": rotation_precision * batched_rotations,
+            "borrow_qubits": restore_qrom,
+            "select_swap_depth": select_swap_depth,
+        },
+    )
+    gate_list.append(GateCount(qrom_twobody, num_batches))
+
+    # Cost for rotations by adding the rotations into the phase gradient state
+    gate_list.append(GateCount(semiadder, num_orb - 1))
+
+    # Clifford cost for rotations
+    h = resource_rep(qre.Hadamard)
+    s = resource_rep(qre.S)
+    s_dagg = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
+
+    gate_list.append(GateCount(h, 4 * (num_orb)))
+    gate_list.append(GateCount(s, 2 * num_orb))
+    gate_list.append(GateCount(s_dagg, 2 * num_orb))
+
+    # Adjoint of QROM for two body integrals Eq. 35 in arXiv:2011.03494
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
+
+    # Adjoint of semiadder for two body integrals
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1))
+
+    # Z gate in the center of rotations
+    gate_list.append(qre.GateCount(resource_rep(qre.Z)))
+
+    cz = resource_rep(qre.CZ)
+    gate_list.append(qre.GateCount(cz, 1))
+
+    # 1 cswap between the spin registers
+    gate_list.append(qre.GateCount(cswap, 1))
+    gate_list.append(Deallocate(allocated_register=data_reg))  # release data register
+
+    gate_list.append(Deallocate(allocated_register=phase_grad_reg))  # release phase grad register
+    return gate_list
+
+
+def select_thc_controlled_resource_decomp(
+    num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
+) -> list[GateCount]:
+    r"""Returns a list representing the resources for the controlled version of the operator.
+
+    .. note::
+
+        This decomposition assumes that an appropriately sized phase gradient state is available.
+        Users should ensure that the cost of constructing this state has been accounted for.
+        See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+
+    Args:
+        num_ctrl_wires (int): the number of wires the operation is controlled on
+        num_zero_ctrl (int): the number of control wires, that are controlled when in the :math:`|0\rangle` state
+        target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
+
+    Resources:
+        The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+        represents a specific quantum gate and the number of times it appears
+        in the decomposition.
+    """
+
+    thc_ham = target_resource_params["thc_ham"]
+    rotation_precision = target_resource_params["rotation_precision"]
+    select_swap_depth = target_resource_params["select_swap_depth"]
+    num_batches = target_resource_params["num_batches"]
+
+    num_orb = thc_ham.num_orbitals
+    tensor_rank = thc_ham.tensor_rank
+
+    gate_list = []
+
+    # access the phase gradient register:
+    phase_grad_reg = Allocate(rotation_precision - 1, state="any", restored=True)
+    gate_list.append(phase_grad_reg)
+
+    if num_ctrl_wires > 1:
+        mcx = resource_rep(
+            qre.MultiControlledX,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_zero_ctrl": num_zero_ctrl,
+            },
+        )
+        aux_reg = Allocate(1, state="zero", restored=True)
+        gate_list.append(aux_reg)
+        gate_list.append(GateCount(mcx, 2))
+
+    # 4 swaps on state registers controlled on spin qubits
+    cswap = resource_rep(qre.CSWAP)
+    gate_list.append(GateCount(cswap, 4 * num_orb))
+
+    restore_qrom = num_batches != 1
+
+    batched_rotations = int(math.ceil((num_orb - 1) / num_batches))
+
+    # Data output for rotations
+    data_reg = Allocate(rotation_precision * batched_rotations, state="zero", restored=True)
+    gate_list.append(data_reg)
+
+    # QROM for loading rotation angles for 1-body and 2-body integrals
+    qrom_full = resource_rep(
+        qre.QROM,
+        {
+            "num_bitstrings": tensor_rank + num_orb,
+            "size_bitstring": rotation_precision * batched_rotations,
+            "borrow_qubits": restore_qrom,
+            "select_swap_depth": select_swap_depth,
+        },
+    )
+    gate_list.append(GateCount(qrom_full, num_batches))
+
+    # Cost for rotations by adding the rotations into the phase gradient state
+    semiadder = resource_rep(
+        qre.Controlled,
+        {
+            "base_cmpr_op": resource_rep(
+                qre.SemiAdder,
+                {"max_register_size": rotation_precision - 1},
+            ),
+            "num_ctrl_wires": 1,
+            "num_zero_ctrl": 0,
+        },
+    )
+    gate_list.append(GateCount(semiadder, num_orb - 1))
+
+    # Adjoint of QROM for 1-body and 2-body integrals Eq. 34 in arXiv:2011.03494
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_full})))
+    # Adjoint of semiadder for 1-body and 2-body integrals
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1))
+
+    # QROM for loading rotation angles for two body integrals
+    qrom_twobody = resource_rep(
+        qre.QROM,
+        {
+            "num_bitstrings": tensor_rank,
+            "size_bitstring": rotation_precision * batched_rotations,
+            "borrow_qubits": restore_qrom,
+            "select_swap_depth": select_swap_depth,
+        },
+    )
+    gate_list.append(GateCount(qrom_twobody, num_batches))
+
+    # Cost for rotations by adding the rotations into the phase gradient state
+    gate_list.append(GateCount(semiadder, num_orb - 1))
+
+    # Clifford cost for rotations
+    h = resource_rep(qre.Hadamard)
+    s = resource_rep(qre.S)
+    s_dagg = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
+
+    gate_list.append(GateCount(h, 4 * (num_orb)))
+    gate_list.append(GateCount(s, 2 * num_orb))
+    gate_list.append(GateCount(s_dagg, 2 * num_orb))
+
+    # Adjoint of QROM for two body integrals Eq. 35 in arXiv:2011.03494
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_twobody})))
+    # Adjoint of semiadder for two body integrals
+    gate_list.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": semiadder}), num_orb - 1))
+
+    # Z gate in the center of rotations
+    cz = resource_rep(qre.CZ)
+    gate_list.append(qre.GateCount(cz, 1))
+
+    ccz = resource_rep(
+        qre.Controlled,
+        {
+            "base_cmpr_op": qre.Z.resource_rep(),
+            "num_ctrl_wires": 2,
+            "num_zero_ctrl": 1,
+        },
+    )
+    gate_list.append(qre.GateCount(ccz, 1))
+
+    # 1 cswap between the spin registers
+    gate_list.append(qre.GateCount(cswap, 1))
+
+    gate_list.append(Deallocate(allocated_register=data_reg))  # release data register
+
+    if num_ctrl_wires > 1:
+        gate_list.append(Deallocate(allocated_register=aux_reg))
+    elif num_zero_ctrl > 0:
+        gate_list.append(GateCount(resource_rep(qre.X), 2 * num_zero_ctrl))
+
+    gate_list.append(Deallocate(allocated_register=phase_grad_reg))  # release phase grad register
+    return gate_list
+
+
+def qrom_state_preparation_resource_decomp(
+    num_state_qubits: int,
+    positive_and_real: bool,
+    precision: float | None = None,
+    selswap_depths=1,
+) -> list[GateCount]:
+    r"""Returns a list representing the resources of the operator. Each object in the list
+    represents a gate and the number of times it occurs in the circuit.
+
+    Args:
+        num_state_qubits (int): number of qubits required to represent the state-vector
+        positive_and_real (bool): Flag that the coefficients of the statevector are all real
+            and positive.
+        precision (float): The precision threshold for loading in the binary representation
+            of the rotation angles.
+        selswap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth.
+
+    Resources:
+        The resources for QROMStatePreparation are according to the decomposition as described
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+        :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
+        load the rotation angles. Controlled-RY (and phase shifts) gates are used to apply all of
+        the rotations coherently.
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+        ``GateCount`` objects, where each object represents a specific quantum gate and the
+        number of times it appears in the decomposition.
+    """
+    gate_counts = []
+    cry = qre.CRY.resource_rep()
+    phase_shift = qre.PhaseShift.resource_rep()
+
+    expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+    if isinstance(selswap_depths, int) or selswap_depths is None:
+        selswap_depths = [selswap_depths] * expected_size
+
+    num_precision_wires = ceil_log2(math.pi / precision)
+    load_reg = Allocate(num_precision_wires, state="zero", restored=True)
+
+    gate_counts.append(load_reg)  # allocate load register
+
+    for j in range(num_state_qubits):
+        num_bitstrings = 2**j
+        num_bit_flips = num_bitstrings * num_precision_wires // 2
+
+        gate_counts.append(
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=LabsQROM.resource_rep(
+                        num_bitstrings=num_bitstrings,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=num_bit_flips,
+                        borrow_qubits=True,
+                        select_swap_depth=selswap_depths[j],
+                    ),
+                    cmpr_target_op=qre.Prod.resource_rep(
+                        cmpr_factors_and_counts=((cry, num_precision_wires),),
+                        num_wires=num_precision_wires + 1,
+                    ),
+                    num_wires=j + num_precision_wires + 1,
+                ),
+            )
+        )
+
+    if not positive_and_real:
+        gate_counts.append(
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=LabsQROM.resource_rep(
+                        num_bitstrings=2**num_state_qubits,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
+                        borrow_qubits=True,
+                        select_swap_depth=selswap_depths[-1],
+                    ),
+                    cmpr_target_op=qre.Prod.resource_rep(
+                        cmpr_factors_and_counts=((phase_shift, num_precision_wires),),
+                        num_wires=num_precision_wires,
+                    ),
+                ),
+            )
+        )
+
+    gate_counts.append(Deallocate(allocated_register=load_reg))  # free load register
+    return gate_counts
+
+
+def qrom_state_preparation_phase_grad_resource_decomp(
+    num_state_qubits: int,
+    positive_and_real: bool,
+    precision: float | None = None,
+    selswap_depths=1,
+) -> list[GateCount]:
+    r"""Returns a list representing the resources of the operator. Each object in the list
+    represents a gate and the number of times it occurs in the circuit.
+
+    .. note::
+
+        This decomposition assumes an appropriately sized phase gradient state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
+        See also :class:`~.pennylane.estimator.PhaseGradient`.
+
+    Args:
+        num_state_qubits (int): number of qubits required to represent the state-vector
+        positive_and_real (bool): Flag that the coefficients of the statevector are all real
+            and positive.
+        precision (float): The precision threshold for loading in the binary representation
+            of the rotation angles.
+        selswap_depths (int | Iterable(int) | None): A parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth.
+
+    Resources:
+        The resources for QROMStatePreparation are according to the decomposition as described
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+        :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
+        load the rotation angles. These rotations gates are implemented using an inplace
+        controlled-adder operation (see Figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_)
+        to phase gradient.
+
+    Returns:
+        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+        ``GateCount`` objects, where each object represents a specific quantum gate and the
+        number of times it appears in the decomposition.
+    """
+    gate_counts = []
+    h = qre.Hadamard.resource_rep()
+    s = qre.S.resource_rep()
+    s_dagg = qre.Adjoint.resource_rep(base_cmpr_op=s)
+
+    expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+    if isinstance(selswap_depths, int) or selswap_depths is None:
+        selswap_depths = [selswap_depths] * expected_size
+
+    num_precision_wires = ceil_log2(math.pi / precision)
+    semi_adder = qre.SemiAdder.resource_rep(max_register_size=num_precision_wires)
+    ctrl_semi_adder = qre.Controlled.resource_rep(semi_adder, 1, 0)
+
+    load_reg = Allocate(num_precision_wires, state="zero", restored=True)
+    phase_grad_reg = Allocate(num_precision_wires, state="any", restored=True)
+
+    gate_counts.append(load_reg)  # allocate load register
+    gate_counts.append(phase_grad_reg)  # grab qubits from phase grad register
+
+    # map RY rotations to RZ for phase grad
+    gate_counts.append(GateCount(h, num_precision_wires))
+    gate_counts.append(GateCount(s, num_precision_wires))
+
+    for j in range(num_state_qubits):
+        num_bitstrings = 2**j
+        num_bit_flips = num_bitstrings * num_precision_wires // 2
+
+        gate_counts.append(
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=LabsQROM.resource_rep(
+                        num_bitstrings=num_bitstrings,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=num_bit_flips,
+                        borrow_qubits=True,
+                        select_swap_depth=selswap_depths[j],
+                    ),
+                    cmpr_target_op=ctrl_semi_adder,
+                    num_wires=j + 2 * num_precision_wires,
+                )
+            )
+        )
+
+    if not positive_and_real:
+        gate_counts.append(
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=LabsQROM.resource_rep(
+                        num_bitstrings=2**num_state_qubits,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
+                        borrow_qubits=True,
+                        select_swap_depth=selswap_depths[-1],
+                    ),
+                    cmpr_target_op=ctrl_semi_adder,
+                    num_wires=num_state_qubits + 2 * num_precision_wires,
+                )
+            )
+        )
+
+    # map RY rotations to RZ for phase grad
+    gate_counts.append(GateCount(h, num_precision_wires))
+    gate_counts.append(GateCount(s_dagg, num_precision_wires))
+
+    gate_counts.append(Deallocate(allocated_register=load_reg))  # free load register
+    gate_counts.append(Deallocate(allocated_register=phase_grad_reg))  # free phase grad register
+    return gate_counts
+
+
 # pylint: disable=arguments-differ,too-many-arguments
 class LabsQROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
