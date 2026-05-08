@@ -497,7 +497,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                     return setup_inputs(*args, **kwargs)
 
                 orig_sig = signature(setup_inputs)
-                qnode_param = Parameter("qnode", Parameter.POSITIONAL_ONLY)
+                qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
                 _modified_setup_inputs.__signature__ = orig_sig.replace(
                     parameters=[qnode_param, *orig_sig.parameters.values()]
                 )
