@@ -69,7 +69,7 @@ def transpile(
         is passed which contains these types of measurements, a ``NotImplementedError`` will be raised.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum tape (QNode or quantum function).
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         coupling_map: Data specifying the couplings between different qubits. This data can be any format accepted by ``nx.to_networkx_graph()``,
             currently including edge list, dict of dicts, dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
 
