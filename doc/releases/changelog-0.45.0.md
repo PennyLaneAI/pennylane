@@ -9,6 +9,9 @@
   [Fomichev et al., PRX Quantum 5, 040339](https://doi.org/10.1103/PRXQuantum.5.040339) is a
   state-of-the-art technique for algorithms that require a high-quality initial state, like in
   ground-state energy estimation algorithms of chemical systems.
+  Check out our
+  [demo](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
+  to see how it works!
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
@@ -66,7 +69,9 @@
 
 <h4>Workflow Inspection 🔍</h4>
 
-* The output of :func:`~.specs` with ``level="all"`` now displays a table, which allows you to easily see how circuit resources evolve with each stage of compilation.
+* When using :func:`~.specs` with :func:`~.qjit` and ``level="all"`,
+  you can now display the returned :class:`~.CircuitSpecs` as a table,
+  allowing you to easily see how circuit resources evolve with each stage of compilation.
   In addition, :func:`~.specs` now supports setting ``level="user"`` for workflows compiled with :func:`~.qjit`,
   returning circuit specifications after all user-specified transforms have been applied.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
