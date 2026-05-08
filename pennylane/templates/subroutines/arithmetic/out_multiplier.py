@@ -590,17 +590,15 @@ def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires
     return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
 
 
-def _add_plus_one(x_wires, y_wires, work_wires):
-    """This qfunc implements ``(x, y, 0) -> (x, (x+y+1) % 2**m, 0)`` for ``m`` the number of
-    bits in ``y``. This circuit is similar to the one shown in Fig. 1c) in
-    `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__, just without the bit flips on the
-    ``x_wires`` before and after the adder. We replace the explicit input carry in that figure
-    by bit flips on the least significant bits of all three registers, the bit flip on the work
-    wire occurring after the first left elbow/before the last right elbow.
+def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=None):
+    """SemiAdder decomposition with bit flips on the last work wire inserted after the first
+    left elbow and before the last right elbow of the adder.
+
+    If flip_control is provided, the bit flips are controlled accordingly, the adder part remains
+    unchanged. We only expect this function to be used with two values for `flip_control`: None
+    or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
-    work_wires = work_wires[: len(y_wires) - 1]
-    X(x_wires[-1])
-    X(y_wires[-1])
+
     with AnnotatedQueue() as q:
         _semiadder(x_wires, y_wires, work_wires)
     adder_ops = q.queue
@@ -608,12 +606,31 @@ def _add_plus_one(x_wires, y_wires, work_wires):
         # We insert work wire bit flips where a carry-in qubit would cause them,
         # i.e., after the very first left elbow and before the last right elbow
         with QueuingManager.stop_recording():
-            work_wire_flip = X(work_wires[-1])
+            if flip_control is None:
+                work_wire_flip = X(work_wires[-1])
+            else:
+                c_wire, c_val = flip_control
+                work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
         adder_ops.insert(1, work_wire_flip)
         adder_ops.insert(-2, work_wire_flip)
     if QueuingManager.recording():
         for op in adder_ops:
             apply(op)
+
+
+def _add_plus_one(x_wires, y_wires, work_wires):
+    """This qfunc implements ``(x, y, 0) -> (x, (x+y+1) % 2**m, 0)`` for ``m`` the number of
+    bits in ``y``. This circuit is similar to the one shown in Fig. 1c) in
+    `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__, just without the bit flips on the
+    ``x_wires`` before and after the adder. We replace the explicit input carry in that figure
+    by bit flips on the least significant bits of all three registers, the bit flip on the work
+    wire occurring after the first left elbow/before the last right elbow (this insertion
+    is done by _adder_flipped_first_work_wire).
+    """
+    work_wires = work_wires[: len(y_wires) - 1]
+    X(x_wires[-1])
+    X(y_wires[-1])
+    _adder_flipped_first_work_wire(x_wires, y_wires, work_wires)
     X(y_wires[-1])
     X(x_wires[-1])
 
@@ -693,26 +710,22 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     bits of each register that correspond to an input carry being set to one. The bit flips on
     the least significant work wire occur after the first left elbow/before the last right elbow.
     """
+    # We need to control-flip all x_wires in order to achieve subtraction for c_wire=|0>
+    # We also need to control-flip the LSB of x_wires (last wire) to achieve addition plus one
+    # (c.f. _add_plus_one). The bit flips on the LSB cancel, so that we only control-flip all _but_
+    # the LSB
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
     work_wires = work_wires[: len(y_wires) - 1]
+    # Control-flip the LSB of the output register. This is part of achieving addition plus one
+    # for c_wire=|0>. (c.f. _add_plus_one).
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
 
     # Create the operator sequence for an adder and insert (controlled) work wire bit flips
-    with AnnotatedQueue() as q:
-        _semiadder(x_wires, y_wires, work_wires)
-    adder_ops = q.queue
-    if work_wires:
-        # We insert controlled work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
-        adder_ops.insert(1, work_wire_flip)
-        adder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording():
-        for op in adder_ops:
-            apply(op)
+    # We insert controlled work wire bit flips where a carry-in qubit would cause them,
+    # i.e., after the very first left elbow and before the last right elbow
+    _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=(c_wire, 0))
 
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
 
@@ -838,6 +851,8 @@ def _out_multiplier_with_cache(
     output_wires_zeroed,
     **__,
 ):  # pylint: disable=unused-argument,too-many-arguments
+    r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s
+    with ``output_wires_zeroed=True`` and one ``SemiAdder``, using additional work wires."""
     cache_wires = work_wires[: len(output_wires)]
     work_wires = work_wires[len(output_wires) :]
     OutMultiplier(
