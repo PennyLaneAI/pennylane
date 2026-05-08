@@ -943,10 +943,13 @@
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
   [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
 
-* :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+* :meth:`QuantumScript.expand <pennylane.tape.QuantumScript.expand>`, :func:`qp.tape.qscript.expand <pennylane.tape.qscript.expand>` and the related functions
+  :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and
+  :func:`~pennylane.tape.create_expand_trainable_multipar`
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
   function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
+  [(#9438)](https://github.com/PennyLaneAI/pennylane/pull/9438)
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
@@ -1227,6 +1230,7 @@
 * The docstring for :func:`~transforms.combine_global_phases` now has a "Usage with qjit" section
   to outline what the transform does when used with Catalyst.
   [(#9386)](https://github.com/PennyLaneAI/pennylane/pull/9386)
+  [(#9438)](https://github.com/PennyLaneAI/pennylane/pull/9438)
 
 * Though the documentation for this function is now solely in the Catalyst repository, a correction was
   made in the output of the code example for :func:`~.transforms.decompose_arbitrary_ppr` while the
