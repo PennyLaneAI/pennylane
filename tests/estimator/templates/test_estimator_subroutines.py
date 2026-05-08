@@ -371,6 +371,26 @@ class TestHybridQRAM:
 class TestSelectOnlyQRAM:
     """Test the SelectOnlyQRAM class."""
 
+    def test_select_value_is_optional(self):
+        wires = qp.registers({"intermediate_result": 3, "final_result": 3})
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.SelectOnlyQRAM(
+                ["010", "111", "110", "000", "010", "111", "110", "000"],
+                control_wires=wires["intermediate_result"],
+                target_wires=wires["final_result"],
+                # No select value provided
+            )
+
+            return qp.probs(wires=wires["final_result"])
+
+        # should not raise
+        qp.estimator.estimate(
+            circuit,
+            gate_set={"T", "CNOT", "S", "Hadamard", "RZ", "GlobalPhase", "Toffoli", "MidMeasure"},
+        )()
+
     def test_raises_with_wrong_wire_num(self):
         with pytest.raises(ValueError, match="Expected 7 wires, got 4."):
             qre.SelectOnlyQRAM(
