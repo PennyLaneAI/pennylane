@@ -240,6 +240,7 @@
   :func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
   same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
+  [(#9435)](https://github.com/PennyLaneAI/pennylane/pull/9435)
 
   ```python
   poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
@@ -282,6 +283,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   of all possible decomposition paths the graph system can take for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9427)](https://github.com/PennyLaneAI/pennylane/pull/9427)
 
   For each decomposition rule applicable to the operator instance, the output includes its name, circuit
   diagram, gate count, and wire allocation (if any):
@@ -323,6 +325,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 * A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
   the decomposition graph chooses decomposition rules for each operator instance in a circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9436)](https://github.com/PennyLaneAI/pennylane/pull/9436)
 
   The :func:`~.transforms.decomp_inspector` acts as a transform that can be applied on a QNode as a decorator.
   It returns an object that allows for interactively querying a given operator to identify which
@@ -444,6 +447,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+  [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
 
   ```python
   import pennylane.estimator as qre
@@ -510,7 +514,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 
   ```python
   @qp.register_resources({qp.CNOT: 1, qp.H: 2})
-  def custom_decomp(wires):
+  def custom_decomp(wires):D
       qp.H(wires[1])
       qp.CNOT(wires)
       qp.H(wires[1])
@@ -552,6 +556,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
     decomposition only is valid if ``TemporaryAND`` is used as intended - on zeroed input target qubits
     or zeroed output target qubits for ``Adjoint(TemporaryAND)``.
     [(#9303)](https://github.com/PennyLaneAI/pennylane/pull/9303)
+    [(#9424)](https://github.com/PennyLaneAI/pennylane/pull/9424)
 
   - A new decomposition of `Evolution` into `qp.PauliRot` has been added which is compatible with the
     new graph-based decomposition system. Similarly, a decomposition of `qp.RZ`
@@ -893,8 +898,8 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   single-qubit unitaries rather than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
 
-* Operations using ``FermiWord`` are now much faster due to various performance improvements to the
-  class.
+* Operations involving ``FermiWord`` objects are now significantly faster
+  due to various performance enhancements made to the class.
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
 * :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
@@ -1572,7 +1577,8 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 
 * The description of NumPy array slicing used to get the subspace of a density matrix is now more clear in
   the docs of `_phase_shift`.
-  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
+  [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246)
+  [(#9432)](https://github.com/PennyLaneAI/pennylane/pull/9432)
 
 <h3>Bug fixes 🐛</h3>
 
