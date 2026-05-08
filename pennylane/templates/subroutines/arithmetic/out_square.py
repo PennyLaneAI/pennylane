@@ -247,8 +247,7 @@ class OutSquare(Operation):
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires "
-                f"and {output_wires_zeroed=}."
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
             )
 
         registers = [
@@ -406,7 +405,7 @@ def _out_square_with_adder(
         # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
         # the other bits.
         CNOT([x_wires[-1], output_wires[-1]])  # First control-copy is a CNOT
-        for x_wire, out_wire in zip(x_wires[-2::-1], output_wires[-2::-1]):
+        for x_wire, out_wire in zip(x_wires[-2::-1], output_wires[-2::-1], strict=True):
             TemporaryAND([x_wires[-1], x_wire, out_wire])  # Subsequent control-copies
         # Mark that the copying has happened and does not have to happen via an adder below
         x_wires_to_multiply = x_wires[-m:-1]
@@ -524,6 +523,24 @@ def _out_square_with_caddsub(
     output_wires_zeroed: bool,
     **_,
 ):
+    r"""This decomposition uses controlled add-subtract blocks.
+    We start with augmenting the output register by one auxiliary qubit that we add as the new
+    least significant bit (This basically multiplies with two) and applying n controlled
+    add-subtract operations. The j-th operation (starting at j=0) caches x_{n-1-j} in a cache qubit
+    ``c_wire`` (which we take from the work wires) and then adds or subtracts x into a subregister
+    of y, starting at the j-th least significant bit, controlled on the cache. This computes
+
+    ..math :: A = \sum_{j=0}^{n-1} \left(2^j (2x_j-1)x + 2^{n+j}(1-x_j)\right)
+
+    ..math :: =2x^2-x\left(\sum_{j=0}^{n-1}2^j\right) + 2^n \left(\sum_{j=0}^{n-1} 2^j\right) - 2^n x
+
+    ..math :: =2x^2-2^{n}x+x+2^n(2^n-1-x).
+
+    Then, we subtract x, add 2^nx, and subtract 2^n(2^n-1-x) to arrive at 2x^2 overall.
+    In a last step we divide by two simply by splitting off the auxiliary qubit we had added as
+    LSB in the beginning. This qubit is guaranteed to be zeroed because we computed an even
+    number before.
+    """
     # First work wire is used for caching control bits
     c_wire = work_wires[0]
     # Second work wire is used to augment the output wires because we compute
