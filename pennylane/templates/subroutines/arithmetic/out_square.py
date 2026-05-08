@@ -195,10 +195,10 @@ class OutSquare(Operation):
         13: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
         14: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
         15: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        17: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        18: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        19: ───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
+        16: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────╰SemiAdder────┤
+        17: ───────├SemiAdder───────├SemiAdder───────╰SemiAdder─────────────────────┤
+        18: ───────├SemiAdder───────╰SemiAdder──────────────────────────────────────┤
+        19: ───────╰SemiAdder───────────────────────────────────────────────────────┤
 
         >>> print(qp.draw(circuit)(True))
          0: ──X──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
@@ -217,10 +217,7 @@ class OutSquare(Operation):
         13: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
         14: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
         15: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        17: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        18: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        19: ───────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
+        16: ───────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
 
     """
 
@@ -338,7 +335,7 @@ class OutSquare(Operation):
 
         >>> all_wires = ([0, 1], [2, 3], [4, 5])
         >>> qp.OutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
-        [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2, 5]), control_wires=[4]), CNOT(wires=[0, 4])]
+        [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2]), control_wires=[4], work_wires=[5]), CNOT(wires=[0, 4])]
         """
         with AnnotatedQueue() as q:
             _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed)
@@ -371,7 +368,7 @@ def _out_square_with_adder_resources(
     if output_wires_zeroed:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
         resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (min(n, m) - 1)
+        resources[resource_rep(TemporaryAND)] = min(n, m) - 1
 
     # Controlled adders, includes the one for copying if output_wires_zeroed=False
     for i in range(output_wires_zeroed, min(n, m)):
@@ -399,33 +396,37 @@ def _out_square_with_adder(
 ):
     n = len(x_wires)
     m = len(output_wires)
+    x_wires = x_wires[::-1]
+    output_wires = output_wires[::-1]
 
     if output_wires_zeroed:
         # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
         # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
         # the other bits.
-        CNOT([x_wires[-1], output_wires[-1]])  # First control-copy is a CNOT
-        for x_wire, out_wire in zip(x_wires[-2::-1], output_wires[-2::-1], strict=True):
-            TemporaryAND([x_wires[-1], x_wire, out_wire])  # Subsequent control-copies
-        # Mark that the copying has happened and does not have to happen via an adder below
-        x_wires_to_multiply = x_wires[-m:-1]
-        start = 1
-    else:
-        x_wires_to_multiply = x_wires[-m:]
-        start = 0
+        CNOT([x_wires[0], output_wires[0]])  # First control-copy is a CNOT
+        num_elbows = min(n, m) - 1
+        copy_input = x_wires[1 : num_elbows + 1]
+        copy_output = output_wires[1 : num_elbows + 1]
+        for x_wire, out_wire in zip(copy_input, copy_output, strict=True):
+            TemporaryAND([x_wires[0], x_wire, out_wire])  # Subsequent control-copies
 
-    for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
+    # Mark that the copying has happened and does not have to happen via an adder in the loop
+    start = int(output_wires_zeroed)
+
+    for i, x_wire in enumerate(x_wires[start:m], start=start):
         # Add x to the output register, controlled on x_wire via the work_wires[0] and
         # shifted by i bit positions. For output_wires_zeroed=False, includes the initial copy
         # The output wires of the adder need to take all of the output register of square
         # into account due to carry values. For output_wires_zeroed=True, we can reduce to
         # a fixed size (`n`) instead, because we know at each step how large the value stored
         # in the output register can have grown by then.
-        output_msb = max(0, m - n - i - 1) if output_wires_zeroed else 0
-        output = output_wires[output_msb : m - i]
+        output_msb = min(m, n + i + 1) if output_wires_zeroed else m
+        output = output_wires[i:output_msb]
         CNOT([x_wire, work_wires[0]])
         ctrl(
-            SemiAdder(x_wires=x_wires, y_wires=output, work_wires=work_wires[1 : len(output)]),
+            SemiAdder(
+                x_wires=x_wires[::-1], y_wires=output[::-1], work_wires=work_wires[1 : len(output)]
+            ),
             control=work_wires[:1],
             work_wires=work_wires[len(output) :],
             work_wire_type="zeroed",
