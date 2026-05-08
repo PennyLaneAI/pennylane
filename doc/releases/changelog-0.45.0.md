@@ -74,6 +74,7 @@
   returning circuit specifications after all user-specified transforms have been applied.
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
   [(#9307)](https://github.com/PennyLaneAI/pennylane/pull/9307)
+  [(#9426)](https://github.com/PennyLaneAI/pennylane/pull/9426)
 
   ```python
   @qp.qjit
@@ -448,6 +449,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
   [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
+  [(#9449)](https://github.com/PennyLaneAI/pennylane/pull/9449)
 
   ```python
   import pennylane.estimator as qre
