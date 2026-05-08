@@ -227,6 +227,7 @@
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
   [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
+  [(#9449)](https://github.com/PennyLaneAI/pennylane/pull/9449)
 
 <h3>Improvements 🛠</h3>
 
