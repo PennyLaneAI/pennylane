@@ -60,7 +60,9 @@ class Hadamard(ResourceOperator):
         Raises:
             ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
+        raise ResourcesUndefinedError(
+            f"{cls.__name__} does not have a resource decomposition defined."
+        )
 
     @property
     def resource_params(self) -> dict:
@@ -593,7 +595,9 @@ class T(ResourceOperator):
         Raises:
             ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
+        raise ResourcesUndefinedError(
+            f"{cls.__name__} does not have a resource decomposition defined."
+        )
 
     @property
     def resource_params(self) -> dict:
