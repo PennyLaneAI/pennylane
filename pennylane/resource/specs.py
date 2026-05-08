@@ -935,10 +935,9 @@ def specs(
         Measurements:      |
         - probs(all wires) |  1 |  1 |  1
 
-        When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
-        object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
-        :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. The resources
-        associated with a particular level can be accessed using the returned level name as follows:
+        When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
+        accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
+        the name of a pass or marker. For example:
 
         >>> print(all_specs.resources['merge-rotations'])
         Wire allocations: 3
@@ -965,9 +964,9 @@ def specs(
         Depth: Not computed
 
         .. warning::
-            Certain transforms, like the ``split_non_commuting`` transform, can result in multiple output tapes.
-            In this case, the resources for that level will be returned as a list of :class:`~.resource.SpecsResources`
-            objects. When printed, these split tapes will be shown as individual columns.
+            Certain transforms, like the ``split_non_commuting`` transform, can result in splitting a single execution
+            into multiple executions. In this case, the resources for that level will be returned as a list of
+            :class:`~.resource.SpecsResources` objects. When printed, these split tapes will be shown as individual columns.
 
         .. code-block:: python
 
