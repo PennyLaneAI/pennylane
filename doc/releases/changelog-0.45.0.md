@@ -310,6 +310,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   0: ────╭●───────────┤
   1: ──H─╰RZ(0.50)──H─┤
   Gate Count: {Hadamard: 2, CRZ: 1}
+  ```
+
 * A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
   the decomposition graph chooses decomposition rules for each operator instance in a circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
