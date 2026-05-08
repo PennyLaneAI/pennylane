@@ -33,6 +33,33 @@ from pennylane.operation import Operation
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
 
+    def test_all_operators_with_resource_ops_mapped(self):
+        """Test that everything with both an Operator and a ResourceOperator version
+        have a registered mapping.  Bypasses Qubitization for the moment."""
+
+        special_cases = {"Qubitization", "QSVT"}
+
+        for estimator_entry in dir(qp.estimator):
+            estimator_val = getattr(qp.estimator, estimator_entry)
+
+            if (
+                estimator_entry not in special_cases
+                and isinstance(estimator_val, type)
+                and issubclass(estimator_val, re_ops.ResourceOperator)
+                and estimator_entry in dir(qp)
+            ):
+                qp_val = getattr(qp, estimator_entry)
+
+                if (
+                    isinstance(qp_val, type)
+                    and issubclass(qp_val, qp.operation.Operator)
+                    and qp_val not in _map_to_resource_op.registry
+                ):
+                    raise ValueError(
+                        f"{estimator_entry} has both a estimator rep {estimator_val} and"
+                        f"an operator rep {qp_val} but no mapping in _map_to_resource_op"
+                    )
+
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
         """Test that a TypeError is raised if the input is not an Operation."""
         with pytest.raises(TypeError, match="is not a valid operation"):
@@ -69,6 +96,14 @@ class TestMapToResourceOp:
         [
             (qp.Identity(0), re_ops.Identity()),
             (qp.GlobalPhase(0), re_ops.GlobalPhase()),
+            (
+                qp.BasisState([0, 1, 0], wires=[0, 1, 2]),
+                re_ops.BasisState(num_wires=3, wires=[0, 1, 2]),
+            ),
+            (
+                qp.BasisEmbedding([0, 1, 0], wires=[0, 1, 2]),
+                re_temps.BasisEmbedding(num_wires=3, wires=[0, 1, 2]),
+            ),
             # Single-Qubit Gates
             (qp.Hadamard(0), re_ops.Hadamard()),
             (qp.S(0), re_ops.S()),
@@ -100,6 +135,10 @@ class TestMapToResourceOp:
             # Multi-Qubit Gates
             (qp.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.MultiRZ(num_wires=3)),
             (qp.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.PauliRot("XYZ")),
+            (
+                qp.PCPhase(0.1, dim=3, wires=[0, 1, 2]),
+                re_ops.PCPhase(num_wires=3, dim=3, wires=[0, 1, 2]),
+            ),
             (
                 qp.MultiControlledX(wires=[0, 1, 2]),
                 re_ops.MultiControlledX(num_ctrl_wires=2, num_zero_ctrl=0),
@@ -133,6 +172,10 @@ class TestMapToResourceOp:
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
+            ),
+            (
+                qtemps.IQP(weights=[0.1, 0.2], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False),
+                re_temps.IQP(num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False, wires=[0, 1]),
             ),
             (
                 qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
@@ -381,6 +424,10 @@ class TestMapToResourceOp:
                     select_swap_depths=1,
                     wires=[0, 1, 2, 3],
                 ),
+            ),
+            (
+                qtemps.GQSP(qp.RX(0.3, 0), qp.poly_to_angles([0.1, 0.2j, 0.3], "GQSP"), control=1),
+                qp.estimator.GQSP(qp.estimator.RX(), d_plus=2, wires=(0, 1)),
             ),
         ],
     )

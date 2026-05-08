@@ -226,6 +226,8 @@
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+  [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
+  [(#9449)](https://github.com/PennyLaneAI/pennylane/pull/9449)
 
 <h3>Improvements 🛠</h3>
 
@@ -510,6 +512,7 @@
   :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
   [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+  [(#9444)](https://github.com/PennyLaneAI/pennylane/pull/9444)
 
   The source code for these passes in PennyLane has been removed as part of this change.  However,
   all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
@@ -613,6 +616,7 @@
 * Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  [(#9425)](https://github.com/PennyLaneAI/pennylane/pull/9425)
 
 * No unnecessary classical registers will be created now when using `qp.to_openqasm` with `measure_all=False`.
   [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
@@ -1197,7 +1201,7 @@
   a resource decomposition defined and is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
+* Refined the documentation of :func:`~.shadow_expval` measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
@@ -1243,6 +1247,9 @@
   [(#9246)](https://github.com/PennyLaneAI/pennylane/pull/9246/)
 
 <h3>Bug fixes 🐛</h3>
+
+* `SProd.is_verified_hermitian` can now be calculated with abstract (jax tracer) coefficients.
+  [(#9446)](https://github.com/PennyLaneAI/pennylane/pull/9446)
 
 * Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
   [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
@@ -1438,6 +1445,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
+Lillian Frederiksen,
 Diego Guala,
 Sengthai Heng,
 Jacob Kitchen,
