@@ -808,6 +808,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   :func:`~.transforms.ppm_compilation`, and :func:`~.transforms.parity_synth`.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
   [(#9395)](https://github.com/PennyLaneAI/pennylane/pull/9395)
+  [(#9444)](https://github.com/PennyLaneAI/pennylane/pull/9444)
 
   The source code for these passes in PennyLane has been removed as part of this change. However,
   all transforms listed above can still be accessed from the :mod:`pennylane.transforms` module as
@@ -915,6 +916,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 * A ``qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)`` function has been added to
   extract the ``CompilePipeline`` of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  [(#9425)](https://github.com/PennyLaneAI/pennylane/pull/9425)
 
 * No unnecessary classical registers will be created now when using ``qp.to_openqasm`` with
   ``measure_all=False``.
@@ -1252,6 +1254,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
   transform for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
+  [(#9438)](https://github.com/PennyLaneAI/pennylane/pull/9438)
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with
   ``mode="reversed"`` or ``mode="standard"`` has been deprecated and will no longer be supported in
@@ -1573,6 +1576,9 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 
 <h3>Bug fixes 🐛</h3>
 
+* `SProd.is_verified_hermitian` can now be calculated with abstract (jax tracer) coefficients.
+  [(#9446)](https://github.com/PennyLaneAI/pennylane/pull/9446)
+
 * Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
   [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
 
@@ -1761,6 +1767,7 @@ Isaac De Vlugt,
 Diksha Dhawan,
 Olivia Di Matteo,
 Marcus Edwards,
+Lillian Frederiksen,
 Diego Guala,
 Sengthai Heng,
 Jacob Kitchen,
