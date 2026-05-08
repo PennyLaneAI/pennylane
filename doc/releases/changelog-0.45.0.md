@@ -1247,6 +1247,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `SProd.is_verified_hermitian` can now be calculated with abstract (jax tracer) coefficients.
+  [(#9446)](https://github.com/PennyLaneAI/pennylane/pull/9446)
+
 * Fixed a bug where :func:`~.specs` would fail in multi-threaded or multi-processed settings.
   [(#9420)](https://github.com/PennyLaneAI/pennylane/pull/9420)
 
