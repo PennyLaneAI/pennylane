@@ -6,12 +6,10 @@
 
 * A new state preparation method called :class:`~.SumOfSlatersPrep` is now available. This state
   preparation routine introduced in
-  [Fomichev et al., PRX Quantum 5, 040339](https://doi.org/10.1103/PRXQuantum.5.040339) is a
-  state-of-the-art technique for algorithms that require a high-quality initial state, like in
-  ground-state energy estimation algorithms of chemical systems.
-  Check out our
-  [demo](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
-  to see how it works!
+  [Fomichev et al., PRX Quantum 5, 040339](https://doi.org/10.1103/PRXQuantum.5.040339)
+  (see the associated [demo](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation))
+  is a state-of-the-art technique for algorithms that require a high-quality initial state,
+  like in ground-state energy estimation algorithms of chemical systems.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
   [(#9228)](https://github.com/PennyLaneAI/pennylane/pull/9228)
@@ -34,7 +32,7 @@
   ``wires`` as input. It efficiently prepares sparse states using auxiliary wires,
   :class:`~.QROM`\ s, reversible bit encodings, and a dense-state preparation on a smaller
   subspace. Its implementation can be inspected by using PennyLane's graph-based decomposition
-  algorithm (:func:`~decomposition.enable_graph`) with the following gate set and five auxiliary
+  algorithm (:func:`~.decomposition.enable_graph`) with the following gate set and five auxiliary
   wires (``work_wires``).
 
   ```python
@@ -69,7 +67,7 @@
 
 <h4>Workflow Inspection 🔍</h4>
 
-* When using :func:`~.specs` with :func:`~.qjit` and ``level="all"`,
+* When using :func:`~.specs` with :func:`~.qjit` and ``level="all"``,
   you can now display the returned :class:`~.CircuitSpecs` as a table,
   allowing you to easily see how circuit resources evolve with each stage of compilation.
   In addition, :func:`~.specs` now supports setting ``level="user"`` for workflows compiled with :func:`~.qjit`,
@@ -243,6 +241,16 @@
   same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
 
+  ```python
+  poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
+  qsvt_angles = qp.poly_to_angles(poly, "QSVT", angle_solver="iterative-optax")
+  ```
+
+  ```pycon
+  >>> print(qsvt_angles)
+  [-4.74724627  1.51868559  0.57952342  0.57952342  1.51868559 -0.03485729]
+  ```
+
 <h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
 
 New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
@@ -275,6 +283,9 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
 
+  For each decomposition rule applicable to the operator instance, the output includes its name, circuit
+  diagram, gate count, and wire allocation (if any):
+
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
   Decomposition 0 (name: _crx_to_rx_cz)
@@ -297,9 +308,6 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   1: ──RX(0.25)─╰RZX(-0.25)─┤
   Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
   ```
-  
-  For each decomposition rule applicable to the operator instance, the output includes its name, circuit
-  diagram, gate count, and wire allocation (if any).
 
   By default, :func:`~.decomposition.inspect_decomps` displays all available decomposition rules for an
   operator. Alternatively, a single decomposition rule can be inspected by passing its name:
