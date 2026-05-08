@@ -115,7 +115,9 @@ class TestOutSquare:
             ),
         ],
     )
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
+    @pytest.mark.parametrize(
+        "use_jit", [pytest.param(True, marks=(pytest.mark.external, pytest.mark.catalyst)), False]
+    )
     def test_operation_result(
         self,
         x_wires,
@@ -318,7 +320,9 @@ class TestOutSquare:
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
         ],
     )
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
+    @pytest.mark.parametrize(
+        "use_jit", [pytest.param(True, marks=(pytest.mark.catalyst, pytest.mark.external)), False]
+    )
     def test_decomposition_new(
         self,
         x_wires,
