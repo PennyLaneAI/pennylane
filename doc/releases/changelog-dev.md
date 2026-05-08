@@ -4,6 +4,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
+  than the existing QFT-based decomposition, at the cost of more auxiliary wires.
+  In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
+  used to indicate ``output_wires`` to be in the :math:`|0\rangle` state, leading to cheaper
+  decompositions.
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
