@@ -301,6 +301,15 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   For each decomposition rule applicable to the operator instance, the output includes its name, circuit
   diagram, gate count, and wire allocation (if any).
 
+  By default, :func:`~.decomposition.inspect_decomps` displays all available decomposition rules for an
+  operator. Alternatively, a single decomposition rule can be inspected by passing its name:
+
+  ```pycon
+  >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+  Decomposition 0 (name: _crx_to_h_crz)
+  0: ────╭●───────────┤
+  1: ──H─╰RZ(0.50)──H─┤
+  Gate Count: {Hadamard: 2, CRZ: 1}
 * A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
   the decomposition graph chooses decomposition rules for each operator instance in a circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
