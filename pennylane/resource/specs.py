@@ -628,7 +628,7 @@ def specs(
     .. note::
 
         The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on ``qjit``-compiled QNodes:
+        There are two broad ways to use ``specs`` on ``qjit``-compiled QNodes:
 
         * Runtime resource tracking via mock circuit execution
         * Pass-by-pass resource collection for user applied compilation passes
@@ -672,8 +672,8 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
-    The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, and provides more direct
-    access to the data fields, for example:
+    The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
+    access to the data fields. For example:
 
     >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
     {'RX': 1, 'CNOT': 1, 'Evolution': 96}
@@ -795,7 +795,7 @@ def specs(
             - expval(Prod(num_wires=2, num_terms=2)): 1
             Depth: 1
 
-        In this case, the returned :class:`~.resource.CircuitSpecs` resources field is a list containing a
+        In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
         >>> qp.specs(circuit, level="user")().resources
@@ -807,7 +807,7 @@ def specs(
 
         .. note::
 
-            This documentation is specific to workflows with ``qjit``.
+            This functionality is specific to workflows with ``qjit``.
 
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
@@ -856,7 +856,7 @@ def specs(
 
         .. note::
 
-            This documentation is specific to workflows with ``qjit``.
+            This functionality is specific to workflows with ``qjit``.
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
@@ -886,7 +886,7 @@ def specs(
             and incremental levels correspond to the aggregate of user-specified transforms and passes
             in the order in which they are applied.
 
-            In addition to the user-passes, the pass-by-pass inspection will indicate where the MLIR
+            In addition to the user-passes, pass-by-pass inspection will indicate where the MLIR
             "lowering" occurs with the ``Before MLIR Passes`` stage. This will be placed after all tape
             transforms, but before all other MLIR passes. Note that this may be at level ``0`` if there are no tape transforms.
             In some cases, the pass to lower to MLIR will
