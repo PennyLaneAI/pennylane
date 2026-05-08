@@ -236,7 +236,7 @@
 <h4>QSVT Angle Solver 📐</h4>
 
 * A new angle solver has been added to find QSVT phase angles faster for large-degree polynomials.
-  This can be accessed by setting `angle_solver = 'iterative-optax'` in :func:`~.qsvt` and
+  This can be accessed by setting `angle_solver="iterative-optax"` in :func:`~.qsvt` and
   :func:`~.poly_to_angles`, where the benefits are seen when when repeatedly evaluating the
   same-degree polynomial with different coefficients. Note that this requires ``optax`` to be installed.
   [(#8685)](https://github.com/PennyLaneAI/pennylane/pull/8685)
