@@ -108,7 +108,7 @@ It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 OpenQASM
 ~~~~~~~~
 
-:func:~pennylane.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
+:func:`~pennylane.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
 mid circuit measurements, subroutines, classical computation, and more.
 
 .. code-block:: python
