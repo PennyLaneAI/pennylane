@@ -534,9 +534,9 @@ class TestSelectOnlyQRAM:
             qre.SelectOnlyQRAM.resource_decomp(
                 data,
                 num_wires,
-                select_value,
                 num_select_wires,
                 num_control_wires,
+                select_value,
             )
             == expected
         )
