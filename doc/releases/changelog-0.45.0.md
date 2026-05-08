@@ -100,7 +100,7 @@
   of how many markers are present.
   Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
   pipeline's string representation now shows both transforms and markers.
-  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  The `CompilePipeline` object also now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectability.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
@@ -226,6 +226,7 @@
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+  [(#9415)](https://github.com/PennyLaneAI/pennylane/pull/9415)
 
 <h3>Improvements 🛠</h3>
 
@@ -285,7 +286,7 @@
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
-* The inspectibility of general symbolic decomposition rules is improved. The string representation of a decomposition rule
+* The inspectability of general symbolic decomposition rules is improved. The string representation of a decomposition rule
   is by default its source code. Now for symbolic decomposition rules that wrap a base decomposition rule, the source code
   for the base decomposition rule is also displayed when printing this rule.
   [(#9305)](https://github.com/PennyLaneAI/pennylane/pull/9305)
@@ -366,6 +367,7 @@
   for a concrete operator instance.
   [(#9322)](https://github.com/PennyLaneAI/pennylane/pull/9322)
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9427)](https://github.com/PennyLaneAI/pennylane/pull/9427)
 
   ```pycon
   >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
@@ -394,6 +396,7 @@
 * A new function :func:`~.transforms.decomp_inspector` that allows users to inspect how the decomposition
   graph is choosing decomposition rules for each operator in the circuit has been added.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
+  [(#9436)](https://github.com/PennyLaneAI/pennylane/pull/9436)
 
   ```python
   qp.decomposition.enable_graph()
@@ -584,7 +587,8 @@
   than their rotation decomposition.
   [(#9144)](https://github.com/PennyLaneAI/pennylane/pull/9144)
 
-* Operations using ``FermiWord`` are now much faster due to various performance improvements to the class
+* Operations involving ``FermiWord`` objects are now significantly faster due to various performance enhancements
+  made to the class.
   [(#9283)](https://github.com/PennyLaneAI/pennylane/pull/9283)
 
 * :class:`~.MottonenStatePreparation` now supports parameter broadcasting in its decomposition.
@@ -610,6 +614,7 @@
 * Added a `qp.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  [(#9425)](https://github.com/PennyLaneAI/pennylane/pull/9425)
 
 * No unnecessary classical registers will be created now when using `qp.to_openqasm` with `measure_all=False`.
   [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
@@ -1194,7 +1199,7 @@
   a resource decomposition defined and is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
 
-* Refined the documentation of :func:~.shadow_expval measurement for clarity and added instructions
+* Refined the documentation of :func:`~.shadow_expval` measurement for clarity and added instructions
   for achieving reproducible results with the seed keyword argument.
   [(#9216)](https://github.com/PennyLaneAI/pennylane/pull/9216)
 
