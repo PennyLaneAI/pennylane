@@ -16,6 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
+import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import partial, reduce
@@ -65,7 +66,6 @@ def jit_if_jax_available(f, **kwargs):
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
-
     if block_encoding not in ["prepselprep", "qubitization", None]:
         raise ValueError(
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
@@ -192,8 +192,8 @@ def qsvt(
         angle_solver (str): Specifies the method used to calculate the angles of the routine
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
-            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+            - ``"root-finding"`` (Default): effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: Effective for polynomials of degree higher than :math:`\sim 1000` for
               the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
             - ``"iterative-optax"``: Recommended for high-degree polynomials
               **when using polynomials of the same degree and running repeatedly**;
@@ -711,7 +711,6 @@ def _QSVT_resources(projectors, UA):
 
 @register_resources(_QSVT_resources)
 def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
-
     pytrees.unflatten(*pytrees.flatten(projectors[0]))
 
     for i in range(1, len(projectors) - 1, 2):
@@ -823,7 +822,6 @@ def _compute_qsp_angle(poly_coeffs):
     # Adaptation of Algorithm 1 of [arXiv:2308.01501]
     with QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
-
             poly_a, poly_b = polynomial_matrix[:, idx]
             rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
 
@@ -1154,10 +1152,22 @@ def _compute_qsp_angles_iteratively_optax(poly):
         ModuleNotFoundError: if JAX or Optax are not installed
     """
     if not is_jax_available:
-        raise ModuleNotFoundError("jax is required!")  # pragma: no cover
+        raise ModuleNotFoundError(
+            "JAX is required for this functionality. Please install it with 'pip install jax'."
+        )  # pragma: no cover
 
     if not is_optax_available:
-        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
+        raise ModuleNotFoundError(
+            "Optax is required for this functionality. Please install it with 'pip install optax'."
+        )  # pragma: no cover
+
+    if not jax.config.jax_enable_x64:
+        warnings.warn(
+            UserWarning(
+                "JAX 64-bit mode is recommended for this functionality. "
+                'Please enable it with: jax.config.update("jax_enable_x64", True)'
+            )
+        )
 
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
@@ -1229,7 +1239,6 @@ def _compute_gqsp_angles(poly_coeffs):
     angles_theta, angles_phi, angles_lambda = math.zeros([3, num_elements])
 
     for idx in range(num_elements - 1, -1, -1):
-
         component_a, component_b = input_data[:, idx]
         angles_theta[idx] = math.arctan2(np.abs(component_b), math.abs(component_a))
         angles_phi[idx] = (

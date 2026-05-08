@@ -160,7 +160,7 @@ class CompilePipeline:
             qp.transforms.cancel_inverses(recursive=True),
             qp.transforms.merge_rotations,
         )
-        # Add a marker for inspectibility
+        # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
         @pipeline
@@ -176,7 +176,8 @@ class CompilePipeline:
             qp.RX(y, wires=0)
             return qp.expval(qp.Z(1))
 
-    >>> print(circuit.compile_pipeline)
+    >>> from pennylane.workflow import get_compile_pipeline
+    >>> print(get_compile_pipeline(circuit)(0.1, 0.2))
     CompilePipeline(
        ├─▶ no-transforms
       [1] commute_controlled(),

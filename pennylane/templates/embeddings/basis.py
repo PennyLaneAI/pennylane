@@ -15,12 +15,7 @@ r"""
 Contains the BasisEmbedding template.
 """
 
-from pennylane.decomposition import add_decomps
-from pennylane.ops.qubit.state_preparation import (
-    BasisState,
-    _basis_state_decomp,
-    _jax_jit_basis_state_decomp,
-)
+from pennylane.ops.qubit.state_preparation import BasisState
 
 
 class BasisEmbedding(BasisState):
@@ -82,5 +77,3 @@ class BasisEmbedding(BasisState):
 
 
 BasisEmbedding._primitive = BasisState._primitive  # pylint: disable=protected-access
-
-add_decomps(BasisEmbedding, _basis_state_decomp, _jax_jit_basis_state_decomp)

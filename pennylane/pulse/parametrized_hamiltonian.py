@@ -246,6 +246,7 @@ class ParametrizedHamiltonian:
         self.wires = Wires.all_wires(
             [op.wires for op in self.ops_fixed] + [op.wires for op in self.ops_parametrized]
         )
+        self.queue()
 
     def __call__(self, params, t):
         if len(params) != len(self.coeffs_parametrized):
@@ -277,6 +278,13 @@ class ParametrizedHamiltonian:
 
         res = "\n  + ".join(terms)
         return f"(\n    {res}\n)"
+
+    def queue(self, context=QueuingManager):
+        """Append the parametrized Hamiltonian to the queue."""
+        for op in self.ops:
+            context.remove(op)
+        context.append(self)
+        return self
 
     def map_wires(self, wire_map):
         """Returns a copy of the current ParametrizedHamiltonian with its wires changed according
@@ -344,6 +352,9 @@ class ParametrizedHamiltonian:
     def __add__(self, H):
         r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
         or ``ParametrizedHamiltonian``."""
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
+            QueuingManager.remove(H)
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
@@ -369,6 +380,9 @@ class ParametrizedHamiltonian:
     def __radd__(self, H):
         r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
         or ``ParametrizedHamiltonian``."""
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
+            QueuingManager.remove(H)
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
@@ -392,6 +406,8 @@ class ParametrizedHamiltonian:
         return NotImplemented
 
     def __mul__(self, other):
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
         ops = self.ops.copy()
         coeffs_fixed = self.coeffs_fixed.copy()
         coeffs_parametrized = self.coeffs_parametrized.copy()

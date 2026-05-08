@@ -93,21 +93,25 @@ class TestHardwareHamiltonian:
     )
     def test_add_hardware_hamiltonian(self, settings):
         """Test that the __add__ dunder method works correctly."""
-        rm1 = HardwareHamiltonian(
-            coeffs=[1, 2],
-            observables=[qp.PauliX(4), qp.PauliZ(8)],
-            pulses=[HardwarePulse(1, 2, 3, [4, 8])],
-            settings=settings,
-            reorder_fn=_reorder_parameters,
-        )
-        rm2 = HardwareHamiltonian(
-            coeffs=[2],
-            observables=[qp.PauliY(8)],
-            pulses=[HardwarePulse(5, 6, 7, 8)],
-            reorder_fn=_reorder_parameters,
-        )
+        with qp.queuing.AnnotatedQueue() as q:
+            rm1 = HardwareHamiltonian(
+                coeffs=[1, 2],
+                observables=[qp.PauliX(4), qp.PauliZ(8)],
+                pulses=[HardwarePulse(1, 2, 3, [4, 8])],
+                settings=settings,
+                reorder_fn=_reorder_parameters,
+            )
+            rm2 = HardwareHamiltonian(
+                coeffs=[2],
+                observables=[qp.PauliY(8)],
+                pulses=[HardwarePulse(5, 6, 7, 8)],
+                reorder_fn=_reorder_parameters,
+            )
 
-        sum_rm = rm1 + rm2
+            sum_rm = rm1 + rm2
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == sum_rm
 
         assert isinstance(sum_rm, HardwareHamiltonian)
         assert qp.math.allequal(sum_rm.coeffs, [1, 2, 2])
@@ -137,15 +141,19 @@ class TestHardwareHamiltonian:
         ops = [qp.PauliZ(0), qp.PauliX(2)]
         h_wires = [0, 2]
 
-        rh = HardwareHamiltonian(
-            coeffs=[coeffs[0]],
-            observables=[ops[0]],
-            pulses=[HardwarePulse(5, 6, 7, 8)],
-        )
-        ph = qp.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
+        with qp.queuing.AnnotatedQueue() as q:
+            rh = HardwareHamiltonian(
+                coeffs=[coeffs[0]],
+                observables=[ops[0]],
+                pulses=[HardwarePulse(5, 6, 7, 8)],
+            )
+            ph = qp.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
 
-        res1 = rh + ph
-        res2 = ph + rh
+            res1 = rh + ph
+            res2 = ph + rh
+
+        assert len(q.queue) == 2
+        assert q.queue == [res1, res2]
 
         assert isinstance(res1, HardwareHamiltonian)
         assert res1.coeffs_fixed == coeffs
@@ -351,7 +359,8 @@ class TestInteractionWithOperators:
         R = drive(amplitude=f1, phase=0, wires=[0, 1])
         with qp.queuing.AnnotatedQueue() as q:
             R += 3
-        assert len(q) == 0
+        assert len(q) == 1
+        assert q.queue[0] == R
 
     def test_unknown_type_raises_error(self):
         """Test that adding an invalid object to a HardwareHamiltonian raises an error."""
