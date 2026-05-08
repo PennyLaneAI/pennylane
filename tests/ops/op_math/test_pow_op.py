@@ -512,13 +512,10 @@ class TestMiscMethods:
         op = Pow(target, z)
         data, metadata = op._flatten()
 
-        assert len(data) == 2
-        assert data[0] is target
-        assert data[1] == z
+        assert data == (target,)
+        assert metadata == (z,)
 
-        assert metadata == tuple()
-
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(data, metadata)
         assert new_op is not op
         qp.assert_equal(new_op, op)
 

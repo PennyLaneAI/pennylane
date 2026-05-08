@@ -336,20 +336,27 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=4)
-
-    You can apply the transform directly on :class:`QNode`:
+    You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=4)
 
         @qp.transforms.merge_amplitude_embedding
         @qp.qnode(device=dev)
         def circuit():
             qp.CNOT(wires = [0,1])
-            qp.AmplitudeEmbedding([0,1], wires = 2)
-            qp.AmplitudeEmbedding([0,1], wires = 3)
+            qp.AmplitudeEmbedding([0, 1], wires = 2)
+            qp.AmplitudeEmbedding([0, 1], wires = 3)
             return qp.state()
 
+    >>> print(qp.draw(circuit)())
+    0: ─╭●───┤  State
+    1: ─╰X───┤  State
+    2: ─╭|Ψ⟩─┤  State
+    3: ─╰|Ψ⟩─┤  State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
@@ -357,7 +364,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
     .. details::
         :title: Usage Details
 
-        You can also apply it on quantum function.
+        You can also apply the transform on a quantum function:
 
         .. code-block:: python
 
@@ -370,6 +377,27 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         The circuit before compilation will not work because of using two amplitude embedding.
 
         Using the transformation we can join the different amplitude embedding into a single one:
+
+        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
+        0: ─╭●───┤  State
+        1: ─╰X───┤  State
+        2: ─╭|Ψ⟩─┤  State
+        3: ─╰|Ψ⟩─┤  State
+
+        You can also apply this transform on quantum functions:
+
+        .. code-block:: python
+
+            def qfunc():
+                qp.CNOT(wires = [0,1])
+                qp.AmplitudeEmbedding([0,1], wires = 2)
+                qp.AmplitudeEmbedding([0,1], wires = 3)
+                return qp.state()
+
+        This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
+        Using the transformation we can join the different instances into a single one:
 
         >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
         >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)

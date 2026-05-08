@@ -449,7 +449,7 @@ def hadamard_grad(
     if mode in ["standard", "reversed"] and aux_wire is None:
         warnings.warn(
             """
-            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
+            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will
             no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
             """,
             PennyLaneDeprecationWarning,
@@ -721,7 +721,7 @@ def processing_fn(results: ResultBatch, tape, coeffs, generators_per_parameter):
     """Post processing function for computing a hadamard gradient."""
 
     final_res = []
-    for coeff, res in zip(coeffs, results):
+    for coeff, res in zip(coeffs, results, strict=True):
         if not isinstance(res, (tuple, list)):
             res = [res]  # add singleton dimension back in for one measurement
         final_res.append([math.convert_like(2 * coeff * r, r) for r in res])
@@ -747,7 +747,7 @@ def processing_fn(results: ResultBatch, tape, coeffs, generators_per_parameter):
     results = iter(final_res)
     for num_generators in generators_per_parameter:
         if num_generators == 0:
-            for g_for_parameter, mp in zip(grads, mps):
+            for g_for_parameter, mp in zip(grads, mps, strict=True):
                 zeros_like_mp = np.zeros(
                     mp.shape(num_device_wires=len(tape.wires)), dtype=mp.numeric_type
                 )
@@ -755,7 +755,7 @@ def processing_fn(results: ResultBatch, tape, coeffs, generators_per_parameter):
         else:
             sub_results = islice(results, num_generators)  # take the next number of results
             # sum over batch, iterate over measurements
-            summed_sub_results = (sum(r) for r in zip(*sub_results))
+            summed_sub_results = (sum(r) for r in zip(*sub_results, strict=True))
 
             for g_for_parameter, r in zip(grads, summed_sub_results, strict=True):
                 g_for_parameter.append(r)

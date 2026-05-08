@@ -61,7 +61,7 @@ def _create_transform_primitive():
     def setup_env(tracers, params):
         args_tracers = tracers[slice(*params["args_slice"])]
         args_vars = params["inner_jaxpr"].invars
-        env = dict(zip(args_vars, args_tracers), strict=True)
+        env = dict(zip(args_vars, args_tracers, strict=True))
 
         consts_tracers = tracers[slice(*params["consts_slice"])]
         consts_vars = params["inner_jaxpr"].constvars
@@ -1196,7 +1196,7 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
         count = 0
         final_results = []
 
-        for f, s in zip(batch_fns, tape_counts):
+        for f, s in zip(batch_fns, tape_counts, strict=True):
             # apply any batch transform post-processing
             new_res = f(res[count : count + s])
             final_results.append(new_res)

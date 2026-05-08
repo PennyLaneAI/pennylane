@@ -84,7 +84,7 @@ class IQP(Operation):
     0: ─╭IQP─┤  <Z>
     1: ─╰IQP─┤  <Z>
 
-    .. seealso:: `IQP tutorial <https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax#parameterized-iqp-circuits>`__
+    .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
     """
 
     resource_keys = {"spin_sym", "pattern", "num_wires"}
