@@ -518,7 +518,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   - The :class:`~.QROM` decomposition now has a more efficient allocation of work wires.
   [(#9131)](https://github.com/PennyLaneAI/pennylane/pull/9131)
 
-  - :class:`~.CSWAP` is now decomposed more efficiently, using ``change_op_basis`` with two ``CNOT``
+  - :class:`~.CSWAP` is now decomposed more efficiently, using :func:`~.change_op_basis` with two ``CNOT``
     gates and a single ``Toffoli`` gate.
     [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
