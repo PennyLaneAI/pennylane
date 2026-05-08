@@ -516,7 +516,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 
   ```python
   @qp.register_resources({qp.CNOT: 1, qp.H: 2})
-  def custom_decomp(wires):D
+  def custom_decomp(wires):
       qp.H(wires[1])
       qp.CNOT(wires)
       qp.H(wires[1])
@@ -854,7 +854,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   includes further linear algebraic functionalities over :math:`\mathbb{Z}_2`.
   [(#8982)](https://github.com/PennyLaneAI/pennylane/pull/8982)
 
-  - :func:`~.math.binary_is_independent` computes whether a vector is linear lindependent of
+  - :func:`~.math.binary_is_independent` computes whether a vector is linearly independent of
     a basis of binary vectors over :math:`\mathbb{Z}_2`.
   - :func:`~.math.binary_matrix_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
   - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
@@ -1389,7 +1389,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 * Updated the ``diastatic-malt`` dependency to version ``v2.15.3``.
   [(#9154)](https://github.com/PennyLaneAI/pennylane/pull/9154)
 
-* A workflow was created to sync the ``main`` branch to ``master`` and latter on deleted, after
+* A workflow was created to sync the ``main`` branch to ``master`` and later on deleted, after
   ``master`` branch was deleted.
   [(#9127)](https://github.com/PennyLaneAI/pennylane/pull/9127)
   [(#9316)](https://github.com/PennyLaneAI/pennylane/pull/9316)
@@ -1692,7 +1692,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
 
 * The error message was improved for when the number of inputs to a `qp.for_loop`-decorated function
-  is not one greated than the number of outputs.
+  is not one greater than the number of outputs.
   [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
 * Fixed a bug that `qp.QubitDensityMatrix` was applied in `default.mixed` device using `qp.math.partial_trace` incorrectly.
