@@ -131,7 +131,7 @@
   Depth: Not computed
   ```
 
-* When inspecting a circuit via the ``level`` argument in :func:`~.specs` or :func:`~.draw`,
+* When inspecting a circuit via the ``level`` argument in :func:`~.specs` or :func:`~.drawer.draw`,
   markers placed in a :class:`~.CompilePipeline` (with :func:`~.marker`) are now accessible exclusively via their ``label``,
   making it much easier to track levels of compilation without having to track shifting integer ``level`` values.
   In addition, markers can now be added directly to a :class:`~.CompilePipeline` with the ``add_marker`` method,
@@ -169,7 +169,7 @@
   ```
 
   As usual, marker labels can be used as an argument to ``level`` in :func:`~.specs`
-  and :func:`~.draw`, showing the cumulative result of compilation up to the provided marker:
+  and :func:`~.drawer.draw`, showing the cumulative result of compilation up to the provided marker:
 
   ```pycon
   >>> print(qp.draw(circuit, level="no-transforms")()) # or level=0
@@ -683,16 +683,16 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 
 <h4>Drawing ✏️</h4>
 
-* The :func:`~.draw_graph` function is now accessible from PennyLane, not just from Catalyst. This
+* The :func:`~.drawer.draw_graph` function is now accessible from PennyLane, not just from Catalyst. This
   function allows for compact graphical inspection of ``qjit``-compiled circuits, preserving
   structured control flow.
   [(#9020)](https://github.com/PennyLaneAI/pennylane/pull/9020)
 
   .. note::
 
-    The :func:`~.draw_graph` function is only compatible with :func:`~.qjit` workflows.
+    The :func:`~.drawer.draw_graph` function is only compatible with :func:`~.qjit` workflows.
 
-  Like with :func:`~.draw`, :func:`~.draw_mpl`, and :func:`~.specs`, :func:`~.draw_graph` can be
+  Like with :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`, and :func:`~.specs`, :func:`~.drawer.draw_graph` can be
   given a ``level`` to inspect how compilation passes affect the circuit.
 
   ```python
