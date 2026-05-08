@@ -279,13 +279,15 @@ def merge_rotations(
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=3)
-
     You can apply the transform directly on :class:`QNode`
 
     .. code-block:: python
 
-        @merge_rotations
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=3)
+
+        @qp.transforms.merge_rotations
         @qp.qnode(device=dev)
         def circuit(x, y, z):
             qp.RX(x, wires=0)
@@ -297,8 +299,10 @@ def merge_rotations(
             qp.RY(-y, wires=1)
             return qp.expval(qp.Z(0))
 
-    >>> circuit(0.1, 0.2, 0.3)
-    np.float64(0.955...)
+    >>> print(qp.draw(circuit)(0.1, 0.2, 0.3))
+    0: ──RX(0.30)────╭RZ(0.30)─┤  <Z>
+    1: ─╭●───────────│─────────┤
+    2: ─╰X─────────H─╰●────────┤
 
     .. details::
         :title: Usage Details

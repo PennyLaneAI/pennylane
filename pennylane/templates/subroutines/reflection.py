@@ -29,7 +29,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 
@@ -210,6 +210,9 @@ class Reflection(Operation):
             decomp_ops.append(ops.X(wires=wires))
             decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
             decomp_ops.append(ops.X(wires=wires))
+
+        if QueuingManager.recording():
+            apply(U)
 
         decomp_ops.append(U)
 
