@@ -51,3 +51,5 @@
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
+Guillermo Alonso,
+David Wierichs
