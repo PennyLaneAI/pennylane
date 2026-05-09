@@ -418,7 +418,7 @@ def cancel_inverses(
 
         There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
 
-        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
+        * The ``recursive`` argument is not supported, and an error will be raised if a value for ``recursive`` is specified.
 
         * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
 
