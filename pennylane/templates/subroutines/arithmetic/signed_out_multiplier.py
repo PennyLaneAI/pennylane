@@ -160,8 +160,8 @@ class SignedOutMultiplier(Operator):
         for input_reg in [x_wires, y_wires]:
             twos_complement_helper(input_reg)
 
-        # Reset sign bit (flip if it is 1, otherwise do nothing)
-        measure(input_reg[0], reset=True)
+            # Reset sign bit (flip if it is 1, otherwise do nothing)
+            measure(input_reg[0], reset=True)
 
         # Multiply the magnitudes
         OutMultiplier(
