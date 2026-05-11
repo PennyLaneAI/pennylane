@@ -20,7 +20,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math
+from pennylane import math, capture
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
@@ -191,29 +191,15 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     if num_wires > 2:
         resources[resource_rep(FermionicSWAP)] = _count_swaps(num_wires)
 
-    bit_reversal_swaps = 0
-    for i in range(num_wires // 2):
-        left, right, l_end, r_end = i, num_wires - i - 1, num_wires - i - 1, i
-        finished = False
-        while not finished:
-            finished = (left == l_end) and (right == r_end)
-            if left < l_end:
-                bit_reversal_swaps += 1
-                if left + 1 == right:
-                    right -= 1
-                left += 1
-            if right > r_end:
-                bit_reversal_swaps += 1
-                right -= 1
-
-    resources[resource_rep(FermionicSWAP)] += bit_reversal_swaps
+    resources[resource_rep(FermionicSWAP)] += (num_wires - 1) * num_wires // 2
 
     return resources
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
 def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
-    wires = math.array(wires)
+    if capture.enabled():
+        wires = math.array(wires, like="jax")
     num_wires = len(wires)
 
     # bit-reversal permutation
