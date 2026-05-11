@@ -35,14 +35,6 @@ The following frameworks are currently supported:
 
 import autoray as ar
 
-from .abstract_types import (
-    AbstractArray,
-    AbstractBool,
-    AbstractComplex,
-    AbstractFloat,
-    AbstractInt,
-    AbstractWires,
-)
 from .binary_linalg import (
     binary_decimals,
     binary_finite_reduced_row_echelon,
@@ -218,12 +210,6 @@ def __getattr__(name):
 
 
 __all__ = [
-    "AbstractArray",
-    "AbstractBool",
-    "AbstractComplex",
-    "AbstractFloat",
-    "AbstractInt",
-    "AbstractWires",
     "add",
     "allclose",
     "allequal",

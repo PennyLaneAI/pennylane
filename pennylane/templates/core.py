@@ -51,6 +51,7 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
@@ -178,7 +179,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.math import AbstractArray, AbstractWires
+        from pennylane.typing import AbstractArray, AbstractWires
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
@@ -226,12 +227,12 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(math.AbstractWires(len(val)))
+            key.append(AbstractWires(len(val)))
         else:
             leaves, struct = flatten(val)
 
             shapes = (
-                math.AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
                 for l in leaves
             )
             key.append((struct, tuple(shapes)))
@@ -399,11 +400,11 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     sig = subroutine.signature.bind(*args, **kwargs)
     for arg in subroutine.dynamic_argnames:
         avals, struct = flatten(sig.arguments[arg])
-        if avals and isinstance(avals[0], math.AbstractArray):
+        if avals and isinstance(avals[0], AbstractArray):
             params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
             sig.arguments[arg] = unflatten(params, struct)
     for arg in subroutine.wire_argnames:
-        if isinstance(sig.arguments[arg], math.AbstractWires):
+        if isinstance(sig.arguments[arg], AbstractWires):
             sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
     with queuing.AnnotatedQueue() as q:
         subroutine.definition(**sig.arguments)
@@ -605,7 +606,7 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     and :class:`~.AbstractWires` classes.
 
-    >>> from pennylane.math import AbstractArray, AbstractWires
+    >>> from pennylane.typing import AbstractArray, AbstractWires
     >>> abstract_params = AbstractArray((10,), float)
     >>> abstract_wires = AbstractWires(10)
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
@@ -616,7 +617,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.math import AbstractArray, AbstractWires
+        from pennylane.typing import AbstractArray, AbstractWires
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
