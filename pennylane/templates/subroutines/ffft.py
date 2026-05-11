@@ -85,15 +85,6 @@ class FFFT(Operator):
     sites in each iteration of the recursion. These parallel Fourier transforms are followed by a series of
     2-site linear gates.
 
-    Args:
-
-        wires (WiresLike): The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or equal to 2.
-
-    Raises:
-
-        ValueError: If ``len(wires)`` is not at least 2.
-        NotImplementedError: If ``len(wires)`` is not a power of 2.
-
     .. math::
 
         \sum_{x=0}^{n-1} e^{\frac{2 \pi i k x}{n}} c_x^\dagger = \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'}^\dagger + e^{\frac{2 \pi i k}{n}} \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'+1}^\dagger
@@ -108,6 +99,15 @@ class FFFT(Operator):
 
     Iterating the decomposition :math:`k` times realizes the full Fourier transform over
     :math:`2^{k}` sites.
+
+    Args:
+
+        wires (WiresLike): The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or equal to 2.
+
+    Raises:
+
+        ValueError: If ``len(wires)`` is not at least 2.
+        NotImplementedError: If ``len(wires)`` is not a power of 2.
 
     **Example**
 
