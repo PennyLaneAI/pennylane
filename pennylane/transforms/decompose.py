@@ -21,6 +21,7 @@ import warnings
 from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
+from importlib.util import find_spec
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
