@@ -73,11 +73,8 @@ def _select_ops(
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
-        Select(
-            _new_ops(depth, target_wires, control_wires, swap_wires, data),
-            control=control_select_wires,
-            work_wires=select_work_wires,
-        )
+        new_ops = _new_ops(depth, target_wires, control_wires, swap_wires, data)
+        Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
     else:
         _new_ops(depth, target_wires, control_wires, swap_wires, data)
 
