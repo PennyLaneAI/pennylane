@@ -89,12 +89,14 @@ Operator Types
     :parts: 1
 """
 
+import warnings
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Literal
 
+import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qp
@@ -1210,3 +1212,90 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
+
+
+# =============================================================================
+# Base Operation class
+# =============================================================================
+
+
+class Operation2(Operator2):
+    r"""Base class representing quantum gates or channels applied to quantum states.
+
+    Operations define some additional properties, that are used for external
+    transformations such as gradient transforms.
+
+    The following three class attributes are optional, but in most cases
+    at least one should be clearly defined to avoid unexpected behaviour during
+    differentiation.
+
+    * :attr:`~.Operation2.grad_recipe`
+    * :attr:`~.Operation2.parameter_frequencies`
+    * :attr:`~.Operation2.generator`
+
+    Note that ``grad_recipe`` takes precedence when computing parameter-shift
+    derivatives. Finally, these optional class attributes are used by certain
+    transforms, quantum optimizers, and gradient methods.
+    For details on how they are used during differentiation and other transforms,
+    please see the documentation for :class:`~.gradients.param_shift`,
+    :class:`~.metric_tensor`, :func:`~.reconstruct`.
+
+    Args:
+        *args (tuple): Operation arguments
+        **kwargs (dict): Operator keyword arguments
+    """
+
+    grad_recipe = None
+    r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
+        parameter-shift method.
+
+        This is a tuple with one nested list per operation parameter. For
+        parameter :math:`\phi_k`, the nested list contains elements of the form
+        :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+        term, resulting in a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
+        If ``None``, the default gradient recipe containing the two terms
+        :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+        s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
+    """
+
+    # Attributes for compilation transforms
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """str or None: The basis of an operation, or for controlled gates, of the
+        target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+        or ``"Z"``.
+
+        For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+        ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+        """
+        return None
+
+    @property
+    def control_wires(self) -> Wires:  # pragma: no cover
+        r"""Control wires of the operator.
+
+        For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
+
+        Returns:
+            Wires: The control wires of the operation.
+        """
+        return Wires([])
+
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
+        r"""The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
+        raise NotImplementedError
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # FIXME:
