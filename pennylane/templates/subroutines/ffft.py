@@ -108,6 +108,9 @@ class FFFT(Operator):
         ValueError: If ``len(wires)`` is not at least 2.
         NotImplementedError: If ``len(wires)`` is not a power of 2.
 
+    .. note::
+        This Template is not compatible with ``default.tensor``. Please try ``default.qubit``.
+
     **Example**
 
     Consider the FFFT operation performed on 4 wires:
