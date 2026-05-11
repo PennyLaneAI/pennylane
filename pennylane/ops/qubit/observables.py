@@ -222,7 +222,11 @@ class Hermitian(Operator):
                 UserWarning,
             )
 
-        return [qp.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)]
+        lincomb = qp.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)
+        if qp.QueuingManager.recording():
+            qp.apply(lincomb)
+
+        return [lincomb]
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
