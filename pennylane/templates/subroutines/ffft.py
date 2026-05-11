@@ -167,10 +167,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     def _count_two_recursive(
         wires,
     ):
-        two_qubit_gates = wires // 2
-        if wires > 2:
-            two_qubit_gates += _count_two_recursive(wires // 2) * 2
-        return two_qubit_gates
+        return wires * qp.math.log2(wires) // 2  # given wires is always power of 2
 
     two_qubit_gates = _count_two_recursive(num_wires)
     resources[resource_rep(TwoQubitFFT)] = two_qubit_gates
