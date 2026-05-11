@@ -17,6 +17,8 @@ import sys
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging
+from sphinx.ext.autodoc import FunctionDocumenter
+from pennylane.transforms.core import Transform
 
 logger = logging.getLogger(__name__)
 
@@ -390,8 +392,24 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
                 f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}"
             )
 
+class TransformDocumenter(FunctionDocumenter):
+    """
+    Forces automodule to document callable instances as functions.
+    """
+    objtype = 'transform'
+    directivetype = 'function' # this is what tells sphinx to render it as a function
+    
+    # Priority must be higher than DataDocumenter (which is 10)
+    priority = 20 
+
+    @classmethod
+    def can_document_member(cls, member, membername, isattr, parent):
+        """Determine if this documenter should handle the given member."""
+        return isinstance(member, Transform)
+
 
 def setup(app):
     """Sphinx entry point for this extension."""
     app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
+    app.add_autodocumenter(TransformDocumenter)
