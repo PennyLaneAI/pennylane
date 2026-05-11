@@ -276,6 +276,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Construct the decomposition graph
         self._min_work_wires = 0
         self._start = self._graph.add_node(None)
+
+        # The purpose of this is to keep track of which operators we're still exploring
+        # decomposition paths for during **graph construction**. If we loop back to an
+        # op that we're still exploring (e.g., if we find ourselves exploring decomposition
+        # rules for C(RX) during exploration of RX itself), we stop.
+        self._in_progress = []
+
         self._construct_graph(operations)
 
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
@@ -327,6 +334,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         use_reconstructor = decomps_use_reconstructor(op.op_type, op.params)
 
+        self._in_progress.append(op)
         rules = self._get_decompositions(op, use_reconstructor)
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -335,6 +343,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # this op unless there is no other choice.
             self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
+            self._in_progress.pop()
             return op_node_idx
 
         op_reachable = False
@@ -368,6 +377,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
+        self._in_progress.pop()
         return op_node_idx
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
@@ -487,6 +497,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
+        if base in self._in_progress:
+            return []
+
         return [
             make_adjoint_decomp(base_decomp, use_reconstructor)
             for base_decomp in self._get_decompositions(base, use_reconstructor)
@@ -536,6 +549,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
+        if base in self._in_progress:
+            return []
+
         rules = [
             make_controlled_decomp(decomp)
             for decomp in self._get_decompositions(base, use_reconstructor)
