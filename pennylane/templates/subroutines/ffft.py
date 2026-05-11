@@ -183,10 +183,8 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = _count_one_recursive(num_wires, resources)
 
     def _count_swaps(wires):
-        swaps = 2 * (wires // 2) * (wires // 2 - 1)
-        if wires > 2:
-            swaps += _count_swaps(wires // 2) * 2
-        return swaps
+        k = qp.math.log2(wires)
+        return wires * (wires - k - 1)
 
     if num_wires > 2:
         resources[resource_rep(FermionicSWAP)] = _count_swaps(num_wires)
