@@ -137,7 +137,7 @@ class FFFT(Operator):
     3: ··· ───────────────────────────╰fSWAP(3.14)──────────────╰fSWAP(3.14)─┤  State
 
 
-    The FFFT operation is decomposed recursively into :class:`~TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
+    The FFFT operation is decomposed recursively into :class:`~.TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
     """
 
     resource_keys = {"num_wires"}
