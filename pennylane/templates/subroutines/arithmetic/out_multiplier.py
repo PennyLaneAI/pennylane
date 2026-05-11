@@ -560,12 +560,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # increment 2^(n+m) bit
     size = k - n - m
-    if size > 0:
-        if size > 1:
-            resources[resource_rep(TemporaryAND)] += size - 2
-            resources[adjoint_resource_rep(TemporaryAND)] += size - 2
-        resources[resource_rep(CNOT)] += size - 1
-        resources[x_rep] += 1
+    resources[resource_rep(Incrementer, num_wires=size)] = 1
 
     # Second negation
     resources[x_rep] += k

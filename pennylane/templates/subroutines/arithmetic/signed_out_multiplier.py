@@ -115,7 +115,7 @@ class SignedOutMultiplier(Operator):
 
     @property
     def resource_params(self) -> dict:
-
+        
 
 
 def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, mod, output_wires_zeroed):
