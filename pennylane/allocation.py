@@ -36,7 +36,7 @@ except ImportError:
     jax = None
     has_jax = False
 
-if jax:
+if has_jax:
 
     class AbstractQubit(AbstractValue):
         """An aval representing an allocated qubit"""

@@ -41,7 +41,6 @@ from typing import Any, ParamSpec
 import numpy as np
 
 from pennylane import capture, math, queuing
-from pennylane.allocation import AbstractQubit
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -58,6 +57,8 @@ from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
+if has_jax:
+    from pennylane.allocation import AbstractQubit
 
 
 @dataclass(frozen=True)
@@ -295,7 +296,7 @@ def _get_non_array_iterables():
 
 def _setup_wires(wires):
     if isinstance(wires, _get_array_types()):
-        if isinstance(wires.val.aval, AbstractQubit):
+        if has_jax and isinstance(wires.val.aval, AbstractQubit):
             return (wires,)
         if wires.shape == ():
             return (wires,)
@@ -831,14 +832,17 @@ class Subroutine:
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
-                    wires = [
-                        (
-                            w
-                            if (is_abstract(w) and isinstance(w.val.aval, AbstractQubit))
-                            else jax.numpy.array(w)
-                        )
-                        for w in register
-                    ]
+                    if has_jax:
+                        wires = [
+                            (
+                                w
+                                if (is_abstract(w) and isinstance(w.val.aval, AbstractQubit))
+                                else jax.numpy.array(w)
+                            )
+                            for w in register
+                        ]
+                    else:
+                        wires = jax.numpy.stack(register)
                     bound_args.arguments[wire_argname] = wires
 
             else:
