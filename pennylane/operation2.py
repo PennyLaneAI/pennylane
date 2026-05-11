@@ -90,8 +90,24 @@ Operator Types
 """
 
 from abc import ABC, abstractmethod
+from functools import partial
+from inspect import BoundArguments, Signature, signature
+from typing import Any, ClassVar, Hashable
 
 from pennylane.capture import ABCCaptureMeta
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 
 
 class Operator2(ABC, metaclass=ABCCaptureMeta):
@@ -370,3 +386,108 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         one of them (in other words, without the leading underscore) for the first time will
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
+
+    # ------------ Class variables set manually --------------------
+
+    wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
+    """The names of arguments corresponding to wires."""
+
+    dyn_argnames: ClassVar[tuple[str, ...]]
+    """The names of arguments corresponding to dynamic arguments. Dynamic arguments
+    are those whose concrete values may not be known at compile-time."""
+
+    static_argnames: ClassVar[tuple[str, ...]]
+    """The names of arguments corresponding to static arguments. Static arguments
+    are those whose concrete values must be known at compile-time."""
+
+    ndim_params: ClassVar[tuple[int, ...]]
+    """The number of dimensions expected for each dynamic argument. This must be specified
+    for parameter broadcasting support."""
+
+    # ------------ Class variables set automatically ---------------
+
+    _sig: ClassVar[Signature]
+    """The signature of the operator."""
+
+    # ------------ Instance variables set automatically ------------
+
+    _bound_args: BoundArguments
+    """BoundArguments mapping arguments names to their values."""
+
+    # TODO: Add more class/instance variables as needed.
+
+    def __init__(self, *args, **kwargs):
+        self._bound_args = self._sig.bind(*args, **kwargs)
+        self._bound_args.apply_defaults()
+
+    def __init_subclass__(cls: type["Operator2"]) -> None:
+        cls._sig = signature(cls)
+        _add_dynamic_properties(cls)
+
+    @classmethod
+    def _primitive_bind_call(cls: type["Operator2"], *args, **kwargs) -> None:
+        return
+
+    # ------------------ General properties ------------------
+
+    @property
+    def arguments(self) -> dict[str, Any]:
+        """Dictionary mapping argument names to their values."""
+        return self._bound_args.arguments
+
+    @property
+    def dyn_args(self) -> dict[str, Any]:
+        """Dictionary mapping dynamic argument names to their values."""
+        return {name: self.arguments[name] for name in self.dyn_argnames}
+
+    @property
+    def static_args(self) -> dict[str, Any]:
+        """Dictionary mapping static argument names to their values."""
+        return {name: self.arguments[name] for name in self.static_argnames}
+
+    @property
+    def wire_args(self) -> dict[str, Any]:
+        """Dictionary mapping wire argument names to their values."""
+        return {name: self.arguments[name] for name in self.wire_argnames}
+
+    # ------------------ Operator representations ------------------
+    # Matrix
+    # Sparse matrix
+    # Decomposition
+    # Eigenvalues
+    # Diagonalizing gates
+    # Terms
+    # Generator
+
+    # ------------------ Dunder methods ------------------
+
+    def __hash__(self) -> int:
+        # FIXME:
+        return -1
+
+    def __eq__(self) -> bool:
+        # FIXME:
+        return True
+
+    # TODO: Add arithmetic dunder methods
+
+
+def _add_dynamic_properties(cls: type[Operator2]) -> None:
+    """Create dynamic properties for an operator using its signature."""
+
+    for name in cls._sig.parameters.keys():
+        if name not in vars(cls):
+            dyn_property = partial(_dynamic_property, name=name)
+            cls.__dict__[name] = property(dyn_property)
+
+
+def _dynamic_property(self: Operator2, name: str) -> Any:
+    """Dynamic property for an argument called ``name``."""
+    if "_bound_args" in vars(self) and name in self._bound_args.arguments:
+        return self._bound_args.arguments[name]
+
+    return object.__getattribute__(self, name)
+
+
+def _make_hashable(attr: Any) -> Hashable:
+    """Create a hashable representation of an attribute."""
