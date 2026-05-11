@@ -193,8 +193,6 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                # breakpoint()
-                # wires = math.array(_args[-num_wires:], like="jax")
                 wires = []
                 for w in _args[-num_wires:]:
                     if math.is_abstract(w) and isinstance(w.val.aval, AbstractQubit):
