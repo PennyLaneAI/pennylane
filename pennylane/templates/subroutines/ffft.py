@@ -28,6 +28,9 @@ from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import Wires, WiresLike
 
 
+INV_SQRT2 = 1 / math.sqrt(2)
+
+
 class TwoQubitFFT(Operator):
     r"""
     The two-qubit unitary operator that corresponds to a Fourier transform on
@@ -65,8 +68,8 @@ class TwoQubitFFT(Operator):
         return math.array(
             [
                 [1, 0, 0, 0],
-                [0, 2 ** -(1 / 2), 2 ** -(1 / 2), 0],
-                [0, 2 ** -(1 / 2), -(2 ** -(1 / 2)), 0],
+                [0, INV_SQRT2, INV_SQRT2, 0],
+                [0, INV_SQRT2, -INV_SQRT2, 0],
                 [0, 0, 0, -1],
             ]
         )
