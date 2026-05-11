@@ -1245,6 +1245,8 @@ class Operation2(Operator2):
         **kwargs (dict): Operator keyword arguments
     """
 
+    # FIXME: Add missing stuff
+
     grad_recipe = None
     r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
         parameter-shift method.
