@@ -2414,9 +2414,11 @@ except TermsUndefinedError:
     return False
 """
 
+
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
     return is_abstract(v) and isinstance(v.val.aval, qp.allocation.AbstractQubit)
+
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
