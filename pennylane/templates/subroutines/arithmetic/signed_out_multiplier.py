@@ -22,11 +22,13 @@ from pennylane import measure
 from pennylane.ops import PauliX, Toffoli, Controlled, CNOT
 
 from pennylane.templates import OutMultiplier, Adder
+from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
 from pennylane.templates.subroutines.arithmetic.out_multiplier import _increment
 
 from pennylane.wires import Wires, WiresLike
 
 from pennylane.operation import Operator
+from tmp.qa_045 import num_control_wires
 
 
 class SignedOutMultiplier(Operator):
@@ -115,6 +117,7 @@ class SignedOutMultiplier(Operator):
     def resource_params(self) -> dict:
 
 
+
 def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, mod, output_wires_zeroed):
     """
     Computes the resources for the SignedOutMultiplier.
@@ -132,7 +135,8 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
     resources[
         controlled_resource_rep(
             Incrementer,
-            num_wires=num_x_wires - 1
+            {"num_wires": num_x_wires - 1},
+            num_control_wires=1
         )
     ] += 2
     resources[
@@ -149,13 +153,15 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
     resources[
         controlled_resource_rep(
             Incrementer,
-            num_wires=num_output_wires - 1
+            {"num_wires": num_output_wires - 1},
+            num_control_wires=1
         )
     ] += 1
     resources[
         controlled_resource_rep(
             Incrementer,
-            num_wires=num_y_wires - 1
+            {"num_wires": num_y_wires - 1},
+            num_control_wires=1
         )
     ] += 2
     resources[resource_rep(CNOT)] = 2
@@ -172,7 +178,7 @@ def _twos_complement_helper(input_reg, work_wires):
     # Add one
     Controlled(
         # TODO: make Incrementer a Template
-        _increment(
+        Incrementer(
             wires=input_reg[1:],
             work_wires=work_wires,  # TODO: think about whether we can use these work wires
         ),

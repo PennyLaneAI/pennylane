@@ -40,6 +40,7 @@ from pennylane.ops import (
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
+from .incrementer import Incrementer
 
 from ..controlled_sequence import ControlledSequence
 from ..qft import QFT
@@ -740,7 +741,7 @@ def _out_multiplier_with_caddsub(
     SemiAdder(y_wires, output_wires, work_wires)
     if k > n + m:
         increment_wires = output_wires[: k - n - m]
-        _increment(increment_wires, work_wires)
+        Incrementer(increment_wires, work_wires)
     _ = [X(w) for w in output_wires]
 
     # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
