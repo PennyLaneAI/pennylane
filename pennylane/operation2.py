@@ -93,7 +93,7 @@ from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar, Hashable
+from typing import Any, Callable, ClassVar, Hashable, Iterable, Literal
 
 from scipy.sparse import spmatrix
 
@@ -113,7 +113,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import classproperty
+from pennylane.operation import FlatPytree, classproperty, create_operator_primitive
+from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
@@ -396,6 +397,8 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
 
+    # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
     # ------------ Class variables set manually --------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
@@ -418,24 +421,137 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
     _sig: ClassVar[Signature]
     """The signature of the operator."""
 
+    resource_keys: ClassVar[set]
+    """The set of parameters that affects the resource requirement of the operator."""
+
     # ------------ Instance variables set automatically ------------
 
     _bound_args: BoundArguments
     """BoundArguments mapping arguments names to their values."""
 
-    # TODO: Add more class/instance variables as needed.
+    # ------------------ Initialization ------------------
+
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
+    __array_priority__ = 1000
+
+    _primitive: "jax.extend.core.Primitive" | None = None
+    """Optional[jax.extend.core.Primitive]"""
 
     def __init__(self, *args, **kwargs):
+        self._name = type(self).__name__
+
+        # Union[PauliSentence, None]: Representation of the operator as a
+        # pauli sentence, if applicable
+        self._pauli_rep: qp.pauli.PauliSentence | None = None
+
+        # FIXME: Complete
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
     def __init_subclass__(cls: type["Operator2"]) -> None:
+        # turn has_decomposition into a class property if possible
+
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        # if class overrides has_decomposition property, we do not want to
+        # override it here
+
+        if (
+            cls.compute_decomposition != Operator2.compute_decomposition
+            or cls.decomposition != Operator2.decomposition
+        ) and (cls.has_decomposition == Operator2.has_decomposition):
+            cls.has_decomposition = True
+
+        register_pytree(cls, cls._flatten, cls._unflatten)
+        cls._primitive = create_operator_primitive(cls)
+
         cls._sig = signature(cls)
         _add_dynamic_properties(cls)
 
+        cls.resource_keys = set(cls._sig.parameters.keys())
+
     @classmethod
     def _primitive_bind_call(cls: type["Operator2"], *args, **kwargs) -> None:
+        # FIXME:
         return
+
+    def _flatten(self) -> FlatPytree:
+        """Serialize the operation into dynamic and static components.
+
+        Returns:
+            data, metadata: The dynamic and static components.
+
+        See ``Operator2._unflatten``.
+
+        The dynamic component can be recursive and include other operators.
+
+        The metadata **must** be hashable. If the static data contains a non-hashable component, then this
+        method and ``Operator2._unflatten`` should be overridden to provide a hashable version of the static data.
+
+        **Example:**
+
+        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qp.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
+        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        ``_flatten`` methods.
+
+        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op._flatten()
+        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
+        """
+        dyn_data = []
+        hashable_data = []
+        for k, v in self._bound_args.arguments.items():
+            if k in self.dyn_argnames:
+                dyn_data.append(v)
+                hashable_data.append((k, None))
+            else:
+                hashable_data.append((k, v))
+
+        return tuple(dyn_data), tuple(hashable_data)
+
+    @classmethod
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the dynamic component of the operation
+            metadata: the static component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
+        >>> qp.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
+        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+        """
+        args = {}
+        dyn_idx = 0
+
+        for k, v in metadata:
+            if v is None:
+                args[k] = data[dyn_idx]
+                dyn_idx += 1
+            else:
+                args[k] = v
+
+        return cls(**args)
 
     # ------------------ General properties ------------------
 
@@ -458,6 +574,193 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
     def wire_args(self) -> dict[str, Any]:
         """Dictionary mapping wire argument names to their values."""
         return {name: self.arguments[name] for name in self.wire_argnames}
+
+    @property
+    def name(self) -> str:
+        """Operator name."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Operator name setter."""
+        self._name = value
+
+    @property
+    def wires(self) -> Wires:
+        """Wires that the operator acts on.
+
+        Returns:
+            Wires: wires
+        """
+        return Wires.all_wires([self.arguments[w] for w in self.wire_argnames])
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 0
+
+    @property
+    def is_verified_hermitian(self) -> bool:
+        """This property determines if an operator is verified to be Hermitian.
+
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
+
+        >>> op = (qp.X(0) @ qp.Y(0) - qp.X(0) @ qp.Z(0)) * 1j
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
+        False
+
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
+
+        >>> qp.is_hermitian(op) # definitive
+        True
+
+        """
+        return False
+
+    @property
+    def pauli_rep(self) -> "qp.pauli.PauliSentence" | None:
+        """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
+        return self._pauli_rep
+
+    # ------------------ Operator actions ------------------
+
+    def pow(self, z: float) -> list["Operator2"]:
+        """A list of new operators equal to this one raised to the given power. This method is used to simplify
+        :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+
+        ``Operator2.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        are the entry point for constructing generic powers to exponents.
+
+        Args:
+            z (float): exponent for the operator
+
+        Returns:
+            list[:class:`~.operation2.Operator2`]
+
+        >>> class MyClass(qp.operation2.Operator2):
+        ...
+        ...     def pow(self, z):
+        ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...
+        >>> op = MyClass(0.5, 0) ** 2
+        >>> op
+        MyClass(0.5, wires=[0])**2
+        >>> op.decomposition()
+        [MyClass(1.0, wires=[0])]
+        >>> op.simplify()
+        MyClass(1.0, wires=[0])
+
+        """
+        # Child methods may call super().pow(z%period) where op**period = I
+        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # Hence we define the non-negative integer cases here as a repeated list
+        if z == 0:
+            return []
+        if isinstance(z, int) and z > 0:
+            if QueuingManager.recording():
+                return [qp.apply(self) for _ in range(z)]
+            return [copy.copy(self) for _ in range(z)]
+        raise PowUndefinedError
+
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.append(self)
+        return self
+
+    @property
+    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
+        """Used for sorting objects into their respective lists in ``QuantumScript`` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumScript._process_queue``.
+
+        Options are:
+            * ``"_ops"``
+            * ``"_measurements"``
+            * ``None`` (deprecated)
+        """
+        return "_ops"
+
+    # pylint: disable=no-self-argument
+    @classproperty
+    def has_adjoint(cls) -> bool:
+        r"""Bool: Whether or not the Operator can compute its own adjoint.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.adjoint != Operator2.adjoint
+
+    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one. Used to simplify
+        :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        ``Operator2.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        is the entry point for constructing generic adjoint representations.
+
+        Returns:
+            The adjointed operation.
+
+        >>> class MyClass(qp.operation2.Operator2):
+        ...
+        ...     def adjoint(self):
+        ...         return self
+        ...
+        >>> op = qp.adjoint(MyClass(wires=0))
+        >>> op
+        Adjoint(MyClass(wires=[0]))
+        >>> op.decomposition()
+        [MyClass(wires=[0])]
+        >>> op.simplify()
+        MyClass(wires=[0])
+
+
+        """
+        raise AdjointUndefinedError
+
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator2: new operator
+        """
+        new_op = copy.copy(self)
+        for n, wires in self.wire_args.items():
+            new_op._bound_args.arguments[n] = Wires([wire_map.get(w, w) for w in wires])
+        if (p_rep := self.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
+        return new_op
+
+    def simplify(self) -> "Operator2":
+        """Reduce the depth of nested operators to the minimum.
+
+        Returns:
+            .Operator2: simplified operator
+        """
+        return self
 
     # ------------------ Operator representations ------------------
     # pylint: disable=unused-argument,no-self-argument,comparison-with-callable,no-self-use
@@ -785,6 +1088,13 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
 
     # ------------------ General dunder methods ------------------
 
+    def __repr__(self) -> str:
+        """Constructor-call-like representation."""
+        if self.dyn_argnames:
+            params = ", ".join([self.arguments[d] for d in self.dyn_argnames])
+            return f"{self.name}({params}, wires={self.wires.tolist()})"
+        return f"{self.name}(wires={self.wires.tolist()})"
+
     def __hash__(self) -> int:
         serialized_dyn = tuple(
             (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dyn_args.items()
@@ -825,6 +1135,64 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         return copied_op
 
     # ------------------ Arithmetic dunder methods ------------------
+
+    def __add__(self, other: "Operator2" | TensorLike) -> "Operator2":
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator2):
+            return qp.sum(self, other, lazy=False)
+        if isinstance(other, TensorLike):
+            if qp.math.allequal(other, 0):
+                return self
+            return qp.sum(
+                self,
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other: Callable | TensorLike) -> "Operator2":
+        """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qp.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
+        return NotImplemented
+
+    def __truediv__(self, other: TensorLike):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: "Operator2") -> "Operator2":
+        """The product operation between Operator objects."""
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator2) else NotImplemented
+
+    def __sub__(self, other: "Operator2" | TensorLike) -> "Operator2":
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator2):
+            return self + qp.s_prod(-1, other, lazy=False)
+        if isinstance(other, TensorLike):
+            return self + (qp.math.multiply(-1, other))
+        return NotImplemented
+
+    def __rsub__(self, other: "Operator2" | TensorLike):
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+    def __pow__(self, other: TensorLike) -> "Operator2":
+        r"""The power operation of an Operator object."""
+        if isinstance(other, TensorLike):
+            return qp.pow(self, z=other)
+        return NotImplemented
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
