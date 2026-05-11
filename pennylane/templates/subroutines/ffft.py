@@ -20,13 +20,12 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math, capture
+from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import Wires, WiresLike
-
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -164,12 +163,7 @@ class FFFT(Operator):
 def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
-    def _count_two_recursive(
-        wires,
-    ):
-        return wires * qp.math.log2(wires) // 2  # given wires is always power of 2
-
-    two_qubit_gates = _count_two_recursive(num_wires)
+    two_qubit_gates = num_wires * math.log2(num_wires) // 2
     resources[resource_rep(TwoQubitFFT)] = two_qubit_gates
 
     def _count_one_recursive(wires, resources):
@@ -182,12 +176,8 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 
     resources = _count_one_recursive(num_wires, resources)
 
-    def _count_swaps(wires):
-        k = qp.math.log2(wires)
-        return wires * (wires - k - 1)
-
     if num_wires > 2:
-        resources[resource_rep(FermionicSWAP)] = _count_swaps(num_wires)
+        resources[resource_rep(FermionicSWAP)] = num_wires * (num_wires - math.log2(num_wires) - 1)
 
     resources[resource_rep(FermionicSWAP)] += (num_wires - 1) * num_wires // 2
 
