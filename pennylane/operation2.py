@@ -90,10 +90,15 @@ Operator Types
 """
 
 from abc import ABC, abstractmethod
+from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Hashable
 
+from scipy.sparse import spmatrix
+
+import pennylane as qp
+from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -108,6 +113,9 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
+from pennylane.operation import classproperty
+from pennylane.typing import TensorLike, WiresLike
+from pennylane.wires import Wires
 
 
 class Operator2(ABC, metaclass=ABCCaptureMeta):
@@ -451,25 +459,172 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         return {name: self.arguments[name] for name in self.wire_argnames}
 
     # ------------------ Operator representations ------------------
-    # Matrix
-    # Sparse matrix
+    # pylint: disable=unused-argument,no-self-argument,comparison-with-callable
+
+    @staticmethod
+    def compute_matrix(*args, **kwargs) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qp.matrix() <pennylane.matrix>`
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        raise MatrixUndefinedError
+
+    @classproperty
+    def has_matrix(cls) -> bool:
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.compute_matrix != Operator2.compute_matrix or cls.matrix != Operator2.matrix
+
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        canonical_matrix = self.compute_matrix(**self.arguments)
+
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qp.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
+            return canonical_matrix
+
+        return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+
+    @staticmethod
+    def compute_sparse_matrix(*args, format: str = "csr", **kwargs) -> spmatrix:
+        r"""Representation of the operator as a sparse matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Operator.sparse_matrix`
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
+        """
+        raise SparseMatrixUndefinedError
+
+    @classproperty
+    def has_sparse_matrix(cls) -> bool:
+        r"""Bool: Whether the Operator returns a defined sparse matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.compute_sparse_matrix != Operator2.compute_sparse_matrix
+            or cls.sparse_matrix != Operator2.sparse_matrix
+        )
+
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
+        r"""Representation of the operator as a sparse matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
+
+        Returns:
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
+
+        """
+        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format="csr")
+        return math.expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
+
     # Decomposition
+
     # Eigenvalues
+
     # Diagonalizing gates
+
     # Terms
+
     # Generator
 
-    # ------------------ Dunder methods ------------------
+    # ------------------ General dunder methods ------------------
 
     def __hash__(self) -> int:
-        # FIXME:
-        return -1
+        serialized_dyn = tuple(
+            (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dyn_args.items()
+        )
+        serialized_wires = tuple((n, tuple(w)) for n, w in self.wire_args.items())
+        serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
+        return hash((self.name, serialized_dyn, serialized_wires, serialized_static))
 
-    def __eq__(self) -> bool:
-        # FIXME:
-        return True
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
 
-    # TODO: Add arithmetic dunder methods
+    @property
+    def hash(self):
+        """Hash."""
+        # TODO: This is an artifact and should be removed if possible
+        return hash(self)
+
+    def __copy__(self) -> "Operator2":
+        cls = type(self)
+        copied_op = cls.__new__(cls)
+        for attr, value in vars(self).items():
+            setattr(copied_op, attr, value)
+
+        return copied_op
+
+    def __deepcopy__(self, memo) -> "Operator2":
+        copied_op = object.__new__(type(self))
+
+        # The memo dict maps object ID to object, and is required by
+        # the deepcopy function to keep track of objects it has already
+        # deep copied.
+        memo[id(self)] = copied_op
+
+        for attr, value in vars(self).items():
+            setattr(copied_op, attr, deepcopy(value, memo))
+        return copied_op
+
+    # ------------------ Arithmetic dunder methods ------------------
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
@@ -487,7 +642,3 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
-
-
-def _make_hashable(attr: Any) -> Hashable:
-    """Create a hashable representation of an attribute."""
