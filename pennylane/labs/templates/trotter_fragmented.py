@@ -15,29 +15,27 @@
 
 import pennylane as qp
 import numpy as np
+import jax
 
 
 def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
                        control_wires=None):
     r"""Second-order Trotter time evolution for a factorized Hamiltonian.
 
-    Works for both electronic CDF and vibrational CGF Hamiltonians.
+    This template works for both electronic CDF and vibrational CGF Hamiltonians.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
         num_trotter_steps (int): Number of second-order Trotter steps.
-        hamiltonian (dict): Dictionary with keys ``"core_tensors"`` and ``"leaf_tensors"``.
-            ``"nuc_constant"`` is optional (defaults to 0.0).
+        hamiltonian (dict): A Hamiltonian in the form of a dictionary with keys ``nuc_constant``, ``core_tensors``, and``leaf_tensors``.
             * CDF shapes: ``core_tensors: (L+1, N, N)`` (diagonal per fragment),
               ``leaf_tensors: (L+1, N, N)``.
             * CGF shapes: ``core_tensors: (L+1, M, M, N, N)``,
               ``leaf_tensors:  (L+1, M, N, N)``.
-        wires (Wires): System wires. CDF expects ``2N`` wires (alpha / beta interleaved).
+        wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
-        control_wires (Wires | None): Optional control wires for a Hadamard test. When present, each
-            diagonal Pauli rotation is sandwiched by CNOTs controlled on
-            ``control_wires[0]`` and a global phase correction is applied.
+        control_wires (Wires | None): Optional control wires.
     """
 
     Z = hamiltonian["core_tensors"]
@@ -82,8 +80,8 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
 
 def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires,
                   control_wires, frag_scheme):
-    """Single second-order Trotter step for either CDF or CGF Hamiltonian.
-    """
+    """Single second-order Trotter step for either CDF or CGF Hamiltonian."""
+
     if qp.compiler.active():
         wires = qp.math.array(wires, like="jax")
         if control_wires is not None:
@@ -97,7 +95,6 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires,
     num_two_body_fragments = U_tensor.shape[0] - 1
 
     first_order_time_step = second_order_time_step / 2
-
 
     def two_body_fragments(fragment_idx, prev_fragment_idx):
         U = jax.lax.cond(
@@ -188,7 +185,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires,
 
             @qp.for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
-                # Prefactor breakdown (see original trotter_cdf.py):
+                # Prefactor breakdown:
                 #   1/8  from (A29)
                 #   2    from exp(-i H t) -> IsingZZ(phi) = exp(-i phi Z Z / 2)
                 #   -1/2 from the double-phase trick

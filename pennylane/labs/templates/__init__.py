@@ -23,3 +23,4 @@ This module contains templates, which are pre-coded routines that can be used in
 """
 
 from .left_quantum_comparator import LeftQuantumComparator
+from .trotter_fragmented import trotter_factorized
