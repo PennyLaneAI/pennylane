@@ -18,17 +18,13 @@ from collections import defaultdict
 
 from pennylane.decomposition import register_resources, add_decomps, resource_rep, controlled_resource_rep
 
-from pennylane import measure
-from pennylane.ops import PauliX, Toffoli, Controlled, CNOT
+from pennylane.ops import PauliX, Controlled, CNOT
 
-from pennylane.templates import OutMultiplier, Adder
-from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
-from pennylane.templates.subroutines.arithmetic.out_multiplier import _increment
+from pennylane.templates import OutMultiplier, Incrementer
 
 from pennylane.wires import Wires, WiresLike
 
 from pennylane.operation import Operator
-from tmp.qa_045 import num_control_wires
 
 
 class SignedOutMultiplier(Operator):
@@ -79,13 +75,13 @@ class SignedOutMultiplier(Operator):
         if mod != 2 ** len(output_wires):
             if num_work_wires < 2:
                 raise ValueError(
-                    f"If mod is not 2^{len(output_wires)}, at least two work wires should be provided."
+                    f"If mod is not 2^{len(output_wires) - 1}, at least two work wires should be provided."
                 )
             work_wires = work_wires[:2]
-        if mod > 2 ** (len(output_wires)):
+        if mod > 2 ** (len(output_wires) - 1):
             raise ValueError(
-                "OutMultiplier must have enough wires to represent mod. The maximum mod "
-                f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
+                "SignedOutMultiplier must have enough wires to represent mod. The maximum mod "
+                f"with len(output_wires - 1)={len(output_wires) - 1} is {2 ** (len(output_wires) - 1)}, but received {mod}."
             )
 
         if len(work_wires) != 0:
@@ -115,7 +111,14 @@ class SignedOutMultiplier(Operator):
 
     @property
     def resource_params(self) -> dict:
-        
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "mod": self.hyperparameters["mod"],
+            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
+        }
 
 
 def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, mod, output_wires_zeroed):
@@ -177,7 +180,6 @@ def _twos_complement_helper(input_reg, work_wires):
 
     # Add one
     Controlled(
-        # TODO: make Incrementer a Template
         Incrementer(
             wires=input_reg[1:],
             work_wires=work_wires,  # TODO: think about whether we can use these work wires
