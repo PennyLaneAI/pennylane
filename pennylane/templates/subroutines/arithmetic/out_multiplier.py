@@ -635,65 +635,6 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     X(x_wires[-1])
 
 
-def _increment(wires, work_wires):
-    """Increment the input `wires` by one, using zeroed `work_wires`.
-    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via MCX gates if
-    work wires are available:
-
-    Generic decomposition:
-    0: ─╭X────────────────┤
-    1: ─├●─╭X─────────────┤
-    2: ─├●─├●─╭X──────────┤
-    3: ─├●─├●─├●─╭X───────┤
-    4: ─├●─├●─├●─├●─╭X────┤
-    5: ─╰●─╰●─╰●─╰●─╰●──X─┤
-
-    Decompose all MCX gates into elbows and CNOTs:
-       0: ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
-       1: ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
-       2: ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
-       3: ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
-       4: ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
-
-    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
-       0: ─────────────╭X───────────────────────────────┤
-       1: ──────────╭●─│───●╮─╭X────────────────────────┤
-       2: ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
-       3: ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
-       4: ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
-
-    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
-    This circuit is derived, e.g., in
-    `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
-    see "Incrementer from n-2 Zeroed bits".
-    """
-    wires = wires[::-1]
-    if len(wires) > 1:
-        # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
-        # Forward ladder
-        for k in range(len(wires) - 2):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
-        # Backward ladder
-        for k in range(len(wires) - 3, -1, -1):
-            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
-        # Trailing CNOT
-        CNOT(wires[:2])
-    X(wires[0])
-
-
 def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     r"""Controlled add/subtract operation. If the control wire ``c_wire`` is in the
     state :math:`|1\rangle`, simply adds :math:`x`, the integer stored in ``x_wires``,

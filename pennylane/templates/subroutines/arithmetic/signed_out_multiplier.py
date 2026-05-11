@@ -160,6 +160,8 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
     ] += 2
     resources[resource_rep(CNOT)] = 2
 
+    return resources
+
 
 def _twos_complement_helper(input_reg, work_wires):
     # Invert all bits
