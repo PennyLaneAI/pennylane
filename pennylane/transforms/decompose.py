@@ -23,7 +23,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
-from pennylane.allocation import Allocate, Deallocate, AbstractQubit
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -37,6 +37,10 @@ from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
+
+has_jax = find_spec("jax") is not None
+if has_jax:
+    from pennylane.allocation import AbstractQubit
 
 
 def null_postprocessing(results):
@@ -193,12 +197,15 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = []
-                for w in _args[-num_wires:]:
-                    if math.is_abstract(w) and isinstance(w.val.aval, AbstractQubit):
-                        wires.append(w)
-                    else:
-                        wires.append(jax.numpy.array(w))
+                if has_jax:
+                    wires = []
+                    for w in _args[-num_wires:]:
+                        if math.is_abstract(w) and isinstance(w.val.aval, AbstractQubit):
+                            wires.append(w)
+                        else:
+                            wires.append(jax.numpy.array(w))
+                else:
+                    wires = math.array(_args[-num_wires:], like="jax")
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
