@@ -23,7 +23,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
-from pennylane.allocation import Allocate, Deallocate
+from pennylane.allocation import Allocate, Deallocate, AbstractQubit
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -193,7 +193,14 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = math.array(_args[-num_wires:], like="jax")
+                # breakpoint()
+                # wires = math.array(_args[-num_wires:], like="jax")
+                wires = []
+                for w in _args[-num_wires:]:
+                    if math.is_abstract(w) and isinstance(w.val.aval, AbstractQubit):
+                        wires.append(w)
+                    else:
+                        wires.append(jax.numpy.array(w))
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
