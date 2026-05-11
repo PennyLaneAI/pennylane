@@ -53,4 +53,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
+  if the number of selected operators is notably smaller than the maximal capacity for the given
+  number of control wires. This bug only surfaced for `partial=False`.
+  [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
+
 <h3>Contributors ✍️</h3>
+David Wierichs

@@ -1005,7 +1005,9 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
-            for val, triple in zip(closing_ctrl_bits[2:], reversed(unary_triples[: c - 1]))
+            for val, triple in zip(
+                reversed(closing_ctrl_bits[2:]), reversed(unary_triples[: c - 1])
+            )
         ]
     )
     ops_decomp.append(adjoint(TemporaryAND(unary_triples[0], control_values=closing_ctrl_bits[:2])))
