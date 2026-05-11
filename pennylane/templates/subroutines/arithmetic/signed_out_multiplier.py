@@ -15,9 +15,10 @@
 Contains the SignedOutMultiplier template.
 """
 from pennylane import measure
-from pennylane.ops import PauliX, Toffoli, Controlled
+from pennylane.ops import PauliX, Toffoli, Controlled, CNOT
 
 from pennylane.templates import OutMultiplier, Adder
+from pennylane.templates.subroutines.arithmetic.out_multiplier import _increment
 
 from pennylane.wires import Wires, WiresLike
 
@@ -142,35 +143,39 @@ class SignedOutMultiplier(Operator):
 
             # Add one
             Controlled(
-                Adder(
-                    k=1,
-                    x_wires=input_reg[1:],
-                    mod=2 ** (len(input_reg) - 1)
+                # TODO: make Incrementer a Template
+                _increment(
+                    wires=input_reg[1:],
+                    work_wires=work_wires,
                 ),
                 control_wires=(input_reg[0],),
                 control_values=(1,),
             )
 
         # Compute the sign
-        PauliX(x_wires[0])
-        Toffoli([x_wires[0], y_wires[0], output_wires[0]])
-        Controlled(PauliX(output_wires[0]), control_wires=(x_wires[0], y_wires[0]), control_values=(0, 0))
+        CNOT([x_wires[0], output_wires[0]])
+        CNOT([y_wires[0], output_wires[0]])
 
         # Take 2s complements if necessary
         for input_reg in [x_wires, y_wires]:
             twos_complement_helper(input_reg)
 
-            # Reset sign bit (flip if it is 1, otherwise do nothing)
-            measure(input_reg[0], reset=True)
+            # we would reset the sign bit here to complete the two's complement,
+            # but we do not, so that we can remember the sign
 
         # Multiply the magnitudes
         OutMultiplier(
-            x_wires,
-            y_wires,
+            x_wires[1:],
+            y_wires[1:],
             output_wires[1:],
             mod=mod,
             work_wires=work_wires,
             output_wires_zeroed=output_wires_zeroed,
         )
 
+        # Encode the output
         twos_complement_helper(output_wires)
+
+        # Return inputs to original state
+        for input_reg in [x_wires, y_wires]:
+            twos_complement_helper(input_reg)
