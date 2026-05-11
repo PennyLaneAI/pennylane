@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a :class:`~.SignedOutMultiplier` that multiplies numbers encoded in the input regisers 
+  using a two's complement. Nicely compatible with the algorithms on vibrational modes.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
 <h3>Improvements 🛠</h3>
 
 * Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
