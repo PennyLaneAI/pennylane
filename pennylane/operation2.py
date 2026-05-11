@@ -803,6 +803,7 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         return hash(self)
 
     def __copy__(self) -> "Operator2":
+        # FIXME: probably needs to be updated
         cls = type(self)
         copied_op = cls.__new__(cls)
         for attr, value in vars(self).items():
@@ -811,6 +812,7 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         return copied_op
 
     def __deepcopy__(self, memo) -> "Operator2":
+        # FIXME: probably needs to be updated
         copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
