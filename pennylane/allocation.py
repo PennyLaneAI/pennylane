@@ -19,7 +19,6 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
 
-
 from pennylane.capture import enabled as capture_enabled
 from pennylane.math import is_abstract
 from pennylane.operation import Operator
@@ -27,7 +26,6 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
     from jax.core import AbstractValue
 
     # pylint: disable=ungrouped-imports
