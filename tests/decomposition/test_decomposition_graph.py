@@ -182,7 +182,7 @@ class TestDecompositionGraph:
         assert len(graph2._graph.edges()) == 11
 
     def test_graph_construction_non_applicable_rules(self, _):
-        """Tests rules which are not applicable are skipped."""
+        """Tests rules which are not applicable are not skipped."""
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
         @qp.register_resources({qp.RZ: 1, qp.CNOT: 1})
@@ -202,12 +202,12 @@ class TestDecompositionGraph:
             gate_set={"CNOT", "RZ"},
             alt_decomps={MultiWireOp: [some_rule, some_other_rule]},
         )
-        # 3 ops (MultiWireOp, CNOT, RZ) and 1 decompositions (only some_other_rule),
-        # and the dummy starting node
-        assert len(graph._graph.nodes()) == 5
-        # 2 edges from ops to decompositions, 1 from decompositions to ops,
-        # and 2 from the dummy starting node to the target gate set
-        assert len(graph._graph.edges()) == 5
+        # 3 ops (MultiWireOp, CNOT, RZ), 2 decompositions, and the dummy starting node
+        assert len(graph._graph.nodes()) == 6
+        # 2 edges from ops to decompositions, 2 from decompositions to ops, and 2 from
+        # the dummy starting node to the target gate set note that the non-applicable
+        # decomposition rule itself is included in the graph but not expanded.
+        assert len(graph._graph.edges()) == 6
 
     def test_gate_set(self, _):
         """Tests that graph construction stops at the target gate set."""
@@ -644,8 +644,8 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        assert len(graph._graph.nodes()) == 32
-        assert len(graph._graph.edges()) == 49
+        assert len(graph._graph.nodes()) == 34
+        assert len(graph._graph.edges()) == 51
 
         # Verify the decompositions
         solution = graph.solve()
@@ -704,11 +704,11 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        # 18 op nodes and 16 decomposition nodes, and the dummy starting node
-        assert len(graph._graph.nodes()) == 35
-        # 16 edges from decompositions to ops and 36 edges from ops to decompositions
+        # 18 op nodes and 24 decomposition nodes, and the dummy starting node
+        assert len(graph._graph.nodes()) == 43
+        # 24 edges from decompositions to ops and 36 edges from ops to decompositions
         # and 6 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 58
+        assert len(graph._graph.edges()) == 66
 
         solution = graph.solve()
 

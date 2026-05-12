@@ -1,4 +1,6 @@
 name: GPU Tests
+permissions:
+  contents: read
 on:
   push:
     branches:

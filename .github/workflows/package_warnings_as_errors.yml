@@ -1,4 +1,6 @@
 name: Test-suite with Python warnings as errors
+permissions:
+  contents: read
 on:
   # Scheduled trigger every Sunday at 2:35am UTC
   schedule:

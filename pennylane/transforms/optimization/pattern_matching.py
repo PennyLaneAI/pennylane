@@ -69,23 +69,24 @@ def pattern_matching_optimization(
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=5)
-
     You can apply the transform directly on a :class:`QNode`. For that, you need first to define a pattern that is to be
     found in the circuit. We use the following pattern that implements the identity:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         ops = [qp.S(0), qp.S(0), qp.Z(0)]
         pattern = qp.tape.QuantumTape(ops)
-
 
     Let's consider the following circuit where we want to replace a sequence of two ``pennylane.S`` gates with a
     ``pennylane.PauliZ`` gate.
 
     .. code-block:: python
 
-        @pattern_matching_optimization(pattern_tapes = [pattern])
+        dev = qp.device('default.qubit', wires=5)
+
+        @qp.transforms.pattern_matching_optimization(pattern_tapes = [pattern])
         @qp.qnode(device=dev)
         def circuit():
             qp.S(wires=0)
@@ -100,8 +101,10 @@ def pattern_matching_optimization(
 
     During the call of the circuit, it is first optimized (if possible) and then executed.
 
-    >>> circuit()
-    np.float64(0.0)
+    >>> print(qp.draw(circuit)())
+    0: ──S†─╭●────┤  <X>
+    1: ──Z──╰Z─╭●─┤
+    2: ──Z─────╰Z─┤
 
     .. details::
         :title: Usage Details

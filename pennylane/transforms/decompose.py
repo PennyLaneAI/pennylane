@@ -388,7 +388,7 @@ def decompose(
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled). If ``None``, the gate set is considered to be
             all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
-            for this list.
+            for this list. Operators that belong in the target gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -511,10 +511,14 @@ def decompose(
             )
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=0))())
-    0: ──H─╭QuantumPhaseEstimation─┤
-    1: ────├QuantumPhaseEstimation─┤
-    2: ────├QuantumPhaseEstimation─┤
-    3: ────╰QuantumPhaseEstimation─┤
+    0: ──H─╭QuantumPhaseEstimation(M0)─┤
+    1: ────├QuantumPhaseEstimation(M0)─┤
+    2: ────├QuantumPhaseEstimation(M0)─┤
+    3: ────╰QuantumPhaseEstimation(M0)─┤
+    <BLANKLINE>
+    M0 =
+    [[0.877...+0.j         0.        -0.479...j]
+     [0.        -0.479...j 0.877...+0.j        ]]
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
@@ -683,7 +687,8 @@ def decompose(
         .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-        certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
+        certain operators if they need to be decomposed (i.e., when they're not in the target gate
+        set), whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
         In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``
