@@ -346,9 +346,12 @@ def cancel_inverses(
 
     You can apply the cancel inverses transform directly on :class:`~.QNode`.
 
-    >>> dev = qp.device('default.qubit', wires=3)
 
     .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device('default.qubit', wires=3)
 
         @qp.transforms.cancel_inverses
         @qp.qnode(device=dev)
@@ -365,8 +368,10 @@ def cancel_inverses(
             qp.X(1)
             return qp.expval(qp.Z(0))
 
-    >>> print(circuit(0.1, 0.2, 0.3))
-    1.0
+    >>> print(qp.draw(circuit)(0.1, 0.2, 0.3))
+    0: ──RZ(0.30)───────────╭●─┤  <Z>
+    1: ──H─────────RY(0.20)─│──┤
+    2: ──RX(0.10)──RX(0.20)─╰X─┤
 
     .. details::
         :title: Usage Details

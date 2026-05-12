@@ -51,6 +51,7 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
@@ -173,18 +174,19 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
                 rotation(x, wires)
 
     We can add ``S`` to the resources of another ``Operator`` by using this function together with
-    an abstract form of the arguments it will be called with, using :class:`~.AbstractArray`.
+    an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
+    :class:`~.AbstractWires`.
 
     .. code-block:: python
 
-        from pennylane.math import AbstractArray
+        from pennylane.typing import AbstractArray, AbstractWires
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = AbstractArray((4, ), float)
-        abstract_wires = AbstractArray(()) # a single wire
+        abstract_wires = AbstractWires(1) # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
         @qp.decomposition.register_resources({S_rep: 1})
@@ -225,12 +227,12 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(math.AbstractArray(shape=(len(val),), dtype=int))
+            key.append(AbstractWires(len(val)))
         else:
             leaves, struct = flatten(val)
 
             shapes = (
-                math.AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
                 for l in leaves
             )
             key.append((struct, tuple(shapes)))
@@ -398,11 +400,11 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     sig = subroutine.signature.bind(*args, **kwargs)
     for arg in subroutine.dynamic_argnames:
         avals, struct = flatten(sig.arguments[arg])
-        if avals and isinstance(avals[0], math.AbstractArray):
+        if avals and isinstance(avals[0], AbstractArray):
             params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
             sig.arguments[arg] = unflatten(params, struct)
     for arg in subroutine.wire_argnames:
-        if isinstance(sig.arguments[arg], math.AbstractArray):
+        if isinstance(sig.arguments[arg], AbstractWires):
             sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
     with queuing.AnnotatedQueue() as q:
         subroutine.definition(**sig.arguments)
@@ -602,27 +604,27 @@ class Subroutine:
                 qp.RX(params[i], wires[i])
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
-    class.
+    and :class:`~.AbstractWires` classes.
 
-    >>> from pennylane.math import AbstractArray
+    >>> from pennylane.typing import AbstractArray, AbstractWires
     >>> abstract_params = AbstractArray((10,), float)
-    >>> abstract_wires = AbstractArray((10,))
+    >>> abstract_wires = AbstractWires(10)
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
-    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`
-    and :func:`~.subroutine_resource_rep`.
+    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`,
+    :class:`~.AbstractWires`, and :func:`~.subroutine_resource_rep`.
 
     .. code-block:: python
 
-        from pennylane.math import AbstractArray
+        from pennylane.typing import AbstractArray, AbstractWires
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = AbstractArray((3, ), float)
-        abstract_wires = AbstractArray((3, ))
+        abstract_wires = AbstractWires(3)
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
         @qp.decomposition.register_resources({rxlayer_rep: 1})

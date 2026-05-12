@@ -684,7 +684,7 @@ class MPLDrawer:
         else:
             if len(control_values) != len(wires_ctrl):
                 raise ValueError("`control_values` must be the same length as `wires`")
-            for wire, control_on in zip(wires_ctrl, control_values):
+            for wire, control_on in zip(wires_ctrl, control_values, strict=True):
                 if control_on:
                     self._ctrl_circ(layer, wire, options=options)
                 else:
@@ -1001,7 +1001,7 @@ class MPLDrawer:
         }
         text_options.update(user_text_options)
         text_x = main_box_x + main_box_width / 2
-        for symbol, wire in zip(pauli_word, wires):
+        for symbol, wire in zip(pauli_word, wires, strict=True):
             self._ax.text(text_x, wire, symbol, **text_options)
 
         measure_icon_x, measure_icon_y = notch_x + notch_width / 2 + self._notch_pad, box_center

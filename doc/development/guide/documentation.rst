@@ -335,7 +335,7 @@ Code examples
 Code examples are very important; they *show* readers how the function or class should be used.
 When writing code examples for docstrings, use the following guidelines:
 
-- You may assume that PennyLane is imported as ``qml`` and NumPy is imported as ``np`` in the code examples.
+- You may assume that PennyLane is imported as ``qp`` and NumPy is imported as ``np`` in the code examples.
   All other imports must be specified explicitly.
 
 - For single line statements and associated output, use Python console syntax (``pycon``):

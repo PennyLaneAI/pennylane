@@ -18,7 +18,10 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
-from typing import Optional, TypeVar, Union
+from dataclasses import dataclass
+from math import prod
+from numbers import Number
+from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -123,3 +126,136 @@ PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar
+        dtype (type): the data type of the array
+    """
+
+    shape: tuple[int, ...]
+    dtype: np.dtype | type[Number]
+
+    def __post_init__(self):
+        object.__setattr__(self, "shape", tuple(self.shape))
+        object.__setattr__(self, "dtype", np.dtype(self.dtype))
+
+    @property
+    def size(self) -> int:
+        """Total number of elements."""
+        return prod(self.shape)
+
+    @property
+    def T(self) -> "AbstractArray":
+        """Transpose view of the array."""
+        return AbstractArray(self.shape[::-1], self.dtype)
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions."""
+        return len(self.shape)
+
+    def __getitem__(self, *_, **__):
+        raise IndexError("Cannot index into an abstract array.")
+
+    def __setitem__(self, *_, **__):
+        raise IndexError("Cannot index into an abstract array.")
+
+    def __len__(self) -> int:
+        if not self.shape:
+            raise TypeError("len() of unsized object.")
+        return self.shape[0]
+
+    def __eq__(self, other) -> bool:
+        # This should probably just raise an error
+        if isinstance(other, AbstractArray):
+            return self.shape == other.shape and self.dtype == other.dtype
+
+        raise TypeError("Tried to check equality against an abstract array.")
+
+    def __hash__(self) -> int:
+        return hash((self.shape, self.dtype))
+
+
+@dataclass(frozen=True)
+class AbstractWires:
+    """An abstract representation of a sequence of wires that contains the number
+    of wires, useful for resource calculations.
+
+    Args:
+        num_wires (int): The number of wires
+    """
+
+    num_wires: int
+
+    # def __init__(self, num_wires):
+    #     self.num_wires = num_wires
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, AbstractWires):
+            return self.num_wires == other.num_wires
+
+        raise TypeError("Tried to check equality against an abstract wire register.")
+
+    def __hash__(self):
+        return hash(("AbstractWires", self.num_wires))
+
+    def __len__(self) -> int:
+        return self.num_wires
+
+    @classmethod
+    def from_wires(cls, wires: Sequence[Any]) -> "AbstractWires":
+        """Create an AbstractWires instance from a concrete sequence of wires."""
+        if not isinstance(wires, Sequence):
+            raise TypeError(f"Cannot create AbstractWires from {wires}.")
+
+        return cls(len(wires))
+
+    def __class_getitem__(cls, item) -> "AbstractWires":
+        if not isinstance(item, int):
+            raise TypeError(f"AbstractWires can only be subscripted with integers. Got {item}.")
+        return AbstractWires(item)
+
+
+class AbstractNumber:
+    """Convenience class for typing numbers and arrays thereof. This class is just
+    for type hinting and it must not be instantiated."""
+
+    _dtype: type[Number]
+
+    def __init_subclass__(cls, *, dtype, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._dtype = dtype
+
+    def __new__(cls, *_, **__):
+        raise TypeError("Cannot instantiate AbstractNumbers. They must only be used for typing.")
+
+    @classmethod
+    def __class_getitem__(cls, item) -> AbstractArray:
+        if not hasattr(cls, "_dtype"):
+            raise TypeError("AbstractNumber without a known dtype is not subscriptable.")
+
+        if not isinstance(item, tuple) or not all(isinstance(n, int) for n in item):
+            raise TypeError("AbstractNumber can only be subscripted with integers.")
+        return AbstractArray(item, cls._dtype)
+
+
+class Int(AbstractNumber, dtype=int):
+    """Convenience class for typing integers and arrays thereof."""
+
+
+class Float(AbstractNumber, dtype=float):
+    """Convenience class for typing floats and arrays thereof."""
+
+
+class Bool(AbstractNumber, dtype=bool):
+    """Convenience class for typing booleans and arrays thereof."""
+
+
+class Complex(AbstractNumber, dtype=complex):
+    """Convenience class for typing complex and arrays thereof."""
