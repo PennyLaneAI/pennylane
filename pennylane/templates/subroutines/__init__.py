@@ -68,7 +68,7 @@ from .arithmetic import (
     Elbow,
     TemporaryAND,
     Incrementer,
-    SignedOutMultiplier
+    SignedOutMultiplier,
 )
 
 __all__ = [

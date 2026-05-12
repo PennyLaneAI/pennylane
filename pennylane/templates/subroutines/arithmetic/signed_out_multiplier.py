@@ -14,17 +14,19 @@
 """
 Contains the SignedOutMultiplier template.
 """
+
 from collections import defaultdict
 
-from pennylane.decomposition import register_resources, add_decomps, resource_rep, controlled_resource_rep
-
-from pennylane.ops import PauliX, Controlled, CNOT
-
-from pennylane.templates import OutMultiplier, Incrementer
-
-from pennylane.wires import Wires, WiresLike
-
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operator
+from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.templates import Incrementer, OutMultiplier
+from pennylane.wires import Wires, WiresLike
 
 
 class SignedOutMultiplier(Operator):
@@ -121,26 +123,19 @@ class SignedOutMultiplier(Operator):
         }
 
 
-def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, mod, output_wires_zeroed):
+def _signed_out_multiplier_resources(
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, mod, output_wires_zeroed
+):
     """
     Computes the resources for the SignedOutMultiplier.
     Assumes the worst case that both numbers are negative.
     """
     resources = defaultdict(int)
+    resources[controlled_resource_rep(PauliX, {}, 1, 0)] = (
+        (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
+    )
     resources[
-        controlled_resource_rep(
-            PauliX,
-            {},
-            1,
-            0
-        )
-    ] = (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
-    resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_x_wires - 1},
-            num_control_wires=1
-        )
+        controlled_resource_rep(Incrementer, {"num_wires": num_x_wires - 1}, num_control_wires=1)
     ] += 2
     resources[
         resource_rep(
@@ -155,17 +150,11 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
     ] = 1
     resources[
         controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_output_wires - 1},
-            num_control_wires=1
+            Incrementer, {"num_wires": num_output_wires - 1}, num_control_wires=1
         )
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_y_wires - 1},
-            num_control_wires=1
-        )
+        controlled_resource_rep(Incrementer, {"num_wires": num_y_wires - 1}, num_control_wires=1)
     ] += 2
     resources[resource_rep(CNOT)] = 2
 

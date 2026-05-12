@@ -1,13 +1,16 @@
-from pennylane.wires import WiresLike, Wires
-
-from pennylane.decomposition import add_decomps, register_resources, resource_rep, adjoint_resource_rep, \
-    register_condition
-
-from pennylane.templates import TemporaryAND
-
-from pennylane.ops import adjoint, CNOT, X
-
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_condition,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operator
+from pennylane.ops import CNOT, X, adjoint, cond
+from pennylane.templates import TemporaryAND
+from pennylane.wires import Wires, WiresLike
 
 
 class Incrementer(Operator):
@@ -95,18 +98,36 @@ def _work_wire_condition(wires, work_wires, **_):
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires):
     wires = wires[::-1]
-    if len(wires) > 1:
+
+    if capture.enabled():
+        wires = math.array(wires, like="jax")
+
+    def _increment():
         # Construct the wires on which the ladder will act.
         all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
+
+        if capture.enabled():
+            all_wires = math.array(all_wires, like="jax")
+
         # Forward ladder
-        for k in range(len(wires) - 2):
+        @for_loop(len(wires) - 2)
+        def forward_ladder(k):
             TemporaryAND(all_wires[2 * k : 2 * k + 3])
+
+        forward_ladder()  # pylint: disable=no-value-for-parameter
+
         # Backward ladder
-        for k in range(len(wires) - 3, -1, -1):
+        @for_loop(len(wires) - 3, -1, -1)
+        def backward_adder(k):
             CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
             adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
+
+        backward_adder()  # pylint: disable=no-value-for-parameter
+
         # Trailing CNOT
         CNOT(wires[:2])
+
+    cond(len(wires) > 1, _increment)()
     X(wires[0])
 
 

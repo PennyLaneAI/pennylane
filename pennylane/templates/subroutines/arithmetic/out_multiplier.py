@@ -40,10 +40,10 @@ from pennylane.ops import (
 )
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
-from .incrementer import Incrementer
 
 from ..controlled_sequence import ControlledSequence
 from ..qft import QFT
+from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder, _semiadder, _semiadder_resources
 from .temporary_and import TemporaryAND
