@@ -47,28 +47,17 @@ Qubit Tracking Functionality
     ~MarkClean
     ~MarkQubits
 
-<<<<<<< HEAD
-Resource Operators
-~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.labs.estimator_beta
-=======
 State Preparation
 ~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.estimator_beta.templates
->>>>>>> main
 
 .. autosummary::
     :toctree: api
 
-<<<<<<< HEAD
-    ~LabsQROM
-=======
     ~LabsMottonenStatePreparation
     ~LabsCosineWindow
     ~LabsSumOfSlatersPrep
->>>>>>> main
 
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,14 +72,6 @@ Alternate Decompositions
     ~ch_toffoli_based_resource_decomp
     ~hadamard_controlled_resource_decomp
     ~hadamard_toffoli_based_controlled_decomp
-<<<<<<< HEAD
-    ~mcx_one_clean_aux_resource_decomp
-    ~mcx_one_dirty_aux_resource_decomp
-    ~mcx_many_clean_aux_resource_decomp
-
-"""
-import pennylane.estimator as pl_qre
-=======
     ~mcx_many_clean_aux_resource_decomp
     ~mcx_one_clean_aux_resource_decomp
     ~mcx_one_dirty_aux_resource_decomp
@@ -119,7 +100,6 @@ Templates
 import numpy as np
 
 import pennylane as qp
->>>>>>> main
 from pennylane.estimator import *
 
 from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
@@ -142,10 +122,6 @@ from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
 
 from .templates import (
-<<<<<<< HEAD
-    selectpaulirot_controlled_resource_decomp,
-    LabsQROM,
-=======
     LabsQROM,
     OutOfPlaceIntegerComparator,
     RegisterEquality,
@@ -156,7 +132,6 @@ from .templates import (
     qrom_state_preparation_phase_grad_resource_decomp,
     select_thc_resource_decomp,
     select_thc_controlled_resource_decomp,
->>>>>>> main
 )
 from .ops import (
     ch_resource_decomp,
@@ -192,11 +167,6 @@ def _(action: Deallocate):
     return Allocate(action.num_wires, state=action.state, restored=action.restored)
 
 
-<<<<<<< HEAD
-## Monkey Patching:
-QROM = LabsQROM
-pl_qre.QROM = LabsQROM
-=======
 @_map_to_resource_op.register
 def _(op: qp.QROM):
     bitstrings = op.data[0]
@@ -238,4 +208,3 @@ def _(op: qp.SumOfSlatersPrep):
 
 ## Monkey Patching:
 QROM = LabsQROM
->>>>>>> main
