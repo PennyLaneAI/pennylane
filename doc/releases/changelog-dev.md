@@ -45,6 +45,10 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
+  The deprecated access through `transform_program` has been removed.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
