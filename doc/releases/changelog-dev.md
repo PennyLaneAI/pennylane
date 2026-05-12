@@ -51,6 +51,11 @@
 
 <h3>Documentation 📝</h3>
 
+* The Sphinx display of `Transform` objects is now handled in `doc/conf.py`, instead of in `Transform.__new__`.
+  [(#9454)](https://github.com/PennyLaneAI/pennylane/pull/9454)
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
+
+Christina Lee

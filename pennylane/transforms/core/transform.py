@@ -17,12 +17,10 @@ This module defines the data structure that encapsulates a quantum transform.
 
 from __future__ import annotations
 
-import os
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
-from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
@@ -456,57 +454,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             ...
         ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
     """
-
-    def __new__(  # pylint: disable=too-many-arguments
-        cls,
-        tape_transform: Callable | None = None,
-        pass_name: None | str = None,
-        *,
-        setup_inputs: Callable | None = None,
-        expand_transform: Callable | None = None,
-        classical_cotransform: Callable | None = None,
-        is_informative: bool = False,
-        final_transform: bool = False,
-        use_argnum_in_expand: bool = False,
-        plxpr_transform=None,
-    ) -> Transform:
-        if os.environ.get("SPHINX_BUILD") == "1":
-            # If called during a Sphinx documentation build,
-            # simply return the original function rather than
-            # instantiating the object. This allows the signature to
-            # be correctly displayed in the documentation.
-
-            warnings.warn(
-                "Transforms have been disabled, as a Sphinx "
-                "build has been detected via SPHINX_BUILD='1'. If this is not the "
-                "case, please set the environment variable SPHINX_BUILD='0'.",
-                UserWarning,
-            )
-
-            if tape_transform:
-                tape_transform.custom_qnode_transform = lambda x: x
-                tape_transform.register = _dummy_register
-                return tape_transform
-            if setup_inputs:
-                # NOTE: Prepend "qnode" as an argument to the docstring
-                # so that it's consistent with tape based transform signatures.
-                @wraps(setup_inputs)
-                def _modified_setup_inputs(
-                    qnode, *args, **kwargs
-                ):  # pylint: disable=unused-argument
-                    return setup_inputs(*args, **kwargs)  # pragma: no cover
-
-                orig_sig = signature(setup_inputs)
-                qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
-                _modified_setup_inputs.__signature__ = orig_sig.replace(
-                    parameters=[qnode_param, *orig_sig.parameters.values()]
-                )
-                _modified_setup_inputs.custom_qnode_transform = lambda x: x
-                _modified_setup_inputs.register = _dummy_register
-                return _modified_setup_inputs
-            raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
-
-        return super().__new__(cls)
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(

@@ -931,34 +931,6 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             dispatched_transform = qp.transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(device, index=0)
 
-    def test_sphinx_build(self, monkeypatch):
-        """Test that transforms are not created during Sphinx builds"""
-        monkeypatch.setenv("SPHINX_BUILD", "1")
-
-        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
-
-            @qp.transform
-            def custom_transform(  # pylint:disable=unused-variable
-                tape: QuantumScript, index: int
-            ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-                """A valid transform."""
-                tape = tape.copy()
-                tape._ops.pop(index)  # pylint:disable=protected-access
-                return [tape], lambda x: x
-
-        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
-
-            def setup_inputs(x, y):
-                return (x, y), {}
-
-            qp.transform(setup_inputs=setup_inputs, pass_name="bla")
-
-        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
-            with pytest.raises(
-                ValueError, match="tape_transform or setup_inputs for use with sphinx."
-            ):
-                qp.transform(pass_name="bla")
-
 
 def dummy_fn():
     return qp.state()
