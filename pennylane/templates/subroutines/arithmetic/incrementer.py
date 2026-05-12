@@ -1,6 +1,7 @@
 from pennylane.wires import WiresLike, Wires
 
-from pennylane.decomposition import add_decomps, register_resources, resource_rep, adjoint_resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep, adjoint_resource_rep, \
+    register_condition
 
 from pennylane.templates import TemporaryAND
 
@@ -86,6 +87,11 @@ def _incrementer_resources(num_wires):
     return resources
 
 
+def _work_wire_condition(wires, work_wires, **_):
+    return work_wires >= len(wires) - 1
+
+
+@register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires):
     wires = wires[::-1]
