@@ -49,19 +49,29 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
   instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
-  (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This
-  previously caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear`
-  layers.
+  (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This previously
+  caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear` layers.
   [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
+
+* Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
+  :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
+  [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Daniel Casota.
+Guillermo Alonso,
+Daniel Casota,
+Yushao Chen,
+David Wierichs
