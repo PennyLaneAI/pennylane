@@ -22,11 +22,10 @@ from functools import singledispatch, wraps
 from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
-from pennylane.queuing import AnnotatedQueue
-from pennylane.workflow.qnode import QNode
-
 from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.labs.estimator_beta.wires_manager.wire_counting import estimate_wires_from_circuit
+from pennylane.queuing import AnnotatedQueue
+from pennylane.workflow.qnode import QNode
 
 from .resource_profile import ProfileNode, add_dicts, mul_dict
 
@@ -41,8 +40,7 @@ def profile(
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
-    r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gateset.
-    """
+    r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gateset."""
     return _profile_resources_dispatch(
         workflow, gate_set, zeroed_wires, any_state_wires, tight_wires_budget, config
     )
@@ -87,10 +85,12 @@ def _profile_from_qfunc(
         # Obtain resources in the gate_set
         root_node = ProfileNode()
         compressed_res_ops_list = _ops_to_compressed_reps(q.queue)
-        
+
         for cmp_rep_op in compressed_res_ops_list:
             child_node = _extract_gate_counts_from_compressed_res_op(
-                cmp_rep_op, gate_set=gate_set, config=config,
+                cmp_rep_op,
+                gate_set=gate_set,
+                config=config,
             )
             root_node.children.append(child_node)
             add_dicts(root_node.gate_data, child_node.gate_data)  # Updates base dict inplace
@@ -108,7 +108,7 @@ def _profile_from_qfunc(
                 raise ValueError(
                     f"Allocated more wires than the prescribed wire budget. Allocated {final_zeroed + final_any_state} qubits with a budget of {zeroed + any_state}"
                 )
-        
+
         resources = Resources(
             zeroed_wires=final_zeroed,
             any_state_wires=final_any_state,
@@ -137,27 +137,24 @@ def _extract_gate_counts_from_compressed_res_op(
     # Initialize ProfileNode:
     leaf_node = ProfileNode(comp_res_op, local_scalar)
 
-    # If its already in the gateset: 
+    # If its already in the gateset:
     if comp_res_op.name in gate_set:
         leaf_node.gate_data[comp_res_op] += cumulative_scalar
         return leaf_node
-    
-    # Else decompose: 
+
+    # Else decompose:
     resource_decomp = _get_resource_decomposition(comp_res_op, config)
 
     for action in resource_decomp:
         if isinstance(action, GateCount):
             child_node = _extract_gate_counts_from_compressed_res_op(
                 action.gate,
-                local_scalar = action.count,
-                cumulative_scalar = action.count * cumulative_scalar,
-                gate_set = gate_set,
-                config = config,
+                local_scalar=action.count,
+                cumulative_scalar=action.count * cumulative_scalar,
+                gate_set=gate_set,
+                config=config,
             )
             leaf_node.children.append(child_node)
-            add_dicts(leaf_node.gate_data, child_node.gate_data)   # Updates base dict inplace
-
-            # scaled_gate_counts = mul_dict(child_node.gate_data, scalar)
-            # add_dicts(leaf_node.gate_data, scaled_gate_counts)   # Updates base dict inplace
+            add_dicts(leaf_node.gate_data, child_node.gate_data)  # Updates base dict inplace
 
     return leaf_node

@@ -15,5 +15,6 @@ r"""
 This module contains experimental features for
 visually profiling resource estimation.
 """
+
 from .extract import profile
 from .resource_profile import ProfileNode, export_flame_graph_data, add_dicts, mul_dict

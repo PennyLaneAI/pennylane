@@ -14,4 +14,3 @@
 r"""
 This file contains the visualization logic
 """
-

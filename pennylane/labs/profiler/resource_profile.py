@@ -14,36 +14,39 @@
 r"""
 This file contains the base classes for the profiler feature
 """
+
 from collections import defaultdict
+
 from pennylane.estimator.resource_operator import CompressedResourceOp
 
 
 class ProfileNode:
     """Represents a node in the tree structure for the resource profile."""
-    
+
     def __init__(
         self,
         cmpr_op: CompressedResourceOp | None = None,
         scalar: int = 1,
         gate_data: dict | None = None,
-        children: list["ProfileNode"] | None = None
+        children: list["ProfileNode"] | None = None,
     ):
         self.cmpr_op = cmpr_op
         self.scalar = scalar
         self.children = children or []  # a list of ProfileNodes
         self.gate_data = gate_data or defaultdict(int)
 
-
     @classmethod
-    def default_group_func(cls, child_nodes: list["ProfileNode"]):  # Returns a dict[str, tuple(scalar, gate_counts, child_nodes)]
+    def default_group_func(
+        cls, child_nodes: list["ProfileNode"]
+    ):  # Returns a dict[str, tuple(scalar, gate_counts, child_nodes)]
         if child_nodes is None or len(child_nodes) == 0:
-            return 
-        
+            return
+
         grouped_data = {}
         for node in child_nodes:
             if node.cmpr_op.name not in grouped_data:
                 child_nodes = []
-                child_nodes.extend(node.children)  # this makes a deep copy 
+                child_nodes.extend(node.children)  # this makes a deep copy
                 grouped_data[node.cmpr_op.name] = (node.scalar, node.gate_data, child_nodes)
 
             else:
@@ -79,29 +82,33 @@ class ProfileNode:
                     val += counts
 
             return val
-        
+
         return custom_cost_func
 
 
-def export_flame_graph_data(root_node: ProfileNode, group_func = None, cost_func = None):
+def export_flame_graph_data(root_node: ProfileNode, group_func=None, cost_func=None):
     if group_func is None:
         group_func = ProfileNode.default_group_func
 
-    if cost_func is None: 
+    if cost_func is None:
         cost_func = ProfileNode.default_cost_func
 
     child_nodes = root_node.children
     gate_counts = root_node.gate_data
 
     export_data = (
-        ["circuit"],               # ids,
-        ["circuit"],               # names,
+        ["circuit"],  # ids,
+        ["circuit"],  # names,
         [cost_func(gate_counts)],  # values,
-        [""],                      # parents,
+        [""],  # parents,
     )
     grouped_data = group_func(child_nodes)
     _recurrsive_export_flame_graph(
-        group_func, cost_func, grouped_data, "circuit", export_data,
+        group_func,
+        cost_func,
+        grouped_data,
+        "circuit",
+        export_data,
     )
     return export_data
 
@@ -109,14 +116,14 @@ def export_flame_graph_data(root_node: ProfileNode, group_func = None, cost_func
 def _recurrsive_export_flame_graph(group_func, cost_func, grouped_data, parent_id, export_data):
     if grouped_data is None:
         return
-    
+
     for name, data in grouped_data.items():
         scalar, gate_data, child_nodes = data
         local_name = name if scalar == 1 else name + f" x{scalar}"
         local_id = parent_id + " - " + local_name
         local_val = cost_func(gate_data)
 
-        (ids, names, values, parents) = export_data
+        ids, names, values, parents = export_data
         ids.append(local_id)
         names.append(local_name)
         values.append(local_val)
@@ -124,7 +131,11 @@ def _recurrsive_export_flame_graph(group_func, cost_func, grouped_data, parent_i
 
         sub_grouped_data = group_func(child_nodes)
         _recurrsive_export_flame_graph(
-            group_func, cost_func, sub_grouped_data, local_id, export_data,
+            group_func,
+            cost_func,
+            sub_grouped_data,
+            local_id,
+            export_data,
         )
     return
 
@@ -135,7 +146,8 @@ def add_dicts(base_dict: defaultdict, other_dict: defaultdict, out=False):
         all_keys = set(base_dict.keys()) | set(other_dict.keys())
         return defaultdict(int, {k: base_dict[k] + other_dict[k] for k in all_keys})
 
-    for key, val in other_dict.items(): base_dict[key] += val
+    for key, val in other_dict.items():
+        base_dict[key] += val
     return base_dict
 
 

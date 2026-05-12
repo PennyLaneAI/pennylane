@@ -273,7 +273,7 @@ def select_thc_resource_decomp(
 
     # QROM to load rotation angles for both 1-body and 2-body integrals
     qrom_full = resource_rep(
-        qre.QROM,
+        LabsQROM,
         {
             "num_bitstrings": tensor_rank + num_orb,
             "size_bitstring": rotation_precision * batched_rotations,
@@ -304,7 +304,7 @@ def select_thc_resource_decomp(
 
     # QROM to load rotation angles for two body integrals
     qrom_twobody = resource_rep(
-        qre.QROM,
+        LabsQROM,
         {
             "num_bitstrings": tensor_rank,
             "size_bitstring": rotation_precision * batched_rotations,
@@ -411,7 +411,7 @@ def select_thc_controlled_resource_decomp(
 
     # QROM for loading rotation angles for 1-body and 2-body integrals
     qrom_full = resource_rep(
-        qre.QROM,
+        LabsQROM,
         {
             "num_bitstrings": tensor_rank + num_orb,
             "size_bitstring": rotation_precision * batched_rotations,
@@ -442,7 +442,7 @@ def select_thc_controlled_resource_decomp(
 
     # QROM for loading rotation angles for two body integrals
     qrom_twobody = resource_rep(
-        qre.QROM,
+        LabsQROM,
         {
             "num_bitstrings": tensor_rank,
             "size_bitstring": rotation_precision * batched_rotations,

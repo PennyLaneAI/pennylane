@@ -50,7 +50,7 @@ class Allocate:
         state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
         restored=False,
     ):
-        if not isinstance(num_wires, int) or num_wires <= 0:
+        if not isinstance(num_wires, int) or num_wires < 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if not isinstance(restored, bool):
@@ -183,7 +183,7 @@ class Deallocate:
                     "Must provide the `allocated_register` when deallocating an ANY state register with `restored=True`"
                 )
 
-        if not isinstance(num_wires, int) or num_wires <= 0:
+        if not isinstance(num_wires, int) or num_wires < 0:
             raise ValueError(f"num_wires must be a positive integer, got {num_wires}")
 
         if not isinstance(restored, bool):
