@@ -17,11 +17,14 @@ import numpy as np
 
 import pennylane as qp
 
+# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
+
 has_jax = True
 try:
     import jax
 except ImportError:
     has_jax = False
+
 
 def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
     r"""Second-order Trotter time evolution for a factorized Hamiltonian.
@@ -67,7 +70,7 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, co
         )
         return hamiltonian
 
-    trotter_steps(hamiltonian)
+    trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
 
     if num_trotter_steps > 0:
         U_tensor = hamiltonian["leaf_tensors"]
@@ -90,9 +93,8 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_
 
     if not has_jax:
         raise ImportError(
-           "jax is required for trotter_factorized. "
-           "Install it with: pip install jax jaxlib"
-       )
+            "jax is required for trotter_factorized. Install it with: pip install jax jaxlib"
+        )
 
     if qp.compiler.active():
         wires = qp.math.array(wires, like="jax")
@@ -294,6 +296,7 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
             modal_loop()
 
         mode_loop()
+
 
 # Zero-energy shift (global phase on controlled evolution)
 

@@ -17,7 +17,6 @@ Tests for the trotter_fragmented module (CGF scheme only).
 
 import itertools
 import math
-
 import os
 
 import numpy as np
@@ -26,6 +25,8 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_factorized
+
+# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods
 
 
 def _random_orthogonal(n, rng):
@@ -390,15 +391,14 @@ class TestEdgeCases:
         U = run_trotter_circuit(ham, num_modes, n_states, t=0.0, num_steps=10)
         I_expected = np.eye(2**num_qubits, dtype=complex)
 
-        assert np.allclose(
-            U, I_expected, atol=1e-12
-        )
+        assert np.allclose(U, I_expected, atol=1e-12)
 
     def test_hermiticity_of_exact_H(self, toy_hamiltonian):
         """check that the exact Hamiltonian being built is Hermitian."""
         ham, num_modes, n_states = toy_hamiltonian
         H = build_H_exact(ham, num_modes, n_states)
         assert np.linalg.norm(H - H.conj().T) < 1e-12
+
 
 class TestInputValidation:
     """Test that invalid inputs raise appropriate errors."""
