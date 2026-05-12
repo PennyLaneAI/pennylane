@@ -162,7 +162,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+* The ``qp.transforms.create_expand_fn`` has been removed.
   Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
   - Deprecated in v0.45
