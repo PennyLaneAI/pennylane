@@ -35,7 +35,7 @@ class SignedOutMultiplier(Operator):
     the magnitudes of the encoded inputs, and a quantum comparator on their sign bits to determine
     the final sign of the result.
 
-    The inputs are given in 2s complement.
+    The inputs and output are given in 2s complement.
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
@@ -176,7 +176,7 @@ def _twos_complement_helper(input_reg, work_wires):
     # Invert all bits
     for w in input_reg[1:]:
         # sign bit of 1 indicates a negative value
-        Controlled(PauliX(w), control_wires=(input_reg[0],), control_values=(1,))
+        CNOT([input_reg[0], w])
 
     # Add one
     Controlled(
