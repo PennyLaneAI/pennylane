@@ -15,18 +15,18 @@
 Tests for the trotter_fragmented module (CGF scheme only).
 """
 
-# pylint: disable=no-member
-import os
 import itertools
 import math
+
+# pylint: disable=no-member
+import os
 
 import numpy as np
 import pytest
 from scipy.linalg import expm
 
 import pennylane as qml
-
-from pennylane.labs.templates.trotter_fragmented import trotter_factorized, _energy_shift
+from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_factorized
 
 
 def _random_orthogonal(n, rng):
@@ -48,23 +48,15 @@ def toy_hamiltonian():
     one_body_core_full = np.zeros((num_modes, num_modes, n_states, n_states))
     for l in range(num_modes):
         one_body_core_full[l, l] = np.diag(eps[l])
-    one_body_leaf = np.stack(
-        [_random_orthogonal(n_states, rng) for _ in range(num_modes)]
-    )
+    one_body_leaf = np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
 
     lam = rng.normal(size=(n_states, n_states)) * 0.35
     core_2b = np.zeros((1, num_modes, num_modes, n_states, n_states))
     core_2b[0, 1, 0] = lam
-    leaf_2b = np.stack(
-        [np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])]
-    )
+    leaf_2b = np.stack([np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])])
 
-    core_tensors = np.concatenate(
-        [np.expand_dims(one_body_core_full, axis=0), core_2b], axis=0
-    )
-    leaf_tensors = np.concatenate(
-        [np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0
-    )
+    core_tensors = np.concatenate([np.expand_dims(one_body_core_full, axis=0), core_2b], axis=0)
+    leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
     hamiltonian = {
         "core_tensors": core_tensors,
         "leaf_tensors": leaf_tensors,
@@ -84,9 +76,7 @@ def toy_multi_fragment():
     one_body_core_full = np.zeros((num_modes, num_modes, n_states, n_states))
     for l in range(num_modes):
         one_body_core_full[l, l] = np.diag(eps[l])
-    one_body_leaf = np.stack(
-        [_random_orthogonal(n_states, rng) for _ in range(num_modes)]
-    )
+    one_body_leaf = np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
 
     # Two two-body fragments
     num_frags = 2
@@ -95,17 +85,11 @@ def toy_multi_fragment():
     for f in range(num_frags):
         lam = rng.normal(size=(n_states, n_states)) * 0.25
         core_2b[f, 1, 0] = lam
-        leaf_2b_list.append(
-            np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
-        )
+        leaf_2b_list.append(np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)]))
     leaf_2b = np.stack(leaf_2b_list)
 
-    core_tensors = np.concatenate(
-        [np.expand_dims(one_body_core_full, axis=0), core_2b], axis=0
-    )
-    leaf_tensors = np.concatenate(
-        [np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0
-    )
+    core_tensors = np.concatenate([np.expand_dims(one_body_core_full, axis=0), core_2b], axis=0)
+    leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
     hamiltonian = {
         "core_tensors": core_tensors,
         "leaf_tensors": leaf_tensors,
@@ -115,6 +99,7 @@ def toy_multi_fragment():
 
 
 # Helper functions
+
 
 def _qml_basis_rotation_matrix(leaf_frag, num_modes, n_states):
     """Return the full unitary for per-mode BasisRotation, matching
@@ -139,7 +124,7 @@ def build_H_exact(hamiltonian, num_modes, n_states):
     nuc_constant = hamiltonian["nuc_constant"]
 
     num_qubits = num_modes * n_states
-    dim = 2 ** num_qubits
+    dim = 2**num_qubits
     wires = list(range(num_qubits))
 
     def get_Z(wire):
@@ -221,6 +206,7 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
 
     return qml.matrix(_circuit)()
 
+
 ## Test classes
 class TestHighNConvergence:
     """Test that many Trotter steps converge U_trotter to expm(-i H t)."""
@@ -255,13 +241,14 @@ class TestHighNConvergence:
 
         assert fidelity > 1 - 1e-4
 
+
 class TestDtScaling:
     """Test that single-step Trotter error scales as dt^3 (2nd-order)."""
 
     @pytest.mark.parametrize(
         "dt",
         [
-            (0.2),   # halving dt -> 8x error reduction
+            (0.2),  # halving dt -> 8x error reduction
             (0.1),
             (0.05),
         ],
@@ -290,9 +277,7 @@ class TestDtScaling:
 
         ratio = err_a / err_b
         # expected_ratio = (dt_a / dt_b)^3 = 8.0 for halving
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(8.0)) / math.log2(
-            8.0
-        )
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(8.0)) / math.log2(8.0)
         assert log_dev <= 0.35
 
 
@@ -325,10 +310,9 @@ class TestStepScaling:
             pytest.skip("Denominator error is zero; scaling check not meaningful.")
 
         ratio = err_a / err_b
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(4.0)) / math.log2(
-            4.0
-        )
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(4.0)) / math.log2(4.0)
         assert log_dev <= 0.35
+
 
 class TestGlobalPhase:
     """Test that _energy_shift correctly tracks the Hamiltonian identity terms."""
@@ -398,7 +382,7 @@ class TestEdgeCases:
         t = 1.0
 
         U = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=0)
-        I_expected = np.eye(2 ** num_qubits, dtype=complex)
+        I_expected = np.eye(2**num_qubits, dtype=complex)
 
         assert np.allclose(U, I_expected, atol=1e-12)
 
@@ -408,19 +392,20 @@ class TestEdgeCases:
         num_qubits = num_modes * n_states
 
         U = run_trotter_circuit(ham, num_modes, n_states, t=0.0, num_steps=10)
-        I_expected = np.eye(2 ** num_qubits, dtype=complex)
+        I_expected = np.eye(2**num_qubits, dtype=complex)
 
-        assert np.allclose(U, I_expected, atol=1e-12), (
-            "Zero evolution time did not produce the identity matrix."
-        )
+        assert np.allclose(
+            U, I_expected, atol=1e-12
+        ), "Zero evolution time did not produce the identity matrix."
 
     def test_hermiticity_of_exact_H(self, toy_hamiltonian):
         """check that the exact Hamiltonian being built is Hermitian."""
         ham, num_modes, n_states = toy_hamiltonian
         H = build_H_exact(ham, num_modes, n_states)
-        assert np.linalg.norm(H - H.conj().T) < 1e-12, (
-            "build_H_exact produced a non-Hermitian matrix."
-        )
+        assert (
+            np.linalg.norm(H - H.conj().T) < 1e-12
+        ), "build_H_exact produced a non-Hermitian matrix."
+
 
 class TestInputValidation:
     """Test that invalid inputs raise appropriate errors."""
@@ -468,6 +453,7 @@ class TestMonotonicity:
         for i in range(len(errors) - 1):
             assert errors[i] > errors[i + 1]
 
+
 @pytest.fixture(scope="class")
 def h2s_hamiltonian():
     """Fixture to load the data once per test class."""
@@ -480,16 +466,15 @@ def h2s_hamiltonian():
 
     with np.load(data_path) as data:
         return {
-            "core_tensors": data['core_tensors'],
-            "leaf_tensors": data['leaf_tensors'],
-            "nuc_constant": data['nuc_constant'],
+            "core_tensors": data["core_tensors"],
+            "leaf_tensors": data["leaf_tensors"],
+            "nuc_constant": data["nuc_constant"],
         }
 
 
 @pytest.mark.slow
 class TestH2SConvergence:
     """Integration tests on the real H2S molecule."""
-
 
     def test_high_n_convergence(self, h2s_hamiltonian):
         """H2S should converge at N=64."""
@@ -508,9 +493,7 @@ class TestH2SConvergence:
 
         assert fidelity > 1 - 1e-4
 
-    @pytest.mark.parametrize(
-        "num_steps", [(2), (4), (8)]
-    )
+    @pytest.mark.parametrize("num_steps", [(2), (4), (8)])
     def test_step_scaling(self, h2s_hamiltonian, num_steps):
         """H2S step-doubling should reduce error by ~4x."""
         ham = h2s_hamiltonian
@@ -535,9 +518,7 @@ class TestH2SConvergence:
 
         ratio = err_a / err_b
         expected = (N_b / N_a) ** 2
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(
-            expected
-        )
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(expected)
         assert log_dev <= 0.35
 
     def test_global_phase(self, h2s_hamiltonian):

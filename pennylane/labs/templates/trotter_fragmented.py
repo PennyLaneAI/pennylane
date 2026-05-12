@@ -13,13 +13,17 @@
 # limitations under the License.
 """Contains the Trotter templates for fragmented Hamiltonians."""
 
-import pennylane as qp
 import numpy as np
-import jax
 
+import pennylane as qp
 
-def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
-                       control_wires=None):
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
+def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
     r"""Second-order Trotter time evolution for a factorized Hamiltonian.
 
     This template works for both electronic CDF and vibrational CGF Hamiltonians.
@@ -47,8 +51,9 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
         frag_scheme = "cgf"
     else:
         raise ValueError(
-        "Could not auto-detect Hamiltonian type. "
-        f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}. ")
+            "Could not auto-detect Hamiltonian type. "
+            f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}. "
+        )
 
     if num_trotter_steps > 0:
         second_order_time_step = evolution_time / num_trotter_steps
@@ -57,8 +62,9 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
 
     @qp.for_loop(num_trotter_steps)
     def trotter_steps(step_idx, hamiltonian):
-        _trotter_step(step_idx, second_order_time_step, hamiltonian, wires,
-                      control_wires, frag_scheme)
+        _trotter_step(
+            step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme
+        )
         return hamiltonian
 
     trotter_steps(hamiltonian)
@@ -78,9 +84,15 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires,
         # phase, but we keep it exact for bookkeeping).
         qp.RZ(-phi, control_wires)
 
-def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires,
-                  control_wires, frag_scheme):
+
+def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme):
     """Single second-order Trotter step for either CDF or CGF Hamiltonian."""
+
+    if not has_jax:
+        raise ImportError(
+           "jax is required for trotter_factorized. "
+           "Install it with: pip install jax jaxlib"
+       )
 
     if qp.compiler.active():
         wires = qp.math.array(wires, like="jax")
@@ -100,35 +112,33 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires,
         U = jax.lax.cond(
             prev_fragment_idx < 0,
             lambda U_tensor, fragment_idx, prev_fragment_idx: U_tensor[fragment_idx],
-            lambda U_tensor, fragment_idx, prev_fragment_idx:
-                _merge_leaves(U_tensor[prev_fragment_idx],
-                              U_tensor[fragment_idx], frag_scheme),
-            U_tensor, fragment_idx, prev_fragment_idx,
+            lambda U_tensor, fragment_idx, prev_fragment_idx: _merge_leaves(
+                U_tensor[prev_fragment_idx], U_tensor[fragment_idx], frag_scheme
+            ),
+            U_tensor,
+            fragment_idx,
+            prev_fragment_idx,
         )
         Z = Z_tensor[fragment_idx]
         _apply_system_basis_rotation(U, wires, frag_scheme)
-        _apply_two_body_diagonal(Z, wires, first_order_time_step,
-                                 control_wires, frag_scheme)
+        _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, frag_scheme)
         return fragment_idx
 
     def one_body_fragment():
-        U_one = U_tensor[0] if frag_scheme == "cdf" else U_tensor[0]
+        U_one = U_tensor[0]
         U = _merge_leaves(U_tensor[num_two_body_fragments], U_one, frag_scheme)
         _apply_system_basis_rotation(U, wires, frag_scheme)
-        _apply_one_body_diagonal(Z_tensor[0], wires, first_order_time_step,
-                                 control_wires, frag_scheme)
+        _apply_one_body_diagonal(
+            Z_tensor[0], wires, first_order_time_step, control_wires, frag_scheme
+        )
 
     prev_fragment_idx_forward = qp.math.sign(2 * step_idx - 1)
-    qp.for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(
-        prev_fragment_idx_forward
-    )
+    qp.for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(prev_fragment_idx_forward)
 
     one_body_fragment()
 
     prev_fragment_idx_backward = 0
-    qp.for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(
-        prev_fragment_idx_backward
-    )
+    qp.for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(prev_fragment_idx_backward)
 
 
 def _apply_system_basis_rotation(U, wires, frag_scheme):
@@ -149,7 +159,7 @@ def _apply_system_basis_rotation(U, wires, frag_scheme):
         # modal states to the diagonal basis).  Hence we pass the transpose.
         for l in range(num_modes):
             U_l = qp.math.swapaxes(U[l], -2, -1)
-            mode_wires = wires[l * n_states:(l + 1) * n_states]
+            mode_wires = wires[l * n_states : (l + 1) * n_states]
             if qp.math.is_abstract(U_l):
                 qp.BasisRotation(unitary_matrix=U_l, wires=mode_wires)
             elif not np.allclose(U_l, np.eye(n_states)):
@@ -175,9 +185,8 @@ def _transpose_leaf(U, frag_scheme):
     return qp.math.swapaxes(U, -2, -1)
 
 
-def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires,
-                             mode):
-    if mode == "cdf":
+def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, frag_scheme):
+    if frag_scheme == "cdf":
         num_cas = Z.shape[0]
 
         @qp.for_loop(2 * num_cas - 1)
@@ -232,9 +241,9 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires,
 
                 _p_loop()
 
-def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step,
-                             control_wires, mode):
-    if mode == "cdf":
+
+def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, frag_scheme):
+    if frag_scheme == "cdf":
         num_cas = Z_one_body.shape[0]
 
         @qp.for_loop(2 * num_cas)
@@ -287,7 +296,6 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step,
         mode_loop()
 
 
-
 # ---- CGF diagonal gates (SBE / unary encoding) -----------------------------
 #
 # Encoding assumption: each of the M modes is encoded on N qubits with
@@ -316,13 +324,14 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step,
 # Zero-energy shift (global phase on controlled evolution)
 # ---------------------------------------------------------------------------
 
-def _energy_shift(hamiltonian, mode):
+
+def _energy_shift(hamiltonian, frag_scheme):
     """Compute the zero-of-energy shift that must be applied as a controlled
     ``RZ`` during a Hadamard test."""
     nuc_constant = hamiltonian.get("nuc_constant", 0.0)
     Z_tensor = hamiltonian["core_tensors"]
 
-    if mode == "cdf":
+    if frag_scheme == "cdf":
         # Eq. (A29) first line: nuc + sum_k Z^(0)_{k,k}
         #   - (sum_{l,k,l'} Z^(l)_{k,l'}) / 2
         #   + (sum_{l,k} Z^(l)_{k,k}) / 4
@@ -332,7 +341,6 @@ def _energy_shift(hamiltonian, mode):
             + qp.math.sum(qp.math.trace(Z_tensor[1:], axis1=1, axis2=2)) / 4
         )
         return nuc_constant + phase_from_mod_one_body + phase_from_two_body
-
 
     # One-body diagonal: nested traces over axes (-2, -1) twice pick out the
     # (l == m, p == q) entries and sum ε^l_p.
