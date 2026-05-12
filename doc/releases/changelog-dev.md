@@ -53,4 +53,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
+  :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
+  [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
+
 <h3>Contributors ✍️</h3>
+
+Yushao Chen

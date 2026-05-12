@@ -56,7 +56,7 @@ def pattern_matching_optimization(
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized.
+        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized (QNode or quantum function).
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
