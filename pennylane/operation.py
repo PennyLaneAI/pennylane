@@ -187,6 +187,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
+from warnings import warn
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -1882,15 +1883,26 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
+    # pylint: disable=useless-return
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.
 
+        .. warning::
+
+            ``Operation.basis`` is deprecated in v0.46 and will be removed in v0.47.
+            To check commutivity, :func:`~.is_commuting` should be used instead.
+
         For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
         ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
         """
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return None
 
     @property

@@ -18,7 +18,9 @@ from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
 
+import pennylane as qp  # is_commuting circular import problems
 from pennylane.operation import Operator
+from pennylane.ops.op_math import Controlled
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -78,7 +80,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
 
             # This function follows the same logic used in the `_commute_controlled_left` function.
 
-            if not _can_be_pushed_through(op):
+            if not isinstance(op, Controlled):
                 self.current_index += 1
                 self.op_deque.append(op)
                 return []
@@ -89,7 +91,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
             while prev_gate_idx is not None:
                 prev_gate = self.op_deque[new_index - (prev_gate_idx + 1)]
 
-                if not _can_push_through(prev_gate) or not _can_commute(op, prev_gate):
+                if not isinstance(prev_gate, Controlled) or not qp.is_commuting(op, prev_gate):
                     break
 
                 new_index -= prev_gate_idx + 1
@@ -112,7 +114,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
             while self.current_index >= 0:
                 current_gate = self.op_deque[self.current_index]
 
-                if not _can_be_pushed_through(current_gate):
+                if not isinstance(current_gate, Controlled):
                     self.current_index -= 1
                     continue
 
@@ -126,7 +128,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
                 while next_gate_idx is not None:
                     next_gate = self.op_deque[new_index + next_gate_idx + 1]
 
-                    if not _can_push_through(next_gate) or not _can_commute(
+                    if not isinstance(next_gate, Controlled) or not qp.is_commuting(
                         current_gate, next_gate
                     ):
                         break
@@ -258,42 +260,6 @@ def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> int | Non
     return find_next_gate(wires, reversed(prevs_ops))
 
 
-def _shares_control_wires(op: Operator, ctrl_gate: Operator) -> bool:
-    """Check if the operation shares wires with the control wires of the provided controlled gate."""
-
-    return len(Wires.shared_wires([Wires(op.wires), ctrl_gate.control_wires])) > 0
-
-
-def _can_commute(op1: Operator, op2: Operator) -> bool:
-    """Helper that determines if op1 can commute with a single-qubit gate op2 based on their basis and control wires."""
-
-    # Case 1: overlap is on the control wires. Only Z-type gates go through
-    if _shares_control_wires(op1, op2):
-        return op1.basis == "Z"
-
-    # Case 2: since we know the gates overlap somewhere, and it's a
-    # single-qubit gate, if it wasn't on a control it's the target.
-    return op1.basis == op2.basis
-
-
-def _can_push_through(op: Operator) -> bool:
-    """Check if the provided gate can be pushed through."""
-
-    # Only go ahead if information is available.
-    # If the gate does not have control_wires defined, it is not
-    # controlled so we won't push through.
-    return hasattr(op, "basis") and len(op.control_wires) > 0
-
-
-def _can_be_pushed_through(op: Operator) -> bool:
-    """Check if the provided gate is a single-qubit gate that can be pushed through."""
-
-    # We are looking only at the gates that can be pushed through
-    # controls/targets; these are single-qubit gates with the basis
-    # property specified.
-    return hasattr(op, "basis") and len(op.wires) == 1
-
-
 def _commute_controlled_right(op_list):
     """Push commuting single qubit gates to the right of controlled gates.
 
@@ -312,7 +278,7 @@ def _commute_controlled_right(op_list):
     while current_location >= 0:
         current_gate = op_list[current_location]
 
-        if not _can_be_pushed_through(current_gate):
+        if len(current_gate.wires) != 1:
             current_location -= 1
             continue
 
@@ -325,7 +291,9 @@ def _commute_controlled_right(op_list):
         while next_gate_idx is not None:
             next_gate = op_list[new_location + next_gate_idx + 1]
 
-            if not _can_push_through(next_gate) or not _can_commute(current_gate, next_gate):
+            if not isinstance(next_gate, qp.ops.op_math.Controlled) or not qp.is_commuting(
+                current_gate, next_gate
+            ):
                 break
 
             new_location += next_gate_idx + 1
@@ -358,7 +326,7 @@ def _commute_controlled_left(op_list):
     while current_location < len(op_list):
         current_gate = op_list[current_location]
 
-        if not _can_be_pushed_through(current_gate):
+        if len(current_gate.wires) != 1:
             current_location += 1
             continue
 
@@ -370,7 +338,9 @@ def _commute_controlled_left(op_list):
         while prev_gate_idx is not None:
             prev_gate = op_list[new_location - prev_gate_idx - 1]
 
-            if not _can_push_through(prev_gate) or not _can_commute(current_gate, prev_gate):
+            if not isinstance(prev_gate, qp.ops.op_math.Controlled) or not qp.is_commuting(
+                current_gate, prev_gate
+            ):
                 break
 
             new_location -= prev_gate_idx + 1

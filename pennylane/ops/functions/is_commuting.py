@@ -144,6 +144,8 @@ def _create_commute_function():
             bool: True if the operations commute, False otherwise.
 
         """
+        if op_name1 in non_commuting_operations or op_name2 in non_commuting_operations:
+            return False
         return op_name1 in commutation_map[op_name2]
 
     return commutes_inner
@@ -262,6 +264,7 @@ unsupported_operations = [
     "Exp",
 ]
 non_commuting_operations = [
+    "QubitUnitary",
     # StatePrepBase
     "StatePrep",
     "BasisState",

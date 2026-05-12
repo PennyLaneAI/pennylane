@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``Operation.basis`` is deprecated. :func:`~pennylane.is_commuting` instead should be used to determine whether or not
+  two operators commute. For example, ``qp.is_commuting(my_op, qp.X(my_op.wires[0]))`` can be used to determine
+  if ``my_op`` is in the ``X`` basis.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
   Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
   of a QNode.

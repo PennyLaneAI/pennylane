@@ -18,6 +18,7 @@ This submodule defines a base class for symbolic operations representing operato
 import warnings
 from abc import abstractmethod
 from copy import copy
+from warnings import warn
 
 import numpy as np
 
@@ -116,6 +117,11 @@ class SymbolicOp(Operator):
     @property
     @handle_recursion_error
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return self.base.basis
 
     @property

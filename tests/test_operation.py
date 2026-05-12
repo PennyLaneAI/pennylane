@@ -74,6 +74,16 @@ def test_id_with_label_is_deprecated(test_class):
         _ = op.label()
 
 
+def test_basis_deprecation():
+    """Test that Operation.basis is deprecated."""
+
+    class MyOp(Operation):
+        pass
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
+        assert MyOp(0).basis is None
+
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 

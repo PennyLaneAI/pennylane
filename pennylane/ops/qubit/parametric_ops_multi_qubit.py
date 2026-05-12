@@ -21,8 +21,10 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
+from typing import Literal
 
 import numpy as np
+from warnigns import warn
 
 import pennylane as qp
 from pennylane import compiler, math, queuing
@@ -38,6 +40,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_adjoint_rotation,
     qjit_compatible_pow_rotation,
 )
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation, Operator
 from pennylane.typing import TensorLike
@@ -706,7 +709,15 @@ class PCPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
