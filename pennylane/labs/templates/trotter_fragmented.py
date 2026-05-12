@@ -13,9 +13,18 @@
 # limitations under the License.
 """Contains the Trotter templates for fragmented Hamiltonians."""
 
+from collections import defaultdict
+
 import numpy as np
 
 import pennylane as qp
+from pennylane.decomposition.decomposition_rule import add_decomps, register_resources
+from pennylane.decomposition.resources import resource_rep
+from pennylane.operation import Operation
+from pennylane.resource.resource import Resources
+from pennylane.tape.qscript import QuantumScript
+from pennylane.wires import Wires
+from pennylane.queuing import QueuingManager, apply
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -24,6 +33,144 @@ try:
     import jax
 except ImportError:
     has_jax = False
+
+class TrotterCGF(Operation):
+    r"""Second-order Suzuki-Trotter product for a Christiansen Greedy Factorized Hamiltonian.
+
+    Args:
+        hamiltonian (dict): A CGF Hamiltonian dictionary with keys:
+            * ``"nuc_constant"`` (float): Zero-energy constant.
+            * ``"core_tensors"`` (array[float]): Shape ``(L+1, M, M, N, N)`` --
+              diagonal interaction tensors per fragment, where M is the number of modes, N is the number of modals per mode,
+              and L is the number of two-body fragments.
+            * ``"leaf_tensors"`` (array[float]): Shape ``(L+1, M, N, N)`` --
+              per-mode basis-rotation unitaries per fragment, where M is the number of modes, N is the number of modals per mode,
+              and L is the number of two-body fragments.
+        time (float): Total evolution time :math:`t`.
+        num_steps (int): Number of second-order Trotter steps.
+        wires (Wires): System wires, expects ``M*N`` wires in mode-major
+            order (wire ``l*N + p`` corresponds to modal ``p`` of mode ``l``).
+        control_wires (Wires | None): Optional control wire(s) for controlled
+            time evolution (e.g. Hadamard test).
+
+    """
+
+    resource_keys = {"num_fragments", "num_modes", "num_modals", "num_steps", "control_wires"}
+
+    def __init__(self, hamiltonian, time, num_steps, wires=None, control_wires=None, id=None):
+        self._hyperparameters = {
+            "hamiltonian": hamiltonian,
+            "num_steps": num_steps,
+            "control_wires": control_wires,
+        }
+
+        Z = hamiltonian["core_tensors"]
+        U = hamiltonian["leaf_tensors"]
+
+        if not (Z.ndim == 5 and U.ndim == 4):
+            raise TypeError(
+                "TrotterCGF expects core_tensors with ndim=5 and leaf_tensors with ndim=4. "
+                f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}."
+            )
+
+        all_wires = qp.wires.Wires(wires)
+        if control_wires is not None:
+            all_wires = all_wires + qp.wires.Wires(control_wires)
+
+        super().__init__(time, wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        hamiltonian = self._hyperparameters["hamiltonian"]
+        num_fragments = hamiltonian["core_tensors"].shape[0] - 1
+        num_modes = hamiltonian["core_tensors"].shape[1]
+        num_modals = hamiltonian["core_tensors"].shape[3]
+        return {
+            "num_fragments": num_fragments,
+            "num_modes": num_modes,
+            "num_modals": num_modals,
+            "num_steps": self._hyperparameters["num_steps"],
+            "control_wires": self._hyperparameters["control_wires"],
+        }
+
+    def resources(self) -> Resources:
+        with QueuingManager.stop_recording():
+            decomp = self.compute_decomposition(*self.parameters, wires=self.wires, **self._hyperparameters)
+
+        num_wires = len(self.wires)
+        num_gates = len(decomp)
+
+        depth = QuantumScript(decomp).graph.get_depth()
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        for op in decomp:
+            gate_types[op.name] += 1
+            gate_sizes[op.name] += len(op.wires)
+
+        return Resources(
+            num_wires,
+            num_gates,
+            gate_types,
+            gate_sizes,
+            depth)
+
+    @staticmethod
+    def compute_decomposition(*args, wires, **kwargs):
+        time = args[0]
+        num_steps = kwargs["num_steps"]
+        hamiltonian = kwargs["hamiltonian"]
+        control_wires = kwargs.get("control_wires", None)
+
+        with qp.tape.QuantumTape() as tape:
+            trotter_factorized(
+                evolution_time=time,
+                num_trotter_steps=num_steps,
+                hamiltonian=hamiltonian,
+                wires=wires,
+                control_wires=control_wires,
+            )
+
+        return tape.operations
+
+def _trotter_cgf_resources(num_steps, num_fragments, num_modes, num_modals, control_wires):
+    """Compute resources for TrotterCGF given the resource parameters."""
+    num_basis_rotations = num_modes * ((2 * num_fragments + 1) * num_steps + 1)
+    num_zz_gates = num_fragments * num_modes * (num_modes - 1) * num_modals**2 * num_steps
+    num_rz_gates = num_modes * num_modals * num_steps
+    if control_wires is not None:
+        num_rz_gates += 1
+        num_cnot_gates = 2 * num_steps * (num_fragments * num_modes * (num_modes - 1) * num_modals**2 + num_modes * num_modals)
+        resources = {resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates, resource_rep(qp.CNOT): num_cnot_gates}
+    else:
+        num_cnot_gates = 0
+        resources = {resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates}
+
+    return resources
+
+@register_resources(_trotter_cgf_resources)
+def _trotter_cgf_decomposition(*args, wires, **kwargs):
+    time = args[-1]
+    n = kwargs["num_steps"]
+    hamiltonian = kwargs["hamiltonian"]
+    control_wires = kwargs.get("control_wires", None)
+    if control_wires is not None:
+        system_wires = qp.wires.Wires([w for w in wires if w not in qp.wires.Wires(control_wires)])
+    else:
+        system_wires = wires
+
+    trotter_factorized(
+        evolution_time=time,
+        num_trotter_steps=n,
+        hamiltonian=hamiltonian,
+        wires=system_wires,
+        control_wires=control_wires,
+    )
+
+
+add_decomps(TrotterCGF, _trotter_cgf_decomposition)
+
 
 
 def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
