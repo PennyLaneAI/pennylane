@@ -429,10 +429,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # rule is determined by operator that uses the MOST number of work wires.
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
-
-            if (base_op := _get_base_if_applicable(op)) and base_op in self._in_progress:
-                break
-
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
@@ -793,13 +789,6 @@ class DecompGraphSolution:
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule
-
-
-def _get_base_if_applicable(op: CompressedResourceOp) -> CompressedResourceOp | None:
-    if op.op_type not in (qp.ops.Adjoint, qp.ops.Controlled):
-        return None
-    base_class, base_params = op.params["base_class"], op.params["base_params"]
-    return resource_rep(base_class, **base_params)
 
 
 class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
