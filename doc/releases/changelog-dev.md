@@ -47,6 +47,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``qp.transforms.create_expand_fn`` has been removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  []()
+
 <h3>Internal changes ⚙️</h3>
 
 <h3>Documentation 📝</h3>
@@ -54,3 +58,5 @@
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
+
+Marcus Edwards,
