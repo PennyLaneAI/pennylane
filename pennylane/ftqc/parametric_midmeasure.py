@@ -370,14 +370,9 @@ class ParametricMidMeasure(MidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
         self.batch_size = None
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
-        super().__init__(
-            wires=Wires(wires), reset=reset, postselect=postselect, id=id, meas_uid=meas_uid
-        )
+        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, meas_uid=meas_uid)
         self.hyperparameters["plane"] = plane
         self.hyperparameters["angle"] = angle
 
@@ -483,7 +478,6 @@ class XMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
-            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
@@ -494,17 +488,13 @@ class XMidMeasure(ParametricMidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=0,
             plane="XY",
             reset=reset,
             postselect=postselect,
-            id=id,
             meas_uid=meas_uid,
         )
 
@@ -552,7 +542,6 @@ class YMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
-            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
@@ -563,17 +552,13 @@ class YMidMeasure(ParametricMidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=np.pi / 2,
             plane="XY",
             reset=reset,
             postselect=postselect,
-            id=id,
             meas_uid=meas_uid,
         )
 
