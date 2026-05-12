@@ -153,7 +153,7 @@ class TestDecomposition:
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
-        op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern, id=None)
+        op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern)
 
         for rule in qp.list_decomps(qp.IQPEmbedding):
             _test_decomposition_rule(op, rule)
