@@ -17,6 +17,8 @@ Contains the SignedOutMultiplier template.
 
 from collections import defaultdict
 
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -162,16 +164,20 @@ def _signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, work_wires):
+
     # Invert all bits
-    for w in input_reg[1:]:
+    @for_loop(len(input_reg) - 1)
+    def invert(w):
         # sign bit of 1 indicates a negative value
-        CNOT([input_reg[0], w])
+        CNOT([input_reg[0], input_reg[w + 1]])
+
+    invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
     Controlled(
         Incrementer(
             wires=input_reg[1:],
-            work_wires=work_wires,  # TODO: think about whether we can use these work wires
+            work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=(input_reg[0],),
         control_values=(1,),
@@ -189,16 +195,24 @@ def _signed_out_multiplier_decomposition(
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
+    if capture.enabled():
+        x_wires, y_wires, work_wires, output_wires = (
+            math.array(x_wires, like="jax"),
+            math.array(y_wires, like="jax"),
+            math.array(work_wires, like="jax"),
+            math.array(output_wires, like="jax"),
+        )
+
     # Compute the sign
     CNOT([x_wires[0], output_wires[0]])
     CNOT([y_wires[0], output_wires[0]])
 
     # Take 2s complements if necessary
-    for input_reg in [x_wires, y_wires]:
-        _twos_complement_helper(input_reg, work_wires)
+    _twos_complement_helper(x_wires, work_wires)
+    _twos_complement_helper(y_wires, work_wires)
 
-        # we would reset the sign bit here to complete the two's complement,
-        # but we do not, so that we can remember the signs
+    # we would reset the sign bit here to complete each two's complement,
+    # but we do not, so that we can remember the signs
 
     # Multiply the magnitudes
     OutMultiplier(
@@ -214,8 +228,8 @@ def _signed_out_multiplier_decomposition(
     _twos_complement_helper(output_wires, work_wires)
 
     # Return inputs to original state
-    for input_reg in [x_wires, y_wires]:
-        _twos_complement_helper(input_reg, work_wires)
+    _twos_complement_helper(x_wires, work_wires)
+    _twos_complement_helper(y_wires, work_wires)
 
 
 add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition)
