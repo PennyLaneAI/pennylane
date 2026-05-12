@@ -59,4 +59,7 @@
   [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
 
 <h3>Contributors ✍️</h3>
+
+This release contains contributions from (in alphabetical order):
+
 David Wierichs
