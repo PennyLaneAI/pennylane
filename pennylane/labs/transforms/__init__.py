@@ -22,7 +22,6 @@ Transforms
 .. autosummary::
     :toctree: api
 
-    ~rot_to_phase_gradient
     ~select_pauli_rot_phase_gradient
 
 Custom decomposition rules
@@ -37,6 +36,5 @@ Custom decomposition rules
 """
 
 from .select_pauli_rot_phase_gradient import select_pauli_rot_phase_gradient
-from .rot_to_phase_gradient import rot_to_phase_gradient
 from .decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 from .decomp_selectpaulirot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
