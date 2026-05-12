@@ -47,6 +47,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
+  shots on creation of the `QNode` or using :func:`.set_shots` should be used instead.
+
 <h3>Internal changes ⚙️</h3>
 
 <h3>Documentation 📝</h3>
@@ -54,3 +57,5 @@
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
+
+Christina Lee
