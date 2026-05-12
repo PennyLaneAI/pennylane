@@ -830,7 +830,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     """
 
-    print(op)
     # NOTE: Prevents operators in the decomposition from getting queued if
     # we're in an active queuing context
     with queuing.QueuingManager.stop_recording():
@@ -894,7 +893,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
                 ) from e
 
         elif op.has_decomposition:
-            print(f"\033[91mUsing old decomposition for {op} :(\033[0m")
             decomp = op.decomposition()
 
         elif strict:
@@ -917,7 +915,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
         current_depth += 1
         for sub_op in decomp:
-            print(f"Decomposing {sub_op} next")
             yield from _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,

@@ -137,7 +137,10 @@ def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
     """
     # pylint: disable=arguments-differ
     a = math.abs(state_vector)
-    phases = math.angle(state_vector)
+    if all(math.isreal(state_vector)):
+        phases = None
+    else:
+        phases = math.angle(state_vector)
     n = len(wires)
 
     # Disable for_loop for now because _get_alpha_y is not compatible with traced third argument
@@ -151,7 +154,9 @@ def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
         y_loop(k)
 
     # If necessary, apply RZ multiplexers to prepare correct phases of amplitudes
-    if math.is_abstract(phases) or math.requires_grad(phases) or not math.allclose(phases, 0):
+    if phases is not None and (
+        math.is_abstract(phases) or math.requires_grad(phases) or not math.allclose(phases, 0)
+    ):
         qp.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
 
 
