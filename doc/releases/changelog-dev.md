@@ -49,6 +49,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -57,8 +60,15 @@
   exists from an operator to a controlled/adjoint version of itself.
   [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
 
+* Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
+  :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
+  [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Astral Cai,
+Yushao Chen,
+David Wierichs
