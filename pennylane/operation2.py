@@ -92,6 +92,7 @@ Operator Types
 import warnings
 from abc import ABC, abstractmethod
 from copy import copy, deepcopy
+from enum import Enum, auto
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Literal
@@ -109,8 +110,6 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
-    ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -493,6 +492,7 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
 
         **Example:**
 
+        # FIXME: Update example
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
@@ -500,7 +500,7 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
-        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        Operators that have trainable components that differ from their ``Operator2.data`` must implement their own
         ``_flatten`` methods.
 
         >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
@@ -509,10 +509,11 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         """
         dyn_data = []
         hashable_data = []
-        for k, v in self._bound_args.arguments.items():
-            if k in self.dyn_argnames:
+
+        for k, v in self.arguments.items():
+            if k in (self.dyn_argnames + self.wire_argnames):
                 dyn_data.append(v)
-                hashable_data.append((k, None))
+                hashable_data.append((k, _DYNARG_MARKER))
             else:
                 hashable_data.append((k, v))
 
@@ -526,11 +527,12 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
             data: the dynamic component of the operation
             metadata: the static component of the operation.
 
-        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator._unflatten``.
+        The output of ``Operator2._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator2._unflatten``.
 
         **Example:**
 
+        # FIXME: Update example
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
         ((1.2, 2.3, 3.4), (Wires([0]), ()))
@@ -547,7 +549,7 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
         dyn_idx = 0
 
         for k, v in metadata:
-            if v is None:
+            if v is _DYNARG_MARKER:
                 args[k] = data[dyn_idx]
                 dyn_idx += 1
             else:
@@ -1212,3 +1214,7 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
+
+
+class _DYNARG_MARKER:
+    """Marker class to mark dynamic arguments for Pytree registration."""
