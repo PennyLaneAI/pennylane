@@ -100,6 +100,7 @@ def _create_commute_function():
     Returns:
         function
     """
+    identities = {"Identity", "GlobalPhase"}
     pauliz_group = {
         "PauliZ",
         "ctrl",
@@ -110,13 +111,21 @@ def _create_commute_function():
         "RZ",
         "PhaseShift",
         "MultiRZ",
-        "Identity",
         "U1",
         "IsingZZ",
+        *identities,
     }
-    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
-    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "Adjoint(SX)"}
-    pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
+    swap_group = {
+        "SWAP",
+        "ISWAP",
+        "SISWAP",
+        "Identity",
+        "Adjoint(ISWAP)",
+        "Adjoint(SISWAP)",
+        *identities,
+    }
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "Adjoint(SX)", *identities}
+    pauliy_group = {"PauliY", "RY", "Identity", "IsingYY", *identities}
 
     commutation_map = {}
     for group in [paulix_group, pauliy_group, pauliz_group, swap_group]:
@@ -125,7 +134,7 @@ def _create_commute_function():
 
     identity_only = {"Hadamard", "U2", "U3", "Rot"}
     for op in identity_only:
-        commutation_map[op] = {"Identity", op}
+        commutation_map[op] = {*identities, op}
 
     commutation_map["Identity"] = pauliz_group.union(
         swap_group, paulix_group, pauliy_group, identity_only
@@ -340,7 +349,6 @@ def is_commuting(operation1, operation2):
     >>> qp.is_commuting(qp.X(0), qp.Z(0))
     False
     """
-
     # pylint: disable=too-many-return-statements
 
     if operation1.name in unsupported_operations or isinstance(
