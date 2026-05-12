@@ -49,6 +49,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -59,4 +63,8 @@
 
 <h3>Contributors ✍️</h3>
 
-Yushao Chen
+This release contains contributions from (in alphabetical order):
+
+Guillermo Alonso,
+Yushao Chen,
+David Wierichs
