@@ -133,8 +133,7 @@ def adjoint_jacobian(tape: QuantumScript, state=None):
                 trainable_param_number -= 1
             param_number -= 1
 
-        for kk in range(n_obs):
-            bras[kk, ...] = apply_operation(adj_op, bras[kk, ...])
+        bras = apply_operation(adj_op, bras, is_state_batched=True)
 
     # Post-process the Jacobian matrix for the new return
     jac = np.squeeze(jac)
