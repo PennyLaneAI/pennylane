@@ -172,3 +172,30 @@ def test_differentiability_tensorflow():
 
     assert qp.math.isclose(grad1, 0.0)
     assert qp.math.isclose(grad2, 0.0)
+
+
+@pytest.mark.catalyst
+@pytest.mark.external
+def test_catalyst_integration():
+    """Test that combine_global_phases works with catalyst."""
+
+    assert combine_global_phases.pass_name == "combine-global-phases"
+
+    n = 3
+    dev = qp.device("null.qubit", wires=n)
+
+    @qp.qjit(capture=True)
+    @qp.transforms.combine_global_phases
+    @qp.qnode(dev)
+    def circuit():
+        qp.GlobalPhase(0.1, wires=2)
+        qp.X(n - 1)
+        qp.GlobalPhase(0.1, wires=1)
+        qp.H(n - 2)
+        qp.GlobalPhase(0.1, wires=0)
+        qp.GlobalPhase(0.1, wires=0)
+
+        return qp.expval(qp.Z(0))
+
+    specs = qp.specs(circuit)()
+    assert specs.resources.gate_counts["GlobalPhase"] == 1

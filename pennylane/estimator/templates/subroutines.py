@@ -363,7 +363,9 @@ class SelectOnlyQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
+    def resource_decomp(
+        cls, data, num_wires, num_select_wires, num_control_wires, select_value=None
+    ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 

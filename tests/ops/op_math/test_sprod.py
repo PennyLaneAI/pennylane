@@ -771,6 +771,24 @@ class TestProperties:
         sprod_op = s_prod(scalar, op)
         assert sprod_op.is_verified_hermitian == hermitian_status
 
+    @pytest.mark.jax
+    def test_is_verified_hermitian_abstract(self):
+        """Test that is_verified_hermitian works with abstract coefficients."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        def float_arg(x):
+            op = x * qp.X(0)
+            assert op.is_verified_hermitian
+
+        jax.jit(float_arg)(0.5)
+
+        def complex_arg(x):
+            op = x * qp.X(0)
+            assert not op.is_verified_hermitian
+
+        jax.jit(complex_arg)(jax.numpy.array(0.5 + 1.2j))
+
     @pytest.mark.tf
     def test_is_verified_hermitian_tf(self):
         """Test that is_verified_hermitian works when a tf type scalar is provided."""
