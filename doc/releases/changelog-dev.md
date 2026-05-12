@@ -49,7 +49,7 @@
 
 * The ``qp.transforms.create_expand_fn`` has been removed in v0.46.
   Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-  []()
+  [(#9472)](https://github.com/PennyLaneAI/pennylane/pull/9472)
 
 <h3>Internal changes ⚙️</h3>
 
