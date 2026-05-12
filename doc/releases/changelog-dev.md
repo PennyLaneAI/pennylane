@@ -45,11 +45,12 @@
   
 <h3>Breaking changes 💔</h3>
 
-<h3>Deprecations 👋</h3>
-
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
   shots on creation of the `QNode` or using :func:`.set_shots` should be used instead.
   [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
+
+<h3>Deprecations 👋</h3>
+
 
 <h3>Internal changes ⚙️</h3>
 
