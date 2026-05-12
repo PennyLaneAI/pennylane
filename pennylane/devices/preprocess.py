@@ -367,6 +367,10 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     """
 
+    # print()
+    # print(f"Decomposing tape with {len(tape.operations)} ops.")
+    # print(*tape.operations[:10], sep="\n")
+    # print()
     error = error or DeviceError
 
     if stopping_condition_shots is not None and tape.shots:
