@@ -253,7 +253,7 @@ class TestSpecialOps:
         eqn = jaxpr.eqns[0]
 
         assert eqn.primitive == qp.PauliRot._primitive
-        assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+        assert eqn.params == {"pauli_word": "XY", "n_wires": 2}
 
         assert len(eqn.invars) == 3  # The rotation parameter and the two wires
         assert jaxpr.jaxpr.invars == eqn.invars
@@ -500,7 +500,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"grouping_type": None, "id": None, "method": "lf"}
+        assert eqn.params == {"grouping_type": None, "method": "lf"}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
@@ -522,7 +522,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"id": None}
+        assert eqn.params == {}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 

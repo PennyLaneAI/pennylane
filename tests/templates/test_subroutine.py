@@ -498,21 +498,6 @@ class TestSubroutineCapture:
         inner_xpr = subroutine_eqn.params["jaxpr"]
         assert inner_xpr.eqns[-1].primitive == qp.capture.primitives.cond_prim
 
-    def test_id_ignored(self):
-        """Test that id is ignored with program capture."""
-
-        import jax  # pylint: disable=import-outside-toplevel
-
-        @Subroutine
-        def f(wires):
-            pass
-
-        def w():
-            return f(0, id="val")
-
-        jaxpr = jax.make_jaxpr(w)()
-        assert "id" not in jaxpr.eqns[-1].params
-
 
 @pytest.mark.capture
 class TestCollectedSubroutine:
