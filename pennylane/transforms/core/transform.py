@@ -21,7 +21,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
-from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
