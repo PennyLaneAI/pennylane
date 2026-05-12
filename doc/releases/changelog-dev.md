@@ -51,10 +51,29 @@
   two operators commute. For example, ``qp.is_commuting(my_op, qp.X(my_op.wires[0]))`` can be used to determine
   if ``my_op`` is in the ``X`` basis.
 
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
+  is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
+
 <h3>Internal changes ⚙️</h3>
+
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
+  :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
+  [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
+
 <h3>Contributors ✍️</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Guillermo Alonso,
+Yushao Chen,
+Marcus Edwards,
+David Wierichs
