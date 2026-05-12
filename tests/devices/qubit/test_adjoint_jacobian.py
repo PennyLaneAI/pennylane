@@ -130,6 +130,35 @@ class TestAdjointJacobian:
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
         assert isinstance(grad_D, tuple)
 
+    def test_many_observables_batched_bras(self, tol):
+        """Tests that adjoint_jacobian is correct with many observables, exercising the batched bras path."""
+        n_wires = 5
+        params = np.array([0.1, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5])
+        ops = (
+            [qp.Hadamard(wires=w) for w in range(n_wires)]
+            + [qp.RY(params[i], wires=i) for i in range(n_wires)]
+            + [qp.CNOT(wires=[i, i + 1]) for i in range(n_wires - 1)]
+            + [qp.RX(params[n_wires + i], wires=i) for i in range(3)]
+        )
+        measurements = [qp.expval(qp.PauliZ(w)) for w in range(n_wires)] + [
+            qp.expval(qp.PauliX(0)),
+            qp.expval(qp.PauliY(1)),
+            qp.expval(qp.PauliZ(2) @ qp.PauliZ(3)),
+        ]
+        qs = QuantumScript(ops, measurements, trainable_params=list(range(len(params))))
+        qs_valid, _ = qp.devices.preprocess.decompose(qs, adjoint_ops)
+        qs_valid = qs_valid[0]
+        qs_valid.trainable_params = set(range(len(params)))
+
+        jacobian = adjoint_jacobian(qs_valid)
+
+        tapes, fn = qp.gradients.finite_diff(qs)
+        results = tuple(qp.devices.qubit.simulate(t) for t in tapes)
+        numeric_jacobian = fn(results)
+        numeric_jacobian = np.array([np.squeeze(row) for row in numeric_jacobian])
+
+        assert np.allclose(jacobian, numeric_jacobian, atol=tol, rtol=0)
+
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
         params = np.array([np.pi, np.pi / 2, np.pi / 3])
