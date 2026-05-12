@@ -68,15 +68,6 @@ Pending deprecations
     # New method:
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
-* Deactivating queuing of an ``Operator`` by setting its
-  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
-  has been deprecated and will be removed in v0.46. If necessary, the
-  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
-  subclasses of ``Operator``.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
 
   - Deprecated in v0.45
@@ -167,6 +158,15 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been deprecated and will be removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.

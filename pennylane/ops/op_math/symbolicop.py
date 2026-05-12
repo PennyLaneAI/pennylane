@@ -88,7 +88,6 @@ class SymbolicOp(Operator):
         self._pauli_rep = None
         self.queue()
         self._wires = base.wires
-        self.__queue_category = base._queue_category  # pylint: disable=protected-access
 
     @property
     def batch_size(self):
@@ -131,10 +130,6 @@ class SymbolicOp(Operator):
     @property
     def is_verified_hermitian(self):
         return self.base.is_verified_hermitian
-
-    @property
-    def _queue_category(self):
-        return self.__queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
         context.remove(self.base)

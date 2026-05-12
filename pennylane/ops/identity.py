@@ -58,8 +58,6 @@ class Identity(CVObservable, Operation):
     grad_method = None
     """Gradient computation method."""
 
-    _queue_category = "_ops"
-
     ev_order = 1
 
     resource_keys = set()
