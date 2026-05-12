@@ -31,11 +31,11 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, co
     Args:
         evolution_time (float): Total evolution time ``t``.
         num_trotter_steps (int): Number of second-order Trotter steps.
-        hamiltonian (dict): A Hamiltonian in the form of a dictionary with keys ``nuc_constant``, ``core_tensors``, and``leaf_tensors``.
+        hamiltonian (dict): A Hamiltonian in the form of a dictionary with keys ``nuc_constant``, ``core_tensors``, and ``leaf_tensors``.
             * CDF shapes: ``core_tensors: (L+1, N, N)`` (diagonal per fragment),
-              ``leaf_tensors: (L+1, N, N)``.
+              ``leaf_tensors: (L+1, N, N)``, where N is the number of orbitals, and L is the number of two-body fragments.
             * CGF shapes: ``core_tensors: (L+1, M, M, N, N)``,
-              ``leaf_tensors:  (L+1, M, N, N)``.
+              ``leaf_tensors:  (L+1, M, N, N)``, where M is the number of modes, N is the number of modals per mode, and L is the number of two-body fragments.
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
@@ -295,34 +295,7 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
 
         mode_loop()
 
-
-# ---- CGF diagonal gates (SBE / unary encoding) -----------------------------
-#
-# Encoding assumption: each of the M modes is encoded on N qubits with
-# exactly one qubit excited (unary / single-boson encoding, SBE). With this
-# choice, the number operator on modal p of mode l maps to
-#     n^l_p   ===   (I - Z_{l*N + p}) / 2
-# on the logical subspace. Therefore:
-#   * exp(-i t eps n^l_p) = exp(-i t eps / 2) * RZ(-t eps, wire)
-#   * exp(-i t lam n^l_p n^m_q)
-#       = exp(-i t lam / 4) * RZ(-t lam / 2, p) * RZ(-t lam / 2, q)
-#         * IsingZZ(t lam / 2, [p, q])
-# The leading "identity phases" are collected into ``_energy_shift`` below.
-#
-# Trotter bookkeeping (matching CDF conventions):
-#   * Each two-body fragment is swept twice per step (forward + backward) at
-#     ``first_order_time_step = t / (2 * num_trotter_steps)``. No extra
-#     factor-of-2 is needed because we already feed it to both passes.
-#   * The one-body fragment appears once per step with a factor-of-2 from
-#     merging the forward+backward halves (matches CDF one-body comment).
-#   * Controlled (double-phase) evolution introduces an extra -1/2 factor on
-#     the angle. To stay consistent with ``trotter_cdf.py`` we bake that
-#     -1/2 permanently into the prefactor regardless of ``control_wires``.
-
-
-# ---------------------------------------------------------------------------
 # Zero-energy shift (global phase on controlled evolution)
-# ---------------------------------------------------------------------------
 
 
 def _energy_shift(hamiltonian, frag_scheme):

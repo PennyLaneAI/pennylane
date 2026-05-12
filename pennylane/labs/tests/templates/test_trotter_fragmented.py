@@ -18,14 +18,13 @@ Tests for the trotter_fragmented module (CGF scheme only).
 import itertools
 import math
 
-# pylint: disable=no-member
 import os
 
 import numpy as np
 import pytest
 from scipy.linalg import expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_factorized
 
 
@@ -109,12 +108,12 @@ def _qml_basis_rotation_matrix(leaf_frag, num_modes, n_states):
 
     def _circuit():
         for l in range(num_modes):
-            qml.BasisRotation(
+            qp.BasisRotation(
                 unitary_matrix=leaf_frag[l],
                 wires=list(range(l * n_states, (l + 1) * n_states)),
             )
 
-    return qml.matrix(_circuit, wire_order=wires)()
+    return qp.matrix(_circuit, wire_order=wires)()
 
 
 def build_H_exact(hamiltonian, num_modes, n_states):
@@ -128,7 +127,7 @@ def build_H_exact(hamiltonian, num_modes, n_states):
     wires = list(range(num_qubits))
 
     def get_Z(wire):
-        return qml.matrix(qml.PauliZ(wire), wire_order=wires)
+        return qp.matrix(qp.PauliZ(wire), wire_order=wires)
 
     Z_cache = [get_Z(w) for w in range(num_qubits)]
     I_full = np.eye(dim, dtype=complex)
@@ -197,14 +196,14 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
     """Run the Trotter circuit and return the full unitary matrix."""
     num_qubits = num_modes * n_states
     wires = list(range(num_qubits))
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qp.device("default.qubit", wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def _circuit():
         trotter_factorized(t, num_steps, hamiltonian, wires)
-        return qml.state()
+        return qp.state()
 
-    return qml.matrix(_circuit)()
+    return qp.matrix(_circuit)()
 
 
 ## Test classes
@@ -289,7 +288,7 @@ class TestStepScaling:
         [(2), (4), (8), (16)],
     )
     def test_step_quartic_scaling(self, toy_hamiltonian, num_steps):
-        """Doubling N should reduce subspace error by ~4x."""
+        """Doubling number of steps should reduce subspace error by ~4x."""
         ham, num_modes, n_states = toy_hamiltonian
         H = build_H_exact(ham, num_modes, n_states)
         H_norm = float(np.linalg.norm(H, ord=2))
@@ -333,7 +332,7 @@ class TestGlobalPhase:
         overlap = np.trace(Aref.conj().T @ Atrial)
         measured_phase = np.angle(overlap)
 
-        e_shift = _energy_shift(ham, mode="cgf")
+        e_shift = _energy_shift(ham, frag_scheme="cgf")
         expected_phase = e_shift * t
 
         # Normalize to [-pi, pi]
@@ -341,10 +340,7 @@ class TestGlobalPhase:
         expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
 
         phase_error = abs(measured_phase - expected_phase)
-        assert phase_error < 1e-4, (
-            f"Phase error too large: {phase_error:.4e} rad "
-            f"(measured={measured_phase:.6f}, expected={expected_phase:.6f})"
-        )
+        assert phase_error < 1e-5
 
     def test_energy_shift_with_nuc_constant(self, toy_multi_fragment):
         """Test that energy shift accounts for nonzero nuc_constant."""
@@ -362,7 +358,7 @@ class TestGlobalPhase:
         overlap = np.trace(Aref.conj().T @ Atrial)
         measured_phase = np.angle(overlap)
 
-        e_shift = _energy_shift(ham, mode="cgf")
+        e_shift = _energy_shift(ham, frag_scheme="cgf")
         expected_phase = e_shift * t
 
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
@@ -396,16 +392,13 @@ class TestEdgeCases:
 
         assert np.allclose(
             U, I_expected, atol=1e-12
-        ), "Zero evolution time did not produce the identity matrix."
+        )
 
     def test_hermiticity_of_exact_H(self, toy_hamiltonian):
         """check that the exact Hamiltonian being built is Hermitian."""
         ham, num_modes, n_states = toy_hamiltonian
         H = build_H_exact(ham, num_modes, n_states)
-        assert (
-            np.linalg.norm(H - H.conj().T) < 1e-12
-        ), "build_H_exact produced a non-Hermitian matrix."
-
+        assert np.linalg.norm(H - H.conj().T) < 1e-12
 
 class TestInputValidation:
     """Test that invalid inputs raise appropriate errors."""
@@ -420,14 +413,14 @@ class TestInputValidation:
         wires = list(range(6))
 
         with pytest.raises(ValueError, match="Could not auto-detect"):
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qp.device("default.qubit", wires=wires)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def _circuit():
                 trotter_factorized(0.1, 1, bad_ham, wires)
-                return qml.state()
+                return qp.state()
 
-            qml.matrix(_circuit)()
+            qp.matrix(_circuit)()
 
 
 class TestMonotonicity:
@@ -538,7 +531,7 @@ class TestH2SConvergence:
         overlap = np.trace(Aref.conj().T @ Atrial)
         measured_phase = np.angle(overlap)
 
-        e_shift = _energy_shift(ham, mode="cgf")
+        e_shift = _energy_shift(ham, frag_scheme="cgf")
         expected_phase = e_shift * t
 
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
