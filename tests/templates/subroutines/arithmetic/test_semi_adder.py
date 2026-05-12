@@ -17,7 +17,7 @@ Tests for the SemiAdder template.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
@@ -29,12 +29,12 @@ def test_standard_validity_SemiAdder():
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
-    op = qml.SemiAdder(x_wires, y_wires, work_wires)
-    qml.ops.functions.assert_valid(op)
+    op = qp.SemiAdder(x_wires, y_wires, work_wires)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestSemiAdder:
-    """Test the qml.SemiAdder template."""
+    """Test the qp.SemiAdder template."""
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "x", "y"),
@@ -63,15 +63,15 @@ class TestSemiAdder:
         self, x_wires, y_wires, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the SemiAdder template output."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.SemiAdder(x_wires, y_wires, work_wires)
-            return qml.sample(wires=y_wires), qml.probs(wires=work_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.SemiAdder(x_wires, y_wires, work_wires)
+            return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
 
         output = circuit(x, y)
 
@@ -128,7 +128,7 @@ class TestSemiAdder:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.SemiAdder(x_wires, y_wires, work_wires)
+            qp.SemiAdder(x_wires, y_wires, work_wires)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
@@ -138,7 +138,7 @@ class TestSemiAdder:
             [10, 11, 12, 13],
         )
 
-        adder_decomposition = qml.SemiAdder(x_wires, y_wires, work_wires).compute_decomposition(
+        adder_decomposition = qp.SemiAdder(x_wires, y_wires, work_wires).compute_decomposition(
             x_wires, y_wires, work_wires
         )
 
@@ -160,9 +160,9 @@ class TestSemiAdder:
     def test_decomposition_rule(self, x_wires):
         """Tests that SemiAdder is decomposed properly."""
 
-        for rule in qml.list_decomps(qml.SemiAdder):
+        for rule in qp.list_decomps(qp.SemiAdder):
             _test_decomposition_rule(
-                qml.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
+                qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
                 rule,
             )
 
@@ -179,16 +179,16 @@ class TestSemiAdder:
         x_wires = [0, 1, 4]
         y_wires = [2, 3, 5]
         work_wires = [7, 8]
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.SemiAdder(x_wires, y_wires, work_wires)
-            return qml.sample(wires=y_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.SemiAdder(x_wires, y_wires, work_wires)
+            return qp.sample(wires=y_wires)
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
@@ -248,7 +248,7 @@ class TestSemiAdder:
     ):  # pylint: disable=too-many-arguments
         """Test correctness of C(SemiAdder) decomposition"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         m = len(y_wires)
         k = len(control_wires)
 
@@ -259,22 +259,22 @@ class TestSemiAdder:
             work_wires_adder = work_wires
             work_wires_ctrl = None
 
-        op = qml.SemiAdder(x_wires, y_wires, work_wires_adder)
+        op = qp.SemiAdder(x_wires, y_wires, work_wires_adder)
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(c_value):
-            qml.BasisState(x_value, x_wires)
-            qml.BasisState(y_value, y_wires)
-            qml.BasisState(c_value, control_wires)
+            qp.BasisState(x_value, x_wires)
+            qp.BasisState(y_value, y_wires)
+            qp.BasisState(c_value, control_wires)
             _controlled_semi_adder(
                 op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
             )
             return (
-                qml.counts(wires=x_wires),
-                qml.counts(wires=y_wires),
-                qml.counts(wires=control_wires),
-                qml.counts(wires=work_wires),
+                qp.counts(wires=x_wires),
+                qp.counts(wires=y_wires),
+                qp.counts(wires=control_wires),
+                qp.counts(wires=work_wires),
             )
 
         activating_c_value = 2 ** np.arange(k - 1, -1, -1) @ control_values

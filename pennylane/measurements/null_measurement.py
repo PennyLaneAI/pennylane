@@ -26,9 +26,9 @@ class NullMeasurement(SampleMeasurement, StateMeasurement):
 
     This measurement is for profiling problems without the overhead of performing a measurement.
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=1), diff_method="parameter-shift")
+    >>> @qp.qnode(qp.device('default.qubit', wires=1), diff_method="parameter-shift")
     ... def circuit():
-    ...     return qml.measurements.NullMeasurement()
+    ...     return qp.measurements.NullMeasurement()
     ...
     >>> circuit()
     array(nan)

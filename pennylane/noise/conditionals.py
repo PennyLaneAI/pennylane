@@ -120,17 +120,17 @@ def wires_in(wires):
 
     One may use ``wires_in`` with a given sequence of wires which are used as a wire set:
 
-    >>> cond_func = qml.noise.wires_in([0, 1])
-    >>> cond_func(qml.X(0))
+    >>> cond_func = qp.noise.wires_in([0, 1])
+    >>> cond_func(qp.X(0))
     True
 
-    >>> cond_func(qml.X(3))
+    >>> cond_func(qp.X(3))
     False
 
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qml.noise.wires_in(qml.CNOT(["alice", "bob"]))
+    >>> cond_func = qp.noise.wires_in(qp.CNOT(["alice", "bob"]))
     >>> cond_func("alice")
     True
 
@@ -161,18 +161,18 @@ def wires_eq(wires):
 
     One may use ``wires_eq`` with a given sequence of wires which are used as a wire set:
 
-    >>> cond_func = qml.noise.wires_eq(0)
-    >>> cond_func(qml.X(0))
+    >>> cond_func = qp.noise.wires_eq(0)
+    >>> cond_func(qp.X(0))
     True
 
-    >>> cond_func(qml.RY(1.23, wires=[3]))
+    >>> cond_func(qp.RY(1.23, wires=[3]))
     False
 
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qml.noise.wires_eq(qml.RX(1.0, "dino"))
-    >>> cond_func(qml.RZ(1.23, wires="dino"))
+    >>> cond_func = qp.noise.wires_eq(qp.RX(1.0, "dino"))
+    >>> cond_func(qp.RZ(1.23, wires="dino"))
     True
 
     >>> cond_func("eve")
@@ -408,27 +408,27 @@ def op_in(ops):
 
     One may use ``op_in`` with a string representation of the name of the operation:
 
-    >>> cond_func = qml.noise.op_in(["RX", "RY"])
-    >>> cond_func(qml.RX(1.23, wires=[0]))
+    >>> cond_func = qp.noise.op_in(["RX", "RY"])
+    >>> cond_func(qp.RX(1.23, wires=[0]))
     True
 
-    >>> cond_func(qml.RZ(1.23, wires=[3]))
+    >>> cond_func(qp.RZ(1.23, wires=[3]))
     False
 
-    >>> cond_func([qml.RX(1.23, wires=[1]), qml.RY(4.56, wires=[2])])
+    >>> cond_func([qp.RX(1.23, wires=[1]), qp.RY(4.56, wires=[2])])
     True
 
     Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
     can also be provided:
 
-    >>> cond_func = qml.noise.op_in([qml.RX(1.0, "dino"), qml.RY(2.0, "rhino")])
-    >>> cond_func(qml.RX(1.23, wires=["eve"]))
+    >>> cond_func = qp.noise.op_in([qp.RX(1.0, "dino"), qp.RY(2.0, "rhino")])
+    >>> cond_func(qp.RX(1.23, wires=["eve"]))
     True
 
-    >>> cond_func(qml.RY(1.23, wires=["dino"]))
+    >>> cond_func(qp.RY(1.23, wires=["dino"]))
     True
 
-    >>> cond_func([qml.RX(1.23, wires=[1]), qml.RZ(4.56, wires=[2])])
+    >>> cond_func([qp.RX(1.23, wires=[1]), qp.RZ(4.56, wires=[2])])
     False
     """
     ops = [ops] if not isinstance(ops, (list, tuple, set)) else ops
@@ -455,11 +455,11 @@ def op_eq(ops):
 
     One may use ``op_eq`` with a string representation of the name of the operation:
 
-    >>> cond_func = qml.noise.op_eq("RX")
-    >>> cond_func(qml.RX(1.23, wires=[0]))
+    >>> cond_func = qp.noise.op_eq("RX")
+    >>> cond_func(qp.RX(1.23, wires=[0]))
     True
 
-    >>> cond_func(qml.RZ(1.23, wires=[3]))
+    >>> cond_func(qp.RZ(1.23, wires=[3]))
     False
 
     >>> cond_func("CNOT")
@@ -468,11 +468,11 @@ def op_eq(ops):
     Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
     can also be provided:
 
-    >>> cond_func = qml.noise.op_eq(qml.RX(1.0, "dino"))
-    >>> cond_func(qml.RX(1.23, wires=["eve"]))
+    >>> cond_func = qp.noise.op_eq(qp.RX(1.0, "dino"))
+    >>> cond_func(qp.RX(1.23, wires=["eve"]))
     True
 
-    >>> cond_func(qml.RY(1.23, wires=["dino"]))
+    >>> cond_func(qp.RY(1.23, wires=["dino"]))
     False
     """
     return OpEq(ops)
@@ -551,24 +551,24 @@ def meas_eq(mps):
     One may use ``meas_eq`` with an instance of
     :class:`MeasurementProcess <pennylane.measurements.MeasurementProcess>`:
 
-    >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
-    >>> cond_func(qml.expval(qml.Z(9)))
+    >>> cond_func = qp.noise.meas_eq(qp.expval(qp.Y(0)))
+    >>> cond_func(qp.expval(qp.Z(9)))
     True
 
-    >>> cond_func(qml.sample(op=qml.Y(0)))
+    >>> cond_func(qp.sample(op=qp.Y(0)))
     False
 
     Additionally, a :mod:`measurement <pennylane.measurements>` function
     can also be provided:
 
-    >>> cond_func = qml.noise.meas_eq(qml.expval)
-    >>> cond_func(qml.expval(qml.X(0)))
+    >>> cond_func = qp.noise.meas_eq(qp.expval)
+    >>> cond_func(qp.expval(qp.X(0)))
     True
 
-    >>> cond_func(qml.probs(wires=[0, 1]))
+    >>> cond_func(qp.probs(wires=[0, 1]))
     False
 
-    >>> cond_func(qml.counts(qml.Z(0)))
+    >>> cond_func(qp.counts(qp.Z(0)))
     False
     """
     return MeasEq(mps)
@@ -669,33 +669,33 @@ def partial_wires(operation, *args, **kwargs):
     One may give an instance of :class:`Operation <pennylane.operation.Operation>`
     for the ``operation`` argument:
 
-    >>> func = qml.noise.partial_wires(qml.RX(1.2, [12]))
+    >>> func = qp.noise.partial_wires(qp.RX(1.2, [12]))
     >>> func(2)
     RX(1.2, wires=[2])
-    >>> func(qml.RY(1.0, ["wires"]))
+    >>> func(qp.RY(1.0, ["wires"]))
     RX(1.2, wires=['wires'])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
 
-    >>> func = qml.noise.partial_wires(qml.RX, 3.2, [20])
-    >>> func(qml.RY(1.0, [0]))
+    >>> func = qp.noise.partial_wires(qp.RX, 3.2, [20])
+    >>> func(qp.RY(1.0, [0]))
     RX(3.2, wires=[0])
 
     Moreover, one can use ``kwargs`` instead of positional arguments:
 
-    >>> func = qml.noise.partial_wires(qml.RX, phi=1.2)
-    >>> func(qml.RY(1.0, [2]))
+    >>> func = qp.noise.partial_wires(qp.RX, phi=1.2)
+    >>> func(qp.RY(1.0, [2]))
     RX(1.2, wires=[2])
-    >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
-    >>> rfunc(qml.RY(1.0, ["light"]))
+    >>> rfunc = qp.noise.partial_wires(qp.RX(1.2, [12]), phi=2.3)
+    >>> rfunc(qp.RY(1.0, ["light"]))
     RX(2.3, wires=['light'])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`
 
-    >>> func = qml.noise.partial_wires(qml.expval(qml.Z(0)))
-    >>> func(qml.RX(1.2, wires=[9]))
+    >>> func = qp.noise.partial_wires(qp.expval(qp.Z(0)))
+    >>> func(qp.RX(1.2, wires=[9]))
     expval(Z(9))
     """
     if callable(operation):

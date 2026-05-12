@@ -32,16 +32,19 @@ from pennylane.wires import Wires, WiresLike
 class TemporaryAND(Operation):
     r"""TemporaryAND(wires, control_values)
 
-    The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
-    about the target wire to enable more efficient circuit decompositions. The ``TemporaryAND`` assumes the target qubit
-    to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
-    For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
+    The ``TemporaryAND`` operation is a three-qubit gate equivalent to a reversible ``AND``,
+    or :class:`~pennylane.Toffoli`, gate that leverages extra information about the target
+    wire to enable more efficient circuit decompositions. ``TemporaryAND`` assumes the target qubit
+    to be in the state :math:`|0\rangle`, while ``Adjoint(TemporaryAND)`` assumes the target output
+    to be :math:`|0\rangle`. For more details, see Fig. 4
+    in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of this operation, the user must ensure
-        that before computation the input state of the target wire is :math:`|0\rangle`,
-        and that after uncomputation the output state of the target wire is :math:`|0\rangle`,
+        that before using ``TemporaryAND`` the input state of the target wire is :math:`|0\rangle`,
+        and that after uncomputation, i.e., after using ``Adjoint(TemporaryAND)``, the output
+        state of the target wire is :math:`|0\rangle`,
         when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
         Otherwise, behaviour may differ from the expected ``AND``.
 
@@ -51,11 +54,11 @@ class TemporaryAND(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
-            third one is the target wire.
-        control_values (tuple[bool or int]): The values on the control wires for which
-            the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
+        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the
+            control wires and the third one is the target wire.
+        control_values (tuple[bool or int]): The values on the control wires for which the target
+            operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
 
     .. seealso:: The alias :class:`~Elbow`.
@@ -64,27 +67,52 @@ class TemporaryAND(Operation):
 
     .. code-block:: python
 
-        @qml.set_shots(1)
-        @qml.qnode(qml.device("default.qubit"))
+        import pennylane as qp
+
+        @qp.set_shots(1)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
             # |0000⟩
-            qml.X(0) # |1000⟩
-            qml.X(1) # |1100⟩
+            qp.X(0) # |1000⟩
+            qp.X(1) # |1100⟩
             # The target wire is in state |0>, so we can apply TemporaryAND
-            qml.TemporaryAND([0,1,2]) # |1110⟩
-            qml.CNOT([2,3]) # |1111⟩
+            qp.TemporaryAND([0,1,2]) # |1110⟩
+            qp.CNOT([2,3]) # |1111⟩
             # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied,
             # so we can apply adjoint(TemporaryAND)
-            qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
-            return qml.sample(wires=[0,1,2,3])
+            qp.adjoint(qp.TemporaryAND([0,1,2])) # |1101⟩
+            return qp.sample(wires=[0,1,2,3])
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──X─╭●─────●╮─┤ ╭Sample
     1: ──X─├●─────●┤─┤ ├Sample
     2: ────╰⊕─╭●──⊕╯─┤ ├Sample
     3: ───────╰X─────┤ ╰Sample
     >>> print(circuit())
     [[1 1 0 1]]
+
+    There is also a decomposition of ``TemporaryAND`` into a standard ``Toffoli`` gate, in order
+    to provide a compilation path into gate sets like Clifford + Toffoli:
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.decomposition.enable_graph()
+
+        @qp.decompose(gate_set={qp.Toffoli, qp.X})
+        def circuit():
+            qp.TemporaryAND((0, 1, 2))
+            return qp.expval(qp.Z(2))
+
+    >>> print(qp.draw(circuit)())
+    0: ─╭●─┤
+    1: ─├●─┤
+    2: ─╰X─┤  <Z>
+
+    Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
+    decomposition may contain bit flips on the control qubits, depending on potentially dynamic
+    control values.
     """
 
     num_wires = 3
@@ -133,7 +161,7 @@ class TemporaryAND(Operation):
 
         **Example**
 
-        >>> print(qml.TemporaryAND.compute_matrix(control_values = (1,1)))
+        >>> print(qp.TemporaryAND.compute_matrix(control_values = (1,1)))
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -174,8 +202,12 @@ class TemporaryAND(Operation):
         return result_matrix
 
 
+# The number of X gates we put into resource estimates for flipping control qubits.
+# We choose 2 here because it is the average over the four possible scenarios.
+_number_xs = 2
+
+
 def _temporary_and_resources():
-    number_xs = 4  # worst case scenario
     prod_rep = resource_rep(
         ops.Prod,
         resources={
@@ -186,7 +218,7 @@ def _temporary_and_resources():
         },
     )
     return {
-        resource_rep(ops.X): number_xs,
+        resource_rep(ops.X): _number_xs,
         change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
         adjoint_resource_rep(ops.S, {}): 1,
     }
@@ -221,23 +253,47 @@ def _temporary_and(wires: WiresLike, **kwargs):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
-add_decomps(TemporaryAND, _temporary_and)
+def _toffoli_with_cvals(wires, cvals):
+    """Conjugate a Toffoli by Pauli X depending on control values."""
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
+    ops.Toffoli(wires)
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
+
+
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+def _temporary_and_to_toffoli(wires: WiresLike, **kwargs):
+    _toffoli_with_cvals(wires, kwargs["control_values"])
+
+
+add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
 # pylint: disable=unused-argument
 def _adjoint_temporary_and_resources(base_class=None, base_params=None):
-    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1}
+    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
 
 
-@register_resources(_adjoint_temporary_and_resources)
-def _adjoint_TemporaryAND(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
+@register_resources(_adjoint_temporary_and_resources, exact=False)
+def _adjoint_temporary_and(wires: WiresLike, **kwargs):  # pylint: disable=unused-argument
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
+    cvals = kwargs["base"].hyperparameters["control_values"]
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
     ops.Hadamard(wires=wires[2])
     m_0 = ops.measure(wires[2], reset=True)
     ops.cond(m_0, ops.CZ)(wires=[wires[0], wires[1]])
+    ops.cond(math.logical_not(cvals[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
 
 
-add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND)
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+def _adjoint_temporary_and_to_toffoli(wires: WiresLike, **kwargs):
+    _toffoli_with_cvals(wires, kwargs["base"].hyperparameters["control_values"])
+
+
+add_decomps("Adjoint(TemporaryAND)", _adjoint_temporary_and, _adjoint_temporary_and_to_toffoli)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

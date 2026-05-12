@@ -47,7 +47,7 @@ def get_spectrum(op, decimals):
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
 
-    # todo: use qml.math.linalg once it is tested properly
+    # todo: use qp.math.linalg once it is tested properly
     evals = np.linalg.eigvalsh(matrix(generator(op, format="observable")))
 
     # compute all unique positive differences of eigenvalues, then add 0

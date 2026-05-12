@@ -7,6 +7,8 @@
 # file as an artifact.
 
 name: Unit Test
+permissions:
+  contents: read
 on:
   workflow_call:
     inputs:

@@ -24,7 +24,7 @@ def registers(register_dict):
 
     This function helps to group qubits and abstract away the finer details of running quantum
     algorithms. Register names and their total number of wires are typically known in advance,
-    but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
+    but managing the specific wire range for each register can be a challenge. The ``qp.registers()``
     function creates a dictionary that maps register names to :class:`~.Wires` objects. Moreover,
     it allows one to input a nested structure where registers contain sub-registers, as illustrated
     in the examples below.
@@ -41,12 +41,12 @@ def registers(register_dict):
 
     Given flat input dictionary:
 
-    >>> qml.registers({"alice": 2, "bob": 3})
+    >>> qp.registers({"alice": 2, "bob": 3})
     {'alice': Wires([0, 1]), 'bob': Wires([2, 3, 4])}
 
     Given nested input dictionary:
 
-    >>> wire_registers = qml.registers({"people": {"alice": 2, "bob": 1}})
+    >>> wire_registers = qp.registers({"people": {"alice": 2, "bob": 1}})
     >>> wire_registers
     {'alice': Wires([0, 1]), 'bob': Wires([2]), 'people': Wires([0, 1, 2])}
     >>> wire_registers['bob']
@@ -58,20 +58,20 @@ def registers(register_dict):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
+        dev = qp.device("default.qubit")
+        reg = qp.registers({"aux": 1, "phi": 5, "psi": 5})
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for state in ["phi", "psi"]:
-                 qml.BasisState([1, 1, 0, 0, 0], reg[state])
+                 qp.BasisState([1, 1, 0, 0, 0], reg[state])
 
-            qml.Hadamard(reg["aux"])
+            qp.Hadamard(reg["aux"])
             for i in range(len(reg["phi"])):
-                qml.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
-            qml.Hadamard(reg["aux"])
+                qp.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
+            qp.Hadamard(reg["aux"])
 
-            return qml.expval(qml.Z(wires=reg["aux"]))
+            return qp.expval(qp.Z(wires=reg["aux"]))
 
     >>> print(circuit())
     0.999...

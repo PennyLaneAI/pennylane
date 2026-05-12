@@ -13,21 +13,29 @@
 # limitations under the License.
 
 """
-Provides a transform to combine all ``qml.GlobalPhase`` gates in a circuit into a single one applied at the end.
+Provides a transform to combine all ``qp.GlobalPhase`` gates in a circuit into a single one applied at the end.
 """
 
-import pennylane as qml
+from functools import partial
+
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-@transform
-def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Combine all ``qml.GlobalPhase`` gates into a single ``qml.GlobalPhase`` operation.
+def _combine_global_phases_setup_inputs():
+    return (), {}
 
-    This transform returns a new circuit where all ``qml.GlobalPhase`` gates in the original circuit (if exists)
-    are removed, and a new ``qml.GlobalPhase`` is added at the end of the list of operations with its phase
+
+@partial(
+    transform, pass_name="combine-global-phases", setup_inputs=_combine_global_phases_setup_inputs
+)
+def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Combine all ``qp.GlobalPhase`` gates into a single ``qp.GlobalPhase`` operation.
+
+    This transform returns a new circuit where all ``qp.GlobalPhase`` gates in the original circuit (if exists)
+    are removed, and a new ``qp.GlobalPhase`` is added at the end of the list of operations with its phase
     being a total global phase computed as the algebraic sum of all global phases in the original circuit.
 
     Args:
@@ -35,7 +43,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -44,24 +52,80 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.transforms.combine_global_phases
-        @qml.qnode(dev)
+        @qp.transforms.combine_global_phases
+        @qp.qnode(dev)
         def circuit():
-            qml.GlobalPhase(0.3, wires=0)
-            qml.PauliY(wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=(1,2))
-            qml.GlobalPhase(0.46, wires=2)
-            return qml.expval(qml.X(0) @ qml.Z(1))
+            qp.GlobalPhase(0.3, wires=0)
+            qp.PauliY(wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=(1,2))
+            qp.GlobalPhase(0.46, wires=2)
+            return qp.expval(qp.X(0) @ qp.Z(1))
 
     To check the result, let's print out the circuit:
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──Y────╭GlobalPhase(0.76)─┤ ╭<X@Z>
     1: ──H─╭●─├GlobalPhase(0.76)─┤ ╰<X@Z>
     2: ────╰X─╰GlobalPhase(0.76)─┤
+
+    .. details::
+        :title: Usage with qjit
+
+        There are two key differences to note when using ``combine_global_phases`` with ``qjit``:
+
+        * ``combine_global_phases`` must be applied to a QNode. Quantum functions are not supported as input.
+
+        * When used with ``qjit``, the ``combine_global_phases`` compilation pass will merge
+          operations surrounding control flow together, while those within the control flow are merged
+          together separately (i.e., no formal loop-boundary optimizations).
+
+        Consider the following example:
+
+        .. code-block:: python
+
+            import pennylane as qp
+
+            n = 3
+            dev = qp.device('null.qubit', wires=n)
+
+            @qp.qjit(keep_intermediate=True, capture=True)
+            @qp.transforms.combine_global_phases
+            @qp.qnode(dev)
+            def circuit():
+                qp.GlobalPhase(0.1, wires = 2)
+                qp.X(n-1)
+                qp.GlobalPhase(0.1, wires = 1)
+                qp.H(n-2)
+
+                @qp.for_loop(0, 2)
+                def loop(i):
+                    qp.GlobalPhase(0.1967, wires=i)
+                    qp.GlobalPhase(0.7691, wires=i)
+
+                loop()
+
+                qp.GlobalPhase(0.1, wires=0)
+                qp.GlobalPhase(0.1, wires=0)
+
+                return qp.expval(qp.Z(0))
+
+        The two ``GlobalPhase`` operations within the ``for_loop`` context will be merged together.
+        However, they will not be merged together with the ``GlobalPhase`` operations that occur
+        before and after the ``for_loop``.
+
+        This behaviour is shown in the image below, where the application of
+        ``combine_global_phases`` results in two ``GlobalPhase`` instances (one inside of a
+        ``for_loop`` and the other from the ``GlobalPhase`` instances outside of the ``for_loop``).
+
+        >>> qp.specs(circuit, level="device")().resources.gate_counts
+        {'GlobalPhase': 3, 'Hadamard': 1, 'PauliX': 1}
+        >>> print(qp.draw_graph(circuit)()) # doctest: +SKIP
+
+        .. figure:: ../../_static/catalyst-combine-global-phases-example.png
+            :align: left
 
     """
 
@@ -69,15 +133,15 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     phi = 0
     operations = []
     for op in tape.operations:
-        if isinstance(op, qml.GlobalPhase):
+        if isinstance(op, qp.GlobalPhase):
             has_global_phase = True
             phi += op.parameters[0]
         else:
             operations.append(op)
 
     if has_global_phase:
-        with qml.QueuingManager.stop_recording():
-            operations.append(qml.GlobalPhase(phi=phi))
+        with qp.QueuingManager.stop_recording():
+            operations.append(qp.GlobalPhase(phi=phi))
 
     new_tape = tape.copy(operations=operations)
 

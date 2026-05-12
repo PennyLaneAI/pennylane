@@ -45,7 +45,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
-        return_global_phase (bool): Whether to return the global phase as a ``qml.GlobalPhase(-alpha)``
+        return_global_phase (bool): Whether to return the global phase as a ``qp.GlobalPhase(-alpha)``
             as the last element of the returned list of operations.
 
     Returns:
@@ -57,13 +57,13 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     >>> from pprint import pprint
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
-    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
     [RZ(np.float64(3.14159...), wires=[0]),
      RY(np.float64(1.57079...), wires=[0]),
      RZ(np.float64(0.0), wires=[0]),
      GlobalPhase(np.float64(-1.57079...), wires=[])]
-    >>> decomp = qml.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(np.float64(1.57079...), wires=[0]),
      RZ(np.float64(1.57079...), wires=[0]),
@@ -166,7 +166,7 @@ def two_qubit_decomposition(U, wires):
     We can compute its decompositon like so:
 
     >>> from pprint import pprint
-    >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp = qp.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
     >>> pprint(decomp) # doctest: +SKIP
     [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
            [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
@@ -259,9 +259,9 @@ def multi_qubit_decomposition(U, wires):
 
     .. code-block:: pycon
 
-        >>> matrix_target = qml.matrix(qml.QFT([0,1,2]))
-        >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
-        >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
+        >>> matrix_target = qp.matrix(qp.QFT([0,1,2]))
+        >>> ops = qp.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> matrix_decomposition = qp.matrix(qp.prod(*ops[::-1]), wire_order = [0,1,2])
         >>> print([op.name for op in ops])
         ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
         >>> print(np.allclose(matrix_decomposition, matrix_target))
@@ -284,15 +284,17 @@ def multi_qubit_decomposition(U, wires):
 #######################
 
 
-def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
+def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
     def _resource_fn(num_wires):  # pylint: disable=unused-argument
         return su2_resource() | {ops.GlobalPhase: 1}
 
+    name = name or su2_rule.name
+
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda num_wires: num_wires == 1)
-    @register_resources(_resource_fn, exact=False)
+    @register_resources(_resource_fn, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -367,11 +369,11 @@ def _su2_zxz_decomp(U, wires, **__):
     ops.RZ(omega, wires=wires[0])
 
 
-rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource)
-zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource)
-xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource)
-xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource)
-zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource)
+rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
+zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource, "zyz")
+xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource, "xyx")
+xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource, "xzx")
+zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
 def _two_qubit_resource(**_):
@@ -425,7 +427,7 @@ def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
-    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qp.SelectPauliRot`)
     p = 2 ** (len(wires) - 1)
 
     (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
@@ -1010,7 +1012,7 @@ def _decompose_3_cnots(U, wires, initial_phase):
 
     C1 = SWAP S† C2 S.
 
-    (S is just `qml.S`)
+    (S is just `qp.S`)
     Now, we "just" need to combine all of these basis changes with the type-AI Cartan
     decomposition (_ai_kak) and a function that extracts the parameters a, b, d, e from a matrix
     of the form C1 (_extract_abde). For this, let's compute (not necessarily obvious to come up

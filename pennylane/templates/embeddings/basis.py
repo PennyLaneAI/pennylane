@@ -15,8 +15,7 @@ r"""
 Contains the BasisEmbedding template.
 """
 
-from pennylane.decomposition import add_decomps
-from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp
+from pennylane.ops.qubit.state_preparation import BasisState
 
 
 class BasisEmbedding(BasisState):
@@ -42,18 +41,18 @@ class BasisEmbedding(BasisState):
 
         .. code-block:: python
 
-            dev = qml.device('reference.qubit', wires=3)
+            dev = qp.device('reference.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(feature_vector):
-                qml.BasisEmbedding(features=feature_vector, wires=range(3))
-                return qml.state()
+                qp.BasisEmbedding(features=feature_vector, wires=range(3))
+                return qp.state()
 
             X = [1,1,1]
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(X))
+        >>> print(qp.draw(circuit, level="device")(X))
         0: ──X─┤ ╭State
         1: ──X─┤ ├State
         2: ──X─┤ ╰State
@@ -78,5 +77,3 @@ class BasisEmbedding(BasisState):
 
 
 BasisEmbedding._primitive = BasisState._primitive  # pylint: disable=protected-access
-
-add_decomps(BasisEmbedding, _basis_state_decomp)
