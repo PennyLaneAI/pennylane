@@ -12,6 +12,11 @@ from pennylane.operation import Operator
 class Incrementer(Operator):
     """
     Increment the input `wires` by one, using zeroed `work_wires`.
+
+    Args:
+        wires (Wires): The wires that the incrementer acts on.
+        work_wires (Wires): The auxiliary wires that the incrementer may use in its decomposition.
+
     We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
     This is a manually reduced decomposition of the standard incrementer via MCX gates if
     work wires are available.
@@ -52,10 +57,6 @@ class Incrementer(Operator):
     This circuit is derived, e.g., in
     `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
     see "Incrementer from n-2 Zeroed bits".
-
-    Args:
-        wires (Wires): The wires that the incrementer acts on.
-        work_wires (Wires): The auxiliary wires that the incrementer may use in its decomposition.
     """
 
     resource_keys = {"num_wires"}
