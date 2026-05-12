@@ -82,14 +82,6 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
-  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the 
-  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
@@ -167,6 +159,14 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
+  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  have been deprecated and will be removed in v0.46. Instead, please use the 
+  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
