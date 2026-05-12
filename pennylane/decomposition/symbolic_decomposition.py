@@ -339,9 +339,6 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         ]
         for w in zero_control_wires:
             qp.PauliX(w)
-        # for w, val in zip(control_wires, control_values):
-        # qp.cond(math.logical_not(val), qp.X)(w)
-
         # We're extracting control wires and base wires from the wires argument instead
         # of directly using control_wires and base.wires, `wires` is properly traced, but
         # `control_wires` and `base.wires` are not.
@@ -353,8 +350,6 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
         for w in zero_control_wires:
             qp.PauliX(w)
-        # for w, val in zip(control_wires, control_values):
-        # qp.cond(math.logical_not(val), qp.X)(w)
 
     _impl._source = (
         dedent(_impl._source).strip()
