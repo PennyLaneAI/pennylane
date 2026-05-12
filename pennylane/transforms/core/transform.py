@@ -494,7 +494,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 def _modified_setup_inputs(
                     qnode, *args, **kwargs
                 ):  # pylint: disable=unused-argument
-                    return setup_inputs(*args, **kwargs)
+                    return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
                 qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
