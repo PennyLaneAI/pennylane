@@ -46,6 +46,7 @@
 <h3>Breaking changes 💔</h3>
 
 * `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
+  [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
 
 <h3>Deprecations 👋</h3>
 
