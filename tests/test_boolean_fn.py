@@ -17,7 +17,7 @@ Unit tests for BooleanFn utility class.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 class TestBooleanFn:
@@ -32,20 +32,20 @@ class TestBooleanFn:
     )
     def test_basic_functionality(self, fn, arg, expected):
         """Test initialization and calling of BooleanFn."""
-        crit = qml.BooleanFn(fn)
+        crit = qp.BooleanFn(fn)
         assert crit(arg) == expected
 
     def test_not(self):
         """Test that logical negation works."""
-        crit = qml.BooleanFn(lambda x: x < 4)
+        crit = qp.BooleanFn(lambda x: x < 4)
         ncrit = ~crit
         assert crit(-2) and not ncrit(-2)
         assert not crit(10) and ncrit(10)
 
     def test_and(self):
         """Test that logical conjunction works."""
-        crit_0 = qml.BooleanFn(lambda x: x > 4)
-        crit_1 = qml.BooleanFn(lambda x: x < 9)
+        crit_0 = qp.BooleanFn(lambda x: x > 4)
+        crit_1 = qp.BooleanFn(lambda x: x < 9)
         crit = crit_0 & crit_1
         assert not crit(-2)
         assert crit(6)
@@ -53,8 +53,8 @@ class TestBooleanFn:
 
     def test_or(self):
         """Test that logical or works."""
-        crit_0 = qml.BooleanFn(lambda x: x < 4)
-        crit_1 = qml.BooleanFn(lambda x: x > 9)
+        crit_0 = qp.BooleanFn(lambda x: x < 4)
+        crit_1 = qp.BooleanFn(lambda x: x > 9)
         crit = crit_0 | crit_1
         assert crit(-2)
         assert not crit(6)
@@ -66,6 +66,6 @@ class TestBooleanFn:
         def greater_than_five(x):
             return x > 5
 
-        func = qml.BooleanFn(greater_than_five)
+        func = qp.BooleanFn(greater_than_five)
 
         assert repr(func) == "BooleanFn(greater_than_five)"

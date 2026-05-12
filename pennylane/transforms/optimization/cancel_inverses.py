@@ -331,7 +331,7 @@ def cancel_inverses(
     (self-)inverses or adjoint.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
 
             .. note::
@@ -339,108 +339,84 @@ def cancel_inverses(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-            The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
 
-    You can apply the cancel inverses transform directly on :class:`~.QNode`.
 
-    >>> dev = qml.device('default.qubit', wires=3)
+    You can apply it on quantum functions:
 
     .. code-block:: python
 
-        @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev)
-        def circuit(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=2)
-            qml.RY(y, wires=1)
-            qml.X(1)
-            qml.RZ(z, wires=0)
-            qml.RX(y, wires=2)
-            qml.CNOT(wires=[0, 2])
-            qml.X(1)
-            return qml.expval(qml.Z(0))
+        def qfunc(x, y, z):
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=0)
+            qp.RX(x, wires=2)
+            qp.RY(y, wires=1)
+            qp.X(1)
+            qp.RZ(z, wires=0)
+            qp.RX(y, wires=2)
+            qp.CNOT(wires=[0, 2])
+            qp.X(1)
+            return qp.expval(qp.Z(0))
 
-    >>> print(circuit(0.1, 0.2, 0.3))
-    1.0
+    The circuit before optimization:
 
-    .. details::
-        :title: Usage Details
+    >>> dev = qp.device("default.qubit")
+    >>> qnode = qp.QNode(qfunc, dev)
+    >>> print(qp.draw(qnode)(1, 2, 3))
+    0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
+    1: ──H─────────RY(2.00)──X────────│───X─┤
+    2: ──RX(1.00)──RX(2.00)───────────╰X────┤
 
-        You can also apply it on quantum functions:
+    We can see that there are two adjacent Hadamards on the first qubit that
+    should cancel each other out. Similarly, there are two ``X`` gates on the
+    second qubit that should cancel. We can obtain a simplified circuit by running
+    the ``cancel_inverses`` transform:
 
-        .. code-block:: python
-
-            def qfunc(x, y, z):
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=1)
-                qml.Hadamard(wires=0)
-                qml.RX(x, wires=2)
-                qml.RY(y, wires=1)
-                qml.X(1)
-                qml.RZ(z, wires=0)
-                qml.RX(y, wires=2)
-                qml.CNOT(wires=[0, 2])
-                qml.X(1)
-                return qml.expval(qml.Z(0))
-
-        The circuit before optimization:
-
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)(1, 2, 3))
-        0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
-        1: ──H─────────RY(2.00)──X────────│───X─┤
-        2: ──RX(1.00)──RX(2.00)───────────╰X────┤
-
-        We can see that there are two adjacent Hadamards on the first qubit that
-        should cancel each other out. Similarly, there are two Pauli-X gates on the
-        second qubit that should cancel. We can obtain a simplified circuit by running
-        the ``cancel_inverses`` transform:
-
-        >>> optimized_qfunc = qml.transforms.cancel_inverses(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-        0: ──RZ(3.00)───────────╭●─┤  <Z>
-        1: ──H─────────RY(2.00)─│──┤
-        2: ──RX(1.00)──RX(2.00)─╰X─┤
+    >>> optimized_qnode = qp.transforms.cancel_inverses(qnode)
+    >>> print(qp.draw(optimized_qnode)(1, 2, 3))
+    0: ──RZ(3.00)───────────╭●─┤  <Z>
+    1: ──H─────────RY(2.00)─│──┤
+    2: ──RX(1.00)──RX(2.00)─╰X─┤
 
     .. details::
         :title: Usage with qjit
 
-        There are two key differences to note when using ``cancel_inverses`` with ``qjit``:
+        There are three key differences to note when using ``cancel_inverses`` with ``qjit``:
 
-        * The ``recursive`` argument is not supoprted, and an error will be raised if a value for ``recursive`` is specified.
+        * ``cancel_inverses`` must be applied to a QNode. Quantum functions are not supported as input.
+
+        * The ``recursive`` argument is not supported, and an error will be raised if a value for ``recursive`` is specified.
 
         * Only the following gates can be optimized by ``cancel_inverses`` with ``qjit``:
 
-          - :class:`qml.Hadamard <pennylane.Hadamard>`,
-          - :class:`qml.PauliX <pennylane.PauliX>`,
-          - :class:`qml.PauliY <pennylane.PauliY>`,
-          - :class:`qml.PauliZ <pennylane.PauliZ>`
-          - :class:`qml.CNOT <pennylane.CNOT>`,
-          - :class:`qml.CY <pennylane.CY>`,
-          - :class:`qml.CZ <pennylane.CZ>`,
-          - :class:`qml.SWAP <pennylane.SWAP>`
-          - :class:`qml.Toffoli <pennylane.Toffoli>`
+          - :class:`qp.Hadamard <pennylane.Hadamard>`,
+          - :class:`qp.PauliX <pennylane.PauliX>`,
+          - :class:`qp.PauliY <pennylane.PauliY>`,
+          - :class:`qp.PauliZ <pennylane.PauliZ>`
+          - :class:`qp.CNOT <pennylane.CNOT>`,
+          - :class:`qp.CY <pennylane.CY>`,
+          - :class:`qp.CZ <pennylane.CZ>`,
+          - :class:`qp.SWAP <pennylane.SWAP>`
+          - :class:`qp.Toffoli <pennylane.Toffoli>`
 
         .. code-block:: python
 
-            dev = qml.device("lightning.qubit", wires=1)
+            dev = qp.device("lightning.qubit", wires=1)
 
-            @qml.qjit(capture=True)
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev)
+            @qp.qjit(capture=True)
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
             def circuit():
-                qml.RX(0.1, wires=0)
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(0.1, wires=0)
+                qp.Hadamard(wires=0)
+                qp.Hadamard(wires=0)
+                return qp.expval(qp.PauliZ(0))
 
-        >>> print(qml.specs(circuit, level=1)())
+        >>> print(qp.specs(circuit, level=1)())
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)

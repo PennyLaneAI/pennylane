@@ -23,11 +23,12 @@ Importing quantum circuits
 Importing quantum circuits can help you take advantage of PennyLane's various optimization,
 visualization, and interoperability features for existing circuits. For example, you can take a
 `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ from
-Qiskit, import it into PennyLane, and then apply a `circuit-cutting transform
-<https://pennylane.ai/qml/demos/tutorial_quantum_circuit_cutting/>`_ to reduce the number of qubits
-required to implement the circuit. You could also :ref:`compile <intro_ref_compile_worklfows>` the
-circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
-differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
+Qiskit, import it into PennyLane, and then apply a 
+:doc:`circuit-cutting transform <demo:demos/tutorial_quantum_circuit_cutting>` to reduce the
+number of qubits required to implement the circuit. You could also 
+:ref:`compile <intro_ref_compile_worklfows>` the circuit using
+`Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or differentiate
+and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
 :html:`<div class="summary-table">`
 
@@ -36,6 +37,7 @@ differentiate and optimize the circuit using :ref:`quantum-specific optimizers <
 
     ~pennylane.from_pyquil
     ~pennylane.from_qasm
+    ~pennylane.from_qasm3
     ~pennylane.from_qiskit
     ~pennylane.from_quil
     ~pennylane.from_quil_file
@@ -60,9 +62,9 @@ using:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    pl_qfunc_from_qk = qml.from_qiskit(qk_circuit)
+    pl_qfunc_from_qk = qp.from_qiskit(qk_circuit)
 
 .. note::
 
@@ -73,10 +75,10 @@ This quantum function can then be called from inside a QNode to generate a Penny
 
 .. code-block:: python
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def pl_circuit_from_qk():
         pl_qfunc_from_qk(wires=[0, 1])
-        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
+        return qp.expval(qp.Y(0)), qp.var(qp.Z(1))
 
 .. note::
 
@@ -84,9 +86,9 @@ This quantum function can then be called from inside a QNode to generate a Penny
 
     .. code-block:: python
 
-        measurements = [qml.expval(qml.Y(0)), qml.var(qml.Z(1))]
-        pl_qfunc_from_qk = qml.from_qiskit(qk_circuit, measurements=measurements)
-        pl_circuit_from_qk = qml.QNode(pl_qfunc_from_qk, qml.device("default.qubit"))
+        measurements = [qp.expval(qp.Y(0)), qp.var(qp.Z(1))]
+        pl_qfunc_from_qk = qp.from_qiskit(qk_circuit, measurements=measurements)
+        pl_circuit_from_qk = qp.QNode(pl_qfunc_from_qk, qp.device("default.qubit"))
 
 
     Here, the ``measurements`` argument overrides any terminal measurements in the Qiskit circuit.
@@ -99,14 +101,72 @@ The resulting PennyLane circuit can be executed directly:
 
 It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 
->>> print(qml.draw(pl_circuit_from_qk)())
+>>> print(qp.draw(pl_circuit_from_qk)())
 0: ──H─╭●─┤  <Y>
 1: ────╰X─┤  Var[Z]
 
 OpenQASM
 ~~~~~~~~
 
-An equivalent quantum circuit can be expressed in OpenQASM 2.0 as follows:
+:func:`~pennylane.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
+mid circuit measurements, subroutines, classical computation, and more.
+
+.. code-block:: python
+
+    qasm_string = '''
+            qubit q0;
+            qubit q1;
+            qubit q2;
+
+            float theta = 0.2;
+            int power = 2;
+
+            ry(theta / 2) q0;
+            rx(theta) q1;
+            pow(power) @ x q0;
+
+            def random(qubit q) -> bit
+            {
+                bit b = "0";
+                h q;
+                measure q -> b;
+                return b;
+            }
+
+            bit m = random(q2);
+
+            if (m) {
+                int i = 0;
+                while (i < 5) {
+                    i = i + 1;
+                    rz(i) q1;
+                    break;
+                }
+            }
+    '''
+
+We can convert this circuit into a PennyLane quantum function using:
+
+.. code-block:: python
+
+    @qp.qnode(qp.device("default.qubit", wires=[0, 1, 2]))
+    def my_circuit():
+        qp.from_qasm3(
+            qasm_string,
+            {'q0': 0, 'q1': 1, 'q2': 2}
+        )()
+        return qp.expval(qp.Z(0))
+
+Inspecting the circuit, we can see that the operations and measurements have been correctly interpreted.
+
+>>> print(qp.draw(my_circuit)())
+0: ──RY(0.10)──X²────────────┤  <Z>
+1: ──RX(0.20)───────RZ(1.00)─┤
+2: ──H─────────┤↗├──║────────┤
+                ╚═══╝
+
+
+:func:`~pennylane.from_qasm` relies on the PennyLane-Qiskit plugin and can import the OpenQASM 2.0 spec.
 
 .. code-block:: python
 
@@ -126,18 +186,18 @@ We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    pl_qfunc_from_oq = qml.from_qasm(oq_circuit)
+    pl_qfunc_from_oq = qp.from_qasm(oq_circuit)
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def pl_circuit_from_oq():
         pl_qfunc_from_oq(wires=[0, 1])
-        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
+        return qp.expval(qp.Y(0)), qp.var(qp.Z(1))
 
 The result is as follows:
 
->>> print(qml.draw(pl_circuit_from_oq)())
+>>> print(qp.draw(pl_circuit_from_oq)())
 0: ──H─╭●─┤  <Y>
 1: ────╰X─┤  Var[Z]
 
@@ -164,18 +224,18 @@ This ``Program`` can be converted into a PennyLane quantum function using the
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    pl_qfunc_from_pq = qml.from_pyquil(pq_program)
+    pl_qfunc_from_pq = qp.from_pyquil(pq_program)
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def pl_circuit_from_pq():
         pl_qfunc_from_pq(wires=[0, 1])
-        return qml.expval(qml.Y(0)), qml.var(qml.Z(1))
+        return qp.expval(qp.Y(0)), qp.var(qp.Z(1))
 
 The resulting PennyLane circuit is:
 
->>> print(qml.draw(pl_circuit_from_pq)())
+>>> print(qp.draw(pl_circuit_from_pq)())
 0: ──H─╭●─┤  <Y>
 1: ────╰X─┤  Var[Z]
 
@@ -217,9 +277,9 @@ a PennyLane :class:`Operator <pennylane.operation.Operator>`:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
-    pl_op = qml.from_qiskit_op(qk_op)
+    pl_op = qp.from_qiskit_op(qk_op)
 
 We can inspect both operators to make sure they match:
 

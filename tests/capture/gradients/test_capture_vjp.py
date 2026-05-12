@@ -19,7 +19,7 @@ from functools import partial
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -39,19 +39,19 @@ class TestErrors:
             return x + y
 
         with pytest.raises(ValueError, match="Differentiating with respect to argnums"):
-            qml.vjp(f, (0.5, 1.2), (1.0,), argnums=2)
+            qp.vjp(f, (0.5, 1.2), (1.0,), argnums=2)
 
     def test_error_on_bad_h(self):
         """Test that an error is raised on a bad h value."""
 
         with pytest.raises(ValueError, match="Invalid h value"):
-            qml.vjp(lambda x: x * 2, (0.5,), (1.0,), h="something")
+            qp.vjp(lambda x: x * 2, (0.5,), (1.0,), h="something")
 
     def test_error_on_bad_method(self):
         """Test that an error is raised on a bad method."""
 
         with pytest.raises(ValueError, match="Got unrecognized method"):
-            qml.vjp(lambda x: x**2, (0.5,), (1.0,), method="param-shift")
+            qp.vjp(lambda x: x**2, (0.5,), (1.0,), method="param-shift")
 
     @pytest.mark.parametrize("cotangents", ((0.5,), (1.2, 2.3, 3.4)))
     def test_error_on_wrong_number_of_cotangents(self, cotangents):
@@ -63,7 +63,7 @@ class TestErrors:
         with pytest.raises(
             ValueError, match=r"length of cotangents must match the number of outputs"
         ):
-            qml.vjp(f, (0.5,), cotangents)
+            qp.vjp(f, (0.5,), cotangents)
 
     def test_error_on_wrong_cotangent_dtype(self):
         """Test an error is raised on the wrong cotangent dtype."""
@@ -72,7 +72,7 @@ class TestErrors:
             return 2 * x
 
         with pytest.raises(TypeError, match="dtypes must be equal."):
-            qml.vjp(f, (jnp.array(0.5),), jnp.array(1))
+            qp.vjp(f, (jnp.array(0.5),), jnp.array(1))
 
     def test_error_on_wrong_cotangent_shape(self):
         """Test an error is raised on the wrong cotangent shape."""
@@ -84,14 +84,14 @@ class TestErrors:
         params = (jnp.array(1.0), jnp.array([1.0, 1.0]))
 
         with pytest.raises(ValueError, match=r"got function output params shape"):
-            qml.vjp(f, params, cotangents)
+            qp.vjp(f, params, cotangents)
 
     @pytest.mark.parametrize("argnums", (4.5, "abc"))
     def test_error_bad_argnums(self, argnums):
         """Test that an error is raised if the argnums is not a collection."""
 
         with pytest.raises(ValueError, match="argnums should be an integer or a Sequence"):
-            qml.vjp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
+            qp.vjp(lambda x: x**2, (0.5,), (1.0,), argnums=argnums)
 
 
 class TestCapturingVJP:
@@ -103,7 +103,7 @@ class TestCapturingVJP:
             return jnp.array([2, 1]) * x
 
         def w(x):
-            return qml.vjp(f, (x,), jnp.array([1.0, 1.0]))
+            return qp.vjp(f, (x,), jnp.array([1.0, 1.0]))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -129,7 +129,7 @@ class TestCapturingVJP:
         y = [2.0, 3.0]
 
         def w(x, y, argnums):
-            return qml.vjp(f, (x, y), -1.0, argnums=argnums)
+            return qp.vjp(f, (x, y), -1.0, argnums=argnums)
 
         for argnums in (0, 1):
 
@@ -146,7 +146,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), 1.0, h=1e-4)
+            return qp.vjp(f, (x,), 1.0, h=1e-4)
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -162,7 +162,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), 1.0, method="fd")
+            return qp.vjp(f, (x,), 1.0, method="fd")
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -180,7 +180,7 @@ class TestCapturingVJP:
             return y**2, z**3
 
         def w(x, dy1, dy2):
-            return qml.vjp(f, (x,), (dy1, dy2))
+            return qp.vjp(f, (x,), (dy1, dy2))
 
         x = jnp.array(0.5)
         dy1 = jnp.array([2.0, 3.0])
@@ -205,7 +205,7 @@ class TestCapturingVJP:
             return jnp.sum(x) + jnp.sum(y) + jnp.sum(z)
 
         def w(x, y, z, dy):
-            return qml.vjp(f, (x, y, z), dy, argnums=[0, 2])
+            return qp.vjp(f, (x, y, z), dy, argnums=[0, 2])
 
         x = jnp.arange(2, dtype=float)
         y = jnp.arange(3, dtype=float)
@@ -233,7 +233,7 @@ def test_pytrees_in_and_out():
     x = {"a": 0.5, "b": 1.2}
     y = [2.0, 3.0]
 
-    results, dparams = qml.vjp(f, (x, y), {"result": -1.0})
+    results, dparams = qp.vjp(f, (x, y), {"result": -1.0})
 
     assert isinstance(results, dict)
     assert jnp.allclose(results["result"], 0.5 * 2 + 3.0 * 1.2)
@@ -250,17 +250,17 @@ def test_argnum_int_squeeze():
         return 2 * x
 
     def w(x, argnums):
-        return qml.vjp(f, (x,), (1.0,), argnums=argnums)
+        return qp.vjp(f, (x,), (1.0,), argnums=argnums)
 
     # as int
     results, dparams = w(0.5, 0)
-    assert qml.math.allclose(results, 1.0)
+    assert qp.math.allclose(results, 1.0)
     assert isinstance(dparams, jax.numpy.ndarray)
-    assert qml.math.allclose(dparams, 2)
+    assert qp.math.allclose(dparams, 2)
 
     # as array
     results, dparams = w(0.5, [0])
-    assert qml.math.allclose(results, 1.0)
+    assert qp.math.allclose(results, 1.0)
     assert isinstance(dparams, tuple)
     assert isinstance(dparams[0], jax.numpy.ndarray)
-    assert qml.math.allclose(dparams[0], 2)
+    assert qp.math.allclose(dparams[0], 2)

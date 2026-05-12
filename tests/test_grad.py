@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for qml.grad
+Unit tests for qp.grad
 """
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
-@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+@pytest.mark.parametrize("grad_fn", (qp.grad, qp.jacobian))
 def test_kwarg_errors_without_qjit(grad_fn):
     """Test that errors are raised with method and h when qjit is not active."""
 
     def f(x):
         return x**2
 
-    x = qml.numpy.array(0.5)
+    x = qp.numpy.array(0.5)
 
     with pytest.raises(ValueError, match="method = 'fd' unsupported without QJIT."):
         grad_fn(f, method="fd")(x)
@@ -42,7 +42,7 @@ def test_grad_name():
     def f(x):
         return x**2
 
-    assert qml.grad(f).__name__ == "<grad: f>"
+    assert qp.grad(f).__name__ == "<grad: f>"
 
     class A:
 
@@ -52,7 +52,7 @@ def test_grad_name():
         def __call__(self, x):
             return x**2
 
-    assert qml.grad(A()).__name__ == "<grad: A>"
+    assert qp.grad(A()).__name__ == "<grad: A>"
 
 
 def test_jacobian_name():
@@ -61,7 +61,7 @@ def test_jacobian_name():
     def f(x):
         return x**2
 
-    assert qml.jacobian(f).__name__ == "<jacobian: f>"
+    assert qp.jacobian(f).__name__ == "<jacobian: f>"
 
     class A:
 
@@ -71,7 +71,7 @@ def test_jacobian_name():
         def __call__(self, x):
             return x**2
 
-    assert qml.jacobian(A()).__name__ == "<jacobian: A>"
+    assert qp.jacobian(A()).__name__ == "<jacobian: A>"
 
 
 def test_value_and_grad_name():
@@ -80,7 +80,7 @@ def test_value_and_grad_name():
     def f(x):
         return x**2
 
-    assert qml.value_and_grad(f).__name__ == "<value_and_grad: f>"
+    assert qp.value_and_grad(f).__name__ == "<value_and_grad: f>"
 
     class A:
 
@@ -90,7 +90,7 @@ def test_value_and_grad_name():
         def __call__(self, x):
             return x**2
 
-    assert qml.value_and_grad(A()).__name__ == "<value_and_grad: A>"
+    assert qp.value_and_grad(A()).__name__ == "<value_and_grad: A>"
 
 
 def test_vjp_without_qjit():
@@ -98,16 +98,16 @@ def test_vjp_without_qjit():
 
     def vjp(params, cotangent):
         def f(x):
-            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-            return qml.math.stack(y)
+            y = [qp.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qp.math.stack(y)
 
-        return qml.vjp(f, [params], [cotangent])
+        return qp.vjp(f, [params], [cotangent])
 
-    x = qml.numpy.array([0.1, 0.2])
-    dy = qml.numpy.array([-0.5, 0.1, 0.3])
+    x = qp.numpy.array([0.1, 0.2])
+    dy = qp.numpy.array([-0.5, 0.1, 0.3])
 
     with pytest.raises(
-        qml.exceptions.CompileError,
+        qp.exceptions.CompileError,
         match="PennyLane does not support the VJP function without QJIT.",
     ):
         vjp(x, dy)
@@ -118,16 +118,16 @@ def test_jvp_without_qjit():
 
     def jvp(params, dparams):
         def f(x):
-            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-            return qml.math.stack(y)
+            y = [qp.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qp.math.stack(y)
 
-        return qml.jvp(f, [params], [dparams])
+        return qp.jvp(f, [params], [dparams])
 
-    x = qml.numpy.array([0.1, 0.2])
-    dy = qml.numpy.array([-0.5, 0.1])
+    x = qp.numpy.array([0.1, 0.2])
+    dy = qp.numpy.array([-0.5, 0.1])
 
     with pytest.raises(
-        qml.exceptions.CompileError,
+        qp.exceptions.CompileError,
         match="PennyLane does not support the JVP function without QJIT.",
     ):
         jvp(x, dy)
@@ -138,15 +138,15 @@ def test_value_and_grad_without_qjit():
 
     def value_and_grad(params):
         def f(x):
-            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-            return qml.math.stack(y)
+            y = [qp.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qp.math.stack(y)
 
-        return qml.value_and_grad(f)(params)
+        return qp.value_and_grad(f)(params)
 
-    x = qml.numpy.array([0.1, 0.2])
+    x = qp.numpy.array([0.1, 0.2])
 
     with pytest.raises(
-        qml.exceptions.CompileError,
+        qp.exceptions.CompileError,
         match="PennyLane does not support the value_and_grad function without QJIT.",
     ):
         value_and_grad(x)

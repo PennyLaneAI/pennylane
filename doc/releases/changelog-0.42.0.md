@@ -1123,8 +1123,8 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 * The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively 
   maintained. Please consider using a different machine learning framework, like 
-  `PyTorch <demos/tutorial_qnn_module_torch>`__ or 
-  `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
+  `PyTorch <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`__ or 
+  `JAX <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no

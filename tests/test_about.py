@@ -25,7 +25,7 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 @pytest.mark.slow
@@ -35,7 +35,7 @@ def test_about():
     """
     f = io.StringIO()
     with contextlib.redirect_stdout(f):
-        qml.about()
+        qp.about()
     out = f.getvalue().strip()
 
     assert "Version:" in out
@@ -43,7 +43,7 @@ def test_about():
     # 0.43.0-rc0 -> 0.43.0rc0
     # 0.43.0-dev0 -> 0.43.0.dev0
     is_rc_version = "rc" in pl_version_match
-    assert qml.version().replace("-", "" if is_rc_version else ".") in pl_version_match
+    assert qp.version().replace("-", "" if is_rc_version else ".") in pl_version_match
     assert "Numpy version" in out
     assert "Scipy version" in out
     assert "default.qubit" in out

@@ -23,7 +23,7 @@ from shutil import copyfile
 import numpy as np
 from scipy.constants import angstrom, physical_constants
 
-import pennylane as qml
+import pennylane as qp
 
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
@@ -293,9 +293,9 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     if not fermionic:
         return singles, doubles
 
-    fermionic_singles = [qml.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
+    fermionic_singles = [qp.FermiWord({(0, x[0]): "+", (1, x[1]): "-"}) for x in singles]
     fermionic_doubles = [
-        qml.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
+        qp.FermiWord({(0, x[0]): "+", (1, x[1]): "+", (2, x[2]): "-", (3, x[3]): "-"})
         for x in doubles
     ]
 
@@ -313,7 +313,7 @@ def _beta_matrix(orbitals):
         (array): The transformation matrix
     """
 
-    bin_range = qml.math.ceil_log2(orbitals)
+    bin_range = qp.math.ceil_log2(orbitals)
 
     beta = np.array([[1]])
 

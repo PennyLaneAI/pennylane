@@ -19,7 +19,7 @@ operator.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
@@ -33,6 +33,33 @@ from pennylane.operation import Operation
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
 
+    def test_all_operators_with_resource_ops_mapped(self):
+        """Test that everything with both an Operator and a ResourceOperator version
+        have a registered mapping.  Bypasses Qubitization for the moment."""
+
+        special_cases = {"Qubitization", "QSVT"}
+
+        for estimator_entry in dir(qp.estimator):
+            estimator_val = getattr(qp.estimator, estimator_entry)
+
+            if (
+                estimator_entry not in special_cases
+                and isinstance(estimator_val, type)
+                and issubclass(estimator_val, re_ops.ResourceOperator)
+                and estimator_entry in dir(qp)
+            ):
+                qp_val = getattr(qp, estimator_entry)
+
+                if (
+                    isinstance(qp_val, type)
+                    and issubclass(qp_val, qp.operation.Operator)
+                    and qp_val not in _map_to_resource_op.registry
+                ):
+                    raise ValueError(
+                        f"{estimator_entry} has both a estimator rep {estimator_val} and"
+                        f"an operator rep {qp_val} but no mapping in _map_to_resource_op"
+                    )
+
     def test_map_to_resource_op_raises_type_error_if_not_operation(self):
         """Test that a TypeError is raised if the input is not an Operation."""
         with pytest.raises(TypeError, match="is not a valid operation"):
@@ -40,7 +67,7 @@ class TestMapToResourceOp:
 
     def test_map_to_resource_op_raises_not_implemented_error(self):
         """Test that a NotImplementedError is raised for a valid Operation."""
-        operation = Operation(qml.wires.Wires([4]))
+        operation = Operation(qp.wires.Wires([4]))
         with pytest.raises(
             NotImplementedError, match="Operation doesn't have a resource equivalent"
         ):
@@ -49,17 +76,17 @@ class TestMapToResourceOp:
     def test_unknown_subroutine_decomposition(self):
         """Test that if an unknown subroutine is provided, it just uses the decomposition."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            qml.X(wires)
+            qp.X(wires)
 
         r_op = _map_to_resource_op(f.operator(0))
         assert r_op == re_ops.X()
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def g(wires):
-            qml.X(wires)
-            qml.Y(wires)
+            qp.X(wires)
+            qp.Y(wires)
 
         r_op_g = _map_to_resource_op(g.operator(0))
         assert r_op_g == re_ops.Prod([re_ops.X(), re_ops.Y()])
@@ -67,47 +94,59 @@ class TestMapToResourceOp:
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
-            (qml.Identity(0), re_ops.Identity()),
-            (qml.GlobalPhase(0), re_ops.GlobalPhase()),
-            # Single-Qubit Gates
-            (qml.Hadamard(0), re_ops.Hadamard()),
-            (qml.S(0), re_ops.S()),
-            (qml.T(0), re_ops.T()),
-            (qml.PauliX(0), re_ops.X()),
-            (qml.PauliY(0), re_ops.Y()),
-            (qml.PauliZ(0), re_ops.Z()),
-            (qml.PhaseShift(0.1, wires=0), re_ops.PhaseShift()),
-            (qml.Rot(0.1, 0.2, 0.3, wires=0), re_ops.Rot()),
-            (qml.RX(0.1, wires=0), re_ops.RX()),
-            (qml.RY(0.1, wires=0), re_ops.RY()),
-            (qml.RZ(0.1, wires=0), re_ops.RZ()),
-            # Two-Qubit Gates
-            (qml.SWAP(wires=(0, 1)), re_ops.SWAP()),
-            (qml.SingleExcitation(0.1, wires=(0, 1)), re_ops.SingleExcitation()),
-            (qml.CH(wires=(0, 1)), re_ops.CH()),
-            (qml.CNOT(wires=(0, 1)), re_ops.CNOT()),
-            (qml.ControlledPhaseShift(0.1, wires=(0, 1)), re_ops.ControlledPhaseShift()),
-            (qml.CRot(0.1, 0.2, 0.3, wires=(0, 1)), re_ops.CRot()),
-            (qml.CRX(0.1, wires=(0, 1)), re_ops.CRX()),
-            (qml.CRY(0.1, wires=(0, 1)), re_ops.CRY()),
-            (qml.CRZ(0.1, wires=(0, 1)), re_ops.CRZ()),
-            (qml.CY(wires=(0, 1)), re_ops.CY()),
-            (qml.CZ(wires=(0, 1)), re_ops.CZ()),
-            # Three-Qubit Gates
-            (qml.CCZ(wires=(0, 1, 2)), re_ops.CCZ()),
-            (qml.CSWAP(wires=(0, 1, 2)), re_ops.CSWAP()),
-            (qml.Toffoli(wires=(0, 1, 2)), re_ops.Toffoli()),
-            # Multi-Qubit Gates
-            (qml.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.MultiRZ(num_wires=3)),
-            (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.PauliRot("XYZ")),
+            (qp.Identity(0), re_ops.Identity()),
+            (qp.GlobalPhase(0), re_ops.GlobalPhase()),
             (
-                qml.MultiControlledX(wires=[0, 1, 2]),
+                qp.BasisState([0, 1, 0], wires=[0, 1, 2]),
+                re_ops.BasisState(num_wires=3, wires=[0, 1, 2]),
+            ),
+            (
+                qp.BasisEmbedding([0, 1, 0], wires=[0, 1, 2]),
+                re_temps.BasisEmbedding(num_wires=3, wires=[0, 1, 2]),
+            ),
+            # Single-Qubit Gates
+            (qp.Hadamard(0), re_ops.Hadamard()),
+            (qp.S(0), re_ops.S()),
+            (qp.T(0), re_ops.T()),
+            (qp.PauliX(0), re_ops.X()),
+            (qp.PauliY(0), re_ops.Y()),
+            (qp.PauliZ(0), re_ops.Z()),
+            (qp.PhaseShift(0.1, wires=0), re_ops.PhaseShift()),
+            (qp.Rot(0.1, 0.2, 0.3, wires=0), re_ops.Rot()),
+            (qp.RX(0.1, wires=0), re_ops.RX()),
+            (qp.RY(0.1, wires=0), re_ops.RY()),
+            (qp.RZ(0.1, wires=0), re_ops.RZ()),
+            # Two-Qubit Gates
+            (qp.SWAP(wires=(0, 1)), re_ops.SWAP()),
+            (qp.SingleExcitation(0.1, wires=(0, 1)), re_ops.SingleExcitation()),
+            (qp.CH(wires=(0, 1)), re_ops.CH()),
+            (qp.CNOT(wires=(0, 1)), re_ops.CNOT()),
+            (qp.ControlledPhaseShift(0.1, wires=(0, 1)), re_ops.ControlledPhaseShift()),
+            (qp.CRot(0.1, 0.2, 0.3, wires=(0, 1)), re_ops.CRot()),
+            (qp.CRX(0.1, wires=(0, 1)), re_ops.CRX()),
+            (qp.CRY(0.1, wires=(0, 1)), re_ops.CRY()),
+            (qp.CRZ(0.1, wires=(0, 1)), re_ops.CRZ()),
+            (qp.CY(wires=(0, 1)), re_ops.CY()),
+            (qp.CZ(wires=(0, 1)), re_ops.CZ()),
+            # Three-Qubit Gates
+            (qp.CCZ(wires=(0, 1, 2)), re_ops.CCZ()),
+            (qp.CSWAP(wires=(0, 1, 2)), re_ops.CSWAP()),
+            (qp.Toffoli(wires=(0, 1, 2)), re_ops.Toffoli()),
+            # Multi-Qubit Gates
+            (qp.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.MultiRZ(num_wires=3)),
+            (qp.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.PauliRot("XYZ")),
+            (
+                qp.PCPhase(0.1, dim=3, wires=[0, 1, 2]),
+                re_ops.PCPhase(num_wires=3, dim=3, wires=[0, 1, 2]),
+            ),
+            (
+                qp.MultiControlledX(wires=[0, 1, 2]),
                 re_ops.MultiControlledX(num_ctrl_wires=2, num_zero_ctrl=0),
             ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.TemporaryAND()),
             (
-                qtemps.Reflection(U=qml.Hadamard(0), alpha=0.1, reflection_wires=[0]),
+                qtemps.Reflection(U=qp.Hadamard(0), alpha=0.1, reflection_wires=[0]),
                 re_temps.Reflection(
                     num_wires=1, U=re_ops.Hadamard(wires=[0]), alpha=0.1, wires=[0]
                 ),
@@ -126,7 +165,7 @@ class TestMapToResourceOp:
                 re_temps.OutMultiplier(a_num_wires=2, b_num_wires=1, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
+                qp.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
             (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
@@ -135,11 +174,15 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.IQP(weights=[0.1, 0.2], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False),
+                re_temps.IQP(num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False, wires=[0, 1]),
+            ),
+            (
+                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
-                qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
+                qtemps.Select([qp.PauliX(2), qp.PauliY(2)], control=[0, 1]),
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
@@ -254,13 +297,13 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2]),
+                qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2]),
                 re_temps.ControlledSequence(
                     base=re_ops.RX(wires=3), num_control_wires=3, wires=[0, 1, 2]
                 ),
             ),
             (
-                qml.QubitUnitary(np.eye(2), wires=0),
+                qp.QubitUnitary(np.eye(2), wires=0),
                 re_ops.QubitUnitary(num_wires=1, precision=None, wires=[0]),
             ),
             (
@@ -275,7 +318,7 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qtemps.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                qtemps.QuantumPhaseEstimation(qp.PauliZ(2), estimation_wires=[0, 1]),
                 re_temps.QPE(base=re_ops.Z(2), num_estimation_wires=2, wires=[0, 1]),
             ),
             (
@@ -290,10 +333,10 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.TrotterProduct(
-                    qml.dot(
+                qp.TrotterProduct(
+                    qp.dot(
                         [0.25, 0.75, -1],
-                        [qml.X(0), qml.Z(1), qml.prod(qml.Y(0), qml.Y(2), qml.Y(1))],
+                        [qp.X(0), qp.Z(1), qp.prod(qp.Y(0), qp.Y(2), qp.Y(1))],
                     ),
                     time=1.0,
                     n=10,
@@ -310,12 +353,12 @@ class TestMapToResourceOp:
                 ),
             ),
             (  # Nested sums in the TrotterProduct
-                qml.TrotterProduct(
-                    qml.dot(
+                qp.TrotterProduct(
+                    qp.dot(
                         [0.25, 0.75],
                         [
-                            qml.prod(qml.Z(0), qml.Z(1)),
-                            qml.dot([0.1, -2.3], [qml.X(0), qml.prod(qml.X(0), qml.X(1))]),
+                            qp.prod(qp.Z(0), qp.Z(1)),
+                            qp.dot([0.1, -2.3], [qp.X(0), qp.prod(qp.X(0), qp.X(1))]),
                         ],
                     ),
                     time=1.0,
@@ -347,7 +390,7 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
+                qp.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
                 re_temps.IntegerComparator(value=5, register_size=3, geq=False, wires=[0, 1, 2, 3]),
             ),
             (
@@ -381,6 +424,10 @@ class TestMapToResourceOp:
                     select_swap_depths=1,
                     wires=[0, 1, 2, 3],
                 ),
+            ),
+            (
+                qtemps.GQSP(qp.RX(0.3, 0), qp.poly_to_angles([0.1, 0.2j, 0.3], "GQSP"), control=1),
+                qp.estimator.GQSP(qp.estimator.RX(), d_plus=2, wires=(0, 1)),
             ),
         ],
     )
@@ -514,7 +561,7 @@ class TestMapToResourceOp:
 
             @staticmethod
             def compute_decomposition(theta, wires):
-                return [qml.RX(theta, wires[0]), qml.CNOT(wires)]
+                return [qp.RX(theta, wires[0]), qp.CNOT(wires)]
 
         def actual_circ():
             DummyOp(theta=1.23, wires=[0, 1])
@@ -529,7 +576,7 @@ class TestMapToResourceOp:
         "operator, expected_res_op",
         (
             (qops.Barrier(wires=[1, 2, 3]), re_ops.Identity()),
-            (qops.Snapshot(measurement=qml.state()), re_ops.Identity()),
+            (qops.Snapshot(measurement=qp.state()), re_ops.Identity()),
         ),
     )
     def test_map_to_identity(self, operator, expected_res_op):
@@ -541,27 +588,27 @@ class TestMapToResourceOp:
     "op, mapped_op",
     (
         (
-            qml.X(0),
-            qops.Evolution(qml.X(0)),
+            qp.X(0),
+            qops.Evolution(qp.X(0)),
         ),
         (
-            0.5 * qml.X(0),
-            qops.Evolution(qops.op_math.SProd(0.5, qml.X(0))),
+            0.5 * qp.X(0),
+            qops.Evolution(qops.op_math.SProd(0.5, qp.X(0))),
         ),
         (
-            qops.op_math.SProd(3.4, 0.5 * qml.X(0)),
-            qops.Evolution(qops.op_math.SProd(1.7, qml.X(0))),
+            qops.op_math.SProd(3.4, 0.5 * qp.X(0)),
+            qops.Evolution(qops.op_math.SProd(1.7, qp.X(0))),
         ),
         (
-            1.23 * (qml.X(0) @ qml.Y(1)),
-            qops.Evolution(qops.op_math.SProd(1.23, (qml.X(0) @ qml.Y(1)))),
+            1.23 * (qp.X(0) @ qp.Y(1)),
+            qops.Evolution(qops.op_math.SProd(1.23, (qp.X(0) @ qp.Y(1)))),
         ),
         (
-            qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            qp.dot([1.23, -4.5], [qp.Z(0), qp.Z(1) @ qp.Z(2)]),
             qtemps.TrotterProduct(
                 hamiltonian=qops.op_math.Sum(
-                    qops.op_math.SProd(1.23, qml.Z(0)),
-                    qops.op_math.SProd(-4.5, qml.Z(1) @ qml.Z(2)),
+                    qops.op_math.SProd(1.23, qp.Z(0)),
+                    qops.op_math.SProd(-4.5, qp.Z(1) @ qp.Z(2)),
                 ),
                 n=1,
                 order=1,
@@ -570,11 +617,11 @@ class TestMapToResourceOp:
             ),
         ),
         (
-            2 * qml.dot([1.23, -4.5], [qml.Z(0), qml.Z(1) @ qml.Z(2)]),
+            2 * qp.dot([1.23, -4.5], [qp.Z(0), qp.Z(1) @ qp.Z(2)]),
             qtemps.TrotterProduct(
                 hamiltonian=qops.op_math.Sum(
-                    qops.op_math.SProd(2.46, qml.Z(0)),
-                    qops.op_math.SProd(-9.0, qml.Z(1) @ qml.Z(2)),
+                    qops.op_math.SProd(2.46, qp.Z(0)),
+                    qops.op_math.SProd(-9.0, qp.Z(1) @ qp.Z(2)),
                 ),
                 n=1,
                 order=1,

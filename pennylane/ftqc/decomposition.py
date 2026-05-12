@@ -76,19 +76,19 @@ def ppr_to_mbqc_setup_inputs():
 
     .. code-block::
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.ftqc.decomposition import ppr_to_mbqc
         from pennylane.transforms.decompositions import to_ppr
 
         p = [("my_pipe", ["quantum-compilation-stage"])]
 
-        @qml.qjit(pipelines=p, target="mlir", keep_intermediate=True)
+        @qp.qjit(pipelines=p, target="mlir", keep_intermediate=True)
         @ppr_to_mbqc
         @to_ppr
-        @qml.qnode(qml.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
-            qml.H(0)
-            qml.CNOT([0, 1])
+            qp.H(0)
+            qp.CNOT([0, 1])
             return
 
         print(circuit.mlir_opt)
@@ -141,7 +141,7 @@ def convert_to_mbqc_gateset(tape):
     if not enabled_graph():
         raise RuntimeError(
             "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
-            " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
+            " method. This can be toggled by calling `qp.decomposition.enable_graph()`"
         )
     tapes, fn = decompose(tape, gate_set=gate_sets.MBQC_GATES, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn

@@ -20,6 +20,8 @@ This module contains templates, which are pre-coded routines that can be used in
     :toctree: api
 
     ~LeftClassicalComparator
+    ~LeftQuantumComparator
 """
 
 from .left_classical_comparator import LeftClassicalComparator
+from .left_quantum_comparator import LeftQuantumComparator

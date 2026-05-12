@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.decompositions import gridsynth
 
 
@@ -23,11 +23,11 @@ class TestGridsynth:
     def test_not_implemented(self):
         """Test that NotImplementedError is raised when trying to use gridsynth on tape."""
 
-        tape = qml.tape.QuantumScript([qml.RZ(0.5, wires=0), qml.PhaseShift(0.2, wires=0)])
+        tape = qp.tape.QuantumScript([qp.RZ(0.5, wires=0), qp.PhaseShift(0.2, wires=0)])
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Transform <transform: gridsynth> has no defined tape implementation, and can only be applied when decorating the entire workflow with '@qml.qjit' and when it is placed after all transforms that only have a tape implementation.",
+            match=r"Transform <transform: gridsynth> has no defined tape implementation, and can only be applied when decorating the entire workflow with '@qp.qjit' and when it is placed after all transforms that only have a tape implementation.",
         ):
             gridsynth(tape)
 

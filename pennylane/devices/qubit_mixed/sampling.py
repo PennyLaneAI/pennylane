@@ -20,7 +20,7 @@ from collections.abc import Callable
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
 from pennylane.measurements import ExpectationMP, SampleMeasurement, Shots
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
@@ -40,7 +40,7 @@ def _apply_diagonalizing_gates(
     if len(mps) == 1:
         diagonalizing_gates = mps[0].diagonalizing_gates()
     elif all(mp.obs for mp in mps):
-        diagonalizing_gates = qml.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
+        diagonalizing_gates = qp.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
     else:
         diagonalizing_gates = []
 
@@ -84,7 +84,7 @@ def _measure_with_samples_diagonalizing_gates(
     state = _apply_diagonalizing_gates(mps, state, is_state_batched)
 
     total_indices = _get_num_wires(state, is_state_batched)
-    wires = qml.wires.Wires(range(total_indices))
+    wires = qp.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
         return tuple(mp.process_samples(samples, wires) for mp in mps)
@@ -143,7 +143,7 @@ def _measure_classical_shadow(
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
-    wires = qml.wires.Wires(range(_get_num_wires(state, is_state_batched)))
+    wires = qp.wires.Wires(range(_get_num_wires(state, is_state_batched)))
 
     if shots.has_partitioned_shots:
         return [tuple(process_state_with_shots(mp, state, wires, s, rng=rng) for s in shots)]
@@ -157,7 +157,7 @@ def process_state_with_shots(mp, state, wire_order, shots, rng=None):
     Args:
         mp (ClassicalShadowMP or ShadowExpvalMP): The classical shadow measurement to perform
         state (np.ndarray): A (2^N, 2^N) density matrix for N qubits
-        wire_order (qml.wires.Wires): The global wire ordering
+        wire_order (qp.wires.Wires): The global wire ordering
         shots (int): Number of classical-shadow snapshots
         rng (None or int or Generator): Random seed for measurement bits
 
@@ -267,13 +267,13 @@ def sample_state(
     """
 
     total_indices = _get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
+    state_wires = qp.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
 
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
+    with qp.queuing.QueuingManager.stop_recording():
+        probs = measure(qp.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
     # After getting the correct probs, there's no difference between mixed states and pure states.
     # Therefore, we directly re-use the sample_probs from the module qubit.

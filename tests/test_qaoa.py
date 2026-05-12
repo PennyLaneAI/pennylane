@@ -25,7 +25,7 @@ from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qaoa
 from pennylane.qaoa.cycle import (
     _inner_net_flow_constraint_hamiltonian,
@@ -88,11 +88,11 @@ def lollipop_graph_rx(mesh_nodes: int, path_nodes: int, to_directed: bool = Fals
     return g
 
 
-def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
+def matrix(hamiltonian: qp.Hamiltonian, n_wires: int) -> csc_matrix:
     r"""Calculates the matrix representation of an input Hamiltonian in the standard basis.
 
     Args:
-        hamiltonian (qml.Hamiltonian): the input Hamiltonian
+        hamiltonian (qp.Hamiltonian): the input Hamiltonian
         n_wires (int): the total number of wires
 
     Returns:
@@ -102,7 +102,7 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
 
     for op in hamiltonian.ops:
 
-        if isinstance(op, qml.ops.Prod):
+        if isinstance(op, qp.ops.Prod):
             op_matrix = op.sparse_matrix(wire_order=list(range(n_wires)))
         else:
             op_wires = np.array(op.wires.tolist())
@@ -130,99 +130,99 @@ def make_xy_mixer_test_cases():
     return [
         (
             g2,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2),
-                    qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliY(2) @ qml.PauliY(3),
+                    qp.PauliX(0) @ qp.PauliX(1),
+                    qp.PauliY(0) @ qp.PauliY(1),
+                    qp.PauliX(1) @ qp.PauliX(2),
+                    qp.PauliY(1) @ qp.PauliY(2),
+                    qp.PauliX(2) @ qp.PauliX(3),
+                    qp.PauliY(2) @ qp.PauliY(3),
                 ],
             ),
         ),
         (
             line_graph,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2),
+                    qp.PauliX(0) @ qp.PauliX(1),
+                    qp.PauliY(0) @ qp.PauliY(1),
+                    qp.PauliX(1) @ qp.PauliX(2),
+                    qp.PauliY(1) @ qp.PauliY(2),
                 ],
             ),
         ),
         (
             non_consecutive_graph,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(4),
-                    qml.PauliY(0) @ qml.PauliY(4),
-                    qml.PauliX(0) @ qml.PauliX(2),
-                    qml.PauliY(0) @ qml.PauliY(2),
-                    qml.PauliX(4) @ qml.PauliX(3),
-                    qml.PauliY(4) @ qml.PauliY(3),
-                    qml.PauliX(2) @ qml.PauliX(1),
-                    qml.PauliY(2) @ qml.PauliY(1),
+                    qp.PauliX(0) @ qp.PauliX(4),
+                    qp.PauliY(0) @ qp.PauliY(4),
+                    qp.PauliX(0) @ qp.PauliX(2),
+                    qp.PauliY(0) @ qp.PauliY(2),
+                    qp.PauliX(4) @ qp.PauliX(3),
+                    qp.PauliY(4) @ qp.PauliY(3),
+                    qp.PauliX(2) @ qp.PauliX(1),
+                    qp.PauliY(2) @ qp.PauliY(1),
                 ],
             ),
         ),
         (
             g2_rx,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2),
-                    qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliY(2) @ qml.PauliY(3),
+                    qp.PauliX(0) @ qp.PauliX(1),
+                    qp.PauliY(0) @ qp.PauliY(1),
+                    qp.PauliX(1) @ qp.PauliX(2),
+                    qp.PauliY(1) @ qp.PauliY(2),
+                    qp.PauliX(2) @ qp.PauliX(3),
+                    qp.PauliY(2) @ qp.PauliY(3),
                 ],
             ),
         ),
         (
             graph_rx,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2),
+                    qp.PauliX(0) @ qp.PauliX(1),
+                    qp.PauliY(0) @ qp.PauliY(1),
+                    qp.PauliX(1) @ qp.PauliX(2),
+                    qp.PauliY(1) @ qp.PauliY(2),
                 ],
             ),
         ),
         (
             non_consecutive_graph_rx,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(4),
-                    qml.PauliY(0) @ qml.PauliY(4),
-                    qml.PauliX(0) @ qml.PauliX(2),
-                    qml.PauliY(0) @ qml.PauliY(2),
-                    qml.PauliX(4) @ qml.PauliX(3),
-                    qml.PauliY(4) @ qml.PauliY(3),
-                    qml.PauliX(2) @ qml.PauliX(1),
-                    qml.PauliY(2) @ qml.PauliY(1),
+                    qp.PauliX(0) @ qp.PauliX(4),
+                    qp.PauliY(0) @ qp.PauliY(4),
+                    qp.PauliX(0) @ qp.PauliX(2),
+                    qp.PauliY(0) @ qp.PauliY(2),
+                    qp.PauliX(4) @ qp.PauliX(3),
+                    qp.PauliY(4) @ qp.PauliY(3),
+                    qp.PauliX(2) @ qp.PauliX(1),
+                    qp.PauliY(2) @ qp.PauliY(1),
                 ],
             ),
         ),
         (
             Graph((np.array([0, 1]), np.array([1, 2]), np.array([2, 0]))),
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                 [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliX(2),
-                    qml.PauliY(0) @ qml.PauliY(2),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2),
+                    qp.PauliX(0) @ qp.PauliX(1),
+                    qp.PauliY(0) @ qp.PauliY(1),
+                    qp.PauliX(0) @ qp.PauliX(2),
+                    qp.PauliY(0) @ qp.PauliY(2),
+                    qp.PauliX(1) @ qp.PauliX(2),
+                    qp.PauliY(1) @ qp.PauliY(2),
                 ],
             ),
         ),
@@ -234,89 +234,89 @@ def make_bit_flip_mixer_test_cases():
         (
             Graph([(0, 1)]),
             1,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, -0.5, 0.5, -0.5],
                 [
-                    qml.PauliX(0),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(1),
-                    qml.PauliX(1) @ qml.PauliZ(0),
+                    qp.PauliX(0),
+                    qp.PauliX(0) @ qp.PauliZ(1),
+                    qp.PauliX(1),
+                    qp.PauliX(1) @ qp.PauliZ(0),
                 ],
             ),
         ),
         (
             g1,
             0,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
                 [
-                    qml.PauliX(0),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(1),
-                    qml.PauliX(1) @ qml.PauliZ(2),
-                    qml.PauliX(1) @ qml.PauliZ(0),
-                    qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-                    qml.PauliX(2),
-                    qml.PauliX(2) @ qml.PauliZ(1),
+                    qp.PauliX(0),
+                    qp.PauliX(0) @ qp.PauliZ(1),
+                    qp.PauliX(1),
+                    qp.PauliX(1) @ qp.PauliZ(2),
+                    qp.PauliX(1) @ qp.PauliZ(0),
+                    qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+                    qp.PauliX(2),
+                    qp.PauliX(2) @ qp.PauliZ(1),
                 ],
             ),
         ),
         (
             g1_rx,
             0,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
                 [
-                    qml.PauliX(0),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(1),
-                    qml.PauliX(1) @ qml.PauliZ(2),
-                    qml.PauliX(1) @ qml.PauliZ(0),
-                    qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-                    qml.PauliX(2),
-                    qml.PauliX(2) @ qml.PauliZ(1),
+                    qp.PauliX(0),
+                    qp.PauliX(0) @ qp.PauliZ(1),
+                    qp.PauliX(1),
+                    qp.PauliX(1) @ qp.PauliZ(2),
+                    qp.PauliX(1) @ qp.PauliZ(0),
+                    qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+                    qp.PauliX(2),
+                    qp.PauliX(2) @ qp.PauliZ(1),
                 ],
             ),
         ),
         (
             Graph([("b", 1), (1, 0.3), (0.3, "b")]),
             1,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
                 [
-                    qml.PauliX("b"),
-                    qml.PauliX("b") @ qml.PauliZ(0.3),
-                    qml.PauliX("b") @ qml.PauliZ(1),
-                    qml.PauliX("b") @ qml.PauliZ(1) @ qml.PauliZ(0.3),
-                    qml.PauliX(1),
-                    qml.PauliX(1) @ qml.PauliZ(0.3),
-                    qml.PauliX(1) @ qml.PauliZ("b"),
-                    qml.PauliX(1) @ qml.PauliZ("b") @ qml.PauliZ(0.3),
-                    qml.PauliX(0.3),
-                    qml.PauliX(0.3) @ qml.PauliZ("b"),
-                    qml.PauliX(0.3) @ qml.PauliZ(1),
-                    qml.PauliX(0.3) @ qml.PauliZ(1) @ qml.PauliZ("b"),
+                    qp.PauliX("b"),
+                    qp.PauliX("b") @ qp.PauliZ(0.3),
+                    qp.PauliX("b") @ qp.PauliZ(1),
+                    qp.PauliX("b") @ qp.PauliZ(1) @ qp.PauliZ(0.3),
+                    qp.PauliX(1),
+                    qp.PauliX(1) @ qp.PauliZ(0.3),
+                    qp.PauliX(1) @ qp.PauliZ("b"),
+                    qp.PauliX(1) @ qp.PauliZ("b") @ qp.PauliZ(0.3),
+                    qp.PauliX(0.3),
+                    qp.PauliX(0.3) @ qp.PauliZ("b"),
+                    qp.PauliX(0.3) @ qp.PauliZ(1),
+                    qp.PauliX(0.3) @ qp.PauliZ(1) @ qp.PauliZ("b"),
                 ],
             ),
         ),
         (
             b_rx,
             1,
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
                 [
-                    qml.PauliX("b"),
-                    qml.PauliX("b") @ qml.PauliZ(0.3),
-                    qml.PauliX("b") @ qml.PauliZ(1),
-                    qml.PauliX("b") @ qml.PauliZ(1) @ qml.PauliZ(0.3),
-                    qml.PauliX(1),
-                    qml.PauliX(1) @ qml.PauliZ(0.3),
-                    qml.PauliX(1) @ qml.PauliZ("b"),
-                    qml.PauliX(1) @ qml.PauliZ("b") @ qml.PauliZ(0.3),
-                    qml.PauliX(0.3),
-                    qml.PauliX(0.3) @ qml.PauliZ(1),
-                    qml.PauliX(0.3) @ qml.PauliZ("b"),
-                    qml.PauliX(0.3) @ qml.PauliZ("b") @ qml.PauliZ(1),
+                    qp.PauliX("b"),
+                    qp.PauliX("b") @ qp.PauliZ(0.3),
+                    qp.PauliX("b") @ qp.PauliZ(1),
+                    qp.PauliX("b") @ qp.PauliZ(1) @ qp.PauliZ(0.3),
+                    qp.PauliX(1),
+                    qp.PauliX(1) @ qp.PauliZ(0.3),
+                    qp.PauliX(1) @ qp.PauliZ("b"),
+                    qp.PauliX(1) @ qp.PauliZ("b") @ qp.PauliZ(0.3),
+                    qp.PauliX(0.3),
+                    qp.PauliX(0.3) @ qp.PauliZ(1),
+                    qp.PauliX(0.3) @ qp.PauliZ("b"),
+                    qp.PauliX(0.3) @ qp.PauliZ("b") @ qp.PauliZ(1),
                 ],
             ),
         ),
@@ -331,9 +331,9 @@ class TestMixerHamiltonians:
 
         wires = range(4)
         mixer_hamiltonian = qaoa.x_mixer(wires)
-        expected_hamiltonian = qml.Hamiltonian(
+        expected_hamiltonian = qp.Hamiltonian(
             [1, 1, 1, 1],
-            [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+            [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2), qp.PauliX(3)],
         )
         assert mixer_hamiltonian == expected_hamiltonian
 
@@ -344,7 +344,7 @@ class TestMixerHamiltonians:
         mixer_hamiltonian = qaoa.x_mixer(wires)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
+        assert all(qp.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
         # check that the 1-group grouping information was set
         assert mixer_hamiltonian.grouping_indices is not None
         assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
@@ -407,19 +407,19 @@ def make_max_cut_test_cases():
     ]
 
     cost_terms = [
-        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
-        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
+        [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliZ(1) @ qp.PauliZ(2), qp.Identity(0)],
+        [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliZ(1) @ qp.PauliZ(2), qp.Identity(0)],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.Identity(0),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.Identity(0),
         ],
-        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
-        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
+        [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliZ(1) @ qp.PauliZ(2), qp.Identity(0)],
+        [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliZ(1) @ qp.PauliZ(2), qp.Identity(0)],
     ]
 
-    cost_hamiltonians = [qml.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
+    cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
 
     mixer_coeffs = [
         [1, 1, 1],
@@ -430,14 +430,14 @@ def make_max_cut_test_cases():
     ]
 
     mixer_terms = [
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
     ]
 
-    mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
+    mixer_hamiltonians = [qp.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
     return list(zip(GRAPHS, cost_hamiltonians, mixer_hamiltonians))
 
@@ -463,27 +463,27 @@ def make_max_independent_test_cases():
     ]
 
     cost_terms = [
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(2),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliZ(2),
         ],
-        # [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+        # [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(2),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliZ(2),
         ],
     ]
 
-    cost_hamiltonians = [qml.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
+    cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
 
     mixer_coeffs = [
         [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
@@ -495,44 +495,44 @@ def make_max_independent_test_cases():
 
     mixer_terms = [
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(1),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(1),
         ],
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(1),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(1),
         ],
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(0),
-            qml.PauliX(2) @ qml.PauliZ(1),
-            qml.PauliX(2) @ qml.PauliZ(1) @ qml.PauliZ(0),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(2),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(0),
+            qp.PauliX(2) @ qp.PauliZ(1),
+            qp.PauliX(2) @ qp.PauliZ(1) @ qp.PauliZ(0),
         ],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
     ]
 
-    mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
+    mixer_hamiltonians = [qp.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
     return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
 
@@ -549,26 +549,26 @@ def make_min_vertex_cover_test_cases():
     ]
 
     cost_terms = [
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(2),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliZ(2),
         ],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(2),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliZ(2),
         ],
     ]
 
-    cost_hamiltonians = [qml.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
+    cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
 
     mixer_coeffs = [
         [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
@@ -580,44 +580,44 @@ def make_min_vertex_cover_test_cases():
 
     mixer_terms = [
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(1),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(1),
         ],
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(1),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(1),
         ],
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliZ(1),
-            qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliX(1) @ qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliZ(0),
-            qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(0),
-            qml.PauliX(2) @ qml.PauliZ(1),
-            qml.PauliX(2) @ qml.PauliZ(1) @ qml.PauliZ(0),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(2),
+            qp.PauliX(0) @ qp.PauliZ(1),
+            qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliX(1),
+            qp.PauliX(1) @ qp.PauliZ(2),
+            qp.PauliX(1) @ qp.PauliZ(0),
+            qp.PauliX(1) @ qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(0),
+            qp.PauliX(2) @ qp.PauliZ(1),
+            qp.PauliX(2) @ qp.PauliZ(1) @ qp.PauliZ(0),
         ],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
     ]
 
-    mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
+    mixer_hamiltonians = [qp.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
     return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
 
@@ -634,14 +634,14 @@ def make_max_clique_test_cases():
     ]
 
     cost_terms = [
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-        [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
-        [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)],
+        [qp.PauliZ(0) @ qp.PauliZ(2), qp.PauliZ(0), qp.PauliZ(2), qp.PauliZ(1)],
+        [qp.PauliZ(0) @ qp.PauliZ(2), qp.PauliZ(0), qp.PauliZ(2), qp.PauliZ(1)],
     ]
 
-    cost_hamiltonians = [qml.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
+    cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(5)]
 
     mixer_coeffs = [
         [0.5, 0.5, 1.0, 0.5, 0.5],
@@ -653,25 +653,25 @@ def make_max_clique_test_cases():
 
     mixer_terms = [
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(0),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(2),
+            qp.PauliX(1),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(0),
         ],
         [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliX(2),
-            qml.PauliX(2) @ qml.PauliZ(0),
+            qp.PauliX(0),
+            qp.PauliX(0) @ qp.PauliZ(2),
+            qp.PauliX(1),
+            qp.PauliX(2),
+            qp.PauliX(2) @ qp.PauliZ(0),
         ],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-        [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
+        [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)],
     ]
 
-    mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
+    mixer_hamiltonians = [qp.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(5)]
 
     return list(zip(GRAPHS, CONSTRAINED, cost_hamiltonians, mixer_hamiltonians))
 
@@ -700,47 +700,47 @@ def make_edge_driver_cost_test_cases():
     ]
 
     hamiltonians = [
-        qml.Hamiltonian(
+        qp.Hamiltonian(
             [-0.25, -0.25, -0.25, -0.25, -0.25, -0.25],
             [
-                qml.PauliZ(0) @ qml.PauliZ(1),
-                qml.PauliZ(0),
-                qml.PauliZ(1),
-                qml.PauliZ(1) @ qml.PauliZ(2),
-                qml.PauliZ(1),
-                qml.PauliZ(2),
+                qp.PauliZ(0) @ qp.PauliZ(1),
+                qp.PauliZ(0),
+                qp.PauliZ(1),
+                qp.PauliZ(1) @ qp.PauliZ(2),
+                qp.PauliZ(1),
+                qp.PauliZ(2),
             ],
         ),
-        qml.Hamiltonian(
+        qp.Hamiltonian(
             [-0.5, -0.5, -0.5],
             [
-                qml.PauliZ(0) @ qml.PauliZ(1),
-                qml.PauliZ(0) @ qml.PauliZ(2),
-                qml.PauliZ(1) @ qml.PauliZ(2),
+                qp.PauliZ(0) @ qp.PauliZ(1),
+                qp.PauliZ(0) @ qp.PauliZ(2),
+                qp.PauliZ(1) @ qp.PauliZ(2),
             ],
         ),
-        qml.Hamiltonian([1, 1, 1], [qml.Identity(0), qml.Identity(1), qml.Identity(2)]),
-        qml.Hamiltonian(
+        qp.Hamiltonian([1, 1, 1], [qp.Identity(0), qp.Identity(1), qp.Identity(2)]),
+        qp.Hamiltonian(
             [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
             [
-                qml.PauliZ("b") @ qml.PauliZ(1),
-                qml.PauliZ("b"),
-                qml.PauliZ(1),
-                qml.PauliZ(1) @ qml.PauliZ(2.3),
-                qml.PauliZ(1),
-                qml.PauliZ(2.3),
+                qp.PauliZ("b") @ qp.PauliZ(1),
+                qp.PauliZ("b"),
+                qp.PauliZ(1),
+                qp.PauliZ(1) @ qp.PauliZ(2.3),
+                qp.PauliZ(1),
+                qp.PauliZ(2.3),
             ],
         ),
-        qml.Hamiltonian([1, 1, 1], [qml.Identity(0), qml.Identity(1), qml.Identity(2)]),
-        qml.Hamiltonian(
+        qp.Hamiltonian([1, 1, 1], [qp.Identity(0), qp.Identity(1), qp.Identity(2)]),
+        qp.Hamiltonian(
             [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
             [
-                qml.PauliZ("b") @ qml.PauliZ(1),
-                qml.PauliZ("b"),
-                qml.PauliZ(1),
-                qml.PauliZ(1) @ qml.PauliZ(2.3),
-                qml.PauliZ(1),
-                qml.PauliZ(2.3),
+                qp.PauliZ("b") @ qp.PauliZ(1),
+                qp.PauliZ("b"),
+                qp.PauliZ(1),
+                qp.PauliZ(1) @ qp.PauliZ(2.3),
+                qp.PauliZ(1),
+                qp.PauliZ(2.3),
             ],
         ),
     ]
@@ -806,40 +806,40 @@ def make_max_weighted_cycle_test_cases():
 
     cost_terms = [
         [
-            qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[0]),
+            qp.PauliZ(wires=[1]),
+            qp.PauliZ(wires=[2]),
+            qp.PauliZ(wires=[3]),
+            qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[5]),
         ],
         [
-            qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[5]),
-            qml.Identity(wires=[0]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[4]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[5]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+            qp.PauliZ(wires=[0]),
+            qp.PauliZ(wires=[1]),
+            qp.PauliZ(wires=[2]),
+            qp.PauliZ(wires=[3]),
+            qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[5]),
+            qp.Identity(wires=[0]),
+            qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[1]),
+            qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[2]),
+            qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
+            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[3]),
+            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[3]),
+            qp.PauliZ(wires=[3]) @ qp.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[4]) @ qp.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[3]) @ qp.PauliZ(wires=[4]),
+            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[5]),
+            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[3]),
         ],
     ]
 
-    cost_hamiltonians = [qml.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(2)]
+    cost_hamiltonians = [qp.Hamiltonian(cost_coeffs[i], cost_terms[i]) for i in range(2)]
 
     mixer_coeffs = [
         [
@@ -873,35 +873,35 @@ def make_max_weighted_cycle_test_cases():
 
     mixer_terms = [
         [
-            qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[5]),
-            qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[5]),
-            qml.PauliY(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[5]),
-            qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[5]),
-            qml.PauliX(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3]),
-            qml.PauliY(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliX(wires=[3]),
-            qml.PauliY(wires=[1]) @ qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3]),
-            qml.PauliX(wires=[1]) @ qml.PauliY(wires=[0]) @ qml.PauliY(wires=[3]),
-            qml.PauliX(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliX(wires=[4]),
-            qml.PauliY(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliX(wires=[4]),
-            qml.PauliY(wires=[2]) @ qml.PauliX(wires=[3]) @ qml.PauliY(wires=[4]),
-            qml.PauliX(wires=[2]) @ qml.PauliY(wires=[3]) @ qml.PauliY(wires=[4]),
-            qml.PauliX(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliX(wires=[1]),
-            qml.PauliY(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliX(wires=[1]),
-            qml.PauliY(wires=[3]) @ qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
-            qml.PauliX(wires=[3]) @ qml.PauliY(wires=[2]) @ qml.PauliY(wires=[1]),
-            qml.PauliX(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliX(wires=[2]),
-            qml.PauliY(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliX(wires=[2]),
-            qml.PauliY(wires=[4]) @ qml.PauliX(wires=[5]) @ qml.PauliY(wires=[2]),
-            qml.PauliX(wires=[4]) @ qml.PauliY(wires=[5]) @ qml.PauliY(wires=[2]),
-            qml.PauliX(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliX(wires=[0]),
-            qml.PauliY(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliX(wires=[0]),
-            qml.PauliY(wires=[5]) @ qml.PauliX(wires=[4]) @ qml.PauliY(wires=[0]),
-            qml.PauliX(wires=[5]) @ qml.PauliY(wires=[4]) @ qml.PauliY(wires=[0]),
+            qp.PauliX(wires=[0]) @ qp.PauliX(wires=[1]) @ qp.PauliX(wires=[5]),
+            qp.PauliY(wires=[0]) @ qp.PauliY(wires=[1]) @ qp.PauliX(wires=[5]),
+            qp.PauliY(wires=[0]) @ qp.PauliX(wires=[1]) @ qp.PauliY(wires=[5]),
+            qp.PauliX(wires=[0]) @ qp.PauliY(wires=[1]) @ qp.PauliY(wires=[5]),
+            qp.PauliX(wires=[1]) @ qp.PauliX(wires=[0]) @ qp.PauliX(wires=[3]),
+            qp.PauliY(wires=[1]) @ qp.PauliY(wires=[0]) @ qp.PauliX(wires=[3]),
+            qp.PauliY(wires=[1]) @ qp.PauliX(wires=[0]) @ qp.PauliY(wires=[3]),
+            qp.PauliX(wires=[1]) @ qp.PauliY(wires=[0]) @ qp.PauliY(wires=[3]),
+            qp.PauliX(wires=[2]) @ qp.PauliX(wires=[3]) @ qp.PauliX(wires=[4]),
+            qp.PauliY(wires=[2]) @ qp.PauliY(wires=[3]) @ qp.PauliX(wires=[4]),
+            qp.PauliY(wires=[2]) @ qp.PauliX(wires=[3]) @ qp.PauliY(wires=[4]),
+            qp.PauliX(wires=[2]) @ qp.PauliY(wires=[3]) @ qp.PauliY(wires=[4]),
+            qp.PauliX(wires=[3]) @ qp.PauliX(wires=[2]) @ qp.PauliX(wires=[1]),
+            qp.PauliY(wires=[3]) @ qp.PauliY(wires=[2]) @ qp.PauliX(wires=[1]),
+            qp.PauliY(wires=[3]) @ qp.PauliX(wires=[2]) @ qp.PauliY(wires=[1]),
+            qp.PauliX(wires=[3]) @ qp.PauliY(wires=[2]) @ qp.PauliY(wires=[1]),
+            qp.PauliX(wires=[4]) @ qp.PauliX(wires=[5]) @ qp.PauliX(wires=[2]),
+            qp.PauliY(wires=[4]) @ qp.PauliY(wires=[5]) @ qp.PauliX(wires=[2]),
+            qp.PauliY(wires=[4]) @ qp.PauliX(wires=[5]) @ qp.PauliY(wires=[2]),
+            qp.PauliX(wires=[4]) @ qp.PauliY(wires=[5]) @ qp.PauliY(wires=[2]),
+            qp.PauliX(wires=[5]) @ qp.PauliX(wires=[4]) @ qp.PauliX(wires=[0]),
+            qp.PauliY(wires=[5]) @ qp.PauliY(wires=[4]) @ qp.PauliX(wires=[0]),
+            qp.PauliY(wires=[5]) @ qp.PauliX(wires=[4]) @ qp.PauliY(wires=[0]),
+            qp.PauliX(wires=[5]) @ qp.PauliY(wires=[4]) @ qp.PauliY(wires=[0]),
         ],
-        [qml.PauliX(wires=i) for i in range(6)],
+        [qp.PauliX(wires=i) for i in range(6)],
     ]
 
-    mixer_hamiltonians = [qml.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(2)]
+    mixer_hamiltonians = [qp.Hamiltonian(mixer_coeffs[i], mixer_terms[i]) for i in range(2)]
 
     mappings = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
 
@@ -921,7 +921,7 @@ class TestCostHamiltonians:
         """Tests that the bit driver Hamiltonian has the correct output"""
 
         H = qaoa.bit_driver(range(3), 1)
-        hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)])
+        hamiltonian = qp.Hamiltonian([1, 1, 1], [qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(2)])
         assert hamiltonian == H
 
     def test_edge_driver_errors(self):
@@ -986,7 +986,7 @@ class TestCostHamiltonians:
         cost_h, _ = qaoa.maxcut(graph)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        assert all(qp.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
@@ -1009,7 +1009,7 @@ class TestCostHamiltonians:
         cost_h, _ = qaoa.max_independent_set(graph)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        assert all(qp.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
@@ -1032,7 +1032,7 @@ class TestCostHamiltonians:
         cost_h, _ = qaoa.min_vertex_cover(graph)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        assert all(qp.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
@@ -1055,7 +1055,7 @@ class TestCostHamiltonians:
         cost_h, _ = qaoa.max_clique(graph)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        assert all(qp.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
@@ -1082,7 +1082,7 @@ class TestCostHamiltonians:
         cost_h, _, _ = qaoa.max_weight_cycle(graph)
 
         # check that all observables commute
-        assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
+        assert all(qp.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
         assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
@@ -1096,10 +1096,10 @@ class TestUtils:
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
-            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]), True),
-            (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]), False),
-            (qml.Hamiltonian([1, 1], [qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(1)]), True),
-            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]), False),
+            (qp.Hamiltonian([1, 1], [qp.PauliZ(0), qp.PauliZ(1)]), True),
+            (qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliZ(1)]), False),
+            (qp.Hamiltonian([1, 1], [qp.PauliZ(0) @ qp.Identity(1), qp.PauliZ(1)]), True),
+            (qp.Hamiltonian([1, 1], [qp.PauliZ(0), qp.PauliX(0) @ qp.PauliZ(1)]), False),
         ),
     )
     def test_diagonal_terms(self, hamiltonian, value):
@@ -1129,7 +1129,7 @@ class TestLayers:
         ):
             qaoa.cost_layer(0.1, hamiltonian)
 
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+        hamiltonian = qp.Hamiltonian([1, 1], [qp.PauliZ(0), qp.PauliX(1)])
 
         with pytest.raises(
             ValueError,
@@ -1139,22 +1139,22 @@ class TestLayers:
 
     mixer_layer_test_cases = [
         [
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-            [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+            qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliX(1)]),
+            [qp.PauliRot(2, "X", wires=[0]), qp.PauliRot(2, "X", wires=[1])],
         ],
         [
-            qml.X(0) + qml.X(1),
-            [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+            qp.X(0) + qp.X(1),
+            [qp.PauliRot(2, "X", wires=[0]), qp.PauliRot(2, "X", wires=[1])],
         ],
         [
             qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
             [
-                qml.PauliRot(1.0, "XX", wires=[0, 1]),
-                qml.PauliRot(1.0, "YY", wires=[0, 1]),
-                qml.PauliRot(1.0, "XX", wires=[0, 2]),
-                qml.PauliRot(1.0, "YY", wires=[0, 2]),
-                qml.PauliRot(1.0, "XX", wires=[1, 2]),
-                qml.PauliRot(1.0, "YY", wires=[1, 2]),
+                qp.PauliRot(1.0, "XX", wires=[0, 1]),
+                qp.PauliRot(1.0, "YY", wires=[0, 1]),
+                qp.PauliRot(1.0, "XX", wires=[0, 2]),
+                qp.PauliRot(1.0, "YY", wires=[0, 2]),
+                qp.PauliRot(1.0, "XX", wires=[1, 2]),
+                qp.PauliRot(1.0, "YY", wires=[1, 2]),
             ],
         ],
     ]
@@ -1164,34 +1164,34 @@ class TestLayers:
         """Tests that the gates of the mixer layer are correct"""
 
         alpha = 1
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             out = qaoa.mixer_layer(alpha, mixer)
 
-        expected = qml.ApproxTimeEvolution(mixer, alpha, 1)
-        qml.assert_equal(out, expected)
+        expected = qp.ApproxTimeEvolution(mixer, alpha, 1)
+        qp.assert_equal(out, expected)
 
         assert q.queue[0] is out
         assert len(q) == 1
         decomp = out.decomposition()
 
         for i, j in zip(decomp, gates):
-            qml.assert_equal(i, j)
+            qp.assert_equal(i, j)
 
     cost_layer_test_cases = [
         [
-            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
-            [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+            qp.Hamiltonian([1, 1], [qp.PauliZ(0), qp.PauliZ(1)]),
+            [qp.PauliRot(2, "Z", wires=[0]), qp.PauliRot(2, "Z", wires=[1])],
         ],
         [
-            qml.Z(0) + qml.Z(1),
-            [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+            qp.Z(0) + qp.Z(1),
+            [qp.PauliRot(2, "Z", wires=[0]), qp.PauliRot(2, "Z", wires=[1])],
         ],
         [
             qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
             [
-                qml.PauliRot(1.0, "ZZ", wires=[0, 1]),
-                qml.PauliRot(1.0, "ZZ", wires=[0, 2]),
-                qml.PauliRot(1.0, "ZZ", wires=[1, 2]),
+                qp.PauliRot(1.0, "ZZ", wires=[0, 1]),
+                qp.PauliRot(1.0, "ZZ", wires=[0, 2]),
+                qp.PauliRot(1.0, "ZZ", wires=[1, 2]),
             ],
         ],
     ]
@@ -1205,18 +1205,18 @@ class TestLayers:
 
         gamma = 1
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             out = qaoa.cost_layer(gamma, cost)
 
-        expected = qml.ApproxTimeEvolution(cost, gamma, 1)
-        qml.assert_equal(out, expected)
+        expected = qp.ApproxTimeEvolution(cost, gamma, 1)
+        qp.assert_equal(out, expected)
 
         assert q.queue[0] is out
         assert len(q) == 1
         decomp = out.decomposition()
 
         for i, j in zip(decomp, gates):
-            qml.assert_equal(i, j)
+            qp.assert_equal(i, j)
 
 
 class TestIntegration:
@@ -1241,17 +1241,17 @@ class TestIntegration:
         # pylint: disable=unused-argument
         def circuit(params, **kwargs):
             for w in wires:
-                qml.Hadamard(wires=w)
+                qp.Hadamard(wires=w)
 
-            qml.layer(qaoa_layer, 2, params[0], params[1])
+            qp.layer(qaoa_layer, 2, params[0], params[1])
 
         # Defines the device and the QAOA cost function
-        dev = qml.device("default.qubit", wires=len(wires))
+        dev = qp.device("default.qubit", wires=len(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost_function(params):
             circuit(params)
-            return qml.expval(cost_h)
+            return qp.expval(cost_h)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1280,17 +1280,17 @@ class TestIntegration:
         # pylint: disable=unused-argument
         def circuit(params, **kwargs):
             for w in wires:
-                qml.Hadamard(wires=w)
+                qp.Hadamard(wires=w)
 
-            qml.layer(qaoa_layer, 2, params[0], params[1])
+            qp.layer(qaoa_layer, 2, params[0], params[1])
 
         # Defines the device and the QAOA cost function
-        dev = qml.device("default.qubit", wires=len(wires))
+        dev = qp.device("default.qubit", wires=len(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost_function(params):
             circuit(params)
-            return qml.expval(cost_h)
+            return qp.expval(cost_h)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1383,14 +1383,14 @@ class TestCycles:
         h = _partial_cycle_mixer(g, edge)
 
         ops_expected = [
-            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(7),
-            qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(7),
-            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(7),
-            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(7),
-            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(10),
-            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(10),
-            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(10),
-            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(10),
+            qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliX(7),
+            qp.PauliY(0) @ qp.PauliY(1) @ qp.PauliX(7),
+            qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliY(7),
+            qp.PauliX(0) @ qp.PauliY(1) @ qp.PauliY(7),
+            qp.PauliX(0) @ qp.PauliX(2) @ qp.PauliX(10),
+            qp.PauliY(0) @ qp.PauliY(2) @ qp.PauliX(10),
+            qp.PauliY(0) @ qp.PauliX(2) @ qp.PauliY(10),
+            qp.PauliX(0) @ qp.PauliY(2) @ qp.PauliY(10),
         ]
         coeffs_expected = [0.25, 0.25, 0.25, -0.25, 0.25, 0.25, 0.25, -0.25]
 
@@ -1411,10 +1411,10 @@ class TestCycles:
         h = _partial_cycle_mixer(g, edge)
 
         ops_expected = [
-            qml.PauliX(0) @ qml.PauliX(2) @ qml.PauliX(9),
-            qml.PauliY(0) @ qml.PauliY(2) @ qml.PauliX(9),
-            qml.PauliY(0) @ qml.PauliX(2) @ qml.PauliY(9),
-            qml.PauliX(0) @ qml.PauliY(2) @ qml.PauliY(9),
+            qp.PauliX(0) @ qp.PauliX(2) @ qp.PauliX(9),
+            qp.PauliY(0) @ qp.PauliY(2) @ qp.PauliX(9),
+            qp.PauliY(0) @ qp.PauliX(2) @ qp.PauliY(9),
+            qp.PauliX(0) @ qp.PauliY(2) @ qp.PauliY(9),
         ]
         coeffs_expected = [0.25, 0.25, 0.25, -0.25]
 
@@ -1512,7 +1512,7 @@ class TestCycles:
     @pytest.mark.parametrize("g", [nx.lollipop_graph(3, 1), lollipop_graph_rx(3, 1)])
     def test_matrix(self, g):
         """Test that the matrix function works as expected on a fixed example"""
-        h = qml.qaoa.bit_flip_mixer(g, 0)
+        h = qp.qaoa.bit_flip_mixer(g, 0)
 
         mat = matrix(h, 4)
         mat_expected = np.array(
@@ -1541,7 +1541,7 @@ class TestCycles:
     def test_matrix_rx(self):
         """Test that the matrix function works as expected on a fixed example"""
         g = rx.generators.star_graph(4, [0, 1, 2, 3])
-        h = qml.qaoa.bit_flip_mixer(g, 0)
+        h = qp.qaoa.bit_flip_mixer(g, 0)
 
         mat = matrix(h, 4)
         mat_expected = np.array(
@@ -1633,12 +1633,12 @@ class TestCycles:
         h = loss_hamiltonian(g)
 
         expected_ops = [
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(2),
-            qml.PauliZ(3),
-            qml.PauliZ(4),
-            qml.PauliZ(5),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(2),
+            qp.PauliZ(3),
+            qp.PauliZ(4),
+            qp.PauliZ(5),
         ]
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
 
@@ -1670,20 +1670,20 @@ class TestCycles:
         h = loss_hamiltonian(g)
 
         expected_ops = [
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(2),
-            qml.PauliZ(3),
-            qml.PauliZ(4),
-            qml.PauliZ(5),
-            qml.PauliZ(6),
-            qml.PauliZ(7),
-            qml.PauliZ(8),
-            qml.PauliZ(9),
-            qml.PauliZ(10),
-            qml.PauliZ(11),
-            qml.PauliZ(12),
-            qml.PauliZ(13),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(2),
+            qp.PauliZ(3),
+            qp.PauliZ(4),
+            qp.PauliZ(5),
+            qp.PauliZ(6),
+            qp.PauliZ(7),
+            qp.PauliZ(8),
+            qp.PauliZ(9),
+            qp.PauliZ(10),
+            qp.PauliZ(11),
+            qp.PauliZ(12),
+            qp.PauliZ(13),
         ]
         expected_coeffs = [
             np.log(0.5),
@@ -1754,7 +1754,7 @@ class TestCycles:
         """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
         example"""
         coeffs = [1, -1, -1, 1]
-        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(3)]
+        ops = [qp.Identity(0), qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(3)]
 
         expected_coeffs = [
             1,
@@ -1775,22 +1775,22 @@ class TestCycles:
             1,
         ]
         expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0),
-            qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(0),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-            qml.Identity(0),
+            qp.Identity(0),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(3),
+            qp.PauliZ(0),
+            qp.Identity(0),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0) @ qp.PauliZ(3),
+            qp.PauliZ(1),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.Identity(0),
+            qp.PauliZ(1) @ qp.PauliZ(3),
+            qp.PauliZ(3),
+            qp.PauliZ(0) @ qp.PauliZ(3),
+            qp.PauliZ(1) @ qp.PauliZ(3),
+            qp.Identity(0),
         ]
 
         squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
@@ -1809,14 +1809,14 @@ class TestCycles:
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
         expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(1) @ qml.PauliZ(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
+            qp.Identity(0),
+            qp.PauliZ(1) @ qp.PauliZ(0),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
         ]
         expected_coeffs = [2, 2, -2, -2]
 
-        expected_hamiltonian = qml.Hamiltonian(expected_coeffs, expected_ops)
+        expected_hamiltonian = qp.Hamiltonian(expected_coeffs, expected_ops)
         assert h == expected_hamiltonian
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
@@ -1833,19 +1833,19 @@ class TestCycles:
         example of a 3-node complete digraph relative to the 0 node"""
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
         expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(4),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(1) @ qml.PauliZ(4),
-            qml.PauliZ(2) @ qml.PauliZ(4),
+            qp.Identity(0),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0) @ qp.PauliZ(2),
+            qp.PauliZ(0) @ qp.PauliZ(4),
+            qp.PauliZ(1) @ qp.PauliZ(2),
+            qp.PauliZ(1) @ qp.PauliZ(4),
+            qp.PauliZ(2) @ qp.PauliZ(4),
         ]
         expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
         _, ops = h.terms()
         non_zero_terms = [(coeff, op) for coeff, op in zip(h.coeffs, ops) if coeff != 0]
         coeffs = [term[0] for term in non_zero_terms]
-        assert qml.math.allclose(coeffs, expected_coeffs)
+        assert qp.math.allclose(coeffs, expected_coeffs)
         non_zero_ops = [term[1] for term in non_zero_terms]
         for op, expected_op in zip(non_zero_ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
@@ -1866,11 +1866,11 @@ class TestCycles:
         g.remove_edge(0, 1)
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
         h = h.simplify()
-        expected_ops = [qml.Identity(0), qml.PauliZ(wires=[0])]
+        expected_ops = [qp.Identity(0), qp.PauliZ(wires=[0])]
         expected_coeffs = [0, 0]
 
         coeffs, ops = h.terms()
-        assert qml.math.allclose(expected_coeffs, coeffs)
+        assert qp.math.allclose(expected_coeffs, coeffs)
         for op, expected_op in zip(ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
 
@@ -1884,17 +1884,17 @@ class TestCycles:
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
         h = h.simplify()
         expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
+            qp.Identity(0),
+            qp.PauliZ(0),
+            qp.PauliZ(1),
+            qp.PauliZ(3),
+            qp.PauliZ(0) @ qp.PauliZ(1),
+            qp.PauliZ(0) @ qp.PauliZ(3),
+            qp.PauliZ(1) @ qp.PauliZ(3),
         ]
         expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
         coeffs, ops = h.terms()
-        assert qml.math.allclose(coeffs, expected_coeffs)
+        assert qp.math.allclose(coeffs, expected_coeffs)
         for op, expected_op in zip(ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
 
@@ -1922,16 +1922,16 @@ class TestCycles:
         wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # We use PL to find the energies corresponding to each possible bitstring
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
-            qml.BasisState(basis_state, wires=range(wires))
+            qp.BasisState(basis_state, wires=range(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost(params):
             states(params)
-            return qml.expval(h)
+            return qp.expval(h)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)
@@ -1976,12 +1976,12 @@ class TestCycles:
         wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # We use PL to find the energies corresponding to each possible bitstring
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost(basis_state):
-            qml.BasisState(basis_state, wires=range(wires))
-            return qml.expval(h)
+            qp.BasisState(basis_state, wires=range(wires))
+            return qp.expval(h)
 
         # Calculate the set of all bitstrings
         states = itertools.product([0, 1], repeat=wires)
@@ -2050,16 +2050,16 @@ class TestCycles:
         wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # Find the energies corresponding to each possible bitstring
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
-            qml.BasisState(basis_state, wires=range(wires))
+            qp.BasisState(basis_state, wires=range(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost(params):
             states(params)
-            return qml.expval(h)
+            return qp.expval(h)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)

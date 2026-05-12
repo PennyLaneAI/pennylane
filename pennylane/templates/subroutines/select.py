@@ -123,14 +123,14 @@ class Select(Operation):
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=4)
-    >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=4)
+    >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2, 3])]
+    >>> @qp.qnode(dev)
     ... def circuit():
-    ...     qml.Select(ops, control=[0,1])
-    ...     return qml.state()
+    ...     qp.Select(ops, control=[0,1])
+    ...     return qp.state()
     ...
-    >>> print(qml.draw(circuit, level='device')())
+    >>> print(qp.draw(circuit, level='device')())
     0: ─╭○─╭○─╭●─╭●────┤ ╭State
     1: ─├○─├●─├○─├●────┤ ├State
     2: ─╰X─│──╰Y─├SWAP─┤ ├State
@@ -143,13 +143,13 @@ class Select(Operation):
     :math:`j>K-1`). Passing ``partial=True`` tells ``Select`` that this criterion is
     satisfied, and allows the decomposition to make use of the simplification:
 
-    >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2, 3])]
-    >>> @qml.qnode(dev)
+    >>> ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
+    >>> @qp.qnode(dev)
     ... def circuit():
-    ...     qml.Select(ops, control=[0, 1], partial=True)
-    ...     return qml.state()
+    ...     qp.Select(ops, control=[0, 1], partial=True)
+    ...     return qp.state()
     ...
-    >>> print(qml.draw(circuit, level='device')())
+    >>> print(qp.draw(circuit, level='device')())
     0: ─╭○────╭●────┤ ╭State
     1: ─├○─╭●─│─────┤ ├State
     2: ─╰X─│──├SWAP─┤ ├State
@@ -396,10 +396,16 @@ class Select(Operation):
                 + "wires are required."
             )
 
-        if any(
-            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
-        ):
-            raise ValueError("Control wires should be different from operation wires.")
+        _wires_are_traced = any(math.is_abstract(w) for w in control)
+
+        # Wire overlap validation must be skipped when wires are JAX tracers,
+        # as their concrete values are not available during tracing.
+        if not _wires_are_traced:
+            if any(
+                control_wire in Wires.all_wires([op.wires for op in ops])
+                for control_wire in control
+            ):
+                raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
             QueuingManager.remove(op)
@@ -459,8 +465,8 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
-        >>> op = qml.Select(ops, control=[0,1])
+        >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2,3])]
+        >>> op = qp.Select(ops, control=[0,1])
         >>> from pprint import pprint
         >>> pprint(op.decomposition())
         [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
@@ -496,8 +502,8 @@ class Select(Operation):
 
         **Example**
 
-        >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
-        >>> decomp = qml.Select.compute_decomposition(ops, control=[0,1])
+        >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2,3])]
+        >>> decomp = qp.Select.compute_decomposition(ops, control=[0,1])
         >>> from pprint import pprint
         >>> pprint(decomp)
         [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
