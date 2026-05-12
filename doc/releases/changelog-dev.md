@@ -49,6 +49,7 @@
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
   are removed. Instead, please use the 
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
 
 <h3>Deprecations 👋</h3>
 
