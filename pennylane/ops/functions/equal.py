@@ -566,24 +566,22 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     )
 
     if check_interface:
-        for params1, params2 in zip(op1.data, op2.data, strict=True):
-            params1_interface = math.get_interface(params1)
-            params2_interface = math.get_interface(params2)
-            if params1_interface != params2_interface:
-                return (
-                    "Parameters have different interfaces.\n"
-                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
-                )
+        coeff1_interface = math.get_interface(op1.coeff)
+        coeff2_interface = math.get_interface(op2.coeff)
+        if coeff1_interface != coeff2_interface:
+            return (
+                "Coeffs have different interfaces.\n "
+                f"{op1.coeff} interface is {coeff1_interface} and {op2.coeff} interface is {coeff2_interface}"
+            )
 
     if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data, strict=True):
-            params1_trainability = math.requires_grad(params1)
-            params2_trainability = math.requires_grad(params2)
-            if params1_trainability != params2_trainability:
-                return (
-                    "Parameters have different trainability.\n"
-                    f"{params1} trainability is {params1_trainability} and {params2} trainability is {params2_trainability}"
-                )
+        coeff1_train = math.requires_grad(op1.coeff)
+        coeff2_train = math.requires_grad(op2.coeff)
+        if coeff1_train != coeff2_train:
+            return (
+                "Coeffs have different trainability.\n "
+                f"{op1.coeff} trainability is {coeff1_train} and {op2.coeff} trainability is {coeff2_train}"
+            )
 
     if qp.math.is_abstract(op1.coeff) or qp.math.is_abstract(op2.coeff):
         if op1.coeff is not op2.coeff:
@@ -660,10 +658,14 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
         return False
 
     # check H.coeffs match
+    if len(op1.H.coeffs) != len(op2.H.coeffs):
+        return False
     if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
         return False
 
     # check that all the base operators on op1.H and op2.H match
+    if len(op1.H.ops) != len(op2.H.ops):
+        return False
     return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
 
 
@@ -766,6 +768,8 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
         H_match = equal(op1.H, op2.H)
     elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
+        if len(op1.H) != len(op2.H):
+            return False
         H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H, strict=True))
     else:
         return False
@@ -804,6 +808,8 @@ def _equal_subroutineop(
     for dynamic_arg in op1.subroutine.dynamic_argnames:
         vals1, tree1 = flatten(op1.bound_args.arguments[dynamic_arg])
         vals2, tree2 = flatten(op2.bound_args.arguments[dynamic_arg])
+        if len(vals1) != len(vals2):
+            return f"op1 and op2 return a different number of leaves for {dynamic_arg}."
         if tree1 != tree2:
             return f"op1 and op2 have different pytree structures for {dynamic_arg}."
         for v1, v2 in zip(vals1, vals2, strict=True):

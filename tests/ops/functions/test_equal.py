@@ -2271,7 +2271,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="Coeffs have different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_comparison_with_trainability(self):
@@ -2283,7 +2283,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=False, check_trainability=True) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Coeffs have different trainability"):
             assert_equal(op1, op2, check_interface=False, check_trainability=True)
 
     def test_exp_base_op_comparison_with_interface(self):
@@ -3197,6 +3197,13 @@ class TestCompareSubroutines:
 
         op1 = qp.tape.make_qscript(f)((0.5,), 0)[0]
         op2 = qp.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+
+        assert not qp.equal(op1, op2)
+        with pytest.raises(AssertionError, match="return a different number of leaves"):
+            qp.assert_equal(op1, op2)
+
+        op1 = qp.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+        op2 = qp.tape.make_qscript(f)((0.5, {"a": 0.6}), 0)[0]
 
         assert not qp.equal(op1, op2)
         with pytest.raises(AssertionError, match="have different pytree structures"):
