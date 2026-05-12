@@ -176,7 +176,7 @@ def _twos_complement_helper(input_reg, work_wires):
     # Invert all bits
     for w in input_reg[1:]:
         # sign bit of 1 indicates a negative value
-        Controlled(PauliX(w), control_wires=(input_reg[0],), control_values=(1,))
+        CNOT([input_reg[0], w])
 
     # Add one
     Controlled(
