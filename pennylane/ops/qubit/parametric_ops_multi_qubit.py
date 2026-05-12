@@ -22,9 +22,9 @@ import functools
 from collections import Counter
 from operator import matmul
 from typing import Literal
+from warnings import warn
 
 import numpy as np
-from warnigns import warn
 
 import pennylane as qp
 from pennylane import compiler, math, queuing
