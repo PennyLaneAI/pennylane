@@ -45,6 +45,8 @@
   
 <h3>Breaking changes 💔</h3>
 
+* `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

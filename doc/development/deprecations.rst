@@ -77,11 +77,6 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
   have been deprecated and will be removed in v0.46. Instead, please use the 
@@ -167,6 +162,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
