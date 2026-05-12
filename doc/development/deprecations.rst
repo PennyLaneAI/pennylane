@@ -162,7 +162,7 @@ Completed deprecation cycles
 
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the 
+  are removed. Instead, please use the 
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
   - Deprecated in v0.45
