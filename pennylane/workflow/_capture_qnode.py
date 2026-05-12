@@ -497,7 +497,6 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
             return 2 * expval_z + probs
 
         jaxpr = jax.make_jaxpr(f)(0.1)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
 
     >>> print(jaxpr)
     { lambda ; a:f64[]. let
@@ -518,9 +517,6 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
         i:f64[] = mul 2.0:f64[] c
         j:f64[2] = add i d
       in (j,) }
-
-    >>> print(res)
-    [Array([-0.956..., -0.365...], dtype=float64)]
 
 
     """
