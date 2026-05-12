@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for embedding templates."""
 
-from pennylane.estimator.templates.stateprep import BasisState
+from pennylane.estimator.ops.qubit.state_preparation import BasisState
 
 
 class BasisEmbedding(BasisState):

@@ -37,6 +37,7 @@ OP_NAME_ALIASES = {
     "Elbow": "TemporaryAND",
     "BasisStateProjector": "Projector",
     "StateVectorProjector": "Projector",
+    "BasisEmbedding": "BasisState",
 }
 
 
