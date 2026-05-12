@@ -93,7 +93,7 @@ class AngleEmbedding(Operation):
     def __repr__(self):
         return f"AngleEmbedding({self.data[0]}, wires={self.wires.tolist()}, rotation={self._rotation})"
 
-    def __init__(self, features, wires, rotation="X", id=None):
+    def __init__(self, features, wires, rotation="X"):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
@@ -108,7 +108,7 @@ class AngleEmbedding(Operation):
         self._hyperparameters = {"rotation": ROT[rotation]}
 
         wires = wires[:n_features]
-        super().__init__(features, wires=wires, id=id)
+        super().__init__(features, wires=wires)
 
     @property
     def resource_params(self) -> dict:

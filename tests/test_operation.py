@@ -1844,14 +1844,14 @@ def test_docstring_example_of_operator_class(tol):
         grad_method = "A"
 
         # pylint: disable=too-many-arguments,too-many-positional-arguments
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qp.wires.Wires(wire_rot) + qp.wires.Wires(wire_flip)
-            super().__init__(angle, wires=all_wires, id=id)
+            super().__init__(angle, wires=all_wires)
 
         @property
         def num_params(self):

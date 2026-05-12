@@ -60,14 +60,13 @@ class CountsMP(SampleMeasurement):
         obs: Operator | None = None,
         wires=None,
         eigvals=None,
-        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
         self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
-        super().__init__(obs, wires, eigvals, id)
+        super().__init__(obs, wires, eigvals)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))

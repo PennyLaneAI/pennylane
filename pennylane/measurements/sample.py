@@ -54,7 +54,7 @@ class SampleMP(SampleMeasurement):
     _shortname = "sample"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
+    def __init__(self, obs=None, wires=None, eigvals=None, dtype=None):
 
         self._dtype = dtype
 
@@ -83,7 +83,7 @@ class SampleMP(SampleMeasurement):
                 )
             wires = Wires(wires)
 
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals)
 
     @classmethod
     def _abstract_eval(

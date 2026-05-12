@@ -76,7 +76,7 @@ class CompositeOp(Operator):
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
-        self, *operands: Operator, id=None, _pauli_rep=None
+        self, *operands: Operator, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self._name = self.__class__.__name__

@@ -38,8 +38,8 @@ class StateMP(StateMeasurement):
 
     _shortname = "state"
 
-    def __init__(self, wires: Wires | None = None, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires | None = None):
+        super().__init__(wires=wires)
 
     @classmethod
     def _abstract_eval(
@@ -121,8 +121,8 @@ class DensityMatrixMP(StateMP):
             where the instance has to be identified
     """
 
-    def __init__(self, wires: Wires, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires):
+        super().__init__(wires=wires)
 
     @classmethod
     def _abstract_eval(

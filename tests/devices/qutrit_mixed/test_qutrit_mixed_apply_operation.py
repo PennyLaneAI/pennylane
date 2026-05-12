@@ -41,8 +41,8 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
     num_params = 1
     num_wires = 1
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):
@@ -312,8 +312,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         num_params = 1
         num_wires = 1
 
-        def __init__(self, p, wires, id=None):
-            super().__init__(p, wires=wires, id=id)
+        def __init__(self, p, wires):
+            super().__init__(p, wires=wires)
 
         @staticmethod
         def compute_kraus_matrices(p):

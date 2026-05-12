@@ -31,8 +31,6 @@ class PurityMP(StateMeasurement):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some
-            applications where the instance has to be identified
     """
 
     def __str__(self):
@@ -40,8 +38,8 @@ class PurityMP(StateMeasurement):
 
     _shortname = "purity"
 
-    def __init__(self, wires: Wires, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires):
+        super().__init__(wires=wires)
 
     @property
     def numeric_type(self):

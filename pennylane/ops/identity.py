@@ -77,8 +77,8 @@ class Identity(CVObservable, Operation):
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires: WiresLike = (), id=None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
 
@@ -315,8 +315,8 @@ class GlobalPhase(Operation):
     ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires: WiresLike = (), id=None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi, wires: WiresLike = ()):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:

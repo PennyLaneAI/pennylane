@@ -28,7 +28,7 @@ from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True, id=None):
+def s_prod(scalar, operator, lazy=True):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -70,9 +70,9 @@ def s_prod(scalar, operator, lazy=True, id=None):
            [2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
-        return SProd(scalar, operator, id=id)
+        return SProd(scalar, operator)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, id=id)
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base)
     QueuingManager.remove(operator)
     return sprod_op
 
@@ -134,8 +134,8 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
-        super().__init__(base=base, scalar=scalar, id=id)
+    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, _pauli_rep=None):
+        super().__init__(base=base, scalar=scalar)
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep

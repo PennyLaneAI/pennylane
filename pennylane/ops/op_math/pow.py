@@ -37,7 +37,7 @@ from .symbolicop import ScalarSymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, id=None) -> Operator:
+def pow(base, z=1, lazy=True) -> Operator:
     """Raise an Operator to a power.
 
     Args:
@@ -91,15 +91,15 @@ def pow(base, z=1, lazy=True, id=None) -> Operator:
 
     """
     if lazy:
-        return Pow(base, z, id=id)
+        return Pow(base, z)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z, id=id)
+        return Pow(base, z)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
-        pow_op = qp.Identity(base.wires, id=id)
+        pow_op = qp.Identity(base.wires)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
@@ -142,7 +142,7 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, metadata):
         return pow(data[0], z=metadata[0])
 
-    def __new__(cls, base=None, z=1, id=None):
+    def __new__(cls, base=None, z=1):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
@@ -168,11 +168,11 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, id=None):
+    def __init__(self, base=None, z=1):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, scalar=z, id=id)
+        super().__init__(base, scalar=z)
 
         if isinstance(self.z, int) and self.z > 0:
             if (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (

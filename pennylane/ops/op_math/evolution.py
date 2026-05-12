@@ -77,8 +77,8 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param=1, id=None):
-        super().__init__(generator, coeff=-1j * param, id=id)
+    def __init__(self, generator, param=1):
+        super().__init__(generator, coeff=-1j * param)
         self._data = (param,)
 
     def __repr__(self):
