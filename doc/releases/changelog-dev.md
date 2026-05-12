@@ -45,6 +45,11 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The :func:`~pennylane.workflow.get_transform_program` function has been removed.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+  [(#)]()
+
 * The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
   The deprecated access through `transform_program` has been removed.
   [(#)]()

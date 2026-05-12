@@ -9,13 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
- 
 * The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid`` and will be removed in v0.46. 
 
   - Deprecated in v0.45
@@ -161,6 +154,13 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The :func:`~pennylane.workflow.get_transform_program` function has been removed.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+
+  - Deprecated in v0.45
+  - Removed in v0.46 
 
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` has been removed.
