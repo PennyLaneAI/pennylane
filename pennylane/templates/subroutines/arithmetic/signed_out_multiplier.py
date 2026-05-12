@@ -35,7 +35,7 @@ class SignedOutMultiplier(Operator):
     the magnitudes of the encoded inputs, and a quantum comparator on their sign bits to determine
     the final sign of the result.
 
-    The inputs are given in 2s complement.
+    The inputs and output are given in 2s complement.
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
