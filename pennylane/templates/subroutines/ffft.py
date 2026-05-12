@@ -19,6 +19,7 @@ import copy
 from collections import defaultdict
 
 import numpy as np
+from sympy.ntheory import factorint
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
@@ -194,6 +195,9 @@ def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     num_wires = len(wires)
 
     # bit-reversal permutation
+    f, _ = tuple(factorint(num_wires).items())[0]
+    permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]
+
     @for_loop(num_wires // 2)
     def swaps(i):
         @while_loop(lambda finished, _, __, ___, ____: not finished)

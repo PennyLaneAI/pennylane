@@ -15,18 +15,30 @@
 
 import numpy as np
 import pytest
+from pennylane.templates import BasisEmbedding, QFT
 
 from pennylane import FermionicSWAP, PauliZ, device, list_decomps, probs, qnode, workflow
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
 from pennylane.wires import Wires
 
+
 dev = device("default.qubit")
 
 
 @qnode(dev)
-def ffft(wires):
+def ffft(wires, input=None):
+    if input is not None:
+        BasisEmbedding(input, wires)
     FFFT(wires)
+    return probs(wires)
+
+
+@qnode(dev)
+def qft(wires, input=None):
+    if input is not None:
+        BasisEmbedding(input, wires)
+    QFT(wires)
     return probs(wires)
 
 
@@ -175,3 +187,21 @@ def test_raises(wires, error_type, error_msg):
 def test_ffft_circuit(wires, expected_circuit):
     tape = workflow.construct_tape(ffft, level="device")(wires)
     assert tape.operations == expected_circuit
+
+@pytest.mark.parametrize(
+    "wires, input",
+    [
+        (
+            (0, 1),
+            (1, 0),
+        ),
+        (
+            (0, 1, 2, 3),
+            (0, 1, 1, 1),
+        ),
+    ]
+)
+def test_ffft_correct(wires, input):
+    result = ffft(wires, input)
+    expected = qft(wires, input)
+    assert result == expected
