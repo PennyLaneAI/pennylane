@@ -16,7 +16,7 @@ Tests for the trotter_fragmented module (CGF scheme only).
 """
 
 # pylint: disable=no-member
-
+import os
 import itertools
 import math
 
@@ -467,3 +467,101 @@ class TestMonotonicity:
 
         for i in range(len(errors) - 1):
             assert errors[i] > errors[i + 1]
+
+@pytest.fixture(scope="class")
+def h2s_hamiltonian():
+    """Fixture to load the data once per test class."""
+    # Find the file relative to this test script
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(curr_dir, "cgf_corrected_2modals.npz")
+
+    if not os.path.exists(data_path):
+        pytest.skip(f"Data file not found at {data_path}")
+
+    with np.load(data_path) as data:
+        return {
+            "core_tensors": data['core_tensors'],
+            "leaf_tensors": data['leaf_tensors'],
+            "nuc_constant": data['nuc_constant'],
+        }
+
+
+@pytest.mark.slow
+class TestH2SConvergence:
+    """Integration tests on the real H2S molecule."""
+
+
+    def test_high_n_convergence(self, h2s_hamiltonian):
+        """H2S should converge at N=64."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+
+        H = build_H_exact(ham, num_modes, n_states)
+
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.3 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
+        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
+
+        assert fidelity > 1 - 1e-4
+
+    @pytest.mark.parametrize(
+        "num_steps", [(2), (4), (8)]
+    )
+    def test_step_scaling(self, h2s_hamiltonian, num_steps):
+        """H2S step-doubling should reduce error by ~4x."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.3 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+
+        N_a = num_steps
+        N_b = 2 * num_steps
+        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, t, N_a)
+        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, t, N_b)
+
+        err_a = subspace_operator_error(U_ref, U_tr_a, sub_idx)
+        err_b = subspace_operator_error(U_ref, U_tr_b, sub_idx)
+
+        if err_b <= 0:
+            pytest.skip("Denominator error is zero.")
+
+        ratio = err_a / err_b
+        expected = (N_b / N_a) ** 2
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(
+            expected
+        )
+        assert log_dev <= 0.35
+
+    def test_global_phase(self, h2s_hamiltonian):
+        """H2S energy shift should match the measured global phase."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+        H = build_H_exact(ham, num_modes, n_states)
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+        t = 0.05
+
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
+
+        Aref = U_ref[np.ix_(sub_idx, sub_idx)]
+        Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
+
+        overlap = np.trace(Aref.conj().T @ Atrial)
+        measured_phase = np.angle(overlap)
+
+        e_shift = _energy_shift(ham, mode="cgf")
+        expected_phase = e_shift * t
+
+        measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
+        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+
+        phase_error = abs(measured_phase - expected_phase)
+        assert phase_error < 1e-5
