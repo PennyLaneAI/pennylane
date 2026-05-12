@@ -2757,14 +2757,21 @@ class TestParametrizedEvolutionComparisons:
         """Test that coefficients are compared for two ParametrizedEvolution ops"""
         coeffs1 = [3, f1, f2]
         coeffs2 = [3, 4, f2]
+        coeffs4 = [f1, f2]
+        coeffs5 = [f2, f1]
         ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
+        ops4 = [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(2)]
 
         h1 = qp.dot(coeffs1, ops)
         h2 = qp.dot(coeffs2, ops)
+        h4 = qp.dot(coeffs4, ops4)
+        h5 = qp.dot(coeffs5, ops4)
 
         ev1 = qp.evolve(h1)
         ev2 = qp.evolve(h1)
         ev3 = qp.evolve(h2)
+        ev4 = qp.evolve(h4)
+        ev5 = qp.evolve(h5)
 
         params1 = [6.0, 7.0]
         params2 = [6.0, 7.0]
@@ -2772,7 +2779,12 @@ class TestParametrizedEvolutionComparisons:
         t = 3
 
         assert qp.equal(ev1(params1, t), ev2(params2, t)) is True
+        # Differing evolutions due to different parameters
         assert qp.equal(ev1(params1, t), ev3(params3, t)) is False
+        # Differing evolutions due to differing coefficient lengths
+        assert qp.equal(ev1(params1, t), ev4(params1, t)) is False
+        # Differing evolutions due to different coefficients
+        assert qp.equal(ev4(params1, t), ev5(params1, t)) is False
 
     def test_different_times(self):
         """Test that times are compared for two ParametrizedEvolution ops"""
