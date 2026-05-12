@@ -52,7 +52,7 @@
 
 * The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
   The deprecated access through `transform_program` has been removed.
-  [(#)]()
+  [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
 
 <h3>Deprecations 👋</h3>
 
