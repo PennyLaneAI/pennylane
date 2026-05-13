@@ -1,4 +1,4 @@
-# Copyright 2024-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,35 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+Experimental Pauli Based Computation (PBC) functionality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.pbc
 
 .. autosummary::
     :toctree: api
 
-    dla
-    estimator_beta
-    pbc
-    phox
-    templates
-    transforms
-    trotter_error
+    ~compare_circuits
+
+
+Custom operators
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.pbc
+
+.. autosummary::
+    :toctree: api
+
+    ~ControlledPauli
+    ~controlled
+    ~MeasurePauliWord
+    ~measure
+    ~ppr
+
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import estimator_beta
-from pennylane.labs import phox
-from pennylane.labs import pbc
-from pennylane.labs import templates
-from pennylane.labs import transforms
-from pennylane.labs import trotter_error
-
-__all__ = []
+from .controlled import ControlledPauli, controlled
+from .compare_circuits import compare_circuits
+from .pauli_measure import MeasurePauliWord, measure
+from .ops import ppr
