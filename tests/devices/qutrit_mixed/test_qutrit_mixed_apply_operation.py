@@ -52,7 +52,9 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
         if math.get_interface(p) == "tensorflow":
             p = math.cast_like(p, 1j)
 
-        K0 = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.convert_like(math.eye(3, dtype=complex), p)
+        K0 = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.convert_like(
+            math.eye(3, dtype=complex), p
+        )
         K1 = math.sqrt(p + _SQRT_STABILITY_EPS) * math.convert_like(kraus_matrix, p)
         return [K0, K1]
 
