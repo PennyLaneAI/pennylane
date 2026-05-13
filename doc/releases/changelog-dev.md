@@ -66,8 +66,6 @@
 
 <h3>Deprecations 👋</h3>
 
-<h3>Deprecations 👋</h3>
-
 <h3>Internal changes ⚙️</h3>
 
 * Added support for JAX arrays as control wires during JAXpr evaluation.
