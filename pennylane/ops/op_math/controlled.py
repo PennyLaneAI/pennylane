@@ -593,7 +593,6 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
@@ -615,7 +614,6 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires: WiresLike = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        id=None,
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -651,7 +649,7 @@ class Controlled(SymbolicOp):
         self.hyperparameters["work_wire_type"] = work_wire_type
         self._name = f"C({base.name})"
 
-        super().__init__(base, id)
+        super().__init__(base)
 
     @property
     def hash(self):
@@ -1097,9 +1095,8 @@ class ControlledOp(Controlled, Operation):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type, id)
+        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
         # check the grad_recipe validity
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
@@ -1156,8 +1153,8 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
+        control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
         return type.__call__(
             Controlled,
             base,
@@ -1165,7 +1162,6 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-            id=id,
         )
 
 

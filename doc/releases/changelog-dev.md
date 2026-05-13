@@ -49,18 +49,41 @@
   shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
   [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
 
+* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.Operator` has been removed. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The :func:`~pennylane.workflow.get_transform_program` function has been removed.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+  [(#9466)](https://github.com/PennyLaneAI/pennylane/pull/9466)
+
 * The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
   The deprecated access through `transform_program` has been removed.
   [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
-
-<h3>Deprecations 👋</h3>
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
 
+<h3>Deprecations 👋</h3>
+
 <h3>Internal changes ⚙️</h3>
 
+* Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
+  [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
+  
+* Added support for JAX arrays as control wires during JAXpr evaluation.
+  [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
+  
 * Replaces arbitrary magic numbers across multiple modules with named, documented constants.
   Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
   `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,

@@ -46,8 +46,6 @@ class Identity(CVObservable, Operation):
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
@@ -77,8 +75,8 @@ class Identity(CVObservable, Operation):
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires: WiresLike = (), id=None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
 
@@ -237,8 +235,6 @@ The expectation of this observable
 
 Args:
     wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-    id (str): custom label given to an operator instance,
-        can be useful for some applications where the instance has to be identified.
 
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
@@ -263,8 +259,6 @@ class GlobalPhase(Operation):
     Args:
         phi (TensorLike): the global phase
         wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -315,8 +309,8 @@ class GlobalPhase(Operation):
     ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires: WiresLike = (), id=None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi, wires: WiresLike = ()):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:

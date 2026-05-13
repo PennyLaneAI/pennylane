@@ -48,7 +48,6 @@ class LinearCombination(Sum):
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation), or
             ``'gis'`` (IndependentSet). Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
-        id (str): name to be assigned to this ``LinearCombination`` instance
 
     .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
         for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
@@ -129,7 +128,6 @@ class LinearCombination(Sum):
         *,
         _grouping_indices=None,
         _pauli_rep=None,
-        id=None,
     ):
         if isinstance(observables, Operator):
             raise ValueError(
@@ -159,7 +157,6 @@ class LinearCombination(Sum):
             *operands,
             grouping_type=grouping_type,
             method=method,
-            id=id,
             _grouping_indices=_grouping_indices,
             _pauli_rep=_pauli_rep,
         )
@@ -517,7 +514,6 @@ class Hamiltonian:
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
             or ``'gis'`` (Greedy Independent Set). Ignored if ``grouping_type=None``.
-        id (str): name to be assigned to this Hamiltonian instance
 
     **Example:**
 

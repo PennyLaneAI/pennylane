@@ -21,7 +21,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.workflow import construct_batch
 
 
@@ -92,19 +91,6 @@ class TestMarker:
 
         res = c(0.5)
         assert qp.math.allclose(res, np.cos(0.5))
-
-
-def test_get_transform_program_is_deprecated():
-    """Tests that the 'get_transform_program' function is deprecated."""
-
-    @qp.qnode(qp.device("default.qubit"))
-    def circuit():
-        return qp.state()
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The 'get_transform_program' function is deprecated"
-    ):
-        _ = qp.workflow.get_transform_program(circuit)
 
 
 @qp.transforms.merge_rotations
