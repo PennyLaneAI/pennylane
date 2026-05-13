@@ -33,6 +33,25 @@ from pennylane.wires import Wires
 # =============================================================================
 
 
+def _int_to_binary(vals, n_bits):
+    """Convert integer(s) to binary array representation (MSB first).
+
+    Args:
+        vals: int or array-like of ints
+        n_bits: number of bits
+
+    Returns:
+        2D numpy array of shape (len(vals), n_bits) or 1D if scalar input
+    """
+    vals = np.asarray(vals)
+    scalar = vals.ndim == 0
+    vals = np.atleast_1d(vals)
+    # Bit positions from MSB to LSB
+    shifts = np.arange(n_bits - 1, -1, -1)
+    bits = ((vals[:, None] >> shifts) & 1).astype(np.int8)
+    return bits[0] if scalar else bits
+
+
 class IsometryFinder:
     """
     Classical algorithm that finds the isometry circuit and bijection.
@@ -49,7 +68,7 @@ class IsometryFinder:
         self.m = 1 << int(math.floor(math.log2(max(self.r_size, 1))))
 
         # Initialize tableau as int8 for memory efficiency
-        self.tableau = math.int_to_binary(basis_states, self.n)
+        self.tableau = _int_to_binary(basis_states, self.n)
         self.circuit_ops = []
         self.bijection = {}
 
@@ -80,7 +99,7 @@ class IsometryFinder:
         match = np.all(ctrl_cols == cv, axis=1)
         self.tableau[:, target] ^= match.astype(np.int8)
 
-    def pui(self, k, b, subspace_wires, nonsubspace_wires, batch_qubit_positions, pui_work_wires):
+    def pui(self, k, b, subspace_wires, nonsubspace_wires, batch_qubit_positions, work_wires):
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - b
@@ -88,12 +107,12 @@ class IsometryFinder:
         self.circuit_ops.append(qp.BasisEmbedding(k_start, subspace_wires))
         sub_ops = [qp.X(w) for w in target_wires]
         self.circuit_ops.append(
-            qp.Select(sub_ops, control=subspace_wires, work_wires=pui_work_wires, partial=False)
+            qp.Select(sub_ops, control=subspace_wires, work_wires=work_wires, partial=False)
         )
         self.circuit_ops.append(qp.BasisEmbedding(k_start, subspace_wires))
 
         # Update tableau for PUI effect
-        target_bits = math.int_to_binary(k_start + np.arange(b), self.l)
+        target_bits = _int_to_binary(k_start + np.arange(b), self.l)
         for j, _bits in enumerate(target_bits):
             ns_qubit = self.l + batch_qubit_positions[j]
             self.apply_multi_controlled_x(slice(0, self.l), _bits, ns_qubit)
@@ -107,7 +126,7 @@ class IsometryFinder:
         self.tableau[:, [w0, w1]] = self.tableau[:, [w1, w0]]
 
     @qp.QueuingManager.stop_recording()
-    def find_isometry(self, wires, pui_work_wires):
+    def find_isometry(self, wires, work_wires):
         """
         Find isometry using the batched PUI approach (Algorithm 1).
         Optimized: tracks subspace membership incrementally, minimizes
@@ -120,16 +139,6 @@ class IsometryFinder:
         nonsubspace_wires = wires[self.l :]
 
         # Only allocate work wires if l > 1 (otherwise Select needs none)
-        need_to_allocate = len(pui_work_wires) - (self.l - 1)
-        if need_to_allocate:
-            with qp.queuing.AnnotatedQueue() as q:
-                pui_work_wires = allocate(need_to_allocate, state="zero", restored=True)
-            alloc = q.queue[0]
-            dealloc = qp.allocation.Deallocate(alloc.wires)
-            self.circuit_ops.append(dealloc)  # Reverse ordering
-        else:
-            alloc = None
-
         # Pre-allocate set for batch membership checks
         batch_set = set()
 
@@ -143,9 +152,7 @@ class IsometryFinder:
             need_flush = (b == self.m) or (not remaining and batch)
 
             if need_flush and batch:
-                self.pui(
-                    k, b, subspace_wires, nonsubspace_wires, batch_qubit_positions, pui_work_wires
-                )
+                self.pui(k, b, subspace_wires, nonsubspace_wires, batch_qubit_positions, work_wires)
                 batch = []
                 batch_qubit_positions = []
                 batch_set = set()
@@ -208,7 +215,7 @@ class IsometryFinder:
                                                 wires[actual_qubit],
                                             ],
                                             control_values=[1, ctrl_val],
-                                            work_wires=pui_work_wires[0],
+                                            work_wires=work_wires[0],
                                             work_wire_type="zeroed",
                                         )
                                     )
@@ -230,7 +237,7 @@ class IsometryFinder:
                             subspace_wires,
                             nonsubspace_wires,
                             batch_qubit_positions,
-                            pui_work_wires,
+                            work_wires,
                         )
                         batch = []
                         batch_qubit_positions = []
@@ -248,7 +255,7 @@ class IsometryFinder:
                     self.apply_cx_to_tableau(*_wires)
 
             # Transform subspace to |k>
-            k_bits = math.int_to_binary(k, self.l)
+            k_bits = _int_to_binary(k, self.l)
             current_sub = self.tableau[found_state, : self.l]
             diff_bits = np.where(current_sub != k_bits)[0]
             for j in diff_bits:
@@ -262,9 +269,6 @@ class IsometryFinder:
             batch_set.add(found_state)
             self.bijection[found_state] = k
             k += 1
-
-        if alloc is not None:
-            self.circuit_ops.append(alloc)
 
         # Assign bijection for states already in subspace
         vals = self.tableau[:, : self.l] @ (2 ** np.arange(self.l - 1, -1, -1))
@@ -320,12 +324,12 @@ class PartialUnaryStatePreparation(Operation):
             "num_work_wires": len(self.hyperparameters["work_wires"]),
         }
 
-    def __init__(self, coefficients, wires, indices, work_wires=None):
+    def __init__(self, coefficients, wires, indices, work_wires):
         work_wires = [] if work_wires is None else work_wires
         all_wires = Wires.all_wires([wires, work_wires])
         super().__init__(coefficients, wires=all_wires)
         self.hyperparameters["indices"] = indices
-        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["work_wires"] = Wires(work_wires)
 
     @property
     def has_decomposition(self):
@@ -344,13 +348,16 @@ class PartialUnaryStatePreparation(Operation):
         raise DecompositionUndefinedError
 
 
-def _pui_state_prep_resources(num_entries, num_wires, **_):
+def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     """Compute the resources for _pui_state_prep."""
     ell = max(math.ceil_log2(num_entries), 1)
     if num_entries == 1:
         return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
 
     resources = defaultdict(int)
+    if num_work_wires < ell - 1:
+        resources[resource_rep(qp.allocation.Allocate)] += 1
+        resources[resource_rep(qp.allocation.Deallocate)] += 1
     resources[resource_rep(qp.MultiplexerStatePreparation, num_wires=ell)] += 1
     R = num_wires - ell
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
@@ -363,7 +370,10 @@ def _pui_state_prep_resources(num_entries, num_wires, **_):
     )
     resources[select_rep] += num_entries // 8
 
+    print(main_pui_batch_size)
+    print(num_entries)
     rest_pui_batch_size = num_entries % main_pui_batch_size
+    print(rest_pui_batch_size)
     select_rep = resource_rep(
         qp.Select,
         op_reps=[resource_rep(qp.X)] * rest_pui_batch_size,
@@ -374,20 +384,24 @@ def _pui_state_prep_resources(num_entries, num_wires, **_):
     resources[select_rep] += 1
 
     resources[resource_rep(qp.CNOT)] += int(num_entries**1.15 * 4)
-    embed_rep = resource_rep(qp.BasisEmbedding, num_wires=ell)
-    resources[embed_rep] += num_entries // 4
+    embed_rep = resource_rep(qp.BasisState, num_wires=ell)
+    resources[embed_rep] += max(num_entries // 4, 0)
     swap_rep = resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
 
-    mcx_rep = resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=2,
-        num_zero_control_values=1,
-        num_work_wires=1,
-        work_wire_type="clean",
-    )
-    resources[mcx_rep] += int(num_wires / 10) + 1
+    guess = int(num_wires / 10) + 1
 
+    for num, num_zeroed in zip(
+        [max(guess // 2, 1), max(guess - guess // 2, 1)], [0, 1], strict=True
+    ):
+        mcx_rep = resource_rep(
+            qp.MultiControlledX,
+            num_control_wires=2,
+            num_zero_control_values=num_zeroed,
+            num_work_wires=1,
+            work_wire_type="clean",
+        )
+        resources[mcx_rep] += num
     return resources
 
 
@@ -395,10 +409,10 @@ def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
     ell = max(math.ceil_log2(num_entries), 1)
     needed_work_wires = ell - 1
-    return max(needed_work_wires - num_work_wires, 0)
+    return {"zeroed": max(needed_work_wires - num_work_wires, 0)}
 
 
-@register_resources(_pui_state_prep_resources, work_wires=_pui_state_prep_work_wires)
+@register_resources(_pui_state_prep_resources, work_wires=_pui_state_prep_work_wires, exact=False)
 def _pui_state_prep(coefficients, wires, indices, work_wires, **__):
     """Compute the decomposition of the partial unary iteration state preparation technique."""
     s = len(indices)
@@ -406,22 +420,44 @@ def _pui_state_prep(coefficients, wires, indices, work_wires, **__):
         qp.BasisState(indices[0], wires)
         return
 
-    iso_finder = IsometryFinder(indices, len(wires))
-    ops, bijection = iso_finder.find_isometry(wires, work_wires)
     ell = max(math.ceil_log2(s), 1)
-    subspace_wires = wires[:ell]
+    iso_finder = IsometryFinder(indices, len(wires))
 
-    # Step 1: Dense state preparation
-    dense_state = np.zeros(2**ell, dtype=complex)
-    for i, amp in enumerate(coefficients):
-        dense_state[bijection[i]] = amp
+    need_to_allocate = len(work_wires) - (ell - 1)
+    if need_to_allocate:
+        with allocate(need_to_allocate, state="zero", restored=True) as additional_work_wires:
+            work_wires = list(work_wires) + list(additional_work_wires)
+            ops, bijection = iso_finder.find_isometry(wires, work_wires)
+            subspace_wires = wires[:ell]
 
-    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+            # Step 1: Dense state preparation
+            dense_state = np.zeros(2**ell, dtype=complex)
+            for i, amp in enumerate(coefficients):
+                dense_state[bijection[i]] = amp
 
-    # Step 2: Apply the inverse of the isometry circuit
-    for op in reversed(ops):
-        if qp.QueuingManager.recording():
-            qp.apply(op)
+            qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+
+            # Step 2: Apply the inverse of the isometry circuit
+            for op in reversed(ops):
+                if qp.QueuingManager.recording():
+                    qp.apply(op)
+
+    else:
+        ops, bijection = iso_finder.find_isometry(wires, work_wires)
+
+        subspace_wires = wires[:ell]
+
+        # Step 1: Dense state preparation
+        dense_state = np.zeros(2**ell, dtype=complex)
+        for i, amp in enumerate(coefficients):
+            dense_state[bijection[i]] = amp
+
+        qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+
+        # Step 2: Apply the inverse of the isometry circuit
+        for op in reversed(ops):
+            if qp.QueuingManager.recording():
+                qp.apply(op)
 
 
 add_decomps(PartialUnaryStatePreparation, _pui_state_prep)
