@@ -195,6 +195,9 @@ def _signed_out_multiplier_decomposition(
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
+    # TODO: work wires condition
+    # TODO: fallback when not enough work wires are left for the Incrementer
+
     if capture.enabled():
         x_wires, y_wires, work_wires, output_wires = (
             math.array(x_wires, like="jax"),
