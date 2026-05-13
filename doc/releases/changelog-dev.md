@@ -72,6 +72,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
+  []()
+
 <h3>Internal changes ⚙️</h3>
 
 * Added support for JAX arrays as control wires during JAXpr evaluation.

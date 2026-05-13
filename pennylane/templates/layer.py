@@ -15,7 +15,10 @@ r"""
 Contains the ``layer`` template constructor.
 """
 
+import warnings
+
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 def _preprocess(args, depth):
@@ -205,6 +208,13 @@ def layer(template, depth, *args, **kwargs):
         2: ───────────╰MultiRZ(0.30)──H────────╰MultiRZ(0.40)──H─┤  <Z>
 
     """
+
+    warnings.warn(
+        "Using qp.templates.layer is deprecated "
+        "and will be removed in v0.47. Instead, please apply "
+        "your unitary in a for loop. ",
+        PennyLaneDeprecationWarning,
+    )
 
     _preprocess(args, depth)
 
