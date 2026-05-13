@@ -53,8 +53,6 @@ def ctrl(
     work_wires: Any | None = None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Operator: ...
-
-
 @overload
 def ctrl(
     op: Callable,
@@ -63,8 +61,6 @@ def ctrl(
     work_wires: Any | None = None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Callable: ...
-
-
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="borrowed"):
     r"""Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
