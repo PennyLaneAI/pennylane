@@ -89,10 +89,8 @@ Operator Types
     :parts: 1
 """
 
-import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
 from copy import copy, deepcopy
-from enum import Enum, auto
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Literal
@@ -114,14 +112,14 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import FlatPytree, classproperty, create_operator_primitive
+from pennylane.operation import FlatPytree, classproperty
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 
-class Operator2(ABC, metaclass=ABCCaptureMeta):
+class Operator2(ABC):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their dynamic
@@ -436,9 +434,6 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _primitive: "jax.extend.core.Primitive" | None = None
-    """Optional[jax.extend.core.Primitive]"""
-
     def __init__(self, *args, **kwargs):
         self._name = type(self).__name__
 
@@ -465,17 +460,11 @@ class Operator2(ABC, metaclass=ABCCaptureMeta):
             cls.has_decomposition = True
 
         register_pytree(cls, cls._flatten, cls._unflatten)
-        cls._primitive = create_operator_primitive(cls)
 
         cls._sig = signature(cls)
         _add_dynamic_properties(cls)
 
         cls.resource_keys = set(cls._sig.parameters.keys())
-
-    @classmethod
-    def _primitive_bind_call(cls: type["Operator2"], *args, **kwargs) -> None:
-        # FIXME:
-        return
 
     def _flatten(self) -> FlatPytree:
         """Serialize the operation into dynamic and static components.
