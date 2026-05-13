@@ -26,6 +26,8 @@ from pennylane.ops.qutrit import channel
 
 QUDIT_DIM = 3
 
+# Small offset to push parameter values just outside the valid [0,1] boundary in tests
+_BOUNDARY_OFFSET = 1e-14
 
 class TestQutritDepolarizingChannel:
     """Tests for the qutrit quantum channel QutritDepolarizingChannel"""
@@ -204,9 +206,9 @@ class TestQutritAmplitudeDamping:
         "gamma_10,gamma_20,gamma_21",
         (
             (1.5, 0.0, 0.0),
-            (0.0, 1.0 + 1e-14, 0.0),
+            (0.0, 1.0 + _BOUNDARY_OFFSET, 0.0),
             (0.0, 0.0, 1.1),
-            (0.0, 0.33, 0.67 + 1e-14),
+            (0.0, 0.33, 0.67 + _BOUNDARY_OFFSET),
         ),
     )
     def test_gamma_invalid_parameter(self, gamma_10, gamma_20, gamma_21):
@@ -316,7 +318,7 @@ class TestTritFlip:
 
     @pytest.mark.parametrize(
         "p_01,p_02,p_12",
-        [(1.2, 0, 0), (0, -0.3, 0.5), (0, 0, 1 + 1e-14), (1, 1e-14, 0), (0.3, 0.4, 0.4)],
+        [(1.2, 0, 0), (0, -0.3, 0.5), (0, 0, 1 + _BOUNDARY_OFFSET), (1, _BOUNDARY_OFFSET, 0), (0.3, 0.4, 0.4)],
     )
     def test_p_invalid_parameter(self, p_01, p_02, p_12):
         """Ensures that error is thrown when p_01, p_02, p_12, or their sum are outside [0,1]"""
