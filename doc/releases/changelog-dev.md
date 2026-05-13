@@ -45,6 +45,10 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
+  The deprecated access through `transform_program` has been removed.
+  [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
+
 <h3>Deprecations 👋</h3>
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
@@ -84,4 +88,5 @@ Usman Ahmed,
 Guillermo Alonso,
 Yushao Chen,
 Marcus Edwards,
+Andrija Paurevic,
 David Wierichs
