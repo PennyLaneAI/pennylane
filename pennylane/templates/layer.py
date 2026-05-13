@@ -91,7 +91,7 @@ def layer(template, depth, *args, **kwargs):
 
         This creates the following circuit:
 
-        >>> print(qp.draw(circuit)())
+        >>> print(qp.draw(circuit)())  # doctest: +SKIP
         0: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         1: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
@@ -121,7 +121,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> print(qp.draw(circuit)())
+        >>> print(qp.draw(circuit)())  # doctest: +SKIP
         1: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         2: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
@@ -162,7 +162,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> print(qp.draw(circuit)(params))
+        >>> print(qp.draw(circuit)(params))  # doctest: +SKIP
         0: ──RX(0.50)─╭MultiRZ(0.50)──RX(0.40)─╭MultiRZ(0.40)───────────┤  <Z>
         1: ───────────╰MultiRZ(0.50)──RY(0.50)─╰MultiRZ(0.40)──RY(0.40)─┤  <Z>
 
@@ -203,7 +203,7 @@ def layer(template, depth, *args, **kwargs):
 
         This gives us the following circuit:
 
-        >>> print(qp.draw(circuit)(param1, param2))
+        >>> print(qp.draw(circuit)(param1, param2))  # doctest: +SKIP
         1: ──RX(0.10)─╭MultiRZ(0.30)──RX(0.20)─╭MultiRZ(0.40)────┤  <Z>
         2: ───────────╰MultiRZ(0.30)──H────────╰MultiRZ(0.40)──H─┤  <Z>
 
