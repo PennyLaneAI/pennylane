@@ -74,6 +74,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added support for JAX arrays as control wires during JAXpr evaluation.
+  [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
+  
 * Replaces arbitrary magic numbers across multiple modules with named, documented constants.
   Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
   `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
