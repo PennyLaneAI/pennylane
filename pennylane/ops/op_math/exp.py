@@ -64,7 +64,7 @@ def _find_equal_generator(base, coeff):
     for op_class in _get_has_generator_types(len(base.wires)):
         g, c = qp.generator(op_class)(coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
-        mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires)))
+        mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
         if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator

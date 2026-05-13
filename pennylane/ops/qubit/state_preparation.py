@@ -41,8 +41,8 @@ from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
-# TODO: Remove TOLERANCE as global variable
-TOLERANCE = 1e-10
+#: Numerical tolerance for validating unit norm of input state vectors.
+_STATE_NORM_TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase):
@@ -164,13 +164,12 @@ class BasisState(StatePrepBase):
         """
 
         if not qp.math.is_abstract(state):
-            return [qp.X(wire) for wire, basis in zip(wires, state) if basis == 1]
+            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
 
         op_list = []
-        for wire, basis in zip(wires, state):
-            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
+        for wire, basis in zip(wires, state, strict=True):
+            op_list.append(qp.GlobalPhase(basis * np.pi / 2, wire))
             op_list.append(qp.RX(basis * np.pi, wire))
-            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
 
         return op_list
 
@@ -187,7 +186,7 @@ class BasisState(StatePrepBase):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals_int):
+            for base_wire_label, value in zip(self.wires, prep_vals_int, strict=True):
                 indices[wire_order.index(base_wire_label)] = value
 
         if qp.math.get_interface(prep_vals_int) == "jax":
@@ -224,7 +223,7 @@ def _jax_jit_basis_state_cond(**_):
 @register_condition(_jax_jit_basis_state_cond)
 @register_resources(_jax_jit_basis_state_resources, exact=False)
 def _jax_jit_basis_state_decomp(state, wires, **__):
-    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state, strict=True)]
 
 
 def _basis_state_decomp_resources(num_wires):
@@ -567,7 +566,7 @@ class StatePrep(StatePrepBase):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
@@ -626,7 +625,7 @@ class StatePrep(StatePrepBase):
         if normalize:
             state /= norm
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             raise ValueError(
                 f"The state must be a vector of norm 1.0; got norm {norm}. "
                 "Use 'normalize=True' to automatically normalize."
