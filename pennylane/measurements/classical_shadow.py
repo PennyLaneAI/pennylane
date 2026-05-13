@@ -41,8 +41,6 @@ class ClassicalShadowMP(MeasurementTransform):
     Args:
         wires (.Wires): The wires the measurement process applies to.
         seed (Union[int, None]): The seed used to generate the random measurements
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "shadow"
@@ -51,10 +49,9 @@ class ClassicalShadowMP(MeasurementTransform):
         self,
         wires: WiresLike | None = None,
         seed: int | None = None,
-        id: str | None = None,
     ):
         self.seed = seed
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def _flatten(self):
         metadata = (("wires", self.wires), ("seed", self.seed))
@@ -434,8 +431,6 @@ class ShadowExpvalMP(MeasurementTransform):
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "shadowexpval"
@@ -451,17 +446,17 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
+    # pylint: disable=arguments-renamed
     def __init__(
         self,
         H: Operator | Sequence[Operator],
         seed: int | None = None,
         k: int = 1,
-        id: str | None = None,
     ):
         self.seed = seed
         self.H = H
         self.k = k
-        super().__init__(id=id)
+        super().__init__()
 
     # pylint: disable=arguments-differ
     @classmethod

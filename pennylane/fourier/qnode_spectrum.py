@@ -365,14 +365,16 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
         .. code-block:: python
 
+            from pennylane.fourier import mark
+
             dev = qp.device("default.qubit", wires=2)
 
             @qp.qnode(dev)
             def circuit(x, y, z):
-                qp.RX(0.5*x**2, wires=0, id="x")
-                qp.RY(2.3*y, wires=1, id="y0")
+                mark(qp.RX(0.5*x**2, wires=0), "x")
+                mark(qp.RY(2.3*y, wires=1), "y0")
                 qp.CNOT(wires=[1,0])
-                qp.RY(z, wires=0, id="y1")
+                mark(qp.RY(z, wires=0), "y1")
                 return qp.expval(qp.Z(0))
 
         First, note that we assigned ``id`` labels to the gates for which we will use
@@ -399,7 +401,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
         that we would not be able to compute the advanced spectrum for ``x`` because it is
-        preprocessed non-linearly in the gate ``qp.RX(0.5*x**2, wires=0, id="x")``.
+        preprocessed non-linearly in the gate ``qp.RX(0.5*x**2, wires=0)`` marked with ``"x"``.
 
     """
     # pylint: disable=too-many-branches
@@ -485,7 +487,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 else:
                     # Array-valued argument
                     # Extract indices of parameters contributing to the current operation
-                    par_ids = zip(*[map(int, _ids) for _ids in np.where(jac_of_op)])
+                    par_ids = zip(*[map(int, _ids) for _ids in np.where(jac_of_op)], strict=True)
                     # Exclude contributing parameters that were not requested
                     par_ids = set(par_ids).intersection(requested_par_ids)
                     if len(par_ids) == 0:
