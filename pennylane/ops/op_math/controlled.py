@@ -53,6 +53,8 @@ def ctrl(
     work_wires: Any | None = None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Operator: ...
+
+
 @overload
 def ctrl(
     op: Callable,
@@ -61,6 +63,8 @@ def ctrl(
     work_wires: Any | None = None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Callable: ...
+
+
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="borrowed"):
     r"""Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
@@ -1158,6 +1162,7 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
         work_wire_type="borrowed",
         id=None,
     ):
+        #   control_wires = tuple(w if qp.math.is_abstract(w) else int(w) for w in control_wires)
         return type.__call__(
             Controlled,
             base,

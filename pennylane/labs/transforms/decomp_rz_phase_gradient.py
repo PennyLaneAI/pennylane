@@ -15,9 +15,11 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
+import jax.numpy as jnp
+
 import pennylane as qml
+from pennylane import math
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
-from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import WireError
 
 
@@ -101,12 +103,6 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
         )
 
-    kwargs = {
-        "angle_wires": angle_wires,
-        "phase_grad_wires": phase_grad_wires,
-        "work_wires": work_wires,
-    }
-
     def _resource_fn():
         # rz decomposition costs, using information about angle_wires etc from the outer scope
         target_op = qml.resource_rep(
@@ -130,7 +126,16 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         target_wire = wires
         qml.GlobalPhase(phi / 2)
 
-        pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
-        qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
+        precision = len(angle_wires)
+        binary_int = 2 ** jnp.arange(precision - 1, -1, -1) @ math.binary_decimals(
+            phi, precision, unit=2 * jnp.pi
+        )
+
+        qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
+
+        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+
+        # NOTE: BasisEmbedding is self-inverse, no need to adjoint / uncompute
+        qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
 
     return _decomp_fn
