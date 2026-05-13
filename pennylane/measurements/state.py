@@ -115,8 +115,6 @@ class DensityMatrixMP(StateMP):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     def __init__(self, wires: Wires):
