@@ -14,18 +14,24 @@
 """Workaround function for Mid-circuit Pauli measurement with correct post-measurement state"""
 
 # pylint: disable=protected-access
-import uuid
+
+import numpy as np
 
 import pennylane as qp
 from pennylane.drawer._add_obj import _add_grouping_symbols, _add_obj
-from pennylane.ops.mid_measure.measurement_value import MeasurementValue
-from pennylane.ops.mid_measure.mid_measure import MidMeasure
 
 from .ops import _dequeue
 
 
 class MeasurePauliWord(qp.operation.Operation):
-    """Mid-circuit measurement of an arbitrary Pauli word."""
+    """Mid-circuit measurement of an arbitrary Pauli word.
+
+    This operation represents a projective measurement of a Pauli word.
+    It decomposes into basis-change gates, CNOT parity encoding, and a
+    native ``qp.measure()`` call. Compatible with all MCM methods
+    (tree-traversal, one-shot, deferred) when used via the ``measure()``
+    function.
+    """
 
     num_wires = None
     num_params = 0
@@ -45,13 +51,16 @@ class MeasurePauliWord(qp.operation.Operation):
             # Determine if measurement result should be flipped
             # For Hermitian observables, phase must be ±1
             # Flip when phase is -1 (or has negative real part for robustness)
-            self._sign_flip = qp.math.isclose(self._phase, -1)
+            self._sign_flip = bool(np.real(self._phase) < 0)
 
             self._pauli_word = qp.pauli.pauli_word_to_string(P_bare)
             wires = P_bare.wires
-            measurement_id = str(uuid.uuid4())
-            self._mid_measure = MidMeasure(wires=[wires[0]], meas_uid=measurement_id)
-            self._measurement_value = MeasurementValue([self._mid_measure])
+
+            # Use qp.measure (public API) to create the MidMeasure + MeasurementValue.
+            # Called inside stop_recording so nothing is queued yet.
+            self._measurement_value = qp.measure(wires[0])
+            self._mid_measure = self._measurement_value.measurements[0]
+
         super().__init__(wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None, wire=None):
@@ -83,7 +92,7 @@ class MeasurePauliWord(qp.operation.Operation):
         if self._sign_flip:
             ops.append(qp.X(target))
 
-        # Include MidMeasure AND its measurements for proper MCM handling
+        # Include MidMeasure for proper MCM handling
         ops.append(self._mid_measure)
 
         if self._sign_flip:
@@ -112,8 +121,82 @@ def _add_measure_pauli_word(
     return layer_str
 
 
+# def measure(P):
+#     """Projectively measure a Pauli word mid-circuit. Returns MeasurementValue.
+
+#     Collapses the system into the +/- 1 eigenstate of the Pauli word P.
+
+#     This function queues all operations (basis-change gates, CNOTs, and
+#     ``qp.measure()``) directly onto the tape, ensuring the mid-circuit
+#     measurement is visible to all MCM transforms (deferred, tree-traversal,
+#     one-shot). A ``MeasurePauliWord`` instance is created internally for
+#     metadata but is not placed on the tape.
+
+#     Args:
+#         P: A Pauli word observable (e.g., ``qp.PauliZ(0) @ qp.PauliZ(1)``).
+#             Supports signed Pauli words (e.g., ``-qp.PauliX(0) @ qp.PauliY(1)``).
+
+#     Returns:
+#         MeasurementValue: A measurement value that can be used with ``qp.cond()``.
+#     """
+#     # Create MeasurePauliWord to parse the Pauli word (sign, wires, etc.)
+#     # but don't keep it on the tape — we queue individual gates instead.
+#     op = MeasurePauliWord(P)
+#     qp.QueuingManager.remove(op)
+
+#     wires = op.wires
+#     pw = op._pauli_word
+#     sign_flip = op._sign_flip
+
+#     # Pre-measurement: basis change
+#     for pauli, wire in zip(pw, wires):
+#         if pauli == "X":
+#             qp.Hadamard(wire)
+#         elif pauli == "Y":
+#             qp.adjoint(qp.S)(wire)
+#             qp.Hadamard(wire)
+
+#     # Parity encoding onto target wire
+#     target = wires[0]
+#     for w in wires[1:]:
+#         qp.CNOT((w, target))
+
+#     if sign_flip:
+#         qp.X(target)
+
+#     # Mid-circuit measurement — queued at tape level, visible to all MCM transforms
+#     mv = qp.measure(target)
+
+#     # Post-measurement: undo
+#     if sign_flip:
+#         qp.X(target)
+
+#     for w in reversed(list(wires[1:])):
+#         qp.CNOT((w, target))
+
+#     for pauli, wire in zip(pw, wires):
+#         if pauli == "X":
+#             qp.Hadamard(wire)
+#         elif pauli == "Y":
+#             qp.Hadamard(wire)
+#             qp.S(wire)
+
+#     return mv
+
+
 def measure(P):
-    """Projectively measure a Pauli word mid-circuit. Returns MeasurementValue.
-    Collapses the system into the +/- 1 eigenstate."""
+    """Like ``measure()``, but queues a single ``MeasurePauliWord`` operation
+    for compact circuit drawing. Only compatible with mcm_method='tree-traversal'
+    or 'one-shot' (not 'deferred').
+
+    Use this when you need the grouped drawer representation (e.g., for
+    ``qp.draw()`` or ``compare_circuits``).
+
+    Args:
+        P: A Pauli word observable.
+
+    Returns:
+        MeasurementValue: A measurement value that can be used with ``qp.cond()``.
+    """
     op = MeasurePauliWord(P)
     return op._measurement_value
