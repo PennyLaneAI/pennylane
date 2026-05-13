@@ -53,13 +53,23 @@
 
 <h3>Internal changes ⚙️</h3>
 
+<<<<<<< fix/capture-ctrl-control-wires
 * Added support for JAX arrays as control wires during JAXpr evaluation.
   [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
+=======
+* Replaces arbitrary magic numbers across multiple modules with named, documented constants.
+  Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
+  `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
+  `pennylane/fourier`, and `pennylane/templates` are now module-level constants with
+  ``#:`` doc-comments explaining their purpose and origin. Unused constants
+  ``eps`` in :mod:`pennylane.math` and ``tolerance`` in ``default_qutrit`` are removed.
+  [(#9374)](https://github.com/PennyLaneAI/pennylane/pull/9374)
+>>>>>>> main
 
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
   
-
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -72,6 +82,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Usman Ahmed,
 Guillermo Alonso,
 Yushao Chen,
 Marcus Edwards,
