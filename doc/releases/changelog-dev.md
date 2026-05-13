@@ -45,12 +45,45 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The `transform_program` property of `QNode` has been renamed to `compile_pipeline`.
+  The deprecated access through `transform_program` has been removed.
+  [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
+
 <h3>Deprecations 👋</h3>
+
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
+  is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
 
 <h3>Internal changes ⚙️</h3>
 
+* Replaces arbitrary magic numbers across multiple modules with named, documented constants.
+  Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
+  `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
+  `pennylane/fourier`, and `pennylane/templates` are now module-level constants with
+  ``#:`` doc-comments explaining their purpose and origin. Unused constants
+  ``eps`` in :mod:`pennylane.math` and ``tolerance`` in ``default_qutrit`` are removed.
+  [(#9374)](https://github.com/PennyLaneAI/pennylane/pull/9374)
+
+* Added usage of the `strict` keyword argument for `zip` throughout the codebase.
+  [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
+  
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
+  :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
+  [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
+
 <h3>Contributors ✍️</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Usman Ahmed,
+Guillermo Alonso,
+Yushao Chen,
+Marcus Edwards,
+Andrija Paurevic,
+David Wierichs

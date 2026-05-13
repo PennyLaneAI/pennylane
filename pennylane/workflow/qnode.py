@@ -653,23 +653,6 @@ class QNode:
         self._interface = Interface(value)
 
     @property
-    def transform_program(self) -> CompilePipeline:
-        """The transform program used by the QNode.
-
-        .. warning::
-
-            The ``transform_program`` property of the QNode has been renamed to ``compile_pipeline``.
-            Access through ``transform_program`` will be removed in PennyLane v0.46.
-
-        """
-        warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-            "Access through 'transform_program' will be removed in PennyLane v0.46.",
-            PennyLaneDeprecationWarning,
-        )
-        return self.compile_pipeline
-
-    @property
     def compile_pipeline(self) -> CompilePipeline:
         """The compile pipeline used by the QNode."""
         return self._compile_pipeline
