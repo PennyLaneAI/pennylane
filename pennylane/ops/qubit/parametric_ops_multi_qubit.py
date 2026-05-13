@@ -71,7 +71,6 @@ class MultiRZ(Operation):
     Args:
         theta (TensorLike): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_params = 1
@@ -88,10 +87,10 @@ class MultiRZ(Operation):
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
         if not self._wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."
@@ -287,7 +286,6 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -321,17 +319,16 @@ class PauliRot(Operation):
     }
 
     @classmethod
-    def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
-        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, id=id)
+    def _primitive_bind_call(cls, theta, pauli_word, wires=None):
+        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires)
 
     def __init__(
         self,
         theta: TensorLike,
         pauli_word: str,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
 
         if not self._wires:
             raise ValueError(
@@ -658,7 +655,6 @@ class PCPhase(Operation):
         phi (float): rotation angle :math:`\phi`
         dim (int): the dimension of the subspace
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example:**
 
@@ -743,7 +739,7 @@ class PCPhase(Operation):
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -752,7 +748,7 @@ class PCPhase(Operation):
                 f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
             )
 
-        super().__init__(phi, wires=wires, id=id)
+        super().__init__(phi, wires=wires)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 
     @property
@@ -1162,7 +1158,6 @@ class IsingXX(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1180,8 +1175,8 @@ class IsingXX(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1331,7 +1326,6 @@ class IsingYY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1349,8 +1343,8 @@ class IsingYY(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1508,7 +1502,6 @@ class IsingZZ(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1526,8 +1519,8 @@ class IsingZZ(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1726,7 +1719,6 @@ class IsingXY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1751,8 +1743,8 @@ class IsingXY(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1938,7 +1930,6 @@ class PSWAP(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1953,8 +1944,8 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2147,7 +2138,6 @@ class CPhaseShift00(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2165,8 +2155,8 @@ class CPhaseShift00(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2371,7 +2361,6 @@ class CPhaseShift01(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2389,8 +2378,8 @@ class CPhaseShift01(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2585,7 +2574,6 @@ class CPhaseShift10(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Any, Wires): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2603,8 +2591,8 @@ class CPhaseShift10(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:

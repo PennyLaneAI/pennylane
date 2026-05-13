@@ -138,8 +138,8 @@ class QutritDepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -293,7 +293,7 @@ class QutritAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma_10, gamma_20, gamma_21, wires, id=None):
+    def __init__(self, gamma_10, gamma_20, gamma_21, wires):
         # Verify input
         for gamma in (gamma_10, gamma_20, gamma_21):
             if not math.is_abstract(gamma):
@@ -302,7 +302,7 @@ class QutritAmplitudeDamping(Channel):
         if not (math.is_abstract(gamma_20) or math.is_abstract(gamma_21)):
             if not 0.0 <= gamma_20 + gamma_21 <= 1.0:
                 raise ValueError(r"\gamma_{20}+\gamma_{21} must be in the interval [0,1]")
-        super().__init__(gamma_10, gamma_20, gamma_21, wires=wires, id=id)
+        super().__init__(gamma_10, gamma_20, gamma_21, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(gamma_10, gamma_20, gamma_21):  # pylint:disable=arguments-differ
@@ -412,7 +412,7 @@ class TritFlip(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p_01, p_02, p_12, wires, id=None):
+    def __init__(self, p_01, p_02, p_12, wires):
         # Verify input
         ps = (p_01, p_02, p_12)
         for p in ps:
@@ -422,7 +422,7 @@ class TritFlip(Channel):
             if not 0.0 <= sum(ps) <= 1.0:
                 raise ValueError("The sum of probabilities must be in the interval [0,1]")
 
-        super().__init__(p_01, p_02, p_12, wires=wires, id=id)
+        super().__init__(p_01, p_02, p_12, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p_01, p_02, p_12):  # pylint:disable=arguments-differ
@@ -489,8 +489,8 @@ class QutritChannel(Channel):
 
     grad_method = None
 
-    def __init__(self, K_list, wires=None, id=None):
-        super().__init__(*K_list, wires=wires, id=id)
+    def __init__(self, K_list, wires=None):
+        super().__init__(*K_list, wires=wires)
 
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):
