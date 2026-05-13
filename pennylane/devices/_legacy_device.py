@@ -295,9 +295,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         >>> dev.wire_map()
         OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
         """
-        consecutive_wires = Wires(range(self.num_wires))
-
-        wire_map = zip(wires, consecutive_wires)
+        wire_map = {w: i for i, w in enumerate(wires)}
         return OrderedDict(wire_map)
 
     def order_wires(self, subset_wires):

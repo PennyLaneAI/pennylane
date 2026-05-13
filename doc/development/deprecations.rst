@@ -83,12 +83,6 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
@@ -161,9 +155,15 @@ Completed deprecation cycles
 
   - Deprecated in v0.45
   - Removed in v0.46 
-
+  
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` has been removed.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+  
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  removed and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
   - Deprecated in v0.45
   - Removed in v0.46

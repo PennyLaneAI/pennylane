@@ -260,7 +260,7 @@ class GraphStatePrep(Operation):
                 "GraphStatePrep requires the node labels of the input graph to be sortable"
             ) from e
 
-        wire_map = dict(zip(sorted_nodes, wires))
+        wire_map = dict(zip(sorted_nodes, wires, strict=True))
 
         edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
         edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
