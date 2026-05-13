@@ -16,8 +16,6 @@
 # pylint: disable=protected-access
 import uuid
 
-import numpy as np
-
 import pennylane as qp
 from pennylane.drawer._add_obj import _add_grouping_symbols, _add_obj
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue
@@ -47,7 +45,7 @@ class MeasurePauliWord(qp.operation.Operation):
             # Determine if measurement result should be flipped
             # For Hermitian observables, phase must be ±1
             # Flip when phase is -1 (or has negative real part for robustness)
-            self._sign_flip = bool(np.real(self._phase) < 0)
+            self._sign_flip = qp.math.isclose(self._phase, -1)
 
             self._pauli_word = qp.pauli.pauli_word_to_string(P_bare)
             wires = P_bare.wires
