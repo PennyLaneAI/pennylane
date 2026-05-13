@@ -961,6 +961,14 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
+
+        warnings.warn(
+            "Using QuantumScript.adjoint is deprecated "
+            "and will be removed in v0.47. Instead, please use "
+            "'QuantumScript([adjoint(op) for op in reversed(tape.operations)])'. ",
+            PennyLaneDeprecationWarning,
+        )
+
         ops = self.operations[self.num_preps :]
         prep = self.operations[: self.num_preps]
         with qp.QueuingManager.stop_recording():

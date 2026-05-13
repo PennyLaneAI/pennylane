@@ -37,6 +37,12 @@ from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.transforms import create_expand_trainable_multipar, decompose
 
 
+def test_adjoint_deprecated():
+    qt = QuantumTape([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        qt.adjoint()
+
+
 def TestOperationMonkeypatching():
     """Test that operations are monkeypatched only within the quantum tape"""
     with QuantumTape() as tape:

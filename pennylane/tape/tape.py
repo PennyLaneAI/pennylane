@@ -17,11 +17,12 @@ This module contains the base quantum tape.
 
 # pylint: disable=protected-access
 import copy
+import warnings
 from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
@@ -273,6 +274,13 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self._trainable_params = None
 
     def adjoint(self):
+        warnings.warn(
+            "Using QuantumTape.adjoint is deprecated "
+            "and will be removed in v0.47. Instead, please use "
+            "'QuantumTape([adjoint(op) for op in reversed(tape.operations)])'. ",
+            PennyLaneDeprecationWarning,
+        )
+
         adjoint_tape = super().adjoint()
         QueuingManager.append(adjoint_tape)
         return adjoint_tape

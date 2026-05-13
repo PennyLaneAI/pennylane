@@ -60,6 +60,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+  []()
+
 <h3>Internal changes ⚙️</h3>
 
 * Added support for JAX arrays as control wires during JAXpr evaluation.
