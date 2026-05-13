@@ -90,17 +90,16 @@ Operator Types
 """
 
 from abc import ABC
+from collections.abc import Callable, Hashable, Iterable
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, Callable, ClassVar, Hashable, Iterable, Literal
+from typing import Any, ClassVar, Literal
 
-import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture import ABCCaptureMeta
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -115,8 +114,8 @@ from pennylane.exceptions import (
 from pennylane.operation import FlatPytree, classproperty
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.typing import TensorLike, WiresLike
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 
 class Operator2(ABC):
@@ -588,6 +587,12 @@ class Operator2(ABC):
         return Wires.all_wires([self.arguments[w] for w in self.wire_argnames])
 
     @property
+    def resource_params(self) -> dict[str, Any]:
+        """Resource parameters for graph-based decomposition."""
+        # FIXME:
+        return {}
+
+    @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
@@ -668,7 +673,7 @@ class Operator2(ABC):
         if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
                 return [qp.apply(self) for _ in range(z)]
-            return [copy.copy(self) for _ in range(z)]
+            return [copy(self) for _ in range(z)]
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
@@ -740,7 +745,8 @@ class Operator2(ABC):
         Returns:
             .Operator2: new operator
         """
-        new_op = copy.copy(self)
+        # pylint: disable=protected-access
+        new_op = copy(self)
         for n, wires in self.wire_args.items():
             new_op._bound_args.arguments[n] = Wires([wire_map.get(w, w) for w in wires])
         if (p_rep := self.pauli_rep) is not None:
@@ -1190,7 +1196,7 @@ class Operator2(ABC):
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
-
+    # pylint: disable=protected-access
     for name in cls._sig.parameters.keys():
         if name not in vars(cls):
             dyn_property = partial(_dynamic_property, name=name)
@@ -1199,11 +1205,12 @@ def _add_dynamic_properties(cls: type[Operator2]) -> None:
 
 def _dynamic_property(self: Operator2, name: str) -> Any:
     """Dynamic property for an argument called ``name``."""
+    # pylint: disable=protected-access
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
 
 
-class _DYNARG_MARKER:
+class _DYNARG_MARKER:  # pylint: disable=too-few-public-methods
     """Marker class to mark dynamic arguments for Pytree registration."""
