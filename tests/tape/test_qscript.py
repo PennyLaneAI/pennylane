@@ -939,8 +939,9 @@ def test_adjoint():
     m = [qp.expval(qp.PauliZ(0))]
     qs = QuantumScript(ops, m)
 
-    with qp.queuing.AnnotatedQueue() as q:
-        adj_qs = qs.adjoint()
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        with qp.queuing.AnnotatedQueue() as q:
+            adj_qs = qs.adjoint()
 
     assert len(q.queue) == 0  # not queued
 

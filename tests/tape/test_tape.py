@@ -829,8 +829,9 @@ class TestInverseAdjoint:
             qp.probs(wires=0)
             qp.probs(wires="a")
 
-        with QuantumTape() as tape2:
-            adjoint_tape = tape.adjoint()
+        with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+            with QuantumTape() as tape2:
+                adjoint_tape = tape.adjoint()
 
         assert tape2[0] is adjoint_tape
 
