@@ -76,4 +76,5 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Yushao Chen,
 Marcus Edwards,
+Andrija Paurevic,
 David Wierichs
