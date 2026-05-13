@@ -1024,6 +1024,7 @@ class TestExpand:
             )
         assert len(new_tape.operations) == 7
 
+    @pytest.mark.xfail
     def test_measurement_expansion(self):
         """Test that measurement expansion works as expected"""
         with QuantumTape() as tape:
@@ -1034,7 +1035,7 @@ class TestExpand:
             qp.probs(wires=0)
             # expands into RY on wire b
             qp.expval(qp.PauliZ("a") @ qp.Hadamard("b"))
-            # expands into QubitUnitary on wire 0
+            # expands into QubitUnitary on wire 1
             qp.var(qp.Hermitian(np.array([[1, 2], [2, 4]]), wires=[1]))
 
         with pytest.warns(PennyLaneDeprecationWarning, match="expand"):

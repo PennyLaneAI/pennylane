@@ -444,7 +444,7 @@ def _square_hamiltonian_terms(
         Tuple[List[float], List[qp.operation.Operator]]: The list of coefficients and list of observables
         of the squared Hamiltonian.
     """
-    combs = itertools.combinations(zip(coeffs, ops, strict=True), repeat=2)
+    combs = itertools.combinations(zip(coeffs, ops, strict=True), r=2)
 
     # Initialize with diagonal terms
     squared_coeffs = [sum(c**2 for c in coeffs)]
