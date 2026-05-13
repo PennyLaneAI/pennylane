@@ -43,6 +43,41 @@ def _preprocess(args, depth):
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
 
+    .. warning::
+        This function is deprecated and will be removed in v0.47.
+        Please use a for loop instead i.e. instead of:
+
+        .. code-block:: python
+
+            dev = qp.device("default.qubit")
+
+            def ansatz(params):
+                qp.RX(params[0], wires=[0])
+                qp.MultiRZ(params[1], wires=[0, 1])
+                qp.RY(params[2], wires=[1])
+
+            params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4]])
+
+            @qp.qnode(dev)
+            def circuit(params):
+                qp.layer(ansatz, 2, params)
+                return [qp.expval(qp.Z(0)), qp.expval(qp.Z(1))]
+
+        We would do:
+
+        .. code-block:: python
+
+            @qp.qnode(dev)
+            def circuit(params):
+
+                @qp.for_loop(len(params))
+                def layer_loop(i):
+                    ansatz(params[i])
+
+                layer_loop()
+
+                return [qp.expval(qp.Z(0)), qp.expval(qp.Z(1))]
+
     Args:
         template (callable): The sequence of quantum gates that is being repeated.
                              This could be a single gate, a function of gates, or a "registered"
