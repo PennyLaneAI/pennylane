@@ -192,7 +192,6 @@ def test_integration_multi_wire(seed):
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_disable_plxpr")
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
@@ -200,35 +199,41 @@ def test_capture_compatibility():
     import jax
     import jax.numpy as jnp
 
-    with qp.decomposition.toggle_graph_ctx(True):
-        first_free = 1  # 0 used by RZ
+    qp.capture.enable()
+    try:
+        with qp.decomposition.toggle_graph_ctx(True):
+            first_free = 1  # 0 used by RZ
 
-        precision = 3
-        angle_wires = jnp.array(list(range(first_free, first_free + precision)))
-        phase_grad_wires = jnp.array(
-            list(range(first_free + precision, first_free + 2 * precision))
-        )
-        work_wires = jnp.array(
-            list(range(first_free + 2 * precision, first_free + 3 * precision - 1))
-        )
+            precision = 3
+            angle_wires = jnp.array(list(range(first_free, first_free + precision)))
+            phase_grad_wires = jnp.array(
+                list(range(first_free + precision, first_free + 2 * precision))
+            )
+            work_wires = jnp.array(
+                list(range(first_free + 2 * precision, first_free + 3 * precision - 1))
+            )
 
-        custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+            custom_decomp = make_rz_to_phase_gradient_decomp(
+                angle_wires, phase_grad_wires, work_wires
+            )
 
-        gate_set = {"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"}
+            gate_set = {"C(BasisEmbedding)", "C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
 
-        @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
-        def f(phi):
-            qp.RZ(phi, 0)
-            return qp.state()
+            @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+            def f(phi):
+                qp.RZ(phi, 0)
+                return qp.state()
 
-        phi_val = jnp.pi
+            phi_val = jnp.pi
 
-        cjaxpr = jax.make_jaxpr(f)(phi_val)
+            cjaxpr = jax.make_jaxpr(f)(phi_val)
 
-        collector = CollectOpsandMeas()
-        collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
+            collector = CollectOpsandMeas()
+            collector.eval(cjaxpr.jaxpr, cjaxpr.consts, phi_val)
 
-        op_names = {op.name for op in collector.state["ops"]}
-        assert op_names.issubset(
-            gate_set
-        ), f"Following ops are present but not in gateset: {op_names - gate_set}"
+            op_names = {op.name for op in collector.state["ops"]}
+            assert op_names.issubset(
+                gate_set
+            ), f"Following ops are present but not in gateset: {op_names - gate_set}"
+    finally:
+        qp.capture.disable()
