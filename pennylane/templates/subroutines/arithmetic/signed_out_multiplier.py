@@ -163,23 +163,23 @@ def _signed_out_multiplier_resources(
     return resources
 
 
-def _twos_complement_helper(input_reg, work_wires):
+def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
     # Invert all bits
-    @for_loop(len(input_reg) - 1)
+    @for_loop(len(input_reg))
     def invert(w):
         # sign bit of 1 indicates a negative value
-        CNOT([input_reg[0], input_reg[w + 1]])
+        CNOT([aux_wire, input_reg[w]])
 
     invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
     Controlled(
         Incrementer(
-            wires=input_reg[1:],
+            wires=input_reg,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
-        control_wires=(input_reg[0],),
+        control_wires=(aux_wire,),
         control_values=(1,),
     )
 
@@ -203,33 +203,39 @@ def _signed_out_multiplier_decomposition(
             math.array(output_wires, like="jax"),
         )
 
-    # Compute the sign
-    CNOT([x_wires[0], output_wires[0]])
-    CNOT([y_wires[0], output_wires[0]])
+    x_aux = work_wires[0]
+    y_aux = work_wires[1]
+
+    # Sign extension
+    CNOT([x_wires[0], x_aux])
+    CNOT([y_wires[0], y_aux])
 
     # Take 2s complements if necessary
-    _twos_complement_helper(x_wires, work_wires)
-    _twos_complement_helper(y_wires, work_wires)
+    _twos_complement_helper(x_wires, x_aux, work_wires[2:])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2:])
 
-    # we would reset the sign bit here to complete each two's complement,
-    # but we do not, so that we can remember the signs
+    # at this point the sign is only kept in the auxiliary qubits' states
 
     # Multiply the magnitudes
     OutMultiplier(
-        x_wires[1:],
-        y_wires[1:],
+        x_wires,
+        y_wires,
         output_wires[1:],
         mod=mod,
-        work_wires=work_wires,
+        work_wires=work_wires[2:],
         output_wires_zeroed=output_wires_zeroed,
     )
 
+    # Compute the sign
+    CNOT([x_aux, output_wires[0]])
+    CNOT([y_aux, output_wires[0]])
+
     # Encode the output
-    _twos_complement_helper(output_wires, work_wires)
+    _twos_complement_helper(output_wires[1:], output_wires[0], work_wires[2:])
 
     # Return inputs to original state
-    _twos_complement_helper(x_wires, work_wires)
-    _twos_complement_helper(y_wires, work_wires)
+    _twos_complement_helper(x_wires, x_aux, work_wires[2:])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2:])
 
 
 add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition)
