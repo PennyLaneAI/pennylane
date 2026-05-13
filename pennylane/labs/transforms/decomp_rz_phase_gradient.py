@@ -15,11 +15,14 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
+from functools import partial
+
 import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
+from pennylane.ops.op_math import change_op_basis
 from pennylane.wires import WireError
 
 
@@ -96,11 +99,11 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     """
     if len(angle_wires) != len(phase_grad_wires):
         raise WireError(
-            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires-1)}"
+            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires - 1)}"
         )
     if len(phase_grad_wires) - 1 > len(work_wires):
         raise WireError(
-            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
+            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires - 1)}"
         )
 
     def _resource_fn():
@@ -131,11 +134,12 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             phi, precision, unit=2 * jnp.pi
         )
 
-        qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
+        compute_fn = partial(
+            qml.ctrl, qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire
+        )
 
-        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+        target_fn = partial(qml.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
-        # NOTE: BasisEmbedding is self-inverse, no need to adjoint / uncompute
-        qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
+        return change_op_basis(compute_fn, target_fn)
 
     return _decomp_fn
