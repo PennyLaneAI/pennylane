@@ -53,6 +53,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
+  [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
+
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   
