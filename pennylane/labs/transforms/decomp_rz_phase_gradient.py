@@ -134,12 +134,13 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             phi, precision, unit=2 * jnp.pi
         )
 
-        compute_fn = partial(
-            qml.ctrl, qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire
-        )
+        # NOTE: Must wrap in function so 'BasisEmbedding' is only constructed when compute_fn is called
+        def compute_fn():
+            return qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
 
         target_fn = partial(qml.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
-        change_op_basis(compute_fn, target_fn)
+        # NOTE: Compute function is self-inverse, pass it for the uncompute function
+        change_op_basis(compute_fn, target_fn, compute_fn)
 
     return _decomp_fn
