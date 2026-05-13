@@ -29,7 +29,7 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane import math, pytrees
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
