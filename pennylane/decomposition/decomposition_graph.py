@@ -429,6 +429,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # rule is determined by operator that uses the MOST number of work wires.
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
+
+            if (base := _get_base_rep_if_applicable(op)) and base in self._in_progress:
+                d_node.reachable = False
+                self._graph.add_edge(d_node_idx, op_idx, 0)
+                return d_node
+
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
@@ -614,6 +620,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
         )
+
+
+def _get_base_rep_if_applicable(op: CompressedResourceOp) -> CompressedResourceOp | None:
+    if op.op_type in (qp.ops.Adjoint, qp.ops.Controlled):
+        base_class, base_params = op.params["base_class"], op.params["base_params"]
+        return resource_rep(base_class, **base_params)
+    return None
 
 
 class DecompGraphSolution:
