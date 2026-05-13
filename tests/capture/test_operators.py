@@ -421,6 +421,31 @@ class TestOpmath:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {}
 
+    def test_controlled_with_non_int_control_wires(self):
+        """Tests that controlled works with non int control wires."""
+
+        def qfunc(control_wire):
+            qp.ctrl(qp.X(0), control=control_wire)
+
+        cjaxpr = jax.make_jaxpr(qfunc)(jax.numpy.array(1))
+
+        assert len(cjaxpr.eqns) == 2
+
+        base_eqn = cjaxpr.eqns[0]
+        assert base_eqn.primitive == qp.X._primitive
+
+        ctrl_eqn = cjaxpr.eqns[1]
+        assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
+        assert ctrl_eqn.invars[0] == base_eqn.outvars[0]
+        assert ctrl_eqn.invars[1] == cjaxpr.jaxpr.invars[0]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
+
+        assert len(q) == 1
+        expected = qp.ctrl(qp.X(0), control=1)
+        qp.assert_equal(q.queue[0], expected)
+
     def test_Controlled(self):
         """Test a nested control operation."""
 
