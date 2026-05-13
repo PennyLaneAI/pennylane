@@ -192,7 +192,7 @@ def test_integration_multi_wire(seed):
 
 
 @pytest.mark.jax
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_disable_plxpr")
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
