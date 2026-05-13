@@ -67,6 +67,9 @@ class TestStandardValidityBasisState:
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qp.tape.QuantumScript.from_queue(q))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.BasisState.compute_decomposition(state, wires=wires)
+            tapes.append(qp.tape.QuantumScript.from_queue(q))
 
             return tapes
 
@@ -92,11 +95,18 @@ class TestStandardValidityBasisState:
         )
 
         tapes = jax.jit(abstract_check)(state, wires)
-        for tape in tapes:
+        for tape in tapes[:-1]:  # Test the new decomp rules
             assert len(tape) == 3
             assert all(
                 isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
             )
+        tape = tapes[-1]
+        if state_traced:
+            assert len(tape) == 6
+            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+        else:
+            assert len(tape) == 1
+            assert isinstance(tape[0], qp.X)
 
     @pytest.mark.external
     @pytest.mark.catalyst
@@ -119,9 +129,17 @@ class TestStandardValidityBasisState:
         )
 
         tapes = qp.qjit(abstract_check)(state, wires)
-        for tape in tapes:
+        for tape in tapes[:-1]:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
+
+        tape = tapes[-1]
+        if state_traced:
+            assert len(tape) == 6
+            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+        else:
+            assert len(tape) == 2
+            assert all(isinstance(op, qp.X) for op in tape)
 
 
 @pytest.mark.parametrize(
