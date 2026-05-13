@@ -520,7 +520,9 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
         qp.GlobalPhase(params[0])
         return
 
-    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    zero_control_wires = [
+        w for w, val in zip(control_wires, control_values, strict=True) if not val
+    ]
     for w in zero_control_wires:
         qp.PauliX(w)
     qp.ctrl(
