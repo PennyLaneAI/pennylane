@@ -38,6 +38,21 @@ control_base_map_data = [
 ]
 
 
+test_cases = [
+    (qp.X(0), qp.GlobalPhase(0.5), True),
+    (qp.X(0), qp.GlobalPhase(0.5, wires=(0, 1, 2)), True),
+    (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(0), False),
+    (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
+]
+
+
+@pytest.mark.parametrize("op1, op2, expected", test_cases)
+def test_various_cases(op1, op2, expected):
+    """Parameterize over various things that should and shouldn't commute."""
+    assert qp.is_commuting(op1, op2) == expected
+    assert qp.is_commuting(op2, op1) == expected
+
+
 class TestGetTargetName:
     """Tests the _get_target_name helper function."""
 
