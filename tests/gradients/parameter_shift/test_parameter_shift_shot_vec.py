@@ -1430,6 +1430,7 @@ class TestParameterShiftRule:
             assert qp.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
             assert qp.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
+    @pytest.mark.local_salt(1)
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
