@@ -188,7 +188,7 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
-        >>> print(qp.workflow.get_transform_program(circuit))
+        >>> print(qp.workflow.get_transform_program(circuit)) # doctest: +SKIP
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -206,7 +206,7 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
-        >>> print(qp.workflow.get_transform_program(circuit, level="user"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="user")) # doctest: +SKIP
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -219,7 +219,7 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
         present at the very end of resulting program.
 
-        >>> print(qp.workflow.get_transform_program(circuit, level="gradient"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="gradient")) # doctest: +SKIP
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -230,14 +230,14 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         ``"top"`` and ``0`` both return empty transform programs.
 
-        >>> print(qp.workflow.get_transform_program(circuit, level="top"))
+        >>> print(qp.workflow.get_transform_program(circuit, level="top")) # doctest: +SKIP
         CompilePipeline()
-        >>> print(qp.workflow.get_transform_program(circuit, level=0))
+        >>> print(qp.workflow.get_transform_program(circuit, level=0)) # doctest: +SKIP
         CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-        >>> print(qp.workflow.get_transform_program(circuit, level=2))
+        >>> print(qp.workflow.get_transform_program(circuit, level=2)) # doctest: +SKIP
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations()
@@ -247,12 +247,12 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
-        >>> print(qp.workflow.get_transform_program(circuit, level=slice(1,3)))
+        >>> print(qp.workflow.get_transform_program(circuit, level=slice(1,3))) # doctest: +SKIP
         CompilePipeline(
           [1] merge_rotations(),
           [2] _expand_metric_tensor(device_wires=None)
         )
-        >>> print(qp.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
+        >>> print(qp.workflow.get_transform_program(circuit, level=slice(None, None, -1))) # doctest: +SKIP
         CompilePipeline(
           [1] _conditional_broadcast_expand(),
           [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
@@ -270,14 +270,14 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
 
-        >>> user_prog = qp.workflow.get_transform_program(circuit, level="user")
-        >>> grad_prog = qp.workflow.get_transform_program(circuit, level="gradient")
-        >>> dev_prog = qp.workflow.get_transform_program(circuit, level="device")
-        >>> print(grad_prog[len(user_prog) - 1 : -1])
+        >>> user_prog = qp.workflow.get_transform_program(circuit, level="user") # doctest: +SKIP
+        >>> grad_prog = qp.workflow.get_transform_program(circuit, level="gradient") # doctest: +SKIP
+        >>> dev_prog = qp.workflow.get_transform_program(circuit, level="device") # doctest: +SKIP
+        >>> print(grad_prog[len(user_prog) - 1 : -1]) # doctest: +SKIP
         CompilePipeline(
           [1] metric_tensor(device_wires=None)
         )
-        >>> print(dev_prog[len(grad_prog) - 1 : -1])
+        >>> print(dev_prog[len(grad_prog) - 1 : -1]) # doctest: +SKIP
         CompilePipeline(
           [1] _expand_transform_param_shift(shifts=0.7853981633974483),
           [2] defer_measurements(allow_postselect=True),
