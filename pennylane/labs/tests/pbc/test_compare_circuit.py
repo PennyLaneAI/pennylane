@@ -23,7 +23,7 @@ from pennylane import X, Y, Z
 from pennylane.labs.pbc import compare_circuits, controlled, measure, ppr
 
 
-class TestCompareNonUnitary:
+class TestCompareCircuits:
     """Tests for compare_circuits"""
 
     def test_CNOT(self):
