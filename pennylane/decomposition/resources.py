@@ -312,6 +312,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
+    if op_type is qp.BasisEmbedding:
+        op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
 
 
@@ -341,6 +343,10 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     """
 
     _validate_resource_rep(base_class, base_params)
+
+    # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
+    if base_class is qp.BasisEmbedding:
+        base_class = qp.BasisState
 
     # Flattens nested controlled structures.
     if base_class in (qp.ops.Controlled, qp.ops.ControlledOp):

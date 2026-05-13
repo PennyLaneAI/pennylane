@@ -220,23 +220,19 @@ class OpIn(BooleanFn):
         cs = _get_ops(xs)
 
         try:
-            for x, c in zip(xs, cs, strict=True):
-                if isclass(x) or not getattr(x, "arithmetic_depth", 0):
-                    if c in self._cops:
-                        continue
-                    return False
 
+            def _check(x, c):
+                if isclass(x) or not getattr(x, "arithmetic_depth", 0):
+                    return c in self._cops
                 for op, cp in zip(self._cond, self._cops, strict=True):
-                    _cond = (
-                        _check_arithmetic_ops(op, x)
-                        if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0)
-                        else cp == _get_ops(x)[0]
-                    )
-                    if _cond:
-                        break
-                else:
-                    return False
-            return True
+                    if isinstance(op, cp) and getattr(op, "arithmetic_depth", 0):
+                        if _check_arithmetic_ops(op, x):
+                            return True
+                    elif cp == _get_ops(x)[0]:
+                        return True
+                return False
+
+            return all(_check(x, c) for x, c in zip(xs, cs, strict=True))
 
         except Exception as e:  # pragma: no cover
             raise ValueError(

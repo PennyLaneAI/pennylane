@@ -626,9 +626,7 @@ class SO3Matrix:
         return res
 
     def __eq__(self: SO3Matrix, other: SO3Matrix) -> bool:
-        return self.k == other.k and all(
-            x == y for (x, y) in zip(self.flatten, other.flatten, strict=True)
-        )
+        return self.k == other.k and self.flatten == other.flatten
 
     @property
     def flatten(self: SO3Matrix) -> list[ZOmega]:
