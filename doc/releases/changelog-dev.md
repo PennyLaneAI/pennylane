@@ -74,7 +74,7 @@
 
 * Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
   your unitary in a for loop.
-  []()
+  [(#9484)](https://github.com/PennyLaneAI/pennylane/pull/9484)
 
 <h3>Internal changes ⚙️</h3>
 
