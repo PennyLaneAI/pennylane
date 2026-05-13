@@ -15,7 +15,6 @@
 # pylint: disable = missing-module-docstring
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
-import warnings
 
 import pytest
 from sybil import Sybil
@@ -25,7 +24,6 @@ from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBl
 import numpy as base_numpy
 import scipy as base_scipy
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 try:
     import jax
@@ -69,10 +67,16 @@ def local_decomp_context():
         yield
 
 
+def pytest_configure(config):
+    """Used to amend to the pytest.ini used for testing."""
+    config.addinivalue_line(
+        "filterwarnings", "error::pennylane.exceptions.PennyLaneDeprecationWarning"
+    )
+
+
 def sybil_setup(ns):
     """Sets up the Sybil tool."""
     ns.update(namespace)
-    warnings.filterwarnings("error", category=PennyLaneDeprecationWarning)
 
 
 pytest_collect_file = Sybil(
