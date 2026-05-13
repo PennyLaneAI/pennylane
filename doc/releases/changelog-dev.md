@@ -57,6 +57,7 @@
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
+<h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
 
