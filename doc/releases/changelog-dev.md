@@ -53,6 +53,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added support for JAX arrays as control wires during JAXpr evaluation.
+  [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
+
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   
