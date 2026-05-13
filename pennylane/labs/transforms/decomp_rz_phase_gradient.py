@@ -140,6 +140,6 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
         target_fn = partial(qml.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
-        return change_op_basis(compute_fn, target_fn)
+        change_op_basis(compute_fn, target_fn)
 
     return _decomp_fn
