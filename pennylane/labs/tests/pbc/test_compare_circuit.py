@@ -146,6 +146,10 @@ class TestCompareCircuits:
             "exact",
         )
 
+
+class TestNewIdentities:
+    """Test new identities (and also keep track of them)"""
+
     @pytest.mark.parametrize(
         "P1, P3, P2, P4",
         (
@@ -187,7 +191,11 @@ class TestCompareCircuits:
 
     @pytest.mark.parametrize(
         "P1, P3, P2, P4",
-        ((X(0), Z(0), Z(1), X(1)), (X(0) @ X(1), Z(0) @ X(1), Y(2) @ X(3), X(2) @ X(3))),
+        (
+            (X(0), Z(0), Z(1), X(1)),
+            (X(0) @ X(1), Z(0) @ X(1), Y(2) @ X(3), X(2) @ X(3)),
+            (X(0) @ X(1), Z(0), Y(2) @ X(3), Z(3)),
+        ),
     )
     def test_controlled_measure_commutation_all_anticommute(self, P1, P2, P3, P4):
         """Check commutation relation between a control and measurement when the following commutation relations hold
