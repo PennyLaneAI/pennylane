@@ -74,8 +74,8 @@ class Hadamard(Operation):
 
     resource_keys = set()
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -343,8 +343,8 @@ class PauliX(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -626,8 +626,8 @@ class PauliY(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -879,8 +879,8 @@ class PauliZ(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1829,7 +1829,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2

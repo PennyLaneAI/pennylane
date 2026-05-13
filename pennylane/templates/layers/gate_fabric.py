@@ -188,7 +188,7 @@ class GateFabric(Operation):
 
     resource_keys = {"n_layers", "num_wires", "len_wire_pattern", "include_pi"}
 
-    def __init__(self, weights, wires, init_state, include_pi=False, id=None):
+    def __init__(self, weights, wires, init_state, include_pi=False):
         if len(wires) < 4:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than four; got wires {wires}"
@@ -219,7 +219,7 @@ class GateFabric(Operation):
             "include_pi": include_pi,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def num_params(self):
