@@ -62,7 +62,7 @@
 
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
-  []()
+  [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 <h3>Internal changes ⚙️</h3>
 
