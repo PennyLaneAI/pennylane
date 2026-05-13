@@ -431,8 +431,6 @@ class ShadowExpvalMP(MeasurementTransform):
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "shadowexpval"

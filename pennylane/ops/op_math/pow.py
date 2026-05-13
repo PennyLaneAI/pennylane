@@ -47,8 +47,6 @@ def pow(base, z=1, lazy=True) -> Operator:
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
 
     Returns:
         Operator

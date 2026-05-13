@@ -37,8 +37,6 @@ class AmplitudeEmbedding(StatePrep):
         wires (Any or Iterable[Any]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
 
     Example:

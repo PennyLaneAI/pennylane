@@ -147,7 +147,6 @@ class SingleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -334,7 +333,6 @@ class SingleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -506,7 +504,6 @@ class SingleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -678,7 +675,6 @@ class DoubleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -956,7 +952,6 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 4
@@ -1053,7 +1048,6 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 4
@@ -1157,7 +1151,6 @@ class OrbitalRotation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -1372,7 +1365,6 @@ class FermionicSWAP(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 

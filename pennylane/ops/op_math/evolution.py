@@ -32,7 +32,6 @@ class Evolution(Exp):
         base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
-        id (str): id for the Evolution operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,

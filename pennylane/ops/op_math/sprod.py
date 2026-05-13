@@ -38,7 +38,6 @@ def s_prod(scalar, operator, lazy=True):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
-        id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
 
@@ -84,9 +83,6 @@ class SProd(ScalarSymbolicOp):
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
         base (~.operation.Operator): the operator which will get scaled.
-
-    Keyword Args:
-        id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.

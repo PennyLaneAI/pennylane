@@ -53,8 +53,6 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Any or Iterable[Any]): wires that the template acts on
         rotation (str): type of rotations used
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Example:
 

@@ -451,8 +451,6 @@ class CY(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
     """
 
     num_wires = 2
@@ -1876,7 +1874,6 @@ class CRX(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2093,7 +2090,6 @@ class CRY(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2289,7 +2285,6 @@ class CRZ(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2520,7 +2515,6 @@ class CRot(ControlledOp):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2730,7 +2724,6 @@ class ControlledPhaseShift(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 

@@ -110,8 +110,6 @@ class Conditional(SymbolicOp, Operation):
     Args:
         expr (qp.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
     """
 
     def __init__(self, expr, then_op: Operation):
@@ -119,7 +117,6 @@ class Conditional(SymbolicOp, Operation):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
-        self._id = id
         self._pauli_rep = None
         self.queue()
         self._wires = then_op.wires

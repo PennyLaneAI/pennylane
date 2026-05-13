@@ -355,7 +355,7 @@ class ParametricMidMeasure(MidMeasure):
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
-        id (str): Custom label given to a measurement instance.
+        meas_uid (str | None): Custom label given to a measurement instance.
     """
 
     _shortname = "measure"
