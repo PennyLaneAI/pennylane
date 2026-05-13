@@ -45,6 +45,18 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
+* The `id` keyword argument to :class:`~.Operator` has been removed. 
+  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
+
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
   Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
   of a QNode.

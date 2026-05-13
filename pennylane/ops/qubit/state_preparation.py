@@ -70,7 +70,6 @@ class BasisState(StatePrepBase):
         state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): Custom label given to an operator instance. Can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -98,7 +97,7 @@ class BasisState(StatePrepBase):
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
-    def __init__(self, state, wires: WiresLike, id=None):
+    def __init__(self, state, wires: WiresLike):
 
         wires = Wires(wires)
         if isinstance(state, list):
@@ -130,7 +129,7 @@ class BasisState(StatePrepBase):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
         state = qp.math.cast(state, int)
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def _flatten(self):
         state = self.parameters[0]
@@ -285,8 +284,6 @@ class StatePrep(StatePrepBase):
             :math:`n` is the number of wires.
         normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm
             of ``state`` must be one. The argument ``normalize`` can be set to ``True`` to normalize the state automatically.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
 
 
@@ -413,7 +410,6 @@ class StatePrep(StatePrepBase):
         wires: WiresLike,
         pad_with=None,
         normalize: bool = False,
-        id: str | None = None,
         validate_norm: bool = False,
     ):
         self.is_sparse = False
@@ -434,7 +430,7 @@ class StatePrep(StatePrepBase):
             "validate_norm": validate_norm,
         }
 
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def _check_batching(self):
         if self.is_sparse:
@@ -670,8 +666,6 @@ class QubitDensityMatrix(Operation):
     Args:
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     .. details::
         :title: Usage Details
