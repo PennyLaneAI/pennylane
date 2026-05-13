@@ -63,8 +63,8 @@
 
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
+  [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
   
-
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
