@@ -74,13 +74,8 @@ def pytest_configure(config):
     )
 
 
-def sybil_setup(ns):
-    """Sets up the Sybil tool."""
-    ns.update(namespace)
-
-
 pytest_collect_file = Sybil(
-    setup=sybil_setup,
+    setup=lambda ns: ns.update(namespace),
     parsers=[
         DocTestParser(optionflags=ELLIPSIS | NORMALIZE_WHITESPACE),
         PythonCodeBlockParser(),
