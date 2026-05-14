@@ -294,6 +294,10 @@ def is_commuting(operation1, operation2):
     """
     # pylint: disable=too-many-return-statements
 
+    # operations are disjoints
+    if not intersection(operation1.wires, operation2.wires):
+        return True
+
     if operation1.name in unsupported_operations or isinstance(
         operation1, (qp.operation.CVOperation, qp.operation.Channel)
     ):
@@ -306,10 +310,6 @@ def is_commuting(operation1, operation2):
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:
         return _pword_is_commuting(operation1, operation2)
-
-    # operations are disjoints
-    if not intersection(operation1.wires, operation2.wires):
-        return True
 
     # Simplify the rotations if possible
     with qp.QueuingManager.stop_recording():
