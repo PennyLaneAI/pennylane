@@ -91,12 +91,14 @@ def _incrementer_resources(num_wires):
 
 
 def _work_wire_condition(wires, work_wires, **_):
-    return work_wires >= len(wires) - 1
+    return len(work_wires) >= len(wires) - 1
 
 
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires):
+    # TODO: fallback when not enough work wires are available for this decomp
+
     wires = wires[::-1]
 
     if capture.enabled():

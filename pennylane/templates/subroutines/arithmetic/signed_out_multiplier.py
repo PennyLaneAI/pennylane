@@ -22,6 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
+    register_condition,
     register_resources,
     resource_rep,
 )
@@ -184,6 +185,13 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
+def _work_wire_condition(work_wires, **_):
+    return (
+        len(work_wires) >= 2
+    )  # or max(len(x_wires), len(y_wires)) + 1 to use incrementer decomp with work wires
+
+
+@register_condition(_work_wire_condition)
 @register_resources(_signed_out_multiplier_resources, exact=False)
 def _signed_out_multiplier_decomposition(
     x_wires: WiresLike,
@@ -194,9 +202,6 @@ def _signed_out_multiplier_decomposition(
     output_wires_zeroed: bool = False,
 ):
     """Computes the decomposition of the operator as a product of other operators."""
-
-    # TODO: work wires condition
-    # TODO: fallback when not enough work wires are left for the Incrementer
 
     if capture.enabled():
         x_wires, y_wires, work_wires, output_wires = (
