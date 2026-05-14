@@ -215,5 +215,9 @@ def _signed_out_multiplier_decomposition(
     _twos_complement_helper(x_wires, x_aux, work_wires[2:])
     _twos_complement_helper(y_wires, y_aux, work_wires[2:])
 
+    # Uncompute sign extension
+    CNOT([x_wires[0], x_aux])
+    CNOT([y_wires[0], y_aux])
+
 
 add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition)
