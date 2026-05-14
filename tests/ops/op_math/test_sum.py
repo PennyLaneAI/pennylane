@@ -88,7 +88,7 @@ def _get_pw(w, pauli_op):
 
 
 # pylint: disable=unused-argument
-def sum_using_dunder_method(*summands, id=None):
+def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)

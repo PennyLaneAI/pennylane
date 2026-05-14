@@ -342,7 +342,7 @@ class MPSPrep(Operation):
     resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
 
     def __init__(
-        self, mps, wires, work_wires=None, right_canonicalize=False, id=None
+        self, mps, wires, work_wires=None, right_canonicalize=False
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         _validate_mps_shape(mps)
@@ -357,7 +357,7 @@ class MPSPrep(Operation):
             self.hyperparameters["work_wires"] = None
             all_wires = self.hyperparameters["input_wires"]
 
-        super().__init__(*mps, wires=all_wires, id=id)
+        super().__init__(*mps, wires=all_wires)
 
     @property
     def mps(self):
@@ -399,9 +399,9 @@ class MPSPrep(Operation):
 
     # pylint: disable=arguments-differ, too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None, right_canonicalize=False):
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, right_canonicalize=False):
         return super()._primitive_bind_call(
-            *mps, wires=wires, work_wires=work_wires, id=id, right_canonicalize=right_canonicalize
+            *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
 
     def decomposition(self):
