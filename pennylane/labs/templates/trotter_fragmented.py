@@ -21,10 +21,9 @@ import pennylane as qp
 from pennylane.decomposition.decomposition_rule import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager
 from pennylane.resource.resource import Resources
 from pennylane.tape.qscript import QuantumScript
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager, apply
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -33,6 +32,7 @@ try:
     import jax
 except ImportError:
     has_jax = False
+
 
 class TrotterCGF(Operation):
     r"""Second-order Suzuki-Trotter product for a Christiansen Greedy Factorized Hamiltonian.
@@ -94,8 +94,11 @@ class TrotterCGF(Operation):
         }
 
     def resources(self) -> Resources:
+        r"""The resource requirements for a given instance of TrotterCGF."""
         with QueuingManager.stop_recording():
-            decomp = self.compute_decomposition(*self.parameters, wires=self.wires, **self._hyperparameters)
+            decomp = self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self._hyperparameters
+            )
 
         num_wires = len(self.wires)
         num_gates = len(decomp)
@@ -109,12 +112,7 @@ class TrotterCGF(Operation):
             gate_types[op.name] += 1
             gate_sizes[op.name] += len(op.wires)
 
-        return Resources(
-            num_wires,
-            num_gates,
-            gate_types,
-            gate_sizes,
-            depth)
+        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
 
     @staticmethod
     def compute_decomposition(*args, wires, **kwargs):
@@ -134,6 +132,7 @@ class TrotterCGF(Operation):
 
         return tape.operations
 
+
 def _trotter_cgf_resources(num_steps, num_fragments, num_modes, num_modals, control_wires):
     """Compute resources for TrotterCGF given the resource parameters."""
     num_basis_rotations = 2 * num_modes * (num_fragments * num_steps + 1)
@@ -141,13 +140,27 @@ def _trotter_cgf_resources(num_steps, num_fragments, num_modes, num_modals, cont
     num_rz_gates = num_modes * num_modals * num_steps
     if control_wires is not None:
         num_rz_gates += 1
-        num_cnot_gates = 2 * num_steps * (num_fragments * num_modes * (num_modes - 1) * num_modals**2 + num_modes * num_modals)
-        resources = {resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates, resource_rep(qp.CNOT): num_cnot_gates}
+        num_cnot_gates = (
+            2
+            * num_steps
+            * (num_fragments * num_modes * (num_modes - 1) * num_modals**2 + num_modes * num_modals)
+        )
+        resources = {
+            resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations,
+            resource_rep(qp.IsingZZ): num_zz_gates,
+            resource_rep(qp.RZ): num_rz_gates,
+            resource_rep(qp.CNOT): num_cnot_gates,
+        }
     else:
         num_cnot_gates = 0
-        resources = {resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates}
+        resources = {
+            resource_rep(qp.BasisRotation, dim=num_modals, is_real=True): num_basis_rotations,
+            resource_rep(qp.IsingZZ): num_zz_gates,
+            resource_rep(qp.RZ): num_rz_gates,
+        }
 
     return resources
+
 
 @register_resources(_trotter_cgf_resources)
 def _trotter_cgf_decomposition(*args, wires, **kwargs):
@@ -229,8 +242,11 @@ class TrotterCDF(Operation):
         }
 
     def resources(self) -> Resources:
+        r"""The resource requirements for a given instance of TrotterCDF."""
         with QueuingManager.stop_recording():
-            decomp = self.compute_decomposition(*self.parameters, wires=self.wires, **self._hyperparameters)
+            decomp = self.compute_decomposition(
+                *self.parameters, wires=self.wires, **self._hyperparameters
+            )
 
         num_wires = len(self.wires)
         num_gates = len(decomp)
@@ -244,12 +260,7 @@ class TrotterCDF(Operation):
             gate_types[op.name] += 1
             gate_sizes[op.name] += len(op.wires)
 
-        return Resources(
-            num_wires,
-            num_gates,
-            gate_types,
-            gate_sizes,
-            depth)
+        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
 
     @staticmethod
     def compute_decomposition(*args, wires, **kwargs):
@@ -269,6 +280,7 @@ class TrotterCDF(Operation):
 
         return tape.operations
 
+
 def _trotter_cdf_resources(num_steps, num_fragments, num_orbitals, control_wires):
     """Compute resources for TrotterCDF given the resource parameters."""
     num_basis_rotations = 4 * num_fragments * num_steps + 4
@@ -276,13 +288,27 @@ def _trotter_cdf_resources(num_steps, num_fragments, num_orbitals, control_wires
     num_rz_gates = 2 * num_orbitals * num_steps
     if control_wires is not None:
         num_rz_gates += 1
-        num_cnot_gates = 2 * num_steps * (num_fragments * num_orbitals * (2 * num_orbitals - 1) + 2 * num_orbitals)
-        resources = {resource_rep(qp.BasisRotation, dim=num_orbitals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates, resource_rep(qp.CNOT): num_cnot_gates}
+        num_cnot_gates = (
+            2
+            * num_steps
+            * (num_fragments * num_orbitals * (2 * num_orbitals - 1) + 2 * num_orbitals)
+        )
+        resources = {
+            resource_rep(qp.BasisRotation, dim=num_orbitals, is_real=True): num_basis_rotations,
+            resource_rep(qp.IsingZZ): num_zz_gates,
+            resource_rep(qp.RZ): num_rz_gates,
+            resource_rep(qp.CNOT): num_cnot_gates,
+        }
     else:
         num_cnot_gates = 0
-        resources = {resource_rep(qp.BasisRotation, dim=num_orbitals, is_real=True): num_basis_rotations, resource_rep(qp.IsingZZ): num_zz_gates, resource_rep(qp.RZ): num_rz_gates}
+        resources = {
+            resource_rep(qp.BasisRotation, dim=num_orbitals, is_real=True): num_basis_rotations,
+            resource_rep(qp.IsingZZ): num_zz_gates,
+            resource_rep(qp.RZ): num_rz_gates,
+        }
 
     return resources
+
 
 @register_resources(_trotter_cdf_resources)
 def _trotter_cdf_decomposition(*args, wires, **kwargs):
