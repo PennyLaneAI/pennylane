@@ -190,6 +190,12 @@ def test_twos_complement_helper(aux, wires, init_state, work_wires):
             [1, 0, 1], # -3
             [3, 4, 5],
             [0, 1, 1]
+        ),
+        (
+            [0, 1, 2],
+            [1, 0, 0], # -4
+            [3, 4, 5],
+            [1, 0, 0]
         )
     ]
 )
@@ -202,6 +208,12 @@ def test_simple_twos_complement(wires, init_state, work_wires, expected):
 
         invert()  # pylint: disable=no-value-for-parameter
 
+        # Add one
+        Incrementer(
+            wires=input_reg,
+            work_wires=work_wires,
+        )
+
     @qnode(dev, shots=1)
     def twos_complement(wires, init_state, work_wires):
         # load value
@@ -209,12 +221,6 @@ def test_simple_twos_complement(wires, init_state, work_wires, expected):
 
         # calculate twos complement
         _twos_complement(wires, work_wires)
-
-        # Add one
-        Incrementer(
-            wires=wires,
-            work_wires=work_wires,
-        )
 
         # measure
         return sample(wires=wires)
