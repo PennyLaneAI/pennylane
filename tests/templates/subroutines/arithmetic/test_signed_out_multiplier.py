@@ -16,14 +16,15 @@ Tests for the SignedOutMultiplier template.
 """
 from functools import reduce
 
+import numpy as np
 import pytest
-from pennylane.ops import CNOT
+from pennylane.ops import CNOT, PauliX
 
-from pennylane.measurements import probs
+from pennylane.measurements import probs, sample
 
 from pennylane.templates import BasisEmbedding
 
-from pennylane import device, qnode, SignedOutMultiplier, math
+from pennylane import device, qnode, SignedOutMultiplier, math, for_loop, Incrementer, draw
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
 dev = device("default.qubit")
@@ -141,12 +142,6 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
             [0, 1, 2],
             [1, 0, 1], # -3
             [4, 5]
-        ),
-        (
-            3,
-            [0, 1, 2],
-            [0, 1, 1], # 3
-            [4, 5]
         )
     ]
 )
@@ -173,3 +168,103 @@ def test_twos_complement_helper(aux, wires, init_state, work_wires):
     result = math.ceil_log2(list(math.round(result)).index(1))
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "wires, init_state, work_wires, expected",
+    [
+        (
+            [0, 1, 2],
+            [1, 1, 1],  # -1
+            [],
+            [0, 0, 1]
+        ),
+        (
+            [0, 1, 2],
+            [1, 1, 0], # -2
+            [3, 4],
+            [0, 1, 0]
+        ),
+        (
+            [0, 1, 2],
+            [1, 0, 1], # -3
+            [3, 4, 5],
+            [0, 1, 1]
+        )
+    ]
+)
+def test_simple_twos_complement(wires, init_state, work_wires, expected):
+    def _twos_complement(input_reg, work_wires):
+        # Invert all bits
+        @for_loop(len(input_reg))
+        def invert(w):
+            PauliX(input_reg[w])
+
+        invert()  # pylint: disable=no-value-for-parameter
+
+    @qnode(dev, shots=1)
+    def twos_complement(wires, init_state, work_wires):
+        # load value
+        BasisEmbedding(init_state, wires)
+
+        # calculate twos complement
+        _twos_complement(wires, work_wires)
+
+        # Add one
+        Incrementer(
+            wires=wires,
+            work_wires=work_wires,
+        )
+
+        # measure
+        return sample(wires=wires)
+
+    print(draw(twos_complement)(wires, init_state, work_wires))
+
+    expected_calc = -twos_complement_value(init_state)
+    assert expected_calc == bin_to_int(expected)
+
+    result = twos_complement(wires, init_state, work_wires)[0]
+    assert np.all(result == expected)
+
+    result = math.ceil_log2(list(math.round(result)).index(1))
+    assert result == expected_calc
+
+
+@pytest.mark.parametrize(
+    "wires, init_state, expected",
+    [
+        (
+            [0, 1, 2],
+            [1, 1, 1],
+            [0, 0, 0]
+        ),
+        (
+            [0, 1, 2],
+            [1, 1, 0],
+            [0, 0, 1]
+        ),
+        (
+            [0, 1, 2],
+            [1, 0, 1],
+            [0, 1, 0]
+        )
+    ]
+)
+def test_inverter(wires, init_state, expected):
+
+    def _inverter(input_reg):
+        @for_loop(len(input_reg))
+        def invert(w):
+            PauliX(input_reg[w])
+
+        invert()  # pylint: disable=no-value-for-parameter
+
+    @qnode(dev, shots=1)
+    def inverter(wires, init_state):
+        BasisEmbedding(init_state, wires)
+        _inverter(wires)
+        return sample(wires=wires)
+
+    result = inverter(wires, init_state)[0]
+    assert np.all(result == expected)
