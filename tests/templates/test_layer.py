@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import layer
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 def ConstantCircuit():
@@ -121,6 +122,15 @@ REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
 class TestLayer:
     """Tests the layering function"""
 
+    def test_deprecated(self):
+        params = [1, 1, 1]
+
+        def unitary(param, wires):
+            qp.RX(param, wires=wires)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
+            layer(unitary, 3, params, wires=[0])
+
     def test_args_length(self):
         """Tests that the correct error is thrown when the length of an argument is incorrect"""
 
@@ -129,18 +139,20 @@ class TestLayer:
         def unitary(param, wire):
             qp.RX(param, wires=wire)
 
-        with pytest.raises(
-            ValueError,
-            match=r"Each positional argument must have length matching 'depth'; expected 3",
-        ):
-            layer(unitary, 3, params, wires=[0])
+        with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
+            with pytest.raises(
+                ValueError,
+                match=r"Each positional argument must have length matching 'depth'; expected 3",
+            ):
+                layer(unitary, 3, params, wires=[0])
 
     @pytest.mark.parametrize(("unitary", "depth", "arguments", "keywords", "gates"), REPEAT)
     def test_layer(self, unitary, depth, arguments, keywords, gates):
         """Tests that the layering function is yielding the correct sequence of gates"""
 
-        with qp.tape.OperationRecorder() as rec:
-            layer(unitary, depth, *arguments, **keywords)
+        with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
+            with qp.tape.OperationRecorder() as rec:
+                layer(unitary, depth, *arguments, **keywords)
 
         for i, gate in enumerate(rec.operations):
             prep = [gate.name, gate.parameters, gate.wires]
@@ -159,8 +171,9 @@ class TestLayer:
 
         x = tf.Variable([0.1, 0.2, 0.3])
 
-        with qp.tape.OperationRecorder() as rec:
-            layer(unitary, 3, x)
+        with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
+            with qp.tape.OperationRecorder() as rec:
+                layer(unitary, 3, x)
 
         assert len(rec.operations) == 3
 
