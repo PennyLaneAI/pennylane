@@ -28,13 +28,13 @@ dev = device("default.qubit")
 
 
 @qnode(dev)
-def signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state):
+def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
     BasisEmbedding(
         init_state,
         (0, 1, 2) +
         (3, 4, 5) +
-        (6, 7, 8, 9, 10, 11) +
-        (12, 13, 14, 15),
+        (6, 7, 8, 9) +
+        (10, 11, 12, 13, 14, 15),
     )
     SignedOutMultiplier(
         x_wires,
@@ -46,21 +46,21 @@ def signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state):
 
 
 @pytest.mark.parametrize(
-    "x_wires, y_wires, output_wires, work_wires, init_state",
+    "x_wires, y_wires, work_wires, output_wires, init_state",
     [
         (
             (0, 1, 2),
             (3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (12, 13, 14, 15),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
             [1, 0, 1]  # operand one: -3
             + [0, 1, 1]  # operand two: 3
-            + [0, 0, 0, 0, 0, 0]  # output register starts in |0>
             + [0, 0, 0, 0],  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0]  # output register starts in |0>
         ),
     ]
 )
-def test_signed_out_multiplier_correct(x_wires, y_wires, output_wires, work_wires, init_state):
+def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
     """Tests with a few examples that the Template yields correct results."""
 
     def bin_to_int(bits):
@@ -89,11 +89,13 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, output_wires, work_wire
 
     result = signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state)
 
-    result = math.ceil_log2(list(math.round(result)).index(1))
+    result = math.ceil_log2(list(math.round(result)).index(1)) % (2 ** len(output_wires))
     binary_result = reduce(lambda acc, bit: acc + [int(bit)], bin(result)[2:], [])
+
+    while len(binary_result) < len(output_wires):
+        binary_result = [0] + binary_result
 
     if binary_result[0] == 1:
         result = twos_complement(binary_result)
 
     assert result == expected
-
