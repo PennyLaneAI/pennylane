@@ -401,7 +401,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
         that we would not be able to compute the advanced spectrum for ``x`` because it is
-        preprocessed non-linearly in the gate ``qp.RX(0.5*x**2, wires=0)`` marked with ``"x"``.
+        preprocessed non-linearly in the gate ``qp.RX(0.5*x**2, wires=0)`` that is marked with ``"x"``.
 
     """
     # pylint: disable=too-many-branches
