@@ -23,14 +23,6 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
@@ -90,6 +82,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * The ``qp.transforms.create_expand_fn`` has been deprecated and was removed in v0.46.
   Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
