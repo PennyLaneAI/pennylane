@@ -35,12 +35,6 @@ def test_standard_validity():
 
 class TestInitialization:
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2], id="a")
-        assert op.id == "a"
-
     def test_overlapping_wires_error(self):
         """Test that an error is raised if the wires of the base
         operator and the control wires overlap"""

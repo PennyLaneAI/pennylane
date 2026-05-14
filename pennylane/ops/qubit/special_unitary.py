@@ -210,7 +210,6 @@ class SpecialUnitary(Operation):
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\bm{\theta})`.
             See details below for the order of the Pauli words.
         wires (Sequence[int] or int): The wire(s) the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Raises:
         ValueError: If the shape of the input does not match the Lie algebra
@@ -411,7 +410,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qp.math.shape(theta)
@@ -429,7 +428,7 @@ class SpecialUnitary(Operation):
                 f"{expected_dim}). The parameters have shape {theta_shape}"
             )
 
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
 
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
@@ -487,7 +486,7 @@ class SpecialUnitary(Operation):
             _ = next(matrices)
             A = sum(
                 t * qp.math.asarray(reduce(qp.math.kron, pauli_ops), like=qp.math.get_interface(t))
-                for t, pauli_ops in zip(theta, matrices)
+                for t, pauli_ops in zip(theta, matrices, strict=True)
             )
         else:
             A = qp.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
@@ -685,7 +684,8 @@ class SpecialUnitary(Operation):
 
             # Apply Pauli rotations that yield the Pauli basis derivatives
             paulirots = [
-                TmpPauliRot(zero, word, wires=self.wires) for zero, word in zip(zeros, words)
+                TmpPauliRot(zero, word, wires=self.wires)
+                for zero, word in zip(zeros, words, strict=True)
             ]
             return paulirots + [SpecialUnitary(detached_theta, wires=self.wires)]
 

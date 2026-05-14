@@ -74,7 +74,7 @@ class CustomOpWithReconstructor(qp.operation.Operator):  # pylint: disable=too-f
 
 @register_reconstructor(CustomOpWithReconstructor)
 def _reconstruct_custom_op(*_, wires, **__):
-    return CustomOpWithReconstructor(wires)
+    return CustomOpWithReconstructor(*_, wires)
 
 
 @pytest.mark.unit
