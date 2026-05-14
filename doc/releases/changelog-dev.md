@@ -109,6 +109,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
+  incorrect global phase (off by −1 per qubit). The decomposition used
+  ``GlobalPhase(basis * π/2)`` instead of ``GlobalPhase(-basis * π/2)``, introduced in
+  `#9406 <https://github.com/PennyLaneAI/pennylane/pull/9406>`__.
+  [(#9492)](https://github.com/PennyLaneAI/pennylane/pull/9492)
+
 * Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
