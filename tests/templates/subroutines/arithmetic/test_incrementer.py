@@ -99,4 +99,5 @@ def increment(wires, init_state, work_wires=None):
 )
 def test_correct(wires, init_state, expected, work_wires):
     """Validates that the incrementer adds one."""
-    np.all(increment(wires, init_state, work_wires) == expected)
+    result = increment(wires, init_state, work_wires)
+    assert np.all(result == expected)
