@@ -9,7 +9,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, X, adjoint, cond, MultiControlledX
+from pennylane.ops import CNOT, X, adjoint, cond, MultiControlledX, PauliX
 from .temporary_and import TemporaryAND
 from pennylane.wires import Wires, WiresLike
 
@@ -147,6 +147,25 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     cond(len(wires) > 1, _increment)()
 
 
+def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
+    resources = {}
+
+    for i in range(1, num_wires):
+        resources[
+            resource_rep(
+                MultiControlledX,
+                num_control_wires=i,
+                num_zero_control_values=0,
+                num_work_wires=num_work_wires,
+            )
+        ] = 1
+
+    resources[resource_rep(PauliX)] = 1
+
+    return resources
+
+
+@register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, **_):
 
     if enabled():
