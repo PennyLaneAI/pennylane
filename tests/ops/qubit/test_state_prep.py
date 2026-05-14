@@ -212,7 +212,7 @@ class TestDecomposition:
 
         @qp.qjit
         @qp.qnode(dev)
-        def circuit(s: jax.core.ShapedArray([n_wires], int)):
+        def circuit(s):
             qp.BasisEmbedding(features=s, wires=range(n_wires))
             return qp.state()
 
