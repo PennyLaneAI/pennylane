@@ -29,6 +29,7 @@ SPECIAL_UTILITIES = {
 # Ops that don't commute with anything
 IDENTITIES = {"Identity", "GlobalPhase"}
 # Ops that commute with everything other than special utilities
+SELF_COMMUTE = {"Hadamard"}
 
 PAULIZ_GROUP = {
     "PauliZ",
@@ -121,7 +122,7 @@ def _create_commute_function():
     """
 
     commutation_map = {}
-    for group in [PAULIX_GROUP, PAULIY_GROUP, PAULIZ_GROUP, SWAP_GROUP]:
+    for group in [PAULIX_GROUP, PAULIY_GROUP, PAULIZ_GROUP, SWAP_GROUP, SELF_COMMUTE]:
         for op in group:
             commutation_map[op] = group
 

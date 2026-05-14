@@ -57,6 +57,12 @@ test_cases = [
     (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2))), qp.T(0), True),
     # various things in the same group
     (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
+    (qp.H(0), qp.H(0), True),
+    (qp.BasisState((0, 1), (0, 1)), qp.Z(1), True),
+    (qp.BasisState((0, 1), (0, 1)), qp.Z(0), True),
+    # various things that shouldn't commute
+    (qp.U2(0.5, 2.4, 0), qp.U2(-0.7, 1.9, wires=0), False),
+    (qp.Rot(1.2, 2.3, 3.4, 0), qp.Rot(0.12, 0.23, 0.34, 0), False),
 ]
 
 
