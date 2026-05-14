@@ -9,6 +9,21 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been deprecated and will be removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
 
