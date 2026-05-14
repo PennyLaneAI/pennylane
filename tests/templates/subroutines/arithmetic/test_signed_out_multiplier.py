@@ -55,7 +55,7 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             (10, 11, 12, 13, 14, 15),
             [1, 0, 1]  # operand one: -3
             + [0, 1, 1]  # operand two: 3
-            + [0, 0, 0, 0],  # work wires are zeroed
+            + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0]  # output register starts in |0>
         ),
     ]
