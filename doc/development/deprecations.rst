@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``PauliSentence.simplify`` and ``FermiSentence.simplify`` methods are deprecated in favour of ``PauliSentence.prune`` and ``FermiSentence.prune`` respectively, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid`` and will be removed in v0.46. 
 
   - Deprecated in v0.45

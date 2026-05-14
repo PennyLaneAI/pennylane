@@ -424,7 +424,7 @@ class Sum(CompositeOp):
     def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)

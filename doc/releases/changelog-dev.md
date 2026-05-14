@@ -60,6 +60,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``PauliSentence.simplify`` and ``FermiSentence.simplify`` methods are deprecated in favour of ``PauliSentence.prune`` and ``FermiSentence.prune`` respectively, and will be removed in v0.47.
+  []()
+
 <h3>Internal changes ⚙️</h3>
 
 * Added support for JAX arrays as control wires during JAXpr evaluation.
@@ -91,6 +94,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
