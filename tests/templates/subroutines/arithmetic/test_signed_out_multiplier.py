@@ -18,13 +18,13 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from pennylane.ops import CNOT, PauliX
+from pennylane.ops import CNOT
 
 from pennylane.measurements import probs, sample
 
-from pennylane.templates import BasisEmbedding, Adder
+from pennylane.templates import BasisEmbedding
 
-from pennylane import device, qnode, SignedOutMultiplier, math, for_loop, Incrementer, draw
+from pennylane import device, qnode, SignedOutMultiplier, math
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
 dev = device("default.qubit")
