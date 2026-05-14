@@ -1517,3 +1517,423 @@ class LabsQROM(ResourceOperator):
         select_swap_depth: int | None = None,
     ):
         return "QROM"
+
+
+class SelectCopyQROM(ResourceOperator):
+    r"""Resource class for the SelectCopy variant of Quantum Read-Only Memory (QROM) template.
+
+    Args:
+        num_bitstrings (int): the number of bitstrings that are to be encoded
+        size_bitstring (int): the length of each bitstring
+        batch_size (int): A parameter :math:`\lambda` that determines if data will be
+            loaded in parallel by adding more rows following Figure 1.C of
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+        bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
+            of bits to load per QROM iteration.
+        wires (WiresLike | None): The wires the operation acts on (control and target), excluding
+            any additional qubits allocated or borrowed during the decomposition (e.g unary
+            iteration wires).
+
+    Resources:
+        The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> qrom = qre.SelectCopyQROM(
+    ...     num_bitstrings = 100,
+    ...     size_bitstring = 16,
+    ...     batch_size = 2,
+    ...     bits_per_iter = 4,
+    ... )
+    >>> print(qre.estimate(qrom))
+    --- Resources: ---
+     Total wires: 32
+       algorithmic wires: 23
+       allocated wires: 9
+         zero state: 9
+         any state: 0
+     Total gates : 2.905E+3
+       'Toffoli': 234,
+       'CNOT': 1.491E+3,
+       'X': 478,
+       'Hadamard': 702
+    """
+
+    resource_keys = {
+        "num_bitstrings",
+        "size_bitstring",
+        "batch_size",
+        "bits_per_iter",
+    }
+
+    def __init__(
+        self, num_bitstrings, size_bitstring, batch_size=2, bits_per_iter=1, wires=None
+    ) -> None:
+
+        self.num_bitstrings = num_bitstrings
+        self.size_bitstring = size_bitstring
+
+        self.num_control_wires = ceil_log2(num_bitstrings)
+        self.num_wires = size_bitstring + self.num_control_wires
+
+        if bits_per_iter > size_bitstring:
+            raise ValueError(
+                f"`bits_per_iter` must not be greater than the size of the bitstring ({size_bitstring}), got {bits_per_iter}."
+            )
+
+        self.bits_per_iter = bits_per_iter
+
+        exponent = int(math.log2(batch_size))
+        if 2**exponent != batch_size or (batch_size == 1):
+            raise ValueError(
+                f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
+            )
+
+        self.batch_size = batch_size
+
+        if wires is not None and len(wires) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {wires}")
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_bitstrings (int): the number of bitstrings that are to be encoded
+                * size_bitstring (int): the length of each bitstring
+                * batch_size (int): A parameter :math:`\lambda` that
+                  determines if data will be loaded in parallel by adding more rows following
+                  Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                * bits_per_iter (int): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
+                  representing the number of bits to load per QROM iteration.
+        """
+
+        return {
+            "num_bitstrings": self.num_bitstrings,
+            "size_bitstring": self.size_bitstring,
+            "batch_size": self.batch_size,
+            "bits_per_iter": self.bits_per_iter,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        num_bitstrings: int,
+        size_bitstring: int,
+        batch_size: int = 2,
+        bits_per_iter: int = 1,
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            batch_size (int): A parameter :math:`\lambda` that determines if data will be
+                loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+            bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
+                the number of bits to load per QROM iteration.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+
+        exponent = int(math.log2(batch_size))
+        if 2**exponent != batch_size or (batch_size == 1):
+            raise ValueError(
+                f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
+            )
+
+        if bits_per_iter > size_bitstring:
+            raise ValueError(
+                f"`bits_per_iter` must not be greater than the size of the bitstring ({size_bitstring}), got {bits_per_iter}."
+            )
+
+        params = {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "batch_size": batch_size,
+            "bits_per_iter": bits_per_iter,
+        }
+        num_wires = size_bitstring + ceil_log2(num_bitstrings)
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        num_bitstrings: int,
+        size_bitstring: int,
+        batch_size: int = 2,
+        bits_per_iter: int = 1,
+    ):
+        r"""Returns a list of ``GateCount`` objects representing the operator's resources.
+
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            batch_size (int): A parameter :math:`\lambda` that determines if data will be
+                loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+            bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
+                of bits to load per QROM iteration.
+            wires (WiresLike | None): The wires the operation acts on (control and target), excluding
+                any additional qubits allocated or borrowed during the decomposition (e.g unary
+                iteration wires).
+
+        Resources:
+            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_cost = []
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        num_data_blocks = math.ceil(num_bitstrings / batch_size)
+
+        if bits_per_iter == size_bitstring:
+            num_bit_flips = math.ceil(num_bitstrings * size_bitstring / 2)
+
+            aux_reg = Allocate((batch_size - 1) * size_bitstring, state="any", restored=True)
+            gate_cost.append(aux_reg)
+
+            ## --- Select1 loads all data |q>|r>|0>|Aux> --> |q>|r>|b_q>|Aux @ b_q_r> ---
+            select_1_cost = cls._unary_iter(num_data_blocks, x, num_bit_flips)
+            gate_cost.extend(select_1_cost)
+
+            ## --- Copy data into the output |q>|r>|b_q>|Aux @ b_q_r> --> |q>|r>|b_q @ Aux_r @ b_q_r>|Aux @ b_q_r> ---
+            copy_cost = cls._unary_iter(batch_size - 1, cnot, size_bitstring * (batch_size - 1))
+            gate_cost.extend(copy_cost)
+
+            ## --- Select2 loads all data again except for 0 index ---
+            select_2_cost = cls._unary_iter(
+                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+            )
+            gate_cost.extend(select_2_cost)
+
+            ## --- Copy data again ---
+            copy_cost = cls._unary_iter(batch_size - 1, cnot, size_bitstring * (batch_size - 1))
+            gate_cost.extend(copy_cost)
+            gate_cost.append(Deallocate(allocated_register=aux_reg))
+
+        else:
+            aux_reg = Allocate((batch_size - 1) * bits_per_iter, state="any", restored=True)
+            gate_cost.append(aux_reg)
+
+            num_iters = math.ceil(size_bitstring / bits_per_iter)
+            num_bit_flips = math.ceil(num_bitstrings * bits_per_iter / 2)
+            for _ in range(num_iters - 1):
+
+                ## --- Select1 loads all data ---
+                select_1_cost = cls._unary_iter(num_data_blocks, x, num_bit_flips)
+                gate_cost.extend(select_1_cost)
+
+                ## --- Copy data into the output ---
+                copy_cost = cls._unary_iter(batch_size - 1, cnot, bits_per_iter * (batch_size - 1))
+                gate_cost.extend(copy_cost)
+
+            ## --- Select1 loads all data ---
+            select_1_cost = cls._unary_iter(num_data_blocks, x, num_bit_flips)
+            gate_cost.extend(select_1_cost)
+
+            ## --- Copy data into the output ---
+            copy_cost = cls._unary_iter(
+                batch_size - 1, cnot, (size_bitstring % bits_per_iter) * (batch_size - 1)
+            )
+            gate_cost.extend(copy_cost)
+
+            ## --- Select2 loads all data again except for 0 index ---
+            select_2_cost = cls._unary_iter(
+                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+            )
+            gate_cost.extend(select_2_cost)
+
+            ## --- Copy restore auxiliary qubits ---
+            copy_cost = cls._unary_copy_restore(batch_size - 1, bits_per_iter, size_bitstring)
+            gate_cost.extend(copy_cost)
+
+            gate_cost.append(Deallocate(allocated_register=aux_reg))
+
+        return gate_cost
+
+    @staticmethod
+    def _unary_iter(num_data_blocks, load_op, load_op_amount):
+        r"""Generate the cost of a Select subroutine using the unary iteration trick
+
+        Args:
+            num_data_blocks (int): The number of data points to select in the unary iteration.
+            load_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
+                resource operator to apply controlled on the unary iteration register.
+            load_op_amount (int): The number of times the resource operator is applied, in total,
+                over the whole unary iteration.
+
+        Returns:
+            _type_: _description_
+        """
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        gate_cost = []
+        if num_data_blocks == 1:
+            gate_cost.append(
+                GateCount(
+                    load_op,
+                    load_op_amount,
+                )  # each unitary in the select is just an X gate to load the data
+            )
+
+        elif num_data_blocks == 2:
+            gate_cost.append(
+                GateCount(x, 2),
+            )  # for the 0-control value in the CNOTs
+            gate_cost.append(
+                GateCount(
+                    qre.Controlled.resource_rep(load_op, 1, 0),
+                    load_op_amount,
+                )  # each unitary in the select
+            )
+
+        elif num_data_blocks / 2 ** ceil_log2(num_data_blocks) > 3 / 4:
+            l = ceil_log2(num_data_blocks)
+            unary_aux_reg = Allocate(l - 1, "zero", True)
+            gate_cost.append(unary_aux_reg)
+
+            gate_cost.append(
+                GateCount(x, (2 * (num_data_blocks - 3 + 1)))
+            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    num_data_blocks,
+                )  # num CNOTs in unary iterator trick
+            )
+            gate_cost.append(
+                GateCount(
+                    qre.Controlled.resource_rep(load_op, 1, 0),
+                    load_op_amount,
+                )  # each unitary in the select
+            )
+            gate_cost.append(GateCount(l_elbow, (num_data_blocks - 3)))
+            gate_cost.append(GateCount(r_elbow, (num_data_blocks - 3)))
+            gate_cost.append(Deallocate(allocated_register=unary_aux_reg))
+
+        else:
+            l = ceil_log2(num_data_blocks)
+            unary_aux_reg = Allocate(l - 1, "zero", True)
+            gate_cost.append(unary_aux_reg)
+
+            gate_cost.append(
+                GateCount(x, (2 * (num_data_blocks - 2 + 1)))
+            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    (num_data_blocks - 2),
+                )  # num CNOTs in unary iterator trick
+            )
+            gate_cost.append(
+                GateCount(
+                    qre.Controlled.resource_rep(load_op, 1, 0),
+                    load_op_amount,
+                )  # each unitary in the select
+            )
+            gate_cost.append(GateCount(l_elbow, (num_data_blocks - 2)))
+            gate_cost.append(GateCount(r_elbow, (num_data_blocks - 2)))
+            gate_cost.append(Deallocate(allocated_register=unary_aux_reg))
+
+        return gate_cost
+
+    @staticmethod
+    def _unary_copy_restore(num_data_blocks, bits_per_iter, size_bitstring):
+        r"""Generate the cost of the Copy-Restored subroutine
+
+        Args:
+            num_data_blocks (int): The number of data points to select in the unary iteration
+            bits_per_iter (int): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
+                of bits to load per QROM iteration.
+            size_bitstring (int): the length of each bitstring to load
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        x = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        l_elbow = resource_rep(qre.TemporaryAND)
+        r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
+
+        temp_and_reg = Allocate(1, "zero", True)
+        gate_cost = [temp_and_reg]
+
+        if num_data_blocks == 1:
+            pass
+
+        elif num_data_blocks == 2:
+            gate_cost.append(
+                GateCount(x, 2),
+            )  # for the 0-control value in the CNOTs
+
+        elif num_data_blocks / 2 ** ceil_log2(num_data_blocks) > 3 / 4:
+            l = ceil_log2(num_data_blocks)
+            unary_aux_reg = Allocate(l - 1, "zero", True)
+            gate_cost.append(unary_aux_reg)
+
+            gate_cost.append(
+                GateCount(x, (2 * (num_data_blocks - 3 + 1)))
+            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    num_data_blocks,
+                )  # num CNOTs in unary iterator trick
+            )
+            gate_cost.append(GateCount(l_elbow, (num_data_blocks - 3)))
+            gate_cost.append(GateCount(r_elbow, (num_data_blocks - 3)))
+            gate_cost.append(Deallocate(allocated_register=unary_aux_reg))
+
+        else:
+            l = ceil_log2(num_data_blocks)
+            unary_aux_reg = Allocate(l - 1, "zero", True)
+            gate_cost.append(unary_aux_reg)
+
+            gate_cost.append(
+                GateCount(x, (2 * (num_data_blocks - 2 + 1)))
+            )  # conjugate 0-control in left-elbows + 1 extra 0-control CNOT from unary iterator decomp
+            gate_cost.append(
+                GateCount(
+                    cnot,
+                    (num_data_blocks - 2),
+                )  # num CNOTs in unary iterator trick
+            )
+            gate_cost.append(GateCount(l_elbow, (num_data_blocks - 2)))
+            gate_cost.append(GateCount(r_elbow, (num_data_blocks - 2)))
+            gate_cost.append(Deallocate(allocated_register=unary_aux_reg))
+
+        gate_cost.append(GateCount(l_elbow, bits_per_iter * (num_data_blocks - 1)))
+        gate_cost.append(
+            GateCount(
+                cnot,
+                (
+                    bits_per_iter * math.floor(size_bitstring / bits_per_iter)
+                    + (size_bitstring % bits_per_iter)
+                )
+                * (num_data_blocks - 1),
+            )
+        )
+        gate_cost.append(GateCount(r_elbow, bits_per_iter * (num_data_blocks - 1)))
+        gate_cost.append(Deallocate(allocated_register=temp_and_reg))
+        return gate_cost
