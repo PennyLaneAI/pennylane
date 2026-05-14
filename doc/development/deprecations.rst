@@ -136,9 +136,6 @@ Completed deprecation cycles
   Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
 
-  - Deprecated in v0.45
-  - Removed in v0.46
-
   .. code-block:: python
 
     # Legacy method (deprecated):
