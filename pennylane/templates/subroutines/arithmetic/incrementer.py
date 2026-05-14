@@ -1,4 +1,5 @@
-from pennylane import capture, math
+from pennylane.capture import enabled
+from pennylane.math import array
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
@@ -8,8 +9,8 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, X, adjoint, cond
-from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane.ops import CNOT, X, adjoint, cond, MultiControlledX
+from .temporary_and import TemporaryAND
 from pennylane.wires import Wires, WiresLike
 
 
@@ -61,6 +62,21 @@ class Incrementer(Operator):
     This circuit is derived, e.g., in
     `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
     see "Incrementer from n-2 Zeroed bits".
+
+    The Controlled(Incrementer) decomposition provided is a similar decomposition to the default,
+    except that there are is no X gate at the end of the circuit, and the MCXs have one
+    additional control. It is therefore 'cut-off', and we can follow the same logic as the default
+    decomposition, excluding only the trivial X which is not decomposed into elbows and CNOTs
+    or cancelled in any case.
+
+    Generic decomposition:
+    0: ─╭X────────────────┤
+    1: ─├●─╭X─────────────┤
+    2: ─├●─├●─╭X──────────┤
+    3: ─├●─├●─├●─╭X───────┤
+    4: ─├●─├●─├●─├●─╭X────┤
+    5: ─├●─├●─├●─├●─├●─╭X─┤
+    6: ─╰●─╰●─╰●─╰●─╰●─╰●─┤
     """
 
     resource_keys = {"num_wires"}
@@ -96,30 +112,20 @@ def _work_wire_condition(num_wires, num_work_wires, **_):
     return num_work_wires >= num_wires - num_work_wires - 1
 
 
-# TODO: controlled decomposition
-
-
-@register_condition(_work_wire_condition)
-@register_resources(_incrementer_resources)
-def _incrementer_decomposition(wires, work_wires, **_):
-    # TODO: fallback when not enough work wires are available for this decomp
-
+def _decompose_mcxs(wires, work_wires):
     wires = wires[::-1][len(work_wires):]
-
-    if capture.enabled():
-        wires = math.array(wires, like="jax")
 
     def _increment():
         # Construct the wires on which the ladder will act.
         all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
 
-        if capture.enabled():
-            all_wires = math.array(all_wires, like="jax")
+        if enabled():
+            all_wires = array(all_wires, like="jax")
 
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
+            TemporaryAND(all_wires[2 * k: 2 * k + 3])
 
         forward_ladder()  # pylint: disable=no-value-for-parameter
 
@@ -127,7 +133,7 @@ def _incrementer_decomposition(wires, work_wires, **_):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
+            adjoint(TemporaryAND)(all_wires[2 * k: 2 * k + 3])
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
@@ -135,7 +141,54 @@ def _incrementer_decomposition(wires, work_wires, **_):
         CNOT(wires[:2])
 
     cond(len(wires) > 1, _increment)()
+
+
+def _incrementer_fallback_decomposition(wires, **_):
+
+    if enabled():
+        wires = array(wires, like="jax")
+
+    @for_loop(len(wires) - 1, -1, 0)
+    def flip_wires(i):
+        MultiControlledX([wire for wire in range(i)][::-1], [1 for _ in range(i)])
+    flip_wires()  # pylint: disable=no-value-for-parameter
+
     X(wires[0])
 
 
+@register_condition(_work_wire_condition)
+@register_resources(_incrementer_resources)
+def _incrementer_decomposition(wires, work_wires, **_):
+
+    if enabled():
+        wires = array(wires, like="jax")
+
+    _decompose_mcxs(wires, work_wires)
+    X(wires[0])
+
+
+def _controlled_incrementer_resources(num_wires):
+    resources = _incrementer_resources(num_wires)
+    resources[resource_rep(X)] = 0
+    return resources
+
+
+def _control_values_condition(control_values, **_):
+    return not sum(map(lambda val: not val, control_values))
+
+
+@register_condition(_work_wire_condition)
+@register_condition(_control_values_condition)
+@register_resources(_controlled_incrementer_resources)
+def _controlled_incrementer_decomposition(
+    *_,
+    wires,
+    work_wires,
+    **__,
+):
+    _decompose_mcxs(wires, work_wires)
+
+
 add_decomps(Incrementer, _incrementer_decomposition)
+add_decomps(Incrementer, _incrementer_fallback_decomposition)
+add_decomps("C(Incrementer)", _controlled_incrementer_decomposition)
