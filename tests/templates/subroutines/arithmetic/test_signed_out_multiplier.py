@@ -14,11 +14,15 @@
 """
 Tests for the SignedOutMultiplier template.
 """
+from functools import reduce
+
 import pytest
+
+from pennylane.measurements import probs
+
 from pennylane.templates import BasisEmbedding
 
-from pennylane import device, qnode, SignedOutMultiplier, state
-
+from pennylane import device, qnode, SignedOutMultiplier, math
 
 dev = device("default.qubit")
 
@@ -38,7 +42,7 @@ def signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state):
         output_wires,
         work_wires
     )
-    return state()
+    return probs()
 
 
 @pytest.mark.parametrize(
@@ -85,4 +89,11 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, output_wires, work_wire
 
     result = signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state)
 
+    result = math.ceil_log2(list(math.round(result)).index(1))
+    binary_result = reduce(lambda acc, bit: acc + [int(bit)], bin(result)[2:], [])
+
+    if binary_result[0] == 1:
+        result = twos_complement(binary_result)
+
     assert result == expected
+
