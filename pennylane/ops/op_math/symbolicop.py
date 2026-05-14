@@ -22,6 +22,7 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
