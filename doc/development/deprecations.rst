@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
+  whether or not two operations commute. For example, ``is_commuting(op, qp.X(op.wires[0]))`` can
+  be used to determine if ``op`` is in the X basis.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
 
