@@ -45,6 +45,9 @@
   
 <h3>Breaking changes 💔</h3>
 
+* `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
+  [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
+
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
   are removed. Instead, please use the 
@@ -76,11 +79,20 @@
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
 
+* Setting `Operator._queue_category=None` and `MeasurementProcess._queue_category=None`
+  to avoid processing the operator into the circuit is now removed.
+  Instead, `Operator.queue` can be overwritten if needed.
+  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470) 
+
 <h3>Deprecations 👋</h3>
 
 * Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
   your unitary in a for loop.
   [(#9484)](https://github.com/PennyLaneAI/pennylane/pull/9484)
+
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+  [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -106,6 +118,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
+  instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
+  (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This previously
+  caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear` layers.
+  [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
+
 * Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
@@ -116,6 +134,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,

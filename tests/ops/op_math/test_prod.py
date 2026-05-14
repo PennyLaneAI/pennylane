@@ -950,18 +950,6 @@ class TestProperties:
         prod_op = prod(*ops_lst)
         assert prod_op._queue_category == "_ops"
 
-    def test_queue_category_none(self):
-        """Test _queue_category property is None when any factor is not `_ops`."""
-
-        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
-            """Dummy op with None queue category"""
-
-            _queue_category = None
-            num_wires = 1
-
-        prod_op = prod(qp.Identity(wires=0), DummyOp(wires=0))
-        assert prod_op._queue_category is None
-
     def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
