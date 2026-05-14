@@ -633,6 +633,10 @@ class Controlled(SymbolicOp):
             raise ValueError("control_values should be the same length as control_wires")
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
+            print(
+                f"Trying to create a controlled instance of {base}"
+                f"on wires {base.wires}, with {control_wires=} and {work_wires=} and {control_values=}"
+            )
             raise ValueError("The control wires must be different from the base operation wires.")
 
         work_wires = Wires(() if work_wires is None else work_wires)
