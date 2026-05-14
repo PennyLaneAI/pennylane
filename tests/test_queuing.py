@@ -471,7 +471,7 @@ def test_process_queue_error_if_not_operator_or_measurement():
         qp.queuing.process_queue(q)
 
 
-def test_queue_category_none_revoval():
+def test_queue_category_none_removal():
 
     class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         _queue_category = None
