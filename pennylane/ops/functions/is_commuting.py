@@ -30,6 +30,7 @@ SPECIAL_UTILITIES = {
 IDENTITIES = {"Identity", "GlobalPhase"}
 # Ops that commute with everything other than special utilities
 SELF_COMMUTE = {"Hadamard"}
+# Ops that only commute with themselves. and identities
 
 PAULIZ_GROUP = {
     "PauliZ",
