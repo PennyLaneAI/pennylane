@@ -112,8 +112,12 @@ def _work_wire_condition(num_wires, num_work_wires, **_):
     return num_work_wires >= num_wires - num_work_wires - 1
 
 
-def _decompose_mcxs(wires, work_wires):
-    wires = wires[::-1][len(work_wires):]
+def _decompose_mcxs(wires, work_wires, control_wires=None):
+    if control_wires is None:
+        wires = wires[::-1][len(work_wires):]
+    else:
+        wires = control_wires + wires[:-len(work_wires)]
+        wires = wires[::-1]
 
     def _increment():
         # Construct the wires on which the ladder will act.
@@ -183,10 +187,12 @@ def _control_values_condition(control_values, **_):
 def _controlled_incrementer_decomposition(
     *_,
     wires,
+    control_wires,
     work_wires,
+    base,
     **__,
 ):
-    _decompose_mcxs(wires, work_wires)
+    _decompose_mcxs(base.wires, work_wires, control_wires)
 
 
 add_decomps(Incrementer, _incrementer_decomposition)
