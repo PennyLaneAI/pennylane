@@ -45,6 +45,9 @@
   
 <h3>Breaking changes 💔</h3>
 
+* `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
+  [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
+
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
   are removed. Instead, please use the 
