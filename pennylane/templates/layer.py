@@ -69,12 +69,8 @@ def layer(template, depth, *args, **kwargs):
 
             @qp.qnode(dev)
             def circuit(params):
-
-                @qp.for_loop(len(params))
-                def layer_loop(i):
+                for i in range(params):
                     ansatz(params[i])
-
-                layer_loop()
 
                 return [qp.expval(qp.Z(0)), qp.expval(qp.Z(1))]
 
