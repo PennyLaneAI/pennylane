@@ -341,23 +341,6 @@ class Prod(CompositeOp):
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
-    # pylint: disable=protected-access
-    @property
-    @handle_recursion_error
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-        * `"_ops"`
-        * `"_measurements"`
-        * `None`
-
-        Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
-        """
-        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
