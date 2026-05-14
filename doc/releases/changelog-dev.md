@@ -79,6 +79,11 @@
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
 
+* Setting `Operator._queue_category=None` and `MeasurementProcess._queue_category=None`
+  to avoid processing the operator into the circuit is now removed.
+  Instead, `Operator.queue` can be overwritten if needed.
+  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470) 
+
 <h3>Deprecations 👋</h3>
 
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
