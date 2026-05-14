@@ -31,7 +31,7 @@ from pennylane.typing import PostprocessingFn
 def _get_plxpr_unitary_to_rot():
     try:
         # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
+        from pennyjax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
     except ImportError:  # pragma: no cover

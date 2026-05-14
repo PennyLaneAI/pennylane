@@ -31,9 +31,9 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.experimental.ode import odeint
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
+    from pennyjax.experimental.ode import odeint
 
     from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
@@ -111,7 +111,7 @@ class ParametrizedEvolution(Operation):
 
     .. code-block:: python
 
-        from jax import numpy as jnp
+        from pennyjax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
         H = f1 * qp.Y(0)
@@ -135,7 +135,7 @@ class ParametrizedEvolution(Operation):
 
     .. code-block:: python
 
-        import jax
+        import pennyjax as jax
 
         jax.config.update("jax_enable_x64", True)
 
@@ -211,7 +211,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            from jax import numpy as jnp
+            from pennyjax import numpy as jnp
 
             ops = [qp.X(0), qp.Y(1), qp.Z(2)]
             coeffs = [lambda p, t: p for _ in range(3)]

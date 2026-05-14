@@ -19,7 +19,7 @@ import numpy as np
 
 has_jax = True
 try:
-    import jax.numpy as jnp
+    import pennyjax.numpy as jnp
 except ImportError:
     has_jax = False
 
@@ -58,7 +58,7 @@ def constant(scalar, time):
 
     .. code-block:: python
 
-        import jax
+        import pennyjax as jax
 
         jax.config.update("jax_enable_x64", True)
 

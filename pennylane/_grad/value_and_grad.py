@@ -25,7 +25,7 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 
-_has_jax = find_spec("jax") is not None
+_has_jax = find_spec("pennyjax") is not None
 
 
 # pylint: disable=unused-argument, too-many-arguments
@@ -35,7 +35,7 @@ def _get_value_and_grad_prim():
     if not _has_jax:  # pragma: no cover
         return None
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
     value_and_grad_prim = capture.QpPrimitive("value_and_grad")
     value_and_grad_prim.multiple_results = True
@@ -70,10 +70,10 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     # mostly a copy-paste of _capture_diff, but a few minor things needed to get updated
     # Could also find a way to remove code duplication
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import pennyjax as jax  # pylint: disable=import-outside-toplevel
 
     # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
+    from pennyjax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
     method = _setup_method(method)

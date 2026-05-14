@@ -91,7 +91,7 @@ are callables. The callables defining the parametrized coefficients must have th
 .. code-block:: python
 
     import pennylane as qp
-    from jax import numpy as jnp
+    from pennyjax import numpy as jnp
 
     # defining the coefficients fj(p, t) for the two parametrized terms
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
@@ -181,7 +181,7 @@ can be created using the :func:`~.pennylane.evolve` function:
 
 .. code-block:: python
 
-    from jax import numpy as jnp
+    from pennyjax import numpy as jnp
 
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
     H = 2 * qp.X(0) + f1 * qp.Y(1)
@@ -224,7 +224,7 @@ following :class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
-        from jax import numpy as jnp
+        from pennyjax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
         H = f1 * qp.Y(0)
@@ -234,7 +234,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
 .. code-block:: python
 
-    import jax
+    import pennyjax as jax
 
     jax.config.update("jax_enable_x64", True)
 

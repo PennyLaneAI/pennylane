@@ -26,8 +26,8 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 try:
-    import jax
-    import jax.numpy as jnp
+    import pennyjax as jax
+    import pennyjax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
@@ -124,8 +124,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         import pennylane as qp
         import numpy as np
-        import jax.numpy as jnp
-        import jax
+        import pennyjax.numpy as jnp
+        import pennyjax as jax
 
         from pennylane import X, Z
         from pennylane.liealg import (
@@ -371,8 +371,8 @@ def run_opt(
     .. code-block:: python
 
         from pennylane.labs.dla import run_opt
-        import jax
-        import jax.numpy as jnp
+        import pennyjax as jax
+        import pennyjax.numpy as jnp
         import optax
         jax.config.update("jax_enable_x64", True)
 

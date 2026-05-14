@@ -19,8 +19,8 @@ from collections.abc import Callable
 
 has_jax = True
 try:
-    import jax
-    from jax._src.interpreters.partial_eval import TracingEqn
+    import pennyjax as jax
+    from pennyjax._src.interpreters.partial_eval import TracingEqn
 
 
 except ImportError as e:  # pragma: no cover

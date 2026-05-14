@@ -382,7 +382,7 @@ def apply_conditional(
     interface = math.get_deep_interface(state)
     if interface == "jax":
         # pylint: disable=import-outside-toplevel
-        from jax.lax import cond
+        from pennyjax.lax import cond
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -458,7 +458,7 @@ def apply_mid_measure(
 
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
+        from pennyjax.random import binomial
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)
@@ -965,8 +965,8 @@ def _evolve_state_vector_under_parametrized_evolution(
     """
 
     try:
-        import jax
-        from jax.experimental.ode import odeint
+        import pennyjax as jax
+        from pennyjax.experimental.ode import odeint
 
         from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 

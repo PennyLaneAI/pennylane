@@ -73,7 +73,7 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
-        import jax.numpy as jnp
+        import pennyjax.numpy as jnp
 
         wires = [0, 1, 2, 3]
         H_int = sum([qp.X(i) @ qp.X((i+1)%len(wires)) for i in wires])
@@ -102,7 +102,7 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
-        import jax
+        import pennyjax as jax
 
         jax.config.update("jax_enable_x64", True)
 
