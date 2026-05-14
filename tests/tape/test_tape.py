@@ -22,6 +22,7 @@ import pytest
 import pennylane as qp
 from pennylane import CircuitGraph
 from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -29,6 +30,12 @@ from pennylane.measurements import (
 )
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import decompose
+
+
+def test_adjoint_deprecated():
+    qt = QuantumTape([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        qt.adjoint()
 
 
 def TestOperationMonkeypatching():
@@ -817,8 +824,9 @@ class TestInverseAdjoint:
             qp.probs(wires=0)
             qp.probs(wires="a")
 
-        with QuantumTape() as tape2:
-            adjoint_tape = tape.adjoint()
+        with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+            with QuantumTape() as tape2:
+                adjoint_tape = tape.adjoint()
 
         assert tape2[0] is adjoint_tape
 

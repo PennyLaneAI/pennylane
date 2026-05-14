@@ -20,12 +20,14 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
@@ -826,6 +828,10 @@ class QuantumScript:
     def adjoint(self) -> "QuantumScript":
         """Create a quantum script that is the adjoint of this one.
 
+        .. warning::
+            This method is deprecated and will be removed in v0.47.
+            Please use `QuantumScript([qp.adjoint(op) for op in reversed(tape.operations)])`.
+
         Adjointed quantum scripts are the conjugated and transposed version of the
         original script. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
@@ -833,6 +839,14 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
+
+        warnings.warn(
+            "Using QuantumScript.adjoint is deprecated "
+            "and will be removed in v0.47. Instead, please use "
+            "'QuantumScript([adjoint(op) for op in reversed(tape.operations)])'. ",
+            PennyLaneDeprecationWarning,
+        )
+
         ops = self.operations[self.num_preps :]
         prep = self.operations[: self.num_preps]
         with qp.QueuingManager.stop_recording():
