@@ -478,7 +478,7 @@ def test_bravyi_kitaev_for_identity_ps():
 def test_bravyi_kitaev_for_null_operator_fermi_word_ps(operator):
     """Test that the parity_transform function works when the result is 0"""
     # in PauliSentence return format, returns None
-    assert bravyi_kitaev(operator, 4, ps=True).simplify() is None
+    assert bravyi_kitaev(operator, 4, ps=True).prune() is None
 
     # in operation return format, '0 * I'
     op = bravyi_kitaev(operator, 4).simplify()
@@ -613,7 +613,7 @@ FERMI_AND_PAULI_SENTENCES = [
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_AND_PAULI_SENTENCES)
 def test_bravyi_kitaev_for_fermi_sentence_ps(fermionic_op, n_qubits, result):
     qubit_op = bravyi_kitaev(fermionic_op, n_qubits, ps=True)
-    qubit_op.simplify()
+    qubit_op.prune()
 
     assert qubit_op == result
 
@@ -756,8 +756,7 @@ def test_providing_wire_map_fermi_word_to_operation(wire_map, ops):
     n_qubits = 4
     op = bravyi_kitaev(w, n_qubits, wire_map=wire_map)
     result = qp.sum(*ops)
-
-    op.prune()
+    op = op.simplify()
 
     # converting to Pauli representation for comparison because
     # qp.equal isn't playing nicely with term ordering

@@ -398,7 +398,7 @@ def test_jordan_wigner_for_identity_ps():
 def test_jordan_wigner_for_null_operator_fermi_word_ps(operator):
     """Test that the jordan_wigner function works when the result is 0"""
     # in PauliSentence return format, returns None
-    assert jordan_wigner(operator, ps=True).simplify() is None
+    assert jordan_wigner(operator, ps=True).prune() is None
 
     # in operation return format, '0 * I'
     op = jordan_wigner(operator).simplify()
@@ -678,8 +678,7 @@ def test_providing_wire_map_fermi_word_to_operation(wire_map, ops):
 
     op = jordan_wigner(w, wire_map=wire_map)
     result = qp.sum(*ops)
-
-    op.prune()
+    op = op.simplify()
 
     # converting to Pauli representation for comparison because
     # qp.equal isn't playing nicely with term ordering
