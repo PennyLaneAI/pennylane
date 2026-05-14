@@ -613,8 +613,9 @@ def shadow_expval(
 
                 .. code-block:: python
 
-                    dev = qp.device("default.qubit", seed=42, shots=100)
+                    dev = qp.device("default.qubit", seed=42)
 
+                    @qp.set_shots(100)
                     @qp.qnode(dev)
                     def circuit():
                         qp.H(0)

@@ -45,6 +45,12 @@
   
 <h3>Breaking changes 💔</h3>
 
+* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
+  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  are removed. Instead, please use the 
+  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
+
 * The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`. 
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
@@ -78,6 +84,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
+  [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
+  
 * Added support for JAX arrays as control wires during JAXpr evaluation.
   [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
   
