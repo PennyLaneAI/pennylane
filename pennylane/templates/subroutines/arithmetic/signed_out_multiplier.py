@@ -28,7 +28,8 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operator
 from pennylane.ops import CNOT, Controlled, PauliX
-from pennylane.templates import Incrementer, OutMultiplier
+from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.wires import Wires, WiresLike
 
 
@@ -47,14 +48,9 @@ class SignedOutMultiplier(Operator):
         y_wires (Sequence[int]): wires that store the signed integer :math:`y`
         output_wires (Sequence[int]): wires that store the multiplication result. If the
             register is in a non-zero state :math:`z`, the solution will be added to this value
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set
-            to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. Defaults to an empty tuple, i.e., no work wires.
-        output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
-            :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
-            the operation.
     """
 
     def __init__(
@@ -62,32 +58,13 @@ class SignedOutMultiplier(Operator):
         x_wires: WiresLike,
         y_wires: WiresLike,
         output_wires: WiresLike,
-        mod=None,
         work_wires: WiresLike = (),
-        output_wires_zeroed: bool = False,
-        id=None,
     ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        num_work_wires = len(work_wires)
-
-        if mod is None:
-            mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires):
-            if num_work_wires < 2:
-                raise ValueError(
-                    f"If mod is not 2^{len(output_wires) - 1}, at least two work wires should be provided."
-                )
-            work_wires = work_wires[:2]
-        if mod > 2 ** (len(output_wires) - 1):
-            raise ValueError(
-                "SignedOutMultiplier must have enough wires to represent mod. The maximum mod "
-                f"with len(output_wires - 1)={len(output_wires) - 1} is {2 ** (len(output_wires) - 1)}, but received {mod}."
-            )
 
         if len(work_wires) != 0:
             if any(wire in work_wires for wire in x_wires):
@@ -107,12 +84,10 @@ class SignedOutMultiplier(Operator):
 
         for name, wires in zip(wires_name, wires_list):
             self.hyperparameters[name] = Wires(wires)
-        self.hyperparameters["mod"] = mod
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
 
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -121,8 +96,6 @@ class SignedOutMultiplier(Operator):
             "num_y_wires": len(self.hyperparameters["y_wires"]),
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "mod": self.hyperparameters["mod"],
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
         }
 
 
@@ -185,9 +158,9 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
-def _work_wire_condition(work_wires, **_):
+def _work_wire_condition(num_work_wires, **_):
     return (
-        len(work_wires) >= 2
+        num_work_wires >= 2
     )  # or max(len(x_wires), len(y_wires)) + 1 to use incrementer decomp with work wires
 
 
@@ -197,9 +170,8 @@ def _signed_out_multiplier_decomposition(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod,
     work_wires: WiresLike,
-    output_wires_zeroed: bool = False,
+    **_
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
@@ -229,9 +201,7 @@ def _signed_out_multiplier_decomposition(
         x_wires,
         y_wires,
         output_wires[1:],
-        mod=mod,
         work_wires=work_wires[2:],
-        output_wires_zeroed=output_wires_zeroed,
     )
 
     # Compute the sign

@@ -9,7 +9,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operator
 from pennylane.ops import CNOT, X, adjoint, cond
-from pennylane.templates import TemporaryAND
+from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.wires import Wires, WiresLike
 
 
@@ -68,6 +68,7 @@ class Incrementer(Operator):
     def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
         wires = Wires(wires)
         work_wires = Wires(() if work_wires is None else work_wires)
+        self.hyperparameters["work_wires"] = work_wires
 
         super().__init__(wires=wires + work_wires)
 
@@ -75,6 +76,7 @@ class Incrementer(Operator):
     def resource_params(self):
         return {
             "num_wires": len(self.wires),
+            "num_work_wires": len(self.hyperparameters["work_wires"])
         }
 
 
@@ -90,16 +92,16 @@ def _incrementer_resources(num_wires):
     return resources
 
 
-def _work_wire_condition(wires, work_wires, **_):
-    return len(work_wires) >= len(wires) - 1
+def _work_wire_condition(num_wires, num_work_wires, **_):
+    return num_work_wires >= num_wires - num_work_wires - 1
 
 
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources)
-def _incrementer_decomposition(wires, work_wires):
+def _incrementer_decomposition(wires, work_wires, **_):
     # TODO: fallback when not enough work wires are available for this decomp
 
-    wires = wires[::-1]
+    wires = wires[::-1][len(work_wires):]
 
     if capture.enabled():
         wires = math.array(wires, like="jax")
