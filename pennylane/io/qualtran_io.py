@@ -998,7 +998,7 @@ class FromBloq(Operation):
         if not isinstance(bloq, qt.Bloq):
             raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
         self._hyperparameters = {"bloq": bloq}
-        super().__init__(wires=wires, id=None)
+        super().__init__(wires=wires)
 
     def __repr__(self):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'

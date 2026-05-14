@@ -210,7 +210,6 @@ class SpecialUnitary(Operation):
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\bm{\theta})`.
             See details below for the order of the Pauli words.
         wires (Sequence[int] or int): The wire(s) the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Raises:
         ValueError: If the shape of the input does not match the Lie algebra
@@ -411,7 +410,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qp.math.shape(theta)
@@ -429,7 +428,7 @@ class SpecialUnitary(Operation):
                 f"{expected_dim}). The parameters have shape {theta_shape}"
             )
 
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
 
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())

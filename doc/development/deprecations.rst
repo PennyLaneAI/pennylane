@@ -9,83 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
 
-  - Deprecated in v0.45
-  - Will be removed in v0.46
- 
-* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid`` and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid`` and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-  The ``id`` argument previously served two purposes: (1) adding custom labels
-  to operator instances which were rendered in circuit drawings and (2)
-  tagging encoding gates for Fourier spectrum analysis.
-
-  These are now handled by dedicated functions:
-
-  .. warning::
-
-    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits, as the corresponding ``id`` behaviour didn't work beforehand.
-
-  Use :func:`~.drawer.label` to attach a custom label to an operator instance
-  for circuit drawing:
-
-  .. code-block:: python
-
-    # Legacy method (deprecated):
-    qp.RX(0.5, wires=0, id="my-rx")
-
-    # New method:
-    qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
-
-  Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
-  for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
-
-  .. code-block:: python
-
-    # Legacy method (deprecated):
-    qp.RX(0.5, wires=0, id="x0")
-
-    # New method:
-    qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
-
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
-  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the 
-  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Deprecated in v0.46
+  - Will be removed in v0.47
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -152,7 +80,88 @@ Completed deprecation cycles
   has been deprecated and will be removed in v0.46. If necessary, the
   :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
   subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
 
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``qp.transforms.create_expand_fn`` has been deprecated and was removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+  
+* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
+  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  are removed. Instead, please use the 
+  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46 
+
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid``. 
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``. 
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* The ``id`` keyword argument to :class:`~.Operator` has been removed. 
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+  The ``id`` argument previously served two purposes: (1) adding custom labels
+  to operator instances which were rendered in circuit drawings and (2)
+  tagging encoding gates for Fourier spectrum analysis.
+
+  These are now handled by dedicated functions:
+
+  .. warning::
+
+    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits, as the corresponding ``id`` behaviour didn't work beforehand.
+
+  Use :func:`~.drawer.label` to attach a custom label to an operator instance
+  for circuit drawing:
+
+  .. code-block:: python
+
+    # Legacy method (deprecated):
+    qp.RX(0.5, wires=0, id="my-rx")
+
+    # New method:
+    qp.drawer.label(qp.RX(0.5, wires=0), "my-rx")
+
+  Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+  for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
+
+  .. code-block:: python
+
+    # Legacy method (deprecated):
+    qp.RX(0.5, wires=0, id="x0")
+
+    # New method:
+    qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
+
+* The :func:`~pennylane.workflow.get_transform_program` function has been removed.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+
+  - Deprecated in v0.45
+  - Removed in v0.46 
+  
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` has been removed.
   
