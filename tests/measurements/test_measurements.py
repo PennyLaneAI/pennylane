@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -127,8 +127,13 @@ def test_hash_correctness():
     mp2 = DummyMP(wires=qp.wires.Wires(0))
 
     assert len({mp1, mp2}) == 1
-    assert hash(mp1) == mp1.hash
-    assert hash(mp2) == mp2.hash
+
+    with pytest.warns(PennyLaneDeprecationWarning):
+        assert hash(mp1) == mp1.hash
+
+    with pytest.warns(PennyLaneDeprecationWarning):
+        assert hash(mp2) == mp2.hash
+
     assert hash(mp1) == hash(mp2)
 
 

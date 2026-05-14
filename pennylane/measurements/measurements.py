@@ -18,6 +18,7 @@ and measurement samples using AnnotatedQueues.
 """
 
 import copy
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Optional
@@ -28,6 +29,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
+    PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
@@ -258,7 +260,14 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return equal(self, other)
 
     def __hash__(self):
-        return self.hash
+        fingerprint = (
+            self.__class__.__name__,
+            getattr(self.obs, "hash", "None"),
+            getattr(self.mv, "hash", "None"),
+            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
+            tuple(self.wires.tolist()),
+        )
+        return hash(fingerprint)
 
     def __repr__(self):
         """Representation of this class."""
@@ -386,15 +395,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
-        fingerprint = (
-            self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
-            getattr(self.mv, "hash", "None"),
-            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
-            tuple(self.wires.tolist()),
+        warnings.warn(
+            "The MeasurementProcess.hash property has been deprecated, please use hash(mp) instead.",
+            PennyLaneDeprecationWarning,
         )
-
-        return hash(fingerprint)
+        return hash(self)
 
     def simplify(self):
         """Reduce the depth of the observable to the minimum.

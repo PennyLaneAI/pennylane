@@ -78,6 +78,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+  []()
+
 <h3>Internal changes ⚙️</h3>
 
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
