@@ -21,15 +21,6 @@ Pending deprecations
   - Deprecated in v0.46
   - Will be removed in v0.47
 
-* Deactivating queuing of an ``Operator`` by setting its
-  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
-  has been deprecated and will be removed in v0.46. If necessary, the
-  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
-  subclasses of ``Operator``.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
@@ -89,6 +80,15 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
 
