@@ -271,12 +271,12 @@ class CompositeOp(Operator):
         """
         eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
-        if self.hash not in self._eigs:
+        if hash(self) not in self._eigs:
             mat = self.matrix()
             w, U = eigen_func(mat)
-            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
+            self._eigs[hash(self)] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[self.hash]
+        return self._eigs[hash(self)]
 
     @property
     def has_diagonalizing_gates(self):
@@ -371,12 +371,11 @@ class CompositeOp(Operator):
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([factor.hash for factor in self._sort(self.operands)]))
+                (str(self.name), str([hash(factor) for factor in self._sort(self.operands)]))
             )
         return self._hash
 

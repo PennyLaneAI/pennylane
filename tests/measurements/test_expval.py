@@ -290,14 +290,14 @@ class TestExpval:
         m1 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(0))
         m2 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(0))
 
-        assert m1.hash == m2.hash
+        assert hash(m1) == hash(m2)
 
         m3 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(1))
-        assert m1.hash != m3.hash
+        assert hash(m1) != hash(m3)
 
         m4 = ExpectationMP(eigvals=[-1, 1], wires=qp.wires.Wires(1))
-        assert m1.hash != m4.hash
-        assert m3.hash != m4.hash
+        assert hash(m1) != hash(m4)
+        assert hash(m3) != hash(m4)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(

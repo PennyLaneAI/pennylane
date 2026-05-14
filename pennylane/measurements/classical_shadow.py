@@ -57,15 +57,13 @@ class ClassicalShadowMP(MeasurementTransform):
         metadata = (("wires", self.wires), ("seed", self.seed))
         return (None, None), metadata
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
             self.seed,
             tuple(self.wires.tolist()),
         )
-
         return hash(fingerprint)
 
     def process(self, tape, device):

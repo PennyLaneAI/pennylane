@@ -135,12 +135,11 @@ class SymbolicOp(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
 
-    @property
-    def hash(self):
+    def __hash__(self):
         return hash(
             (
                 str(self.name),
-                self.base.hash,
+                hash(self.base),
             )
         )
 
@@ -208,14 +207,13 @@ class ScalarSymbolicOp(SymbolicOp):
     def has_matrix(self):
         return self.base.has_matrix
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         return hash(
             (
                 str(self.name),
                 str(self.scalar),
-                self.base.hash,
+                hash(self.base),
             )
         )
 

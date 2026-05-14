@@ -626,7 +626,7 @@ class _ProductFactorsGrouping:
             factor = factor.base
         else:
             exponent = 1
-        op_hash = factor.hash
+        op_hash = hash(factor)
         old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [
