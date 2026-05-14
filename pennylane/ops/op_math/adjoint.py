@@ -342,7 +342,7 @@ class Adjoint(SymbolicOp):
             base = pytrees.unflatten(*pytrees.flatten(base))
         return cls._primitive.bind(base, **kwargs)
 
-    def __new__(cls, base=None, id=None):
+    def __new__(cls, base=None):
         """Returns an uninitialized type with the necessary mixins.
 
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
@@ -355,9 +355,9 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, id=None):
+    def __init__(self, base=None):
         self._name = f"Adjoint({base.name})"
-        super().__init__(base, id=id)
+        super().__init__(base)
         if self.base.pauli_rep:
             pr = {pw: qp.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
             self._pauli_rep = qp.pauli.PauliSentence(pr)
