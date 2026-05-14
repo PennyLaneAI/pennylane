@@ -80,7 +80,7 @@
 
 * The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
   in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
-  []()
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -116,6 +116,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
