@@ -187,12 +187,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="State must be one-dimensional"):
             circuit(x=[[1], [0]])
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.BasisEmbedding([0, 1], wires=[0, 1], id="a")
-        assert template.id == "a"
-
 
 def circuit_template(features):
     qp.BasisEmbedding(features, wires=range(3))
