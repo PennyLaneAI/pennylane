@@ -71,7 +71,7 @@ Next we set concrete values of the Pauliw ords to test the identity.
 
 Finally, we compare the two circuits and see that both sides match.
 
->>> compare_circuits(
+>>> pbc.compare_circuits(
 ...     circuit1, circuit2, wires=wires, P1=P1, P2=P2, P3=P3, P4=P4, verbose=True
 ... )
 (True, "exact")
