@@ -22,6 +22,7 @@ import pytest
 import pennylane as qp
 from pennylane import CircuitGraph
 from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
