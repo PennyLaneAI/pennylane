@@ -263,7 +263,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         fingerprint = (
             self.__class__.__name__,
             hash(self.obs),
-            hash(self.mv),
+            hash(tuple(self.mv)) if isinstance(self.mv, list) else hash(self.mv),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
         )

@@ -117,6 +117,10 @@
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
 
+* Fixes a bug where two ``MeasurementProcess`` of taken of different mid-circuit measurement
+  values sometimes incorrectly have the same hash.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

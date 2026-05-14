@@ -137,6 +137,18 @@ def test_hash_correctness():
     assert hash(mp1) == hash(mp2)
 
 
+def test_hash_mcms():
+    """Tests that the hash is correct when it comes to samples of MCMs."""
+
+    m0 = qp.measure(0)
+    m1 = qp.measure(0)
+
+    mp1 = qp.sample(m0)
+    mp2 = qp.sample(m1)
+
+    assert hash(mp1) != hash(mp2)
+
+
 mv = qp.measure(0)
 
 valid_meausurements = [
