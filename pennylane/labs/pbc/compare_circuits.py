@@ -13,7 +13,7 @@
 # limitations under the License.
 """Functionality to compare non-unitary circuits by comparing individual branches (for different measurement outcomes)"""
 
-# pylint: disable=not-callable, too-many-arguments, too-many-branches, too-many-statements
+# pylint: disable=not-callable, too-many-arguments, too-many-branches, too-many-statements, too-many-nested-blocks
 
 import numpy as np
 
@@ -77,7 +77,8 @@ def compare_circuits(
 
     Both circuits are expected to act as the same unitary on the ``wires`` subspace.
     Comparison is done branch-by-branch: for each measurement branch, the effective
-    action on the main wires must match between the two circuits (up to global phase).
+    action on the main wires must match between the two circuits (up to a consistent
+    global phase across all input states).
 
     Args:
         circuit1 (callable): first undecorated ``qfunc``
@@ -178,6 +179,9 @@ def compare_circuits(
     success = True
     is_exact = True  # Track whether match is exact or only up to global phase
 
+    # Track the reference phase per branch to enforce consistency across all inputs
+    branch_phases = {}  # branch_idx -> reference phase (complex number)
+
     # For each input basis state, get branch outputs and compare branch-by-branch
     for i, (in1, in2) in enumerate(zip(in_states1, in_states2)):
         branches1 = _get_branch_outputs(qnode1, in1, n_tot1, kwargs1)
@@ -206,31 +210,79 @@ def compare_circuits(
             else:
                 main2 = state2
 
+            # Skip if both states are zero (e.g. post-selected away)
+            if np.linalg.norm(main1) < 1e-10 and np.linalg.norm(main2) < 1e-10:
+                continue
+
             # Check exact match first
-            if not np.allclose(main1, main2, atol=1e-8):
-                # Check up to global phase
-                # Find first non-zero element to extract phase
-                idx = np.argmax(np.abs(main1))
-                if np.abs(main1[idx]) > 1e-10 and np.abs(main2[idx]) > 1e-10:
-                    phase = main1[idx] / main2[idx]
-                    if np.allclose(main1, phase * main2, atol=1e-8):
-                        is_exact = False  # Match is only up to global phase
-                    else:
-                        print(f"Mismatch for input |{np.binary_repr(i, n)}>, branch {b_idx}:")
-                        print(f"  circuit1 main state: {main1}")
-                        print(f"  circuit2 main state: {main2}")
+            if np.allclose(main1, main2, atol=1e-8):
+                # Exact match — if we already have a phase for this branch, it must be 1
+                if b_idx in branch_phases:
+                    if not np.isclose(branch_phases[b_idx], 1.0, atol=1e-8):
+                        print(
+                            f"Inconsistent phase for branch {b_idx}: "
+                            f"input |{np.binary_repr(i, n)}> gives exact match (phase=0), "
+                            f"but previous inputs gave phase "
+                            f"{np.angle(branch_phases[b_idx])/np.pi:.4f}\u03c0"
+                        )
                         success = False
                 else:
-                    print(
-                        f"Mismatch for input |{np.binary_repr(i, n)}>, branch {b_idx}: "
-                        f"zero entries don't align"
-                    )
+                    branch_phases[b_idx] = 1.0 + 0.0j
+                continue
+
+            # Not exact — check if match up to global phase
+            idx = np.argmax(np.abs(main1))
+            if np.abs(main1[idx]) > 1e-10 and np.abs(main2[idx]) > 1e-10:
+                phase = main1[idx] / main2[idx]
+                if np.allclose(main1, phase * main2, atol=1e-8):
+                    # Valid phase relationship — enforce consistency
+                    if b_idx in branch_phases:
+                        if not np.isclose(phase, branch_phases[b_idx], atol=1e-8):
+                            print(
+                                f"Inconsistent phase for branch {b_idx}: "
+                                f"input |{np.binary_repr(i, n)}> gives phase "
+                                f"{np.angle(phase)/np.pi:.4f}\u03c0, "
+                                f"but previous inputs gave phase "
+                                f"{np.angle(branch_phases[b_idx])/np.pi:.4f}\u03c0"
+                            )
+                            success = False
+                        else:
+                            is_exact = False
+                    else:
+                        branch_phases[b_idx] = phase
+                        is_exact = False
+                else:
+                    print(f"Mismatch for input |{np.binary_repr(i, n)}>, branch {b_idx}:")
+                    print(f"  circuit1 main state: {main1}")
+                    print(f"  circuit2 main state: {main2}")
                     success = False
+            else:
+                print(
+                    f"Mismatch for input |{np.binary_repr(i, n)}>, branch {b_idx}: "
+                    f"zero entries don't align"
+                )
+                success = False
 
     if success:
         if is_exact:
             return True, "exact"
 
-        return True, f"up to global phase {np.angle(phase)/np.pi:.4f}π"
+        # Report the phase(s) — if all branches have the same phase, report one value
+        unique_phases = list(
+            {
+                np.round(np.angle(p) / np.pi, 6)
+                for p in branch_phases.values()
+                if not np.isclose(p, 1.0)
+            }
+        )
+        if len(unique_phases) == 1:
+            return True, f"up to global phase {unique_phases[0]:.4f}\u03c0"
+
+        phase_strs = ", ".join(
+            f"branch {k}: {np.angle(v)/np.pi:.4f}\u03c0"
+            for k, v in sorted(branch_phases.items())
+            if not np.isclose(v, 1.0)
+        )
+        return True, f"up to global phase (per branch: {phase_strs})"
 
     return False, "mismatch"
