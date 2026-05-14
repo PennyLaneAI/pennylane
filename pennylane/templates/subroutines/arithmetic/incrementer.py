@@ -171,9 +171,9 @@ def _incrementer_fallback_decomposition(wires, **_):
     if enabled():
         wires = array(wires, like="jax")
 
-    @for_loop(len(wires) - 1, -1, 0)
+    @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i):
-        MultiControlledX([wire for wire in range(i)][::-1], [1 for _ in range(i)])
+        MultiControlledX([wire for wire in range(i)][::-1], [1 for _ in range(i - 1)])
     flip_wires()  # pylint: disable=no-value-for-parameter
 
     X(wires[0])
