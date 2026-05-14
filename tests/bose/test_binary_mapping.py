@@ -263,10 +263,10 @@ class TestBoseWordMapping:
     def test_binary_mapping_boseword(self, bosonic_op, n_states, result):
         """Test that the binary_mapping function returns the correct qubit operator."""
         qubit_op = binary_mapping(bosonic_op, n_states=n_states, ps=True)
-        qubit_op.simplify()
+        qubit_op.prune()
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op.simplify()
+        expected_op.prune()
         assert qubit_op == expected_op
 
     @pytest.mark.parametrize("bosonic_op, n_states, result", BOSE_WORDS_AND_OPS)
@@ -414,7 +414,7 @@ class TestBoseSentencesMapping:
         op = BoseSentence({})
 
         ps_op = binary_mapping(op, ps=True)
-        ps_op.simplify()
+        ps_op.prune()
         assert ps_op == PauliSentence({})
 
         op = binary_mapping(op).simplify()

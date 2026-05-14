@@ -49,7 +49,7 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
     pr2 = pauli_word_2.pauli_rep
 
     comm = pr1.commutator(pr2)
-    comm.simplify()
+    comm.prune()
     return comm == qp.pauli.pauli_arithmetic.PauliSentence({})
 
 

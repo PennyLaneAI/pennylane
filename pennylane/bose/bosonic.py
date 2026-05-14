@@ -13,9 +13,11 @@
 # limitations under the License.
 """The bosonic representation classes and functions."""
 
+import warnings
 from copy import copy
 
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
 
 
@@ -603,8 +605,24 @@ class BoseSentence(dict):
         return operator
 
     def simplify(self, tol=1e-8):
-        r"""Remove any BoseWords in the BoseSentence with coefficients less than the threshold
-        tolerance."""
+        r"""Remove any BoseWords in the BoseSentence with coefficients less than the threshold tolerance.
+
+        This method mutates the ``BoseSentence`` in place, and does not return anything.
+
+        .. warning::
+
+            The ``simplify`` method is deprecated and will be removed in v0.47. Please use
+            the :meth:`~.prune` method instead.
+
+        """
+        warnings.warn(
+            "BoseSentence.simplify is deprecated. Please use BoseSentence.prune instead.",
+            PennyLaneDeprecationWarning,
+        )
+        self.prune(tol)
+
+    def prune(self, tol=1e-8):
+        r"""Remove any BoseWords in the BoseSentence with coefficients less than the threshold tolerance."""
         items = list(self.items())
         for bw, coeff in items:
             if abs(coeff) <= tol:

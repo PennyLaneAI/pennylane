@@ -416,7 +416,7 @@ class TestBoseSentenceMapping:
         op = BoseSentence({})
 
         ps_op = unary_mapping(op, ps=True)
-        ps_op.simplify()
+        ps_op.prune()
         assert ps_op == PauliSentence({})
 
         op = unary_mapping(op).simplify()
