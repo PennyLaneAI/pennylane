@@ -79,7 +79,7 @@
 <h3>Deprecations 👋</h3>
 
 * The ``PauliSentence.simplify`` and ``FermiSentence.simplify`` methods are deprecated in favour of ``PauliSentence.prune`` and ``FermiSentence.prune`` respectively, and will be removed in v0.47.
-  []()
+  [(#9487)](https://github.com/PennyLaneAI/pennylane/pull/9487)
 
 <h3>Internal changes ⚙️</h3>
 

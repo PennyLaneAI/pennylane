@@ -279,7 +279,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     else:
         if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):
             coeffs = qp.math.real(coeffs)
-        tapered_ham = qp.simplify(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
+        tapered_ham = qp.prune(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
 
     # If simplified Hamiltonian is missing wires due to simplification,
     # then add wires manually for consistency
@@ -527,7 +527,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen = qp.pauli_decompose(
                 gen_mat, wire_order=wire_order, hide_identity=True, pauli=True
             )
-            op_gen.simplify()
+            op_gen.prune()
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
@@ -709,7 +709,7 @@ def taper_operation(
     # TODO: replace when qp.is_commuting supports Pauli words and sentences
     def _is_commuting(ps1, ps2):
         commutator = ps1.commutator(ps2)
-        commutator.simplify()
+        commutator.prune()
         return commutator == PauliSentence({})
 
     # Obtain the tapered generator for the operation
@@ -723,7 +723,7 @@ def taper_operation(
         ):
             gen_tapered = qp.taper(op_gen, generators, paulixops, paulix_sector)
             gen_tapered = pauli_sentence(gen_tapered)
-        gen_tapered.simplify()
+        gen_tapered.prune()
 
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
