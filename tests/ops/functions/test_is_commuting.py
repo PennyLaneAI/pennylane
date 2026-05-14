@@ -51,10 +51,10 @@ test_cases = [
     # controlled versions of operators.
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(0), False),
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
-    (qp.ctrl(qp.QFT((0, 1, 2), 3)), qp.Z(3), True),
+    (qp.ctrl(qp.QFT((0, 1, 2)), 3), qp.Z(3), True),
     # adjoint versions of operators
     (qp.adjoint(qp.U1(0.5, 0)), qp.Z(0), True),
-    (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2)), qp.T(0)), True),
+    (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2))), qp.T(0), True),
     # various things in the same group
     (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
 ]

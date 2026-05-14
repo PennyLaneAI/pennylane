@@ -331,8 +331,8 @@ def is_commuting(operation1, operation2):
     ctrl_base_1 = _get_target_name(operation1)
     ctrl_base_2 = _get_target_name(operation2)
 
-    op1_control_wires = getattr(operation1, "control_wires", {})
-    op2_control_wires = getattr(operation2, "control_wires", {})
+    op1_control_wires = getattr(operation1, "control_wires", qp.wires.Wires({}))
+    op2_control_wires = getattr(operation2, "control_wires", qp.wires.Wires({}))
 
     target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
