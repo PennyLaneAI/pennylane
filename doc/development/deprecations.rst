@@ -77,7 +77,7 @@ Completed deprecation cycles
 
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
-  has been deprecated and will be removed in v0.46. If necessary, the
+  has been removed in v0.46. If necessary, the
   :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
   subclasses of ``Operator``.
   
