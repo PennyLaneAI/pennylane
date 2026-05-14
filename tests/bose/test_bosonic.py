@@ -21,6 +21,7 @@ import pytest
 
 from pennylane import numpy as pnp
 from pennylane.bose import BoseSentence, BoseWord
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 bw1 = BoseWord({(0, 0): "+", (1, 1): "-"})
 bw1_dag = BoseWord({(0, 1): "+", (1, 0): "-"})
@@ -820,11 +821,19 @@ class TestBoseSentence:
         expected_simplified_bs1 = BoseSentence({bw2: 0.05, bw3: 1})
         expected_simplified_bs2 = BoseSentence({bw3: 1})
 
-        un_simplified_bs.prune()
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify()
+
         assert un_simplified_bs == expected_simplified_bs0  # default tol = 1e-8
-        un_simplified_bs.prune(tol=1e-2)
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify(tol=1e-2)
+
         assert un_simplified_bs == expected_simplified_bs1
-        un_simplified_bs.prune(tol=1e-1)
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify(tol=1e-1)
+
         assert un_simplified_bs == expected_simplified_bs2
 
     def test_pickling(self):
@@ -896,7 +905,7 @@ class TestBoseSentenceArithmetic:
         BoseSentences is produced."""
 
         simplified_product = f1 * f2
-        simplified_product.simplify()
+        simplified_product.prune()
 
         assert simplified_product == result
 
@@ -965,7 +974,7 @@ class TestBoseSentenceArithmetic:
         """Test that the correct result of addition is produced for two BoseSentences."""
 
         simplified_product = f1 + f2
-        simplified_product.simplify()
+        simplified_product.prune()
 
         assert simplified_product == result
 
