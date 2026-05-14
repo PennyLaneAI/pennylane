@@ -278,12 +278,12 @@ class TestExpval:
         o1 = qp.prod(qp.PauliX(0), qp.PauliY(1))
         o2 = qp.prod(qp.PauliX(0), qp.PauliZ(1))
 
-        assert qp.expval(o1).hash == qp.expval(o1).hash
-        assert qp.expval(o2).hash == qp.expval(o2).hash
-        assert qp.expval(o1).hash != qp.expval(o2).hash
+        assert hash(qp.expval(o1)) == hash(qp.expval(o1))
+        assert hash(qp.expval(o2)) == hash(qp.expval(o2))
+        assert hash(qp.expval(o1)) != hash(qp.expval(o2))
 
         o3 = qp.sum(qp.PauliX("a"), qp.PauliY("b"))
-        assert qp.expval(o1).hash != qp.expval(o3).hash
+        assert hash(qp.expval(o1)) != hash(qp.expval(o3))
 
     def test_eigvals(self):
         """Test that the eigvals property controls the hash property."""
