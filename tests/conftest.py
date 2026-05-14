@@ -171,7 +171,8 @@ def enable_disable_plxpr():
     try:
         yield
     finally:
-        qp.capture.disable()
+        pass
+        # qp.capture.disable()
 
 
 @pytest.fixture(scope="function")
