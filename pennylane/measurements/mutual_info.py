@@ -34,8 +34,6 @@ class MutualInfoMP(StateMeasurement):
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         log_base (float): base for the logarithm
 
     """
@@ -52,11 +50,10 @@ class MutualInfoMP(StateMeasurement):
     def __init__(
         self,
         wires: Sequence[Wires] | None = None,
-        id: str | None = None,
         log_base: float | None = None,
     ):
         self.log_base = log_base
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     # pylint: disable=arguments-differ
     @classmethod

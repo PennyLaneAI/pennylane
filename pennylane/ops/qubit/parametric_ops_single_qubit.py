@@ -76,7 +76,6 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -96,8 +95,8 @@ class RX(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -282,7 +281,6 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -300,8 +298,8 @@ class RY(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -498,7 +496,6 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -517,8 +514,8 @@ class RZ(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     has_decomposition = False
 
@@ -765,7 +762,6 @@ class PhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -788,8 +784,8 @@ class PhaseShift(Operation):
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     def label(
         self,
@@ -990,7 +986,6 @@ class Rot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1014,9 +1009,8 @@ class Rot(Operation):
         theta: TensorLike,
         omega: TensorLike,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(phi, theta, omega, wires=wires, id=id)
+        super().__init__(phi, theta, omega, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1236,7 +1230,6 @@ class U1(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1254,8 +1247,8 @@ class U1(Operation):
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1386,7 +1379,6 @@ class U2(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1401,8 +1393,8 @@ class U2(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, delta, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
+        super().__init__(phi, delta, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1560,7 +1552,6 @@ class U3(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1582,9 +1573,8 @@ class U3(Operation):
         phi: TensorLike,
         delta: TensorLike,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(theta, phi, delta, wires=wires, id=id)
+        super().__init__(theta, phi, delta, wires=wires)
 
     @property
     def resource_params(self) -> dict:
