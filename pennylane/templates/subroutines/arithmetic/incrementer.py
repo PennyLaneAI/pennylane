@@ -96,6 +96,9 @@ def _work_wire_condition(num_wires, num_work_wires, **_):
     return num_work_wires >= num_wires - num_work_wires - 1
 
 
+# TODO: controlled decomposition
+
+
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires, **_):
