@@ -386,7 +386,7 @@ class Pow(ScalarSymbolicOp):
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
-        if pr := self.pauli_rep.copy():
+        if pr := self.pauli_rep:
             pr.prune()
             return pr.operation(wire_order=self.wires)
 
