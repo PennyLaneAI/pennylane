@@ -99,7 +99,7 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
     expected = x * y
 
     # execute the quantum signed out multiplier circuit
-    result = signed_multiply(x_wires, y_wires, output_wires, work_wires, init_state)
+    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state)
 
     # extract the output from the output histogram
     result = math.ceil_log2(list(math.round(result)).index(1)) % (2 ** len(output_wires))
