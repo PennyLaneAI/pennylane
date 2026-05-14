@@ -52,17 +52,19 @@ To check it, we set out two circuits for each side of the equality sign
 
 .. code-block:: python
 
+    from pennylane.labs import pbc
+
     def circuit1(P1, P2, P3, P4):
-        controlled(P1, P2)
-        measure(P3 @ P4)
+        pbc.controlled(P1, P2)
+        pbc.measure(P3 @ P4)
 
     def circuit2(P1, P2, P3, P4):
-        measure(-P1 @ P3 @ P2 @ P4)
-        controlled(P1, P2)
+        pbc.measure(-P1 @ P3 @ P2 @ P4)
+        pbc.controlled(P1, P2)
 
 Next we set concrete values of the Pauliw ords to test the identity.
 
->>> P1, P3, P2, P4 = X(0)@X(1),Z(0)@X(1), Y(2)@X(3), X(2)@X(3)
+>>> P1, P3, P2, P4 = X(0) @ X(1), Z(0) @ X(1), Y(2) @ X(3), X(2) @ X(3)
 >>> assert qp.commutator(P1, P3) != qp.simplify(0 * P1 @ P3), "P1 and P3 need to anti-commute"
 >>> assert qp.commutator(P2, P4) != qp.simplify(0 * P2 @ P4), "P2 and P4 need to anti-commute"
 >>> wires = qp.wires.Wires.all_wires([P1.wires, P2.wires, P3.wires, P4.wires])
