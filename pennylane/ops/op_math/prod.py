@@ -395,7 +395,7 @@ class Prod(CompositeOp):
         or pure product of single PL operators.
         """
         # try using pauli_rep:
-        if pr := self.pauli_rep:
+        if pr := self.pauli_rep.copy():
             pr.prune()
             return pr.operation(wire_order=self.wires)
 

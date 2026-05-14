@@ -419,7 +419,7 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
-        if pr := self.pauli_rep:
+        if pr := self.pauli_rep.copy():
             pr.prune()
             return pr.operation(wire_order=self.wires)
 

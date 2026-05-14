@@ -168,7 +168,7 @@ class TestBoseWordMapping:
         op = christiansen_mapping(w, wire_map=wire_map)
         result = qp.sum(*ops)
 
-        op.prune()
+        op = op.simplify()
 
         assert pauli_sentence(op) == pauli_sentence(result)
 
