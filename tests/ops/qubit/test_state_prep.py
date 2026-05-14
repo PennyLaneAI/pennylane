@@ -223,6 +223,39 @@ class TestDecomposition:
 
         assert np.allclose(result, expected)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "state",
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+            [1, 1, 1],
+        ],
+    )
+    def test_BasisState_abstract_decomposition_correctness_jax_jit(self, state):
+        """Test that the abstract decomposition of BasisState produces the correct
+        state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
+        which decomposes BasisState with abstract parameters, exercising the
+        GlobalPhase+RX decomposition end-to-end without requiring Catalyst."""
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+
+        n_wires = len(state)
+
+        @qp.qnode(qp.device("reference.qubit", wires=n_wires))
+        def circuit(s):
+            qp.BasisState(s, wires=range(n_wires))
+            return qp.state()
+
+        result = jax.jit(circuit)(jnp.array(state))
+
+        expected = np.zeros(2**n_wires, dtype=complex)
+        expected[int("".join(str(b) for b in state), 2)] = 1.0
+
+        assert np.allclose(result, expected, atol=1e-6)
+
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
 
