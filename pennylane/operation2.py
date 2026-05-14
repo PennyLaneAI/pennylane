@@ -638,6 +638,79 @@ class Operator2(ABC):
 
     # ------------------ Operator actions ------------------
 
+    def label(
+        self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
+    ) -> str:
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qp.RX(1.23456, wires=0)
+        >>> op.label()
+        'RX'
+        >>> op.label(base_label="my_label")
+        'my_label'
+        >>> op = qp.RX(1.23456, wires=0)
+        >>> op.label()
+        'RX'
+        >>> op.label(decimals=2)
+        'RX\n(1.23)'
+        >>> op.label(base_label="my_label")
+        'my_label'
+        >>> op.label(decimals=2, base_label="my_label")
+        'my_label\n(1.23)'
+
+        Note that by default, operator wires and static inputs are not included in the label.
+        To override this behaviour, ``Operator2`` subclasses must override the ``label`` method.
+
+        If the operation has a matrix-valued parameter and a cache dictionary is provided,
+        unique matrices will be cached in the ``'matrices'`` key list. The label will contain
+        the index of the matrix in the ``'matrices'`` list.
+
+        >>> op2 = qp.QubitUnitary(np.eye(2), wires=0)
+        >>> cache = {'matrices': []}
+        >>> op2.label(cache=cache)
+        'U\n(M0)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+         [0., 1.]], requires_grad=True)]
+        >>> op3 = qp.QubitUnitary(np.eye(4), wires=(0,1))
+        >>> op3.label(cache=cache)
+        'U\n(M1)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+                [0., 1.]], requires_grad=True),
+        tensor([[1., 0., 0., 0.],
+                [0., 1., 0., 0.],
+                [0., 0., 1., 0.],
+                [0., 0., 0., 1.]], requires_grad=True)]
+
+        """
+        op_label = base_label or self.__class__.__name__
+
+        if len(self.dyn_argnames) == 0:
+            return op_label
+
+        # Format each parameter individually, excluding those that lead to empty strings
+        param_strings = [
+            out for p in self.dyn_args.values() if (out := _format(p, decimals, cache)) != ""
+        ]
+        inner_string = ",\n".join(param_strings)
+
+        if inner_string == "":
+            return f"{op_label}"
+        return f"{op_label}\n({inner_string})"
+
     def pow(self, z: float) -> list["Operator2"]:
         """A list of new operators equal to this one raised to the given power. This method is used to simplify
         :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
@@ -1194,6 +1267,10 @@ class Operator2(ABC):
         return NotImplemented
 
 
+class _DYNARG_MARKER:  # pylint: disable=too-few-public-methods
+    """Marker class to mark dynamic arguments for Pytree registration."""
+
+
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
     # pylint: disable=protected-access
@@ -1212,5 +1289,27 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     return object.__getattribute__(self, name)
 
 
-class _DYNARG_MARKER:  # pylint: disable=too-few-public-methods
-    """Marker class to mark dynamic arguments for Pytree registration."""
+def _format(x, decimals, cache):
+    """Format a scalar parameter or retrieve/store a matrix-valued parameter
+    from/to cache, formatting its position in the cache as parameter string."""
+    if len(qp.math.shape(x)) == 0:
+        # Scalar case
+        if decimals is None:
+            return ""
+        try:
+            return format(qp.math.toarray(x), f".{decimals}f")
+        except ValueError:
+            # If the parameter can't be displayed as a float
+            return format(x)
+
+    if cache is None or not isinstance(mat_cache := cache.get("matrices", None), list):
+        # No caching; matrices are not printed out fully, so no printing of this parameter
+        return ""
+
+    # Retrieve matrix location in cache, or write the matrix to cache as new entry
+    for i, mat in enumerate(mat_cache):
+        if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
+            return f"M{i}"
+    mat_num = len(mat_cache)
+    mat_cache.append(x)
+    return f"M{mat_num}"
