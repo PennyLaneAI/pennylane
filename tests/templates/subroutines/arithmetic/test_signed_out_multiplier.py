@@ -23,8 +23,23 @@ from pennylane.measurements import probs
 from pennylane.templates import BasisEmbedding
 
 from pennylane import device, qnode, SignedOutMultiplier, math
+from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
 dev = device("default.qubit")
+
+
+def bin_to_int(bits):
+    """Converts a binary array to an integer."""
+    return int("".join(map(str, bits)), 2)
+
+
+def twos_complement_value(bits):
+    """Calculates the value of a number encoded as a twos complement."""
+    sum = 0
+    for i, bit in enumerate(bits[1:][::-1]):
+        sum += (2 ** i) * bit
+    sum -= (2 ** (len(bits) - 1)) * bits[0]
+    return sum
 
 
 @qnode(dev)
@@ -62,18 +77,6 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
 )
 def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
     """Tests with a few examples that the Template yields correct results."""
-
-    def bin_to_int(bits):
-        """Converts a binary array to an integer."""
-        return int("".join(map(str, bits)), 2)
-
-    def twos_complement_value(bits):
-        """Calculates the value of a number encoded as a twos complement."""
-        sum = 0
-        for i, bit in enumerate(bits[1:][::-1]):
-            sum += (2 ** i) * bit
-        sum -= (2 ** (len(bits) - 1)) * bits[0]
-        return sum
 
     # get the initial state of our inputs
     x_state = [init_state[x] for x in x_wires]
@@ -114,5 +117,38 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
     # get the value encoded as a twos complement if the result is negative
     if binary_result[0] == 1:
         result = twos_complement_value(binary_result)
+
+    assert result == expected
+
+@pytest.mark.parametrize(
+    "aux, wires, init_state, work_wires",
+    [
+        (
+            3,
+            [0, 1, 2],
+            [1, 0, 1], # -3
+            [4, 5]
+        ),
+        (
+            3,
+            [0, 1, 2],
+            [0, 1, 1], # 3
+            [4, 5]
+        )
+    ]
+)
+def test_twos_complement_helper(aux, wires, init_state, work_wires):
+    """Tests that the twos complement helper works correctly."""
+
+    @qnode(dev)
+    def twos_complement(aux, wires, init_state, work_wires):
+        BasisEmbedding(init_state, wires)
+        _twos_complement_helper(wires, aux, work_wires)
+        return probs(wires=wires)
+
+    expected = -twos_complement_value(init_state)
+
+    result = twos_complement(aux, wires, init_state, work_wires)
+    result = math.ceil_log2(list(math.round(result)).index(1))
 
     assert result == expected
