@@ -116,7 +116,7 @@ def test_christiansen_bosonic(ordered):
 def test_christiansen_hamiltonian():
     """Test that christiansen_hamiltonian produces the expected hamiltonian."""
     cform_ham = christiansen_hamiltonian(pes=pes_object_3D, n_states=4, cubic=True)
-    cform_ham.prune()
+    cform_ham = cform_ham.simplify()
     assert len(cform_ham.pauli_rep) == 4160
 
     # Tolerance is low here because values smaller than 1e-5 get converted to 0.0

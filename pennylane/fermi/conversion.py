@@ -296,7 +296,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
             if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
@@ -567,7 +567,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
             if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])

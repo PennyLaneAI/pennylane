@@ -279,7 +279,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     else:
         if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):
             coeffs = qp.math.real(coeffs)
-        tapered_ham = qp.prune(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
+        tapered_ham = qp.simplify(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
 
     # If simplified Hamiltonian is missing wires due to simplification,
     # then add wires manually for consistency
