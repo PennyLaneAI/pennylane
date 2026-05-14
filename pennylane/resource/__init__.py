@@ -147,3 +147,4 @@ from .resource import (
     substitute,
 )
 from .specs import specs
+from .expression import Expression
