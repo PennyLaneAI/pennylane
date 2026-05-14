@@ -27,7 +27,6 @@ The following frameworks are currently supported:
 
 * NumPy
 * Autograd
-* TensorFlow
 * PyTorch
 * JAX
 
