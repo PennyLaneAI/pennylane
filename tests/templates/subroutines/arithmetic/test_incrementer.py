@@ -14,3 +14,49 @@
 """
 Tests for the Incrementer template.
 """
+import numpy as np
+import pytest
+from pennylane.measurements import sample
+
+from pennylane.templates import BasisEmbedding
+
+from pennylane import device, Incrementer, qnode
+
+dev = device("default.qubit")
+
+
+@qnode(dev, shots=1)
+def increment(wires, init_state, work_wires=None):
+    BasisEmbedding(init_state , wires)
+    Incrementer(wires, work_wires)
+    return sample()
+
+
+@pytest.mark.parametrize(
+    "wires, init_state, expected",
+    [
+        (
+            [0, 1, 2],
+            [1, 1, 0],
+            [1, 1, 1]
+        ),
+        (
+            [0, 1, 2],
+            [1, 0, 1],
+            [1, 1, 0]
+        ),
+        (
+            [0, 1, 2, 3],
+            [1, 0, 1, 1],
+            [1, 1, 0, 0]
+        ),
+        (
+            [0, 1, 2, 3],
+            [0, 0, 1, 1],
+            [0, 1, 0, 0]
+        ),
+    ]
+)
+def test_correct(wires, init_state, expected):
+    """Validates that the incrementer adds one."""
+    np.all(increment(wires, init_state) == expected)

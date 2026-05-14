@@ -17,6 +17,7 @@ Tests for the SignedOutMultiplier template.
 from functools import reduce
 
 import pytest
+from pennylane.ops import CNOT
 
 from pennylane.measurements import probs
 
@@ -126,6 +127,18 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
         (
             3,
             [0, 1, 2],
+            [1, 1, 1],  # -1
+            [4, 5]
+        ),
+        (
+            3,
+            [0, 1, 2],
+            [1, 1, 0], # -2
+            [4, 5]
+        ),
+        (
+            3,
+            [0, 1, 2],
             [1, 0, 1], # -3
             [4, 5]
         ),
@@ -142,8 +155,16 @@ def test_twos_complement_helper(aux, wires, init_state, work_wires):
 
     @qnode(dev)
     def twos_complement(aux, wires, init_state, work_wires):
+        # load value
         BasisEmbedding(init_state, wires)
+
+        # sign extend
+        CNOT([wires[0], aux])
+
+        # calculate twos complement
         _twos_complement_helper(wires, aux, work_wires)
+
+        # measure
         return probs(wires=wires)
 
     expected = -twos_complement_value(init_state)
