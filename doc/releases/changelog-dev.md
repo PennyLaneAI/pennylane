@@ -100,6 +100,9 @@
   
 <h3>Documentation 📝</h3>
 
+* Removed advertisements of TensorFlow integration in documentation.
+  [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
