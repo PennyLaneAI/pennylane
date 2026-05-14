@@ -123,32 +123,42 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
     assert result == expected
 
 @pytest.mark.parametrize(
-    "aux, wires, init_state, work_wires",
+    "aux, wires, init_state, work_wires, expected",
     [
         (
             3,
             [0, 1, 2],
             [1, 1, 1],  # -1
-            [4, 5]
+            [4, 5],
+            [0, 0, 1]
         ),
         (
             3,
             [0, 1, 2],
             [1, 1, 0], # -2
-            [4, 5]
+            [4, 5],
+            [0, 1, 0]
         ),
         (
             3,
             [0, 1, 2],
             [1, 0, 1], # -3
-            [4, 5]
+            [4, 5],
+            [0, 1, 1]
+        ),
+        (
+            3,
+            [0, 1, 2],
+            [1, 0, 0],  # -4
+            [4, 5],
+            [1, 0, 0]
         )
     ]
 )
-def test_twos_complement_helper(aux, wires, init_state, work_wires):
+def test_twos_complement_helper(aux, wires, init_state, work_wires, expected):
     """Tests that the twos complement helper works correctly."""
 
-    @qnode(dev)
+    @qnode(dev, shots=1)
     def twos_complement(aux, wires, init_state, work_wires):
         # load value
         BasisEmbedding(init_state, wires)
@@ -160,14 +170,13 @@ def test_twos_complement_helper(aux, wires, init_state, work_wires):
         _twos_complement_helper(wires, aux, work_wires)
 
         # measure
-        return probs(wires=wires)
+        return sample(wires=wires)
 
-    expected = -twos_complement_value(init_state)
+    expected_calc = -twos_complement_value(init_state)
+    assert expected_calc == bin_to_int(expected)
 
-    result = twos_complement(aux, wires, init_state, work_wires)
-    result = math.ceil_log2(list(math.round(result)).index(1))
-
-    assert result == expected
+    result = twos_complement(aux, wires, init_state, work_wires)[0]
+    assert np.all(result == expected)
 
 
 @pytest.mark.parametrize(

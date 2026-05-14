@@ -17,6 +17,8 @@ Contains the SignedOutMultiplier template.
 
 from collections import defaultdict
 
+from .adder import Adder
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
@@ -28,8 +30,8 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operator
 from pennylane.ops import CNOT, Controlled, PauliX
-from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
-from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
+from .incrementer import Incrementer
+from .out_multiplier import OutMultiplier
 from pennylane.wires import Wires, WiresLike
 
 
@@ -149,8 +151,9 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
     # Add one
     Controlled(
-        Incrementer(
-            wires=input_reg,
+        Adder(
+            k=1,
+            x_wires=input_reg,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=(aux_wire,),
