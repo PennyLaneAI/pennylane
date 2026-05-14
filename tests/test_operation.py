@@ -23,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -51,7 +52,7 @@ def test_basis_deprecation():
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
         assert MyOp(0).basis is None
 
- 
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 

@@ -202,6 +202,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
