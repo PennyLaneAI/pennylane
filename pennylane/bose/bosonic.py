@@ -336,7 +336,7 @@ class BoseWord(dict):
             bw_sorted_by_index[(i, k[1])] = v
 
         ordered_op = BoseWord(bw_sorted_by_index) + bw_comm.normal_order()
-        ordered_op.simplify(tol=1e-8)
+        ordered_op.prune(tol=1e-8)
         return ordered_op
 
     def shift_operator(self, initial_position, final_position):
