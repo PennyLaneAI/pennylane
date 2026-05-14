@@ -262,8 +262,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     def __hash__(self):
         fingerprint = (
             self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
-            getattr(self.mv, "hash", "None"),
+            hash(self.obs),
+            hash(self.mv),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
         )
