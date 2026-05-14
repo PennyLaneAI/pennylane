@@ -954,6 +954,10 @@ class QuantumScript:
     def adjoint(self) -> "QuantumScript":
         """Create a quantum script that is the adjoint of this one.
 
+        .. warning::
+            This method is deprecated and will be removed in v0.47.
+            Please use `QuantumScript([qp.adjoint(op) for op in reversed(tape.operations)])`.
+
         Adjointed quantum scripts are the conjugated and transposed version of the
         original script. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
