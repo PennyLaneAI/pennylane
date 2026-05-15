@@ -495,7 +495,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         # If available, grab the angles and try to fuse.
         try:
             cumulative_angles = math.stack(current_gate.single_qubit_rot_angles())
-            _, phase = math.convert_to_su2(current_gate.matrix(), return_global_phase=True)
+            _, phase = math.convert_to_su2(current_gate.matrix())
             global_phase += phase
         except (NotImplementedError, AttributeError):
             new_operations.append(current_gate)
@@ -535,7 +535,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             # wire as the current gate will be fused.
             try:
                 next_gate_angles = math.stack(next_gate.single_qubit_rot_angles())
-                _, phase = math.convert_to_su2(next_gate.matrix(), return_global_phase=True)
+                _, phase = math.convert_to_su2(next_gate.matrix())
                 global_phase += phase
             except (NotImplementedError, AttributeError):
                 break

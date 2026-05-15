@@ -130,7 +130,7 @@ ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
-    lam, theta, phi = math.decomposition.xzx_rotation_angles(mat)
+    lam, theta, phi, _ = math.decomposition.xzx_rotation_angles(mat)
     RotXZX(lam, theta, phi, wires)
 
 

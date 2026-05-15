@@ -28,22 +28,21 @@ except ModuleNotFoundError:  # pragma: no cover
     has_jax = False
 
 
-def zyz_rotation_angles(U, return_global_phase=False):
+def zyz_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+            global phase :math:`\alpha`.
 
     """
 
-    U, alpha = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The matrix is [[a, b],[c, d]], where a = cos(theta)*exp(i...)
     # and b = sin(theta)*exp(i...). Taking the magnitude of a and b
@@ -67,25 +66,24 @@ def zyz_rotation_angles(U, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     omega = math.squeeze(omega % (4 * np.pi))
 
-    return (phi, theta, omega, alpha) if return_global_phase else (phi, theta, omega)
+    return phi, theta, omega, alpha
 
 
-def xyx_rotation_angles(U, return_global_phase=False):
+def xyx_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Y rotations in the form
     :math:`e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+            global phase :math:`\alpha`.
 
     """
 
-    U, alpha = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
     # and C^T @ RY @ C = RY. Therefore, consider U = RX @ RY @ RX, we find that
@@ -95,26 +93,25 @@ def xyx_rotation_angles(U, return_global_phase=False):
     C = math.cast_like(math.array([[1, -1], [1, 1]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    lam, theta, phi = zyz_rotation_angles(U)
-    return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
+    lam, theta, phi, _ = zyz_rotation_angles(U)
+    return lam, theta, phi, alpha
 
 
-def xzx_rotation_angles(U, return_global_phase=False):
+def xzx_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Z rotations in the form
     :math:`e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+            global phase :math:`\alpha`.
 
     """
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
     # and C^T @ RZ @ C = RY. Therefore, consider U = RX @ RZ @ RX, we find that
@@ -124,26 +121,25 @@ def xzx_rotation_angles(U, return_global_phase=False):
     C = math.cast_like(math.array([[1, -1j], [1, 1j]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    lam, theta, phi = zyz_rotation_angles(U)
-    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
+    lam, theta, phi, _ = zyz_rotation_angles(U)
+    return lam, theta, phi, alpha
 
 
-def zxz_rotation_angles(U, return_global_phase=False):
+def zxz_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and X rotations in the form
     :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+            global phase :math:`\alpha`.
 
     """
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
@@ -161,7 +157,7 @@ def zxz_rotation_angles(U, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     lam = math.squeeze(lam % (4 * np.pi))
 
-    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
+    return lam, theta, phi, alpha
 
 
 def su2su2_to_tensor_products(U):

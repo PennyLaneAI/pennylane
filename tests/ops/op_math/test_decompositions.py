@@ -988,7 +988,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_compute_num_cnots_identifies_2_cnots(self, U):
         """Test that the new Shende–Bullock–Markov criterion correctly
         classifies 2-CNOT unitaries."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
         assert _compute_num_cnots(U) == 2
 
     @pytest.mark.unit
@@ -996,7 +996,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots_gate_count(self, U):
         """Test that the dispatcher selects the new 2-CNOT decomposition
         and that the resulting circuit actually contains exactly 2 CNOTs."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         ops = two_qubit_decomposition(U, wires=[0, 1])
 
@@ -1018,7 +1018,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
 
@@ -1037,7 +1037,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
@@ -1054,7 +1054,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
 
@@ -1071,7 +1071,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U, _ = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 
