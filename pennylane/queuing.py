@@ -179,13 +179,12 @@ use the :meth:`~.queuing.QueuingManager.stop_recording` context upon constructio
 """
 
 import copy
-import warnings
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
 from typing import Optional, Union
 
-from pennylane.exceptions import PennyLaneDeprecationWarning, QueuingError
+from pennylane.exceptions import QueuingError
 
 
 class WrappedObj:
@@ -573,11 +572,9 @@ def process_queue(
                 "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
             )
         if obj._queue_category is None:
-            warnings.warn(
-                "Preventing an object from being queued via `_queue_category=None` is deprecated.",
-                PennyLaneDeprecationWarning,
+            raise ValueError(
+                f"_queue_category can no longer be set to None. Got None on object {obj}"
             )
-            continue
 
         if list_order[obj._queue_category] > list_order[current_list]:
             current_list = obj._queue_category

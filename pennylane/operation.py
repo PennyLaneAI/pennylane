@@ -1557,7 +1557,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @property
-    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
+    def _queue_category(self) -> Literal["_ops", "_measurements"]:
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
         This property is a temporary solution that should not exist long-term and should not be
@@ -1566,7 +1566,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None` (deprecated)
         """
         return "_ops"
 

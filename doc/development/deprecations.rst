@@ -18,6 +18,12 @@ Pending deprecations
 
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+  
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+  
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
 
   - Deprecated in v0.46
   - Will be removed in v0.47
@@ -28,8 +34,14 @@ Pending deprecations
   :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
   subclasses of ``Operator``.
 
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -90,6 +102,15 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
 
