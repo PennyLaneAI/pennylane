@@ -107,3 +107,61 @@ class TestExpression:
             Expression({("x",): 1}).__int__()
         with pytest.raises(ValueError):
             Expression({("x",): 1, ("y",): 1}).__int__()
+
+    @pytest.mark.parametrize(
+        "expr, expected",
+        [
+            (Expression({}), "0"),
+            (Expression({(): 5}), "5"),
+            (Expression({("x",): 1}), "x"),
+            (Expression({("x",): 3}), "3*x"),
+            (Expression({("x", "y"): 2}), "2*x*y"),
+        ],
+    )
+    def test_str(self, expr, expected):
+        """Test that the __str__ method returns the expected string representation of the expression."""
+        assert str(expr) == expected
+
+    def test_str2(self, sample_expr):
+        # Needs to be separate since a fixture can't be used within parametrize
+        assert str(sample_expr) == "z*z + x*y + 2*x + 5"
+
+    def test_add(self):
+        expr1 = Expression({("x",): 1, (): 1})
+        expr2 = Expression({("y",): 2, (): 2})
+        expr3 = expr1 + expr2
+        assert expr3._data == {("x",): 1, ("y",): 2, (): 3}
+        assert expr1 + expr2 == expr2 + expr1
+
+    def test_add_with_overlapping_vars(self):
+        expr1 = Expression({("x",): 1, (): 1})
+        expr2 = Expression({("x",): 2, (): 2})
+        expr3 = expr1 + expr2
+        assert expr3._data == {("x",): 3, (): 3}
+        assert expr1 + expr2 == expr2 + expr1
+
+    def test_add_int(self):
+        expr = Expression({("x",): 1, (): 2})
+        new_expr = expr + 3
+        assert new_expr._data == {("x",): 1, (): 5}
+        assert expr + 3 == 3 + expr
+
+    def test_mul(self):
+        expr1 = Expression({("x",): 1, (): 2})
+        expr2 = Expression({("y",): 3, (): 4})
+        expr3 = expr1 * expr2
+        assert expr3._data == {("x", "y"): 3, ("x",): 4, ("y",): 6, (): 8}
+        assert expr1 * expr2 == expr2 * expr1
+
+    def test_mul_with_overlapping_vars(self):
+        expr1 = Expression({("x",): 1, (): 2})
+        expr2 = Expression({("x",): 3, (): 4})
+        expr3 = expr1 * expr2
+        assert expr3._data == {("x", "x"): 3, ("x",): 10, (): 8}
+        assert expr1 * expr2 == expr2 * expr1
+
+    def test_mul_int(self):
+        expr = Expression({("x",): 1, (): 2})
+        new_expr = expr * 3
+        assert new_expr._data == {("x",): 3, (): 6}
+        assert expr * 3 == 3 * expr

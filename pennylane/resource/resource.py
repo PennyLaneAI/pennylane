@@ -22,6 +22,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
+from functools import cache
 from string import ascii_lowercase
 from typing import Any
 
@@ -31,6 +32,7 @@ from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
+from .expression import Expression
 
 
 def _count_to_str(count: int) -> str:
@@ -254,6 +256,9 @@ class SpecsResources:
     Class for storing resource information for a quantum circuit. Contains attributes which store
     key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
 
+    Note that this class is intended to be immutable. Modifying the attributes after creation may
+    lead to unexpected behavior.
+
     Args:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
         gate_sizes (dict[int, int]): A dictionary mapping gate sizes to their counts.
@@ -395,6 +400,113 @@ class SpecsResources:
         """Displays __str__ in ipython instead of __repr__"""
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         print(str(self))
+
+
+@dataclass(frozen=True)
+class SymbolicSpecsResources(SpecsResources):
+    """
+    Class for storing symbolic resource information for a quantum circuit. Contains attributes
+    which store expressions representing the resources, allowing for symbolic manipulation and
+    substitution of variables.
+
+    This class is intended to be immutable. Modifying the attributes after creation may
+    lead to unexpected behavior.
+
+    Note that some of the attributes from the parent class, :class:`SpecsResources`, are overridden
+    here to be of type :class:`Expression` instead of `int`.
+    """
+
+    # gate_types: dict[str, Expression]
+    # gate_sizes: dict[int, Expression]
+    # measurements: dict[str, Expression]
+    # num_allocs: Expression
+    # depth: Expression | None = None
+
+    def __post_init__(self):
+        # Make sure that all fields use expressions, (converting ints to constant expressions where necessary)
+        if self.depth is not None and isinstance(self.depth, int):
+            object.__setattr__(
+                self,
+                "depth",
+                Expression({(): self.depth}, _skip_copy=False, _skip_normalization=True),
+            )
+        if isinstance(self.num_allocs, int):
+            object.__setattr__(
+                self,
+                "num_allocs",
+                Expression({(): self.num_allocs}, _skip_copy=False, _skip_normalization=True),
+            )
+
+        for gate, count in self.gate_types.items():
+            if isinstance(count, int):
+                self.gate_types[gate] = Expression(
+                    {(): count}, _skip_copy=False, _skip_normalization=True
+                )
+        for size, count in self.gate_sizes.items():
+            if isinstance(count, int):
+                self.gate_sizes[size] = Expression(
+                    {(): count}, _skip_copy=False, _skip_normalization=True
+                )
+        for meas, count in self.measurements.items():
+            if isinstance(count, int):
+                self.measurements[meas] = Expression(
+                    {(): count}, _skip_copy=False, _skip_normalization=True
+                )
+
+    @property
+    @cache
+    def vars(self) -> set[str]:
+        vars = set()
+
+        if self.depth is not None:
+            vars |= self.depth.vars
+        vars |= self.num_allocs.vars
+
+        for expr in self.gate_types.values():
+            vars |= expr.vars
+        for expr in self.gate_sizes.values():
+            vars |= expr.vars
+        for expr in self.measurements.values():
+            vars |= expr.vars
+
+        return vars
+
+    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
+        substitutions.update(kwargs)
+
+        subs_vars = set(substitutions.keys())
+        if not all(var in self.vars for var in subs_vars):
+            raise ValueError(
+                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
+            )
+
+        num_allocs = self.num_allocs.subs(substitutions)
+        depth = self.depth.subs(substitutions) if self.depth is not None else None
+
+        gate_types = {k: v.subs(substitutions) for k, v in self.gate_types.items()}
+        gate_sizes = {k: v.subs(substitutions) for k, v in self.gate_sizes.items()}
+        measurements = {k: v.subs(substitutions) for k, v in self.measurements.items()}
+
+        if len(self.vars - subs_vars) == 0:
+            # There are no variables remaining, so this can be resolved down to a `SpecsResources`
+            return SpecsResources(
+                gate_types={k: int(v) for k, v in gate_types.items()},
+                gate_sizes={k: int(v) for k, v in gate_sizes.items()},
+                measurements={k: int(v) for k, v in measurements.items()},
+                num_allocs=int(num_allocs),
+                depth=int(depth) if depth is not None else None,
+            )
+
+        return SymbolicSpecsResources(
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements=measurements,
+            num_allocs=num_allocs,
+            depth=depth,
+        )
+
+    def __call__(self, **kwargs):
+        return self.subs(kwargs)
 
 
 @dataclass(frozen=True)
