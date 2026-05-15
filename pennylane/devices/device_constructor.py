@@ -14,7 +14,7 @@
 """
 This module contains code for the main device construction delegation logic.
 """
-
+import warnings
 from importlib import metadata
 from sys import version_info
 
@@ -23,7 +23,7 @@ from packaging.version import Version
 
 from pennylane._version import __version__
 from pennylane.configuration import default_config
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 
 from ._legacy_device import Device as LegacyDevice
 from .legacy_facade import LegacyDeviceFacade
@@ -165,6 +165,7 @@ def device(name, *args, **kwargs):
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([ 1., -1.,  1.]), array([1., 1., 1., 1.]), array([1., 1., 1., 1.]))
     """
+
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
         # Attempt to refresh the devices, in case the user

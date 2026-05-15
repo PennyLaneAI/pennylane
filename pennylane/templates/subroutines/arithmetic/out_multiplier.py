@@ -559,8 +559,9 @@ def _out_multiplier_with_caddsub_resources(
     resources[add_rep] += 1
 
     # increment 2^(n+m) bit
-    size = k - n - m
-    resources[resource_rep(Incrementer, num_wires=size)] = 1
+    if k > n + m:
+        size = k - n - m
+        resources[resource_rep(Incrementer, num_wires=size + num_work_wires - 1, num_work_wires=num_work_wires - 1)] = 1
 
     # Second negation
     resources[x_rep] += k
@@ -736,7 +737,7 @@ def _out_multiplier_with_caddsub(
     SemiAdder(y_wires, output_wires, work_wires)
     if k > n + m:
         increment_wires = output_wires[: k - n - m]
-        Incrementer(increment_wires, work_wires)
+        Incrementer(increment_wires + work_wires, work_wires)
     _ = [X(w) for w in output_wires]
 
     # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
