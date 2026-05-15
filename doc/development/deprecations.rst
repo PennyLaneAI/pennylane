@@ -10,7 +10,7 @@ Pending deprecations
 --------------------
 
 * ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
-  whether or not two operations commute. For example, ``is_commuting(op, qp.X(op.wires[0]))`` can
+  whether or not two operations commute. For example, ``qp.is_commuting(op, qp.X(op.wires[0]))`` can
   be used to determine if ``op`` is in the X basis.
 
   - Deprecated in v0.46
