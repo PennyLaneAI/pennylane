@@ -291,7 +291,8 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        # consts go after the len(branches) conditions, first const at len(branches)
+        # consts go after the len(branches) +1 conditions, first const at len(branches) +1
+        # +1 due to `True` inserted for otherwise_fn
         end_const_ind = len(self.branch_fns) + 1
         conditions = []
         jaxpr_branches = []
