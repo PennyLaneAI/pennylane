@@ -193,7 +193,7 @@ class TestConstruction:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_op._eigs[hash(diag_op)]
+        eigs_cache = diag_op._eigs[diag_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 

@@ -271,12 +271,12 @@ class CompositeOp(Operator):
         """
         eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
-        if hash(self) not in self._eigs:
+        if self not in self._eigs:
             mat = self.matrix()
             w, U = eigen_func(mat)
-            self._eigs[hash(self)] = {"eigvec": U, "eigval": w}
+            self._eigs[self] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[hash(self)]
+        return self._eigs[self]
 
     @property
     def has_diagonalizing_gates(self):
