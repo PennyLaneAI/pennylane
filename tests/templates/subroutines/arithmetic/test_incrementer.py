@@ -17,6 +17,8 @@ Tests for the Incrementer template.
 
 import numpy as np
 import pytest
+from pennylane.ops import PauliX, Controlled
+
 from pennylane.decomposition import list_decomps
 
 from pennylane import Incrementer, device, qnode
@@ -72,4 +74,36 @@ def test_decomposition(
 def test_correct(wires, init_state, expected, work_wires):
     """Validates that the incrementer adds one."""
     result = increment(wires, init_state, work_wires)
+    assert np.all(result == expected)
+
+
+@qnode(dev, shots=1)
+def controlled_increment(wires, init_state, work_wires=None, control=0):
+    BasisEmbedding(init_state, wires)
+    if control:
+        PauliX(len(wires + work_wires))
+    Controlled(
+        Incrementer(wires + work_wires, work_wires),
+        [len(wires + work_wires)],
+        control_values=[1]
+    )
+    return sample(wires=wires)
+
+
+@pytest.mark.parametrize(
+    "wires, init_state, expected, work_wires, control",
+    [
+        # enough work wires for our rule
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10], 0),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10], 1),
+        # not enough work wires
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], 0),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], 1),
+        # no work wires
+        ([0, 1, 2, 3, 4, 5], [0, 0, 1, 0, 0, 0], [0, 0, 1, 0, 0, 0], [], 0),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 1, 0, 0, 0], [0, 0, 1, 0, 0, 1], [], 1),
+    ]
+)
+def test_controlled(wires, init_state, expected, work_wires, control):
+    result = controlled_increment(wires, init_state, work_wires, control)
     assert np.all(result == expected)
