@@ -17,9 +17,11 @@ Tests for the Incrementer template.
 
 import numpy as np
 import pytest
+from pennylane.decomposition import list_decomps
 
 from pennylane import Incrementer, device, qnode
 from pennylane.measurements import sample
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 
 dev = device("default.qubit")
@@ -30,6 +32,24 @@ def increment(wires, init_state, work_wires=None):
     BasisEmbedding(init_state, wires)
     Incrementer(wires + work_wires, work_wires)
     return sample(wires=wires)
+
+
+
+@pytest.mark.parametrize(
+    "wires, work_wires",
+    [
+        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), [])  # no work wires
+    ]
+)
+def test_decomposition(
+    wires, work_wires
+):
+    op = Incrementer(wires, work_wires)
+
+    for rule in list_decomps(Incrementer):
+        _test_decomposition_rule(op, rule)
 
 
 @pytest.mark.parametrize(

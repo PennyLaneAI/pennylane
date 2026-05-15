@@ -78,9 +78,11 @@ class Incrementer(Operator):
     4: ─├●─├●─├●─├●─╭X────┤
     5: ─├●─├●─├●─├●─├●─╭X─┤
     6: ─╰●─╰●─╰●─╰●─╰●─╰●─┤
+
+    TODO: add circuit with optimized decomp
     """
 
-    resource_keys = {"num_wires"}
+    resource_keys = {"num_wires", "num_work_wires"}
 
     def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
         wires = Wires(wires)
@@ -97,20 +99,25 @@ class Incrementer(Operator):
         }
 
 
-def _incrementer_resources(num_wires):
+def _incrementer_resources(num_wires, num_work_wires, **_):
+    num_wires = num_wires - num_work_wires
     resources = {}
     if num_wires > 1:
         # Forward ladder
         resources[resource_rep(TemporaryAND)] = num_wires - 2
         # Backward ladder plus trailing CNOT
-        resources[resource_rep(CNOT)] = num_wires - 3 + 1
-        resources[adjoint_resource_rep(TemporaryAND, {})] = num_wires - 3
+        resources[resource_rep(CNOT)] = num_wires - 2 + 1
+        resources[adjoint_resource_rep(TemporaryAND, {})] = num_wires - 2
     resources[resource_rep(X)] = 1
     return resources
 
 
 def _work_wire_condition(num_wires, num_work_wires, **_):
-    return num_work_wires >= num_wires - num_work_wires - 1
+    return (num_work_wires + 1) >= (num_wires - num_work_wires)
+
+
+def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
+    return not _work_wire_condition(num_wires, num_work_wires)
 
 
 def _decompose_mcxs(wires, work_wires, control_wires=None):
@@ -151,13 +158,14 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
     resources = {}
 
-    for i in range(1, num_wires):
+    for i in range(num_wires - num_work_wires - 1, 1, -1):
         resources[
             resource_rep(
                 MultiControlledX,
-                num_control_wires=i,
+                num_control_wires=i - 1,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
+                work_wire_type="borrowed"
             )
         ] = 1
 
@@ -166,6 +174,7 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
     return resources
 
 
+@register_condition(_work_wire_inverse_condition)
 @register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
@@ -178,7 +187,8 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i, wires, num_wires):
         MultiControlledX(
-            [wires[wire + (num_wires - i)] for wire in range(i)][::-1], [1 for _ in range(i - 1)]
+            [wires[wire + (num_wires - i)] for wire in range(i)][::-1], [1 for _ in range(i - 1)],
+            work_wires=work_wires
         )
         return wires, num_wires
 
@@ -198,7 +208,7 @@ def _incrementer_decomposition(wires, work_wires, **_):
     X(wires[-len(work_wires) - 1])
 
 
-def _controlled_incrementer_resources(num_wires):
+def _controlled_incrementer_resources(num_wires, **_):
     resources = _incrementer_resources(num_wires)
     resources[resource_rep(X)] = 0
     return resources
