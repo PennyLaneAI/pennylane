@@ -65,7 +65,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         )
 
         @qp.transforms.decompose(
-                gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},
+                gate_set={"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"},
                 fixed_decomps={qp.RZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
@@ -79,7 +79,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'GlobalPhase': 1, 'C(BasisEmbedding)': 2, 'SemiAdder': 1}
+    {'GlobalPhase': 1, 'C(BasisState)': 2, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
          0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤  State
      aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤  State
@@ -117,7 +117,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         )
         compute_op = uncompute_op = qml.resource_rep(
             qml.ops.Controlled,
-            base_class=qml.BasisEmbedding,
+            base_class=qml.BasisState,
             base_params={"num_wires": len(angle_wires)},
             num_control_wires=1,
             num_zero_control_values=0,
