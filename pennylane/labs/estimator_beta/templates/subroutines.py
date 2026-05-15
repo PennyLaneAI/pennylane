@@ -1525,11 +1525,17 @@ class SelectCopyQROM(ResourceOperator):
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
-        batch_size (int): A parameter :math:`\lambda` that determines if data will be
+        available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
+            as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+            should not be provided and will be determined from this value.
+        batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
             loaded in parallel by adding more rows following Figure 1.C of
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-        bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
-            of bits to load per QROM iteration.
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
+            then the `bits_per_iter` must also be specified, these will be used to determine
+            `available_dirty_aux`.
+        bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
+            the number of bits to load per QROM iteration. If this parameter is provided, then the
+            `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
@@ -1543,23 +1549,22 @@ class SelectCopyQROM(ResourceOperator):
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> qrom = qre.SelectCopyQROM(
-    ...     num_bitstrings = 100,
+    ...     num_bitstrings = 10e8,
     ...     size_bitstring = 16,
-    ...     batch_size = 2,
-    ...     bits_per_iter = 4,
+    ...     available_dirty_aux = 256,
     ... )
     >>> print(qre.estimate(qrom))
     --- Resources: ---
-     Total wires: 32
-       algorithmic wires: 23
-       allocated wires: 9
-         zero state: 9
+     Total wires: 311
+       algorithmic wires: 46
+       allocated wires: 265
+         zero state: 265
          any state: 0
-     Total gates : 2.905E+3
-       'Toffoli': 234,
-       'CNOT': 1.491E+3,
-       'X': 478,
-       'Hadamard': 702
+     Total gates : 1.700E+10
+       'Toffoli': 1.250E+8,
+       'CNOT': 1.625E+10,
+       'X': 2.500E+8,
+       'Hadamard': 3.750E+8
     """
 
     resource_keys = {
@@ -1567,10 +1572,101 @@ class SelectCopyQROM(ResourceOperator):
         "size_bitstring",
         "batch_size",
         "bits_per_iter",
+        "available_dirty_aux",
     }
 
+    @staticmethod
+    def _optimize_params(N, b, max_q):
+        """Brute force optimization over parameter space"""
+
+        def cost_theorem1(N: int, b: int, mu: int, lam: int) -> int:
+            """Evaluate the Toffoli cost from Theorem 1 (Eq. A1)."""
+            alpha = math.ceil(b / mu)
+            beta = math.floor(b / mu)
+            term1 = (alpha + 1) * (math.ceil(N / lam) + lam - 5)
+            term2 = (lam - 1) * (mu * (beta + 1) + b % mu)
+            return term1 + term2
+
+        highest_l_index = math.floor(math.log2(N - 1))
+
+        eligible_k = list(range(1, b + 1))
+        eligible_l = [2**i for i in range(1, highest_l_index + 1)]
+
+        candidates = []
+        costs = []
+
+        for k in eligible_k:
+            for l in eligible_l:
+                if k * (l - 1) <= max_q:
+                    cost = cost_theorem1(N, b, l, k)
+                    candidates.append((l, k))
+                    costs.append(cost)
+
+        min_cost = min(costs)
+        index = costs.index(min_cost)
+        return candidates[index]
+
+    @staticmethod
+    def _resolve_params(
+        num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+    ):
+        r"""Input validation for the various parameters and optimizes the batch_size and bits_per_iter.
+
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
+                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                should not be provided and will be determined from this value.
+            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
+                loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
+                then the `bits_per_iter` must also be specified, these will be used to determine `available_dirty_aux`.
+            bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
+                of bits to load per QROM iteration. If this parameter is provided, then the `batch_size` must also
+                be specified, these will be used to determine `available_dirty_aux`.
+
+        Raises:
+
+
+        Returns:
+            tuple(int, int): The optimized batch_size and bits_per_iter.
+        """
+        if available_dirty_aux is None:
+            batch_size = batch_size or 2  # default to 2 if None
+            bits_per_iter = bits_per_iter or 1  # default to 1 if None
+
+            exponent = int(math.log2(batch_size))
+            if 2**exponent != batch_size or (batch_size == 1):
+                raise ValueError(
+                    f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
+                )
+
+            if bits_per_iter > size_bitstring:
+                raise ValueError(
+                    f"`bits_per_iter` must not be greater than the size of the bitstring ({size_bitstring}), got {bits_per_iter}."
+                )
+
+        else:  # available_dirty_aux is not None
+            if not isinstance(available_dirty_aux, int) or available_dirty_aux <= 0:
+                raise ValueError(
+                    f"available_dirty_aux must be a positive integer, got {available_dirty_aux}"
+                )
+
+            batch_size, bits_per_iter = SelectCopyQROM._optimize_params(
+                num_bitstrings, size_bitstring, available_dirty_aux
+            )
+
+        return (batch_size, bits_per_iter)
+
     def __init__(
-        self, num_bitstrings, size_bitstring, batch_size=2, bits_per_iter=1, wires=None
+        self,
+        num_bitstrings,
+        size_bitstring,
+        available_dirty_aux=None,
+        batch_size=None,
+        bits_per_iter=None,
+        wires=None,
     ) -> None:
 
         self.num_bitstrings = num_bitstrings
@@ -1579,20 +1675,16 @@ class SelectCopyQROM(ResourceOperator):
         self.num_control_wires = ceil_log2(num_bitstrings)
         self.num_wires = size_bitstring + self.num_control_wires
 
-        if bits_per_iter > size_bitstring:
-            raise ValueError(
-                f"`bits_per_iter` must not be greater than the size of the bitstring ({size_bitstring}), got {bits_per_iter}."
-            )
-
-        self.bits_per_iter = bits_per_iter
-
-        exponent = int(math.log2(batch_size))
-        if 2**exponent != batch_size or (batch_size == 1):
-            raise ValueError(
-                f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
-            )
-
+        batch_size, bits_per_iter = self._resolve_params(
+            num_bitstrings,
+            size_bitstring,
+            available_dirty_aux,
+            batch_size,
+            bits_per_iter,
+        )
         self.batch_size = batch_size
+        self.bits_per_iter = bits_per_iter
+        self.available_dirty_aux = available_dirty_aux
 
         if wires is not None and len(wires) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {wires}")
@@ -1606,16 +1698,24 @@ class SelectCopyQROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * batch_size (int): A parameter :math:`\lambda` that
-                  determines if data will be loaded in parallel by adding more rows following
-                  Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                * bits_per_iter (int): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
-                  representing the number of bits to load per QROM iteration.
+                * available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be
+                  used as parallel loading space. If this parameter is provided, `batch_size` and
+                  `bits_per_iter` should not be provided and will be determined from this value.
+                * batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
+                  loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024)
+                  <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided, then the
+                  `bits_per_iter` must also be specified, these will be used to determine
+                  `available_dirty_aux`.
+                * bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
+                  representing the number of bits to load per QROM iteration. If this parameter is
+                  provided, then the `batch_size` must also be specified, these will be used to determine
+                  `available_dirty_aux`.
         """
 
         return {
             "num_bitstrings": self.num_bitstrings,
             "size_bitstring": self.size_bitstring,
+            "available_dirty_aux": self.available_dirty_aux,
             "batch_size": self.batch_size,
             "bits_per_iter": self.bits_per_iter,
         }
@@ -1625,8 +1725,9 @@ class SelectCopyQROM(ResourceOperator):
         cls,
         num_bitstrings: int,
         size_bitstring: int,
-        batch_size: int = 2,
-        bits_per_iter: int = 1,
+        available_dirty_aux: int | None = None,
+        batch_size: int | None = None,
+        bits_per_iter: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1634,30 +1735,34 @@ class SelectCopyQROM(ResourceOperator):
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            batch_size (int): A parameter :math:`\lambda` that determines if data will be
+            available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
+                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                should not be provided and will be determined from this value.
+            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-            bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
-                the number of bits to load per QROM iteration.
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
+                then the `bits_per_iter` must also be specified, these will be used to determine
+                `available_dirty_aux`.
+            bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
+                the number of bits to load per QROM iteration. If this parameter is provided, then the
+                `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
 
-        exponent = int(math.log2(batch_size))
-        if 2**exponent != batch_size or (batch_size == 1):
-            raise ValueError(
-                f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
-            )
-
-        if bits_per_iter > size_bitstring:
-            raise ValueError(
-                f"`bits_per_iter` must not be greater than the size of the bitstring ({size_bitstring}), got {bits_per_iter}."
-            )
+        batch_size, bits_per_iter = SelectCopyQROM._resolve_params(
+            num_bitstrings,
+            size_bitstring,
+            available_dirty_aux,
+            batch_size,
+            bits_per_iter,
+        )
 
         params = {
             "num_bitstrings": num_bitstrings,
             "size_bitstring": size_bitstring,
+            "available_dirty_aux": available_dirty_aux,
             "batch_size": batch_size,
             "bits_per_iter": bits_per_iter,
         }
@@ -1669,6 +1774,7 @@ class SelectCopyQROM(ResourceOperator):
         cls,
         num_bitstrings: int,
         size_bitstring: int,
+        available_dirty_aux: int | None = None,
         batch_size: int = 2,
         bits_per_iter: int = 1,
     ):
@@ -1677,14 +1783,17 @@ class SelectCopyQROM(ResourceOperator):
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            batch_size (int): A parameter :math:`\lambda` that determines if data will be
+            available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
+                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                should not be provided and will be determined from this value.
+            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-            bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
-                of bits to load per QROM iteration.
-            wires (WiresLike | None): The wires the operation acts on (control and target), excluding
-                any additional qubits allocated or borrowed during the decomposition (e.g unary
-                iteration wires).
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
+                then the `bits_per_iter` must also be specified, these will be used to determine
+                `available_dirty_aux`.
+            bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
+                the number of bits to load per QROM iteration. If this parameter is provided, then the
+                `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
 
         Resources:
             The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
@@ -1716,7 +1825,7 @@ class SelectCopyQROM(ResourceOperator):
 
             ## --- Select2 loads all data again except for 0 index ---
             select_2_cost = cls._unary_iter(
-                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+                num_data_blocks, x, num_bit_flips - (num_bit_flips // num_data_blocks)
             )
             gate_cost.extend(select_2_cost)
 
@@ -1753,7 +1862,7 @@ class SelectCopyQROM(ResourceOperator):
 
             ## --- Select2 loads all data again except for 0 index ---
             select_2_cost = cls._unary_iter(
-                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+                num_data_blocks, x, num_bit_flips - (num_bit_flips // num_data_blocks)
             )
             gate_cost.extend(select_2_cost)
 
