@@ -18,10 +18,9 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, device, draw, qnode
+from pennylane import Incrementer, device, qnode
 from pennylane.measurements import sample
-from pennylane.ops import CNOT, X, adjoint
-from pennylane.templates import BasisEmbedding, TemporaryAND
+from pennylane.templates import BasisEmbedding
 
 dev = device("default.qubit")
 

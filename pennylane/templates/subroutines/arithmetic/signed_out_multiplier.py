@@ -151,9 +151,8 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
     # Add one
     Controlled(
-        Adder(
-            k=1,
-            x_wires=input_reg,
+        Incrementer(
+            wires=input_reg + work_wires,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=(aux_wire,),
