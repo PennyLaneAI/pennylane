@@ -937,7 +937,10 @@ class TestOperationProperties:
         base = qp.RX(1.2, wires=0)
         op: Pow = power_method(base, 2.1)
 
-        assert base.basis == op.basis
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="Operation.basis is deprecated"
+        ):
+            assert base.basis == op.basis
 
     def test_control_wires(self, power_method):
         """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
