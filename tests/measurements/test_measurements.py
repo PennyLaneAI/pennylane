@@ -145,8 +145,10 @@ def test_hash_mcms():
 
     mp1 = qp.sample(m0)
     mp2 = qp.sample(m1)
+    mp3 = qp.sample(m0)
 
     assert hash(mp1) != hash(mp2)
+    assert hash(mp1) == hash(mp3)
 
 
 mv = qp.measure(0)
