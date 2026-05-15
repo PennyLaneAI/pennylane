@@ -307,7 +307,7 @@ class QNode:
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
-            ``pennylane.concurrency.executors.get_supported_backends``.
+            :func:`qp.concurrency.executors.get_supported_backends <.concurrency.executors.get_supported_backends>`.
             The default value is :class:`~.concurrency.executors.native.multiproc.MPPoolExec`.
 
     **Example**
@@ -651,23 +651,6 @@ class QNode:
     @interface.setter
     def interface(self, value: str):
         self._interface = Interface(value)
-
-    @property
-    def transform_program(self) -> CompilePipeline:
-        """The transform program used by the QNode.
-
-        .. warning::
-
-            The ``transform_program`` property of the QNode has been renamed to ``compile_pipeline``.
-            Access through ``transform_program`` will be removed in PennyLane v0.46.
-
-        """
-        warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-            "Access through 'transform_program' will be removed in PennyLane v0.46.",
-            PennyLaneDeprecationWarning,
-        )
-        return self.compile_pipeline
 
     @property
     def compile_pipeline(self) -> CompilePipeline:

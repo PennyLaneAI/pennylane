@@ -43,7 +43,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, id=None, lazy=True):
+def prod(*ops, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -130,16 +130,15 @@ def prod(*ops, id=None, lazy=True):
                 if qp.QueuingManager.recording():
                     op = qp.apply(op)
                 return op
-            return prod(*qs.operations[::-1], id=id, lazy=lazy)
+            return prod(*qs.operations[::-1], lazy=lazy)
 
         return wrapper
 
     if lazy:
-        return Prod(*ops, id=id)
+        return Prod(*ops)
 
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        id=id,
     )
 
     for op in ops:
@@ -310,7 +309,9 @@ class Prod(CompositeOp):
         else:
             full_mat = qp.math.stack(
                 [
-                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    reduce(
+                        math.kron, [m[i] if b else m for m, b in zip(mats, batched, strict=True)]
+                    )
                     for i in range(self.batch_size)
                 ]
             )
@@ -339,23 +340,6 @@ class Prod(CompositeOp):
     @handle_recursion_error
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
-
-    # pylint: disable=protected-access
-    @property
-    @handle_recursion_error
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-        * `"_ops"`
-        * `"_measurements"`
-        * `None`
-
-        Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
-        """
-        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

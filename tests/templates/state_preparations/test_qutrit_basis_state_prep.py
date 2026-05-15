@@ -286,9 +286,3 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis states must only consist of"):
             basis_state = np.array([0, 3])
             circuit(basis_state, obs)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.QutritBasisStatePreparation(np.array([0, 2]), wires=[0, 1], id="a")
-        assert template.id == "a"
