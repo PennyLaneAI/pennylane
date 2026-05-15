@@ -35,16 +35,18 @@ def increment(wires, init_state, work_wires=None):
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires",
     [
+        # without work wires
         ([0, 1, 2], [0, 0, 0], [0, 0, 1], []),
         ([0, 1, 2], [0, 0, 1], [0, 1, 0], []),
         ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),
         ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], []),
         ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], []),
-        ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),
-        ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),
-        ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], [4, 5, 6, 7, 8]),
-        ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], [4, 5]),
+        # with work wires
+        ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),  # enough work wires for our rule
+        ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
+        ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], [4, 5, 6, 7, 8]), # more than enough work wires
+        ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], [4, 5]),  # some work wires, but not enough
     ],
 )
 def test_correct(wires, init_state, expected, work_wires):
