@@ -291,10 +291,14 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = zip(self.preds[1:], self.branch_fns[1:], strict=True)  # skip true branch
-        true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
+        elifs = zip(
+            self.preds[1:],
+            [_no_return(branch_fn) for branch_fn in self.branch_fns[1:]],
+            strict=True,
+        )  # skip true branch
+        true_fn = _no_return(self.true_fn)
         flat_true_fn = FlatFn(true_fn)
-        branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
+        branches = [(self.preds[0], flat_true_fn), *elifs, (True, _no_return(self.otherwise_fn))]
 
         # consts go after the len(branches) conditions, first const at len(branches)
         end_const_ind = len(branches)
