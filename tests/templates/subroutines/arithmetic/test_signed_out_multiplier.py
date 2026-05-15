@@ -34,6 +34,15 @@ def bin_to_int(bits):
     return int("".join(map(str, bits)), 2)
 
 
+def int_to_bin(integer):
+    """Converts an integer to a binary array."""
+    if integer < 0:
+        bin_str = bin(integer)[3:]
+    else:
+        bin_str = bin(integer)[2:]
+    return list(reduce(lambda acc, nxt: acc + [int(nxt)], bin_str, []))
+
+
 def twos_complement_value(bits):
     """Calculates the value of a number encoded as a twos complement."""
     sum = 0
@@ -43,14 +52,14 @@ def twos_complement_value(bits):
     return sum
 
 
-@qnode(dev)
+@qnode(dev, shots=1)
 def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
     BasisEmbedding(
         init_state,
         (0, 1, 2) + (3, 4, 5) + (6, 7, 8, 9) + (10, 11, 12, 13, 14, 15),
     )
     SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
-    return probs()
+    return sample(wires=output_wires)
 
 
 @pytest.mark.parametrize(
@@ -95,21 +104,13 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
     expected = x * y
 
     # execute the quantum signed out multiplier circuit
-    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state)
-
-    # extract the output from the output histogram
-    result = math.ceil_log2(list(math.round(result)).index(1)) % (2 ** len(output_wires))
-
-    # convert the result to binary
-    binary_result = reduce(lambda acc, bit: acc + [int(bit)], bin(result)[2:], [])
-
-    # pad the result
-    while len(binary_result) < len(output_wires):
-        binary_result = [0] + binary_result
+    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state)[0]
 
     # get the value encoded as a twos complement if the result is negative
-    if binary_result[0] == 1:
-        result = twos_complement_value(binary_result)
+    if result[0] == 1:
+        result = twos_complement_value(result)
+    else:
+        result = bin_to_int(result)
 
     assert result == expected
 
