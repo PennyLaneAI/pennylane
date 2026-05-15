@@ -15,5 +15,11 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+* Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
+  ([#PR_NUMBER](https://github.com/PennyLaneAI/pennylane/pull/9448))
 
 <h3>Contributors ✍️</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Usman Ahmed,
