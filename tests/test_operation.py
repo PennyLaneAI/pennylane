@@ -43,6 +43,16 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+def test_basis_deprecation():
+    """Test that Operation.basis is deprecated."""
+
+    class MyOp(Operation):
+        pass
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
+        assert MyOp(0).basis is None
+
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 

@@ -75,6 +75,11 @@
   The deprecated access through `transform_program` has been removed.
   [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
 
+* ``Operation.basis`` is deprecated. :func:`~pennylane.is_commuting` instead should be used to determine whether or not
+  two operators commute. For example, ``qp.is_commuting(my_op, qp.X(my_op.wires[0]))`` can be used to determine
+  if ``my_op`` is in the ``X`` basis.
+  [(#9476)](https://github.com/PennyLaneAI/pennylane/pull/9476)
+
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)

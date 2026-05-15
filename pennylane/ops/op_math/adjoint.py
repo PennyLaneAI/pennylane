@@ -18,11 +18,13 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import overload
+from warnings import warn
 
 import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
@@ -457,6 +459,11 @@ class AdjointOperation(Adjoint, Operation):
 
     @property
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return self.base.basis
 
     @property

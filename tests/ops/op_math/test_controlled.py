@@ -618,7 +618,8 @@ class TestControlledOperationProperties:
 
         base = DummyOp(1)
         op = Controlled(base, 2)
-        assert op.basis == "Z"
+        with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning):
+            assert op.basis == "Z"
 
     @pytest.mark.parametrize(
         "base, expected",
