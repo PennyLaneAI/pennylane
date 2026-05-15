@@ -19,10 +19,12 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from pennylane.decomposition import list_decomps
 
 from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.measurements import sample
 from pennylane.ops import CNOT
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
@@ -50,6 +52,30 @@ def twos_complement_value(bits):
         sum += (2**i) * bit
     sum -= (2 ** (len(bits) - 1)) * bits[0]
     return sum
+
+
+@pytest.mark.parametrize(
+    "x_wires, y_wires, work_wires, output_wires, init_state",
+    [
+        (
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
+            [1, 0, 1]  # operand one: -3
+            + [0, 1, 1]  # operand two: 3
+            + [0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
+        ),
+    ]
+)
+def test_decomposition(
+    x_wires, y_wires, work_wires, output_wires, init_state
+):
+    op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+
+    for rule in list_decomps(SignedOutMultiplier):
+        _test_decomposition_rule(op, rule)
 
 
 @qnode(dev, shots=1)
