@@ -20,8 +20,8 @@ from functools import reduce
 import numpy as np
 import pytest
 
-from pennylane import SignedOutMultiplier, device, math, qnode
-from pennylane.measurements import probs, sample
+from pennylane import SignedOutMultiplier, device, qnode
+from pennylane.measurements import sample
 from pennylane.ops import CNOT
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
@@ -82,6 +82,16 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             (10, 11, 12, 13, 14, 15),
             [1, 1, 1]  # operand one: -1
             + [1, 0, 1]  # operand two: -3
+            + [0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
+        ),
+        (
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
+            [1, 0, 0]  # operand one: -4
+            + [0, 1, 1]  # operand two: 3
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
         ),
