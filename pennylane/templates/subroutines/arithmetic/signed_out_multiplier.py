@@ -17,8 +17,6 @@ Contains the SignedOutMultiplier template.
 
 from collections import defaultdict
 
-from .adder import Adder
-
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
@@ -30,9 +28,11 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operator
 from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.wires import Wires, WiresLike
+
+from .adder import Adder
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
-from pennylane.wires import Wires, WiresLike
 
 
 class SignedOutMultiplier(Operator):
@@ -170,11 +170,7 @@ def _work_wire_condition(num_work_wires, **_):
 @register_condition(_work_wire_condition)
 @register_resources(_signed_out_multiplier_resources, exact=False)
 def _signed_out_multiplier_decomposition(
-    x_wires: WiresLike,
-    y_wires: WiresLike,
-    output_wires: WiresLike,
-    work_wires: WiresLike,
-    **_
+    x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike, **_
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 

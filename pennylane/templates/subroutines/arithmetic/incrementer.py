@@ -1,5 +1,4 @@
 from pennylane.capture import enabled
-from pennylane.math import array
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
@@ -8,10 +7,12 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.math import array
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, X, adjoint, cond, MultiControlledX, PauliX
-from .temporary_and import TemporaryAND
+from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
 from pennylane.wires import Wires, WiresLike
+
+from .temporary_and import TemporaryAND
 
 
 class Incrementer(Operator):
@@ -92,7 +93,7 @@ class Incrementer(Operator):
     def resource_params(self):
         return {
             "num_wires": len(self.wires),
-            "num_work_wires": len(self.hyperparameters["work_wires"])
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
         }
 
 
@@ -114,9 +115,9 @@ def _work_wire_condition(num_wires, num_work_wires, **_):
 
 def _decompose_mcxs(wires, work_wires, control_wires=None):
     if control_wires is None:
-        wires = wires[::-1][len(work_wires):]
+        wires = wires[::-1][len(work_wires) :]
     else:
-        wires = control_wires + wires[:-len(work_wires)]
+        wires = control_wires + wires[: -len(work_wires)]
         wires = wires[::-1]
 
     def _increment():
@@ -129,7 +130,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            TemporaryAND(all_wires[2 * k: 2 * k + 3])
+            TemporaryAND(all_wires[2 * k : 2 * k + 3])
 
         forward_ladder()  # pylint: disable=no-value-for-parameter
 
@@ -137,7 +138,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k: 2 * k + 3])
+            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
@@ -166,17 +167,24 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
 
 
 @register_resources(_incrementer_fallback_resources)
-def _incrementer_fallback_decomposition(wires, **_):
+def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
     if enabled():
         wires = array(wires, like="jax")
 
-    @for_loop(len(wires) - 1, 1, -1)
-    def flip_wires(i):
-        MultiControlledX([wire for wire in range(i)][::-1], [1 for _ in range(i - 1)])
-    flip_wires()  # pylint: disable=no-value-for-parameter
+    if len(work_wires) > 0:
+        wires = wires[: -len(work_wires)]
 
-    X(wires[0])
+    @for_loop(len(wires) - 1, 1, -1)
+    def flip_wires(i, num_wires):
+        MultiControlledX(
+            [wire + (num_wires - i) for wire in range(i)][::-1], [1 for _ in range(i - 1)]
+        )
+        return num_wires
+
+    flip_wires(len(wires))  # pylint: disable=no-value-for-parameter
+
+    X(wires[-1])
 
 
 @register_condition(_work_wire_condition)
@@ -187,7 +195,7 @@ def _incrementer_decomposition(wires, work_wires, **_):
         wires = array(wires, like="jax")
 
     _decompose_mcxs(wires, work_wires)
-    X(wires[0])
+    X(wires[-len(work_wires) - 1])
 
 
 def _controlled_incrementer_resources(num_wires):

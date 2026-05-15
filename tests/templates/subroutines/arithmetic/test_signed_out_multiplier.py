@@ -14,17 +14,16 @@
 """
 Tests for the SignedOutMultiplier template.
 """
+
 from functools import reduce
 
 import numpy as np
 import pytest
-from pennylane.ops import CNOT
 
+from pennylane import SignedOutMultiplier, device, math, qnode
 from pennylane.measurements import probs, sample
-
+from pennylane.ops import CNOT
 from pennylane.templates import BasisEmbedding
-
-from pennylane import device, qnode, SignedOutMultiplier, math
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
 dev = device("default.qubit")
@@ -39,7 +38,7 @@ def twos_complement_value(bits):
     """Calculates the value of a number encoded as a twos complement."""
     sum = 0
     for i, bit in enumerate(bits[1:][::-1]):
-        sum += (2 ** i) * bit
+        sum += (2**i) * bit
     sum -= (2 ** (len(bits) - 1)) * bits[0]
     return sum
 
@@ -48,17 +47,9 @@ def twos_complement_value(bits):
 def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
     BasisEmbedding(
         init_state,
-        (0, 1, 2) +
-        (3, 4, 5) +
-        (6, 7, 8, 9) +
-        (10, 11, 12, 13, 14, 15),
+        (0, 1, 2) + (3, 4, 5) + (6, 7, 8, 9) + (10, 11, 12, 13, 14, 15),
     )
-    SignedOutMultiplier(
-        x_wires,
-        y_wires,
-        output_wires,
-        work_wires
-    )
+    SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
     return probs()
 
 
@@ -73,9 +64,9 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             [1, 0, 1]  # operand one: -3
             + [0, 1, 1]  # operand two: 3
             + [0, 0, 0, 0]  # work wires are zeroed
-            + [0, 0, 0, 0, 0, 0]  # output register starts in |0>
+            + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
         ),
-    ]
+    ],
 )
 def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
     """Tests with a few examples that the Template yields correct results."""
@@ -122,38 +113,15 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
 
     assert result == expected
 
+
 @pytest.mark.parametrize(
     "aux, wires, init_state, work_wires, expected",
     [
-        (
-            3,
-            [0, 1, 2],
-            [1, 1, 1],  # -1
-            [4, 5],
-            [0, 0, 1]
-        ),
-        (
-            3,
-            [0, 1, 2],
-            [1, 1, 0], # -2
-            [4, 5],
-            [0, 1, 0]
-        ),
-        (
-            3,
-            [0, 1, 2],
-            [1, 0, 1], # -3
-            [4, 5],
-            [0, 1, 1]
-        ),
-        (
-            3,
-            [0, 1, 2],
-            [1, 0, 0],  # -4
-            [4, 5],
-            [1, 0, 0]
-        )
-    ]
+        (3, [0, 1, 2], [1, 1, 1], [4, 5], [0, 0, 1]),  # -1
+        (3, [0, 1, 2], [1, 1, 0], [4, 5], [0, 1, 0]),  # -2
+        (3, [0, 1, 2], [1, 0, 1], [4, 5], [0, 1, 1]),  # -3
+        (3, [0, 1, 2], [1, 0, 0], [4, 5], [1, 0, 0]),  # -4
+    ],
 )
 def test_twos_complement_helper(aux, wires, init_state, work_wires, expected):
     """Tests that the twos complement helper works correctly."""
