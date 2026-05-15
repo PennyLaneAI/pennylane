@@ -101,8 +101,8 @@ def get_interface(*values):
       cannot both be present.
 
     * Autograd tensors *may* be present alongside Torch and Jax tensors,
-      but Torch and Jax take precedence; the autograd arrays will
-      be treated as non-differentiable NumPy arrays. A warning will be raised
+      but Torch and Jax take precedence; the Autograd arrays will
+     be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
     * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
