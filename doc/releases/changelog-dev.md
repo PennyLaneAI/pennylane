@@ -118,6 +118,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
+  incorrect global phase (off by −1 per qubit). The decomposition used
+  ``GlobalPhase(basis * π/2)`` instead of ``GlobalPhase(-basis * π/2)``, introduced in
+  [#9406](https://github.com/PennyLaneAI/pennylane/pull/9406).
+  [(#9492)](https://github.com/PennyLaneAI/pennylane/pull/9492)
+
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
   instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
   (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This previously
