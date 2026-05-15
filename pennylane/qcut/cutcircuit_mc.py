@@ -292,7 +292,7 @@ def cut_circuit_mc(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qp.device("default.qubit", wires=2, shots=1)
+        >>> dev = qp.device("default.qubit", wires=2)
         >>> fragment_tapes = [qp.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Note that the number of shots on the device is set to :math:`1` here since we
