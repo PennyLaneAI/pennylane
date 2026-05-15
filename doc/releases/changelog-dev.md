@@ -116,7 +116,7 @@
 
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
-  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+  [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
 <h3>Documentation 📝</h3>
 
@@ -148,4 +148,5 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
+Paul Haochen Wang,
 David Wierichs
