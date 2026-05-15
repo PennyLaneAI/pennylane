@@ -768,8 +768,8 @@ class Operator2(ABC):
         """
         return "_ops"
 
-    # pylint: disable=no-self-argument
     @classproperty
+    @classmethod
     def has_adjoint(cls) -> bool:
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
@@ -835,7 +835,7 @@ class Operator2(ABC):
         return self
 
     # ------------------ Operator representations ------------------
-    # pylint: disable=unused-argument,no-self-argument,comparison-with-callable,no-self-use
+    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -856,6 +856,7 @@ class Operator2(ABC):
         raise MatrixUndefinedError
 
     @classproperty
+    @classmethod
     def has_matrix(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
@@ -917,6 +918,7 @@ class Operator2(ABC):
         raise SparseMatrixUndefinedError
 
     @classproperty
+    @classmethod
     def has_sparse_matrix(cls) -> bool:
         r"""Bool: Whether the Operator returns a defined sparse matrix.
 
@@ -1086,6 +1088,7 @@ class Operator2(ABC):
         raise DiagGatesUndefinedError
 
     @classproperty
+    @classmethod
     def has_diagonalizing_gates(cls) -> bool:
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
@@ -1131,6 +1134,7 @@ class Operator2(ABC):
         raise TermsUndefinedError
 
     @classproperty
+    @classmethod
     def has_generator(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined generator.
 
