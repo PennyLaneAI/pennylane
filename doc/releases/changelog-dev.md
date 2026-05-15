@@ -103,7 +103,7 @@
   
 <h3>Documentation 📝</h3>
 
-* Removed advertisements of TensorFlow integration in documentation.
+* References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
 <h3>Bug fixes 🐛</h3>
