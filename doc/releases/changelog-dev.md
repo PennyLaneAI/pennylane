@@ -118,7 +118,7 @@
 
 <h3>Bug fixes 🐛</h3>
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
-  ([#PR_NUMBER](https://github.com/PennyLaneAI/pennylane/pull/9448))
+  ([#9448](https://github.com/PennyLaneAI/pennylane/pull/9448))
 
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
   instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple

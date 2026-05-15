@@ -800,7 +800,7 @@ class TestMPSPrep:
     def test_mps_prep_work_wires_types(self):
         """Tests that MPSPrep correctly accepts numpy arrays and integers as work_wires."""
         mps = [np.eye(2) for _ in range(2)]
-        
+
         # Test 1: Passing a numpy array shouldn't raise a truth-value ValueError
         work_wires_array = np.array([10, 11])
         op_array = qp.MPSPrep(mps, wires=[0, 1], work_wires=work_wires_array)
