@@ -587,6 +587,25 @@ class Operator2(ABC):
         return Wires.all_wires([self.arguments[w] for w in self.wire_argnames])
 
     @property
+    def data(self) -> tuple[Any, ...]:
+        """Dynamic data of the operator. In the same order as ``dyn_argnames``."""
+        return tuple(self.dyn_args.values())
+
+    @property
+    def parameters(self) -> list[Any, ...]:
+        """Trainable parameters that the operator depends on."""
+        return list(self.dyn_args.values())
+
+    @property
+    def num_params(self) -> int:
+        """Number of dynamic parameters that the operator depends on.
+
+        Returns:
+            int: number of parameters
+        """
+        return len(self.dyn_argnames)
+
+    @property
     def resource_params(self) -> dict[str, Any]:
         """Resource parameters for graph-based decomposition."""
         # FIXME:
