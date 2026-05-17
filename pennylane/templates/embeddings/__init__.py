@@ -21,6 +21,7 @@ from .amplitude import AmplitudeEmbedding
 from .angle import AngleEmbedding
 from .basis import BasisEmbedding
 from .displacement import DisplacementEmbedding
+from .ffqramembedding import FFQRAMEmbedding
 from .iqp import IQPEmbedding
 from .qaoaembedding import QAOAEmbedding
 from .squeezing import SqueezingEmbedding
