@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for density matrices functions."""
+
 # pylint: disable=import-outside-toplevel
 
 import numpy as onp

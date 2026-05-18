@@ -14,6 +14,7 @@
 """
 Unit tests for functions and classes needed for construct a lattice.
 """
+
 import re
 
 import numpy as np

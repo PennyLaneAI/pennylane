@@ -14,6 +14,7 @@
 """
 Tests for qchem resource operators.
 """
+
 import pytest
 
 import pennylane.estimator as qre

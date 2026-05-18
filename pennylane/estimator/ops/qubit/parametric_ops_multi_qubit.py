@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric multi qubit operations."""
+
 from collections import Counter
 
 import pennylane.estimator as qre
@@ -63,7 +64,7 @@ class MultiRZ(ResourceOperator):
     >>> multi_rz = qre.MultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
-    >>> print(qml.estimator.estimate(multi_rz, gate_set))
+    >>> print(qp.estimator.estimate(multi_rz, gate_set))
     --- Resources: ---
      Total wires: 3
         algorithmic wires: 3

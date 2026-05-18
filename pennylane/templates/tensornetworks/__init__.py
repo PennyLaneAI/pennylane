@@ -15,6 +15,7 @@
 Tensor-network templates can be used to create quantum circuit architectures where circuit blocks
 can be broadcast with the shape and connectivity of tensor networks.
 """
+
 from .mera import MERA
 from .mps import MPS
 from .ttn import TTN

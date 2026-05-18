@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines qml.jvp
+Defines qp.jvp
 """
+
 from collections.abc import Sequence
 from functools import lru_cache
 from importlib.util import find_spec
@@ -41,7 +42,7 @@ def _get_jvp_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    jvp_prim = capture.QmlPrimitive("jvp")
+    jvp_prim = capture.QpPrimitive("jvp")
     jvp_prim.multiple_results = True
     jvp_prim.prim_type = "higher_order"
 
@@ -72,7 +73,7 @@ def _validate_tangents(params, dparams, argnums):
 
     if len(dparams) != len(argnums):
         raise TypeError(
-            "number of tangents and number of differentiable parameters in qml.jvp do not "
+            "number of tangents and number of differentiable parameters in qp.jvp do not "
             "match; the number of parameters must be equal. "
             f"Got {len(argnums)} differentiable parameters and so expected "
             f"as many tangents, but got {len(dparams)} instead."
@@ -82,7 +83,7 @@ def _validate_tangents(params, dparams, argnums):
         x = params[i]
         if _dtype(x) != _dtype(dx):
             raise TypeError(
-                "function params and tangents arguments to qml.jvp do not match; "
+                "function params and tangents arguments to qp.jvp do not match; "
                 "dtypes must be equal. "
                 f"Got function params dtype {_dtype(x)} and expected tangent dtype "
                 f"to match, but got tangent dtype {_dtype(dx)} instead."
@@ -90,7 +91,7 @@ def _validate_tangents(params, dparams, argnums):
 
         if _get_shape(x) != _get_shape(dx):
             raise ValueError(
-                "qml.jvp called with different function params and tangent "
+                "qp.jvp called with different function params and tangent "
                 f"shapes; got function params shape {_get_shape(x)} and tangent shape "
                 f"{_get_shape(dx)}"
             )
@@ -102,9 +103,9 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):
-        raise ValueError(f"params must be a Sequence in qml.jvp. Got type {type(params)}.")
+        raise ValueError(f"params must be a Sequence in qp.jvp. Got type {type(params)}.")
     if not isinstance(dparams, Sequence):
-        raise ValueError(f"tangents must be a Sequence in qml.jvp. Got type {type(params)}.")
+        raise ValueError(f"tangents must be a Sequence in qp.jvp. Got type {type(params)}.")
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -178,13 +179,13 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None):
 
     .. code-block:: python
 
-        @qml.qjit
+        @qp.qjit
         def jvp(params, tangent):
           def f(x):
               y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
               return jnp.stack(y)
 
-          return qml.jvp(f, [params], [tangent])
+          return qp.jvp(f, [params], [tangent])
 
     >>> x = jnp.array([0.1, 0.2])
     >>> tangent = jnp.array([0.3, 0.6])
@@ -199,16 +200,16 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None):
 
     .. code-block:: python
 
-        @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(n, params):
-            qml.RX(params[n, 0], wires=n)
-            qml.RY(params[n, 1], wires=n)
-            return qml.expval(qml.Z(1))
+            qp.RX(params[n, 0], wires=n)
+            qp.RY(params[n, 1], wires=n)
+            return qp.expval(qp.Z(1))
 
-        @qml.qjit
+        @qp.qjit
         def workflow(primals, tangents):
-            return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
+            return qp.jvp(circuit, [1, primals], [tangents], argnums=[1])
 
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])

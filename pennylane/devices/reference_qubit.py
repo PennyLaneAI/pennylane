@@ -16,7 +16,6 @@ Contains the ReferenceQubit device, a minimal device that can be used for testin
 and plugin development purposes.
 """
 
-
 import numpy as np
 
 from pennylane import math

@@ -14,12 +14,13 @@
 """
 Code relevant for sampling a qutrit mixed state.
 """
+
 import functools
 from collections.abc import Callable
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.measurements import (
     CountsMP,
@@ -54,7 +55,7 @@ def _process_samples(
     wire_order,
 ):
     """Processes samples like SampleMP.process_samples, but fixed for qutrits"""
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    wire_map = {w: i for i, w in enumerate(wire_order)}
     mapped_wires = [wire_map[w] for w in mp.wires]
 
     if mapped_wires:
@@ -69,8 +70,8 @@ def _process_samples(
 
     # Replace the basis state in the computational basis with the correct eigenvalue.
     # Extract only the columns of the basis samples required based on ``wires``.
-    powers_of_three = QUDIT_DIM ** qml.math.arange(num_wires)[::-1]
-    indices = qml.math.array(samples @ powers_of_three)
+    powers_of_three = QUDIT_DIM ** qp.math.arange(num_wires)[::-1]
+    indices = qp.math.array(samples @ powers_of_three)
     return mp.eigvals()[indices]
 
 
@@ -79,7 +80,7 @@ def _process_counts_samples(processed_sample, mp_has_obs):
     observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
     if not mp_has_obs:
         observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
+    return dict(zip(observables, counts, strict=True))
 
 
 def _process_expval_samples(processed_sample):
@@ -130,7 +131,7 @@ def _measure_with_samples_diagonalizing_gates(
     state = _apply_diagonalizing_gates(mp, state, is_state_batched)
 
     total_indices = get_num_wires(state, is_state_batched)
-    wires = qml.wires.Wires(range(total_indices))
+    wires = qp.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
         samples_processed = _process_samples(mp, samples, wires)
@@ -146,7 +147,7 @@ def _measure_with_samples_diagonalizing_gates(
             raise NotImplementedError
 
         if is_state_batched:
-            return qml.math.stack(tuple(process_func(s) for s in samples_processed))
+            return qp.math.stack(tuple(process_func(s) for s in samples_processed))
         return process_func(samples_processed)
 
     # if there is a shot vector, build a list containing results for each shot entry
@@ -241,13 +242,13 @@ def _sample_state_jax(
     """
 
     total_indices = get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
+    state_wires = qp.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
 
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
+    with qp.queuing.QueuingManager.stop_recording():
+        probs = measure(qp.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
     state_len = len(state)
 
@@ -305,14 +306,11 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state
     basis_states = np.arange(QUDIT_DIM**num_wires)
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
-        keys = []
-        for _ in range(state_len):
-            key, subkey = jax.random.split(key)
-            keys.append(subkey)
+        keys = jax.random.split(key, num=state_len)
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-                for _key, prob in zip(keys, probs)
+                for _key, prob in zip(keys, probs, strict=True)
             ]
         )
     else:
@@ -362,13 +360,13 @@ def sample_state(
         )
 
     total_indices = get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
+    state_wires = qp.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
 
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
+    with qp.queuing.QueuingManager.stop_recording():
+        probs = measure(qp.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
     return sample_probs(probs, shots, num_wires, is_state_batched, rng)
 

@@ -16,5 +16,6 @@ This module contains decorators that can modify an implementation of the :class:
 class and add default behaviour.
 
 """
+
 from .single_tape_support import single_tape_support
 from .simulator_tracking import simulator_tracking

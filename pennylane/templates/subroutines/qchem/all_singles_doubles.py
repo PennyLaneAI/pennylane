@@ -100,27 +100,27 @@ class AllSinglesDoubles(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             electrons = 2
             qubits = 4
 
             # Define the HF state
-            hf_state = qml.qchem.hf_state(electrons, qubits)
+            hf_state = qp.qchem.hf_state(electrons, qubits)
 
             # Generate all single and double excitations
-            singles, doubles = qml.qchem.excitations(electrons, qubits)
+            singles, doubles = qp.qchem.excitations(electrons, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qp.device('default.qubit', wires=qubits)
 
             wires = range(qubits)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-                qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.Z(0))
+                qp.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+                return qp.expval(qp.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
@@ -138,7 +138,6 @@ class AllSinglesDoubles(Operation):
         hf_state: Sequence[int],
         singles: Sequence[tuple[int, int]] | None = None,
         doubles: Sequence[tuple[int, int, int, int]] | None = None,
-        id=None,
     ):
         wires = Wires(wires)
         if len(wires) < 2:
@@ -176,18 +175,18 @@ class AllSinglesDoubles(Operation):
             "doubles": doubles,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @classmethod
     def _primitive_bind_call(
-        cls, weights, wires, hf_state, singles=None, doubles=None, id=None
+        cls, weights, wires, hf_state, singles=None, doubles=None
     ):  # pylint: disable=arguments-differ
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
         hf_state = math.array(hf_state)
         weights = math.array(weights)
-        return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
+        return cls._primitive.bind(weights, wires, hf_state, singles, doubles)
 
     @property
     def resource_params(self) -> dict:

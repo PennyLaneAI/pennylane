@@ -14,6 +14,7 @@
 """
 Tests for the ``DatasetTuple`` attribute type.
 """
+
 import pytest
 
 from pennylane.data.attributes.tuple import DatasetTuple

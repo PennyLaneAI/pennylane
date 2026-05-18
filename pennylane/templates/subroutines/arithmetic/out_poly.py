@@ -14,22 +14,19 @@
 """
 Contains the OutPoly template.
 """
+
 from collections import Counter
 
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
 from pennylane.ops import adjoint, ctrl
-from pennylane.templates.core import (
-    AbstractArray,
-    adjoint_subroutine_resource_rep,
-    subroutine_resource_rep,
-)
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
@@ -189,24 +186,24 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            wires = qml.registers({"x": 2, "y": 2, "output": 4})
+            wires = qp.registers({"x": 2, "y": 2, "output": 4})
 
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit"), shots=1)
+            @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # load values of x and y
-                qml.BasisEmbedding(3, wires=wires["x"])
-                qml.BasisEmbedding(2, wires=wires["y"])
+                qp.BasisEmbedding(3, wires=wires["x"])
+                qp.BasisEmbedding(2, wires=wires["y"])
 
                 # apply the polynomial
-                qml.OutPoly(
+                qp.OutPoly(
                     f,
                     input_registers = [wires["x"], wires["y"]],
                     output_wires = wires["output"])
 
-                return qml.sample(wires=wires["output"])
+                return qp.sample(wires=wires["output"])
 
         >>> print(circuit())
         [[1 0 1 1]]
@@ -235,15 +232,15 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit"), shots=1)
+            @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # loading values for x and y
-                qml.BasisEmbedding(3, wires=x_wires)
-                qml.BasisEmbedding(2, wires=y_wires)
-                qml.BasisEmbedding(1, wires=output_wires)
+                qp.BasisEmbedding(3, wires=x_wires)
+                qp.BasisEmbedding(2, wires=y_wires)
+                qp.BasisEmbedding(1, wires=output_wires)
 
                 # applying the polynomial
-                qml.OutPoly(
+                qp.OutPoly(
                     f,
                     input_registers,
                     output_wires,
@@ -251,7 +248,7 @@ class OutPoly(Operation):
                     work_wires = work_wires
                 )
 
-                return qml.sample(wires=output_wires)
+                return qp.sample(wires=output_wires)
 
         >>> print(circuit())
         [[1 0 1]]
@@ -279,7 +276,6 @@ class OutPoly(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
-        id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         r"""Initialize the OutPoly class"""
@@ -339,7 +335,7 @@ class OutPoly(Operation):
                 "None of the wires in a register should be included in other register."
             )
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     def _flatten(self):
         metadata1 = tuple((key, value) for key, value in self.hyperparameters.items())
@@ -408,7 +404,7 @@ class OutPoly(Operation):
 
             from pprint import pprint
 
-            ops = qml.OutPoly.compute_decomposition(
+            ops = qp.OutPoly.compute_decomposition(
                 lambda x, y: x + y,
                 input_registers=[[0, 1],[2,3]],
                 output_wires=[4, 5],
@@ -436,7 +432,7 @@ class OutPoly(Operation):
             [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
         )
 
-        list_ops.append(QFT.operator(wires=output_adder_mod))
+        list_ops.append(QFT(wires=output_adder_mod))
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
@@ -478,7 +474,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
     resources = Counter(
         {
-            subroutine_resource_rep(QFT, AbstractArray((num_output_adder_mod,))): 1,
+            resource_rep(QFT, num_wires=num_output_adder_mod): 1,
         }
     )
 
@@ -504,7 +500,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
             )
             resources[ctrl_phase_rep] += 1
 
-    resources[adjoint_subroutine_resource_rep(QFT, AbstractArray((num_output_adder_mod,)))] = 1
+    resources[adjoint_resource_rep(QFT, {"num_wires": num_output_adder_mod})] = 1
 
     return dict(resources)
 
@@ -551,7 +547,7 @@ def _out_poly_decomposition(
                 control=controls,
             )
 
-    adjoint(QFT)(wires=output_adder_mod)
+    adjoint(QFT(wires=output_adder_mod))
 
 
 add_decomps(OutPoly, _out_poly_decomposition)

@@ -14,6 +14,7 @@
 """
 Pytest configuration file for AutoGraph test folder.
 """
+
 import warnings
 
 import pytest

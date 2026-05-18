@@ -14,6 +14,7 @@
 """
 Code relevant for performing measurements on a state.
 """
+
 from collections.abc import Callable
 
 from scipy.sparse import csr_matrix

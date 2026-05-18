@@ -109,18 +109,24 @@ class Device(abc.ABC):
         If an arbitrary, non-preprocessed circuit is provided, :meth:`~.execute` has no responsibility to perform any
         validation or provide clearer error messages.
 
-        >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
-        >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
+        >>> import pennylane as qp
+        >>> op = qp.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> circuit = qp.tape.QuantumScript([op], [qp.state()])
+        >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
-        MatrixUndefinedError
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.Z(0))])
+        Traceback (most recent call last):
+        ...
+        pennylane.exceptions.MatrixUndefinedError
+        >>> angles = qp.numpy.array([1.2, 2.3, 3.4])
+        >>> circuit = qp.tape.QuantumScript([qp.Rot(*angles, 0)], [qp.expval(qp.Z(0))])
         >>> config = ExecutionConfig(gradient_method="adjoint")
-        >>> dev.compute_derivatives(circuit, config)
-        ValueError: Operation Rot is not written in terms of a single parameter
-        >>> new_circuit, postprocessing, new_config = dev.preprocess(circuit, config)
+        >>> dev.compute_derivatives(circuit, config)  # the result will be incorrect
+        (array(0.), array(0.), array(0.))
+        >>> program, new_config = dev.preprocess(config)
+        >>> new_circuit, postprocessing = program([circuit])
         >>> dev.compute_derivatives(new_circuit, new_config)
-        ((array(0.), array(-0.74570521), array(0.)),)
+        ((array(-1.6682...e-18), array(-0.7457...), array(-2.6785...e-18)),)
 
         Any validation checks or error messages should occur in :meth:`~.preprocess` to avoid failures after expending
         computation resources.
@@ -302,11 +308,11 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import TapeBatch
+                from pennylane.tape import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
-                @transform
-                def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+                @qp.transform
+                def my_preprocessing_transform(tape: qp.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                     def blank_processing_fn(results):
@@ -325,36 +331,6 @@ class Device(abc.ABC):
                     return program, config
 
         .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
-
-        .. details::
-            :title: Post processing function and derivatives
-
-            Derivatives and jacobian products will be bound to the machine learning library before the postprocessing
-            function is called on results. Therefore the machine learning library will be responsible for combining the
-            device provided derivatives and post processing derivatives.
-
-            .. code-block:: python
-
-                from pennylane.interfaces.jax import execute as jax_boundary
-
-                def f(x):
-                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
-                    config = ExecutionConfig(gradient_method="adjoint")
-                    program, config = dev.preprocess(config)
-                    circuit_batch, postprocessing = program((circuit, ))
-
-                    def execute_fn(tapes):
-                        return dev.execute_and_compute_derivatives(tapes, config)
-
-                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
-                    return postprocessing(results)
-
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
-
-
-            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary`` function.
-            Only then is the classical postprocessing called on the result object.
 
         """
         if execution_config is None:
@@ -438,8 +414,8 @@ class Device(abc.ABC):
             from pennylane.tape import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
-            @qml.transform
-            def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            @qp.transform
+            def my_preprocessing_transform(tape: qp.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                 def blank_processing_fn(results):
@@ -457,37 +433,6 @@ class Device(abc.ABC):
                 return program
 
         .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.CompilePipeline`
-
-        .. details::
-            :title: Post processing function and derivatives
-
-            Derivatives and Jacobian products will be bound to the machine learning library before
-            the postprocessing function is called on the results. Therefore, the machine learning
-            library will be responsible for combining and post-processing derivatives returned from
-            the device.
-
-            .. code-block:: python
-
-                from pennylane.interfaces.jax import execute as jax_boundary
-
-                def f(x):
-                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
-                    config = ExecutionConfig(gradient_method="adjoint")
-                    config = dev.setup_execution_config(config)
-                    program = dev.preprocess_transforms(config)
-                    circuit_batch, postprocessing = program((circuit, ))
-
-                    def execute_fn(tapes):
-                        return dev.execute_and_compute_derivatives(tapes, config)
-
-                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
-                    return postprocessing(results)
-
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
-
-            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary``
-            function. Only then is the classical postprocessing called on the result object.
 
         """
 
@@ -661,26 +606,22 @@ class Device(abc.ABC):
             measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-            >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.Z(0))])
-            >>> tape.shape(dev)
-            ()
+            >>> tape = qp.tape.QuantumScript(measurements=[qp.expval(qp.Z(0))])
             >>> dev.execute(tape)
-            array(1.0)
+            np.float64(1.0)
 
             If execute recieves a batch of scripts, then it should return a tuple of results:
 
             >>> dev.execute([tape, tape])
-            (array(1.0), array(1.0))
+            (np.float64(1.0), np.float64(1.0))
             >>> dev.execute([tape])
-            (array(1.0),)
+            (np.float64(1.0),)
 
             If the script has multiple measurements, then the device should return a tuple of measurements.
 
-            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
-            >>> tape.shape(dev)
-            ((), (4,))
+            >>> tape = qp.tape.QuantumTape(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
             >>> dev.execute(tape)
-            (array(1.0), array([1., 0., 0., 0.]))
+            (np.float64(1.0), array([1., 0., 0., 0.]))
 
         """
         raise NotImplementedError
@@ -706,7 +647,7 @@ class Device(abc.ABC):
         will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
 
         >>> config = ExecutionConfig(gradient_method="parameter-shift")
-        >>> custom_device.supports_derivatives(config)
+        >>> custom_device.supports_derivatives(config)  # doctest: +SKIP
         True
 
         In this case, :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives` will be called instead of :meth:`~.execute` with
@@ -720,26 +661,26 @@ class Device(abc.ABC):
         if the order is ``1`` and the execution occurs with no shots (``shots=None``).
 
         >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> dev.supports_derivatives(config)  # doctest: +SKIP
         True
-        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=None)
-        >>> dev.supports_derivatives(config, circuit=circuit_analytic)
+        >>> circuit_analytic = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.Z(0))], shots=None)
+        >>> dev.supports_derivatives(config, circuit=circuit_analytic)  # doctest: +SKIP
         True
-        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.Z(0))], shots=10)
-        >>> dev.supports_derivatives(config, circuit = circuit_fintite_shots)
+        >>> circuit_finite_shots = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.Z(0))], shots=10)
+        >>> dev.supports_derivatives(config, circuit = circuit_finite_shots)  # doctest: +SKIP
         False
 
         >>> config = ExecutionConfig(derivative_order=2, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> dev.supports_derivatives(config)  # doctest: +SKIP
         False
 
         Adjoint differentiation will only be supported for circuits with expectation value measurements.
         If a circuit is provided and it cannot be converted to a form supported by differentiation method by
         :meth:`~.Device.preprocess`, then ``supports_derivatives`` should return False.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
-        >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
-        >>> dev.supports_derivatives(config, circuit=circuit)
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
+        >>> circuit = qp.tape.QuantumScript([qp.RX(2.0, wires=0)], [qp.probs(wires=(0,1))])
+        >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         False
 
         If the circuit is not natively supported by the differentiation method but can be converted into a form
@@ -748,9 +689,9 @@ class Device(abc.ABC):
         operations supported by adjoint differentiation. Therefore this method may reproduce compilation
         and validation steps performed by :meth:`~.Device.preprocess`.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
-        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.Z(0))])
-        >>> dev.supports_derivatives(config, circuit=circuit)
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
+        >>> circuit = qp.tape.QuantumScript([qp.Rot(1.2, 2.3, 3.4, wires=0)], [qp.expval(qp.Z(0))])
+        >>> dev.supports_derivatives(config, circuit=circuit)  # doctest: +SKIP
         True
 
         **Backpropagation:**
@@ -759,9 +700,9 @@ class Device(abc.ABC):
         is only supported if the device is transparent to the machine learning framework from start to finish.
 
         >>> config = ExecutionConfig(gradient_method="backprop")
-        >>> python_device.supports_derivatives(config)
+        >>> python_device.supports_derivatives(config)  # doctest: +SKIP
         True
-        >>> cpp_device.supports_derivatives(config)
+        >>> cpp_device.supports_derivatives(config)  # doctest: +SKIP
         False
 
         """
@@ -1042,24 +983,24 @@ class Device(abc.ABC):
         Returns:
             Sequence[TensorLike], Sequence[TensorLike]: the results and jacobian vector products
 
-        >>> qml.capture.enable()
+        >>> qp.capture.enable()
         >>> import jax
         >>> closure_var = jax.numpy.array(0.5)
         >>> def f(x):
-        ...     qml.RX(closure_var, 0)
-        ...     qml.RX(x, 1)
-        ...     return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        ...     qp.RX(closure_var, 0)
+        ...     qp.RX(x, 1)
+        ...     return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
         >>> jaxpr = jax.make_jaxpr(f)(1.2)
         >>> args = (closure_var, 1.2)
         >>> zero = jax.interpreters.ad.Zero(jax.core.ShapedArray((), float))
         >>> tangents = (zero, 1.0)
-        >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-        >>> dev = qml.device('default.qubit', wires=2)
+        >>> config = qp.devices.ExecutionConfig(gradient_method="adjoint")
+        >>> dev = qp.device('default.qubit', wires=2)
         >>> res, jvps = dev.jaxpr_jvp(jaxpr.jaxpr, args, tangents, execution_config=config)
         >>> res
-        [Array(0.87758255, dtype=float32), Array(0.36235774, dtype=float32)]
+        [Array(0.87758256, dtype=float64), Array(0.36235775, dtype=float64)]
         >>> jvps
-        [Array(0., dtype=float32), Array(-0.932039, dtype=float32)]
+        [Array(0., dtype=float64), Array(-0.93203909, dtype=float64)]
 
         """
         raise NotImplementedError(f"device {self} does not yet support PLXPR jvps.")

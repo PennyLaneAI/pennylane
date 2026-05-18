@@ -15,8 +15,7 @@
 Tests for the 'mark' functionality.
 """
 
-
-import pennylane as qml
+import pennylane as qp
 from pennylane.fourier.mark import MarkedOp, mark
 
 
@@ -27,9 +26,9 @@ class TestMarkedOp:
     def test_flatten_unflatten(self):
         """Tests the unflatten and flatten methods."""
 
-        op = MarkedOp(qml.X(0), marker="my-x")
+        op = MarkedOp(qp.X(0), marker="my-x")
         data, metadata = op._flatten()
-        assert data[0] == qml.X(0)
+        assert data[0] == qp.X(0)
         assert metadata[0] == ("marker", "my-x")
 
         unflattened_op = MarkedOp._unflatten(data, metadata)
@@ -38,23 +37,23 @@ class TestMarkedOp:
     def test_repr(self):
         """Tests the 'repr'."""
 
-        op = MarkedOp(qml.X(0), marker="my-x")
+        op = MarkedOp(qp.X(0), marker="my-x")
         assert repr(op) == 'MarkedOp(X(0), marker="my-x")'
 
     def test_label(self):
         """Tests the 'label' method."""
 
-        op = MarkedOp(qml.X(0), marker="my-x")
+        op = MarkedOp(qp.X(0), marker="my-x")
         assert op.label() == 'X("my-x")'
 
-        op = MarkedOp(qml.RX(1.2345, wires=0), marker="my-x")
+        op = MarkedOp(qp.RX(1.2345, wires=0), marker="my-x")
         assert op.label() == 'RX("my-x")'
         assert op.label(decimals=2) == 'RX\n(1.23, "my-x")'
 
     def test_marker_property(self):
         """Tests the 'custom_label' property."""
 
-        op = MarkedOp(qml.X(0), marker="my-x")
+        op = MarkedOp(qp.X(0), marker="my-x")
         assert hasattr(op, "marker")
         assert op.marker == "my-x"
 
@@ -62,7 +61,7 @@ class TestMarkedOp:
 def test_mark():
     """Tests for the 'mark' function."""
 
-    op = qml.X(0)
+    op = qp.X(0)
     marked_op = mark(op, marker="my-x")
     assert isinstance(marked_op, MarkedOp)
     assert hasattr(marked_op, "marker")

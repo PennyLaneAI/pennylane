@@ -23,7 +23,7 @@ Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circ
 arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -51,37 +51,37 @@ def match_relative_phase_toffoli(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        @qml.transforms.match_relative_phase_toffoli
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.match_relative_phase_toffoli
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.X(0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.X(0)
 
             # begin relative phase 4-qubit Toffoli
 
-            qml.CCZ(wires=[0, 1, 3])
-            qml.ctrl(qml.S(wires=[1]), control=[0])
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.CCZ(wires=[0, 1, 3])
+            qp.ctrl(qp.S(wires=[1]), control=[0])
+            qp.ctrl(qp.S(wires=[2]), control=[0, 1])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
 
             # end relative phase 4-qubit Toffoli
 
-            qml.Hadamard(wires=1)
-            qml.X(0)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=1)
+            qp.X(0)
+            return qp.expval(qp.Z(0))
 
     The circuit (containing a 4-qubit relative phase Toffoli) before decomposition:
 
-    >>> print(qml.draw(circuit, level=0)())
+    >>> print(qp.draw(circuit, level=0)())
     0: ──H──X─╭●─╭●─╭●─╭●──X─┤  <Z>
     1: ──H────├●─╰S─├●─├●──H─┤
     2: ───────│─────╰S─├●────┤
@@ -89,7 +89,7 @@ def match_relative_phase_toffoli(
 
     The 4-qubit relative phase Toffoli pattern is replaced after the transform:
 
-    >>> print(qml.draw(circuit, level=1)())
+    >>> print(qp.draw(circuit, level=1)())
     0: ──H──X───────────╭●───────────╭●──X────────────────────────┤  <Z>
     1: ──H──────────────│─────╭●─────│─────╭●──H──────────────────┤
     2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
@@ -97,29 +97,29 @@ def match_relative_phase_toffoli(
 
     """
     pattern_ops = [
-        qml.CCZ([0, 1, 3]),
-        qml.ctrl(qml.S(1), control=[0]),
-        qml.ctrl(qml.S(2), control=[0, 1]),
-        qml.MultiControlledX([0, 1, 2, 3]),
+        qp.CCZ([0, 1, 3]),
+        qp.ctrl(qp.S(1), control=[0]),
+        qp.ctrl(qp.S(2), control=[0, 1]),
+        qp.MultiControlledX([0, 1, 2, 3]),
         # ------------
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([2, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([0, 3]),
-        qml.T(3),
-        qml.CNOT([1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([0, 3]),
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([2, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.Hadamard(3),
+        qp.Hadamard(3),
+        qp.T(3),
+        qp.CNOT([2, 3]),
+        qp.adjoint(qp.T(3)),
+        qp.Hadamard(3),
+        qp.T(3),
+        qp.CNOT([1, 3]),
+        qp.adjoint(qp.T(3)),
+        qp.CNOT([0, 3]),
+        qp.T(3),
+        qp.CNOT([1, 3]),
+        qp.adjoint(qp.T(3)),
+        qp.CNOT([0, 3]),
+        qp.Hadamard(3),
+        qp.T(3),
+        qp.CNOT([2, 3]),
+        qp.adjoint(qp.T(3)),
+        qp.Hadamard(3),
     ]
     pattern = QuantumScript(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
@@ -146,7 +146,7 @@ def match_controlled_iX_gate(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
-            The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -154,30 +154,30 @@ def match_controlled_iX_gate(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        @qml.transforms.match_controlled_iX_gate(num_controls=2)
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.match_controlled_iX_gate(num_controls=2)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.X(0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.X(0)
 
             # begin multi-controlled iX gate
 
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.S(wires=[2]), control=[0, 1])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
 
             # end multi-controlled iX gate
 
-            qml.Hadamard(wires=1)
-            qml.X(0)
+            qp.Hadamard(wires=1)
+            qp.X(0)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     The circuit (containing a controlled iX gate) before decomposition:
 
-    >>> print(qml.draw(circuit, level=0)())
+    >>> print(qp.draw(circuit, level=0)())
     0: ──H──X─╭●─╭●──X─┤  <Z>
     1: ──H────├●─├●──H─┤
     2: ───────╰S─├●────┤
@@ -185,7 +185,7 @@ def match_controlled_iX_gate(
 
     The multi-controlled iX gate is replaced after the transform:
 
-    >>> print(qml.draw(circuit, level=1)())
+    >>> print(qp.draw(circuit, level=1)())
     0: ──H──X────────╭●───────────╭●──X─┤  <Z>
     1: ──H───────────├●───────────├●──H─┤
     2: ────────╭●────│──────╭●────│─────┤
@@ -197,19 +197,19 @@ def match_controlled_iX_gate(
             "There must be at least one control wire for the controlled iX gate decomposition."
         )
     pattern_ops = [
-        qml.ctrl(qml.S(num_controls), control=list(range(num_controls))),
-        qml.MultiControlledX(list(range(num_controls + 2))),
+        qp.ctrl(qp.S(num_controls), control=list(range(num_controls))),
+        qp.MultiControlledX(list(range(num_controls + 2))),
         # ------------
-        qml.Hadamard(num_controls + 1),
-        qml.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
-        qml.adjoint(qml.T(num_controls + 1)),
-        qml.CNOT([num_controls, num_controls + 1]),
-        qml.T(num_controls + 1),
-        qml.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
-        qml.adjoint(qml.T(num_controls + 1)),
-        qml.CNOT([num_controls, num_controls + 1]),
-        qml.T(num_controls + 1),
-        qml.Hadamard(num_controls + 1),
+        qp.Hadamard(num_controls + 1),
+        qp.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qp.adjoint(qp.T(num_controls + 1)),
+        qp.CNOT([num_controls, num_controls + 1]),
+        qp.T(num_controls + 1),
+        qp.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qp.adjoint(qp.T(num_controls + 1)),
+        qp.CNOT([num_controls, num_controls + 1]),
+        qp.T(num_controls + 1),
+        qp.Hadamard(num_controls + 1),
     ]
     pattern = QuantumScript(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])

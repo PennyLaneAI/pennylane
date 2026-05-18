@@ -16,7 +16,7 @@
 # pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 
 jax = pytest.importorskip("jax")
@@ -34,9 +34,9 @@ class TestMidMeasureUnit:
     """Unit tests for capturing mid-circuit measurements."""
 
     def test_mid_measure(self, reset, postselect):
-        """Test that qml.measure returns expected results."""
-        with qml.queuing.AnnotatedQueue() as q:
-            m = qml.measure(0, reset=reset, postselect=postselect)
+        """Test that qp.measure returns expected results."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m = qp.measure(0, reset=reset, postselect=postselect)
 
         assert len(q) == 1
         mp = list(q.keys())[0].obj
@@ -48,9 +48,9 @@ class TestMidMeasureUnit:
         assert m.measurements[0] is mp
 
     def test_mid_measure_capture(self, reset, postselect):
-        """Test that qml.measure is captured correctly."""
+        """Test that qp.measure is captured correctly."""
 
-        jaxpr = jax.make_jaxpr(qml.measure)(0, reset=reset, postselect=postselect)
+        jaxpr = jax.make_jaxpr(qp.measure)(0, reset=reset, postselect=postselect)
         assert len(jaxpr.eqns) == 1
         invars = jaxpr.eqns[0].invars
         outvars = jaxpr.eqns[0].outvars
@@ -69,9 +69,9 @@ class TestMidMeasureCapture:
         """Test that circuits with mid-circuit measurements can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            qml.measure(0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            qp.measure(0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
         assert jaxpr.eqns[1].primitive.name == "measure"
@@ -87,12 +87,12 @@ class TestMidMeasureCapture:
             pytest.skip("Cannot use sequence of MCMs with expval or var.")
 
         p_name = measurement + "_mcm"
-        measure_fn = getattr(qml, measurement)
+        measure_fn = getattr(qp, measurement)
 
         def f(x):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            m2 = qp.measure(0)
             return measure_fn(op=[m1, m2] if multi_mcm else m1)
 
         jaxpr = jax.make_jaxpr(f)(1.0)
@@ -110,15 +110,15 @@ class TestMidMeasureCapture:
         can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            m2 = qp.measure(0)
             a = ~m1
             b = m2 > m1
             _ = m1 | m2
             c = a != m2
             _ = b & c
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
 
@@ -154,14 +154,14 @@ class TestMidMeasureCapture:
         values can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            m2 = qp.measure(0)
             a = 3.1 * m1
             b = m2 / a
             _ = a**b
             _ = a - m2
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
 
@@ -205,10 +205,10 @@ class TestMidMeasureCapture:
         can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            m = qml.measure(0)
+            qp.RX(x, 0)
+            m = qp.measure(0)
             _ = fn(m)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
 
@@ -227,13 +227,13 @@ class TestMidMeasureCapture:
         """Test that creating and using arrays of mid-circuit measurements can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            m2 = qp.measure(0)
             arr = jnp.array([m1, m2])
             arr = jnp.reshape(arr, (1, 1, -1))
             jnp.max(arr)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
 
@@ -269,16 +269,16 @@ class TestMidMeasureCapture:
         parameters can be captured."""
 
         def f(x):
-            qml.RX(x, 0)
-            m = qml.measure(0)
-            qml.RX(m, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            m = qp.measure(0)
+            qp.RX(m, 0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.0)
 
         mcm = jaxpr.eqns[1].outvars[0]
 
-        # qml.RX(m, 0)
+        # qp.RX(m, 0)
         assert jaxpr.eqns[2].primitive.name == "RX"
         assert jaxpr.eqns[2].invars[0] == mcm
         assert isinstance(jaxpr.eqns[2].outvars[0].aval, AbstractOperator)
@@ -287,18 +287,18 @@ class TestMidMeasureCapture:
 def compare_with_capture_disabled(qnode, *args, **kwargs):
     """Helper function for comparing execution results with capture disabled."""
     res = qnode(*args, **kwargs)
-    qml.capture.disable()
+    qp.capture.disable()
     expected = qnode(*args, **kwargs)
-    return qml.math.allclose(res, expected)
+    return qp.math.allclose(res, expected)
 
 
 @pytest.mark.parametrize("mcm_method", ("deferred", "one-shot", "tree-traversal"))
 def test_capture_mcm_method(mcm_method):
     """Test that the mcm_method is present in the plxpr."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3), mcm_method=mcm_method)
+    @qp.qnode(qp.device("default.qubit", wires=3), mcm_method=mcm_method)
     def f():
-        return qml.state()
+        return qp.state()
 
     jaxpr = jax.make_jaxpr(f)()
     config = jaxpr.eqns[0].params["execution_config"]
@@ -308,7 +308,7 @@ def test_capture_mcm_method(mcm_method):
 # pylint: disable=too-many-arguments, redefined-outer-name
 @pytest.mark.system
 @pytest.mark.parametrize("shots", [None, 100])
-@pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.probs])
+@pytest.mark.parametrize("mp_fn", [qp.expval, qp.var, qp.sample, qp.probs])
 class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
@@ -319,24 +319,24 @@ class TestMidMeasureExecute:
     def test_simple_circuit_execution(self, phi, reset, postselect, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
 
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, mcm_method="deferred", postselect_mode="fill-shots", shots=shots)
+        @qp.qnode(dev, mcm_method="deferred", postselect_mode="fill-shots", shots=shots)
         def f(x):
-            qml.RX(x, 0)
-            qml.measure(0, reset=reset, postselect=postselect)
-            return mp_fn(op=qml.Z(0))
+            qp.RX(x, 0)
+            qp.measure(0, reset=reset, postselect=postselect)
+            return mp_fn(op=qp.Z(0))
 
         if shots and postselect is None:
             # results are probabilistic and difficult to compare
             res = f(phi)
-            qml.capture.disable()
+            qp.capture.disable()
             expected = f(phi)
 
-            if mp_fn is qml.sample:
+            if mp_fn is qp.sample:
                 ones_count = jnp.sum(res == 1)
                 minus_ones_count = jnp.sum(res == -1)
                 if reset:
@@ -352,14 +352,14 @@ class TestMidMeasureExecute:
                     #   Var(Z) = 4 * p_plus * p_minus
                     #   Std(sample_mean) = 2 * sqrt(p_plus * p_minus / shots)
                     # Using 4σ tolerance gives <0.01% failure rate per check.
-                    p_plus = qml.math.cos(phi / 2) ** 2
+                    p_plus = qp.math.cos(phi / 2) ** 2
                     p_minus = 1 - p_plus
                     expected_avg = p_plus - p_minus
-                    std_sample_avg = 2 * qml.math.sqrt(p_plus * p_minus / shots)
+                    std_sample_avg = 2 * qp.math.sqrt(p_plus * p_minus / shots)
                     atol = 4 * std_sample_avg
-                    assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
-            else:  # qml.expval, qml.var, qml.probs
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                    assert qp.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
+            else:  # qp.expval, qp.var, qp.probs
+                assert qp.math.allclose(res, expected, atol=1 / qp.math.sqrt(shots), rtol=0.1)
         else:
             assert compare_with_capture_disabled(f, phi)
 
@@ -368,27 +368,27 @@ class TestMidMeasureExecute:
     def test_circuit_with_terminal_measurement_execution(self, phi, shots, mp_fn, multi_mcm, seed):
         """Test that circuits with mid-circuit measurements that also collect statistics
         on the mid-circuit measurements can be executed in a QNode."""
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        if multi_mcm and mp_fn in (qml.expval, qml.var):
+        if multi_mcm and mp_fn in (qp.expval, qp.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def f(x, y):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            qml.RX(y, 0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            qp.RX(y, 0)
+            m2 = qp.measure(0)
             return mp_fn(op=[m1, m2] if multi_mcm else m1)
 
         if shots:
             res = f(phi, phi + 1.5)
-            qml.capture.disable()
+            qp.capture.disable()
             expected = f(phi, phi + 1.5)
-            qml.capture.enable()
+            qp.capture.enable()
 
             # Comparing TWO independent estimates of MCM bits {0, 1}:
             # Max variance for a bit: Var(M) = 0.25 (Bernoulli at p=0.5)
@@ -397,20 +397,20 @@ class TestMidMeasureExecute:
             # Standard deviation of difference:
             max_var_bit = 0.25
             var_diff = 2 * max_var_bit / shots
-            std_diff = qml.math.sqrt(var_diff)
+            std_diff = qp.math.sqrt(var_diff)
             # Use 3σ tolerance for <1% failure rate:
             atol = 3 * std_diff
 
-            if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
-            elif mp_fn is qml.var:
+            if mp_fn is qp.expval:
+                assert qp.math.allclose(res, expected, atol=atol, rtol=0)
+            elif mp_fn is qp.var:
                 # Var(M) = <M> - <M>^2. Max slope vs <M> is 1. Error scales similarly.
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
-            elif mp_fn is qml.probs:
+                assert qp.math.allclose(res, expected, atol=atol, rtol=0)
+            elif mp_fn is qp.probs:
                 # Probs are values in [0, 1] with max variance 0.25 per bin.
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
+                assert qp.math.allclose(res, expected, atol=atol, rtol=0)
             else:
-                # mp_fn is qml.sample
+                # mp_fn is qp.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
                 assert not (jnp.all(expected == 1) or jnp.all(expected == -1))
 
@@ -422,26 +422,26 @@ class TestMidMeasureExecute:
     def test_circuit_with_boolean_arithmetic_execution(self, phi, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
         can be executed."""
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def f(x, y):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            qml.RX(y, 0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            qp.RX(y, 0)
+            m2 = qp.measure(0)
             a = m1 & m2
             _ = a > m2
-            return mp_fn(op=qml.Z(0))
+            return mp_fn(op=qp.Z(0))
 
         if shots:
             res = f(phi, phi + 1.5)
-            qml.capture.disable()
+            qp.capture.disable()
             expected = f(phi, phi + 1.5)
-            qml.capture.enable()
+            qp.capture.enable()
 
             # Comparing TWO independent estimates of Pauli Z eigenvalues {-1, 1}:
             # Max variance for Z: Var(Z) = 1.0 (at <Z>=0)
@@ -450,24 +450,24 @@ class TestMidMeasureExecute:
             # Standard deviation of difference:
             max_var_z = 1.0
             var_diff = 2 * max_var_z / shots
-            std_diff = qml.math.sqrt(var_diff)
+            std_diff = qp.math.sqrt(var_diff)
             # Use 3σ tolerance for <1% failure rate:
             atol = 3 * std_diff
 
-            if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
-            elif mp_fn is qml.var:
+            if mp_fn is qp.expval:
+                assert qp.math.allclose(res, expected, atol=atol, rtol=0)
+            elif mp_fn is qp.var:
                 # Var(Z) = 1 - <Z>^2. Max slope vs <Z> is 2. Error is ~2x expval error.
-                assert qml.math.allclose(res, expected, atol=2 * atol, rtol=0)
-            elif mp_fn is qml.probs:
+                assert qp.math.allclose(res, expected, atol=2 * atol, rtol=0)
+            elif mp_fn is qp.probs:
                 # Probs are [0,1] bins -> back to bit statistics (max var 0.25).
                 max_var_bit = 0.25
                 var_diff_probs = 2 * max_var_bit / shots
-                std_diff_probs = qml.math.sqrt(var_diff_probs)
+                std_diff_probs = qp.math.sqrt(var_diff_probs)
                 atol_probs = 3 * std_diff_probs
-                assert qml.math.allclose(res, expected, atol=atol_probs, rtol=0)
+                assert qp.math.allclose(res, expected, atol=atol_probs, rtol=0)
             else:
-                # mp_fn is qml.sample
+                # mp_fn is qp.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
                 assert not (jnp.all(expected == 1) or jnp.all(expected == -1))
 
@@ -479,20 +479,20 @@ class TestMidMeasureExecute:
     def test_circuit_with_classical_processing_execution(self, phi, shots, mp_fn, seed):
         """Test that circuits that apply non-boolean operations to mid-circuit measurement
         values can be executed."""
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def f(x, y):
-            qml.RX(x, 0)
-            m1 = qml.measure(0)
-            qml.RX(y, 0)
-            m2 = qml.measure(0)
+            qp.RX(x, 0)
+            m1 = qp.measure(0)
+            qp.RX(y, 0)
+            m2 = qp.measure(0)
             a = 3.1 * m1
             _ = a ** (m2 / 5)
-            return mp_fn(op=qml.Z(0))
+            return mp_fn(op=qp.Z(0))
 
         _ = f(phi, phi + 1.5)
 
@@ -501,17 +501,17 @@ class TestMidMeasureExecute:
     def test_mid_measure_processed_with_jax_numpy_execution(self, phi, fn, shots, mp_fn, seed):
         """Test that a circuit containing mid-circuit measurements processed using jax.numpy
         can be executed."""
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def f(x):
-            qml.RX(x, 0)
-            m = qml.measure(0)
+            qp.RX(x, 0)
+            m = qp.measure(0)
             _ = fn(m)
-            return mp_fn(op=qml.Z(0))
+            return mp_fn(op=qp.Z(0))
 
         assert jnp.all(f(phi))
 
@@ -519,16 +519,16 @@ class TestMidMeasureExecute:
     def test_mid_measure_as_gate_parameter_execution(self, phi, shots, mp_fn, seed):
         """Test that mid-circuit measurements (simple or classical processed) used as gate
         parameters can be executed."""
-        if shots is None and mp_fn is qml.sample:
+        if shots is None and mp_fn is qp.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def f(x):
-            qml.RX(x, 0)
-            m = qml.measure(0)
-            qml.RX(m, 0)
-            return mp_fn(op=qml.Z(0))
+            qp.RX(x, 0)
+            m = qp.measure(0)
+            qp.RX(m, 0)
+            return mp_fn(op=qp.Z(0))
 
         _ = f(phi)

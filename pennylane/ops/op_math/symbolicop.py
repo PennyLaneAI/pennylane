@@ -15,13 +15,13 @@
 This submodule defines a base class for symbolic operations representing operator math.
 """
 
-import warnings
 from abc import abstractmethod
 from copy import copy
+from warnings import warn
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
@@ -34,8 +34,6 @@ class SymbolicOp(Operator):
 
     Args:
         base (~.operation.Operator): the base operation that is modified symbolically
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.Adjoint`.
@@ -74,21 +72,13 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base, id=None):
+    def __init__(self, base):
         self.hyperparameters["base"] = base
-        if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+        if isinstance(base, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument is deprecated and will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-                stacklevel=2,
-            )
-        self._id = id
         self._pauli_rep = None
         self.queue()
         self._wires = base.wires
-        self.__queue_category = base._queue_category  # pylint: disable=protected-access
 
     @property
     def batch_size(self):
@@ -116,6 +106,11 @@ class SymbolicOp(Operator):
     @property
     @handle_recursion_error
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return self.base.basis
 
     @property
@@ -131,10 +126,6 @@ class SymbolicOp(Operator):
     @property
     def is_verified_hermitian(self):
         return self.base.is_verified_hermitian
-
-    @property
-    def _queue_category(self):
-        return self.__queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
         context.remove(self.base)
@@ -173,8 +164,6 @@ class ScalarSymbolicOp(SymbolicOp):
     Args:
         base (~.operation.Operator): the base operation that is modified symbolically
         scalar (float): the scalar coefficient
-        id (str): custom label given to an operator instance, can be useful for some applications
-            where the instance has to be identified
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.Pow`.
@@ -182,9 +171,9 @@ class ScalarSymbolicOp(SymbolicOp):
 
     _name = "ScalarSymbolicOp"
 
-    def __init__(self, base, scalar: float, id=None):
+    def __init__(self, base, scalar: float):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
-        super().__init__(base, id=id)
+        super().__init__(base)
         self._batch_size = _UNSET_BATCH_SIZE
 
     @property
@@ -192,12 +181,12 @@ class ScalarSymbolicOp(SymbolicOp):
     def batch_size(self):
         if self._batch_size is _UNSET_BATCH_SIZE:
             base_batch_size = self.base.batch_size
-            if qml.math.ndim(self.scalar) == 0:
+            if qp.math.ndim(self.scalar) == 0:
                 # coeff is not batched
                 self._batch_size = base_batch_size
             else:
                 # coeff is batched
-                scalar_size = qml.math.size(self.scalar)
+                scalar_size = qp.math.size(self.scalar)
                 if base_batch_size is not None and base_batch_size != scalar_size:
                     raise ValueError(
                         "Broadcasting was attempted but the broadcasted dimensions "
@@ -270,33 +259,35 @@ class ScalarSymbolicOp(SymbolicOp):
         # compute base matrix
         base_matrix = self.base.matrix()
 
-        scalar_interface = qml.math.get_interface(self.scalar)
+        scalar_interface = qp.math.get_interface(self.scalar)
         scalar = self.scalar
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-            base_matrix = qml.math.convert_like(base_matrix, self.scalar)
+            base_matrix = qp.math.convert_like(base_matrix, self.scalar)
         elif (
             scalar_interface == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             # just cast everything to complex128. Otherwise we may have casting problems
-            # where things get truncated like in SProd(tf.Variable(0.1), qml.X(0))
-            scalar = qml.math.cast(scalar, "complex128")
-            base_matrix = qml.math.cast(base_matrix, "complex128")
+            # where things get truncated like in SProd(tf.Variable(0.1), qp.X(0))
+            scalar = qp.math.cast(scalar, "complex128")
+            base_matrix = qp.math.cast(base_matrix, "complex128")
 
         # compute scalar operation on base matrix taking batching into account
-        scalar_size = qml.math.size(scalar)
+        scalar_size = qp.math.size(scalar)
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(scalar, base_matrix)])
+                mat = qp.math.stack(
+                    [self._matrix(s, m) for s, m in zip(scalar, base_matrix, strict=True)]
+                )
             else:
                 # only scalar is broadcasted
-                mat = qml.math.stack([self._matrix(s, base_matrix) for s in scalar])
+                mat = qp.math.stack([self._matrix(s, base_matrix) for s in scalar])
         elif self.base.batch_size is not None:
             # only base is broadcasted
-            mat = qml.math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
+            mat = qp.math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
         else:
             # none are broadcasted
             mat = self._matrix(scalar, base_matrix)
 
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return qp.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

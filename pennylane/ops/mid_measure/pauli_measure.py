@@ -16,12 +16,10 @@ Implements the pauli measurement.
 """
 
 import uuid
-import warnings
 from functools import lru_cache
 
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -39,17 +37,8 @@ class PauliMeasure(Operator):
         pauli_word: str,
         wires: WiresLike,
         postselect: int | None = None,
-        id: str | None = None,
         meas_uid: str | None = None,
     ):
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-            )
-            # Only override if meas_uid wasn't explicitly provided
-            if meas_uid is None:
-                meas_uid = id
 
         if not all(c in _VALID_PAULI_CHARS for c in pauli_word):
             raise ValueError(
@@ -120,9 +109,9 @@ def _create_pauli_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import QmlPrimitive
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    pauli_measure_p = QmlPrimitive("pauli_measure")
+    pauli_measure_p = QpPrimitive("pauli_measure")
 
     @pauli_measure_p.def_impl
     def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
@@ -176,19 +165,19 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("null.qubit", wires=3))
+        @qp.qnode(qp.device("null.qubit", wires=3))
         def circuit():
-            qml.Hadamard(0)
-            qml.Hadamard(2)
+            qp.Hadamard(0)
+            qp.Hadamard(2)
 
-            ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
-            qml.cond(ppm, qml.X)(wires=1)
+            ppm = qp.pauli_measure(pauli_word="XY", wires=[0, 2])
+            qp.cond(ppm, qp.X)(wires=1)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     The ``X`` operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──H─╭┤↗X├────┤  <Z>
     1: ────│──────X─┤
     2: ──H─╰┤↗Y├──║─┤
@@ -197,7 +186,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
-    >>> print(qml.specs(circuit)()['resources'])
+    >>> print(qp.specs(circuit)()['resources'])
     Wire allocations: 3
     Total gates: 4
     Gate counts:

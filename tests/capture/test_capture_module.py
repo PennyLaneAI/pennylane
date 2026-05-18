@@ -14,9 +14,10 @@
 """
 Tests capture module imports and access.
 """
+
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
@@ -27,4 +28,4 @@ def test_no_attribute_available():
     """Test that if we try and access an attribute that doesn't exist, we get an attribute error."""
 
     with pytest.raises(AttributeError):
-        _ = qml.capture.something
+        _ = qp.capture.something

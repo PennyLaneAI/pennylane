@@ -14,6 +14,7 @@
 """
 This module contains tests for the compact Hamiltonian dataclasses used in resource estimation.
 """
+
 import pytest
 
 import pennylane.estimator as qre

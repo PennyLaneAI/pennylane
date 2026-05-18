@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
+
 from collections.abc import Sequence
 from typing import NamedTuple
 
@@ -308,7 +309,7 @@ def add_shots(s1: Shots, s2: Shots) -> Shots:
     Example:
         >>> s1 = Shots((5, (10, 2)))
         >>> s2 = Shots((3, 2, (10, 3)))
-        >>> print(qml.measurements.add_shots(s1, s2))
+        >>> print(qp.measurements.add_shots(s1, s2))
         Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
     """
     if s1.total_shots is None:

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Test matrix operations"""
 
-
 import numpy as np
 import pytest
 

@@ -16,9 +16,10 @@ Tests for capturing value_and_grad into jaxpr.
 
 Note some tests on the errors exist in test_capture_diff.py
 """
+
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = pytest.mark.capture
 
@@ -34,7 +35,7 @@ def test_value_and_grad_error_with_non_scalar_function():
     with pytest.raises(
         TypeError, match="value_and_grad only defined for scalar-output functions. "
     ):
-        jax.make_jaxpr(qml.value_and_grad(jnp.sin))(jnp.array([0.5, 0.2]))
+        jax.make_jaxpr(qp.value_and_grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
     def f(x):
         return (x, x)
@@ -42,7 +43,7 @@ def test_value_and_grad_error_with_non_scalar_function():
     with pytest.raises(
         TypeError, match="value_and_grad only defined for scalar-output functions. "
     ):
-        jax.make_jaxpr(qml.value_and_grad(f))(0.5)
+        jax.make_jaxpr(qp.value_and_grad(f))(0.5)
 
 
 def diff_eqn_assertions(eqn, argnums=None, fn=None):
@@ -70,7 +71,7 @@ def test_classical_func(argnums):
         return jnp.prod(jnp.sin(x) * jnp.cos(y) ** 2)
 
     def workflow(x):
-        return qml.value_and_grad(inner_func, argnums=argnums)(x, 0.5 * jnp.sqrt(x))
+        return qp.value_and_grad(inner_func, argnums=argnums)(x, 0.5 * jnp.sqrt(x))
 
     def workflow_jax(x):
         return jax.value_and_grad(inner_func, argnums=argnums)(x, 0.5 * jnp.sqrt(x))
@@ -78,8 +79,8 @@ def test_classical_func(argnums):
     x = 0.4
     jax_res, jax_grad = workflow_jax(x)
     res, g = workflow(x)
-    assert qml.math.allclose(res, jax_res)
-    assert qml.math.allclose(g, jax_grad)
+    assert qp.math.allclose(res, jax_res)
+    assert qp.math.allclose(g, jax_grad)
 
     jaxpr = jax.make_jaxpr(workflow)(x)
     assert jaxpr.in_avals == [jax.core.ShapedArray((), float, weak_type=True)]
@@ -98,8 +99,8 @@ def test_classical_func(argnums):
     assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
     manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-    assert qml.math.allclose(manual_eval[0], jax_res)
-    assert qml.math.allclose(manual_eval[1:], jax_grad)
+    assert qp.math.allclose(manual_eval[0], jax_res)
+    assert qp.math.allclose(manual_eval[1:], jax_grad)
 
 
 def test_nested_value_and_grad():
@@ -111,23 +112,23 @@ def test_nested_value_and_grad():
 
     x = 0.654
 
-    qml_func_1 = qml.value_and_grad(func)
+    qp_func_1 = qp.value_and_grad(func)
     expected_1 = 3 * jnp.sin(x) ** 2 * jnp.cos(x)
-    r, g = qml_func_1(x)
-    assert qml.math.allclose(r, func(x))
-    assert qml.math.allclose(g, expected_1)
+    r, g = qp_func_1(x)
+    assert qp.math.allclose(r, func(x))
+    assert qp.math.allclose(g, expected_1)
 
-    jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
+    jaxpr_1 = jax.make_jaxpr(qp_func_1)(x)
     assert jaxpr_1.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
     assert len(jaxpr_1.eqns) == 1
     assert jaxpr_1.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * 2
 
     def just_grad_part(*args):
-        return qml_func_1(*args)[1]
+        return qp_func_1(*args)[1]
 
-    qml_func_2 = qml.value_and_grad(just_grad_part)
+    qp_func_2 = qp.value_and_grad(just_grad_part)
 
-    jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
+    jaxpr_2 = jax.make_jaxpr(qp_func_2)(x)
     assert jaxpr_2.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
     assert len(jaxpr_2.eqns) == 1
     assert jaxpr_2.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * 2
@@ -148,8 +149,8 @@ def test_pytree_input(argnums):
     def inner_func(x, y):
         return jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2)
 
-    def func_qml(x):
-        return qml.value_and_grad(inner_func, argnums=argnums)(
+    def func_qp(x):
+        return qp.value_and_grad(inner_func, argnums=argnums)(
             {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]},)
         )
 
@@ -162,14 +163,14 @@ def test_pytree_input(argnums):
     jax_res, jax_grad = func_jax(x)
     jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_grad)
 
-    res, grad = func_qml(x)
-    qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(grad)
-    assert jax_out_tree == qml_out_tree
-    assert qml.math.allclose(jax_out_flat, qml_out_flat)
-    assert qml.math.allclose(jax_res, res)
+    res, grad = func_qp(x)
+    qp_out_flat, qp_out_tree = jax.tree_util.tree_flatten(grad)
+    assert jax_out_tree == qp_out_tree
+    assert qp.math.allclose(jax_out_flat, qp_out_flat)
+    assert qp.math.allclose(jax_res, res)
 
     # Check overall jaxpr properties
-    jaxpr = jax.make_jaxpr(func_qml)(x)
+    jaxpr = jax.make_jaxpr(func_qp)(x)
     assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
     assert len(jaxpr.eqns) == 3
     argnums = (argnums,) if isinstance(argnums, int) else tuple(argnums)
@@ -185,4 +186,4 @@ def test_pytree_input(argnums):
     grad_out_flat, grad_out_tree = jax.tree_util.tree_flatten(manual_out[1:])
     # Assert that the output from the manual evaluation is flat
     assert grad_out_tree == jax.tree_util.tree_flatten(grad_out_flat)[1]
-    assert qml.math.allclose(jax_out_flat, grad_out_flat)
+    assert qp.math.allclose(jax_out_flat, grad_out_flat)

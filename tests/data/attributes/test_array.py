@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane.data.attributes.array
-from pennylane import numpy as qml_numpy
+from pennylane import numpy as qp_numpy
 from pennylane.data.attributes import DatasetArray
 
 pytestmark = pytest.mark.data
@@ -30,7 +30,7 @@ class TestDatasetArray:
         "value, py_type, interface",
         [
             (np.array([1, 2, 3]), "numpy.ndarray", "numpy"),
-            (qml_numpy.tensor([1, 2, 3]), "pennylane.numpy.tensor.tensor", "autograd"),
+            (qp_numpy.tensor([1, 2, 3]), "pennylane.numpy.tensor.tensor", "autograd"),
         ],
     )
     def test_value_init(self, value, interface, py_type):
@@ -44,7 +44,7 @@ class TestDatasetArray:
         assert arr.info.type_id == "array"
         assert arr.info["array_interface"] == interface
 
-    @pytest.mark.parametrize("array_class", [qml_numpy.tensor])
+    @pytest.mark.parametrize("array_class", [qp_numpy.tensor])
     @pytest.mark.parametrize("requires_grad", [True, False])
     def test_value_init_requires_grad(self, array_class, requires_grad):
         """Test that a DatasetArray preserves the ``requires_grad`` attribute

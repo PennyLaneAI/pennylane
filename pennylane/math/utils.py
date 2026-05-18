@@ -370,7 +370,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
+            print("Abstract:", qp.math.is_abstract(x))
             return jnp.sum(x ** 2)
 
     When we execute it, we see that the tensor is not abstract; it has known value:
@@ -401,7 +401,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
+            print("Abstract:", qp.math.is_abstract(x))
             return tf.reduce_sum(x ** 2)
 
     >>> x = tf.Variable([0.5, 0.1])
@@ -611,21 +611,21 @@ def ceil_log2(n: int) -> int:
     On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
     an ``int``:
 
-    >>> qml.math.ceil_log2(8)
+    >>> qp.math.ceil_log2(8)
     3
 
     On other numbers, the rounding of the logarithm becomes visible:
 
-    >>> qml.math.log2(14)
+    >>> qp.math.log2(14)
     3.807354922057604
-    >>> qml.math.ceil_log2(14)
+    >>> qp.math.ceil_log2(14)
     4
 
     Note that we always round up:
 
-    >>> qml.math.round(qml.math.log2(9))
+    >>> qp.math.round(qp.math.log2(9))
     3.0
-    >>> qml.math.ceil_log2(9)
+    >>> qp.math.ceil_log2(9)
     4
     """
     if is_abstract(n):

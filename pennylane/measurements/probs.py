@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.probs measurement.
+This module contains the qp.probs measurement.
 """
+
 import warnings
 from collections.abc import Sequence
 
@@ -44,8 +45,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "probs"
@@ -71,7 +70,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -109,7 +108,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
         # translate to wire labels used by device
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
@@ -232,12 +231,12 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=1)
-            return qml.probs(wires=[0, 1])
+            qp.Hadamard(wires=1)
+            return qp.probs(wires=[0, 1])
 
     Executing this QNode:
 
@@ -250,42 +249,42 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     .. warning::
 
-       ``qml.probs`` is not compatible with :class:`~.Hermitian`. When using
-       ``qml.probs`` with a Hermitian observable, the output might be different than
+       ``qp.probs`` is not compatible with :class:`~.Hermitian`. When using
+       ``qp.probs`` with a Hermitian observable, the output might be different than
        expected as the lexicographical ordering of eigenvalues is not guaranteed and
        the diagonalizing gates may exist in a degenerate subspace.
 
     **Example:**
 
-    The order of the output might be different when using ``qml.Hermitian``, as in the
+    The order of the output might be different when using ``qp.Hermitian``, as in the
     following example:
 
     .. code-block:: python
 
         H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(wires=0)
-            return qml.probs(op=qml.Hermitian(H, wires=0)), qml.probs(op=qml.Hadamard(wires=0))
+            qp.H(wires=0)
+            return qp.probs(op=qp.Hermitian(H, wires=0)), qp.probs(op=qp.Hadamard(wires=0))
 
     >>> circuit()
     (array([0.14644661, 0.85355339]), array([0.85355339, 0.14644661]))
 
     **Example:**
 
-    The output might also be different than expected when using ``qml.Hermitian``,
+    The output might also be different than expected when using ``qp.Hermitian``,
     because the probability vector can be expressed in the eigenbasis obtained from
     diagonalizing the matrix of the observable, as in the following example:
 
     .. code-block:: python
 
-        ob = qml.X(0) @ qml.Y(1)
-        h = qml.Hermitian(ob.matrix(), wires=[0, 1])
+        ob = qp.X(0) @ qp.Y(1)
+        h = qp.Hermitian(ob.matrix(), wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.probs(op=h), qml.probs(op=ob)
+            return qp.probs(op=h), qp.probs(op=ob)
 
     >>> circuit()
     (array([0.5, 0. , 0. , 0.5]), array([0.25, 0.25, 0.25, 0.25]))
@@ -297,9 +296,9 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     if isinstance(op, MeasurementValue):
         if len(op.measurements) > 1:
             raise ValueError(
-                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+                "Cannot use qp.probs() when measuring multiple mid-circuit measurements collected "
                 "using arithmetic operators. To collect probabilities for multiple mid-circuit "
-                "measurements, use a list of mid-circuit measurements with qml.probs()."
+                "measurements, use a list of mid-circuit measurements with qp.probs()."
             )
         return ProbabilityMP(obs=op)
 
@@ -333,7 +332,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
     if isinstance(op, Hermitian):
         warnings.warn(
-            "Using qml.probs with a Hermitian observable might return different results than expected as the "
+            "Using qp.probs with a Hermitian observable might return different results than expected as the "
             "lexicographical ordering of eigenvalues is not guaranteed.",
             UserWarning,
         )

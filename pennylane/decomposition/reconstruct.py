@@ -16,7 +16,7 @@
 
 from collections.abc import Callable
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -27,10 +27,9 @@ _reconstructors = {}
 def decomps_use_reconstructor(op_type, op_params):
     """Checks for special cases that has_reconstructor is not yet prepared to handle."""
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    # TODO: Adjoint to be implemented in a follow-up PR [sc-110066]
-    if op_type in (qml.ops.Controlled, qml.ops.Adjoint):
+    if op_type is qp.ops.Controlled:
         return False
-    if issubclass(op_type, qml.ops.Pow):
+    if issubclass(op_type, qp.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         return decomps_use_reconstructor(base_class, base_params)
     return has_reconstructor(op_type, op_params)
@@ -68,7 +67,7 @@ def has_reconstructor(op_class: type[Operator], op_params: dict):
         # that this operator is never compatible with the graph system.
         return False
 
-    if op_class is qml.templates.TemporaryAND:
+    if op_class is qp.templates.TemporaryAND:
         # TODO: Special case of an controlled-like operator which takes control_values,
         # to be handled in a follow-up PR. [sc-110068]
         return False
@@ -77,7 +76,7 @@ def has_reconstructor(op_class: type[Operator], op_params: dict):
         return True
 
     # TODO: Controlled to be implemented in a follow-up PR [sc-110068]
-    if op_class in (qml.ops.Adjoint, qml.ops.Pow):
+    if op_class in (qp.ops.Adjoint, qp.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
         return has_reconstructor(base_class, base_params)
 
@@ -97,17 +96,17 @@ def reconstruct(data: tuple, wires: Wires, op_type: type[Operator], op_params: d
         # information is apparant from the shape of the wires array already.
         return op_type(*data, wires=wires)
 
-    if op_type is qml.ops.Adjoint:
+    if op_type is qp.ops.Adjoint:
         base_class, base_params = op_params["base_class"], op_params["base_params"]
-        return qml.adjoint(reconstruct)(data, wires, base_class, base_params)
+        return qp.adjoint(reconstruct)(data, wires, base_class, base_params)
 
-    if op_type is qml.ops.Controlled:
+    if op_type is qp.ops.Controlled:
         # TODO: to be implemented in a follow-up PR [sc-110068]
         raise NotImplementedError  # pragma: no cover
 
-    if issubclass(op_type, qml.ops.Pow):
+    if issubclass(op_type, qp.ops.Pow):
         base_class, base_params = op_params["base_class"], op_params["base_params"]
-        return qml.pow(reconstruct(data, wires, base_class, base_params), z=op_params["z"])
+        return qp.pow(reconstruct(data, wires, base_class, base_params), z=op_params["z"])
 
     if op_type in _reconstructors:
         return _reconstructors[op_type](*data, wires=wires, **op_params)

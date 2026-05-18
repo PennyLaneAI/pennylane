@@ -14,6 +14,7 @@
 r"""
 Contains the FlipSign template.
 """
+
 from functools import reduce
 
 from pennylane.decomposition import (
@@ -50,14 +51,14 @@ class FlipSign(Operation):
     .. code-block:: python
 
         num_wires = 2
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qp.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for wire in range(num_wires):
-                qml.Hadamard(wire)
-            qml.FlipSign([1, 0], wires=range(num_wires))
-            return qml.state()
+                qp.Hadamard(wire)
+            qp.FlipSign([1, 0], wires=range(num_wires))
+            return qp.state()
 
     The result for the above circuit is:
 
@@ -75,7 +76,7 @@ class FlipSign(Operation):
     def __repr__(self):
         return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
 
-    def __init__(self, n, wires, id=None):
+    def __init__(self, n, wires):
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("At least one valid wire is required.")
 
@@ -93,7 +94,7 @@ class FlipSign(Operation):
             raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
 
         self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self):

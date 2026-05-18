@@ -61,8 +61,9 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
     .. note::
 
-        Subroutines are only available when using the PLxPR program capture
-        interface.
+        Subroutines are only available when using the program capture
+        interface. To activate the program capture interface with Catalyst,
+        please set `qp.qjit(capture=True)`.
 
     Args:
         subroutine (Callable): the function
@@ -74,17 +75,17 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
     .. code-block:: python
 
-        qml.capture.enable()
+        qp.capture.enable()
 
-        @qml.capture.subroutine
+        @qp.capture.subroutine
         def f(x, wires):
-            qml.RX(x, wires)
+            qp.RX(x, wires)
 
-        @qml.qnode(qml.device('lightning.qubit', wires=5))
+        @qp.qnode(qp.device('lightning.qubit', wires=5))
         def c(x : float):
             f(x, 0)
             f(x, 1)
-            return qml.state()
+            return qp.state()
 
         print(jax.make_jaxpr(c)(0.5))
 
@@ -135,7 +136,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
     If we create a ``qjit`` version of the QNode, we can inspect the mlir and see a ``FuncOp`` that is
     reused for both calls:
 
-    >>> qjit_c = qml.qjit(c)
+    >>> qjit_c = qp.qjit(c)
     >>> print(qjit_c.mlir[1010:1300]) # doctest: +SKIP
     %0 = quantum.alloc( 5) : !quantum.reg
     %1 = call @f(%0, %arg0, %c_0) : (!quantum.reg, tensor<f64>, tensor<i64>) -> !quantum.reg

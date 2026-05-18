@@ -94,15 +94,15 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(theta):
-            qml.Hadamard(wires=0)
-            qml.RX(theta, wires=1)
-            qml.CNOT(wires=[0,1])
-            return qml.expval(qml.Z(1))
+            qp.Hadamard(wires=0)
+            qp.RX(theta, wires=1)
+            qp.CNOT(wires=[0,1])
+            return qp.expval(qp.Z(1))
 
     >>> circuit(0.5)  # the first call, compilation occurs here
     array(0.)
@@ -115,17 +115,17 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def f(x):
-            qml.RX(x["rx_param"], wires=0)
-            qml.RY(x["ry_param"], wires=0)
-            qml.CNOT(wires=[0, 1])
+            qp.RX(x["rx_param"], wires=0)
+            qp.RY(x["ry_param"], wires=0)
+            qp.CNOT(wires=[0, 1])
             return {
-                "XY": qml.expval(qml.X(0) @ qml.Y(1)),
-                "X": qml.expval(qml.X(0)),
+                "XY": qp.expval(qp.X(0) @ qp.Y(1)),
+                "X": qp.expval(qp.X(0)),
             }
 
     >>> x = {"rx_param": 0.5, "ry_param": 0.54}

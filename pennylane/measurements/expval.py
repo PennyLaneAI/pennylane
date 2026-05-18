@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.expval measurement.
+This module contains the qp.expval measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math
@@ -40,8 +41,6 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "expval"
@@ -128,14 +127,14 @@ def expval(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Y(0))
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Y(0))
 
     Executing this QNode:
 
@@ -155,14 +154,14 @@ def expval(
 
     if isinstance(op, Sequence):
         raise ValueError(
-            "qml.expval does not support measuring sequences of measurements or observables"
+            "qp.expval does not support measuring sequences of measurements or observables"
         )
 
     if isinstance(op, I) and len(op.wires) == 0:
         # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
-        # allow once we have testing and confidence in qml.expval(I())
+        # allow once we have testing and confidence in qp.expval(I())
         raise NotImplementedError(
-            "Expectation values of qml.Identity() without wires are currently not allowed."
+            "Expectation values of qp.Identity() without wires are currently not allowed."
         )
 
     return ExpectationMP(obs=op)

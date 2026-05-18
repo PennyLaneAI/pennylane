@@ -13,8 +13,9 @@
 # limitations under the License.
 # pylint: disable=protected-access
 """
-This module contains the qml.mutual_info measurement.
+This module contains the qp.mutual_info measurement.
 """
+
 from collections.abc import Sequence
 from copy import copy
 
@@ -33,8 +34,6 @@ class MutualInfoMP(StateMeasurement):
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         log_base (float): base for the logarithm
 
     """
@@ -51,11 +50,10 @@ class MutualInfoMP(StateMeasurement):
     def __init__(
         self,
         wires: Sequence[Wires] | None = None,
-        id: str | None = None,
         log_base: float | None = None,
     ):
         self.log_base = log_base
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     # pylint: disable=arguments-differ
     @classmethod
@@ -148,12 +146,12 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_mutual(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
+            qp.IsingXX(x, wires=[0, 1])
+            return qp.mutual_info(wires0=[0], wires1=[1])
 
     Executing this QNode:
 
@@ -163,7 +161,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     It is also possible to get the gradient of the previous QNode:
 
     >>> param = pnp.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_mutual)(param)
+    >>> qp.grad(circuit_mutual)(param)
     tensor(1.24645048, requires_grad=True)
 
     .. note::
