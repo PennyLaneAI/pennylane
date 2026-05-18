@@ -2350,3 +2350,116 @@ class TestLabsQROM:
             },
         )
         assert decomp_equal(computed_decomp, expected_decomp)
+
+
+class TestSelectCopyQROM:
+    """Test the SelectCopyQROM class"""
+
+    @pytest.mark.parametrize(
+        "N, b, max_q, expected_res",
+        (
+            (1000, 4, 3, (4, 1)),
+            (1000, 4, 4, (2, 4)),
+            (1000, 4, 9, (8, 1)),
+        ),
+    )
+    def test_optimize_params(self, N, b, max_q, expected_res):
+        """Test that the parameters are optimized as expected"""
+        assert qre.SelectCopyQROM._optimize_params(N, b, max_q) == expected_res
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_output",
+        (
+            (
+                100, 2, None, 3, 1, r"`batch_size` must be a positive integer power of 2.",
+            ),
+            (
+                100, 2, None, 1, 1, r"`batch_size` must be a positive integer power of 2.",
+            ),
+            (
+                100, 2, None, None, 2, (2, 2),
+            ),
+            (
+                100, 2, None, 4, 5, r"`bits_per_iter` must not be greater than the size of the bitstring",
+            ),
+            (
+                100, 2, None, 4, None, (4, 1),
+            ),
+            (
+                100, 2, None, 4, 1, (4, 1),
+            ),
+            (
+                100, 2, -2, 4, 2, "available_dirty_aux must be a positive integer,",
+            ),
+            (
+                100, 2, 0, 4, 2, "available_dirty_aux must be a positive integer,",
+            ),
+            (
+                1000, 4, 4, None, None, (2, 4),
+            ),
+            (
+                1000, 4, 4, 1, 3, "The batch_size and bits_per_iter provided are not compatible \(or optimal\) with the available_dirty_aux.",
+            ),
+        ),
+    )
+    def test_resolve_params(
+        self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_output,
+    ):
+        """Test the input validation works as expected for resolve_params"""
+        if isinstance(expected_output, str):
+            with pytest.raises(ValueError, match = expected_output):
+                qre.SelectCopyQROM._resolve_params(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
+        else:
+            assert expected_output == qre.SelectCopyQROM._resolve_params(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires, expected_wires",
+        (
+            (
+                100, 2, None, 3, 1, None, None,
+            ),
+        )
+    )
+    def test_init(self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires, expected_wires):
+        """Test the init method works as expected"""
+        qrom = qre.SelectCopyQROM(
+            num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires,
+        )
+
+
+        assert qrom.num_wires == expected_wires
+        assert qrom.num_bitstrings == num_bitstrings
+        assert qrom.size_bitstring == size_bitstring
+        assert qrom.available_dirty_aux == available_dirty_aux
+
+    #     if batch_size is None)
+
+
+
+    # def test_init(self):
+    #     """Test the init method works as expected"""
+    #     pass
+
+    # def test_resource_params(self):
+    #     """Test that the resource_params are set as expected"""
+    #     pass
+
+    # def test_resource_rep(self):
+    #     """Test that the resource_rep is generated as expected"""
+    #     pass
+
+    # def test_resource_decomp(self):
+    #     """Test that the resource decomposition is as expected"""
+    #     pass
+
+    # def test_controlled_resource_decomp(self):
+    #     """Test that the controlled resource decomposition is as expected"""
+    #     pass
+
+    # def test_integration_resource_decomp(self):
+    #     """Test that dirty auxiliary qubits are used as expected"""
+    #     pass
+
+    # def test_integration_controlled_resource_decomp(self):
+    #     """Test that dirty auxiliary qubits are used as expected for controlled decomposition"""
+    #     pass

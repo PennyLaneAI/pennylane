@@ -1576,7 +1576,7 @@ class SelectCopyQROM(ResourceOperator):
     }
 
     @staticmethod
-    def _optimize_params(N, b, max_q):
+    def _optimize_params(N: int, b: int, max_q: int):
         """Brute force optimization over parameter space"""
 
         def cost_theorem1(N: int, b: int, mu: int, lam: int) -> int:
@@ -1598,7 +1598,7 @@ class SelectCopyQROM(ResourceOperator):
         for k in eligible_k:
             for l in eligible_l:
                 if k * (l - 1) <= max_q:
-                    cost = cost_theorem1(N, b, l, k)
+                    cost = cost_theorem1(N, b, k, l)
                     candidates.append((l, k))
                     costs.append(cost)
 
@@ -1608,7 +1608,7 @@ class SelectCopyQROM(ResourceOperator):
 
     @staticmethod
     def _resolve_params(
-        num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+        num_bitstrings: int, size_bitstring: int, available_dirty_aux: int | None, batch_size: int | None, bits_per_iter: int | None,
     ):
         r"""Input validation for the various parameters and optimizes the batch_size and bits_per_iter.
 
@@ -1627,7 +1627,9 @@ class SelectCopyQROM(ResourceOperator):
                 be specified, these will be used to determine `available_dirty_aux`.
 
         Raises:
-
+            ValueError: If `batch_size` is not a positive integer power of 2.
+            ValueError: If `bits_per_iter` is larger than the size of the bitstring.
+            ValueError: If `available_dirty_aux` is not a positive integer.
 
         Returns:
             tuple(int, int): The optimized batch_size and bits_per_iter.
@@ -1637,7 +1639,7 @@ class SelectCopyQROM(ResourceOperator):
             bits_per_iter = bits_per_iter or 1  # default to 1 if None
 
             exponent = int(math.log2(batch_size))
-            if 2**exponent != batch_size or (batch_size == 1):
+            if (2**exponent != batch_size) or (batch_size == 1):
                 raise ValueError(
                     f"`batch_size` must be a positive integer power of 2. Got {batch_size}"
                 )
@@ -1653,20 +1655,29 @@ class SelectCopyQROM(ResourceOperator):
                     f"available_dirty_aux must be a positive integer, got {available_dirty_aux}"
                 )
 
-            batch_size, bits_per_iter = SelectCopyQROM._optimize_params(
+            new_batch_size, new_bits_per_iter = SelectCopyQROM._optimize_params(
                 num_bitstrings, size_bitstring, available_dirty_aux
             )
 
+            if (batch_size is not None) or (bits_per_iter is not None):
+                if (batch_size != new_batch_size) or (bits_per_iter != new_bits_per_iter):
+                    raise ValueError(
+                        "The batch_size and bits_per_iter provided are not compatible (or optimal) with the available_dirty_aux. Please only provide either available_dirty_aux or (exclusively) batch_size and bits_per_iter"
+                    )
+
+            batch_size = new_batch_size
+            bits_per_iter = new_bits_per_iter
+        
         return (batch_size, bits_per_iter)
 
     def __init__(
         self,
-        num_bitstrings,
-        size_bitstring,
-        available_dirty_aux=None,
-        batch_size=None,
-        bits_per_iter=None,
-        wires=None,
+        num_bitstrings: int,
+        size_bitstring: int,
+        available_dirty_aux: int | None = None,
+        batch_size: int | None = None,
+        bits_per_iter: int | None = None,
+        wires: WiresLike | None = None,
     ) -> None:
 
         self.num_bitstrings = num_bitstrings
@@ -2030,7 +2041,7 @@ class SelectCopyQROM(ResourceOperator):
         return gate_cost
 
     @staticmethod
-    def _unary_iter(num_data_blocks, load_op, load_op_amount):
+    def _unary_iter(num_data_blocks: int, load_op: CompressedResourceOp, load_op_amount: int):
         r"""Generate the cost of a Select subroutine using the unary iteration trick
 
         Args:
@@ -2121,7 +2132,7 @@ class SelectCopyQROM(ResourceOperator):
         return gate_cost
 
     @staticmethod
-    def _single_ctrl_unary_iter(num_data_blocks, load_op, load_op_amount):
+    def _single_ctrl_unary_iter(num_data_blocks: int, load_op: CompressedResourceOp, load_op_amount: int):
         r"""Generate the cost of a Select subroutine using the unary iteration trick
 
         Args:
@@ -2177,7 +2188,7 @@ class SelectCopyQROM(ResourceOperator):
         return gate_cost
 
     @staticmethod
-    def _unary_copy_restore(num_data_blocks, bits_per_iter, size_bitstring):
+    def _unary_copy_restore(num_data_blocks: int, bits_per_iter: int, size_bitstring: int):
         r"""Generate the cost of the Copy-Restored subroutine
 
         Args:
