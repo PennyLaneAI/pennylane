@@ -515,7 +515,7 @@ class SymbolicSpecsResources(SpecsResources):
     def to_pretty_str(self, preindent: int = 0) -> str:
         prefix = " " * preindent
         return (
-            f"{prefix}Symbolic Variables: {', '.join(self.vars) if self.vars else 'None'}\n"
+            f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}\n"
             + super().to_pretty_str(preindent)
         )
 

@@ -65,6 +65,7 @@ def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
     fn_resources: dict[str, SymbolicSpecsResources | None],
+    display_names: dict[str, str],
 ) -> None:  # pragma: no cover
     # This function is covered by integration tests within the Catalyst frontend
     """
@@ -101,12 +102,11 @@ def _mlir_resources_to_specs_resources(
     fn_resources[focus] = None
     resources = all_data[focus]
 
-    # Sort the gate and measurement dictionaries by key to ensure consistent ordering, which is helpful for testing and readability of results
-    operations = {k: resources["operations"][k] for k in sorted(resources["operations"].keys())}
-    measurements = {
-        k: resources["measurements"][k] for k in sorted(resources["measurements"].keys())
-    }
+    operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
 
+    measurements = defaultdict(
+        int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
+    )
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
@@ -128,9 +128,13 @@ def _mlir_resources_to_specs_resources(
     ):
         if not isinstance(call_count, int):
             # If there is no integer call count, we have to treat this as a symbolic variable
-            call_count = Expression({("var_" + str(call_count),): 1})
+            if call_count not in display_names:
+                display_names[call_count] = chr(ord("a") + len(display_names))
+            var_name = display_names[call_count]
+
+            call_count = Expression({(var_name,): 1})
         if called_fn not in fn_resources:
-            _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources)
+            _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources, display_names)
 
         called_fn_resources = fn_resources[called_fn]
         if called_fn_resources is None:
@@ -147,10 +151,12 @@ def _mlir_resources_to_specs_resources(
         for meas, meas_count in called_fn_resources.measurements.items():
             measurements[meas] += call_count * meas_count
 
+    # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
+    # which is helpful for testing and readability
     fn_resources[focus] = SymbolicSpecsResources(
-        gate_types=dict(gate_types),
-        gate_sizes=dict(gate_sizes),
-        measurements=measurements,
+        gate_types={k: gate_types[k] for k in sorted(gate_types.keys())},
+        gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
+        measurements={k: measurements[k] for k in sorted(measurements.keys())},
         num_allocs=num_allocs,
         depth=None,  # Can't get depth from MLIR pass results
     )
@@ -164,7 +170,9 @@ def _get_resources_from_analysis_pass(
     resource_data = {}
 
     for fn_name in all_data.keys():
-        _mlir_resources_to_specs_resources(all_data, focus=fn_name, fn_resources=resource_data)
+        _mlir_resources_to_specs_resources(
+            all_data, focus=fn_name, fn_resources=resource_data, display_names={}
+        )
 
     if any(resources["has_branches"] for resources in all_data.values()):
         warnings.warn(
