@@ -2371,82 +2371,231 @@ class TestSelectCopyQROM:
         "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_output",
         (
             (
-                100, 2, None, 3, 1, r"`batch_size` must be a positive integer power of 2.",
+                100,
+                2,
+                None,
+                3,
+                1,
+                r"`batch_size` must be a positive integer power of 2.",
             ),
             (
-                100, 2, None, 1, 1, r"`batch_size` must be a positive integer power of 2.",
+                100,
+                2,
+                None,
+                1,
+                1,
+                r"`batch_size` must be a positive integer power of 2.",
             ),
             (
-                100, 2, None, None, 2, (2, 2),
+                100,
+                2,
+                None,
+                None,
+                2,
+                (2, 2),
             ),
             (
-                100, 2, None, 4, 5, r"`bits_per_iter` must not be greater than the size of the bitstring",
+                100,
+                2,
+                None,
+                4,
+                5,
+                r"`bits_per_iter` must not be greater than the size of the bitstring",
             ),
             (
-                100, 2, None, 4, None, (4, 1),
+                100,
+                2,
+                None,
+                4,
+                None,
+                (4, 1),
             ),
             (
-                100, 2, None, 4, 1, (4, 1),
+                100,
+                2,
+                None,
+                4,
+                1,
+                (4, 1),
             ),
             (
-                100, 2, -2, 4, 2, "available_dirty_aux must be a positive integer,",
+                100,
+                2,
+                -2,
+                4,
+                2,
+                "available_dirty_aux must be a positive integer,",
             ),
             (
-                100, 2, 0, 4, 2, "available_dirty_aux must be a positive integer,",
+                100,
+                2,
+                0,
+                4,
+                2,
+                "available_dirty_aux must be a positive integer,",
             ),
             (
-                1000, 4, 4, None, None, (2, 4),
+                1000,
+                4,
+                4,
+                None,
+                None,
+                (2, 4),
             ),
             (
-                1000, 4, 4, 1, 3, "The batch_size and bits_per_iter provided are not compatible \(or optimal\) with the available_dirty_aux.",
+                1000,
+                4,
+                4,
+                1,
+                3,
+                "The batch_size and bits_per_iter provided are not compatible \(or optimal\) with the available_dirty_aux.",
             ),
         ),
     )
     def test_resolve_params(
-        self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_output,
+        self,
+        num_bitstrings,
+        size_bitstring,
+        available_dirty_aux,
+        batch_size,
+        bits_per_iter,
+        expected_output,
     ):
         """Test the input validation works as expected for resolve_params"""
         if isinstance(expected_output, str):
-            with pytest.raises(ValueError, match = expected_output):
-                qre.SelectCopyQROM._resolve_params(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
+            with pytest.raises(ValueError, match=expected_output):
+                qre.SelectCopyQROM._resolve_params(
+                    num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+                )
         else:
-            assert expected_output == qre.SelectCopyQROM._resolve_params(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
+            assert expected_output == qre.SelectCopyQROM._resolve_params(
+                num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+            )
 
     @pytest.mark.parametrize(
-        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires, expected_wires",
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires",
         (
-            (
-                100, 2, None, 3, 1, None, None,
-            ),
-        )
+            (100, 2, None, 4, 1, None),
+            (100, 2, None, 4, 1, range(9)),
+            (1000, 4, 4, 2, 4, None),
+            (1000, 4, 4, 2, 4, range(14)),
+            (1000, 4, 9, 8, 1, None),
+            (1000, 4, 9, 8, 1, range(14)),
+        ),
     )
-    def test_init(self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires, expected_wires):
+    def test_init(
+        self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires
+    ):
         """Test the init method works as expected"""
         qrom = qre.SelectCopyQROM(
-            num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires,
+            num_bitstrings,
+            size_bitstring,
+            available_dirty_aux,
+            batch_size,
+            bits_per_iter,
+            wires,
         )
 
-
-        assert qrom.num_wires == expected_wires
+        assert qrom.num_wires == ceil_log2(num_bitstrings) + size_bitstring
         assert qrom.num_bitstrings == num_bitstrings
         assert qrom.size_bitstring == size_bitstring
         assert qrom.available_dirty_aux == available_dirty_aux
+        assert qrom.batch_size == batch_size
+        assert qrom.bits_per_iter == bits_per_iter
+        assert qrom.wires == (qp.wires.Wires(wires) if wires is not None else None)
 
-    #     if batch_size is None)
+        if available_dirty_aux is not None:
+            qrom = qre.SelectCopyQROM(
+                num_bitstrings,
+                size_bitstring,
+                available_dirty_aux,
+                None,
+                None,
+                wires,
+            )
 
+            assert qrom.batch_size == batch_size
+            assert qrom.bits_per_iter == bits_per_iter  # Check that these are set even when None
 
+    def test_init_wire_error(self):
+        """Test that an error is raised if incompatible wires are provided"""
+        with pytest.raises(ValueError, match="Expected 20 wires,"):
+            _ = qre.SelectCopyQROM(1000, 10, 20, wires=[1, 2, 3])
 
-    # def test_init(self):
-    #     """Test the init method works as expected"""
-    #     pass
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter",
+        (
+            (100, 2, None, 4, 1),
+            (1000, 4, 4, 2, 4),
+            (1000, 4, 9, 8, 1),
+        ),
+    )
+    def test_resource_params(
+        self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+    ):
+        """Test that the resource_params are set as expected"""
+        qrom = qre.SelectCopyQROM(
+            num_bitstrings,
+            size_bitstring,
+            available_dirty_aux,
+            batch_size,
+            bits_per_iter,
+        )
+        qrom_params = qrom.resource_params
 
-    # def test_resource_params(self):
-    #     """Test that the resource_params are set as expected"""
-    #     pass
+        assert qrom_params["num_bitstrings"] == num_bitstrings
+        assert qrom_params["size_bitstring"] == size_bitstring
+        assert qrom_params["available_dirty_aux"] == available_dirty_aux
+        assert qrom_params["batch_size"] == batch_size
+        assert qrom_params["bits_per_iter"] == bits_per_iter
 
-    # def test_resource_rep(self):
-    #     """Test that the resource_rep is generated as expected"""
-    #     pass
+        if available_dirty_aux is not None:
+            qrom = qre.SelectCopyQROM(num_bitstrings, size_bitstring, available_dirty_aux)
+            qrom_params = qrom.resource_params
+
+            assert qrom_params["batch_size"] == batch_size
+            assert qrom_params["bits_per_iter"] == bits_per_iter
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter",
+        (
+            (100, 2, None, 4, 1),
+            (1000, 4, 4, 2, 4),
+            (1000, 4, 9, 8, 1),
+        ),
+    )
+    def test_resource_rep(
+        self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+    ):
+        """Test that the resource_rep is generated as expected"""
+        qrom = qre.SelectCopyQROM.resource_rep(
+            num_bitstrings,
+            size_bitstring,
+            available_dirty_aux,
+            batch_size,
+            bits_per_iter,
+        )
+
+        qrom_params = {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "available_dirty_aux": available_dirty_aux,
+            "batch_size": batch_size,
+            "bits_per_iter": bits_per_iter,
+        }
+        expected_cmpr_rep = qre.CompressedResourceOp(
+            qre.SelectCopyQROM,
+            ceil_log2(num_bitstrings) + size_bitstring,
+            qrom_params,
+        )
+
+        assert qrom == expected_cmpr_rep
+
+        if available_dirty_aux is not None:
+            qrom = qre.SelectCopyQROM.resource_rep(
+                num_bitstrings, size_bitstring, available_dirty_aux
+            )
+            assert qrom == expected_cmpr_rep
 
     # def test_resource_decomp(self):
     #     """Test that the resource decomposition is as expected"""

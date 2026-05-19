@@ -1608,7 +1608,11 @@ class SelectCopyQROM(ResourceOperator):
 
     @staticmethod
     def _resolve_params(
-        num_bitstrings: int, size_bitstring: int, available_dirty_aux: int | None, batch_size: int | None, bits_per_iter: int | None,
+        num_bitstrings: int,
+        size_bitstring: int,
+        available_dirty_aux: int | None,
+        batch_size: int | None,
+        bits_per_iter: int | None,
     ):
         r"""Input validation for the various parameters and optimizes the batch_size and bits_per_iter.
 
@@ -1667,7 +1671,7 @@ class SelectCopyQROM(ResourceOperator):
 
             batch_size = new_batch_size
             bits_per_iter = new_bits_per_iter
-        
+
         return (batch_size, bits_per_iter)
 
     def __init__(
@@ -2132,7 +2136,9 @@ class SelectCopyQROM(ResourceOperator):
         return gate_cost
 
     @staticmethod
-    def _single_ctrl_unary_iter(num_data_blocks: int, load_op: CompressedResourceOp, load_op_amount: int):
+    def _single_ctrl_unary_iter(
+        num_data_blocks: int, load_op: CompressedResourceOp, load_op_amount: int
+    ):
         r"""Generate the cost of a Select subroutine using the unary iteration trick
 
         Args:
