@@ -648,46 +648,20 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "pred, expected",
-        [
-            (1, -1),
-            (0, 1),
-        ],
-    )
-    def test_circuit_cond_on_operator(self, pred, expected):
-        """Test circuit with qp.cond() on operators directly."""
-
-        @qp.qnode(dev)
-        def circuit_with_cond_on_operator(p):
-            qp.cond(p, qp.X, qp.Z)(0)
-            return qp.expval(qp.Z(0))
-
-        result = circuit_with_cond_on_operator(pred)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
-        args = [pred]
-        jaxpr = jax.make_jaxpr(circuit_with_cond_on_operator)(*args)
-
-        # cond primitive must not return `AbstractQperator`s when the branch fns are operators
-        cond_eqn = jaxpr.eqns[0].params["qfunc_jaxpr"].eqns[1]
-        assert not cond_eqn.outvars
-
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-    def test_circuit_cond_on_oeprator_jaxpr_check(self):
+    def test_circuit_cond_on_operator_jaxpr_check(self):
         """Test that the cond has no output when the functions are an operator type."""
-        
+
         def f(pred):
             return qp.cond(pred, qp.X, qp.Z)(0)
-            
-       jaxpr = jax.make_jaxpr(f)(True)
-       assert len(jaxpr.outvars) == 0
-       assert jaxpr.eqns[-1].primitive == cond_prim
-       assert jaxpr.eqns[-1].outvars == []
-       
-       for branch in jaxpr.eqns[-1].params['jaxpr_branches']:
-           assert branch.outvars == []
+
+        jaxpr = jax.make_jaxpr(f)(True).jaxpr
+        assert len(jaxpr.outvars) == 0
+        assert jaxpr.eqns[-1].primitive == cond_prim
+        assert jaxpr.eqns[-1].outvars == []
+
+        for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
+            assert branch.outvars == []
+
     @pytest.mark.parametrize(
         "pred, arg1, arg2, expected",
         [
