@@ -71,38 +71,22 @@ class TestDeviceProperties:
     def test_load_device(self, device_kwargs):
         """Test that the device loads correctly."""
         device_kwargs["wires"] = 2
-        device_kwargs["shots"] = 1234
 
         dev = qp.device(**device_kwargs)
         if isinstance(dev, qp.devices.Device):
             assert isinstance(dev.wires, qp.wires.Wires)
             assert dev.wires == qp.wires.Wires((0, 1))
 
-            assert isinstance(dev.shots, qp.measurements.Shots)
-            assert dev.shots == qp.measurements.Shots(1234)
-
             assert device_kwargs["name"] == dev.name
             assert isinstance(dev.tracker, qp.Tracker)
             return
 
         assert dev.num_wires == 2
-        assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            dev = qp.device(**device_kwargs)
-            if isinstance(dev, qp.devices.Device):
-                pytest.skip("test is old interface specific.")
-
-    def test_no_0_shots(self, device_kwargs):
-        """Test that non-analytic devices cannot accept 0 shots."""
-        # first create a valid device to extract its capabilities
-        device_kwargs["wires"] = 2
-        device_kwargs["shots"] = 0
-
-        with pytest.raises(Exception):  # different types of error based on interface
             dev = qp.device(**device_kwargs)
             if isinstance(dev, qp.devices.Device):
                 pytest.skip("test is old interface specific.")
@@ -250,7 +234,7 @@ class TestCapabilities:
 
             assert state is None
         else:
-            if dev.shots is not None:
+            if shots is not None:
                 with pytest.warns(
                     UserWarning,
                     match="Requested state or density matrix with finite shots; the returned",

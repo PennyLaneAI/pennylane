@@ -204,7 +204,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_BasisRotation(self, device, tol, shots):
         """Test the BasisRotation template."""
         dev = device(2)
-        if dev.shots or "mixed" in dev.name or "Mixed" in dev.name:
+        if shots or "mixed" in dev.name or "Mixed" in dev.name:
             pytest.skip("test only works with analytic-mode pure statevector simulators")
 
         unitary_matrix = np.array(
@@ -320,7 +320,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_FermionicDoubleExcitation(self, device, tol, shots):
         """Test the FermionicDoubleExcitation template."""
         dev = device(5)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
         @qp.qnode(dev, shots=shots)
@@ -335,7 +335,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_FermionicSingleExcitation(self, device, tol, shots):
         """Test the FermionicSingleExcitation template."""
         dev = device(3)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
         @qp.qnode(dev, shots=shots)
@@ -350,7 +350,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_FlipSign(self, device, tol, shots):
         """Test the FlipSign template."""
         dev = device(2)
-        if dev.shots:
+        if shots:
             pytest.skip("test only works with analytic-mode simulations")
         basis_state = [1, 0]
 
@@ -547,7 +547,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_MottonenStatePreparation_state(self, device, tol, shots):
         """Test the MottonenStatePreparation template on analytic-mode devices."""
         dev = device(3)
-        if dev.shots:
+        if shots:
             pytest.skip("test only works with analytic-mode simulations")
 
         @qp.qnode(dev, shots=shots)
@@ -892,7 +892,7 @@ class TestMoleculeTemplates:
         """Test the GateFabric template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
         @qp.qnode(dev, shots=shots)
@@ -967,7 +967,7 @@ class TestMoleculeTemplates:
         """Test the kUpCCGSD template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
         @qp.qnode(dev, shots=shots)

@@ -117,7 +117,7 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 3
         dev = qp.device(**device_kwargs)
 
-        if dev.shots and observable == "SparseHamiltonian":
+        if shots and observable == "SparseHamiltonian":
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -667,7 +667,7 @@ class TestTensorExpval:
                 pytest.skip(
                     "Skipped because device does not support the SparseHamiltonian observable."
                 )
-        if dev.shots:
+        if shots:
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
@@ -701,7 +701,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         @qp.qnode(dev, shots=shots)
@@ -711,7 +711,7 @@ class TestSample:
 
         res = circuit()
         assert qp.math.allclose(res, 1)  # note, might be violated with a noisy device?
-        assert qp.math.shape(res) == (dev.shots.total_shots, 1)
+        assert qp.math.shape(res) == (shots, 1)
         assert qp.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol, shots):
@@ -721,7 +721,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         @qp.qnode(dev, shots=shots)
@@ -741,7 +741,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
@@ -773,7 +773,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -821,7 +821,7 @@ class TestSample:
         n_wires = 2
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
@@ -870,7 +870,7 @@ class TestSample:
         n_wires = 2
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -928,7 +928,7 @@ class TestTensorSample:
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -972,7 +972,7 @@ class TestTensorSample:
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -1014,7 +1014,7 @@ class TestTensorSample:
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -1108,7 +1108,7 @@ class TestTensorSample:
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -1694,7 +1694,7 @@ class TestSampleMeasurement:
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Shots must be specified in the device to compute a sampled measurement.")
 
         class MyMeasurement(SampleMeasurement):
@@ -1718,7 +1718,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
         dev = device(2)
 
-        if dev.shots:
+        if shots:
             pytest.skip("If shots!=None no error is raised.")
 
         class MyMeasurement(SampleMeasurement):
@@ -1745,7 +1745,7 @@ class TestSampleMeasurement:
             pytest.skip("test specific for old device interface.")
         _skip_test_for_braket(dev)
 
-        if dev.shots is None:
+        if shots is None:
             pytest.skip(
                 "The number of shots has to be explicitly set on the device when using "
                 "sample-based measurements."
@@ -1770,7 +1770,7 @@ class TestStateMeasurement:
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if dev.shots:
+        if shots:
             pytest.skip("Some plugins don't update state information when shots is not None.")
 
         class MyMeasurement(StateMeasurement):
@@ -1876,7 +1876,7 @@ class TestCustomMeasurement:
             pytest.skip("test specific to old device interface.")
         _skip_test_for_braket(dev)
 
-        if dev.shots is None:
+        if shots is None:
             pytest.skip(
                 "The number of shots has to be explicitly set on the device when using "
                 "sample-based measurements."

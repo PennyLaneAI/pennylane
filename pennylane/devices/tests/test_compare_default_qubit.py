@@ -38,7 +38,7 @@ class TestComparison:
         dev = device(n_wires)
         dev_def = qp.device("default.qubit")
 
-        if dev.shots:
+        if shots:
             pytest.skip("Device is in non-analytical mode.")
 
         if dev.name == "default.qubit":
@@ -104,7 +104,7 @@ class TestComparison:
         dev = device(n_wires)
         dev_def = qp.device("default.qubit", wires=n_wires)
 
-        if dev.shots:
+        if shots:
             pytest.skip("Device is in non-analytical mode.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -157,7 +157,7 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if dev.shots:
+        if shots:
             pytest.skip("Device is in non-analytical mode.")
 
         theta = 0.432
@@ -195,7 +195,7 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if dev.shots:
+        if shots:
             pytest.skip("Device is in non-analytical mode.")
 
         n_layers = pnp.random.randint(1, 5)
@@ -225,7 +225,7 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        if dev.shots:
+        if shots:
             pytest.skip("Device is in non-analytical mode.")
 
         gates = [

@@ -54,7 +54,7 @@ class TestGradients:
         if diff_method != "backprop":
             pytest.skip(reason="test only works with backprop")
         dev = device(2)
-        if dev.shots:
+        if shots:
             pytest.skip("test uses backprop, must be in analytic mode")
         if "mixed" in dev.name:
             pytest.skip("mixed-state simulator will wrongly use grad on non-scalar results")
