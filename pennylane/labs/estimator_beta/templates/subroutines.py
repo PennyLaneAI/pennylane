@@ -1549,7 +1549,7 @@ class SelectCopyQROM(ResourceOperator):
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> qrom = qre.SelectCopyQROM(
-    ...     num_bitstrings = 10e8,
+    ...     num_bitstrings = 1e9,
     ...     size_bitstring = 16,
     ...     available_dirty_aux = 256,
     ... )
@@ -1577,7 +1577,17 @@ class SelectCopyQROM(ResourceOperator):
 
     @staticmethod
     def _optimize_params(N: int, b: int, max_q: int):
-        """Brute force optimization over parameter space"""
+        """Brute force optimization of the cost function from Theorem 1 of 
+        the paper which optimizes the batch size and bits per iteration values.
+
+        Args:
+            N (int): the number of bitstrings
+            b (int): the size of the bitstrings
+            max_q (int): the maximum available dirty auxiliary qubits
+        
+        Returns:
+            tuple(int, int): The optimal batch size and bits per iteration (respectively).
+        """
 
         def cost_theorem1(N: int, b: int, mu: int, lam: int) -> int:
             """Evaluate the Toffoli cost from Theorem 1 (Eq. A1)."""
