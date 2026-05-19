@@ -302,9 +302,8 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
 
         for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
-            pred = (
-                self.preds[i] if i < len(self.preds) else True
-            )  # otherwise_fn always has pred=True
+            # otherwise_fn always has pred=True
+            pred = self.preds[i] if i < len(self.preds) else True
             fn = _no_return(_fn)
             if i == 0:
                 flat_true_fn = FlatFn(fn)
