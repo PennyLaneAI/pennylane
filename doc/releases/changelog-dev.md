@@ -19,7 +19,7 @@
   ```python
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
-  
+
   dev = qp.device("lightning.qubit")
 
   @qp.qnode(dev, shots=1)
@@ -35,14 +35,18 @@
 
     return qp.sample(wires=[12])
   ```
-  
+
   ```pycon
     >>> output = circuit(3, ">=", 2)
     >>> print(bool(output))
     True
-  
+
   ```
-  
+
+* Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
+  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which led to compilation errors when using the old catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
+  [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
+
 <h3>Breaking changes 💔</h3>
 
 * `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
@@ -50,20 +54,20 @@
 
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  are removed. Instead, please use the 
+  are removed. Instead, please use the
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
 
-* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`. 
+* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`. 
+* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
+* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.Operator` has been removed. 
+* The `id` keyword argument to :class:`~.Operator` has been removed.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
@@ -87,7 +91,7 @@
 * Setting `Operator._queue_category=None` and `MeasurementProcess._queue_category=None`
   to avoid processing the operator into the circuit is now removed.
   Instead, `Operator.queue` can be overwritten if needed.
-  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470) 
+  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
 <h3>Deprecations 👋</h3>
 
@@ -103,10 +107,10 @@
 
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
-  
+
 * Added support for JAX arrays as control wires during JAXpr evaluation.
   [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
-  
+
 * Replaces arbitrary magic numbers across multiple modules with named, documented constants.
   Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
   `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
@@ -118,7 +122,7 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
-  
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
