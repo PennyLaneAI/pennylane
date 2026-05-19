@@ -17,7 +17,6 @@ This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ
 import functools
 import math as builtin_math
 from itertools import combinations
@@ -42,6 +41,9 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation
+
+# pylint: disable=arguments-differ
+from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -180,10 +182,11 @@ class RX(Operation):
 
         return RX(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        pi_half = qp.math.ones_like(self.data[0]) * (np.pi / 2)
-        return [pi_half, self.data[0], -pi_half]
+
+@single_qubit_zyz_angles.register
+def _(op: RX):
+    # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
+    return (np.pi / 2, op.data[0], -np.pi / 2)
 
 
 def _rx_to_rot_resources():
@@ -391,9 +394,11 @@ class RY(Operation):
 
         return RY(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-        return [0.0, self.data[0], 0.0]
+
+@single_qubit_zyz_angles.register
+def _(op: RY):
+    # RY(\theta) = RZ(0) RY(\theta) RZ(0)
+    return (0.0, op.data[0], 0.0)
 
 
 def _ry_to_rot_resources():
@@ -655,9 +660,11 @@ class RZ(Operation):
 
         return RZ(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
+
+@single_qubit_zyz_angles.register
+def _(op: RZ):
+    # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+    return (op.data[0], 0.0, 0.0)
 
 
 def _rz_to_ps_resources():
@@ -950,9 +957,11 @@ class PhaseShift(Operation):
 
         return PhaseShift(phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
+
+@single_qubit_zyz_angles.register
+def _(op: PhaseShift):
+    # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+    return (op.data[0], 0.0, 0.0)
 
 
 def _phaseshift_to_rz_gp_resources():
@@ -1153,9 +1162,6 @@ class Rot(Operation):
     def _controlled(self, wire: WiresLike) -> "qp.CRot":
         return qp.CRot(*self.parameters, wires=wire + self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        return self.data
-
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
 
@@ -1179,6 +1185,11 @@ class Rot(Operation):
             return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
+
+
+@single_qubit_zyz_angles.register
+def _(op: Rot):
+    return tuple(op.data)
 
 
 def _rot_to_rz_ry_rz_resources():

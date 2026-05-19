@@ -17,6 +17,7 @@ from functools import lru_cache, partial
 
 import pennylane as qp
 from pennylane import math
+from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -99,7 +100,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             res = []
             for prev_op in previous_ops_on_wires:
                 with qp.capture.pause():
-                    rot = qp.Rot(*prev_op.single_qubit_rot_angles(), wires=prev_op.wires)
+                    rot = qp.Rot(*single_qubit_zyz_angles(prev_op), wires=prev_op.wires)
                 res.append(super().interpret_operation(rot))
 
             res.append(super().interpret_operation(op))
@@ -128,7 +129,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                     self.previous_ops[w] = op
                 return []
 
-            prev_op_angles = math.stack(prev_op.single_qubit_rot_angles())
+            prev_op_angles = math.stack(single_qubit_zyz_angles(prev_op))
             cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
             if (
@@ -168,7 +169,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                 return super().interpret_operation(op)
 
             try:
-                cumulative_angles = math.stack(op.single_qubit_rot_angles())
+                cumulative_angles = math.stack(single_qubit_zyz_angles(op))
             except (NotImplementedError, AttributeError):
                 return self._handle_non_fusible_op(op)
 
@@ -268,9 +269,10 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
-    Fusion is performed only between gates that implement the property
-    ``single_qubit_rot_angles``. Any sequence of two or more single-qubit gates
-    (on the same qubit) with that property defined will be fused into one ``Rot``.
+    Fusion is performed only between gates with custom implementations registered
+    for the ``single_qubit_zyz_angles`` dispatch function. Any sequence of two or 
+    more single-qubit gates (on the same qubit) with a custom implementation registered
+    for that function is fused into one ``Rot``.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
@@ -491,10 +493,10 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
                 list_copy.pop(0)
                 continue
 
-        # Look for single_qubit_rot_angles; if not available, queue and move on.
+        # Look for dispatch of single_qubit_zyz_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = math.stack(current_gate.single_qubit_rot_angles())
+            cumulative_angles = math.stack(single_qubit_zyz_angles(current_gate))
             _, phase = math.convert_to_su2(current_gate.matrix(), return_global_phase=True)
             global_phase += phase
         except (NotImplementedError, AttributeError):
@@ -534,7 +536,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = math.stack(next_gate.single_qubit_rot_angles())
+                next_gate_angles = math.stack(single_qubit_zyz_angles(next_gate))
                 _, phase = math.convert_to_su2(next_gate.matrix(), return_global_phase=True)
                 global_phase += phase
             except (NotImplementedError, AttributeError):

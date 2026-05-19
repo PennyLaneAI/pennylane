@@ -470,10 +470,6 @@ class AdjointOperation(Adjoint, Operation):
     def control_wires(self):
         return self.base.control_wires
 
-    def single_qubit_rot_angles(self):
-        omega, theta, phi = self.base.single_qubit_rot_angles()
-        return [-phi, -theta, -omega]
-
     @property
     def grad_method(self):
         return self.base.grad_method
@@ -494,6 +490,12 @@ class AdjointOperation(Adjoint, Operation):
 
     def generator(self):
         return -1 * self.base.generator()
+
+
+@qp.single_qubit_zyz_angles.register
+def _(self: AdjointOperation):
+    omega, theta, phi = qp.single_qubit_zyz_angles(self.base)
+    return (-phi, -theta, -omega)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

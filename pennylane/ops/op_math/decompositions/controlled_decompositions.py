@@ -29,6 +29,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import Operation, Operator
+from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 
@@ -176,7 +177,7 @@ def ctrl_decomp_zyz(
 
     if isinstance(target_operation, Operation):
         try:
-            rot_angles = target_operation.single_qubit_rot_angles()
+            rot_angles = single_qubit_zyz_angles(target_operation)
             _, global_phase = math.convert_to_su2(
                 ops.functions.matrix(target_operation), return_global_phase=True
             )

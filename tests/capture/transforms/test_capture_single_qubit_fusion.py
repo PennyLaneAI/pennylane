@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 
 jax = pytest.importorskip("jax")
 
@@ -452,7 +453,7 @@ class TestSingleQubitFusionInterpreter:
         def get_double_ry_rot_angles(angles):
             return fuse_rot_angles(angles, angles)
 
-        angles = jax.numpy.array(qp.RY(3.5, 0).single_qubit_rot_angles())
+        angles = jax.numpy.array(single_qubit_zyz_angles(qp.RY(3.5, 0)))
         fused_angles = get_double_ry_rot_angles(angles)
         expected_ops = [qp.RX(2.5, 0), qp.Rot(*fused_angles, 0), qp.RX(2.5, 0)]
         expected_meas = [qp.expval(qp.Z(0))]

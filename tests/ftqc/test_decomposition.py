@@ -45,6 +45,7 @@ from pennylane.ftqc.decomposition import (
     queue_single_qubit_gate,
 )
 from pennylane.ftqc.utils import QubitMgr
+from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 
 
 class TestGateSetDecomposition:
@@ -172,7 +173,7 @@ class TestGateSetDecomposition:
             qp.CZ([0, 1])
 
             # MBQC Z rotation: X, X, +/- angle, X
-            angles = rot_xzx_gate.single_qubit_rot_angles()
+            angles = single_qubit_zyz_angles(rot_xzx_gate)
             m1 = measure_x(0)
             m2 = cond_measure(
                 m1,

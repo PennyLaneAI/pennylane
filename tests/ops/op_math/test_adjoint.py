@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
@@ -432,8 +433,8 @@ class TestAdjointOperation:
         base = qp.RX(param, wires=0)
         op = Adjoint(base)
 
-        base_angles = base.single_qubit_rot_angles()
-        angles = op.single_qubit_rot_angles()
+        base_angles = single_qubit_zyz_angles(base)
+        angles = single_qubit_zyz_angles(op)
 
         for angle1, angle2 in zip(angles, reversed(base_angles)):
             assert angle1 == -angle2
