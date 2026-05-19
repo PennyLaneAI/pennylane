@@ -111,8 +111,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import FlatPytree, classproperty
-from pennylane.pytrees import register_pytree
+from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
+from pennylane.pytrees import flatten, register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -410,6 +410,17 @@ class Operator2(ABC):
     """The names of arguments corresponding to static arguments. Static arguments
     are those whose concrete values must be known at compile-time."""
 
+    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
+    """The names of arguments which correspond to dynamic data wrapped in static
+    structures (known as Pytrees). This feature is opt-in, but is required for cases
+    where arrays, operators, and wires are supplied within a collection."""
+
+    compilable_argnames: ClassVar[tuple[str, ...]] = ()
+    """The names of arguments which correspond to compilable static operator data.
+    This feature is opt-in, but can be useful PauliString arguments and the like."""
+
+    # TODO: Remove this. ndim_params is a property by default, and only needs to be specified
+    # if an operator has broadcastable dynamic arguments
     ndim_params: ClassVar[tuple[int, ...]]
     """The number of dimensions expected for each dynamic argument. This must be specified
     for parameter broadcasting support."""
@@ -440,9 +451,34 @@ class Operator2(ABC):
         # pauli sentence, if applicable
         self._pauli_rep: qp.pauli.PauliSentence | None = None
 
-        # FIXME: Complete
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
+
+        # Initialize wires:
+        #   1. Union of all wire_argnames into _wires
+        #   2. Flatten pytree arguments and look for operators
+        #   3. Append operator argument wires to _wires
+        # pylint: disable=unnecessary-lambda-assignment
+        is_wires = lambda v: isinstance(v, Wires)
+        is_op = lambda v: isinstance(v, Operator2)
+        all_wires = []
+
+        for w in self.wire_argnames:
+            leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=is_wires)
+            all_wires.extend(leaves)
+
+        for h in self.hybrid_argnames:
+            leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=is_op)
+            ops = filter(is_op, leaves)
+            all_wires.extend(op.wires for op in ops)
+
+        self.__wires = Wires.all_wires(all_wires)
+
+        # Broadcasting-related initialization
+        self._batch_size: int | None = _UNSET_BATCH_SIZE
+        self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
+
+        self.queue()
 
     def __init_subclass__(cls: type["Operator2"]) -> None:
         # turn has_decomposition into a class property if possible
@@ -545,6 +581,67 @@ class Operator2(ABC):
 
         return cls(**args)
 
+    def _check_batching(self):
+        """Check if the expected numbers of dimensions of parameters coincides with the
+        ones received and sets the ``_batch_size`` attribute.
+
+        The check always passes and sets the ``_batch_size`` to ``None`` for the default
+        ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
+        expected numbers of dimensions, allowing to infer a batch size.
+        """
+        self._batch_size = None
+        dyn_args = tuple(self.dyn_args.values())
+
+        try:
+            ndims = tuple(qp.math.ndim(arg) for arg in dyn_args)
+        except (
+            ValueError
+        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # an operation with abstract parameters that make `qp.math.ndim` fail.
+            if any(math.is_abstract(p) for p in dyn_args):
+                self._batch_size = None
+                self._ndim_params = (0,) * len(dyn_args)
+                return
+            raise e  # pragma: no cover
+
+        if any(len(qp.math.shape(arg)) >= 1 and qp.math.shape(arg)[0] is None for arg in dyn_args):
+            # if the batch dimension is unknown, then skip the validation
+            # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
+            # typically during compilation of a function decorated with jax.jit or tf.function
+            return
+
+        self._ndim_params = ndims
+        if ndims != self.ndim_params:
+            ndims_matches = [
+                (ndim == exp_ndim, ndim == exp_ndim + 1)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
+            ]
+            if not all(correct or batched for correct, batched in ndims_matches):
+                raise ValueError(
+                    f"{self.name}: wrong number(s) of dimensions in parameters. "
+                    f"Parameters with ndims {ndims} passed, {self.ndim_params} expected."
+                )
+
+            first_dims = [
+                qp.math.shape(arg)[0]
+                for (_, batched), arg in zip(ndims_matches, dyn_args, strict=True)
+                if batched
+            ]
+            if not qp.math.allclose(first_dims, first_dims[0]):
+                raise ValueError(
+                    "Broadcasting was attempted but the broadcasted dimensions "
+                    f"do not match: {first_dims}."
+                )
+
+            self._batch_size = first_dims[0]
+
     # ------------------ General properties ------------------
 
     @property
@@ -584,7 +681,38 @@ class Operator2(ABC):
         Returns:
             Wires: wires
         """
-        return Wires.all_wires([self.arguments[w] for w in self.wire_argnames])
+        return self.__wires
+
+    @property
+    def batch_size(self) -> int | None:
+        """Batch size of the operator if it is used with broadcasted parameters.
+
+        The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
+        for the operator. If (some of) the latter have an additional dimension, and this
+        dimension has the same size for all parameters, its size is the batch size of the
+        operator. If no parameter has an additional dimension, the batch size is ``None``.
+
+        Returns:
+            int or None: Size of the parameter broadcasting dimension if present, else ``None``.
+        """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._check_batching()
+        return self._batch_size
+
+    @property
+    def ndim_params(self) -> tuple[int]:
+        """Number of dimensions per trainable parameter of the operator.
+
+        By default, this property returns the numbers of dimensions of the parameters used
+        for the operator creation. If the parameter sizes for an operator subclass are fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            tuple: Number of dimensions for each trainable parameter.
+        """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._check_batching()
+        return self._ndim_params
 
     @property
     def data(self) -> tuple[Any, ...]:
