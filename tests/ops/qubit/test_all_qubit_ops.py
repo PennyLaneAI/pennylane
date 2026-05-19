@@ -24,6 +24,33 @@ from gate_data import I
 import pennylane as qp
 
 
+@pytest.mark.parametrize(
+    "op, basis",
+    [
+        (qp.X(0), "X"),
+        (qp.Y(0), "Y"),
+        (qp.Z(0), "Z"),
+        (qp.S(0), "Z"),
+        (qp.T(0), "Z"),
+        (qp.SX(0), "X"),
+        (qp.RX(0.5, 0), "X"),
+        (qp.RY(0.5, 0), "Y"),
+        (qp.RZ(0.5, 0), "Z"),
+        (qp.PhaseShift(0.5, 0), "Z"),
+        (qp.PCPhase(1.23, 7, (1, 2, 3)), "Z"),
+        (qp.X(0) + qp.Y(0), None),
+        (qp.X(0) @ qp.Y(1), None),
+    ],
+)
+def test_basis_deprecation(op, basis):
+    """Test Operation.basis raises a deprecation warning."""
+    with pytest.warns(
+        qp.exceptions.PennyLaneDeprecationWarning,
+        match="Operation.basis is deprecated in v0.46 and will be removed in v0.47.",
+    ):
+        assert op.basis == basis
+
+
 class TestOperations:
     """Tests for the operations"""
 

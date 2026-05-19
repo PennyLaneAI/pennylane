@@ -637,7 +637,7 @@ class TestMultiControlledX:
     def test_decomposition_no_control_values(self):
         """Test decomposition has default control values of all ones."""
         decomp1 = qp.MultiControlledX.compute_decomposition((0, 1, 2))
-        decomp2 = qp.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1, 1])
+        decomp2 = qp.MultiControlledX.compute_decomposition((0, 1, 2), control_values=[1, 1])
 
         assert len(decomp1) == len(decomp2)
 
