@@ -290,7 +290,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]  # pylint: disable=protected-access
+        eigs_cache = diag_sum_op._eigs[diag_sum_op]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -656,13 +656,13 @@ class TestProperties:
         """Test the hash property is independent of order."""
         op1 = Sum(qp.PauliX("a"), qp.PauliY("b"))
         op2 = Sum(qp.PauliY("b"), qp.PauliX("a"))
-        assert op1.hash == op2.hash
+        assert hash(op1) == hash(op2)
 
         op3 = Sum(qp.PauliX("a"), qp.PauliY("b"), qp.PauliZ(-1))
-        assert op3.hash != op1.hash
+        assert hash(op3) != hash(op1)
 
         op4 = Sum(qp.X("a"), qp.X("a"), qp.Y("b"))
-        assert op4.hash != op1.hash
+        assert hash(op4) != hash(op1)
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
     @pytest.mark.parametrize("ops_lst", ops)

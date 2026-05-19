@@ -75,11 +75,33 @@
   The deprecated access through `transform_program` has been removed.
   [(#9465)](https://github.com/PennyLaneAI/pennylane/pull/9465)
 
+* ``Operation.basis`` is deprecated. :func:`~pennylane.is_commuting` instead should be used to determine whether or not
+  two operators commute. For example, ``qp.is_commuting(my_op, qp.X(my_op.wires[0]))`` can be used to determine
+  if ``my_op`` is in the ``X`` basis.
+  [(#9476)](https://github.com/PennyLaneAI/pennylane/pull/9476)
+
 * Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"``
   is no longer supported as of 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#9468)](https://github.com/PennyLaneAI/pennylane/pull/9468)
 
+* Setting `Operator._queue_category=None` and `MeasurementProcess._queue_category=None`
+  to avoid processing the operator into the circuit is now removed.
+  Instead, `Operator.queue` can be overwritten if needed.
+  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470) 
+
 <h3>Deprecations 👋</h3>
+
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
+  [(#9484)](https://github.com/PennyLaneAI/pennylane/pull/9484)
+
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+  [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -105,9 +127,25 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
+  incorrect global phase (off by −1 per qubit). The decomposition used
+  ``GlobalPhase(basis * π/2)`` instead of ``GlobalPhase(-basis * π/2)``, introduced in
+  [#9406](https://github.com/PennyLaneAI/pennylane/pull/9406).
+  [(#9492)](https://github.com/PennyLaneAI/pennylane/pull/9492)
+
+* Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
+  instead of `(batch, n_measurements)` when the wrapped QNode returns multiple measurements as a tuple
+  (e.g., `return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))`) and receives batched inputs. This previously
+  caused shape mismatch errors when feeding the output into downstream `torch.nn.Linear` layers.
+  [(#9284)](https://github.com/PennyLaneAI/pennylane/pull/9284)
+
 * Fixed a bug where :class:`~.BasisEmbedding` was not normalized to :class:`~.BasisState` in
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
+
+* Fixes a bug where two ``MeasurementProcess`` of taken of different mid-circuit measurement
+  values sometimes incorrectly have the same hash.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
 <h3>Contributors ✍️</h3>
 
@@ -115,6 +153,8 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Astral Cai,
+Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,

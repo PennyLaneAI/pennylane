@@ -20,9 +20,11 @@ import abc
 import copy
 from collections.abc import Callable
 from functools import wraps
+from warnings import warn
 
 import pennylane as qp
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
@@ -271,12 +273,12 @@ class CompositeOp(Operator):
         """
         eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
-        if self.hash not in self._eigs:
+        if self not in self._eigs:
             mat = self.matrix()
             w, U = eigen_func(mat)
-            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
+            self._eigs[self] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[self.hash]
+        return self._eigs[self]
 
     @property
     def has_diagonalizing_gates(self):
@@ -371,18 +373,22 @@ class CompositeOp(Operator):
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([factor.hash for factor in self._sort(self.operands)]))
+                (str(self.name), str([hash(factor) for factor in self._sort(self.operands)]))
             )
         return self._hash
 
-    # pylint:disable = missing-function-docstring
+    # pylint:disable = missing-function-docstring, useless-return
     @property
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return None
 
     @property

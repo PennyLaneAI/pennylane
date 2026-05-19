@@ -187,6 +187,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
+from warnings import warn
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -201,6 +202,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -797,6 +799,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
+        warnings.warn(
+            "The Operator.hash property has been deprecated, use hash(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return hash(self)
+
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
+
+    def __hash__(self) -> int:
         return hash(
             (
                 str(self.name),
@@ -805,12 +817,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 _process_data(self),
             )
         )
-
-    def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
-
-    def __hash__(self) -> int:
-        return self.hash
 
     @staticmethod
     def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
@@ -1559,7 +1565,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @property
-    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
+    def _queue_category(self) -> Literal["_ops", "_measurements"]:
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
         This property is a temporary solution that should not exist long-term and should not be
@@ -1568,7 +1574,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None` (deprecated)
         """
         return "_ops"
 
@@ -1834,15 +1839,26 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
+    # pylint: disable=useless-return
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.
 
+        .. warning::
+
+            ``Operation.basis`` is deprecated in v0.46 and will be removed in v0.47.
+            To check commutivity, :func:`~.is_commuting` should be used instead.
+
         For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
         ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
         """
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return None
 
     @property
