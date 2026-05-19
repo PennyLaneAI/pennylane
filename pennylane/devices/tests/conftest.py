@@ -46,7 +46,7 @@ def tol():
     probing analytic or non-analytic devices, which allows us to define the
     standard for deterministic or stochastic test results dynamically."""
 
-    def _tol(shots):
+    def _tol(shots):  # pylint: disable=redefined-outer-name
         if shots is None:
             return float(os.environ.get("TOL", TOL))
         return TOL_STOCHASTIC
@@ -112,11 +112,17 @@ def skip_if():
 
 
 @pytest.fixture
-def validate_diff_method(device, diff_method, device_kwargs):
+def shots(request) -> None | int:
+    """The number of shots to use during an execution."""
+    return int(request.config.getoption("--shots"))
+
+
+@pytest.fixture
+def validate_diff_method(device, diff_method, shots):  # pylint: disable=redefined-outer-name
     """Skip tests if a device does not support a diff_method"""
     if diff_method in {"parameter-shift", "hadamard"}:
         return
-    if diff_method == "backprop" and device_kwargs.get("shots") is not None:
+    if diff_method == "backprop" and shots is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
     config = qp.devices.ExecutionConfig(gradient_method=diff_method)
