@@ -51,11 +51,9 @@ class VnEntropyMP(StateMeasurement):
         self.log_base = log_base
         super().__init__(wires=wires)
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (self.__class__.__name__, tuple(self.wires.tolist()), self.log_base)
-
         return hash(fingerprint)
 
     @property
