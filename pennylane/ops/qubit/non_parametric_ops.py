@@ -16,6 +16,8 @@ This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
 
+# pylint: disable=arguments-differ
+
 import cmath
 from copy import copy
 from functools import lru_cache
@@ -43,8 +45,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
-
-# pylint: disable=arguments-differ
 from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 from pennylane.wires import Wires, WiresLike
 

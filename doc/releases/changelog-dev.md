@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a new :func:`~single_qubit_zyz_angles` function that returns the pre-defined rotation angles
+  of a ZYZ decomposition of a single-qubit operator.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
 <h3>Improvements 🛠</h3>
 
 * Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
@@ -109,6 +113,9 @@
 * The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
+
+* The ``Operator.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
 
