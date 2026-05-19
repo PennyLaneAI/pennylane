@@ -16,11 +16,18 @@
 
 from functools import singledispatch
 
+from pennylane.estimator.ops.op_math.symbolic import Adjoint
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 
 @singledispatch
-def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, TensorLike]:
+def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
     """Returns the rotation angles for the ZYZ decomposition of this operator."""
     raise NotImplementedError
+
+
+@single_qubit_zyz_angles.register
+def _(op: Adjoint):
+    omega, theta, phi, alpha = single_qubit_zyz_angles(op.base)
+    return (-phi, -theta, -omega, -alpha)

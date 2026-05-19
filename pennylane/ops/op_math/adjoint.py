@@ -492,10 +492,4 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-@qp.single_qubit_zyz_angles.register
-def _(self: AdjointOperation):
-    omega, theta, phi = qp.single_qubit_zyz_angles(self.base)
-    return (-phi, -theta, -omega)
-
-
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

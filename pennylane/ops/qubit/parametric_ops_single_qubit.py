@@ -186,7 +186,7 @@ class RX(Operation):
 @single_qubit_zyz_angles.register
 def _(op: RX):
     # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-    return (np.pi / 2, op.data[0], -np.pi / 2)
+    return (np.pi / 2, op.data[0], -np.pi / 2, 0.0)
 
 
 def _rx_to_rot_resources():
@@ -398,7 +398,7 @@ class RY(Operation):
 @single_qubit_zyz_angles.register
 def _(op: RY):
     # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-    return (0.0, op.data[0], 0.0)
+    return (0.0, op.data[0], 0.0, 0.0)
 
 
 def _ry_to_rot_resources():
@@ -664,7 +664,7 @@ class RZ(Operation):
 @single_qubit_zyz_angles.register
 def _(op: RZ):
     # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-    return (op.data[0], 0.0, 0.0)
+    return (op.data[0], 0.0, 0.0, 0.0)
 
 
 def _rz_to_ps_resources():
@@ -961,7 +961,7 @@ class PhaseShift(Operation):
 @single_qubit_zyz_angles.register
 def _(op: PhaseShift):
     # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-    return (op.data[0], 0.0, 0.0)
+    return (op.data[0], 0.0, 0.0, 0.0)
 
 
 def _phaseshift_to_rz_gp_resources():
@@ -1189,7 +1189,7 @@ class Rot(Operation):
 
 @single_qubit_zyz_angles.register
 def _(op: Rot):
-    return tuple(op.data)
+    return tuple(op.data) + (0.0,)
 
 
 def _rot_to_rz_ry_rz_resources():

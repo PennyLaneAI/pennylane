@@ -223,7 +223,7 @@ class Hadamard(Operation):
 @single_qubit_zyz_angles.register
 def _h_rot_angles(op: Hadamard):  # pylint: disable=unused-argument
     # H = RZ(\pi) RY(\pi/2) RZ(0)
-    return (np.pi, np.pi / 2, 0.0)
+    return (np.pi, np.pi / 2, 0.0, 0.0)
 
 
 H = Hadamard
@@ -499,7 +499,7 @@ class PauliX(Operation):
 @single_qubit_zyz_angles.register
 def _x_rot_angles(op: PauliX):  # pylint: disable=unused-argument
     # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
-    return (np.pi / 2, np.pi, -np.pi / 2)
+    return (np.pi / 2, np.pi, -np.pi / 2, 0.0)
 
 
 X = PauliX
@@ -790,7 +790,7 @@ class PauliY(Operation):
 @single_qubit_zyz_angles.register
 def _y_rot_angles(op: PauliY):  # pylint: disable=unused-argument
     # Y = RZ(0) RY(\pi) RZ(0)
-    return (0.0, np.pi, 0.0)
+    return (0.0, np.pi, 0.0, 0.0)
 
 
 Y = PauliY
@@ -1061,7 +1061,7 @@ class PauliZ(Operation):
 @single_qubit_zyz_angles.register
 def _z_rot_angles(op: PauliZ):  # pylint: disable=unused-argument
     # Z = RZ(\pi) RY(0) RZ(0)
-    return (np.pi, 0.0, 0.0)
+    return (np.pi, 0.0, 0.0, 0.0)
 
 
 Z = PauliZ
@@ -1287,10 +1287,10 @@ class S(Operation):
         )
 
 
-@single_qubit_zyz_angles
+@single_qubit_zyz_angles.register
 def _s_rot_angles(op: S):  # pylint: disable=unused-argument
     # S = RZ(\pi/2) RY(0) RZ(0)
-    return (np.pi / 2, 0.0, 0.0)
+    return (np.pi / 2, 0.0, 0.0, 0.0)
 
 
 def _s_phaseshift_resources():
@@ -1468,7 +1468,7 @@ class T(Operation):
 @single_qubit_zyz_angles.register
 def _t_rot_angles(op: T):  # pylint: disable=unused-argument
     # T = RZ(\pi/4) RY(0) RZ(0)
-    return (np.pi / 4, 0.0, 0.0)
+    return (np.pi / 4, 0.0, 0.0, 0.0)
 
 
 def _t_phaseshift_resources():
@@ -1635,7 +1635,7 @@ class SX(Operation):
 @single_qubit_zyz_angles.register
 def _sx_rot_angles(op: SX):  # pylint: disable=unused-argument
     # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-    return (np.pi / 2, np.pi / 2, -np.pi / 2)
+    return (np.pi / 2, np.pi / 2, -np.pi / 2, 0.0)
 
 
 def _sx_to_rx_resources():

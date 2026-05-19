@@ -1882,7 +1882,7 @@ class Operation(Operator):
             "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
             "please use qp.single_qubit_zyz_angles(op) instead."
         )
-        return qp.single_qubit_zyz_angles(self)
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     @property
     def parameter_frequencies(self) -> list[tuple[float | int]]:

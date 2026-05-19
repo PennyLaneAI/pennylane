@@ -173,7 +173,7 @@ class TestGateSetDecomposition:
             qp.CZ([0, 1])
 
             # MBQC Z rotation: X, X, +/- angle, X
-            angles = single_qubit_zyz_angles(rot_xzx_gate)
+            *angles, _ = single_qubit_zyz_angles(rot_xzx_gate)
             m1 = measure_x(0)
             m2 = cond_measure(
                 m1,
