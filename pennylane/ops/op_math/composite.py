@@ -20,9 +20,11 @@ import abc
 import copy
 from collections.abc import Callable
 from functools import wraps
+from warnings import warn
 
 import pennylane as qp
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
@@ -76,9 +78,8 @@ class CompositeOp(Operator):
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
-        self, *operands: Operator, id=None, _pauli_rep=None
+        self, *operands: Operator, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
-        self._id = id
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
@@ -353,7 +354,7 @@ class CompositeOp(Operator):
                     "Composite operator labels require ``base_label`` keyword to be same length as operands."
                 )
             return self._op_symbol.join(
-                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label, strict=True)
             )
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
@@ -381,9 +382,14 @@ class CompositeOp(Operator):
             )
         return self._hash
 
-    # pylint:disable = missing-function-docstring
+    # pylint:disable = missing-function-docstring, useless-return
     @property
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return None
 
     @property

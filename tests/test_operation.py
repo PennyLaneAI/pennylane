@@ -43,35 +43,14 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-@pytest.mark.parametrize("test_class", [Operator, Operation])
-def test_id_is_deprecated(test_class):
-    """Tests that the 'id' argument is deprecated."""
+def test_basis_deprecation():
+    """Test that Operation.basis is deprecated."""
 
-    class DummyOp(test_class):
-        """Custom dummy operator."""
+    class MyOp(Operation):
+        pass
 
-    _ = DummyOp(0.5, [0])
-    _ = DummyOp(0.5, [0], id=None)
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-        _ = DummyOp(0.5, [0], id="blah")
-
-
-@pytest.mark.parametrize("test_class", [Operator, Operation])
-def test_id_with_label_is_deprecated(test_class):
-    """Tests that using 'label' with a set 'id' argument gives useful warning."""
-
-    class DummyOp(test_class):
-        """Custom dummy operator."""
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-        op = DummyOp(0.5, [0], id="blah")
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="Using 'id' to add a custom label to your operator is deprecated",
-    ):
-        _ = op.label()
+    with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
+        assert MyOp(0).basis is None
 
 
 class TestOperatorConstruction:
@@ -969,19 +948,6 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Test that the id attribute of an operator can be set."""
-
-        class DummyOp(qp.operation.Operation):
-            r"""Dummy custom operation"""
-
-            num_wires = 1
-            grad_method = None
-
-        op = DummyOp(1.0, wires=0, id="test")
-        assert op.id == "test"
-
     def test_control_wires(self):
         """Test that control_wires defaults to an empty Wires object."""
 
@@ -1071,19 +1037,6 @@ class TestObservableConstruction:
         m = qp.PauliZ(wires=["a"])
         expected = "Z('a')"
         assert str(m) == expected
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Test that the id attribute of an observable can be set."""
-
-        class DummyObserv(qp.operation.Operator):
-            r"""Dummy custom observable"""
-
-            num_wires = 1
-            grad_method = None
-
-        op = DummyObserv(1.0, wires=0, id="test")
-        assert op.id == "test"
 
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
@@ -1338,26 +1291,6 @@ class TestOperatorIntegration:
         """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qp.PauliX(0) @ "dummy"
-
-    def test_label_for_operations_with_id(self):
-        """Test that the label is correctly generated for an operation with an id"""
-
-        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-            op = qp.RX(1.344, wires=0, id="test_with_id")
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Using 'id' to add a custom label to your operator is deprecated",
-        ):
-            assert '"test_with_id"' in op.label()
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Using 'id' to add a custom label to your operator is deprecated",
-        ):
-            assert '"test_with_id"' in op.label(decimals=2)
-
-        op = qp.RX(1.344, wires=0)
-        assert '"test_with_id"' not in op.label()
-        assert '"test_with_id"' not in op.label(decimals=2)
 
 
 # Dummy class inheriting from Operator
@@ -1922,14 +1855,14 @@ def test_docstring_example_of_operator_class(tol):
         grad_method = "A"
 
         # pylint: disable=too-many-arguments,too-many-positional-arguments
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qp.wires.Wires(wire_rot) + qp.wires.Wires(wire_flip)
-            super().__init__(angle, wires=all_wires, id=id)
+            super().__init__(angle, wires=all_wires)
 
         @property
         def num_params(self):
