@@ -45,6 +45,10 @@
   
 <h3>Breaking changes 💔</h3>
 
+* The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
+  shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
+  [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
+
 * `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
   [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
 
@@ -163,5 +167,6 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Christina Lee,
 Andrija Paurevic,
 David Wierichs

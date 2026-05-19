@@ -22,7 +22,7 @@ import pytest
 from scipy.stats import ttest_ind
 
 import pennylane as qp
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -733,11 +733,7 @@ class TestSnapshotUnsupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            result = circuit(shots=200)
+        result = qp.set_shots(circuit, shots=200)()
         finite_shot_result = result[0]
         assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
             finite_shot_result,
