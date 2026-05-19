@@ -101,7 +101,7 @@ Completed deprecation cycles
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
-  - Removed in v0.44
+  - Removed in v0.46
 
 * The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid``. 
 
