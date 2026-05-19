@@ -27,11 +27,10 @@ from pennylane import numpy as pnp
 class TestGradients:
     """Test various gradient computations."""
 
-    def test_basic_grad(self, diff_method, device, tol):
+    def test_basic_grad(self, diff_method, device, tol, shots):
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
         dev = device(wires=wires + (diff_method == "hadamard"))
-        tol = tol(dev.shots)
 
         qnode_kwargs = {
             "diff_method": diff_method,
@@ -41,7 +40,7 @@ class TestGradients:
             tol += 0.01
             qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires}
 
-        @qp.qnode(dev, **qnode_kwargs)
+        @qp.qnode(dev, shots=shots, **qnode_kwargs)
         def circuit(x):
             qp.RX(x, 0)
             return qp.expval(qp.Z(0))
@@ -50,7 +49,7 @@ class TestGradients:
         res = qp.grad(circuit)(x)
         assert np.isclose(res, -pnp.sin(x), atol=tol, rtol=0)
 
-    def test_backprop_state(self, diff_method, device, tol):
+    def test_backprop_state(self, diff_method, device, tol, shots):
         """Test the trainability of parameters in a circuit returning the state."""
         if diff_method != "backprop":
             pytest.skip(reason="test only works with backprop")
@@ -59,12 +58,11 @@ class TestGradients:
             pytest.skip("test uses backprop, must be in analytic mode")
         if "mixed" in dev.name:
             pytest.skip("mixed-state simulator will wrongly use grad on non-scalar results")
-        tol = tol(dev.shots)
 
         x = pnp.array(0.543)
         y = pnp.array(-0.654)
 
-        @qp.qnode(dev, diff_method=diff_method, grad_on_execution=True)
+        @qp.qnode(dev, shots=shots, diff_method=diff_method, grad_on_execution=True)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -84,7 +82,7 @@ class TestGradients:
         res = qp.grad(cost_fn)(x, y)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
-    def test_parameter_shift(self, diff_method, device, tol):
+    def test_parameter_shift(self, diff_method, device, tol, shots):
         """Test a multi-parameter circuit with parameter-shift."""
         if diff_method != "parameter-shift":
             pytest.skip(reason="test only works with parameter-shift")
@@ -93,9 +91,8 @@ class TestGradients:
         b = pnp.array(0.2)
 
         dev = device(2)
-        tol = tol(dev.shots)
 
-        @qp.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
+        @qp.qnode(dev, shots=shots, diff_method="parameter-shift", grad_on_execution=False)
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=1)
@@ -111,11 +108,10 @@ class TestGradients:
         res = qp.grad(circuit)(a, b)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
-    def test_probs(self, diff_method, device, tol):
+    def test_probs(self, diff_method, device, tol, shots):
         """Test differentiation of a circuit returning probs()."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        tol = tol(dev.shots)
         x = pnp.array(0.543)
         y = pnp.array(-0.654)
 
@@ -125,7 +121,7 @@ class TestGradients:
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
 
-        @qp.qnode(dev, **qnode_kwargs)
+        @qp.qnode(dev, shots=shots, **qnode_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -155,11 +151,10 @@ class TestGradients:
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
-    def test_multi_meas(self, diff_method, device, tol):
+    def test_multi_meas(self, diff_method, device, tol, shots):
         """Test differentiation of a circuit with both scalar and array-like returns."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        tol = tol(dev.shots)
         x = pnp.array(0.543)
         y = pnp.array(-0.654, requires_grad=False)
 
@@ -169,7 +164,7 @@ class TestGradients:
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
 
-        @qp.qnode(dev, **qnode_kwargs)
+        @qp.qnode(dev, shots=shots, **qnode_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -185,17 +180,16 @@ class TestGradients:
         assert isinstance(jac, pnp.ndarray)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_hessian(self, diff_method, device, tol):
+    def test_hessian(self, diff_method, device, tol, shots):
         """Test hessian computation."""
         wires = 3 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
-        tol = tol(dev.shots)
 
         qnode_kwargs = {"diff_method": diff_method, "max_diff": 2}
         if diff_method == "hadamard":
             qnode_kwargs["gradient_kwargs"] = {"mode": "reversed-direct"}
 
-        @qp.qnode(dev, **qnode_kwargs)
+        @qp.qnode(dev, shots=shots, **qnode_kwargs)
         def circuit(x):
             qp.RY(x[0], wires=0)
             qp.RX(x[1], wires=0)

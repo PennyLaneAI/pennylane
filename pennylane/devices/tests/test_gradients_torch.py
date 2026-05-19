@@ -28,17 +28,16 @@ torch = pytest.importorskip("torch")
 class TestGradients:
     """Test various gradient computations."""
 
-    def test_basic_grad(self, diff_method, device, tol):
+    def test_basic_grad(self, diff_method, device, tol, shots):
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
-        tol = tol(dev.shots)
         gradient_kwargs = {}
         if diff_method == "hadamard":
             tol += 0.01
             gradient_kwargs["aux_wire"] = 1
 
-        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, shots=shots, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x):
             qp.RX(x, 0)
             return qp.expval(qp.Z(0))
@@ -48,7 +47,7 @@ class TestGradients:
         res.backward()
         assert np.isclose(x.grad, -np.sin(x.detach()), atol=tol, rtol=0)
 
-    def test_backprop_state(self, diff_method, device, tol):
+    def test_backprop_state(self, diff_method, device, tol, shots):
         """Test the trainability of parameters in a circuit returning the state."""
         if diff_method != "backprop":
             pytest.skip(reason="test only works with backprop")
@@ -57,12 +56,11 @@ class TestGradients:
             pytest.skip("test uses backprop, must be in analytic mode")
         if "mixed" in dev.name:
             pytest.skip("mixed-state simulator will wrongly use grad on non-scalar results")
-        tol = tol(dev.shots)
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qp.qnode(dev, diff_method="backprop", grad_on_execution=True)
+        @qp.qnode(dev, shots=shots, diff_method="backprop", grad_on_execution=True)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -81,7 +79,7 @@ class TestGradients:
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_parameter_shift(self, diff_method, device, tol):
+    def test_parameter_shift(self, diff_method, device, tol, shots):
         """Test a multi-parameter circuit with parameter-shift."""
         if diff_method != "parameter-shift":
             pytest.skip(reason="test only works with parameter-shift")
@@ -90,9 +88,8 @@ class TestGradients:
         b = torch.tensor(0.2, requires_grad=True)
 
         dev = device(2)
-        tol = tol(dev.shots)
 
-        @qp.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
+        @qp.qnode(dev, shots=shots, diff_method="parameter-shift", grad_on_execution=False)
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=1)
@@ -106,11 +103,10 @@ class TestGradients:
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_probs(self, diff_method, device, tol):
+    def test_probs(self, diff_method, device, tol, shots):
         """Test differentiation of a circuit returning probs()."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        tol = tol(dev.shots)
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
@@ -118,7 +114,7 @@ class TestGradients:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, shots=shots, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -149,11 +145,10 @@ class TestGradients:
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
-    def test_multi_meas(self, diff_method, device, tol):
+    def test_multi_meas(self, diff_method, device, tol, shots):
         """Test differentiation of a circuit with both scalar and array-like returns."""
         wires = 3 if diff_method == "hadamard" else 2
         dev = device(wires=wires)
-        tol = tol(dev.shots)
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
@@ -161,7 +156,7 @@ class TestGradients:
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
 
-        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(dev, shots=shots, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qp.RX(x, wires=[0])
             qp.RY(y, wires=[1])
@@ -191,17 +186,18 @@ class TestGradients:
         assert all(isinstance(j, torch.Tensor) and j.shape == (2,) for j in jac[1])
         assert np.allclose(jac[1], expected[1], atol=tol, rtol=0)
 
-    def test_hessian(self, diff_method, device, tol):
+    def test_hessian(self, diff_method, device, tol, shots):
         """Test hessian computation."""
         wires = 3 if diff_method == "hadamard" else 1
         dev = device(wires=wires)
-        tol = tol(dev.shots)
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        @qp.qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
+        @qp.qnode(
+            dev, shots=shots, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs
+        )
         def circuit(x):
             qp.RY(x[0], wires=0)
             qp.RX(x[1], wires=0)

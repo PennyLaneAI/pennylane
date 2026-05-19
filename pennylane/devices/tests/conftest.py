@@ -41,17 +41,14 @@ LIST_CORE_DEVICES = {
 
 
 @pytest.fixture(scope="function")
-def tol():
+def tol(shots):  # pylint: disable=redefined-outer-name
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices, which allows us to define the
     standard for deterministic or stochastic test results dynamically."""
 
-    def _tol(shots):  # pylint: disable=redefined-outer-name
-        if shots is None:
-            return float(os.environ.get("TOL", TOL))
-        return TOL_STOCHASTIC
-
-    return _tol
+    if shots is None:
+        return float(os.environ.get("TOL", TOL))
+    return TOL_STOCHASTIC
 
 
 @pytest.fixture(scope="session")
@@ -114,7 +111,8 @@ def skip_if():
 @pytest.fixture
 def shots(request) -> None | int:
     """The number of shots to use during an execution."""
-    return int(request.config.getoption("--shots"))
+    shots_value = request.config.getoption("--shots")
+    return None if shots_value in (None, "None") else int(shots_value)
 
 
 @pytest.fixture
@@ -270,12 +268,6 @@ def pytest_generate_tests(metafunc):
 
     for dev in devices_to_test:
         device_kwargs = {"name": dev}
-
-        # if shots specified in command line,
-        # add to the device kwargs
-        if opt.shots is not None:
-            # translate command line string to None if necessary
-            device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
 
         # store user defined device kwargs
         device_kwargs.update(opt.device_kwargs)
