@@ -458,8 +458,7 @@ class ParametrizedEvolution(Operation):
         mapped_op.H = self.H.map_wires(wire_map)
         return mapped_op
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: Integer hash that uniquely represents the operator."""
         return hash(
             (

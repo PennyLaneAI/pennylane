@@ -307,7 +307,7 @@ class SProd(ScalarSymbolicOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         if self.scalar == 1:

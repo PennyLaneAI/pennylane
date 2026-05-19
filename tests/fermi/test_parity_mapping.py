@@ -441,13 +441,13 @@ FERMI_OPS_COMPLEX = [
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS + FERMI_OPS_COMPLEX)
 def test_parity_transform_fermi_word_ps(fermionic_op, n_qubits, result):
     """Test that the parity_transform function returns the correct qubit operator."""
-    # convert FermiWord to PauliSentence and simplify
+    # convert FermiWord to PauliSentence and prune
     qubit_op = parity_transform(fermionic_op, n_qubits, ps=True)
-    qubit_op.simplify()
+    qubit_op.prune()
 
-    # get expected op as PauliSentence and simplify
+    # get expected op as PauliSentence and prune
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op.simplify()
+    expected_op.prune()
 
     assert qubit_op == expected_op
 
@@ -488,7 +488,7 @@ def test_parity_transform_for_identity_ps():
 def test_parity_transform_for_null_operator_fermi_word_ps(operator):
     """Test that the parity_transform function works when the result is 0"""
     # in PauliSentence return format, returns None
-    assert parity_transform(operator, 4, ps=True).simplify() is None
+    assert parity_transform(operator, 4, ps=True).prune() is None
 
     # in operation return format, '0 * I'
     op = parity_transform(operator, 4).simplify()
@@ -512,7 +512,7 @@ def test_empty_fermi_sentence():
     op = FermiSentence({})
 
     ps_op = parity_transform(op, 6, ps=True)
-    ps_op.simplify()
+    ps_op.prune()
     assert ps_op == PauliSentence({})
 
     op = parity_transform(op, 6).simplify()
@@ -623,7 +623,7 @@ FERMI_AND_PAULI_SENTENCES = [
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_AND_PAULI_SENTENCES)
 def test_parity_transform_for_fermi_sentence_ps(fermionic_op, n_qubits, result):
     qubit_op = parity_transform(fermionic_op, n_qubits, ps=True)
-    qubit_op.simplify()
+    qubit_op.prune()
 
     assert qubit_op == result
 
@@ -723,8 +723,8 @@ def test_providing_wire_map_fermi_sentence_to_ps(wire_map, ops):
     result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
-    ps.simplify()
-    op.simplify()
+    ps.prune()
+    op.prune()
 
     assert ps == op
 
@@ -766,8 +766,7 @@ def test_providing_wire_map_fermi_word_to_operation(wire_map, ops):
     n_qubits = 4
     op = parity_transform(w, n_qubits, wire_map=wire_map)
     result = qp.sum(*ops)
-
-    op.simplify()
+    op = op.simplify()
 
     # converting to Pauli representation for comparison because
     # qp.equal isn't playing nicely with term ordering
@@ -782,8 +781,8 @@ def test_providing_wire_map_fermi_word_to_ps(wire_map, ops):
     result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
-    ps.simplify()
-    op.simplify()
+    ps.prune()
+    op.prune()
 
     assert ps == op
 

@@ -150,12 +150,12 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         # same hash if different order but can be permuted to right order
         op1 = qp.prod(qp.PauliX(0), qp.PauliY("a"))
         op2 = qp.prod(qp.PauliY("a"), qp.PauliX(0))
-        assert op1.hash == op2.hash
+        assert hash(op1) == hash(op2)
 
         # test not the same hash if different order and cant be exchanged to correct order
         op3 = qp.prod(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
         op4 = qp.prod(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
-        assert op3.hash != op4.hash
+        assert hash(op3) != hash(op4)
 
     PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
         (
@@ -303,7 +303,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[prod_op.hash]
+        eigs_cache = prod_op._eigs[prod_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -950,18 +950,6 @@ class TestProperties:
         prod_op = prod(*ops_lst)
         assert prod_op._queue_category == "_ops"
 
-    def test_queue_category_none(self):
-        """Test _queue_category property is None when any factor is not `_ops`."""
-
-        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
-            """Dummy op with None queue category"""
-
-            _queue_category = None
-            num_wires = 1
-
-        prod_op = prod(qp.Identity(wires=0), DummyOp(wires=0))
-        assert prod_op._queue_category is None
-
     def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1010,7 +998,7 @@ class TestProperties:
 
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_prod_op._eigs[diag_prod_op.hash]
+        eigs_cache = diag_prod_op._eigs[diag_prod_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 

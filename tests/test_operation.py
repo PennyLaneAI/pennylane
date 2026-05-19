@@ -23,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -40,6 +41,16 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
+
+
+def test_basis_deprecation():
+    """Test that Operation.basis is deprecated."""
+
+    class MyOp(Operation):
+        pass
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
+        assert MyOp(0).basis is None
 
 
 class TestOperatorConstruction:
@@ -305,8 +316,13 @@ class TestOperatorConstruction:
         op2 = DummyOp(0)
 
         assert len({op1, op2}) == 1
-        assert hash(op1) == op1.hash
-        assert hash(op2) == op2.hash
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            assert hash(op1) == op1.hash
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            assert hash(op2) == op2.hash
+
         assert hash(op1) == hash(op2)
 
     @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])

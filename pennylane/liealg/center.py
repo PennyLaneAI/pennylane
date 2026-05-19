@@ -190,7 +190,7 @@ def center(
 
     have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:
-        _ = [el.simplify() for el in res]
+        _ = [el.prune() for el in res]
         if not pauli:
             res = [el.operation() for el in res]
     else:
