@@ -715,7 +715,6 @@ class TestCondCircuits:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
-    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
