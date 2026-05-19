@@ -55,6 +55,54 @@ def twos_complement_value(bits):
 
 
 @pytest.mark.parametrize(
+    ("x_wires", "y_wires", "output_wires","work_wires", "msg_match"),
+    [
+        (
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [1, 10],
+            "None of the wires in work_wires should be included in x_wires.",
+        ),
+        (
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [3, 10],
+            "None of the wires in work_wires should be included in y_wires.",
+        ),
+        (
+            [0, 1, 2],
+            [2, 4, 5],
+            [6, 7, 8],
+            [9, 10],
+            "None of the wires in y_wires should be included in x_wires.",
+        ),
+        (
+            [0, 1, 2],
+            [3, 7, 5],
+            [6, 7, 8],
+            [9, 10],
+            "None of the wires in y_wires should be included in output_wires.",
+        ),
+        (
+            [0, 1, 7],
+            [3, 4, 5],
+            [6, 7, 8],
+            [9, 10],
+            "None of the wires in x_wires should be included in output_wires.",
+        ),
+    ],
+)
+def test_wires_error(
+    x_wires, y_wires, output_wires, work_wires, msg_match
+):
+    """Test an error is raised when some work_wires don't meet the requirements"""
+    with pytest.raises(ValueError, match=msg_match):
+        SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+
+
+@pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, init_state",
     [
         (
