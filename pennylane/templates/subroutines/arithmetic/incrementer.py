@@ -177,7 +177,7 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
                 num_control_wires=i - 1,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
-                work_wire_type="borrowed"
+                work_wire_type="borrowed",
             )
         ] = 1
 
@@ -199,8 +199,9 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i, wires, num_wires):
         MultiControlledX(
-            [wires[wire + (num_wires - i)] for wire in range(i)][::-1], [1 for _ in range(i - 1)],
-            work_wires=work_wires
+            [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
+            [1 for _ in range(i - 1)],
+            work_wires=work_wires,
         )
         return wires, num_wires
 

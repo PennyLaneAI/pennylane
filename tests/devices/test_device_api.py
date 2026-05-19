@@ -25,7 +25,7 @@ from pennylane.devices.capabilities import (
     ExecutionCondition,
     OperatorProperties,
 )
-from pennylane.exceptions import DeviceError, QuantumFunctionError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch

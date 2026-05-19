@@ -19,9 +19,9 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from pennylane.decomposition import list_decomps
 
 from pennylane import SignedOutMultiplier, device, qnode
+from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -55,7 +55,7 @@ def twos_complement_value(bits):
 
 
 @pytest.mark.parametrize(
-    ("x_wires", "y_wires", "output_wires","work_wires", "msg_match"),
+    ("x_wires", "y_wires", "output_wires", "work_wires", "msg_match"),
     [
         (
             [0, 1, 2],
@@ -94,9 +94,7 @@ def twos_complement_value(bits):
         ),
     ],
 )
-def test_wires_error(
-    x_wires, y_wires, output_wires, work_wires, msg_match
-):
+def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
     """Test an error is raised when some work_wires don't meet the requirements"""
     with pytest.raises(ValueError, match=msg_match):
         SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
@@ -115,11 +113,9 @@ def test_wires_error(
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
         ),
-    ]
+    ],
 )
-def test_decomposition(
-    x_wires, y_wires, work_wires, output_wires, init_state
-):
+def test_decomposition(x_wires, y_wires, work_wires, output_wires, init_state):
     op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
 
     for rule in list_decomps(SignedOutMultiplier):

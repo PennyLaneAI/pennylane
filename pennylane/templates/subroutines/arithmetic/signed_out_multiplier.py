@@ -103,9 +103,7 @@ class SignedOutMultiplier(Operator):
         }
 
 
-def _signed_out_multiplier_resources(
-    num_x_wires, num_y_wires, num_output_wires, num_work_wires
-):
+def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires):
     """
     Computes the resources for the SignedOutMultiplier.
     Assumes the worst case that both numbers are negative.
@@ -115,7 +113,11 @@ def _signed_out_multiplier_resources(
         (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
     )
     resources[
-        controlled_resource_rep(Incrementer, {"num_wires": num_x_wires + num_work_wires - 2, "num_work_wires": num_work_wires - 2}, num_control_wires=1)
+        controlled_resource_rep(
+            Incrementer,
+            {"num_wires": num_x_wires + num_work_wires - 2, "num_work_wires": num_work_wires - 2},
+            num_control_wires=1,
+        )
     ] += 2
     resources[
         resource_rep(
@@ -125,16 +127,25 @@ def _signed_out_multiplier_resources(
             num_y_wires=num_y_wires,
             num_work_wires=num_work_wires - 2,
             mod=2 ** (num_output_wires - 1),
-            output_wires_zeroed=False
+            output_wires_zeroed=False,
         )
     ] = 1
     resources[
         controlled_resource_rep(
-            Incrementer, {"num_wires": num_output_wires + num_work_wires - 3, "num_work_wires": num_work_wires - 2}, num_control_wires=1
+            Incrementer,
+            {
+                "num_wires": num_output_wires + num_work_wires - 3,
+                "num_work_wires": num_work_wires - 2,
+            },
+            num_control_wires=1,
         )
     ] += 1
     resources[
-        controlled_resource_rep(Incrementer, {"num_wires": num_y_wires + num_work_wires - 2, "num_work_wires": num_work_wires - 2}, num_control_wires=1)
+        controlled_resource_rep(
+            Incrementer,
+            {"num_wires": num_y_wires + num_work_wires - 2, "num_work_wires": num_work_wires - 2},
+            num_control_wires=1,
+        )
     ] += 2
     resources[resource_rep(CNOT)] = 4
 

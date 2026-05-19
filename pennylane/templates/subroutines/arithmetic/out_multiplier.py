@@ -561,7 +561,11 @@ def _out_multiplier_with_caddsub_resources(
     # increment 2^(n+m) bit
     if k > n + m:
         size = k - n - m
-        resources[resource_rep(Incrementer, num_wires=size + num_work_wires - 1, num_work_wires=num_work_wires - 1)] = 1
+        resources[
+            resource_rep(
+                Incrementer, num_wires=size + num_work_wires - 1, num_work_wires=num_work_wires - 1
+            )
+        ] = 1
 
     # Second negation
     resources[x_rep] += k
