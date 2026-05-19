@@ -97,11 +97,11 @@ def get_interface(*values):
     To determine the framework to dispatch to, the following rules
     are applied:
 
-    * Tensors that are incompatible (such as Torch, TensorFlow and Jax tensors)
+    * Tensors that are incompatible (such as Torch and Jax tensors)
       cannot both be present.
 
-    * Autograd tensors *may* be present alongside Torch, TensorFlow and Jax tensors,
-      but Torch, TensorFlow and Jax take precedence; the autograd arrays will
+    * Autograd tensors *may* be present alongside Torch and Jax tensors,
+      but Torch and Jax take precedence; the Autograd arrays will
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
@@ -136,7 +136,7 @@ def get_interface(*values):
         # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow, PyTorch, and Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
+            "PyTorch, and Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
 

@@ -212,10 +212,6 @@ class QNode:
             * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
-              through the QNode. The QNode accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
-
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
               JAX ``Array`` objects.
