@@ -385,7 +385,7 @@ class DefaultQubit(Device):
         max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
-            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+            issue, say using JAX, or Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
 

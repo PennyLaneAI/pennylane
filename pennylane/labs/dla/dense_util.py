@@ -325,7 +325,7 @@ def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | Operator]):
         u1 = PauliSentence({})
         for j in range(num_pw):
             u1 += _idx_to_pw[j] * OM[j, i]
-        u1.simplify()
+        u1.prune()
         generators_orthogonal.append(u1)
 
     return generators_orthogonal

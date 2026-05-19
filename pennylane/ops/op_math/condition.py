@@ -110,20 +110,16 @@ class Conditional(SymbolicOp, Operation):
     Args:
         expr (qp.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Operation, id=None):
+    def __init__(self, expr, then_op: Operation):
         # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
-        self._id = id
         self._pauli_rep = None
         self.queue()
         self._wires = then_op.wires
-        self.__queue_category = then_op._queue_category  # pylint: disable=protected-access
 
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
@@ -135,10 +131,6 @@ class Conditional(SymbolicOp, Operation):
     def meas_val(self):
         """the measurement outcome value to consider from `expr` argument"""
         return self.hyperparameters["meas_val"]
-
-    @property
-    def _queue_category(self):
-        return self.__queue_category  # pylint: disable=protected-access
 
     @property
     def num_params(self):
@@ -222,7 +214,7 @@ class CondCallable:
             # elifs = (elif_condition, elif_function)
             elifs = (elifs,)
         if elifs:
-            elif_preds, elif_fns = list(zip(*elifs))
+            elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
 
@@ -276,7 +268,7 @@ class CondCallable:
     @property
     def elifs(self):
         """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
-        return list(zip(self.preds[1:], self.branch_fns[1:]))
+        return list(zip(self.preds[1:], self.branch_fns[1:], strict=True))
 
     def __call_capture_disabled(self, *args, **kwargs):
 
@@ -287,7 +279,7 @@ class CondCallable:
                 qp.QueuingManager.remove(l)
 
         # python fallback
-        for pred, branch_fn in zip(self.preds, self.branch_fns):
+        for pred, branch_fn in zip(self.preds, self.branch_fns, strict=True):
             if pred:
                 return branch_fn(*args, **kwargs)
         if self.otherwise_fn:
@@ -299,7 +291,7 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = zip(self.preds[1:], self.branch_fns[1:])  # skip true branch
+        elifs = zip(self.preds[1:], self.branch_fns[1:], strict=True)  # skip true branch
         true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
         flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
@@ -749,7 +741,7 @@ def _validate_abstract_values(
             msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
         raise ValueError(msg)
 
-    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals, strict=True)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
             if type(outval) != type(expected_outval):  # pragma: no cover
@@ -824,7 +816,7 @@ def _get_cond_qfunc_prim():
                 )
             conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
 
-        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
             consts = all_args[const_slice]
             if isinstance(pred, qp.ops.MeasurementValue):
 
