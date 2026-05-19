@@ -17,6 +17,7 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import cache
+from typing import Union
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
@@ -62,6 +63,18 @@ class Expression:
             self._data = data.copy()
         if not _skip_normalization:
             self._normalize()
+            object.__setattr__(
+                self,
+                "_data",
+                {
+                    vars: self._data[vars]
+                    for vars in sorted(
+                        self._data.keys(),
+                        reverse=True,
+                        key=lambda var_tuple: (len(var_tuple), var_tuple),
+                    )
+                },
+            )
 
     def _normalize(self) -> None:
         """
@@ -90,7 +103,7 @@ class Expression:
         """
         return set(var for vars in self._data.keys() for var in vars)
 
-    def subs(self, substitutions: dict[str, int]) -> "Expression":
+    def subs(self, substitutions: dict[str, int]) -> Union["Expression", int]:
         """
         Substitutes the given values for the variables in the expression.
 
@@ -98,7 +111,7 @@ class Expression:
             substitutions (dict[str, int]): A dictionary mapping variable names to their values.
 
         Returns:
-            Expression: A new expression with the variables substituted.
+            Expression | int: A new expression with the variables substituted, or an int if the result is a constant.
         """
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
@@ -116,7 +129,7 @@ class Expression:
         if len(new_data) == 0:
             return 0
         if len(new_data) == 1 and () in new_data:
-            return new_data[()]
+            return new_data[()]  # Return as int rather than Expression if the result is a constant
         return Expression(new_data, _skip_normalization=True)
 
     @cache
@@ -139,7 +152,7 @@ class Expression:
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, (int, Expression)):
-            return False
+            return NotImplemented
         if isinstance(other, int):
             return len(self._data) == 1 and () in self._data and self._data[()] == other
         return self._data == other._data
@@ -162,7 +175,7 @@ class Expression:
 
     def __mul__(self, other) -> "Expression":
         if not isinstance(other, (int, Expression)):
-            raise TypeError("Invalid type for multiplication with expression: " + str(type(other)))
+            return NotImplemented
 
         if isinstance(other, int):
             return Expression(
@@ -182,17 +195,17 @@ class Expression:
 
     def __add__(self, other) -> "Expression":
         if not isinstance(other, (int, Expression)):
-            raise TypeError("Invalid type for addition with expression: " + str(type(other)))
+            return NotImplemented
 
         if isinstance(other, int):
             new_data = self._data.copy()
             new_data[()] = new_data.get((), 0) + other
-            return Expression(new_data, _skip_copy=True, _skip_normalization=True)
+            return Expression(new_data, _skip_copy=True)
 
-        new_data = defaultdict(int, self._data)
+        new_data = self._data.copy()
         for vars, coeff in other._data.items():
-            new_data[vars] += coeff
-        return Expression(new_data, _skip_normalization=True)
+            new_data[vars] = new_data.get(vars, 0) + coeff
+        return Expression(new_data, _skip_copy=True)
 
     def __radd__(self, other) -> "Expression":
         return self.__add__(other)

@@ -22,7 +22,6 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
-from functools import cache
 from string import ascii_lowercase
 from typing import Any
 
@@ -421,6 +420,7 @@ class SymbolicSpecsResources(SpecsResources):
     # measurements: dict[str, Expression]
     # num_allocs: Expression
     # depth: Expression | None = None
+    vars: set[str] = field(init=False)
 
     def __post_init__(self):
         # Make sure that all fields use expressions, (converting ints to constant expressions where necessary)
@@ -453,9 +453,6 @@ class SymbolicSpecsResources(SpecsResources):
                     {(): count}, _skip_copy=False, _skip_normalization=True
                 )
 
-    @property
-    @cache
-    def vars(self) -> set[str]:
         vars = set()
 
         if self.depth is not None:
@@ -469,7 +466,7 @@ class SymbolicSpecsResources(SpecsResources):
         for expr in self.measurements.values():
             vars |= expr.vars
 
-        return vars
+        object.__setattr__(self, "vars", vars)
 
     def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
         """
@@ -477,6 +474,8 @@ class SymbolicSpecsResources(SpecsResources):
         If all variables are substituted, this will return a :class:`SpecsResources` object with
         integer values instead of another :class:`SymbolicSpecsResources` object.
         """
+        if substitutions is None:
+            substitutions = {}
         substitutions.update(kwargs)
 
         subs_vars = set(substitutions.keys())
@@ -512,6 +511,13 @@ class SymbolicSpecsResources(SpecsResources):
 
     def __call__(self, **kwargs):
         return self.subs(kwargs)
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        prefix = " " * preindent
+        return (
+            f"{prefix}Symbolic Variables: {', '.join(self.vars) if self.vars else 'None'}\n"
+            + super().to_pretty_str(preindent)
+        )
 
 
 @dataclass(frozen=True)

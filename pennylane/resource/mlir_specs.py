@@ -14,6 +14,7 @@
 """Helper functions for converting MLIR resource analysis output into SpecsResources objects."""
 
 import copy
+import itertools
 import json
 import os
 import re
@@ -26,6 +27,7 @@ from typing import Any
 
 import pennylane as qp
 
+from .expression import Expression
 from .resource import SpecsResources, SymbolicSpecsResources
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
@@ -60,23 +62,56 @@ def make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
 
 
 def _mlir_resources_to_specs_resources(
-    resources: dict[str, Any],
-) -> SpecsResources:  # pragma: no cover
+    all_data: dict[str, Any],
+    focus: str,
+    fn_resources: dict[str, SymbolicSpecsResources | None],
+) -> None:  # pragma: no cover
     # This function is covered by integration tests within the Catalyst frontend
-    """Helper function to convert the output of resource analysis pass into SpecsResources."""
+    """
+    Helper function to convert the output of resource analysis pass into SpecsResources objects.
+
+    Recursively resolves the resources for a given function call, combining subroutine resources
+    with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
+    function name to the corresponding :class:`~pennylane.resource.SymbolicSpecsResources` object.
+
+    .. note::
+
+        All resources are stored within :class:`~pennylane.resource.SymbolicSpecsResources` objects
+        as symbolic expressions, even if all values are concrete and knowable at compile time.
+        It is the responsibility of the caller to upcast these to concrete valued
+        :class:`~pennylane.resource.SpecsResources` objects if desired.
+
+    Args:
+        all_data (dict[str, Any]): the full data output from the MLIR resource analysis
+        focus (str): the name of the function to resolve resources for in this call
+        fn_resources (dict[str, SymbolicSpecsResources | None]): the mapping from function name to resolved
+            `SymbolicSpecsResources` objects
+    """
+
+    if focus in fn_resources:
+        if fn_resources[focus] is None:
+            # TODO: Determine if we prefer this to be a warning or an error
+            raise ValueError(
+                f"Specs detected recursion in function {focus} during resolution of MLIR resource analysis results. "
+                "Specs does not currently support recursive functions, so this may lead to incorrect results."
+            )
+        return
+
+    # Set to None to mark that we are currently resolving this function, which helps with detecting recursion
+    fn_resources[focus] = None
+    resources = all_data[focus]
 
     # Sort the gate and measurement dictionaries by key to ensure consistent ordering, which is helpful for testing and readability of results
-    resources["operations"] = {
-        k: resources["operations"][k] for k in sorted(resources["operations"].keys())
-    }
-    resources["measurements"] = {
+    operations = {k: resources["operations"][k] for k in sorted(resources["operations"].keys())}
+    measurements = {
         k: resources["measurements"][k] for k in sorted(resources["measurements"].keys())
     }
 
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
+    num_allocs = resources["num_qubits"]
 
-    for res_name, count in resources["operations"].items():
+    for res_name, count in operations.items():
         match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
         gate_name, gate_size = match.groups() if match else (res_name, 0)
 
@@ -87,28 +122,60 @@ def _mlir_resources_to_specs_resources(
         gate_types[gate_name] += count
         gate_sizes[int(gate_size)] += count
 
-    if resources["has_dyn_loop"]:
-        warnings.warn(
-            "Specs was unable to determine the number of loop iterations. "
-            "The results will assume the loop runs only once. "
-            "This may be fixed in some cases by inlining dynamic arguments.",
-            UserWarning,
-        )
+    # Recurse through all function calls and combine resources with the appropriate multiplicative factors
+    for called_fn, call_count in itertools.chain(
+        resources["function_calls"].items(), resources["var_function_calls"].items()
+    ):
+        if not isinstance(call_count, int):
+            # If there is no integer call count, we have to treat this as a symbolic variable
+            call_count = Expression({("var_" + str(call_count),): 1})
+        if called_fn not in fn_resources:
+            _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources)
 
-    if resources["has_branches"]:
+        called_fn_resources = fn_resources[called_fn]
+        if called_fn_resources is None:
+            raise ValueError(
+                f"Specs detected recursion in function {called_fn} during resolution of MLIR resource analysis results. "
+                "Specs does not currently support recursive functions, so this may lead to incorrect results."
+            )
+
+        num_allocs += call_count * called_fn_resources.num_allocs
+        for gate, gate_count in called_fn_resources.gate_types.items():
+            gate_types[gate] += call_count * gate_count
+        for size, size_count in called_fn_resources.gate_sizes.items():
+            gate_sizes[size] += call_count * size_count
+        for meas, meas_count in called_fn_resources.measurements.items():
+            measurements[meas] += call_count * meas_count
+
+    fn_resources[focus] = SymbolicSpecsResources(
+        gate_types=dict(gate_types),
+        gate_sizes=dict(gate_sizes),
+        measurements=measurements,
+        num_allocs=num_allocs,
+        depth=None,  # Can't get depth from MLIR pass results
+    )
+
+
+def _get_resources_from_analysis_pass(
+    all_data: dict[str, Any],
+) -> list[SpecsResources]:  # pragma: no cover
+    # This function is covered by integration tests within the Catalyst frontend
+
+    resource_data = {}
+
+    for fn_name in all_data.keys():
+        _mlir_resources_to_specs_resources(all_data, focus=fn_name, fn_resources=resource_data)
+
+    if any(resources["has_branches"] for resources in all_data.values()):
         warnings.warn(
             "Specs was unable to determine the branch of a conditional or switch statement."
             " The results will take the maximum resources across all possible branches, serving as an upper bound.",
             UserWarning,
         )
 
-    return SpecsResources(
-        gate_types=dict(gate_types),
-        gate_sizes=dict(gate_sizes),
-        measurements=resources["measurements"],
-        num_allocs=resources["num_qubits"],
-        depth=None,  # Can't get depth from MLIR pass results
-    )
+    # Only include information about qnodes, ignoring any extra functions
+    # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
+    return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
 
 
 def _execute_analysis_pass(
@@ -276,13 +343,7 @@ def resources_from_analysis_pass(
             with res_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            cur_level_resources = [
-                _mlir_resources_to_specs_resources(res)
-                for res in data.values()
-                if res[
-                    "qnode"
-                ]  # Only include information about qnodes, ignoring any extra functions
-            ]
+            cur_level_resources = _get_resources_from_analysis_pass(data)
 
             if len(cur_level_resources) == 1:
                 cur_level_resources = cur_level_resources[0]
