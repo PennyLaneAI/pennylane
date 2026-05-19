@@ -92,12 +92,11 @@ class CountsMP(SampleMeasurement):
             "CountsMP returns a dictionary, which is not compatible with capture."
         )
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
+            hash(self.obs),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
             self.all_outcomes,

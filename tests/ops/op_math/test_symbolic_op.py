@@ -267,6 +267,6 @@ class TestScalarSymbolicOp:
         op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
         op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
         op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
-        assert op0.hash == op1.hash
+        assert hash(op0) == hash(op1)
         for second_op in [op2, op3, op4]:
-            assert op0.hash != second_op.hash
+            assert hash(op0) != hash(second_op)

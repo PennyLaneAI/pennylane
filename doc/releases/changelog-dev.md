@@ -91,6 +91,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
 * Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
   your unitary in a for loop.
   [(#9484)](https://github.com/PennyLaneAI/pennylane/pull/9484)
@@ -139,12 +143,17 @@
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
 
+* Fixes a bug where two ``MeasurementProcess`` of taken of different mid-circuit measurement
+  values sometimes incorrectly have the same hash.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,

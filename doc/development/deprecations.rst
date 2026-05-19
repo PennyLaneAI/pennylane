@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
   whether or not two operations commute. For example, ``qp.is_commuting(op, qp.X(op.wires[0]))`` can
   be used to determine if ``op`` is in the X basis.
