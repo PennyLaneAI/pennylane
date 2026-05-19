@@ -94,6 +94,7 @@ Templates
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
     ~LabsQROM
+    ~SelectCopyQROM
 
 """
 

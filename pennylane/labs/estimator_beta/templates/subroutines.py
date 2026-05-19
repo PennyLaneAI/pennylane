@@ -2260,7 +2260,7 @@ class SelectCopyQROM(ResourceOperator):
             gate_cost.append(GateCount(r_elbow, (num_data_blocks - 2)))
             gate_cost.append(Deallocate(allocated_register=unary_aux_reg))
 
-        gate_cost.append(GateCount(l_elbow, bits_per_iter * (num_data_blocks - 1)))
+        gate_cost.append(GateCount(l_elbow, bits_per_iter * num_data_blocks))
         gate_cost.append(
             GateCount(
                 cnot,
@@ -2271,6 +2271,6 @@ class SelectCopyQROM(ResourceOperator):
                 * (num_data_blocks - 1),
             )
         )
-        gate_cost.append(GateCount(r_elbow, bits_per_iter * (num_data_blocks - 1)))
+        gate_cost.append(GateCount(r_elbow, bits_per_iter * num_data_blocks))
         gate_cost.append(Deallocate(allocated_register=temp_and_reg))
         return gate_cost

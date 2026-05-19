@@ -2597,9 +2597,30 @@ class TestSelectCopyQROM:
             )
             assert qrom == expected_cmpr_rep
 
-    # def test_resource_decomp(self):
+    # @pytest.mark.parametrize(
+    #     "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_tof_cost, expected_qubit_alloc",
+    #     (
+    #         (100, 2, None, 4, 1, 81, 7),
+    #         (1000, 4, 4, 2, 4, 1002, 12),
+    #         (1000, 4, 9, 8, 1, 675, 13),
+    #         # (1e8, 16, None, 64, 3, ),
+    #         # (1e8, 16, 256, 32, 8, ),
+    #     ),  # toffoli and qubit costs computed by hand
+    # )
+    # def test_resource_decomp(self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_tof_cost, expected_qubit_alloc):
     #     """Test that the resource decomposition is as expected"""
-    #     pass
+    #     resources = qre.estimate(
+    #         qre.SelectCopyQROM(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
+    #     )
+
+    #     aux_qubits = resources.zeroed_wires
+    #     tof_counts = resources.gate_counts["Toffoli"]
+
+    #     print(tof_counts, expected_tof_cost)
+
+    #     assert abs(tof_counts - expected_tof_cost) <= 10  # The formula is accurate to within 10 Tof gates
+    #     assert aux_qubits == expected_qubit_alloc
+    #     assert False
 
     # def test_controlled_resource_decomp(self):
     #     """Test that the controlled resource decomposition is as expected"""
