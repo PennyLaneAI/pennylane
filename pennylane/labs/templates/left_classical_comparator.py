@@ -56,14 +56,14 @@ class LeftClassicalComparator(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.labs.templates import LeftClassicalComparator
 
-        dev = qml.device("lightning.qubit", wires=6, shots=1)
+        dev = qp.device("lightning.qubit", wires=6, shots=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x_val, L_val):
-            qml.BasisState(x_val, wires=[0, 1, 2])
+            qp.BasisState(x_val, wires=[0, 1, 2])
 
             LeftClassicalComparator(
                 x_wires=[0, 1, 2],
@@ -72,7 +72,7 @@ class LeftClassicalComparator(Operation):
                 work_wires=[4, 5],
                 comparator='>='
             )
-            return qml.sample(wires=3)
+            return qp.sample(wires=3)
 
     .. code-block:: pycon
 
