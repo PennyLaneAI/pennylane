@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
   in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
 
