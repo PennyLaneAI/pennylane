@@ -320,8 +320,8 @@ def _su2_rot_resource():
 def _su2_rot_decomp(U, wires, **__):
     phi, theta, omega, alpha = zyz_rotation_angles(U)
     ops.cond(
-        math.allclose(U[..., 0, 1], 0.0),
-        lambda: ops.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
+        math.allclose(theta, 0.0),
+        lambda: ops.RZ(phi + omega, wires=wires[0]),
         lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
     )()
     return alpha
