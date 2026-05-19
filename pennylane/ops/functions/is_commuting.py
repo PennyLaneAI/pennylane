@@ -21,6 +21,44 @@ import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Prod, SProd, Sum
 
+SPECIAL_UTILITIES = {
+    "Barrier",
+    "WireCut",
+    "Snapshot",
+}
+# Ops that don't commute with anything
+IDENTITIES = {"Identity", "GlobalPhase"}
+# Ops that commute with everything other than special utilities
+SELF_COMMUTE = {"Hadamard"}
+# Ops that only commute with themselves and identities
+
+PAULIZ_GROUP = {
+    "PauliZ",
+    "ctrl",
+    "S",
+    "T",
+    "RZ",
+    "PhaseShift",
+    "MultiRZ",
+    "U1",
+    "IsingZZ",
+}
+# Set[str]: names of operations that commute with PauliZ
+
+SWAP_GROUP = {
+    "SWAP",
+    "ISWAP",
+    "SISWAP",
+    "Permute",
+}
+# Set[str]: names of operations that commute with SWAP
+
+PAULIX_GROUP = {"PauliX", "SX", "RX", "Identity", "IsingXX", "BasisState"}
+# Set[str]: names of operations that commute with X
+
+PAULIY_GROUP = {"PauliY", "RY", "Identity", "IsingYY"}
+# Set[str]: names of operations that commute with Y
+
 
 def _pword_is_commuting(pauli_word_1, pauli_word_2):
     r"""Checks if two Pauli words commute.
@@ -57,25 +95,8 @@ def _get_target_name(op):
     """Get the name for the target operation. If the operation is not controlled, this is
     simplify the operation's name.
     """
-    _control_base_map = {
-        "CNOT": "PauliX",
-        "CZ": "PauliZ",
-        "CCZ": "PauliZ",
-        "CY": "PauliY",
-        "CH": "Hadamard",
-        "CSWAP": "SWAP",
-        "Toffoli": "PauliX",
-        "ControlledPhaseShift": "PhaseShift",
-        "CRX": "RX",
-        "CRY": "RY",
-        "CRZ": "RZ",
-        "CRot": "Rot",
-        "MultiControlledX": "PauliX",
-    }
-    if op.name in _control_base_map:
-        return _control_base_map[op.name]
-    if isinstance(op, qp.ops.op_math.Controlled):
-        return op.base.name
+    if isinstance(op, qp.ops.op_math.SymbolicOp):
+        return _get_target_name(op.base)
     return op.name
 
 
@@ -100,36 +121,11 @@ def _create_commute_function():
     Returns:
         function
     """
-    pauliz_group = {
-        "PauliZ",
-        "ctrl",
-        "S",
-        "Adjoint(S)",
-        "T",
-        "Adjoint(T)",
-        "RZ",
-        "PhaseShift",
-        "MultiRZ",
-        "Identity",
-        "U1",
-        "IsingZZ",
-    }
-    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
-    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "Adjoint(SX)"}
-    pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
     commutation_map = {}
-    for group in [paulix_group, pauliy_group, pauliz_group, swap_group]:
+    for group in [PAULIX_GROUP, PAULIY_GROUP, PAULIZ_GROUP, SWAP_GROUP, SELF_COMMUTE]:
         for op in group:
             commutation_map[op] = group
-
-    identity_only = {"Hadamard", "U2", "U3", "Rot"}
-    for op in identity_only:
-        commutation_map[op] = {"Identity", op}
-
-    commutation_map["Identity"] = pauliz_group.union(
-        swap_group, paulix_group, pauliy_group, identity_only
-    )
 
     def commutes_inner(op_name1, op_name2):
         """Determine whether or not two operations commute.
@@ -144,7 +140,12 @@ def _create_commute_function():
             bool: True if the operations commute, False otherwise.
 
         """
-        return op_name1 in commutation_map[op_name2]
+        if op_name1 in SPECIAL_UTILITIES or op_name2 in SPECIAL_UTILITIES:
+            return False
+        if op_name1 in IDENTITIES or op_name2 in IDENTITIES:
+            return True
+        # assume non commuting if not in commutation map
+        return op_name1 in commutation_map.get(op_name2, {})
 
     return commutes_inner
 
@@ -261,50 +262,6 @@ unsupported_operations = [
     "SqueezingEmbedding",
     "Exp",
 ]
-non_commuting_operations = [
-    # StatePrepBase
-    "StatePrep",
-    "BasisState",
-    # Templates
-    "ArbitraryStatePreparation",
-    "MottonenStatePreparation",
-    "QubitCarry",
-    "QubitSum",
-    "SingleExcitation",
-    "SingleExcitationMinus",
-    "SingleExcitationPlus",
-    "DoubleExcitation",
-    "DoubleExcitationPlus",
-    "DoubleExcitationMinus",
-    "BasicEntanglerLayers",
-    "GateFabric",
-    "ParticleConservingU1",
-    "ParticleConservingU2",
-    "RandomLayers",
-    "SimplifiedTwoDesign",
-    "StronglyEntanglingLayers",
-    "AllSinglesDoubles",
-    "FermionicDoubleExcitation",
-    "FermionicSingleExcitation",
-    "Grover",
-    "kUpCCGSD",
-    "Permute",
-    "QFT",
-    "QuantumMonteCarlo",
-    "QuantumPhaseEstimation",
-    "UCCSD",
-    "MPS",
-    "TTN",
-    "AmplitudeEmbedding",
-    "AngleEmbedding",
-    "BasisEmbedding",
-    "IQPEmbedding",
-    "QAOAEmbedding",
-    # utility ops
-    "Barrier",
-    "WireCut",
-    "Snapshot",
-]
 
 
 def is_commuting(operation1, operation2):
@@ -337,8 +294,11 @@ def is_commuting(operation1, operation2):
     >>> qp.is_commuting(qp.X(0), qp.Z(0))
     False
     """
-
     # pylint: disable=too-many-return-statements
+
+    # operations are disjoints
+    if not intersection(operation1.wires, operation2.wires):
+        return True
 
     if operation1.name in unsupported_operations or isinstance(
         operation1, (qp.operation.CVOperation, qp.operation.Channel)
@@ -353,10 +313,6 @@ def is_commuting(operation1, operation2):
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:
         return _pword_is_commuting(operation1, operation2)
 
-    # operations are disjoints
-    if not intersection(operation1.wires, operation2.wires):
-        return True
-
     # Simplify the rotations if possible
     with qp.QueuingManager.stop_recording():
         operation1 = qp.simplify(operation1)
@@ -365,16 +321,9 @@ def is_commuting(operation1, operation2):
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
 
-    # Operation is in the non commuting list
-    if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:
-        return False
-
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
         return check_commutation_two_non_simplified_crot(operation1, operation2)
-
-    if "Identity" in (operation1.name, operation2.name):
-        return True
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
@@ -384,8 +333,8 @@ def is_commuting(operation1, operation2):
     ctrl_base_1 = _get_target_name(operation1)
     ctrl_base_2 = _get_target_name(operation2)
 
-    op1_control_wires = getattr(operation1, "control_wires", {})
-    op2_control_wires = getattr(operation2, "control_wires", {})
+    op1_control_wires = getattr(operation1, "control_wires", qp.wires.Wires({}))
+    op2_control_wires = getattr(operation2, "control_wires", qp.wires.Wires({}))
 
     target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
