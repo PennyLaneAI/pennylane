@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
   in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
 
@@ -69,12 +74,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
-  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -102,6 +101,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` has been removed.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
+
+  - Deprecated in v0.43
+  - Removed in v0.46
 
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``

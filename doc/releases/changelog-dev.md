@@ -19,7 +19,7 @@
   ```python
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
-  
+
   dev = qp.device("lightning.qubit")
 
   @qp.qnode(dev, shots=1)
@@ -35,35 +35,39 @@
 
     return qp.sample(wires=[12])
   ```
-  
+
   ```pycon
     >>> output = circuit(3, ">=", 2)
     >>> print(bool(output))
     True
-  
+
   ```
-  
+
 <h3>Breaking changes 💔</h3>
+
+* The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
+  shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
+  [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
 
 * `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
   [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
 
 * :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
   :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  are removed. Instead, please use the 
+  are removed. Instead, please use the
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
 
-* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`. 
+* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`. 
+* The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
+* The `id` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
-* The `id` keyword argument to :class:`~.Operator` has been removed. 
+* The `id` keyword argument to :class:`~.Operator` has been removed.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
@@ -87,9 +91,12 @@
 * Setting `Operator._queue_category=None` and `MeasurementProcess._queue_category=None`
   to avoid processing the operator into the circuit is now removed.
   Instead, `Operator.queue` can be overwritten if needed.
-  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470) 
+  [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
 <h3>Deprecations 👋</h3>
+
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+  [(#9487)](https://github.com/PennyLaneAI/pennylane/pull/9487)
 
 * The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
   in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
@@ -107,10 +114,10 @@
 
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
-  
+
 * Added support for JAX arrays as control wires during JAXpr evaluation.
   [(#9480)](https://github.com/PennyLaneAI/pennylane/pull/9480)
-  
+
 * Replaces arbitrary magic numbers across multiple modules with named, documented constants.
   Raw numeric literals in `pennylane/math`, `pennylane/ops`, `pennylane/devices`,
   `pennylane/gradients`, `pennylane/pauli`, `pennylane/qchem`, `pennylane/liealg`,
@@ -122,8 +129,15 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
-  
+
+* The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
+  are gate-like operators.
+  [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
+
 <h3>Documentation 📝</h3>
+
+* References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
+  [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -157,5 +171,7 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Christina Lee,
 Andrija Paurevic,
+Paul Haochen Wang,
 David Wierichs
