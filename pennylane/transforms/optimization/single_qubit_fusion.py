@@ -15,7 +15,6 @@
 
 import pennylane as qp
 from pennylane import math
-from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -259,7 +258,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         # Look for dispatch of single_qubit_zyz_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            *angles, phase = single_qubit_zyz_angles(current_gate)
+            *angles, phase = qp.single_qubit_zyz_angles(current_gate)
             cumulative_angles = math.stack(angles)
             global_phase += phase
         except (NotImplementedError, AttributeError):
@@ -299,7 +298,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                *angles, phase = single_qubit_zyz_angles(next_gate)
+                *angles, phase = qp.single_qubit_zyz_angles(next_gate)
                 next_gate_angles = math.stack(angles)
                 global_phase += phase
             except (NotImplementedError, AttributeError):

@@ -45,7 +45,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
-from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -218,12 +217,6 @@ class Hadamard(Operation):
 
     def pow(self, z: int | float):
         return super().pow(z % 2)
-
-
-@single_qubit_zyz_angles.register
-def _h_rot_angles(op: Hadamard):  # pylint: disable=unused-argument
-    # H = RZ(\pi) RY(\pi/2) RZ(0)
-    return (np.pi, np.pi / 2, 0.0, 0.0)
 
 
 H = Hadamard
@@ -494,12 +487,6 @@ class PauliX(Operation):
 
     def _controlled(self, wire: WiresLike) -> "qp.CNOT":
         return qp.CNOT(wires=Wires(wire) + self.wires)
-
-
-@single_qubit_zyz_angles.register
-def _x_rot_angles(op: PauliX):  # pylint: disable=unused-argument
-    # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
-    return (np.pi / 2, np.pi, -np.pi / 2, 0.0)
 
 
 X = PauliX
@@ -787,12 +774,6 @@ class PauliY(Operation):
         return qp.CY(wires=Wires(wire) + self.wires)
 
 
-@single_qubit_zyz_angles.register
-def _y_rot_angles(op: PauliY):  # pylint: disable=unused-argument
-    # Y = RZ(0) RY(\pi) RZ(0)
-    return (0.0, np.pi, 0.0, 0.0)
-
-
 Y = PauliY
 r"""The Pauli Y operator
 
@@ -1058,12 +1039,6 @@ class PauliZ(Operation):
         return qp.CZ(wires=wire + self.wires)
 
 
-@single_qubit_zyz_angles.register
-def _z_rot_angles(op: PauliZ):  # pylint: disable=unused-argument
-    # Z = RZ(\pi) RY(0) RZ(0)
-    return (np.pi, 0.0, 0.0, 0.0)
-
-
 Z = PauliZ
 r"""The Pauli Z operator
 
@@ -1287,12 +1262,6 @@ class S(Operation):
         )
 
 
-@single_qubit_zyz_angles.register
-def _s_rot_angles(op: S):  # pylint: disable=unused-argument
-    # S = RZ(\pi/2) RY(0) RZ(0)
-    return (np.pi / 2, 0.0, 0.0, 0.0)
-
-
 def _s_phaseshift_resources():
     return {qp.PhaseShift: 1}
 
@@ -1465,12 +1434,6 @@ class T(Operation):
         )
 
 
-@single_qubit_zyz_angles.register
-def _t_rot_angles(op: T):  # pylint: disable=unused-argument
-    # T = RZ(\pi/4) RY(0) RZ(0)
-    return (np.pi / 4, 0.0, 0.0, 0.0)
-
-
 def _t_phaseshift_resources():
     return {qp.PhaseShift: 1}
 
@@ -1630,12 +1593,6 @@ class SX(Operation):
         if z_mod4 == 2:
             return [X(wires=self.wires)]
         return super().pow(z_mod4)
-
-
-@single_qubit_zyz_angles.register
-def _sx_rot_angles(op: SX):  # pylint: disable=unused-argument
-    # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-    return (np.pi / 2, np.pi / 2, -np.pi / 2, 0.0)
 
 
 def _sx_to_rx_resources():

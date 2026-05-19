@@ -43,7 +43,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation
-from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -181,12 +180,6 @@ class RX(Operation):
             return qp.Identity(wires=self.wires)
 
         return RX(theta, wires=self.wires)
-
-
-@single_qubit_zyz_angles.register
-def _(op: RX):
-    # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-    return (np.pi / 2, op.data[0], -np.pi / 2, 0.0)
 
 
 def _rx_to_rot_resources():
@@ -393,12 +386,6 @@ class RY(Operation):
             return qp.Identity(wires=self.wires)
 
         return RY(theta, wires=self.wires)
-
-
-@single_qubit_zyz_angles.register
-def _(op: RY):
-    # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-    return (0.0, op.data[0], 0.0, 0.0)
 
 
 def _ry_to_rot_resources():
@@ -659,12 +646,6 @@ class RZ(Operation):
             return qp.Identity(wires=self.wires)
 
         return RZ(theta, wires=self.wires)
-
-
-@single_qubit_zyz_angles.register
-def _(op: RZ):
-    # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-    return (op.data[0], 0.0, 0.0, 0.0)
 
 
 def _rz_to_ps_resources():
@@ -958,12 +939,6 @@ class PhaseShift(Operation):
         return PhaseShift(phi, wires=self.wires)
 
 
-@single_qubit_zyz_angles.register
-def _(op: PhaseShift):
-    # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-    return (op.data[0], 0.0, 0.0, 0.0)
-
-
 def _phaseshift_to_rz_gp_resources():
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
@@ -1185,11 +1160,6 @@ class Rot(Operation):
             return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
-
-
-@single_qubit_zyz_angles.register
-def _(op: Rot):
-    return tuple(op.data) + (0.0,)
 
 
 def _rot_to_rz_ry_rz_resources():
