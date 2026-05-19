@@ -472,6 +472,11 @@ class SymbolicSpecsResources(SpecsResources):
         return vars
 
     def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
+        """
+        Substitute variables in the symbolic resources with concrete integer values.
+        If all variables are substituted, this will return a :class:`SpecsResources` object with
+        integer values instead of another :class:`SymbolicSpecsResources` object.
+        """
         substitutions.update(kwargs)
 
         subs_vars = set(substitutions.keys())

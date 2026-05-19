@@ -146,5 +146,5 @@ from .resource import (
     resources_from_tape,
     substitute,
 )
-from .specs import specs
 from .expression import Expression
+from .specs import specs
