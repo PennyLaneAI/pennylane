@@ -894,7 +894,7 @@ class QROMStatePreparation(ResourceOperator):
             number of times it appears in the decomposition.
         """
         return cls._decomp_selection_helper(
-            use_phase_grad_trick=False,
+            use_phase_grad_trick=True,
             num_state_qubits=num_state_qubits,
             positive_and_real=positive_and_real,
             precision=precision,
