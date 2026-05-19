@@ -58,7 +58,7 @@ class TestInitialization:
 class TestProperties:
 
     def test_hash(self):
-        """Test that op.hash uniquely describes a ControlledSequence"""
+        """Test that hash(op) uniquely describes a ControlledSequence"""
 
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
         op1 = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])  # identical

@@ -449,7 +449,10 @@ class TestAdjointOperation:
     )
     def test_basis_property(self, base, basis):
         op = Adjoint(base)
-        assert op.basis == basis
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="Operation.basis is deprecated"
+        ):
+            assert op.basis == basis
 
     def test_control_wires(self):
         """Test the control_wires of an adjoint are the same as the base op."""

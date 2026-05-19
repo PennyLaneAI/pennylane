@@ -9,39 +9,39 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
+  whether or not two operations commute. For example, ``qp.is_commuting(op, qp.X(op.wires[0]))`` can
+  be used to determine if ``op`` is in the X basis.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
   has been deprecated and will be removed in v0.46. If necessary, the
   :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
   subclasses of ``Operator``.
 
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Deprecated in v0.46
+  - Will be removed in v0.47
 
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
 
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
-  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the 
-  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Deprecated in v0.46
+  - Will be removed in v0.47
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -102,6 +102,34 @@ Completed deprecation cycles
 
   - Deprecated in v0.43
   - Removed in v0.46
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``qp.transforms.create_expand_fn`` has been deprecated and was removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+  
+* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
+  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  are removed. Instead, please use the 
+  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46 
 
 * The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid``. 
 
