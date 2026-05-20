@@ -21,6 +21,32 @@ from pennylane.ops import MeasurementValue, PauliMeasure
 from pennylane.wires import Wires
 
 
+@pytest.mark.external
+@pytest.mark.catalyst
+def test_pauli_measure_catalyst_dispatch():
+    """Test that qp.pauli_measure can be used with qjit and capture disabled."""
+
+    pytest.importorskip("catalyst")
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def c():
+        qp.X(0)
+        m = qp.pauli_measure("Z", wires=[0], postselect=1)
+
+        def f():
+            qp.X(1)
+
+        qp.cond(m, f)()
+
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+    z0, z1 = c()
+
+    assert qp.math.allclose(z0, -1)
+    assert qp.math.allclose(z1, -1)
+
+
 class TestPauliMeasure:
     """Tests for the pauli_measure function."""
 
