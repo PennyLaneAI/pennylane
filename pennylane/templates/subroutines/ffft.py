@@ -19,7 +19,6 @@ import copy
 from collections import defaultdict
 
 import numpy as np
-from sympy.ntheory import factorint
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
@@ -79,6 +78,14 @@ class FFFT(Operator):
     r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
     the fermions are encoded using the Jordan-Wigner transformation. Assumes the Fermions are encoded using the ordering
     of the wires as passed to the FFFT.
+
+    Instead of performing the bit-reversal permutation that is typical at the beginning or end of a Fourier transform,
+    this Template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
+    where f is the first number that factors `num_wires`.
+
+    .. python::
+
+        permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]
 
     The FFFT over a number of wires :math:`n` (a power of two)
     is decomposed recursively into two parallel FFFTs over :math:`\tfrac{n}{2}`
@@ -183,8 +190,6 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     if num_wires > 2:
         resources[resource_rep(FermionicSWAP)] = num_wires * (num_wires - math.log2(num_wires) - 1)
 
-    resources[resource_rep(FermionicSWAP)] += (num_wires - 1) * num_wires // 2
-
     return resources
 
 
@@ -192,30 +197,9 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")
-    num_wires = len(wires)
 
-    # bit-reversal permutation
-    f, _ = tuple(factorint(num_wires).items())[0]
-    permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]
-
-    @for_loop(num_wires // 2)
-    def swaps(i):
-        @while_loop(lambda finished, _, __, ___, ____: not finished)
-        def fswaps(f, left, right, l_end, r_end):
-            f = (left == l_end) and (right == r_end)
-            if left < l_end:
-                FermionicSWAP(np.pi, Wires([wires[left], wires[left + 1]]))
-                if left + 1 == right:
-                    right -= 1
-                left += 1
-            if right > r_end:
-                FermionicSWAP(np.pi, Wires([wires[right], wires[right - 1]]))
-                right -= 1
-            return f, left, right, l_end, r_end
-
-        fswaps(False, i, num_wires - i - 1, num_wires - i - 1, i)
-
-    swaps()  # pylint: disable=no-value-for-parameter
+    # Rather than performing a bit-reversal permutation, we expect the user to label their wires
+    # correctly at the beginning.
 
     _recursive_decompose(wires)
 
