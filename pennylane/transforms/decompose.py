@@ -41,7 +41,7 @@ from pennylane.transforms.core import transform
 
 has_jax = find_spec("jax") is not None
 if has_jax:
-    from pennylane.allocation import AbstractQubit
+    from pennylane.allocation import is_abstract_qubit
 
 
 def null_postprocessing(results):
@@ -201,7 +201,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 if has_jax:
                     wires = []
                     for w in _args[-num_wires:]:
-                        if math.is_abstract(w) and isinstance(w.val.aval, AbstractQubit):
+                        if is_abstract_qubit(w):
                             wires.append(w)
                         else:
                             wires.append(jax.numpy.array(w))
