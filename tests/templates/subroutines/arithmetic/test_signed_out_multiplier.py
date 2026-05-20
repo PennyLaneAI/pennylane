@@ -161,6 +161,16 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
         ),
+        (
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
+            [1, 0, 1]  # operand one: -3
+            + [0, 1, 1]  # operand two: 3
+            + [0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 1, 0],  # output register starts in non-zero state!
+        ),
     ],
 )
 def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
@@ -169,6 +179,10 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
     # get the initial state of our inputs
     x_state = [init_state[x] for x in x_wires]
     y_state = [init_state[y] for y in y_wires]
+
+    x_sign = x_state[0]
+    y_sign = y_state[0]
+    z_sign = x_sign ^ y_sign  # exclusive OR
 
     # get the integer value of the x input
     if init_state[0] == 1:
@@ -186,8 +200,11 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
         # otherwise just convert from binary to int
         y = bin_to_int(y_state)
 
+    # get z_m
+    z_m = bin_to_int(init_state[-5:])
+
     # calculate the expected result
-    expected = x * y
+    expected = x * y + ((-1) ** z_sign) * z_m
 
     # execute the quantum signed out multiplier circuit
     result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state)[0]
