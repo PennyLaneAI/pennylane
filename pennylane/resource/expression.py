@@ -40,13 +40,15 @@ class Expression:
     after it is created, as this may lead to incorrect behavior.
     """
 
-    __slots__ = ("_hashval", "_data")
+    __slots__ = ("_hashval", "_data", "_vars")
 
     _data: dict[tuple[str, ...], int]
+    _vars: set[str]
 
     def __init__(
         self,
         data: dict[tuple[str, ...], int],
+        vars: set[str] | None = None,
         _skip_copy: bool = False,
         _skip_normalization: bool = False,
     ) -> None:
@@ -56,6 +58,9 @@ class Expression:
         Args:
             data (dict[tuple[str, ...], int]): A dictionary mapping tuples of variable names to their coefficients.
         """
+        if not isinstance(data, dict):
+            raise TypeError("Expression data must be a dictionary or tuples")
+
         self._hashval = None
         if _skip_copy:
             self._data = data
@@ -63,18 +68,19 @@ class Expression:
             self._data = data.copy()
         if not _skip_normalization:
             self._normalize()
-            object.__setattr__(
-                self,
-                "_data",
-                {
-                    vars: self._data[vars]
-                    for vars in sorted(
-                        self._data.keys(),
-                        reverse=True,
-                        key=lambda var_tuple: (len(var_tuple), var_tuple),
-                    )
-                },
-            )
+            # Sort data after normalization
+            self._data = {
+                vars: self._data[vars]
+                for vars in sorted(
+                    self._data.keys(),
+                    reverse=True,
+                    key=lambda var_tuple: (len(var_tuple), var_tuple),
+                )
+            }
+        if vars is not None:
+            self._vars = vars
+        else:
+            self._vars = set(var for vars in self._data.keys() for var in vars)
 
     def _normalize(self) -> None:
         """
@@ -90,18 +96,16 @@ class Expression:
                 if sorted_vars not in self._data:
                     self._data[sorted_vars] = 0
                 self._data[sorted_vars] += self._data[vars]
+                if self._data[sorted_vars] == 0:
+                    del self._data[sorted_vars]
                 del self._data[vars]
 
     @property
-    @cache
     def vars(self) -> set[str]:
         """
-        Returns the set of variables that appear in the expression.
-
-        Returns:
-            set[str]: The set of variable names that appear in the expression.
+        The set of variables that appear in the expression.
         """
-        return set(var for vars in self._data.keys() for var in vars)
+        return self._vars
 
     def subs(self, substitutions: dict[str, int]) -> Union["Expression", int]:
         """
@@ -130,7 +134,9 @@ class Expression:
             return 0
         if len(new_data) == 1 and () in new_data:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(new_data, _skip_normalization=True)
+        return Expression(
+            new_data, _skip_normalization=True, vars=self._vars.difference(substitutions.keys())
+        )
 
     @cache
     def __str__(self) -> str:
@@ -182,13 +188,14 @@ class Expression:
                 {vars: coeff * other for vars, coeff in self._data.items()},
                 _skip_copy=True,
                 _skip_normalization=True,
+                vars=self._vars,
             )
 
         new_data = defaultdict(int)
         for vars1, coeff1 in self._data.items():
             for vars2, coeff2 in other._data.items():
                 new_data[vars1 + vars2] += coeff1 * coeff2
-        return Expression(dict(new_data))
+        return Expression(new_data, vars=self._vars.union(other._vars))
 
     def __rmul__(self, other) -> "Expression":
         return self.__mul__(other)
@@ -200,12 +207,12 @@ class Expression:
         if isinstance(other, int):
             new_data = self._data.copy()
             new_data[()] = new_data.get((), 0) + other
-            return Expression(new_data, _skip_copy=True)
+            return Expression(new_data, _skip_copy=True, vars=self._vars)
 
         new_data = self._data.copy()
         for vars, coeff in other._data.items():
             new_data[vars] = new_data.get(vars, 0) + coeff
-        return Expression(new_data, _skip_copy=True)
+        return Expression(new_data, _skip_copy=True, vars=self._vars.union(other._vars))
 
     def __radd__(self, other) -> "Expression":
         return self.__add__(other)

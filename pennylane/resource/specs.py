@@ -742,6 +742,68 @@ def specs(
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
         returned and displayed separately, though the level name for both is the same, since they come from the same transform.
+
+    .. details::
+        :title: Symbolic Results for Pass-by-pass Specs with Catalyst
+
+        In some cases, the resources obtained from pass-by-pass specs may be symbolic rather than
+        exact values. This can occur when the resources depend on values that are not known at
+        compile time, such as the number of iterations in a loop. In these cases, the resource
+        information will be returned as a symbolic expression via a
+        :class:`~.resource.SymbolicSpecsResources` rather than a concrete valued
+        :class:`~.resource.SpecsResources`.
+
+        For example, consider the following circuit which contains a ``for`` loop with a
+        non-static range:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit
+            @qp.qnode(dev)
+            def circuit(x):
+                qp.Hadamard(0)
+                qp.PauliX(0)
+                for _ in range(x):
+                    qp.PauliX(0)
+                return qp.expval(qp.PauliZ(0))
+
+            specs_result = qp.specs(circuit, level=0)(5)
+
+        If we attempt to get pass-by-pass specs for this circuit, the resource information will be
+        symbolic due to the dependence on the input parameter ``x``:
+
+        >>> print(specs_result)
+        Device: lightning.qubit
+        Device wires: 1
+        Shots: Shots(total=None)
+        Level: Before MLIR Passes
+        <BLANKLINE>
+        Symbolic Variables: a
+        Wire allocations: 1
+        Total gates: a + 2
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: a + 1
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        The resource object can be made into a concrete value by using the ``.subs`` method of the
+        returned :class:`~.resource.SymbolicSpecsResources` object, and providing a mapping from
+        each symbolic variable to an integer value:
+
+        >>> res = specs_result.resources
+        >>> print(res.subs({'a': 5}))
+        Wire allocations: 1
+        Total gates: 7
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: 6
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed

@@ -24,11 +24,13 @@ import pytest
 import pennylane as qp
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
+from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
     Resources,
     ResourcesOperation,
     SpecsResources,
+    SymbolicSpecsResources,
     _batch_num_to_letters,
     _combine_dict,
     _count_resources,
@@ -787,6 +789,154 @@ class TestSpecsResources:
         }
 
         assert s.to_dict() == expected
+
+
+class TestSymbolicSpecsResources:
+    @pytest.fixture
+    def example_resource(self) -> SymbolicSpecsResources:
+        """
+        Generate an example SymbolicSpecsResources instance.
+        The resources roughly correspond to the following circuit:
+
+        .. code-block:: python
+
+            def circ():
+                qp.Hadamard(0)
+                qp.PauliX(0)
+                for i in range(x):
+                    qp.PauliX(i)
+                    for _ in range(z):
+                        qp.CNOT(wires=[0, 1])
+                for j in range(2 * z):
+                    qp.PauliZ(j)
+                return expval(qp.PauliZ(0))
+        """
+        return SymbolicSpecsResources(
+            gate_types={
+                "Hadamard": Expression({(): 1}),
+                "PauliX": Expression({("x"): 1, (): 1}),
+                "CNOT": Expression({("x", "z"): 1}),
+                "PauliZ": Expression({("z",): 2}),
+            },
+            gate_sizes={1: Expression({("z"): 2, "x": 1, (): 2}), 2: Expression({("x", "z"): 1})},
+            measurements={"expval(PauliZ)": 1},
+            # The values for allocs and depth are a bit off, but are helpful for testing substitutions
+            num_allocs=Expression({("x",): 1, ("z",): 2, (): 1}),
+            depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
+        )
+
+    @pytest.fixture
+    def example_resource_concrete(self) -> SymbolicSpecsResources:
+        """
+        Generate an example SymbolicSpecsResources instance for a non-dynamic circuit.
+
+        Specifically, returns the resources for a simple Bell state circuit with a measurement.
+        """
+        return SymbolicSpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_init_converts_to_expression(self):
+        """Test that SymbolicSpecsResources can be instantiated with ints and correctly converts them."""
+        s = SymbolicSpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+        assert isinstance(s.gate_types, dict)
+        assert all(isinstance(v, Expression) for v in s.gate_types.values())
+        assert isinstance(s.gate_sizes, dict)
+        assert all(isinstance(v, Expression) for v in s.gate_sizes.values())
+        assert isinstance(s.measurements, dict)
+        assert all(isinstance(v, Expression) for v in s.measurements.values())
+        assert isinstance(s.num_allocs, Expression)
+        assert isinstance(s.depth, Expression)
+
+    def test_blank_subs(self, example_resource):
+        s = example_resource
+        assert s.subs() == s
+
+    def test_blank_subs_concrete(self, example_resource_concrete):
+        s = example_resource_concrete
+
+        concretized = s.subs()
+        assert isinstance(concretized, SpecsResources)
+        assert not isinstance(concretized, SymbolicSpecsResources)
+        assert concretized == SpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_partial_subs(self, example_resource):
+        s = example_resource
+
+        # Substitute x=2, leaving z symbolic
+        partially_substituted = s.subs({"x": 2})
+
+        expected = SymbolicSpecsResources(
+            gate_types={
+                "Hadamard": Expression({(): 1}),
+                "PauliX": Expression({(): 3}),
+                "CNOT": Expression({("z",): 2}),
+                "PauliZ": Expression({("z",): 2}),
+            },
+            gate_sizes={
+                1: Expression({("z",): 2, (): 4}),
+                2: Expression({("z",): 2}),
+            },
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=Expression({("z",): 2, (): 3}),
+            depth=Expression({("z",): 4, (): 4}),
+        )
+
+        assert partially_substituted == expected
+
+    def test_full_subs(self, example_resource):
+        s = example_resource
+
+        # Substitute x=2 and z=3
+        fully_substituted = s.subs({"x": 2, "z": 3})
+
+        expected = SpecsResources(
+            gate_types={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
+            gate_sizes={1: 10, 2: 6},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=9,
+            depth=16,
+        )
+
+        assert fully_substituted == expected
+        assert not isinstance(fully_substituted, SymbolicSpecsResources)
+
+    def test_subs_kwargs(self, example_resource):
+        assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
+
+    def test_str(self, example_resource):
+        s = example_resource
+
+        expected = "Symbolic Variables: x, z\n"
+        expected += "Wire allocations: 2*z + x + 1\n"
+        expected += "Total gates: x*z + 2*z + x + 2\n"
+        expected += "Gate counts:\n"
+        expected += "- Hadamard: 1\n"
+        expected += "- PauliX: x + 1\n"
+        expected += "- CNOT: x*z\n"
+        expected += "- PauliZ: 2*z\n"
+        expected += "Measurements:\n"
+        expected += "- expval(PauliZ): 1\n"
+        expected += "Depth: x*z + 2*z + x + 2"
+
+        assert str(s) == expected
 
 
 class TestCircuitSpecs:

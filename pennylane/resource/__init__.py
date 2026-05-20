@@ -138,6 +138,7 @@ from .resource import (
     Resources,
     ResourcesOperation,
     SpecsResources,
+    SymbolicSpecsResources,
     CircuitSpecs,
     add_in_series,
     add_in_parallel,

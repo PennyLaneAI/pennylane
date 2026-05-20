@@ -34,8 +34,10 @@ from .error.error import _compute_algo_error
 from .expression import Expression
 
 
-def _count_to_str(count: int) -> str:
+def _count_to_str(count: int | Expression) -> str:
     """Helper for printing counts, converts large counts to scientific notation."""
+    if isinstance(count, Expression):
+        return str(count).replace(" ", "")
     return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
 
 
