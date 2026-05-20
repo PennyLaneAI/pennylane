@@ -56,9 +56,6 @@ class SignedOutMultiplier(Operator):
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
             the operation.
 
-
-    **How it works**
-
     We begin with three signed quantum registers, storing :math:`|x\rangle`, :math:`|y\rangle` and :math:`|0\rangle` with register sizes :math:`n`, :math:`m` and :math:`k`, respectively. We will turn to the case of non-zero initial states for the last register later.
     Here, :math:`x` and :math:`y` are signed integers in two's complement representation:
 
