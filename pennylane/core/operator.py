@@ -98,12 +98,12 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 Contents
 --------
 
-.. currentmodule:: pennylane.operation
+.. currentmodule:: pennylane.core.operator
 
 Operator Types
 ~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.operation
+.. currentmodule:: pennylane.core.operator
 
 .. autosummary::
     :toctree: api
@@ -116,7 +116,7 @@ Operator Types
     ~Channel
     ~StatePrepBase
 
-.. currentmodule:: pennylane.operation
+.. currentmodule:: pennylane.core.operator
 
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
@@ -124,6 +124,8 @@ Operator Types
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
+
+Note that this function is in the ``penylane.operation`` namespace, not ``pennylane.core.operator``.
 
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
@@ -137,6 +139,8 @@ The ``operation`` module provides the following:
 
 Other
 ~~~~~
+
+Note that this function is in the ``penylane.operation`` namespace, not ``pennylane.core.operator``.
 
 .. currentmodule:: pennylane.operation
 
