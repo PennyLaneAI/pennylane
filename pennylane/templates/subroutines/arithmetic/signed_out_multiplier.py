@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, Controlled, PauliX, measure, MidMeasure
+from pennylane.ops import CNOT, Controlled, MidMeasure, PauliX, measure
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -57,7 +57,13 @@ class SignedOutMultiplier(Operator):
             the operation.
     """
 
-    resource_keys = {"num_output_wires", "num_work_wires", "num_x_wires", "num_y_wires", "output_wires_zeroed"}
+    resource_keys = {
+        "num_output_wires",
+        "num_work_wires",
+        "num_x_wires",
+        "num_y_wires",
+        "output_wires_zeroed",
+    }
 
     def __init__(
         self,
@@ -108,8 +114,14 @@ class SignedOutMultiplier(Operator):
             "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
         }
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
-def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed):
+
+def _signed_out_multiplier_resources(
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed
+):
     """
     Computes the resources for the SignedOutMultiplier.
     Assumes the worst case that both numbers are negative.
@@ -191,7 +203,12 @@ def _work_wire_condition(num_work_wires, **_):
 @register_condition(_work_wire_condition)
 @register_resources(_signed_out_multiplier_resources, exact=False)
 def _signed_out_multiplier_decomposition(
-    x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike, output_wires_zeroed: bool, **_
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+    **_,
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 

@@ -103,6 +103,10 @@ class Incrementer(Operator):
 
         super().__init__(wires=wires + work_wires)
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @property
     def resource_params(self):
         return {
