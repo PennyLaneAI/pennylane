@@ -1838,7 +1838,7 @@ def test_symmetric_matrix_early_return(op, mocker):
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
 
-    spy = mocker.spy(qp.operation, "expand_matrix")
+    spy = mocker.spy(qp.core.operator, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
 
     spy.assert_not_called()
@@ -1929,7 +1929,7 @@ def test_get_attr():
 
     attr_name = "non_existent_attr"
     with pytest.raises(
-        AttributeError, match=f"module 'pennylane.core.operator' has no attribute '{attr_name}'"
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
     ):
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 

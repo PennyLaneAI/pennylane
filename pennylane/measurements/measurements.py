@@ -26,6 +26,7 @@ from typing import Optional
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator, _get_abstract_operator
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
@@ -33,7 +34,6 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
-from pennylane.operation import Operator, _get_abstract_operator
 from pennylane.ops import MeasurementValue
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager

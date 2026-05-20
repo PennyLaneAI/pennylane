@@ -211,7 +211,7 @@ from pennylane.exceptions import (
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 has_jax = True
@@ -347,9 +347,6 @@ def _process_data(op):
         mod_val = None
 
     return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
-
-
-FlatPytree = tuple[Iterable[Any], Hashable]
 
 
 class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
@@ -691,7 +688,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             tuple,
             Wires,
             range,
-            qp.capture.autograph.ag_primitives.PRange,
+            capture.autograph.ag_primitives.PRange,
             set,
             *array_types,
         )

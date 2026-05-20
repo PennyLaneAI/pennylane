@@ -18,6 +18,19 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import *  # pylint: disable=wildcard-import, unused-wildcard-import
 from pennylane.core.operator import _UNSET_BATCH_SIZE  # pylint: disable=unused-import
+from pennylane.exceptions import (  # pylint: disable=unused-import
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    OperatorPropertyUndefined,
+    ParameterFrequenciesUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 from pennylane.typing import TensorLike
 
 
@@ -51,3 +64,10 @@ def is_trainable(obj):
     according to ``qp.math.requires_grad``.
     """
     return any(math.requires_grad(p) for p in obj.parameters)
+
+
+def __getattr__(name):
+    """To facilitate StatePrep rename"""
+    if name == "StatePrep":
+        return StatePrepBase
+    raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
