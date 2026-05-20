@@ -323,38 +323,11 @@ def measure(
         Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
 
-        If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
-        or ``Inf`` values:
-
-        .. code-block:: python
-
-            dev = qp.device("default.qubit")
-
-            @qp.qnode(dev)
-            def func(x):
-                qp.RX(x, wires=0)
-                m0 = qp.measure(0, postselect=1)
-                qp.cond(m0, qp.X)(wires=1)
-                return qp.probs(wires=1)
-
-        >>> func(0.0)
-        array([nan, nan])
-
-        In the case of ``qp.sample`` and `mcm_method="deferred"`, an empty array will be returned:
-
-        .. code-block:: python
-
-            dev = qp.device("default.qubit")
-
-            @qp.qnode(dev, mcm_method="deferred")
-            def func(x):
-                qp.RX(x, wires=0)
-                m0 = qp.measure(0, postselect=1)
-                qp.cond(m0, qp.X)(wires=1)
-                return qp.sample(wires=[0, 1])
-
-        >>> qp.set_shots(func, shots=[10, 10])(0.0)
-        (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
+        Avoid postselecting on a state with zero probability of being measured. Depending on the
+        execution method and measurement type, this may raise an error, return ``NaN`` or ``Inf``
+        values, or leave no valid samples after postselection. Use an input state that gives the
+        postselected outcome nonzero probability when writing examples or validating postselected
+        circuits.
 
         .. note::
 

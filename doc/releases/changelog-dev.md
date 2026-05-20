@@ -178,6 +178,10 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* The :func:`~.measure` docstring no longer includes runnable examples that postselect on
+  outcomes with zero probability.
+  [(#9509)](https://github.com/PennyLaneAI/pennylane/pull/9509)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
@@ -218,6 +222,7 @@ Guillermo Alonso,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
+Puneet Dixit,
 Marcus Edwards,
 Christina Lee,
 Anton Naim Ibrahim,
