@@ -171,6 +171,16 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 1, 0],  # output register starts in non-zero state!
         ),
+        (
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
+            [1, 0, 1]  # operand one: -3
+            + [0, 1, 1]  # operand two: 3
+            + [0, 0, 0, 0]  # work wires are zeroed
+            + [1, 0, 0, 0, 1, 1],  # output register starts in negative non-zero state!
+        ),
     ],
 )
 def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
