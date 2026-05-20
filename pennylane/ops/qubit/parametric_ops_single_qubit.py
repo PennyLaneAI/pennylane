@@ -21,6 +21,8 @@ core parametrized gates.
 import functools
 import math as builtin_math
 from itertools import combinations
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 import scipy as sp
@@ -38,7 +40,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_adjoint_rotation,
     qjit_compatible_pow_rotation,
 )
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -87,7 +89,15 @@ class RX(Operation):
 
     resource_keys = set()
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
     resource_keys = set()
@@ -290,7 +300,15 @@ class RY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    basis = "Y"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
     resource_keys = set()
@@ -507,7 +525,15 @@ class RZ(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -773,7 +799,15 @@ class PhaseShift(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 

@@ -154,9 +154,9 @@ def cut_circuit_mc(
            [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
-    the qnode:
+    the qnode with :func:`~pennylane.set_shots`:
 
-    >>> results = circuit(x, shots=123)
+    >>> results = qp.set_shots(circuit, shots=123)(x)
     >>> results.shape
     (123, 2)
 
