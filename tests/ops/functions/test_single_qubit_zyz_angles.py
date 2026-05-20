@@ -65,7 +65,7 @@ def test_angles_correct(op):
     expected_mat = qp.matrix(op)
 
     phi, theta, omega, alpha = single_qubit_zyz_angles(op)
-    decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(alpha)]
+    decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(-alpha)]
     decomp_mat = qp.matrix(decomp, wire_order=[0])
 
     assert qp.math.allclose(decomp_mat, expected_mat)
@@ -78,7 +78,7 @@ def test_angles_correct_adjoint(op):
     expected_mat = qp.matrix(qp.adjoint(op))
 
     phi, theta, omega, alpha = single_qubit_zyz_angles(qp.adjoint(op))
-    decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(alpha)]
+    decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(-alpha)]
     decomp_mat = qp.matrix(decomp, wire_order=[0])
 
     assert qp.math.allclose(decomp_mat, expected_mat)
