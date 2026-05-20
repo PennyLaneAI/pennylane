@@ -302,7 +302,7 @@ def _signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-    """
+    r"""
     The magnitude of `input_reg` can be computed by flipping all bits of `input_reg` and incrementing by one,
     both steps controlled on the sign bit `aux_wire`. Any `work_wires` are used by the `Incrementer`.
 
@@ -326,6 +326,7 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
             &=(-1)^{x_{n-1}}x.
         \end{align}
     """
+
     # Invert all bits
     @for_loop(len(input_reg))
     def invert(w):
