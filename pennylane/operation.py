@@ -32,6 +32,7 @@ from pennylane.exceptions import (  # pylint: disable=unused-import
     TermsUndefinedError,
 )
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires  # pylint: disable-unused-import
 
 
 def operation_derivative(operation: Operation) -> TensorLike:
