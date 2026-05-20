@@ -45,8 +45,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "probs"
@@ -72,7 +70,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -110,7 +108,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
         # translate to wire labels used by device
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
