@@ -15,7 +15,6 @@
 This module contains code for the main device construction delegation logic.
 """
 
-import warnings
 from importlib import metadata
 from sys import version_info
 
@@ -24,7 +23,7 @@ from packaging.version import Version
 
 from pennylane._version import __version__
 from pennylane.configuration import default_config
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DeviceError
 
 from ._legacy_device import Device as LegacyDevice
 from .legacy_facade import LegacyDeviceFacade

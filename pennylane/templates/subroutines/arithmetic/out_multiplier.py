@@ -28,7 +28,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import (
-    CNOT,
     BasisState,
     H,
     Prod,

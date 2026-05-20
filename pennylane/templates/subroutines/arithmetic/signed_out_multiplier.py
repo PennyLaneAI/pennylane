@@ -221,7 +221,7 @@ class SignedOutMultiplier(Operator):
         output_wires: WiresLike,
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
-    ):
+    ):  # pylint: disable=too-many-arguments
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)

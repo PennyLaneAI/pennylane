@@ -1,3 +1,18 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Contains the implementation of the incrementer template."""
+
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
@@ -225,8 +240,8 @@ def _incrementer_decomposition(wires, work_wires, **_):
     X(wires[-len(work_wires) - 1])
 
 
-def _controlled_incrementer_resources(num_wires, **_):
-    resources = _incrementer_resources(num_wires)
+def _controlled_incrementer_resources(num_wires, num_work_wires, **_):
+    resources = _incrementer_resources(num_wires, num_work_wires)
     resources[resource_rep(X)] = 0
     return resources
 
@@ -240,7 +255,6 @@ def _control_values_condition(control_values, **_):
 @register_resources(_controlled_incrementer_resources)
 def _controlled_incrementer_decomposition(
     *_,
-    wires,
     control_wires,
     work_wires,
     base,
