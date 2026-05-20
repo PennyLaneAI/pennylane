@@ -134,13 +134,10 @@
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
 
-<<<<<<< HEAD
-=======
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
->>>>>>> 1d6349aaa973a898e9d500031954a0113a8d8c3c
 <h3>Documentation 📝</h3>
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
