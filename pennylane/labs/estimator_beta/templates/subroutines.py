@@ -1540,9 +1540,6 @@ class SelectCopyQROM(ResourceOperator):
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
 
-    Resources:
-        The resources are derived from Motlagh, Pocrnic (2026).
-
     **Example**
 
     The resources for this operation are computed using:
@@ -1763,11 +1760,10 @@ class SelectCopyQROM(ResourceOperator):
             available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
                 as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
                 should not be provided and will be determined from this value.
-            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
-                loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-                then the ``bits_per_iter`` must also be specified, these will be used to determine
-                ``available_dirty_aux``.
+            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be loaded
+                in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                If this parameter is provided, then the ``bits_per_iter`` must also be specified,
+                these will be used to determine ``available_dirty_aux``.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. If this parameter is provided, then the
                 ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
@@ -1811,17 +1807,13 @@ class SelectCopyQROM(ResourceOperator):
             available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
                 as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
                 should not be provided and will be determined from this value.
-            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
-                loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-                then the ``bits_per_iter`` must also be specified, these will be used to determine
-                ``available_dirty_aux``.
+            batch_size (int | None): A parameter :math:`\lambda` that determines if data will be loaded
+                in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                If this parameter is provided, then the ``bits_per_iter`` must also be specified,
+                these will be used to determine ``available_dirty_aux``.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. If this parameter is provided, then the
                 ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
-
-        Resources:
-            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -1915,17 +1907,13 @@ class SelectCopyQROM(ResourceOperator):
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
-            batch_size (int): A parameter :math:`\lambda` that determines if data will be
-                loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+            batch_size (int): A parameter :math:`\lambda` that determines if data will be loaded in
+                parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
             bits_per_iter: A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
                 of bits to load per QROM iteration.
             wires (WiresLike | None): The wires the operation acts on (control and target), excluding
                 any additional qubits allocated or borrowed during the decomposition (e.g unary
                 iteration wires).
-
-        Resources:
-            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -2019,9 +2007,6 @@ class SelectCopyQROM(ResourceOperator):
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
-
-        Resources:
-            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
