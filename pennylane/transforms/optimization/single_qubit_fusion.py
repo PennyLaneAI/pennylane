@@ -273,7 +273,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
