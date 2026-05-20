@@ -30,7 +30,6 @@ from pennylane.operation import Operator
 from pennylane.ops import CNOT, Controlled, PauliX, measure, MidMeasure
 from pennylane.wires import Wires, WiresLike
 
-from .adder import Adder
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
 
