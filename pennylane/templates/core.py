@@ -833,17 +833,14 @@ class Subroutine:
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
-                    if has_jax:
-                        wires = [
-                            (
-                                w
-                                if (is_abstract(w) and isinstance(w.val.aval, AbstractQubit))
-                                else jax.numpy.array(w)
-                            )
-                            for w in register
-                        ]
-                    else:
-                        wires = jax.numpy.stack(register)
+                    wires = [
+                        (
+                            w
+                            if (is_abstract(w) and isinstance(w.val.aval, AbstractQubit))
+                            else jax.numpy.array(w)
+                        )
+                        for w in register
+                    ]
                     bound_args.arguments[wire_argname] = wires
 
             else:
