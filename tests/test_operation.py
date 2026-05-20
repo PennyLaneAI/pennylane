@@ -1929,7 +1929,7 @@ def test_get_attr():
 
     attr_name = "non_existent_attr"
     with pytest.raises(
-        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+        AttributeError, match=f"module 'pennylane.core.operator' has no attribute '{attr_name}'"
     ):
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 

@@ -16,8 +16,8 @@ The former location of pennylane/core/operator.
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core import operator
-from pennylane.core.operator import Operation
+from pennylane.core.operator import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from pennylane.core.operator import _UNSET_BATCH_SIZE  # pylint: disable=unused-import
 from pennylane.typing import TensorLike
 
 
@@ -51,7 +51,3 @@ def is_trainable(obj):
     according to ``qp.math.requires_grad``.
     """
     return any(math.requires_grad(p) for p in obj.parameters)
-
-
-def __getattr__(key):
-    return getattr(operator, key)
