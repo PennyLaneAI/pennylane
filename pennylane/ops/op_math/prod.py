@@ -379,7 +379,7 @@ class Prod(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
@@ -609,7 +609,7 @@ class _ProductFactorsGrouping:
             factor = factor.base
         else:
             exponent = 1
-        op_hash = factor.hash
+        op_hash = hash(factor)
         old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [

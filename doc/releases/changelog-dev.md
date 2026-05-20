@@ -49,6 +49,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
+  shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
+  [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
+
 * `BoundTransform.transform` has been removed in favor of `BoundTransform.tape_transform`.
   [(#9471)](https://github.com/PennyLaneAI/pennylane/pull/9471/)
 
@@ -95,6 +99,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+  [(#9487)](https://github.com/PennyLaneAI/pennylane/pull/9487)
+
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
 * Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
   your unitary in a for loop.
   [(#9484)](https://github.com/PennyLaneAI/pennylane/pull/9484)
@@ -123,9 +134,22 @@
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
 
+<<<<<<< HEAD
+=======
+* The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
+  are gate-like operators.
+  [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
+
+>>>>>>> 1d6349aaa973a898e9d500031954a0113a8d8c3c
 <h3>Documentation 📝</h3>
 
+* References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
+  [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
+
 <h3>Bug fixes 🐛</h3>
+
+* The `pl-device-test` no longer uses the deprecated syntax that sets the shots on the device.
+  [(#9503)](https://github.com/PennyLaneAI/pennylane/pull/9503)
 
 * Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
   incorrect global phase (off by −1 per qubit). The decomposition used
@@ -143,14 +167,21 @@
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
 
+* Fixes a bug where two ``MeasurementProcess`` of taken of different mid-circuit measurement
+  values sometimes incorrectly have the same hash.
+  [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Christina Lee,
 Andrija Paurevic,
+Paul Haochen Wang,
 David Wierichs

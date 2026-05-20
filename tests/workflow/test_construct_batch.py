@@ -317,14 +317,12 @@ class TestConstructBatch:
 
         dev = qp.device("default.qubit")
 
-        with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
-
-            @qp.set_shots(shots=100)
-            @qp.qnode(dev)
-            def circuit(shots):
-                for _ in range(shots):
-                    qp.S(0)
-                return qp.expval(qp.PauliZ(0))
+        @qp.set_shots(shots=100)
+        @qp.qnode(dev)
+        def circuit(shots):
+            for _ in range(shots):
+                qp.S(0)
+            return qp.expval(qp.PauliZ(0))
 
         batch, fn = construct_batch(circuit, level="device")(shots=2)
 
