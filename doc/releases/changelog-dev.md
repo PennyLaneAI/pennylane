@@ -42,6 +42,36 @@
     True
 
   ```
+  
+* Created a new ``~.labs.templates.LeftClassicalComparator`` template for performing inequality test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6, shots=1)
+
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
+  
+  ```
 
 <h3>Breaking changes 💔</h3>
 
