@@ -1520,7 +1520,7 @@ class LabsQROM(ResourceOperator):
 
 
 class SelectCopyQROM(ResourceOperator):
-    r"""Resource class for the SelectCopy variant of Quantum Read-Only Memory (QROM) template.
+    r"""Resource class for the Select-Copy variant of Quantum Read-Only Memory (QROM) template.
 
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
