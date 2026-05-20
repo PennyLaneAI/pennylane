@@ -70,6 +70,7 @@
     >>> output = circuit(3, 2)
     >>> print(bool(output)) # 3 >= 2
     True
+  
   ```
 
 <h3>Breaking changes 💔</h3>
