@@ -2597,39 +2597,87 @@ class TestSelectCopyQROM:
             )
             assert qrom == expected_cmpr_rep
 
-    # @pytest.mark.parametrize(
-    #     "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_tof_cost, expected_qubit_alloc",
-    #     (
-    #         (100, 2, None, 4, 1, 81, 7),
-    #         (1000, 4, 4, 2, 4, 1002, 12),
-    #         (1000, 4, 9, 8, 1, 675, 13),
-    #         # (1e8, 16, None, 64, 3, ),
-    #         # (1e8, 16, 256, 32, 8, ),
-    #     ),  # toffoli and qubit costs computed by hand
-    # )
-    # def test_resource_decomp(self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_tof_cost, expected_qubit_alloc):
-    #     """Test that the resource decomposition is as expected"""
-    #     resources = qre.estimate(
-    #         qre.SelectCopyQROM(num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter)
-    #     )
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, expected_tof_cost, expected_qubit_alloc",
+        (
+            (100, 2, None, 4, 1, 78, 7),
+            (1000, 4, 4, 2, 4, 1002, 12),
+            (1000, 4, 9, 8, 1, 665, 13),
+            (1e8, 16, None, 64, 3, 10939103, 209),
+            (1e8, 16, None, 32, 8, 9375822, 269),
+        ),  # toffoli and qubit costs computed by hand
+    )
+    def test_resource_decomp(
+        self,
+        num_bitstrings,
+        size_bitstring,
+        available_dirty_aux,
+        batch_size,
+        bits_per_iter,
+        expected_tof_cost,
+        expected_qubit_alloc,
+    ):
+        """Test that the resource decomposition is as expected"""
+        resources = qre.estimate(
+            qre.SelectCopyQROM(
+                num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+            )
+        )
 
-    #     aux_qubits = resources.zeroed_wires
-    #     tof_counts = resources.gate_counts["Toffoli"]
+        aux_qubits = resources.zeroed_wires
+        tof_counts = resources.gate_counts["Toffoli"]
 
-    #     print(tof_counts, expected_tof_cost)
+        assert tof_counts == expected_tof_cost
+        assert aux_qubits == expected_qubit_alloc
 
-    #     assert abs(tof_counts - expected_tof_cost) <= 10  # The formula is accurate to within 10 Tof gates
-    #     assert aux_qubits == expected_qubit_alloc
-    #     assert False
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, num_ctrl_wires, expected_tof_cost, expected_qubit_alloc",
+        (
+            (100, 2, None, 4, 1, 1, 84, 8),
+            (1000, 4, 4, 2, 4, 3, 1008, 15),
+            (1000, 4, 9, 8, 1, 2, 676, 15),
+            (1e8, 16, None, 32, 8, 10, 9375834, 279),
+        ),  # toffoli and qubit costs computed by hand
+    )
+    def test_controlled_resource_decomp(
+        self,
+        num_bitstrings,
+        size_bitstring,
+        available_dirty_aux,
+        batch_size,
+        bits_per_iter,
+        num_ctrl_wires,
+        expected_tof_cost,
+        expected_qubit_alloc,
+    ):
+        """Test that the controlled resource decomposition is as expected"""
+        qrom = qre.SelectCopyQROM(
+            num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
+        )
+        resources = qre.estimate(qre.Controlled(qrom, num_ctrl_wires, 0))
 
-    # def test_controlled_resource_decomp(self):
-    #     """Test that the controlled resource decomposition is as expected"""
-    #     pass
+        aux_qubits = resources.zeroed_wires
+        tof_counts = resources.gate_counts["Toffoli"]
 
-    # def test_integration_resource_decomp(self):
-    #     """Test that dirty auxiliary qubits are used as expected"""
-    #     pass
+        assert tof_counts == expected_tof_cost
+        assert aux_qubits == expected_qubit_alloc
 
-    # def test_integration_controlled_resource_decomp(self):
-    #     """Test that dirty auxiliary qubits are used as expected for controlled decomposition"""
-    #     pass
+    def test_integration_resource_decomp(self):
+        """Test that dirty auxiliary qubits are used as expected"""
+        qrom = qre.SelectCopyQROM(1000, 4, batch_size=2, bits_per_iter=4)
+        resources_qrom = qre.estimate(qrom)
+
+        assert resources_qrom.algo_wires == 14  # the algorithmic wires of qrom
+        assert resources_qrom.zeroed_wires == 12  # 4 of these could have been borrowed
+
+        def circuit():
+            for i in range(4):
+                qre.Hadamard(wires=i)  # wires [1, 2, 3, 4] are dirty borrowable qubits
+
+            qrom_wires = [f"qrom_{i}" for i in range(14)]
+            qre.SelectCopyQROM(1000, 4, batch_size=2, bits_per_iter=4, wires=qrom_wires)
+
+        resources_circ = qre.estimate(circuit)()
+
+        assert resources_circ.algo_wires == 14 + 4  # the algorithmic wires of the circuit
+        assert resources_circ.zeroed_wires == 12 - 4  # the allocated wires for unary iteration

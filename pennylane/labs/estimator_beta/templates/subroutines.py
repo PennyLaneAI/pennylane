@@ -1577,14 +1577,14 @@ class SelectCopyQROM(ResourceOperator):
 
     @staticmethod
     def _optimize_params(N: int, b: int, max_q: int):
-        """Brute force optimization of the cost function from Theorem 1 of 
+        """Brute force optimization of the cost function from Theorem 1 of
         the paper which optimizes the batch size and bits per iteration values.
 
         Args:
             N (int): the number of bitstrings
             b (int): the size of the bitstrings
             max_q (int): the maximum available dirty auxiliary qubits
-        
+
         Returns:
             tuple(int, int): The optimal batch size and bits per iteration (respectively).
         """
@@ -1880,9 +1880,12 @@ class SelectCopyQROM(ResourceOperator):
             gate_cost.extend(select_1_cost)
 
             ## --- Copy data into the output ---
-            copy_cost = cls._unary_iter(
-                batch_size - 1, cnot, (size_bitstring % bits_per_iter) * (batch_size - 1)
-            )
+            if size_bitstring % bits_per_iter == 0:
+                copy_counts = bits_per_iter * (batch_size - 1)
+            else:
+                copy_counts = (size_bitstring % bits_per_iter) * (batch_size - 1)
+
+            copy_cost = cls._unary_iter(batch_size - 1, cnot, copy_counts)
             gate_cost.extend(copy_cost)
 
             ## --- Select2 loads all data again except for 0 index ---
@@ -1951,7 +1954,7 @@ class SelectCopyQROM(ResourceOperator):
 
             ## --- Select2 loads all data again except for 0 index ---
             select_2_cost = cls._single_ctrl_unary_iter(
-                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+                num_data_blocks, x, num_bit_flips - (num_bit_flips // num_data_blocks)
             )
             gate_cost.extend(select_2_cost)
 
@@ -1981,14 +1984,17 @@ class SelectCopyQROM(ResourceOperator):
             gate_cost.extend(select_1_cost)
 
             ## --- Copy data into the output ---
-            copy_cost = cls._unary_iter(
-                batch_size - 1, cnot, (size_bitstring % bits_per_iter) * (batch_size - 1)
-            )
+            if size_bitstring % bits_per_iter == 0:
+                copy_counts = bits_per_iter * (batch_size - 1)
+            else:
+                copy_counts = (size_bitstring % bits_per_iter) * (batch_size - 1)
+
+            copy_cost = cls._unary_iter(batch_size - 1, cnot, copy_counts)
             gate_cost.extend(copy_cost)
 
             ## --- Select2 loads all data again except for 0 index ---
             select_2_cost = cls._single_ctrl_unary_iter(
-                num_data_blocks - 1, x, num_bit_flips - (num_bit_flips // num_data_blocks)
+                num_data_blocks, x, num_bit_flips - (num_bit_flips // num_data_blocks)
             )
             gate_cost.extend(select_2_cost)
 
@@ -2079,9 +2085,9 @@ class SelectCopyQROM(ResourceOperator):
         if num_data_blocks == 1:
             gate_cost.append(
                 GateCount(
-                    load_op,
+                    qre.Controlled.resource_rep(load_op, 1, 0),
                     load_op_amount,
-                )  # each unitary in the select is just an X gate to load the data
+                )  # each unitary in the select
             )
 
         elif num_data_blocks == 2:
