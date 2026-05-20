@@ -940,7 +940,7 @@ class TestSymbolicSpecsResources:
 
 
 class TestCircuitSpecs:
-
+    @pytest.fixture
     def example_specs_result(self):
         """Generate an example CircuitSpecs instance."""
         return CircuitSpecs(
@@ -957,6 +957,7 @@ class TestCircuitSpecs:
             ),
         )
 
+    @pytest.fixture
     def example_specs_result_multi(self):
         """Generate an example CircuitSpecs instance with multiple levels and batches."""
         return CircuitSpecs(
@@ -972,7 +973,7 @@ class TestCircuitSpecs:
                     num_allocs=2,
                     depth=2,
                 ),
-                3: [
+                2: [
                     SpecsResources(
                         gate_types={"CNOT": 1},
                         gate_sizes={2: 1},
@@ -991,6 +992,44 @@ class TestCircuitSpecs:
             },
         )
 
+    @pytest.fixture
+    def example_specs_result_multi_symbolic(self):
+        """Generate an example CircuitSpecs instance with multiple levels and batches, as well as symbolic resources."""
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SymbolicSpecsResources(
+                    gate_types={
+                        "Hadamard": Expression({("x",): 2, (): 2}),
+                        "CNOT": Expression({("x",): 2}),
+                    },
+                    gate_sizes={1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
+                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    num_allocs=2,
+                    depth=2,
+                ),
+                2: [
+                    SymbolicSpecsResources(
+                        gate_types={"CNOT": Expression({("x",): 1})},
+                        gate_sizes={2: Expression({("x",): 1})},
+                        measurements={"expval(PauliX)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                    SymbolicSpecsResources(
+                        gate_types={"CNOT": Expression({("x",): 1})},
+                        gate_sizes={2: Expression({("x",): 1})},
+                        measurements={"expval(PauliZ)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                ],
+            },
+        )
+
     def test_blank_init(self):
         """Test that CircuitSpecss can be instantiated with no arguments."""
         r = CircuitSpecs()  # should not raise any errors
@@ -1001,10 +1040,10 @@ class TestCircuitSpecs:
         assert r.level is None
         assert r.resources is None
 
-    def test_getitem(self):
+    def test_getitem(self, example_specs_result):
         """Test that CircuitSpecs supports indexing via __getitem__."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         assert r["device_name"] == r.device_name
         assert r["num_device_wires"] == r.num_device_wires
@@ -1012,10 +1051,10 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_getitem_removed_keys(self):
+    def test_getitem_removed_keys(self, example_specs_result):
         """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         with pytest.raises(
             KeyError,
@@ -1049,10 +1088,10 @@ class TestCircuitSpecs:
         ):
             _ = r["potato"]
 
-    def test_to_dict(self):
+    def test_to_dict(self, example_specs_result, example_specs_result_multi):
         """Test the to_dict method of CircuitSpecs."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         expected = {
             "device_name": "default.qubit",
@@ -1071,7 +1110,7 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
 
         expected = {
             "device_name": "default.qubit",
@@ -1087,7 +1126,7 @@ class TestCircuitSpecs:
                     "depth": 2,
                     "num_gates": 6,
                 },
-                3: [
+                2: [
                     {
                         "gate_types": {"CNOT": 1},
                         "gate_sizes": {2: 1},
@@ -1110,10 +1149,10 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
-    def test_str(self):
+    def test_str(self, example_specs_result):
         """Test the string representation of a CircuitSpecs instance."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         expected = "Device: default.qubit\n"
         expected += "Device wires: 5\n"
@@ -1124,10 +1163,10 @@ class TestCircuitSpecs:
 
         assert str(r) == expected
 
-    def test_str_multi_tabular(self):
+    def test_str_multi_tabular(self, example_specs_result_multi):
         """Test the tabular string representation of a CircuitSpecs instance."""
 
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
         assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
 Device wires: 5
 Shots: Shots(total=1000)
@@ -1146,9 +1185,31 @@ Measurements:    |
 - expval(PauliX) |    1 |    1 |    0
 - expval(PauliZ) |    1 |    0 |    1""".split()]
 
-    def test_str_multi_non_tabular(self):
+    def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
+        """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
+
+        r = example_specs_result_multi_symbolic
+        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
+Device wires: 5
+Shots: Shots(total=1000)
+Levels:
+- 1: l1
+- 2: l2
+
+↓Metric   Level→ |     1 |  2-a |  2-b
+----------------------------------------
+Wire allocations |     2 |    2 |    2
+Total gates      | 4*x+2 |    x |    x
+Gate counts:     |
+- Hadamard       | 2*x+2 |    0 |    0
+- CNOT           |   2*x |    x |    x
+Measurements:    |
+- expval(PauliX) |     1 |    1 |    0
+- expval(PauliZ) |     1 |    0 |    1""".split()]
+
+    def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
 
         expected = "Device: default.qubit\n"
         expected += "Device wires: 5\n"
@@ -1163,11 +1224,11 @@ Measurements:    |
 
         expected += "\n\n" + "-" * 60 + "\n\n"
 
-        expected += "Level = 3:\n"
+        expected += "Level = 2:\n"
         expected += "    Batched tape a:\n"
-        expected += r.resources[3][0].to_pretty_str(preindent=8)
+        expected += r.resources[2][0].to_pretty_str(preindent=8)
         expected += "\n\n    Batched tape b:\n"
-        expected += r.resources[3][1].to_pretty_str(preindent=8)
+        expected += r.resources[2][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
 
