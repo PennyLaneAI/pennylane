@@ -134,6 +134,11 @@
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
+* The `allocate` PLxPR primitive now returns a list of `AbstractQubit` abstract values instead of a
+  list of abstract integer values. This is to better define the set of operations allowed on
+  allocated qubits.
+  [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
+
 <h3>Documentation 📝</h3>
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
