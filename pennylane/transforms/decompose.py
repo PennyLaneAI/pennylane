@@ -25,7 +25,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 from importlib.util import find_spec
 
-from pennylane import math, ops, queuing
+from pennylane import ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import (
     DecompositionGraph,
@@ -658,8 +658,8 @@ def decompose(
             def stopping_condition(op):
 
                 if isinstance(op, qp.QubitUnitary):
-                    identity = math.eye(2 ** len(op.wires))
-                    return math.allclose(op.matrix(), identity)
+                    identity = qp.math.eye(2 ** len(op.wires))
+                    return qp.math.allclose(op.matrix(), identity)
 
                 return False
 
