@@ -50,6 +50,26 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
     Returns:
         The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the global phase :math:`\alpha`
 
+    **Examples**
+
+    >>> qp.single_qubit_zyz_angles(qp.H(0))
+    (3.141592653589793, 1.5707963267948966, 0.0, -1.5707963267948966)
+
+    We can verify that this is correct:
+
+    .. code-block:: python
+
+        phi, theta, omega, alpha = qp.single_qubit_zyz_angles(qp.H(0))
+
+        def circuit():
+            qp.RZ(phi, wires=0)
+            qp.RY(theta, wires=0)
+            qp.RZ(omega, wires=0)
+            qp.GlobalPhase(-alpha)  # note the negative sign convention
+
+    >>> qp.math.allclose(qp.matrix(circuit, wire_order=[0])(), qp.H(0).matrix())
+    True
+
     """
     raise NotImplementedError
 
