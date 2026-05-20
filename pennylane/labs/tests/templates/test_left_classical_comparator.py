@@ -62,8 +62,6 @@ class TestLeftClassicalComparator:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the LeftClassicalComparator template output."""
 
-        pytest.importorskip("catalyst")
-
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit():
             qp.BasisState(x, wires=x_wires)

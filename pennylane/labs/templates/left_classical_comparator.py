@@ -109,7 +109,7 @@ class LeftClassicalComparator(Operation):
             raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if x_wires.intersection(target_wire):
             raise ValueError("None of the wires in x_wires should be the target wire.")
-        if L >= 2 ** len(x_wires):
+        if not math.is_abstract(L) and L >= 2 ** len(x_wires):
             raise ValueError("L must be less than 2**len(x_wires).")
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
