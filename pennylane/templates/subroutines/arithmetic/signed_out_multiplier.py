@@ -183,6 +183,35 @@ class SignedOutMultiplier(Operator):
 
     This is similar to how the `OutMultiplier` will calculate :math:`\ket{b + xy}` for the output register initialized with value :math:`b`.
 
+    **Example**
+
+    This example performs the multiplication of two integers :math:`x=-3` and :math:`y=3`.
+    We'll let :math:`z=0`.
+
+    .. code-block:: python
+
+        x = -3
+        y = 3
+
+        x_wires = [0, 1, 2]
+        y_wires = [3, 4, 5]
+        output_wires = [6, 7, 8, 9, 10, 11]
+        work_wires = [12, 13, 14, 15]
+
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev, shots=1)
+        def circuit():
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+            return qp.sample(wires=output_wires)
+
+    >>> print(circuit())
+    [[1 1 0 1 1 1]]
+
+    The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of
+    :math:`-3 \cdot 3 \; = -9` in 2's complement form.
     """
 
     resource_keys = {
