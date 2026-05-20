@@ -36,12 +36,12 @@ depends_on = ["pennylane.transforms", "pennylane.decomposition", "pennylane.ops"
 [[modules]]
 path = "pennylane.ftqc"
 visibility = []
-depends_on = ["pennylane.operation", "pennylane.tape", "pennylane.queuing", "pennylane.devices", "pennylane.transforms", "pennylane.decomposition", "pennylane.capture", "pennylane.ops", "pennylane.measurements", "pennylane", "pennylane.drawer", "pennylane.wires", "pennylane.math"]
+depends_on = ["pennylane.operation", "pennylane.core.operator", "pennylane.tape", "pennylane.queuing", "pennylane.devices", "pennylane.transforms", "pennylane.decomposition", "pennylane.capture", "pennylane.ops", "pennylane.measurements", "pennylane", "pennylane.drawer", "pennylane.wires", "pennylane.math"]
 
 [[modules]]
 path = "pennylane.labs"
 visibility = []
-depends_on = ["pennylane.compiler", "pennylane.workflow", "pennylane", "pennylane.pauli", "pennylane.templates.subroutines", "pennylane.liealg", "pennylane.templates", "pennylane.queuing", "pennylane.decomposition", "pennylane.operation", "pennylane.measurements", "pennylane.typing", "pennylane.capture", "pennylane.tape", "pennylane.math", "pennylane.ops", "pennylane.wires", "pennylane.estimator", "pennylane.transforms", "pennylane.allocation"]
+depends_on = ["pennylane.compiler", "pennylane.workflow", "pennylane", "pennylane.pauli", "pennylane.templates.subroutines", "pennylane.liealg", "pennylane.templates", "pennylane.queuing", "pennylane.decomposition", "pennylane.operation", "pennylane.core.operator", "pennylane.measurements", "pennylane.typing", "pennylane.capture", "pennylane.tape", "pennylane.math", "pennylane.ops", "pennylane.wires", "pennylane.estimator", "pennylane.transforms", "pennylane.allocation"]
 
 ## UTILITY modules
 
@@ -162,13 +162,13 @@ depends_on = ["pennylane.capture", "pennylane.compiler"]
 path = "pennylane.circuit_graph"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.measurements", "pennylane.wires", "pennylane.operation", "pennylane.queuing", "pennylane.resource", "pennylane.ops"]
+depends_on = ["pennylane.measurements", "pennylane.wires", "pennylane.operation", "pennylane.core.operator", "pennylane.queuing", "pennylane.resource", "pennylane.ops"]
 
 [[modules]]
 path = "pennylane.allocation"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.math", "pennylane.operation", "pennylane.capture", "pennylane.wires"]
+depends_on = ["pennylane.math", "pennylane.operation", "pennylane.core.operator", "pennylane.capture", "pennylane.wires"]
 
 [[modules]]
 path = "pennylane.measurements"
@@ -189,7 +189,7 @@ depends_on = ["pennylane.tape", "pennylane.ops", "pennylane.transforms.core"]
 path = "pennylane.gradients"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.transforms.core", "pennylane.operation", "pennylane.transforms", "pennylane.devices", "pennylane.ops", "pennylane.decomposition", "pennylane.tape", "pennylane.workflow", "pennylane.pulse", "pennylane.pauli"]
+depends_on = ["pennylane.transforms.core", "pennylane.operation", "pennylane.core.operator", "pennylane.transforms", "pennylane.devices", "pennylane.ops", "pennylane.decomposition", "pennylane.tape", "pennylane.workflow", "pennylane.pulse", "pennylane.pauli"]
 
 [[modules]]
 path = "pennylane.optimize"
@@ -201,7 +201,7 @@ depends_on = ["pennylane.gradients", "pennylane.pauli", "pennylane.workflow", "p
 path = "pennylane.pulse"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.operation", "pennylane.ops"]
+depends_on = ["pennylane.operation", "pennylane.core.operator", "pennylane.ops"]
 
 # TEMPLATES MODULE
 
@@ -210,37 +210,37 @@ path = "pennylane.templates"
 # Once all submodules are cleaned up, uncomment the following and delete the submodules
 # layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.ops", "pennylane.templates.layer", "pennylane.capture", "pennylane.control_flow", "pennylane.pytrees", "pennylane.templates.layers", "pennylane.queuing", "pennylane.templates.swapnetworks", "pennylane.typing", "pennylane", "pennylane.templates.tensornetworks", "pennylane.operation", "pennylane.decomposition", "pennylane.math", "pennylane.templates.embeddings", "pennylane.wires", "pennylane.templates.subroutines"]
+depends_on = ["pennylane.ops", "pennylane.templates.layer", "pennylane.capture", "pennylane.control_flow", "pennylane.pytrees", "pennylane.templates.layers", "pennylane.queuing", "pennylane.templates.swapnetworks", "pennylane.typing", "pennylane", "pennylane.templates.tensornetworks", "pennylane.operation", "pennylane.core.operator", "pennylane.decomposition", "pennylane.math", "pennylane.templates.embeddings", "pennylane.wires", "pennylane.templates.subroutines"]
 
 [[modules]]
 path = "pennylane.templates.embeddings"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.decomposition", "pennylane.capture", "pennylane.ops", "pennylane.operation"]
+depends_on = ["pennylane.decomposition", "pennylane.capture", "pennylane.ops", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.templates.layers"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.capture", "pennylane.decomposition", "pennylane.operation", "pennylane.templates.subroutines", "pennylane.ops", "pennylane.templates.embeddings"]
+depends_on = ["pennylane.capture", "pennylane.decomposition", "pennylane.operation", "pennylane.core.operator", "pennylane.templates.subroutines", "pennylane.ops", "pennylane.templates.embeddings"]
 
 [[modules]]
 path = "pennylane.templates.subroutines"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.ops", "pennylane.tape", "pennylane.resource", "pennylane.capture", "pennylane.decomposition", "pennylane.pauli", "pennylane.templates", "pennylane.gradients", "pennylane.operation", "pennylane.templates.embeddings"]
+depends_on = ["pennylane.ops", "pennylane.tape", "pennylane.resource", "pennylane.capture", "pennylane.decomposition", "pennylane.pauli", "pennylane.templates", "pennylane.gradients", "pennylane.operation", "pennylane.core.operator", "pennylane.templates.embeddings"]
 
 [[modules]]
 path = "pennylane.templates.swapnetworks"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.ops", "pennylane.operation"]
+depends_on = ["pennylane.ops", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.templates.tensornetworks"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.tape", "pennylane.operation"]
+depends_on = ["pennylane.tape", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.templates.layer"
@@ -267,7 +267,7 @@ layer = "tertiary"
 path = "pennylane.io"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.registers", "pennylane.operation", "pennylane.workflow", "pennylane.estimator", "pennylane.devices", "pennylane.tape", "pennylane.templates", "pennylane.ops", "pennylane.transforms"]
+depends_on = ["pennylane.registers", "pennylane.operation", "pennylane.core.operator", "pennylane.workflow", "pennylane.estimator", "pennylane.devices", "pennylane.tape", "pennylane.templates", "pennylane.ops", "pennylane.transforms"]
 
 [[modules]]
 path = "pennylane.qnn"
@@ -278,7 +278,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.qaoa"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.operation", "pennylane.templates", "pennylane.ops"]
+depends_on = ["pennylane.operation", "pennylane.core.operator", "pennylane.templates", "pennylane.ops"]
 
 [[modules]]
 path = "pennylane.kernels"
@@ -289,13 +289,13 @@ layer = "tertiary"
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
-depends_on = ["pennylane.operation", "pennylane.qchem", "pennylane.ops"]
+depends_on = ["pennylane.operation", "pennylane.core.operator", "pennylane.qchem", "pennylane.ops"]
 
 [[modules]]
 path = "pennylane.liealg"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.pauli", "pennylane.ops", "pennylane.operation"]
+depends_on = ["pennylane.pauli", "pennylane.ops", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.fermi"
@@ -319,19 +319,19 @@ depends_on = ["pennylane.ops", "pennylane.fermi", "pennylane.qchem"]
 path = "pennylane.drawer"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.workflow", "pennylane.operation", "pennylane.decomposition", "pennylane.templates", "pennylane.ops", "pennylane.tape"]
+depends_on = ["pennylane.workflow", "pennylane.operation", "pennylane.core.operator", "pennylane.decomposition", "pennylane.templates", "pennylane.ops", "pennylane.tape"]
 
 [[modules]]
 path = "pennylane.fourier"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.tape", "pennylane.workflow", "pennylane.transforms", "pennylane.ops", "pennylane.operation", "pennylane.transforms.core", "pennylane.capture", "pennylane.decomposition"]
+depends_on = ["pennylane.tape", "pennylane.workflow", "pennylane.transforms", "pennylane.ops", "pennylane.operation", "pennylane.core.operator", "pennylane.transforms.core", "pennylane.capture", "pennylane.decomposition"]
 
 [[modules]]
 path = "pennylane.noise"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.templates", "pennylane.tape", "pennylane.decomposition", "pennylane.transforms.core", "pennylane.ops", "pennylane.transforms", "pennylane.devices", "pennylane.workflow", "pennylane.operation"]
+depends_on = ["pennylane.templates", "pennylane.tape", "pennylane.decomposition", "pennylane.transforms.core", "pennylane.ops", "pennylane.transforms", "pennylane.devices", "pennylane.workflow", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.debugging"
@@ -343,13 +343,13 @@ depends_on = ["pennylane.ops", "pennylane.tape", "pennylane.transforms.core", "p
 path = "pennylane.qcut"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.transforms", "pennylane.workflow", "pennylane.pauli", "pennylane.operation", "pennylane.decomposition", "pennylane.transforms.core", "pennylane.ops", "pennylane.devices", "pennylane.tape"]
+depends_on = ["pennylane.transforms", "pennylane.workflow", "pennylane.pauli", "pennylane.operation", "pennylane.core.operator", "pennylane.decomposition", "pennylane.transforms.core", "pennylane.ops", "pennylane.devices", "pennylane.tape"]
 
 [[modules]]
 path = "pennylane.estimator"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.qchem", "pennylane.templates", "pennylane.workflow", "pennylane.operation", "pennylane.ops"]
+depends_on = ["pennylane.qchem", "pennylane.templates", "pennylane.workflow", "pennylane.operation", "pennylane.core.operator", "pennylane.ops"]
 
 ## UNSORTED module(s)
 # Due to circular import problems, these modules below have incorrect dependencies
@@ -360,12 +360,12 @@ depends_on = ["pennylane.qchem", "pennylane.templates", "pennylane.workflow", "p
 [[modules]]
 path = "pennylane.transforms.core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.operation", "pennylane._grad", "pennylane", "pennylane.queuing", "pennylane.tape", "pennylane.pytrees", "pennylane.math", "pennylane.typing"]
+depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.operation", "pennylane.core.operator", "pennylane._grad", "pennylane", "pennylane.queuing", "pennylane.tape", "pennylane.pytrees", "pennylane.math", "pennylane.typing"]
 
 [[modules]]
 path = "pennylane.operation"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane", "pennylane.math", "pennylane.core.operator", "pennylane.typing"]
+depends_on = ["pennylane", "pennylane.math", "pennylane.core.operator", "pennylane.typing", "pennylane.exceptions"]
 
 [[modules]]
 path = "pennylane.core.operator"
@@ -375,12 +375,12 @@ depends_on = ["pennylane.capture", "pennylane.typing", "pennylane", "pennylane.m
 [[modules]]
 path = "pennylane.ops"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.templates.subroutines", "pennylane.templates.embeddings", "pennylane.decomposition", "pennylane.queuing", "pennylane.pytrees", "pennylane.typing", "pennylane.control_flow", "pennylane.pauli", "pennylane.numpy", "pennylane.pulse", "pennylane.tape", "pennylane.wires", "pennylane.operation", "pennylane.allocation", "pennylane.workflow", "pennylane", "pennylane.math", "pennylane.templates", "pennylane.compiler"]
+depends_on = ["pennylane.capture", "pennylane.measurements", "pennylane.templates.subroutines", "pennylane.templates.embeddings", "pennylane.decomposition", "pennylane.queuing", "pennylane.pytrees", "pennylane.typing", "pennylane.control_flow", "pennylane.pauli", "pennylane.numpy", "pennylane.pulse", "pennylane.tape", "pennylane.wires", "pennylane.operation", "pennylane.core.operator", "pennylane.allocation", "pennylane.workflow", "pennylane", "pennylane.math", "pennylane.templates", "pennylane.compiler"]
 
 [[modules]]
 path = "pennylane.tape"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.measurements", "pennylane.typing", "pennylane.templates", "pennylane.wires", "pennylane.queuing", "pennylane", "pennylane.allocation", "pennylane.ops", "pennylane.pytrees", "pennylane.capture", "pennylane.operation"]
+depends_on = ["pennylane.measurements", "pennylane.typing", "pennylane.templates", "pennylane.wires", "pennylane.queuing", "pennylane", "pennylane.allocation", "pennylane.ops", "pennylane.pytrees", "pennylane.capture", "pennylane.operation", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.qchem"
@@ -390,33 +390,33 @@ depends_on = ["pennylane.pauli", "pennylane.wires", "pennylane.fermi", "pennylan
 [[modules]]
 path = "pennylane.transforms"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane", "pennylane.wires", "pennylane.measurements", "pennylane.capture", "pennylane.queuing", "pennylane.templates", "pennylane.operation", "pennylane.decomposition", "pennylane.typing", "pennylane.math", "pennylane.ops", "pennylane.transforms.core", "pennylane.allocation", "pennylane.tape", "pennylane.pauli"]
+depends_on = ["pennylane", "pennylane.wires", "pennylane.measurements", "pennylane.capture", "pennylane.queuing", "pennylane.templates", "pennylane.operation","pennylane.core.operator", "pennylane.decomposition", "pennylane.typing", "pennylane.math", "pennylane.ops", "pennylane.transforms.core", "pennylane.allocation", "pennylane.tape", "pennylane.pauli"]
 
 [[modules]]
 path = "pennylane.capture"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane", "pennylane.ops", "pennylane.workflow", "pennylane.transforms.core", "pennylane.control_flow", "pennylane._grad", "pennylane.measurements", "pennylane.operation", "pennylane.math"]
+depends_on = ["pennylane", "pennylane.ops", "pennylane.workflow", "pennylane.transforms.core", "pennylane.control_flow", "pennylane._grad", "pennylane.measurements", "pennylane.operation","pennylane.core.operator", "pennylane.math"]
 
 
 [[modules]]
 path = "pennylane.pauli"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.queuing", "pennylane.math", "pennylane.ops", "pennylane", "pennylane.typing", "pennylane.operation", "pennylane.wires"]
+depends_on = ["pennylane.queuing", "pennylane.math", "pennylane.ops", "pennylane", "pennylane.typing", "pennylane.operation", "pennylane.core.operator", "pennylane.wires"]
 
 [[modules]]
 path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.tape", "pennylane.devices", "pennylane.operation", "pennylane.ops", "pennylane.qnn", "pennylane.measurements", "pennylane"]
+depends_on = ["pennylane.tape", "pennylane.devices", "pennylane.operation", "pennylane.core.operator", "pennylane.ops", "pennylane.qnn", "pennylane.measurements", "pennylane"]
 
 [[modules]]
 path = "pennylane.decomposition"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.operation", "pennylane.math", "pennylane.ops", "pennylane.queuing", "pennylane.allocation", "pennylane.capture", "pennylane", "pennylane.wires"]
+depends_on = ["pennylane.operation", "pennylane.core.operator", "pennylane.math", "pennylane.ops", "pennylane.queuing", "pennylane.allocation", "pennylane.capture", "pennylane", "pennylane.wires"]
 
 [[modules]]
 path = "pennylane.devices"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-depends_on = ["pennylane.pulse", "pennylane.configuration", "pennylane.logging", "pennylane.decomposition", "pennylane.transforms", "pennylane.wires", "pennylane.queuing", "pennylane.typing", "pennylane._version", "pennylane.boolean_fn", "pennylane.operation", "pennylane.capture", "pennylane.templates.subroutines", "pennylane.math", "pennylane.numpy", "pennylane.ops", "pennylane", "pennylane.pauli", "pennylane.tape", "pennylane.measurements", "pennylane.transforms.core"]
+depends_on = ["pennylane.pulse", "pennylane.configuration", "pennylane.logging", "pennylane.decomposition", "pennylane.transforms", "pennylane.wires", "pennylane.queuing", "pennylane.typing", "pennylane._version", "pennylane.boolean_fn", "pennylane.operation", "pennylane.core.operator", "pennylane.capture", "pennylane.templates.subroutines", "pennylane.math", "pennylane.numpy", "pennylane.ops", "pennylane", "pennylane.pauli", "pennylane.tape", "pennylane.measurements", "pennylane.transforms.core"]
 
 [[modules]]
 path = "pennylane.workflow"
