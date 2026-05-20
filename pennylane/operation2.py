@@ -264,7 +264,7 @@ class Operator2(ABC):
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
-    # TODO: ##################### FIX BELOW THIS POINT #####################
+    # FIXME: ##################### FIX BELOW THIS POINT #####################
     .. details::
         :title: Parameter broadcasting
         :href: parameter-broadcasting
@@ -419,12 +419,6 @@ class Operator2(ABC):
     """The names of arguments which correspond to compilable static operator data.
     This feature is opt-in, but can be useful PauliString arguments and the like."""
 
-    # TODO: Remove this. ndim_params is a property by default, and only needs to be specified
-    # if an operator has broadcastable dynamic arguments
-    ndim_params: ClassVar[tuple[int, ...]]
-    """The number of dimensions expected for each dynamic argument. This must be specified
-    for parameter broadcasting support."""
-
     # ------------ Class variables set automatically ---------------
 
     _sig: ClassVar[Signature]
@@ -482,12 +476,10 @@ class Operator2(ABC):
 
     def __init_subclass__(cls: type["Operator2"]) -> None:
         # turn has_decomposition into a class property if possible
-
         # Some operators will overwrite `decomposition` instead of `compute_decomposition`
         # Currently, those are mostly classes from the operator arithmetic module.
         # if class overrides has_decomposition property, we do not want to
         # override it here
-
         if (
             cls.compute_decomposition != Operator2.compute_decomposition
             or cls.decomposition != Operator2.decomposition
@@ -495,6 +487,8 @@ class Operator2(ABC):
             cls.has_decomposition = True
 
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        # FIXME: Add dyn/static argnames setup
 
         cls._sig = signature(cls)
         _add_dynamic_properties(cls)
@@ -516,20 +510,12 @@ class Operator2(ABC):
 
         **Example:**
 
-        # FIXME: Update example
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
-
-        Operators that have trainable components that differ from their ``Operator2.data`` must implement their own
-        ``_flatten`` methods.
-
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
         """
         dyn_data = []
         hashable_data = []
@@ -556,18 +542,21 @@ class Operator2(ABC):
 
         **Example:**
 
-        # FIXME: Update example
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
+        ((1.2, 2.3, 3.4, Wires([0])),
+         (('phi', pennylane.operation2._DYNARG_MARKER),
+          ('theta', pennylane.operation2._DYNARG_MARKER),
+          ('omega', pennylane.operation2._DYNARG_MARKER),
+          ('wires', pennylane.operation2._DYNARG_MARKER)))
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+        ((1.2, Wires([0, 1])),
+         (('phi', pennylane.operation2._DYNARG_MARKER),
+          ('pauli_word', 'XY'),
+          ('wires', pennylane.operation2._DYNARG_MARKER)))
         """
         args = {}
         dyn_idx = 0
@@ -736,7 +725,7 @@ class Operator2(ABC):
     @property
     def resource_params(self) -> dict[str, Any]:
         """Resource parameters for graph-based decomposition."""
-        # FIXME:
+        # TODO: Update this during graph-decomposition integration
         return {}
 
     @property
@@ -779,7 +768,7 @@ class Operator2(ABC):
         return False
 
     @property
-    def pauli_rep(self) -> "qp.pauli.PauliSentence" | None:
+    def pauli_rep(self) -> qp.pauli.PauliSentence | None:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
@@ -1314,7 +1303,7 @@ class Operator2(ABC):
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
         if self.dyn_argnames:
-            params = ", ".join([self.arguments[d] for d in self.dyn_argnames])
+            params = ", ".join([repr(self.arguments[d]) for d in self.dyn_argnames])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
@@ -1336,17 +1325,15 @@ class Operator2(ABC):
         return hash(self)
 
     def __copy__(self) -> "Operator2":
-        # FIXME: probably needs to be updated
         cls = type(self)
         copied_op = cls.__new__(cls)
         for attr, value in vars(self).items():
             setattr(copied_op, attr, value)
-
         return copied_op
 
     def __deepcopy__(self, memo) -> "Operator2":
-        # FIXME: probably needs to be updated
-        copied_op = object.__new__(type(self))
+        cls = type(self)
+        copied_op = cls.__new__(cls)
 
         # The memo dict maps object ID to object, and is required by
         # the deepcopy function to keep track of objects it has already
@@ -1428,7 +1415,8 @@ def _add_dynamic_properties(cls: type[Operator2]) -> None:
     for name in cls._sig.parameters.keys():
         if name not in vars(cls):
             dyn_property = partial(_dynamic_property, name=name)
-            cls.__dict__[name] = property(dyn_property)
+            # cls.__dict__[name] = property(dyn_property)
+            setattr(cls, name, property(dyn_property))
 
 
 def _dynamic_property(self: Operator2, name: str) -> Any:
