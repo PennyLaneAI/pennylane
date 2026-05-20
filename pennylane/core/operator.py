@@ -194,6 +194,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import capture, math
+from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -212,8 +213,6 @@ from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-from .utils import classproperty
 
 has_jax = True
 try:

@@ -48,6 +48,13 @@ utility = true
 depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+
+[[modules]]
+path = "pennylane._class_property"
+utility = true
+depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
 [[modules]]
 path = "pennylane.concurrency"
 utility = true
