@@ -15,6 +15,8 @@
 A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 
+# pylint: disable=possibly-used-before-assignment
+
 from __future__ import annotations
 
 import warnings
@@ -23,7 +25,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 from importlib.util import find_spec
 
-from pennylane import math, ops, queuing
+from pennylane import ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import (
     DecompositionGraph,
@@ -647,6 +649,7 @@ def decompose(
         .. code-block:: python
 
             import pennylane as qp
+            from qp import math
 
             qp.decomposition.enable_graph()
 
