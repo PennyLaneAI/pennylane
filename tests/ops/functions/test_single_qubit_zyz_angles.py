@@ -23,6 +23,8 @@ from pennylane.ops import (
     RY,
     RZ,
     SX,
+    U2,
+    U3,
     GlobalPhase,
     Hadamard,
     PauliX,
@@ -51,10 +53,10 @@ TEST_OPS = [
 ]
 
 
-def test_not_implemented_error():
-    """Tests that a NotImplementedError is raised for unregistered ops."""
+def test_error_for_multi_qubit_ops():
+    """Tests that a ValueError is raised for ops on multiple wires."""
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError, match="not applicable to operators on more than one wire."):
         single_qubit_zyz_angles(CRX(0.5, [0, 1]))
 
 
@@ -78,6 +80,21 @@ def test_angles_correct_adjoint(op):
     expected_mat = qp.matrix(qp.adjoint(op))
 
     phi, theta, omega, alpha = single_qubit_zyz_angles(qp.adjoint(op))
+    decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(-alpha)]
+    decomp_mat = qp.matrix(decomp, wire_order=[0])
+
+    assert qp.math.allclose(decomp_mat, expected_mat)
+
+
+@pytest.mark.parametrize("op", [U2(0.1, 0.2, wires=0), U3(0.1, 0.2, 0.3, wires=0)])
+def test_computed_angles(op):
+    """Tests that the computed angles are correct for non-registered ops."""
+
+    assert type(op) not in single_qubit_zyz_angles.registry
+
+    expected_mat = qp.matrix(op)
+
+    phi, theta, omega, alpha = single_qubit_zyz_angles(op)
     decomp = [RZ(phi, wires=0), RY(theta, wires=0), RZ(omega, wires=0), GlobalPhase(-alpha)]
     decomp_mat = qp.matrix(decomp, wire_order=[0])
 

@@ -18,6 +18,7 @@ from functools import singledispatch
 
 import numpy as np
 
+from pennylane.math.decomposition import zyz_rotation_angles
 from pennylane.operation import Operator
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.qubit import (
@@ -53,7 +54,7 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
     **Examples**
 
     >>> qp.single_qubit_zyz_angles(qp.H(0))
-    (3.141592653589793, 1.5707963267948966, 0.0, -1.5707963267948966)
+    (3.141..., 1.570..., 0.0, 1.570...)
 
     We can verify that this is correct:
 
@@ -71,7 +72,12 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
     True
 
     """
-    raise NotImplementedError
+    if len(op.wires) != 1:
+        raise ValueError(
+            "qp.single_qubit_zyz_angles is not applicable to operators on more than one wire."
+        )
+
+    return zyz_rotation_angles(op.matrix(), return_global_phase=True)
 
 
 @single_qubit_zyz_angles.register

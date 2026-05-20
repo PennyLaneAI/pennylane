@@ -31,11 +31,6 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
-    Fusion is performed only between gates with custom implementations registered
-    for the ``single_qubit_zyz_angles`` dispatch function. Any sequence of two or 
-    more single-qubit gates (on the same qubit) with a custom implementation registered
-    for that function is fused into one ``Rot``.
-
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         atol (float): An absolute tolerance for which to apply a rotation after
@@ -47,7 +42,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], Callable]:
-        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -255,13 +250,11 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
                 list_copy.pop(0)
                 continue
 
-        # Look for dispatch of single_qubit_zyz_angles; if not available, queue and move on.
-        # If available, grab the angles and try to fuse.
-        try:
+        if len(current_gate.wires) == 1:
             *angles, phase = qp.single_qubit_zyz_angles(current_gate)
             cumulative_angles = math.stack(angles)
             global_phase += phase
-        except (NotImplementedError, AttributeError):
+        else:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue
@@ -297,11 +290,11 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             # solely for single-qubit gates, and we used find_next_gate to obtain
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
-            try:
+            if len(next_gate.wires) == 1:
                 *angles, phase = qp.single_qubit_zyz_angles(next_gate)
                 next_gate_angles = math.stack(angles)
                 global_phase += phase
-            except (NotImplementedError, AttributeError):
+            else:
                 break
             cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
 
