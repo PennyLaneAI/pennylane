@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.ops import CNOT, Controlled, PauliX, measure, MidMeasure
 from pennylane.wires import Wires, WiresLike
 
 from .adder import Adder
@@ -53,9 +53,12 @@ class SignedOutMultiplier(Operator):
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. Defaults to an empty tuple, i.e., no work wires.
+        output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
+            :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
+            the operation.
     """
 
-    resource_keys = {"num_output_wires", "num_work_wires", "num_x_wires", "num_y_wires"}
+    resource_keys = {"num_output_wires", "num_work_wires", "num_x_wires", "num_y_wires", "output_wires_zeroed"}
 
     def __init__(
         self,
@@ -63,6 +66,7 @@ class SignedOutMultiplier(Operator):
         y_wires: WiresLike,
         output_wires: WiresLike,
         work_wires: WiresLike = (),
+        output_wires_zeroed: bool = False,
     ):
 
         x_wires = Wires(x_wires)
@@ -89,6 +93,8 @@ class SignedOutMultiplier(Operator):
         for name, wires in zip(wires_name, wires_list):
             self.hyperparameters[name] = Wires(wires)
 
+        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
+
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires)
@@ -100,10 +106,11 @@ class SignedOutMultiplier(Operator):
             "num_y_wires": len(self.hyperparameters["y_wires"]),
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
         }
 
 
-def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires):
+def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed):
     """
     Computes the resources for the SignedOutMultiplier.
     Assumes the worst case that both numbers are negative.
@@ -127,7 +134,7 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
             num_y_wires=num_y_wires,
             num_work_wires=num_work_wires - 2,
             mod=2 ** (num_output_wires - 1),
-            output_wires_zeroed=False,
+            output_wires_zeroed=output_wires_zeroed,
         )
     ] = 1
     resources[
@@ -148,6 +155,9 @@ def _signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires,
         )
     ] += 2
     resources[resource_rep(CNOT)] = 4
+
+    if not output_wires_zeroed:
+        resources[resource_rep(MidMeasure)] = 1
 
     return resources
 
@@ -182,7 +192,7 @@ def _work_wire_condition(num_work_wires, **_):
 @register_condition(_work_wire_condition)
 @register_resources(_signed_out_multiplier_resources, exact=False)
 def _signed_out_multiplier_decomposition(
-    x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike, **_
+    x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike, output_wires_zeroed: bool, **_
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
@@ -196,6 +206,10 @@ def _signed_out_multiplier_decomposition(
 
     x_aux = work_wires[0]
     y_aux = work_wires[1]
+
+    # reset output sign bit
+    if not output_wires_zeroed:
+        measure(output_wires[0], reset=True)
 
     # Sign extension
     CNOT([x_wires[0], x_aux])
@@ -213,6 +227,7 @@ def _signed_out_multiplier_decomposition(
         y_wires,
         output_wires[1:],
         work_wires=work_wires[2:],
+        output_wires_zeroed=output_wires_zeroed,
     )
 
     # Compute the sign
