@@ -151,8 +151,7 @@ class SignedOutMultiplier(Operator):
     .. math::
         \begin{align}
             &(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s (1 + \sum_{j=0}^{k-2} (1 - (\bar{x}\bar{y} + z_m)_j)2^j) \\
-            &=(1 - z_s) (\bar{x}\bar{y} + z_m) \\
-            &\hspace{20mm}+ z_s(1 + \sum_{j=0}^{k-2}2^j - \sum_{j=0}^{k-2} (\bar{x}\bar{y} + z_m)_j2^j \\
+            &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s(1 + \sum_{j=0}^{k-2}2^j - \sum_{j=0}^{k-2} (\bar{x}\bar{y} + z_m)_j2^j \\
             &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s(1 + 2^{k-1} - 1 - \bar{x}\bar{y} - z_m) \\
             &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s (2^{k-1} - \bar{x}\bar{y} - z_m) \\\
             &=(-1)^{z_s}\bar{x}\bar{y} + 2^{k - 1} z_s + (-1)^{z_s} z_m
@@ -317,10 +316,8 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
             \bar{x}&=(1-x_{n-1})x+x_{n-1}\left(1 + \sum_{j=0}^{n-1} (1-x_j) 2^j\right)\\
             % &=2^n-x_u\\
             &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - \sum_{j=0}^{n-1} x_j 2^j) \\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j \\
-            &\hspace{30mm}+ 2^{n-1}x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j \\
-            &\hspace{15mm}- 2^{n-1}x_{n-1} + 2^n x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
+            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j + 2^{n-1}x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
+            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - 2^{n-1}x_{n-1} + 2^n x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
             &=(x-x_{n-1} x) + x_{n-1} (1 + (2^n - 1) - (x + 2^n x_{n-1})) \\
             &=(x-x_{n-1} x)+x_{n-1}2^n-x_{n-1}(x+2^nx_{n-1})\\
             &=x-2x_{n-1}x+2^nx_{n-1}(1-x_{n-1})\\
