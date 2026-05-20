@@ -2448,7 +2448,7 @@ class TestSelectCopyQROM:
                 4,
                 1,
                 3,
-                "The batch_size and bits_per_iter provided are not compatible \(or optimal\) with the available_dirty_aux.",
+                "The batch_size and bits_per_iter provided are not compatible with the available_dirty_aux.",
             ),
         ),
     )

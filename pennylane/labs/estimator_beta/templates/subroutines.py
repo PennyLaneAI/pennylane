@@ -1526,22 +1526,22 @@ class SelectCopyQROM(ResourceOperator):
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
         available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
-            as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+            as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
             should not be provided and will be determined from this value.
         batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
             loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-            then the `bits_per_iter` must also be specified, these will be used to determine
-            `available_dirty_aux`.
+            then the ``bits_per_iter`` must also be specified, these will be used to determine
+            ``available_dirty_aux``.
         bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
             the number of bits to load per QROM iteration. If this parameter is provided, then the
-            `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
+            ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
 
     Resources:
-        The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+        The resources are derived from Motlagh, Pocrnic (2026).
 
     **Example**
 
@@ -1630,20 +1630,20 @@ class SelectCopyQROM(ResourceOperator):
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
-                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
                 should not be provided and will be determined from this value.
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-                then the `bits_per_iter` must also be specified, these will be used to determine `available_dirty_aux`.
+                then the ``bits_per_iter`` must also be specified, these will be used to determine ``available_dirty_aux``.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing the number
-                of bits to load per QROM iteration. If this parameter is provided, then the `batch_size` must also
-                be specified, these will be used to determine `available_dirty_aux`.
+                of bits to load per QROM iteration. If this parameter is provided, then the ``batch_size`` must also
+                be specified, these will be used to determine ``available_dirty_aux``.
 
         Raises:
-            ValueError: If `batch_size` is not a positive integer power of 2.
-            ValueError: If `bits_per_iter` is larger than the size of the bitstring.
-            ValueError: If `available_dirty_aux` is not a positive integer.
+            ValueError: If ``batch_size`` is not a positive integer power of 2.
+            ValueError: If ``bits_per_iter`` is larger than the size of the bitstring.
+            ValueError: If ``available_dirty_aux`` is not a positive integer.
 
         Returns:
             tuple(int, int): The optimized batch_size and bits_per_iter.
@@ -1676,7 +1676,7 @@ class SelectCopyQROM(ResourceOperator):
             if (batch_size is not None) or (bits_per_iter is not None):
                 if (batch_size != new_batch_size) or (bits_per_iter != new_bits_per_iter):
                     raise ValueError(
-                        "The batch_size and bits_per_iter provided are not compatible (or optimal) with the available_dirty_aux. Please only provide either available_dirty_aux or (exclusively) batch_size and bits_per_iter"
+                        "The batch_size and bits_per_iter provided are not compatible with the available_dirty_aux. Please only provide either available_dirty_aux or (exclusively) batch_size and bits_per_iter"
                     )
 
             batch_size = new_batch_size
@@ -1724,17 +1724,17 @@ class SelectCopyQROM(ResourceOperator):
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
                 * available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be
-                  used as parallel loading space. If this parameter is provided, `batch_size` and
-                  `bits_per_iter` should not be provided and will be determined from this value.
+                  used as parallel loading space. If this parameter is provided, ``batch_size`` and
+                  ``bits_per_iter`` should not be provided and will be determined from this value.
                 * batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                   loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024)
                   <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided, then the
-                  `bits_per_iter` must also be specified, these will be used to determine
-                  `available_dirty_aux`.
+                  ``bits_per_iter`` must also be specified, these will be used to determine
+                  ``available_dirty_aux``.
                 * bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
                   representing the number of bits to load per QROM iteration. If this parameter is
-                  provided, then the `batch_size` must also be specified, these will be used to determine
-                  `available_dirty_aux`.
+                  provided, then the ``batch_size`` must also be specified, these will be used to determine
+                  ``available_dirty_aux``.
         """
 
         return {
@@ -1761,16 +1761,16 @@ class SelectCopyQROM(ResourceOperator):
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
-                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
                 should not be provided and will be determined from this value.
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-                then the `bits_per_iter` must also be specified, these will be used to determine
-                `available_dirty_aux`.
+                then the ``bits_per_iter`` must also be specified, these will be used to determine
+                ``available_dirty_aux``.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. If this parameter is provided, then the
-                `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
+                ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -1809,19 +1809,19 @@ class SelectCopyQROM(ResourceOperator):
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             available_dirty_aux (int | None): The number of available dirty auxiliary qubits to be used
-                as parallel loading space. If this parameter is provided, `batch_size` and `bits_per_iter`
+                as parallel loading space. If this parameter is provided, ``batch_size`` and ``bits_per_iter``
                 should not be provided and will be determined from this value.
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. If this parameter is provided,
-                then the `bits_per_iter` must also be specified, these will be used to determine
-                `available_dirty_aux`.
+                then the ``bits_per_iter`` must also be specified, these will be used to determine
+                ``available_dirty_aux``.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. If this parameter is provided, then the
-                `batch_size` must also be specified, these will be used to determine `available_dirty_aux`.
+                ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
 
         Resources:
-            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -1925,7 +1925,7 @@ class SelectCopyQROM(ResourceOperator):
                 iteration wires).
 
         Resources:
-            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -2021,7 +2021,7 @@ class SelectCopyQROM(ResourceOperator):
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
 
         Resources:
-            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/????>`_.
+            The resources are derived from Motlagh, Pocrnic (2026).
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
