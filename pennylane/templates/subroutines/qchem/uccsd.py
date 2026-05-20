@@ -201,7 +201,6 @@ class UCCSD(Operation):
         d_wires: Sequence[tuple[Sequence[int], Sequence[int]]] | None = None,
         init_state: Sequence[int] | None = None,
         n_repeats: int = 1,
-        id=None,
     ):
         if init_state is None:
             raise ValueError("Requires `init_state` to be provided.")
@@ -252,7 +251,7 @@ class UCCSD(Operation):
             "n_repeats": n_repeats,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

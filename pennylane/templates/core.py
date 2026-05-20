@@ -367,7 +367,6 @@ class SubroutineOp(Operation):
         bound_args: BoundArguments,
         decomposition: list[Operation],
         output: Any = None,
-        id: None | str = None,
     ):
         self._subroutine = subroutine
         self._bound_args = bound_args
@@ -383,7 +382,7 @@ class SubroutineOp(Operation):
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         data = flatten(dynamic_args)[0]
-        super().__init__(*data, wires=wires, id=id)
+        super().__init__(*data, wires=wires)
 
         self._hyperparameters = {
             "decomposition": tuple(decomposition),
@@ -852,18 +851,18 @@ class Subroutine:
 
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
-    def operator(self, *args, id: str | None = None, **kwargs) -> SubroutineOp:
+    def operator(self, *args, **kwargs) -> SubroutineOp:
         """Create a ``SubroutineOp`` from the template."""
         bound_args = self._full_setup_inputs(*args, **kwargs)
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
-        return SubroutineOp(self, bound_args, decomposition.queue, output, id=id)
+        return SubroutineOp(self, bound_args, decomposition.queue, output)
 
-    def __call__(self, *args, id: str | None = None, **kwargs):
+    def __call__(self, *args, **kwargs):
         if capture.enabled():
             bound_args = self._full_setup_inputs(*args, **kwargs)
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
-        op = self.operator(*args, id=id, **kwargs)
+        op = self.operator(*args, **kwargs)
         return op.output
 
 

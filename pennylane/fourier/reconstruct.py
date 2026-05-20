@@ -24,6 +24,9 @@ from pennylane import math
 from pennylane.capture.autograph import wraps
 from pennylane.workflow.qnode import QNode
 
+#: Threshold for identifying ill-conditioned Fourier transform matrices.
+_ILL_CONDITIONED_THRESHOLD = 1e8
+
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     r"""Reconstruct a univariate Fourier series with consecutive integer
@@ -76,7 +79,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
 
     def _reconstruction(x):
         """Univariate reconstruction based on equidistant shifts and Dirichlet kernels.
-        The derivative at of ``sinc`` are not well-implemented in TensorFlow and Autograd,
+        The derivative at of ``sinc`` are not well-implemented in Autograd,
         use the Fourier transform reconstruction if this derivative is needed.
         """
         _x = x - x0 - shifts
@@ -164,7 +167,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
 
     # Solve the system of linear equations
     cond = math.linalg.cond(C)
-    if cond > 1e8:
+    if cond > _ILL_CONDITIONED_THRESHOLD:
         warnings.warn(
             f"The condition number of the Fourier transform matrix is very large: {cond}.",
             UserWarning,
@@ -533,7 +536,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         .. warning::
 
-            When using ``TensorFlow`` or ``Autograd`` *and* ``nums_frequency`` ,
+            When using ``Autograd`` *and* ``nums_frequency`` ,
             the reconstructed functions are not differentiable at the point of
             reconstruction. One workaround for this is to use ``spectra`` as
             input instead and to thereby use the Fourier transform instead of
