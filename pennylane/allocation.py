@@ -47,7 +47,7 @@ if has_jax:
         def __hash__(self):
             return self.hash_value
 
-        def _iter(self):
+        def _iter(self):  # pragma: no cover
             return
 
 

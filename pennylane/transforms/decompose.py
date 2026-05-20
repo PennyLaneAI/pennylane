@@ -198,15 +198,12 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                if has_jax:
-                    wires = []
-                    for w in _args[-num_wires:]:
-                        if is_abstract_qubit(w):
-                            wires.append(w)
-                        else:
-                            wires.append(jax.numpy.array(w))
-                else:
-                    wires = math.array(_args[-num_wires:], like="jax")
+                wires = []
+                for w in _args[-num_wires:]:
+                    if is_abstract_qubit(w):
+                        wires.append(w)
+                    else:
+                        wires.append(jax.numpy.array(w))
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)

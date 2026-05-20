@@ -298,8 +298,6 @@ def _get_non_array_iterables():
 
 def _setup_wires(wires):
     if isinstance(wires, _get_array_types()):
-        if has_jax and isinstance(wires.val.aval, AbstractQubit):
-            return (wires,)
         if wires.shape == ():
             return (wires,)
         return wires
