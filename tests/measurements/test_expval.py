@@ -139,6 +139,7 @@ class TestExpval:
             res = func(phi)
             assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
+    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
