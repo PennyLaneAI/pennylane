@@ -740,7 +740,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            if is_abstract_qubit(wires):
+            if qp.allocation.is_abstract_qubit(wires):
                 wires = (wires,)
             elif isinstance(wires, array_types) and wires.shape == ():
                 wires = (wires,)
@@ -751,7 +751,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             kwargs["n_wires"] = len(wires)
             args += wires
         # If not in kwargs, check if the last positional argument represents wire(s).
-        elif is_abstract_qubit(args[-1]):
+        elif qp.allocation.is_abstract_qubit(args[-1]):
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
@@ -2370,11 +2370,6 @@ try:
 except TermsUndefinedError:
     return False
 """
-
-
-def is_abstract_qubit(v):
-    """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    return is_abstract(v) and isinstance(v.val.aval, qp.allocation.AbstractQubit)
 
 
 def __getattr__(name):

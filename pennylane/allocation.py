@@ -51,6 +51,11 @@ if has_jax:
             return
 
 
+def is_abstract_qubit(v):
+    """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
+    return is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
 class AllocateState(StrEnum):
     """An enumeration for the different types of states a dynamic wire can start in."""
 
