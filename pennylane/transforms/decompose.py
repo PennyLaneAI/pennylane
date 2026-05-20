@@ -25,7 +25,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 from importlib.util import find_spec
 
-from pennylane import ops, queuing
+from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import (
     DecompositionGraph,
@@ -649,7 +649,6 @@ def decompose(
         .. code-block:: python
 
             import pennylane as qp
-            from qp import math
 
             qp.decomposition.enable_graph()
 
