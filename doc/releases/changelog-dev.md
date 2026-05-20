@@ -8,6 +8,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
+  [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
+
 * Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
   than the existing QFT-based decomposition, at the cost of more auxiliary wires.
   In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
