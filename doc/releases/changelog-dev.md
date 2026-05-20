@@ -112,6 +112,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a new `pennylane/core` module.
+  Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
 
