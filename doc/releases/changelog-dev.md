@@ -43,6 +43,33 @@
 
   ```
 
+* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses the new
+  optimal decomposition to estimate the cost for QROM.
+  [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+
+  ```pycon
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> 
+    >>> qrom_op = qre.SelectCopyQROM(
+    ...     num_bitstrings = 10**8,
+    ...     size_bitstring = 8,
+    ...     available_dirty_aux = 300,
+    ... )
+    >>> 
+    >>> print(qre.estimate(qrom_op))
+    --- Resources: ---
+    Total wires: 308
+      algorithmic wires: 35
+      allocated wires: 273
+        zero state: 273
+        any state: 0
+    Total gates : 4.781E+8
+      'Toffoli': 3.520E+6,
+      'CNOT': 4.570E+8,
+      'X': 7.036E+6,
+      'Hadamard': 1.055E+7
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
@@ -176,5 +203,6 @@ Yushao Chen,
 Marcus Edwards,
 Christina Lee,
 Andrija Paurevic,
+Jay Soni,
 Paul Haochen Wang,
 David Wierichs

@@ -1555,16 +1555,16 @@ class SelectCopyQROM(ResourceOperator):
     ... )
     >>> print(qre.estimate(qrom))
     --- Resources: ---
-     Total wires: 311
+     Total wires: 322
        algorithmic wires: 46
-       allocated wires: 265
-         zero state: 265
+       allocated wires: 276
+         zero state: 276
          any state: 0
-     Total gates : 1.700E+10
-       'Toffoli': 1.250E+8,
-       'CNOT': 1.625E+10,
-       'X': 2.500E+8,
-       'Hadamard': 3.750E+8
+     Total gates : 9.031E+9
+       'Toffoli': 6.641E+7,
+       'CNOT': 8.633E+9,
+       'X': 1.328E+8,
+       'Hadamard': 1.992E+8
     """
 
     resource_keys = {
