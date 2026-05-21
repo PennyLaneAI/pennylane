@@ -4,6 +4,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
+  [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
+
 * Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
   than the existing QFT-based decomposition, at the cost of more auxiliary wires.
   In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
@@ -46,6 +49,34 @@
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
   This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which led to compilation errors when using the old catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
   [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
+
+* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+  decomposition to estimate the cost for QROM.
+  [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+
+  ```pycon
+    >>> import pennylane.labs.estimator_beta as qre
+    >>>
+    >>> qrom_op = qre.SelectCopyQROM(
+    ...     num_bitstrings = 10**8,
+    ...     size_bitstring = 8,
+    ...     available_dirty_aux = 300,
+    ... )
+    >>> 
+    >>> print(qre.estimate(qrom_op))
+    --- Resources: ---
+    Total wires: 308
+      algorithmic wires: 35
+      allocated wires: 273
+        zero state: 273
+        any state: 0
+    Total gates : 4.781E+8
+      'Toffoli': 3.520E+6,
+      'CNOT': 4.570E+8,
+      'X': 7.036E+6,
+      'Hadamard': 1.055E+7
+
+  ```
 
 <h3>Breaking changes 💔</h3>
 
@@ -178,7 +209,9 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
+Jay Soni,
 Paul Haochen Wang,
 David Wierichs
