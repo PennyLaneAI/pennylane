@@ -80,7 +80,7 @@ class FFFT(Operator):
     of the wires as passed to the FFFT.
 
     Instead of performing the bit-reversal permutation that is typical at the beginning or end of a Fourier transform,
-    this Template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
+    this template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
     where f is the first number that factors `num_wires`.
 
     .. python::
