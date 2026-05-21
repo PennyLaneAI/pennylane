@@ -129,61 +129,8 @@ class SignedOutMultiplier(Operator):
 
     **Non-zero initial state of output wires**
 
-    Next, let's consider the scenario where the output register starts out in a non-zero state :math:`|z\rangle`. In this case, we can make use of the `output_wires_zeroed` flag to the `OutMultiplier` that we employ in eqn. 15 to ensure that the magnitude is calculated into the output register correctly. This will affect the decomposition of the `OutMultiplier` yielding a more or less efficient circuit. The more efficient case is that of :math:`z = 0`.
-
-    However, there is one caveat. We will always want the output register's sign bit to start in the :math:`\ket{0}_s` state. Therefore, we add a reset of this qubit when `output_wires_zeroed` is `False`.
-
-    Otherwise, the circuit behaves in the same way. Let :math:`z_m` be the initial value of the output register, in the magnitude bits. Then, starting from line 15:
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |0\rangle_s |z_m + \bar{x}\bar{y}\rangle.
-        \end{align}
-
-    We flip the sign bit of the output register controlled on the (cached) sign bits of each input, respectively:
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |z_s \rangle_s |z_m + \bar{x}\bar{y}\rangle.
-        \end{align}
-
-    Next, we flip and increment the (non-sign) bits of the output register controlled on the output sign bit.
-
-    .. math::
-        \begin{align}
-            &(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s (1 + \sum_{j=0}^{k-2} (1 - (\bar{x}\bar{y} + z_m)_j)2^j) \\
-            &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s(1 + \sum_{j=0}^{k-2}2^j - \sum_{j=0}^{k-2} (\bar{x}\bar{y} + z_m)_j2^j \\
-            &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s(1 + 2^{k-1} - 1 - \bar{x}\bar{y} - z_m) \\
-            &=(1 - z_s) (\bar{x}\bar{y} + z_m) + z_s (2^{k-1} - \bar{x}\bar{y} - z_m) \\\
-            &=(-1)^{z_s}\bar{x}\bar{y} + 2^{k - 1} z_s + (-1)^{z_s} z_m
-        \end{align}
-
-    Yielding a state of:
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y} + 2^{k - 1} z_s + (-1)^{z_s} z_m\rangle.
-        \end{align}
-
-    We uncompute the magnitudes and the copied sign bits of the input registers, arriving at
-
-    .. math::
-        \begin{align}
-            |x\rangle |0\rangle |y\rangle |0\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y} + 2^{k - 1} z_s + (-1)^{z_s} z_m\rangle.
-        \end{align}
-
-    This time, we find that we computed
-
-    .. math::
-        \begin{align}
-            z &= (-1)^{z_s}\bar{x}\bar{y} + 2^{k - 1} z_s + (-1)^{z_s} z_m - 2^{k-1} z_s\\
-            &=(-1)^{z_s} \bar{x}\bar{y} + (-1)^{z_s} z_m \\
-            &=(-1)^{x_{n-1}}\bar{x} (-1)^{y_{m-1}}\bar{y} + (-1)^{z_s} z_m\\
-            &= x y + (-1)^{z_s} z_m.
-        \end{align}
-
-    This is similar to how the `OutMultiplier` will calculate :math:`\ket{b + xy}` for the output register initialized with value :math:`b`.
-    We just assume that the initial value in the output register is positive, and we add or subtract it depending on whether the outcome of :math:`xy` is positive or negative.
+    If we have a non-zero initial state :math:`z_i` in the output register, we will end up with :math:`xy + z_i` in the
+    output register once the template has executed. This requires more work wires and a more costly decomposition.
 
     **Example**
 
