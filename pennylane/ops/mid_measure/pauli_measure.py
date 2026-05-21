@@ -200,7 +200,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()
-        wires = qp.templates.core._setup_wires(wires)
+        wires = qp.templates.core._setup_wires(wires)  # pylint: disable=protected-access
         return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
     return _pauli_measure_impl(wires, pauli_word, postselect)
