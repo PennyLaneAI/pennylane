@@ -31,6 +31,7 @@ from pennylane.ops import CNOT, Controlled, MidMeasure, PauliX, measure
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
+from .out_adder import OutAdder
 from .out_multiplier import OutMultiplier
 
 
@@ -277,7 +278,7 @@ class SignedOutMultiplier(Operator):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _signed_out_multiplier_resources(
+def _zeroed_signed_out_multiplier_resources(
     num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ):
     """
@@ -285,6 +286,7 @@ def _signed_out_multiplier_resources(
     Assumes the worst case that both numbers are negative.
     """
     resources = defaultdict(int)
+
     resources[controlled_resource_rep(PauliX, {}, 1, 0)] = (
         (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
     )
@@ -303,7 +305,7 @@ def _signed_out_multiplier_resources(
             num_y_wires=num_y_wires,
             num_work_wires=num_work_wires - 2,
             mod=2 ** (num_output_wires - 1),
-            output_wires_zeroed=output_wires_zeroed,
+            output_wires_zeroed=True,
         )
     ] = 1
     resources[
@@ -323,10 +325,77 @@ def _signed_out_multiplier_resources(
             num_control_wires=1,
         )
     ] += 2
+
     resources[resource_rep(CNOT)] = 4
 
-    if not output_wires_zeroed:
-        resources[resource_rep(MidMeasure)] = 1
+    return resources
+
+
+def _not_zeroed_signed_out_multiplier_resources(
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed
+):
+    """
+    Computes the resources for the SignedOutMultiplier.
+    Assumes the worst case that both numbers are negative.
+    """
+    resources = defaultdict(int)
+
+    resources[controlled_resource_rep(PauliX, {}, 1, 0)] = (
+        (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
+    )
+    resources[
+        controlled_resource_rep(
+            Incrementer,
+            {
+                "num_wires": num_x_wires + num_work_wires - (2 * num_output_wires + 3),
+                "num_work_wires": num_work_wires - (2 * num_output_wires + 3),
+            },
+            num_control_wires=1,
+        )
+    ] += 2
+    resources[
+        resource_rep(
+            OutMultiplier,
+            num_output_wires=num_output_wires,
+            num_x_wires=num_x_wires,
+            num_y_wires=num_y_wires,
+            num_work_wires=num_work_wires - 2 * num_output_wires - 3,
+            mod=2**num_output_wires,
+            output_wires_zeroed=True,
+        )
+    ] = 1
+    resources[
+        controlled_resource_rep(
+            Incrementer,
+            {
+                "num_wires": num_output_wires - 1,
+                "num_work_wires": num_work_wires - 2 * num_output_wires - 1,
+            },
+            num_control_wires=1,
+        )
+    ] += 1
+    resources[
+        controlled_resource_rep(
+            Incrementer,
+            {
+                "num_wires": num_y_wires + num_work_wires - (2 * num_output_wires + 3),
+                "num_work_wires": num_work_wires - (2 * num_output_wires + 3),
+            },
+            num_control_wires=1,
+        )
+    ] += 2
+
+    resources[
+        resource_rep(
+            OutAdder,
+            num_output_wires=num_output_wires,
+            num_x_wires=num_output_wires,
+            num_y_wires=num_output_wires,
+            mod=2**num_output_wires,
+        )
+    ] = 1
+    resources[resource_rep(MidMeasure)] = num_output_wires
+    resources[resource_rep(CNOT)] = 4 + num_output_wires - 1
 
     return resources
 
@@ -376,24 +445,35 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
-def _work_wire_condition(num_work_wires, **_):
+def _not_zeroed_work_wire_condition(num_work_wires, num_output_wires, **_):
+    return num_work_wires >= 2 * num_output_wires + 1
+
+
+def _zeroed_work_wire_condition(num_work_wires, **_):
     return (
         num_work_wires >= 2
     )  # or max(len(x_wires), len(y_wires)) + 1 to use incrementer decomp with work wires
 
 
-@register_condition(_work_wire_condition)
-@register_resources(_signed_out_multiplier_resources, exact=False)
-def _signed_out_multiplier_decomposition(
+def _zeroed_condition(output_wires_zeroed, **_):
+    return output_wires_zeroed
+
+
+def _not_zeroed_condition(output_wires_zeroed, **_):
+    return not output_wires_zeroed
+
+
+@register_condition(_zeroed_condition)
+@register_condition(_zeroed_work_wire_condition)
+@register_resources(_zeroed_signed_out_multiplier_resources, exact=False)
+def _signed_out_multiplier_decomposition_zeroed(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
     **_,
 ):
-    """Computes the decomposition of the operator as a product of other operators."""
-
+    """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
     if capture.enabled():
         x_wires, y_wires, work_wires, output_wires = (
             math.array(x_wires, like="jax"),
@@ -402,12 +482,10 @@ def _signed_out_multiplier_decomposition(
             math.array(output_wires, like="jax"),
         )
 
+    # We have a more efficient decomposition if the output wires are zeroed
+
     x_aux = work_wires[0]
     y_aux = work_wires[1]
-
-    # reset output sign bit
-    if not output_wires_zeroed:
-        measure(output_wires[0], reset=True)
 
     # Sign extension
     CNOT([x_wires[0], x_aux])
@@ -425,7 +503,7 @@ def _signed_out_multiplier_decomposition(
         y_wires,
         output_wires[1:],
         work_wires=work_wires[2:],
-        output_wires_zeroed=output_wires_zeroed,
+        output_wires_zeroed=True,
     )
 
     # Compute the sign
@@ -444,4 +522,86 @@ def _signed_out_multiplier_decomposition(
     CNOT([y_wires[0], y_aux])
 
 
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition)
+@register_condition(_not_zeroed_condition)
+@register_condition(_not_zeroed_work_wire_condition)
+@register_resources(_not_zeroed_signed_out_multiplier_resources, exact=False)
+def _signed_out_multiplier_decomposition_not_zeroed(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    work_wires: WiresLike,
+    **_,
+):
+    """Computes the decomposition of the operator as a product of other operators."""
+
+    if capture.enabled():
+        x_wires, y_wires, work_wires, output_wires = (
+            math.array(x_wires, like="jax"),
+            math.array(y_wires, like="jax"),
+            math.array(work_wires, like="jax"),
+            math.array(output_wires, like="jax"),
+        )
+
+    x_aux = work_wires[0]
+    y_aux = work_wires[1]
+    z_aux = work_wires[2]
+
+    # Sign extension
+    CNOT([x_wires[0], x_aux])
+    CNOT([y_wires[0], y_aux])
+
+    # Take 2s complements if necessary
+    _twos_complement_helper(x_wires, x_aux, work_wires[2 * len(output_wires) + 3 :])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2 * len(output_wires) + 3 :])
+
+    # at this point the sign is only kept in the auxiliary qubits' states
+
+    # Temp output register for multiplication output
+    mult_temp = work_wires[3 : len(output_wires) + 3]
+
+    # Multiply the magnitudes
+    OutMultiplier(
+        x_wires,
+        y_wires,
+        mult_temp,
+        work_wires=work_wires[2 * len(output_wires) + 3 :],
+        output_wires_zeroed=True,
+    )
+
+    # Compute the sign
+    CNOT([x_aux, z_aux])
+    CNOT([y_aux, z_aux])
+
+    # Encode the output
+    _twos_complement_helper(mult_temp, z_aux, work_wires[2 * len(output_wires) + 3 :])
+
+    # Temp output register for adder output
+    add_temp = work_wires[len(output_wires) + 3 : 2 * len(output_wires) + 3]
+
+    # Add any initial value in the output register
+    OutAdder(
+        output_wires,
+        mult_temp,
+        add_temp,
+        work_wires=work_wires[2 * len(output_wires) + 3 :],
+    )
+
+    # Reset out put register
+    for w in output_wires:
+        measure(w, reset=True)
+
+    # Load final value into output register
+    for i in range(len(add_temp)):
+        CNOT([add_temp[i], output_wires[i]])
+
+    # Return inputs to original state
+    _twos_complement_helper(x_wires, x_aux, work_wires[2 * len(output_wires) + 3 :])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2 * len(output_wires) + 3 :])
+
+    # Uncompute sign extension
+    CNOT([x_wires[0], x_aux])
+    CNOT([y_wires[0], y_aux])
+
+
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_not_zeroed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_zeroed)

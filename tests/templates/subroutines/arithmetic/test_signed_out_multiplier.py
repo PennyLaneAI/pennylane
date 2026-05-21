@@ -101,36 +101,68 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
 
 
 @pytest.mark.parametrize(
-    "x_wires, y_wires, work_wires, output_wires",
+    "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
-        (
-            (0, 1, 2),
-            (3, 4, 5),
-            (6, 7, 8, 9),
-            (10, 11, 12, 13, 14, 15),
-        ),
+        ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
+        ((0, 1), (2, 3), (4, 5, 6, 7, 8, 9, 10), (11, 12), False),
     ],
 )
-def test_decomposition(x_wires, y_wires, work_wires, output_wires):
-    op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
+    op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, zeroed)
 
     for rule in list_decomps(SignedOutMultiplier):
         _test_decomposition_rule(op, rule)
 
 
 @qnode(dev, shots=1)
-def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
+def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
     BasisEmbedding(
         init_state,
-        (0, 1, 2) + (3, 4, 5) + (6, 7, 8, 9) + (10, 11, 12, 13, 14, 15),
+        [i for i in range(len(x_wires))]
+        + [i for i in range(len(x_wires), len(x_wires) + len(y_wires))]
+        + [
+            i
+            for i in range(
+                len(y_wires) + len(x_wires), len(y_wires) + len(x_wires) + len(work_wires)
+            )
+        ]
+        + [
+            i
+            for i in range(
+                len(y_wires) + len(x_wires) + len(work_wires),
+                len(y_wires) + len(x_wires) + len(work_wires) + len(output_wires),
+            )
+        ],
     )
-    SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+    SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
     return sample(wires=output_wires)
 
 
 @pytest.mark.parametrize(
-    "x_wires, y_wires, work_wires, output_wires, init_state",
+    "x_wires, y_wires, work_wires, output_wires, init_state, zeroed",
     [
+        (
+            (0, 1),
+            (2, 3),
+            (4, 5, 6, 7, 8, 9, 10),
+            (11, 12),
+            [1, 1]  # operand one: -1
+            + [0, 1]  # operand two: 1
+            + [0, 0, 0, 0, 0, 0, 0]  # work wires are zeroed
+            + [0, 1],  # output register starts in non-zero state!
+            False,
+        ),
+        (
+            (0, 1),
+            (2, 3),
+            (4, 5, 6, 7, 8, 9, 10),
+            (11, 12),
+            [0, 1]  # operand one: 1
+            + [0, 1]  # operand two: 1
+            + [0, 0, 0, 0, 0, 0, 0]  # work wires are zeroed
+            + [1, 1],  # output register starts in negative non-zero state!
+            False,
+        ),
         (
             (0, 1, 2),
             (3, 4, 5),
@@ -140,6 +172,7 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             + [0, 1, 1]  # operand two: 3
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
+            True,
         ),
         (
             (0, 1, 2),
@@ -150,6 +183,7 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             + [1, 0, 1]  # operand two: -3
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
+            True,
         ),
         (
             (0, 1, 2),
@@ -160,39 +194,18 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state):
             + [0, 1, 1]  # operand two: 3
             + [0, 0, 0, 0]  # work wires are zeroed
             + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
-        ),
-        (
-            (0, 1, 2),
-            (3, 4, 5),
-            (6, 7, 8, 9),
-            (10, 11, 12, 13, 14, 15),
-            [1, 0, 1]  # operand one: -3
-            + [0, 1, 1]  # operand two: 3
-            + [0, 0, 0, 0]  # work wires are zeroed
-            + [0, 0, 0, 0, 1, 0],  # output register starts in non-zero state!
-        ),
-        (
-            (0, 1, 2),
-            (3, 4, 5),
-            (6, 7, 8, 9),
-            (10, 11, 12, 13, 14, 15),
-            [1, 0, 1]  # operand one: -3
-            + [0, 1, 1]  # operand two: 3
-            + [0, 0, 0, 0]  # work wires are zeroed
-            + [1, 0, 0, 0, 1, 1],  # output register starts in negative non-zero state!
+            True,
         ),
     ],
 )
-def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wires, init_state):
+def test_signed_out_multiplier_correct(
+    x_wires, y_wires, work_wires, output_wires, init_state, zeroed
+):
     """Tests with a few examples that the Template yields correct results."""
 
     # get the initial state of our inputs
     x_state = [init_state[x] for x in x_wires]
     y_state = [init_state[y] for y in y_wires]
-
-    x_sign = x_state[0]
-    y_sign = y_state[0]
-    z_sign = x_sign ^ y_sign  # exclusive OR
 
     # get the integer value of the x input
     if init_state[0] == 1:
@@ -210,14 +223,17 @@ def test_signed_out_multiplier_correct(x_wires, y_wires, work_wires, output_wire
         # otherwise just convert from binary to int
         y = bin_to_int(y_state)
 
-    # get z_m
-    z_m = bin_to_int(init_state[-5:])
+    # get initial output register value
+    if zeroed:
+        z = twos_complement_value(init_state[-6:])
+    else:
+        z = twos_complement_value(init_state[-2:])
 
     # calculate the expected result
-    expected = x * y + ((-1) ** z_sign) * z_m
+    expected = x * y + z
 
     # execute the quantum signed out multiplier circuit
-    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state)[0]
+    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed)[0]
 
     # get the value encoded as a twos complement if the result is negative
     if result[0] == 1:
