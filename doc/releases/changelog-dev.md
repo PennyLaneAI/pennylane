@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new `Template` for Fast Fermionic Fourier Transforms has been added based on
+* A new template for Fast Fermionic Fourier Transforms has been added based on
   [Ferris (2013)](https://arxiv.org/abs/1310.7605), for efficient simulation of quantum materials and chemistry systems.
   [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
 

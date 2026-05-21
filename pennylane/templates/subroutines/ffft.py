@@ -80,7 +80,7 @@ class FFFT(Operator):
     of the wires as passed to the FFFT.
 
     Instead of performing the bit-reversal permutation that is typical at the beginning or end of a Fourier transform,
-    this Template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
+    this template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
     where f is the first number that factors `num_wires`.
 
     `permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]`
@@ -115,7 +115,7 @@ class FFFT(Operator):
         NotImplementedError: If ``len(wires)`` is not a power of 2.
 
     .. note::
-        This Template is not compatible with ``default.tensor``. Please try ``default.qubit``.
+        This template is not compatible with ``default.tensor``. Please try ``default.qubit``.
 
     **Example**
 
