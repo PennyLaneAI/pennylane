@@ -1540,6 +1540,9 @@ class SelectCopyQROM(ResourceOperator):
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
 
+    Resources:
+        The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_.
+
     **Example**
 
     The resources for this operation are computed using:
@@ -1815,6 +1818,9 @@ class SelectCopyQROM(ResourceOperator):
                 the number of bits to load per QROM iteration. If this parameter is provided, then the
                 ``batch_size`` must also be specified, these will be used to determine ``available_dirty_aux``.
 
+        Resources:
+            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_.
+
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
@@ -2007,6 +2013,10 @@ class SelectCopyQROM(ResourceOperator):
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             target_resource_params (dict): A dictionary containing the resource parameters of the target operator.
+
+        Resources:
+            The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_. Furthermore,
+            we only need to control the ``Select`` subroutines.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
