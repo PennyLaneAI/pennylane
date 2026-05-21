@@ -827,6 +827,17 @@ class _DecompInfo:
             return f"Insufficient work wires: requires {req} but only {avail} available."
         return self.circuit_drawing + "\n" + self.gate_counts_and_allocations
 
+    def _repr_markdown_(self) -> str:
+        """The string representation of this rule in Markdown format."""
+        if not self._conditions_met:
+            return "_Not applicable (provided operator instance does not meet all conditions for this rule)._"
+        if not self._enough_work_wires:
+            req = self._work_wire_spec.total
+            avail = self._num_work_wires
+            return f"_Insufficient work wires: requires {req} but only {avail} available._"
+        circuit_drawing = "```\n" + self.circuit_drawing + "\n```"
+        return circuit_drawing + "\n" + self.gate_counts_and_allocations_md
+
     @property
     def circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
@@ -850,12 +861,40 @@ class _DecompInfo:
             gate_count_str += f"\nWire Allocations: {allocations}"
         return gate_count_str
 
+    @property
+    def gate_counts_and_allocations_md(self) -> str:
+        """The actual and estimated gate counts of this rule in the Markdown format."""
+        assert self._conditions_met and self._enough_work_wires
+        estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
+        actual_count, allocations = _count_gates(self._op, self._rule)
+        gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
+        if allocations:
+            alloc_str = self._make_table(allocations, "WireType", "Count")
+            gate_count_str += f"\n\nWire Allocations:\n\n{alloc_str}"
+        return gate_count_str
+
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
             return f"Gate Count: {estimated_count}"
         return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
+
+    def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
+        """Get the section of the string that specifies the gate count."""
+        estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        if estimated_count == actual_count:
+            return f"Gate Count:\n\n{self._make_table(estimated_count, "Gate", "Count")}"
+        estimate = self._make_table(estimated_count, "Gate", "Count")
+        actual = self._make_table(actual_count, "Gate", "Count")
+        return f"Estimated Gate Count\n\n{estimate}\n\nActual Gate Count:\n\n{actual}"
+
+    def _make_table(self, entry_dict, key, value) -> str:
+        header = f"| {key} | {value} |\n| :--- | :--- |\n"
+        lines = []
+        for op, count in entry_dict.items():
+            lines.append(f"| {op} | {count} |")
+        return header + "\n".join(lines)
 
     @property
     def is_applicable(self) -> bool:
@@ -876,7 +915,7 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
         self._show_not_applicable = show_not_applicable
         if not show_not_applicable:
             indexed_rule_infos = filter(lambda p: p[1].is_applicable, indexed_rule_infos)
-        self._rule_infos = list(indexed_rule_infos)
+        self._rules = list(indexed_rule_infos)
 
     def _title(self, index, rule) -> str:
         return f"Decomposition {index} (name: {rule.name})"
@@ -884,9 +923,18 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
     def __str__(self) -> str:
         if not self._n_rules_original:
             return "No available decomposition rules."
-        if not self._rule_infos:
+        if not self._rules:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
-        return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rule_infos)
+        return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rules)
+
+    # pylint: disable=protected-access
+    def _repr_markdown_(self) -> str:
+        if not self._n_rules_original:
+            return "No available decomposition rules."
+        if not self._rules:
+            return "No applicable decomposition rules (non-applicable rules are excluded)."
+        lines = (f"{self._title(i, rule)}\n\n{rule._repr_markdown_()}" for i, rule in self._rules)
+        return "\n\n---\n\n".join(lines).rstrip("\n")
 
     def __repr__(self) -> str:
         return self.__str__()

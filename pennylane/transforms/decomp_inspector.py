@@ -60,6 +60,14 @@ class _DecompInGraphInfo(_DecompInfo):
             return result + "\n" + self.missing_ops
         return result + "\n" + self.gate_set_resources
 
+    def _repr_markdown_(self) -> str:
+        result = super()._repr_markdown_()
+        if not self.is_applicable:
+            return result
+        if not self.is_reachable:
+            return result + "\n\n" + self.missing_ops
+        return result + "\n\n" + self.gate_set_resources_md
+
     @property
     def is_reachable(self) -> bool:
         """Whether this decomposition rule is reachable from the target gate set."""
@@ -73,6 +81,15 @@ class _DecompInGraphInfo(_DecompInfo):
         gate_counts = gate_set_resource.gate_counts
         weighted_cost = gate_set_resource.weighted_cost
         return f"Full Expansion Gates: {gate_counts}\nWeighted Cost: {weighted_cost}"
+
+    @property
+    def gate_set_resources_md(self) -> str:
+        """The gate count and weighted cost in terms of the target gate set in Markdown."""
+        assert self.is_reachable
+        gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
+        gate_counts = self._make_table(gate_set_resource.gate_counts, "Gate", "Count")
+        weighted_cost = gate_set_resource.weighted_cost
+        return f"Full Expansion Gates:\n\n{gate_counts}\n\nWeighted Cost: {weighted_cost}"
 
     @property
     def missing_ops(self) -> str:
