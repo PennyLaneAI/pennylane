@@ -83,9 +83,7 @@ class FFFT(Operator):
     this Template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
     where f is the first number that factors `num_wires`.
 
-    .. python::
-
-        permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]
+    `permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]`
 
     The FFFT over a number of wires :math:`n` (a power of two)
     is decomposed recursively into two parallel FFFTs over :math:`\tfrac{n}{2}`
