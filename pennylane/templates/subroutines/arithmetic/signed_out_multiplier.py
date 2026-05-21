@@ -153,7 +153,7 @@ class SignedOutMultiplier(Operator):
         def circuit():
             qp.BasisEmbedding(x, wires=x_wires)
             qp.BasisEmbedding(y, wires=y_wires)
-            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
+            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True)
             return qp.sample(wires=output_wires)
 
     >>> print(circuit())
