@@ -49,7 +49,8 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
         op (Operator): the operator to obtain rotation angles for.
 
     Returns:
-        The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the global phase :math:`\alpha`
+        A tuple of (:math:`\phi`, :math:`\theta`, :math:`\omega`, :math:`\alpha`) where the first
+        three values are the rotation angles and :math:`\alpha` is the global phase.
 
     **Examples**
 
@@ -82,7 +83,7 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
 
 @single_qubit_zyz_angles.register
 def _h_rot_angles(op: Hadamard):  # pylint: disable=unused-argument
-    # H = RZ(\pi) RY(\pi/2) RZ(0)
+    # H = RZ(0) RY(\pi/2) RZ(\pi)
     return (np.pi, np.pi / 2, 0.0, np.pi / 2)
 
 
@@ -100,19 +101,19 @@ def _y_rot_angles(op: PauliY):  # pylint: disable=unused-argument
 
 @single_qubit_zyz_angles.register
 def _z_rot_angles(op: PauliZ):  # pylint: disable=unused-argument
-    # Z = RZ(\pi) RY(0) RZ(0)
+    # Z = RZ(0) RY(0) RZ(\pi)
     return (np.pi, 0.0, 0.0, np.pi / 2)
 
 
 @single_qubit_zyz_angles.register
 def _s_rot_angles(op: S):  # pylint: disable=unused-argument
-    # S = RZ(\pi/2) RY(0) RZ(0)
+    # S = RZ(0) RY(0) RZ(\pi/2)
     return (np.pi / 2, 0.0, 0.0, np.pi / 4)
 
 
 @single_qubit_zyz_angles.register
 def _t_rot_angles(op: T):  # pylint: disable=unused-argument
-    # T = RZ(\pi/4) RY(0) RZ(0)
+    # T = RZ(0) RY(0) RZ(\pi/4)
     return (np.pi / 4, 0.0, 0.0, np.pi / 8)
 
 
@@ -136,13 +137,13 @@ def _ry_rot_angles(op: RY):
 
 @single_qubit_zyz_angles.register
 def _rz_rot_angles(op: RZ):
-    # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+    # RZ(\theta) = RZ(0) RY(0) RZ(\theta)
     return (op.data[0], 0.0, 0.0, 0.0)
 
 
 @single_qubit_zyz_angles.register
 def _ps_rot_angles(op: PhaseShift):
-    # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+    # PhaseShift(\theta) = RZ(0) RY(0) RZ(\theta)
     return (op.data[0], 0.0, 0.0, op.data[0] / 2)
 
 
@@ -153,5 +154,5 @@ def _rot_rot_angles(op: Rot):
 
 @single_qubit_zyz_angles.register
 def _adjoint_rot_angles(op: AdjointOperation):
-    omega, theta, phi, alpha = single_qubit_zyz_angles(op.base)
-    return (-phi, -theta, -omega, -alpha)
+    phi, theta, omega, alpha = single_qubit_zyz_angles(op.base)
+    return (-omega, -theta, -phi, -alpha)
