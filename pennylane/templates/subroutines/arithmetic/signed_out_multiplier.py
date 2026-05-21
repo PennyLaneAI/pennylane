@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, Controlled, MidMeasure, PauliX, measure, Toffoli, MultiControlledX
+from pennylane.ops import CNOT, Controlled, MidMeasure, PauliX, measure
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -330,7 +330,7 @@ def _signed_out_multiplier_resources(
     return resources
 
 
-def _twos_complement_helper(input_reg, aux_wire, work_wires, invert=False):
+def _twos_complement_helper(input_reg, aux_wire, work_wires):
     r"""
     The magnitude of `input_reg` can be computed by flipping all bits of `input_reg` and incrementing by one,
     both steps controlled on the sign bit `aux_wire`. Any `work_wires` are used by the `Incrementer`.
@@ -339,7 +339,6 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires, invert=False):
         input_reg: The register we want to take the 2s complement of.
         aux_wire: The cached sign bit which tells us whether we already have a magnitude.
         work_wires: Any work wires we can use in the decomposition.
-        invert: Whether to invert the control.
 
     .. math::
         \begin{align}
@@ -361,7 +360,7 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires, invert=False):
     @for_loop(len(input_reg))
     def invert(w):
         # sign bit of 1 indicates a negative value
-        Controlled(PauliX(input_reg[w]), (aux_wire,), (not invert,))
+        CNOT([aux_wire, input_reg[w]])
 
     invert()  # pylint: disable=no-value-for-parameter
 
@@ -372,7 +371,7 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires, invert=False):
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=(aux_wire,),
-        control_values=(not invert,),
+        control_values=(1,),
     )
 
 
@@ -404,22 +403,18 @@ def _signed_out_multiplier_decomposition(
 
     x_aux = work_wires[0]
     y_aux = work_wires[1]
-    z_aux = work_wires[2]
+
+    # reset output sign bit
+    if not output_wires_zeroed:
+        measure(output_wires[0], reset=True)
 
     # Sign extension
     CNOT([x_wires[0], x_aux])
     CNOT([y_wires[0], y_aux])
 
-    # Compute the final sign
-    CNOT([x_aux, z_aux])
-    CNOT([y_aux, z_aux])
-
-    # Correct sign of z
-    _twos_complement_helper(output_wires, z_aux, work_wires[3:], invert=True)
-
     # Take 2s complements if necessary
-    _twos_complement_helper(x_wires, x_aux, work_wires[3:])
-    _twos_complement_helper(y_wires, y_aux, work_wires[3:])
+    _twos_complement_helper(x_wires, x_aux, work_wires[2:])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2:])
 
     # at this point the sign is only kept in the auxiliary qubits' states
 
@@ -428,22 +423,20 @@ def _signed_out_multiplier_decomposition(
         x_wires,
         y_wires,
         output_wires[1:],
-        work_wires=work_wires[3:],
+        work_wires=work_wires[2:],
         output_wires_zeroed=output_wires_zeroed,
     )
 
-    measure(output_wires[0], reset=True)
-
-    # Compute the final sign
+    # Compute the sign
     CNOT([x_aux, output_wires[0]])
     CNOT([y_aux, output_wires[0]])
 
     # Encode the output
-    _twos_complement_helper(output_wires, z_aux, work_wires[3:])
+    _twos_complement_helper(output_wires[1:], output_wires[0], work_wires[2:])
 
     # Return inputs to original state
-    _twos_complement_helper(x_wires, x_aux, work_wires[3:])
-    _twos_complement_helper(y_wires, y_aux, work_wires[3:])
+    _twos_complement_helper(x_wires, x_aux, work_wires[2:])
+    _twos_complement_helper(y_wires, y_aux, work_wires[2:])
 
     # Uncompute sign extension
     CNOT([x_wires[0], x_aux])
