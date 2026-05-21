@@ -240,6 +240,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             _op = _op.base
         op_rep = qp.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[op_rep] += 1
+    actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources

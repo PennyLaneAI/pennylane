@@ -51,7 +51,6 @@ from .stateprep import (
     UniformStatePrep,
     AliasSampling,
     PrepTHC,
-    BasisState,
 )
 
 from .embeddings import BasisEmbedding

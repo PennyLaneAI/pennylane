@@ -19,17 +19,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
-
-
-def test_id_deprecation():
-    """Tests that the id kwarg is deprecated"""
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
-        _ = SymbolicOp(qp.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
@@ -164,15 +156,14 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.is_verified_hermitian == is_herm
 
-    @pytest.mark.parametrize("queue_cat", ("_ops", None))
-    def test_queuecateory(self, queue_cat):
+    def test_queuecateory(self):
         """Test that a symbolic operator inherits the queue_category from its base."""
 
         class DummyOp(Operator):
-            _queue_category = queue_cat
+            pass
 
         op = SymbolicOp(DummyOp("b"))
-        assert op._queue_category == queue_cat  # pylint:disable=protected-access
+        assert op._queue_category == "_ops"  # pylint:disable=protected-access
 
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
@@ -276,6 +267,6 @@ class TestScalarSymbolicOp:
         op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
         op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
         op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
-        assert op0.hash == op1.hash
+        assert hash(op0) == hash(op1)
         for second_op in [op2, op3, op4]:
-            assert op0.hash != second_op.hash
+            assert hash(op0) != hash(second_op)

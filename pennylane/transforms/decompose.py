@@ -381,14 +381,14 @@ def decompose(
         :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
 
     Args:
-        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
         gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled). If ``None``, the gate set is considered to be
             all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
-            for this list.
+            for this list. Operators that belong in the target gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -616,7 +616,6 @@ def decompose(
         1: ──H─╰RZ(0.10)──H─├●─┤
         2: ─────────────────╰X─┤
 
-
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
         *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
         efficient.
@@ -687,7 +686,8 @@ def decompose(
         .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-        certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
+        certain operators if they need to be decomposed (i.e., when they're not in the target gate
+        set), whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
         In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``

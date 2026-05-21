@@ -463,14 +463,6 @@ from .commutation_dag import (
     CommutationDAG,
     CommutationDAGNode,
 )
-from .tape_expand import (
-    expand_invalid_trainable,
-    expand_multipar,
-    expand_nonunitary_gen,
-    expand_trainable_multipar,
-    create_expand_fn,
-    create_expand_trainable_multipar,
-)
 from .transpile import transpile
 from .zx import (
     to_zx,
@@ -480,7 +472,6 @@ from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 from .intermediate_reps import (
     parity_matrix,
-    parity_synth,
     phase_polynomial,
     rowcol,
 )
