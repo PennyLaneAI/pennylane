@@ -884,7 +884,8 @@ class _DecompInfo:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
-            return f"Gate Count:\n\n{self._make_table(estimated_count, "Gate", "Count")}"
+            gate_count_str = self._make_table(estimated_count, "Gate", "Count")
+            return f"Gate Count:\n\n{gate_count_str}"
         estimate = self._make_table(estimated_count, "Gate", "Count")
         actual = self._make_table(actual_count, "Gate", "Count")
         return f"Estimated Gate Count\n\n{estimate}\n\nActual Gate Count:\n\n{actual}"
