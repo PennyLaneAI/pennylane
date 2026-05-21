@@ -181,6 +181,8 @@
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Bug fixes 🐛</h3>
+* Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
+  ([#9448](https://github.com/PennyLaneAI/pennylane/pull/9448))
 
 * The `pl-device-test` no longer uses the deprecated syntax that sets the shots on the device.
   [(#9503)](https://github.com/PennyLaneAI/pennylane/pull/9503)
