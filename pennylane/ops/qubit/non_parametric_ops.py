@@ -20,6 +20,8 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 from scipy import sparse
@@ -40,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     qjit_compatible_self_adjoint,
 )
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -74,8 +77,8 @@ class Hadamard(Operation):
 
     resource_keys = set()
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -327,7 +330,14 @@ class PauliX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 
@@ -343,8 +353,8 @@ class PauliX(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -574,7 +584,9 @@ def _controlled_x_decomp(
         )
         return
 
-    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    zero_control_wires = [
+        w for w, val in zip(control_wires, control_values, strict=True) if not val
+    ]
     for w in zero_control_wires:
         qp.PauliX(w)
     qp.Toffoli(wires=wires)
@@ -612,7 +624,14 @@ class PauliY(Operation):
 
     resource_keys = set()
 
-    basis = "Y"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
 
     batch_size = None
 
@@ -624,8 +643,8 @@ class PauliY(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -863,7 +882,14 @@ class PauliZ(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -877,8 +903,8 @@ class PauliZ(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1135,7 +1161,14 @@ class S(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1304,7 +1337,14 @@ class T(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1461,7 +1501,14 @@ class SX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 
@@ -1827,7 +1874,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2

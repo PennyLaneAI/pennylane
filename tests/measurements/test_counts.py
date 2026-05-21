@@ -69,10 +69,10 @@ class TestCounts:
         m1 = qp.counts(all_outcomes=True)
         m2 = qp.counts(all_outcomes=False)
 
-        assert m1.hash != m2.hash
+        assert hash(m1) != hash(m2)
 
         m3 = CountsMP(eigvals=[0.5, -0.5], wires=qp.wires.Wires(0), all_outcomes=True)
-        assert m3.hash != m1.hash
+        assert hash(m3) != hash(m1)
 
     def test_repr(self):
         """Test that the repr includes the all_outcomes property."""

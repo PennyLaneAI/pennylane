@@ -16,4 +16,8 @@
 Version number (major.minor.patch[-label])
 """
 
+<<<<<<< HEAD
 __version__ = "0.45.0.post0"
+=======
+__version__ = "0.46.0-dev13"
+>>>>>>> main

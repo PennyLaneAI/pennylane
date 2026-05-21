@@ -358,18 +358,6 @@ class TestSubroutineCall:
         op = q.queue[0]
         assert op.bound_args.arguments["metadata"] == "default_value"
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_handle_id(self):
-        """Test that Subroutine's can handle accepting an id."""
-
-        @Subroutine
-        def f(wires):
-            pass
-
-        op = f.operator(0, id="val")
-
-        assert op.id == "val"
-
     def test_mcm_outputs(self):
         """Test that a subroutine can return mcms."""
 
@@ -509,21 +497,6 @@ class TestSubroutineCapture:
 
         inner_xpr = subroutine_eqn.params["jaxpr"]
         assert inner_xpr.eqns[-1].primitive == qp.capture.primitives.cond_prim
-
-    def test_id_ignored(self):
-        """Test that id is ignored with program capture."""
-
-        import jax  # pylint: disable=import-outside-toplevel
-
-        @Subroutine
-        def f(wires):
-            pass
-
-        def w():
-            return f(0, id="val")
-
-        jaxpr = jax.make_jaxpr(w)()
-        assert "id" not in jaxpr.eqns[-1].params
 
 
 @pytest.mark.capture

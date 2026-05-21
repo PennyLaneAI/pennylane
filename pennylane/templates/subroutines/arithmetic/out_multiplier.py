@@ -156,7 +156,7 @@ class OutMultiplier(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
-        id=None,
+        output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -205,7 +205,7 @@ class OutMultiplier(Operation):
 
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
