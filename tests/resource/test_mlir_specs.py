@@ -15,8 +15,6 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.resource import SpecsResources, SymbolicSpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.mlir_specs import (
