@@ -54,7 +54,7 @@ class TwoQubitFFT(Operator):
     num_params = 0
 
     def __init__(self, wires: WiresLike):
-        super().__init__(wires=wires, id=None)
+        super().__init__(wires=wires)
 
     @staticmethod
     def compute_matrix(*_, **__):
