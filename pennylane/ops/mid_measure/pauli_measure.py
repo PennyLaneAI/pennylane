@@ -18,6 +18,7 @@ Implements the pauli measurement.
 import uuid
 from functools import lru_cache
 
+import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
@@ -199,7 +200,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()
-        wires = (wires,) if math.shape(wires) == () else tuple(wires)
+        wires = qp.templates.core._setup_wires(wires)
         return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
     return _pauli_measure_impl(wires, pauli_word, postselect)
