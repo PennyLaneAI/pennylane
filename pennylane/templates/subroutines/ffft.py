@@ -117,7 +117,7 @@ class FFFT(Operator):
         NotImplementedError: If ``len(wires)`` is not a power of 2.
 
     .. note::
-        This Template is not compatible with ``default.tensor``. Please try ``default.qubit``.
+        This template is not compatible with ``default.tensor``. Please try ``default.qubit``.
 
     **Example**
 
