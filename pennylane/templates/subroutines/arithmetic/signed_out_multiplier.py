@@ -182,6 +182,7 @@ class SignedOutMultiplier(Operator):
         \end{align}
 
     This is similar to how the `OutMultiplier` will calculate :math:`\ket{b + xy}` for the output register initialized with value :math:`b`.
+    We just assume that the initial value in the output register is positive, and we add or subtract it depending on whether the outcome of $xy$ is positive or negative.
 
     **Example**
 
