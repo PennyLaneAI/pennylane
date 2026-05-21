@@ -567,29 +567,29 @@ class TestControlledMiscMethods:
             assert op1.wires == op2.wires
 
     def test_hash(self):
-        """Test that op.hash uniquely describes an op up to work wires."""
+        """Test that hash(op) uniquely describes an op up to work wires."""
 
         base = qp.RY(1.2, wires=0)
         # different control wires
         op1 = Controlled(base, (1, 2), [0, 1])
         op2 = Controlled(base, (2, 1), [0, 1])
-        assert op1.hash != op2.hash
+        assert hash(op1) != hash(op2)
 
         # different control values
         op3 = Controlled(base, (1, 2), [1, 0])
-        assert op1.hash != op3.hash
-        assert op2.hash != op3.hash
+        assert hash(op1) != hash(op3)
+        assert hash(op2) != hash(op3)
 
         # all variations on default control_values
         op4 = Controlled(base, (1, 2))
         op5 = Controlled(base, (1, 2), [True, True])
         op6 = Controlled(base, (1, 2), [1, 1])
-        assert op4.hash == op5.hash
-        assert op4.hash == op6.hash
+        assert hash(op4) == hash(op5)
+        assert hash(op4) == hash(op6)
 
         # work wires
         op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
-        assert op7.hash != op1.hash
+        assert hash(op7) != hash(op1)
 
 
 class TestControlledOperationProperties:
@@ -618,7 +618,8 @@ class TestControlledOperationProperties:
 
         base = DummyOp(1)
         op = Controlled(base, 2)
-        assert op.basis == "Z"
+        with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning):
+            assert op.basis == "Z"
 
     @pytest.mark.parametrize(
         "base, expected",

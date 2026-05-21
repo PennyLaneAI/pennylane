@@ -14,9 +14,11 @@
 """The fermionic representation classes and functions."""
 
 import re
+import warnings
 from copy import copy
 
 from pennylane import fermi, math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
 
 
@@ -625,7 +627,16 @@ class FermiSentence(dict):
 
         .. seealso:: :meth:`~.prune`
 
+        .. warning::
+
+            The ``simplify`` method is deprecated and will be removed in v0.47. Please use
+            the :meth:`~.prune` method instead.
+
         """
+        warnings.warn(
+            "FermiSentence.simplify is deprecated. Please use FermiSentence.prune instead.",
+            PennyLaneDeprecationWarning,
+        )
         self.prune(tol)
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):

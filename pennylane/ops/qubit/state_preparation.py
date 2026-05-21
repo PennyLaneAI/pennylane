@@ -168,7 +168,7 @@ class BasisState(StatePrepBase):
 
         op_list = []
         for wire, basis in zip(wires, state, strict=True):
-            op_list.append(qp.GlobalPhase(basis * np.pi / 2, wire))
+            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
             op_list.append(qp.RX(basis * np.pi, wire))
 
         return op_list

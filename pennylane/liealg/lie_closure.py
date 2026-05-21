@@ -174,7 +174,7 @@ def lie_closure(
         # nesting level of the commutators.
         for ps1, ps2 in product(vspace.basis[old_length:], vspace.basis[:initial_length]):
             com = ps1.commutator(ps2)
-            com.simplify(tol=vspace.tol)
+            com.prune(tol=vspace.tol)
 
             if len(com) == 0:  # skip because operators commute
                 continue
