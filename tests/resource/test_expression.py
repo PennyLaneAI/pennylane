@@ -126,6 +126,22 @@ class TestExpression:
         # Needs to be separate since a fixture can't be used within parametrize
         assert str(sample_expr) == "z*z + x*y + 2*x + 5"
 
+    def test_eq(self):
+        """Test that the __eq__ method correctly determines equality of expressions."""
+        expr1 = Expression({("x",): 1, (): 2})
+        expr2 = Expression({("x",): 1, (): 2})
+        expr3 = Expression({("x",): 1, (): 3})
+        expr4 = Expression({("y",): 1, (): 2})
+        assert expr1 == expr2
+        assert expr1 != expr3
+        assert expr1 != expr4
+        assert expr1 != 1
+        assert expr1 != 2
+        assert expr1 != 3
+        assert expr1 != "not an expression"
+
+        assert Expression({(): 2}) == 2
+
     def test_add(self):
         expr1 = Expression({("x",): 1, (): 1})
         expr2 = Expression({("y",): 2, (): 2})

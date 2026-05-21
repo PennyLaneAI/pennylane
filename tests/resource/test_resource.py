@@ -645,6 +645,7 @@ def test_specs_compute_depth(compute_depth):
 class TestSpecsResources:
     """Test the methods and attributes of the SpecsResource class"""
 
+    @pytest.fixture
     def example_specs_resource(self):
         """Generate an example SpecsResources instance."""
         return SpecsResources(
@@ -667,7 +668,7 @@ class TestSpecsResources:
 
         assert s.depth is None
 
-    def test_num_gates(self):
+    def test_num_gates(self, example_specs_resource):
         """Test that the SpecsResources class handles `num_gates` as expected."""
 
         with pytest.raises(
@@ -679,14 +680,14 @@ class TestSpecsResources:
                 gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
             )
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         assert s.num_gates == 3
 
-    def test_immutable(self):
+    def test_immutable(self, example_specs_resource):
         """Test that SpecsResources is immutable."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
             s.gate_types = {}
@@ -703,10 +704,10 @@ class TestSpecsResources:
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
             s.depth = 0
 
-    def test_getitem(self):
+    def test_getitem(self, example_specs_resource):
         """Test that SpecsResources supports indexing via __getitem__."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         assert s["gate_types"] == s.gate_types
         assert s["gate_counts"] == s.gate_types
@@ -736,10 +737,10 @@ class TestSpecsResources:
         ):
             _ = s["potato"]
 
-    def test_str(self):
+    def test_str(self, example_specs_resource):
         """Test the string representation of a SpecsResources instance."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         expected = "Wire allocations: 2\n"
         expected += "Total gates: 3\n"
@@ -774,10 +775,10 @@ class TestSpecsResources:
         assert s.to_pretty_str() == expected
         assert s.to_pretty_str(preindent=4) == expected_indented
 
-    def test_to_dict(self):
+    def test_to_dict(self, example_specs_resource):
         """Test the to_dict method of SpecsResources."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         expected = {
             "gate_types": {"Hadamard": 2, "CNOT": 1},
@@ -1088,7 +1089,9 @@ class TestCircuitSpecs:
         ):
             _ = r["potato"]
 
-    def test_to_dict(self, example_specs_result, example_specs_result_multi):
+    def test_to_dict(
+        self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
+    ):
         """Test the to_dict method of CircuitSpecs."""
 
         r = example_specs_result
@@ -1142,6 +1145,52 @@ class TestCircuitSpecs:
                         "num_allocs": 2,
                         "depth": 1,
                         "num_gates": 1,
+                    },
+                ],
+            },
+        }
+
+        assert r.to_dict() == expected
+
+        # TODO: Figure out what we want to_dict to do
+        r = example_specs_result_multi_symbolic
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": {1: "l1", 2: "l2"},
+            "resources": {
+                1: {
+                    "gate_types": {
+                        "Hadamard": Expression({("x",): 2, (): 2}),
+                        "CNOT": Expression({("x",): 2}),
+                    },
+                    "gate_sizes": {1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
+                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "num_allocs": 2,
+                    "depth": 2,
+                    "num_gates": Expression({("x",): 4, (): 2}),
+                    "vars": ["x"],
+                },
+                2: [
+                    {
+                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_sizes": {2: Expression({("x",): 1})},
+                        "measurements": {"expval(PauliX)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": Expression({("x",): 1}),
+                        "vars": ["x"],
+                    },
+                    {
+                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_sizes": {2: Expression({("x",): 1})},
+                        "measurements": {"expval(PauliZ)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": Expression({("x",): 1}),
+                        "vars": ["x"],
                     },
                 ],
             },

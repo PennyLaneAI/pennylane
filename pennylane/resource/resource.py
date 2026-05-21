@@ -521,6 +521,12 @@ class SymbolicSpecsResources(SpecsResources):
             + super().to_pretty_str(preindent)
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SymbolicSpecsResources to a dictionary, including the variables."""
+        d = super().to_dict()
+        d["vars"] = sorted(self.vars)
+        return d
+
 
 @dataclass(frozen=True)
 class CircuitSpecs:
