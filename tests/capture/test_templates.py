@@ -1688,7 +1688,7 @@ unsupported_templates = [
     qp.TrotterizedQfunc,  # TODO: add support in follow up PR
     qp.templates.SubroutineOp,
     qp.templates.Subroutine,
-    qp.templates.TwoQubitFFT
+    qp.templates.TwoQubitFFT,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates

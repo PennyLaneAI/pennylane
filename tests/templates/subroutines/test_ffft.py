@@ -16,7 +16,8 @@
 import numpy as np
 import pytest
 
-from pennylane import FermionicSWAP, PauliZ, device, list_decomps, probs, qnode, workflow
+from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode, workflow
+from pennylane.measurements import sample
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
@@ -25,12 +26,12 @@ from pennylane.wires import Wires
 dev = device("default.qubit")
 
 
-@qnode(dev)
+@qnode(dev, shots=1)
 def ffft(wires, input=None):
     if input is not None:
         BasisEmbedding(input, wires)
     FFFT(wires)
-    return probs(wires)
+    return sample(wires=wires)
 
 
 @pytest.mark.parametrize(
