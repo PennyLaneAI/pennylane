@@ -61,13 +61,21 @@ def make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
     return unique_name
 
 
+def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
+    # TODO: Decide on the prefered strategy for naming symbolic variables in the output.
+    # At the very least this needs to be extended to support more than 26 variables
+    # If we decide to take this approach, we can reuse resources._batch_num_to_letters()
+    if var not in display_names:
+        display_names[var] = chr(ord("a") + len(display_names))
+    return display_names[var]
+
+
 def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
     fn_resources: dict[str, SymbolicSpecsResources | None],
     display_names: dict[str, str],
-) -> None:  # pragma: no cover
-    # This function is covered by integration tests within the Catalyst frontend
+) -> None:
     """
     Helper function to convert the output of resource analysis pass into SpecsResources objects.
 
@@ -128,9 +136,7 @@ def _mlir_resources_to_specs_resources(
     ):
         if not isinstance(call_count, int):
             # If there is no integer call count, we have to treat this as a symbolic variable
-            if call_count not in display_names:
-                display_names[call_count] = chr(ord("a") + len(display_names))
-            var_name = display_names[call_count]
+            var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
 
             call_count = Expression({(var_name,): 1})
         if called_fn not in fn_resources:
@@ -164,9 +170,7 @@ def _mlir_resources_to_specs_resources(
 
 def _get_resources_from_analysis_pass(
     all_data: dict[str, Any],
-) -> list[SpecsResources]:  # pragma: no cover
-    # This function is covered by integration tests within the Catalyst frontend
-
+) -> list[SpecsResources]:
     resource_data = {}
 
     for fn_name in all_data.keys():

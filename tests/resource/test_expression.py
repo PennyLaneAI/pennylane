@@ -140,7 +140,11 @@ class TestExpression:
         assert expr1 != 3
         assert expr1 != "not an expression"
 
+        # Test comparison of constant-valued Expression with ints
         assert Expression({(): 2}) == 2
+        assert Expression({(): 2}) != 3
+        assert Expression({}) == 0
+        assert Expression({}) != 1
 
     def test_add(self):
         expr1 = Expression({("x",): 1, (): 1})

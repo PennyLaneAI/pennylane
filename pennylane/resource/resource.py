@@ -430,30 +430,24 @@ class SymbolicSpecsResources(SpecsResources):
             object.__setattr__(
                 self,
                 "depth",
-                Expression({(): self.depth}, _skip_copy=False, _skip_normalization=True),
+                Expression({(): self.depth}, _skip_copy=True),
             )
         if isinstance(self.num_allocs, int):
             object.__setattr__(
                 self,
                 "num_allocs",
-                Expression({(): self.num_allocs}, _skip_copy=False, _skip_normalization=True),
+                Expression({(): self.num_allocs}, _skip_copy=True),
             )
 
         for gate, count in self.gate_types.items():
             if isinstance(count, int):
-                self.gate_types[gate] = Expression(
-                    {(): count}, _skip_copy=False, _skip_normalization=True
-                )
+                self.gate_types[gate] = Expression({(): count}, _skip_copy=True)
         for size, count in self.gate_sizes.items():
             if isinstance(count, int):
-                self.gate_sizes[size] = Expression(
-                    {(): count}, _skip_copy=False, _skip_normalization=True
-                )
+                self.gate_sizes[size] = Expression({(): count}, _skip_copy=True)
         for meas, count in self.measurements.items():
             if isinstance(count, int):
-                self.measurements[meas] = Expression(
-                    {(): count}, _skip_copy=False, _skip_normalization=True
-                )
+                self.measurements[meas] = Expression({(): count}, _skip_copy=True)
 
         vars = set()
 
@@ -509,6 +503,23 @@ class SymbolicSpecsResources(SpecsResources):
             measurements=measurements,
             num_allocs=num_allocs,
             depth=depth,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, (SpecsResources, SymbolicSpecsResources)):
+            return NotImplemented
+        if not isinstance(other, SymbolicSpecsResources):
+            if self.vars:
+                return False
+            return self.subs() == other
+
+        return (
+            self.vars == other.vars
+            and self.num_allocs == other.num_allocs
+            and self.depth == other.depth
+            and self.gate_types == other.gate_types
+            and self.gate_sizes == other.gate_sizes
+            and self.measurements == other.measurements
         )
 
     def __call__(self, **kwargs):

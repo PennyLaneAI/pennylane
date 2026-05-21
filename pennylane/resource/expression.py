@@ -68,7 +68,7 @@ class Expression:
             self._data = data.copy()
         if not _skip_normalization:
             self._normalize()
-            # Sort data after normalization
+            # Sort order of variable tuples for deterministic display and testing
             self._data = {
                 vars: self._data[vars]
                 for vars in sorted(
@@ -94,10 +94,11 @@ class Expression:
             sorted_vars = tuple(sorted(vars))
             if sorted_vars != vars:
                 if sorted_vars not in self._data:
-                    self._data[sorted_vars] = 0
-                self._data[sorted_vars] += self._data[vars]
-                if self._data[sorted_vars] == 0:
-                    del self._data[sorted_vars]
+                    self._data[sorted_vars] = self._data[vars]
+                else:
+                    self._data[sorted_vars] += self._data[vars]
+                    if self._data[sorted_vars] == 0:
+                        del self._data[sorted_vars]
                 del self._data[vars]
 
     @property
@@ -134,9 +135,7 @@ class Expression:
             return 0
         if len(new_data) == 1 and () in new_data:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(
-            new_data, _skip_normalization=True, vars=self._vars.difference(substitutions.keys())
-        )
+        return Expression(new_data, vars=self._vars.difference(substitutions.keys()))
 
     @cache
     def __str__(self) -> str:
@@ -160,7 +159,13 @@ class Expression:
         if not isinstance(other, (int, Expression)):
             return NotImplemented
         if isinstance(other, int):
-            return len(self._data) == 1 and () in self._data and self._data[()] == other
+            match len(self._data):
+                case 0:
+                    return other == 0
+                case 1 if () in self._data:
+                    return self._data[()] == other
+                case _:
+                    return False
         return self._data == other._data
 
     def __hash__(self) -> int:
@@ -184,6 +189,8 @@ class Expression:
             return NotImplemented
 
         if isinstance(other, int):
+            if other == 0:
+                return Expression({})
             return Expression(
                 {vars: coeff * other for vars, coeff in self._data.items()},
                 _skip_copy=True,
