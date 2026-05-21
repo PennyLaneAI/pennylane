@@ -40,7 +40,9 @@ from pennylane.typing import TensorLike
 
 @singledispatch
 def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
-    r"""Returns the equivalent ZYZ rotation angles of a single-qubit operator.
+    r"""single_qubit_zyz_angles(op: Operator)
+    
+    Returns the equivalent ZYZ rotation angles of a single-qubit operator.
 
     A single-qubit unitary operator is equivalent to a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
