@@ -177,6 +177,9 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* Functions with ``singledispatch`` stop having its signature duplicated in the documentation for every registered dispatch function.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `pl-device-test` no longer uses the deprecated syntax that sets the shots on the device.
