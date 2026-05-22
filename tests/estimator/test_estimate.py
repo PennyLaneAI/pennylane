@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.estimator.estimate import estimate
-from pennylane.estimator.ops.op_math.symbolic import Adjoint
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
+from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
@@ -32,10 +32,11 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.resources_base import Resources
+from pennylane.estimator.templates.subroutines import BasisRotation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable= no-self-use, arguments-differ
+# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
 
 
 def _circuit_w_expval(circ):
@@ -537,7 +538,6 @@ class TestEstimateResources:
 
     def test_custom_pow_decomposition(self):
         """Test that a custom pow decomposition can be set and used."""
-        from pennylane.estimator.ops.op_math.symbolic import Pow
 
         def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Hadamard), count=2)]
@@ -558,7 +558,6 @@ class TestEstimateResources:
 
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
-        from pennylane.estimator.ops.op_math.symbolic import Controlled
 
         def custom_ctrl_RZ(
             num_ctrl_wires, num_zero_ctrl, target_resource_params
@@ -578,3 +577,56 @@ class TestEstimateResources:
 
         assert res == expected_resources
         assert pl_res == expected_resources
+
+    def test_controlled_uses_custom_base_decomp_from_config(self):
+        """Controlled(op) should use the custom base decomp from config."""
+        cfg = ResourceConfig()
+
+        def custom_decomp(dim):
+            x = resource_rep(X)
+            return [GateCount(x, dim)]
+
+        cfg.set_decomp(BasisRotation, custom_decomp)
+
+        op = BasisRotation(3)
+        ctrl_op = Controlled(op, 1, 0)
+
+        result = estimate(ctrl_op, config=cfg)
+        # Custom decomp gives dim=3 X gates; controlling each X → CNOT
+        assert result.total_gates == 3
+
+    def test_adjoint_uses_custom_base_decomp_from_config(self):
+        """Adjoint(op) should use the custom base decomp from config."""
+        cfg = ResourceConfig()
+
+        def custom_decomp(dim):
+            h = resource_rep(Hadamard)
+            return [GateCount(h, dim)]
+
+        cfg.set_decomp(BasisRotation, custom_decomp)
+
+        op = BasisRotation(3)
+        adj_op = Adjoint(op)
+
+        result = estimate(adj_op, config=cfg)
+        # Hadamard is self-adjoint, so Adjoint(H) = H
+        assert result.total_gates == 3
+
+    def test_explicit_symbolic_override_takes_priority(self):
+        """An explicit ctrl override in config should NOT be overwritten by the base wrapper."""
+        cfg = ResourceConfig()
+
+        def custom_base(dim):
+            return [GateCount(resource_rep(X), dim)]
+
+        def custom_ctrl(
+            num_ctrl_wires, num_zero_ctrl, target_resource_params=None
+        ):  # pylint: disable=unused-argument
+            return [GateCount(resource_rep(T), 42)]
+
+        cfg.set_decomp(BasisRotation, custom_base)
+        cfg.set_decomp(BasisRotation, custom_ctrl, decomp_type="ctrl")
+
+        ctrl_op = Controlled(BasisRotation(3), 1, 0)
+        result = estimate(ctrl_op, config=cfg)
+        assert result.total_gates == 42  # explicit ctrl override wins
