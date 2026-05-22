@@ -110,6 +110,21 @@ class SignedOutMultiplier(Operator):
         We also have the magnitude of the signed integer which can be computed by flipping all bits of :math:`x` and incrementing by one,
         both steps controlled on the sign bit of :math:`x`, :math:`x_{n-1}`.
 
+        .. math::
+            \begin{align}
+                \bar{x}&=(1-x_{n-1})x+x_{n-1}\left(1 + \sum_{j=0}^{n-1} (1-x_j) 2^j\right)\\
+                % &=2^n-x_u\\
+                &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - \sum_{j=0}^{n-1} x_j 2^j) \\
+                &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j + 2^{n-1}x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
+                &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - 2^{n-1}x_{n-1} + 2^n x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
+                &=(x-x_{n-1} x) + x_{n-1} (1 + (2^n - 1) - (x + 2^n x_{n-1})) \\
+                &=(x-x_{n-1} x)+x_{n-1}2^n-x_{n-1}(x+2^nx_{n-1})\\
+                &=x-2x_{n-1}x+2^nx_{n-1}(1-x_{n-1})\\
+                &=(1-2x_{n-1})x + 2^n x_{n-1} - 2^n x_{n-1}^2 \\
+                &=(1-2x_{n-1})x\\
+                &=(-1)^{x_{n-1}}x.
+            \end{align}
+
         The first step is to copy the sign bit of :math:`x` and :math:`y` to one auxiliary qubit each, and to compute the magnitude of the respective integer, as just described.
         At this point we have the state
 
@@ -421,31 +436,6 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-    r"""
-    The magnitude of `input_reg` can be computed by flipping all bits of `input_reg` and incrementing by one,
-    both steps controlled on the sign bit `aux_wire`. Any `work_wires` are used by the `Incrementer`.
-
-    Args:
-        input_reg: The register we want to take the 2s complement of.
-        aux_wire: The cached sign bit which tells us whether we already have a magnitude.
-        work_wires: Any work wires we can use in the decomposition.
-
-    .. math::
-        \begin{align}
-            \bar{x}&=(1-x_{n-1})x+x_{n-1}\left(1 + \sum_{j=0}^{n-1} (1-x_j) 2^j\right)\\
-            % &=2^n-x_u\\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - \sum_{j=0}^{n-1} x_j 2^j) \\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j + 2^{n-1}x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + \sum_{j=0}^{n-1} 2^j - 2^{n-1}x_{n-1} + 2^n x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j) \\
-            &=(x-x_{n-1} x) + x_{n-1} (1 + (2^n - 1) - (x + 2^n x_{n-1})) \\
-            &=(x-x_{n-1} x)+x_{n-1}2^n-x_{n-1}(x+2^nx_{n-1})\\
-            &=x-2x_{n-1}x+2^nx_{n-1}(1-x_{n-1})\\
-            &=(1-2x_{n-1})x + 2^n x_{n-1} - 2^n x_{n-1}^2 \\
-            &=(1-2x_{n-1})x\\
-            &=(-1)^{x_{n-1}}x.
-        \end{align}
-    """
-
     # Invert all bits
     @for_loop(len(input_reg))
     def invert(w):
