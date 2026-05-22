@@ -17,11 +17,12 @@ from collections.abc import Iterable
 
 import pennylane as qp
 from pennylane.operation import StatePrepBase
+from .utils import QUDIT_DIM
 
 
 def create_initial_state(
-    wires: qp.wires.Wires | Iterable,
-    prep_operation: StatePrepBase | None = None,
+    wires: qp.wires.Wires, Iterable,
+    prep_operation: StatePrepBase | qml.QutritDensityMatrix | None = None,
     like: str = None,
 ):
     r"""
@@ -39,17 +40,18 @@ def create_initial_state(
     num_wires = len(wires)
 
     if not prep_operation:
-        rho = _create_basis_state(num_wires, 0)
+        return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
 
     if isinstance(prep_operation, qml.QubitDensityMatrix):
-        rho = prep_operation.data[0]
+        rho = prep_operation.data
+        is_state_batched = True
     else:
-        rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
+        rho, is_state_batched = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
-    return _post_process(rho, num_wires, like)
+    return _post_process(rho, num_wires, like, is_state_batched)
 
 
-def _post_process(rho, num_wires, like):
+def _post_process(rho, num_wires, like, is_state_batched):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -57,16 +59,20 @@ def _post_process(rho, num_wires, like):
     in the module (again from some legacy code).
     """
     # Ensure correct shape and remove batch dimension if unused.
-    rho = math.reshape(rho, (-1,) + (3, 3) * num_wires)
+    rho = math.reshape(rho, (-1,) + (QUDIT_DIM, ) * (2 * num_wires))
     rho = math.squeeze(rho)
 
     dtype = str(rho.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
+
+    if not is_state_batched:
+        rho = math.reshape(rho, (QUDIT_DIM,) * num_axes)
     return math.cast(math.asarray(rho, like=like), dtype)
 
-def _apply_state_vector(state, num_wires):  # function is easy to abstract for qudit
+
+def _apply_state_vector(pure_state, num_wires):  # function is easy to abstract for qudit
     """Initialize the internal state in a specified pure state.
 
     Args:
@@ -81,11 +87,11 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
     """
     # Don't assume the expected shape to be fixed
     batch_size = math.get_batch_size(
-        pure_state, expected_shape=(3,) * num_wires, expected_size=3**num_wires
+        pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=3**num_wires
     )
     if batch_size is None:
         return _flatten_outer(pure_state)
-    return math.stack([_flatten_outer(s) for s in pure_state])
+    return math.stack([_flatten_outer(s) for s in pure_state]), (batch_size is not None)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
