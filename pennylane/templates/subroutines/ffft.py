@@ -25,7 +25,13 @@ from pennylane.control_flow import for_loop, while_loop
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops import FermionicSWAP, PauliZ, pow
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -218,7 +224,7 @@ def _recursive_decompose(wires: WiresLike):
 
         @for_loop(len(wires) // 2)
         def fouriers(i):
-            _permute_and_apply(wires, Wires([wires[i], wires[len(wires) // 2 + i]]), TwoQubitFFT)
+            _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoQubitFFT)
 
         fouriers()  # pylint: disable=no-value-for-parameter
 
@@ -232,26 +238,31 @@ def _permute_and_apply(order, wires, operator):
         wires (WiresLike): The wires to permute.
         operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
     """
-    first = list(order).index(wires.labels[0])
-    second = list(order).index(wires.labels[1])
+    if capture.enabled() and has_jax:
+        first = jnp.argmax(jnp.where(order == wires[0], order, 0))
+        second = jnp.argmax(jnp.where(order == wires[1], order, 0))
+    else:
+        first = list(order).index(wires[0])
+        second = list(order).index(wires[1])
+
     second_copy = copy.copy(second)
 
     # permute into adjacency
     @while_loop(lambda s: s > first + 1)
     def permute_in(s):
-        FermionicSWAP(np.pi, Wires([order[s], order[s - 1]]))
+        FermionicSWAP(np.pi, [order[s], order[s - 1]])
         s -= 1
         return s
 
     permute_in(second)  # pylint: disable=no-value-for-parameter
 
     # apply the operator
-    operator(Wires([order[first], order[first + 1]]))
+    operator([order[first], order[first + 1]])
 
     # permute back
     @while_loop(lambda s: s < second_copy)
     def permute_out(s):
-        FermionicSWAP(np.pi, Wires([order[s], order[s + 1]]))
+        FermionicSWAP(np.pi, [order[s], order[s + 1]])
         s += 1
         return s
 

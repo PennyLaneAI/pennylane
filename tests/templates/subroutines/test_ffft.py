@@ -23,6 +23,12 @@ from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
 from pennylane.wires import Wires
 
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 dev = device("default.qubit")
 
 
@@ -63,7 +69,7 @@ def test_raises(wires, error_type, error_msg):
         FFFT(wires)
 
 
-@pytest.mark.jax
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, expected_circuit",
     [
@@ -73,8 +79,8 @@ def test_raises(wires, error_type, error_msg):
             [
                 TwoQubitFFT(wires=[0, 1]),
                 TwoQubitFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
+                PauliZ(jnp.array(2)) ** jnp.array(0.0),
+                PauliZ(jnp.array(3)) ** jnp.array(0.5),
                 FermionicSWAP(np.pi, wires=[2, 1]),
                 TwoQubitFFT(wires=[0, 1]),
                 FermionicSWAP(np.pi, wires=[1, 2]),
@@ -88,8 +94,8 @@ def test_raises(wires, error_type, error_msg):
             [
                 TwoQubitFFT(wires=[0, 1]),
                 TwoQubitFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
+                PauliZ(jnp.array(2)) ** jnp.array(0.0),
+                PauliZ(jnp.array(3)) ** jnp.array(0.5),
                 FermionicSWAP(np.pi, wires=[2, 1]),
                 TwoQubitFFT(wires=[0, 1]),
                 FermionicSWAP(np.pi, wires=[1, 2]),
@@ -98,18 +104,18 @@ def test_raises(wires, error_type, error_msg):
                 FermionicSWAP(np.pi, wires=[2, 3]),
                 TwoQubitFFT(wires=[4, 5]),
                 TwoQubitFFT(wires=[6, 7]),
-                PauliZ(6) ** 0.0,
-                PauliZ(7) ** 0.5,
+                PauliZ(jnp.array(6)) ** jnp.array(0.0),
+                PauliZ(jnp.array(7)) ** jnp.array(0.5),
                 FermionicSWAP(np.pi, wires=[6, 5]),
                 TwoQubitFFT(wires=[4, 5]),
                 FermionicSWAP(np.pi, wires=[5, 6]),
                 FermionicSWAP(np.pi, wires=[7, 6]),
                 TwoQubitFFT(wires=[5, 6]),
                 FermionicSWAP(np.pi, wires=[6, 7]),
-                PauliZ(4) ** 0.0,
-                PauliZ(5) ** 0.25,
-                PauliZ(6) ** 0.5,
-                PauliZ(7) ** 0.75,
+                PauliZ(jnp.array(4)) ** jnp.array(0.0),
+                PauliZ(jnp.array(5)) ** jnp.array(0.25),
+                PauliZ(jnp.array(6)) ** jnp.array(0.5),
+                PauliZ(jnp.array(7)) ** jnp.array(0.75),
                 FermionicSWAP(np.pi, wires=[4, 3]),
                 FermionicSWAP(np.pi, wires=[3, 2]),
                 FermionicSWAP(np.pi, wires=[2, 1]),
@@ -143,5 +149,10 @@ def test_raises(wires, error_type, error_msg):
     ],
 )
 def test_ffft_circuit(wires, expected_circuit):
+    @qnode(device("default.qubit", wires=wires), shots=1)
+    def ffft(wires):
+        FFFT(wires)
+        return sample(wires=wires)
+
     tape = workflow.construct_tape(ffft, level="device")(wires)
     assert tape.operations == expected_circuit
