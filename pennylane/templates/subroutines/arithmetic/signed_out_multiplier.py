@@ -92,8 +92,8 @@ class SignedOutMultiplier(Operator):
     [[1 1 0 1 1 1]]
 
     The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of
-    :math:`-3 \cdot 3 \; = -9` in 2's complement form. We can tell it is negative since the first bit is 1.
-    Then we can find the magnitude by flipping the bits and adding 1. This gives us math`[[0 0 1 0 0 1]]`.
+    :math:`-3 \cdot 3 \; = -9` in 2s complement form. We can tell it is negative since the first bit is 1.
+    Then we can find the magnitude by flipping the bits and adding 1. This gives us :math:`[[0 0 1 0 0 1]]`.
     The sum of these bits is :math:`2^3 + 2^0 = 9`.
 
     .. details::
