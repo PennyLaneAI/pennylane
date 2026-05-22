@@ -32,7 +32,7 @@ def test_pauli_measure_catalyst_dispatch():
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def c():
         qp.X(0)
-        m = qp.pauli_measure("Z", wires=[0], postselect=1)
+        m = qp.pauli_measure("Z", wires=[0])
 
         def f():
             qp.X(1)
