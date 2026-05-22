@@ -870,7 +870,7 @@ class _DecompInfo:
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
             alloc_str = self._make_table(allocations, "WireType", "Count")
-            gate_count_str += f"\n\nWire Allocations:\n\n{alloc_str}"
+            gate_count_str += f"\n\n* Wire Allocations:\n\n{alloc_str}"
         return gate_count_str
 
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
@@ -885,16 +885,16 @@ class _DecompInfo:
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
             gate_count_str = self._make_table(estimated_count, "Gate", "Count")
-            return f"Gate Count:\n\n{gate_count_str}"
+            return f"* Gate Count:\n\n{gate_count_str}"
         estimate = self._make_table(estimated_count, "Gate", "Count")
         actual = self._make_table(actual_count, "Gate", "Count")
-        return f"Estimated Gate Count\n\n{estimate}\n\nActual Gate Count:\n\n{actual}"
+        return f"* Estimated Gate Count\n\n{estimate}\n\n* Actual Gate Count:\n\n{actual}"
 
     def _make_table(self, entry_dict, key, value) -> str:
-        header = f"| {key} | {value} |\n| :--- | :--- |\n"
+        header = f"  | {key} | {value} |\n  | :--- | :--- |\n"
         lines = []
         for op, count in entry_dict.items():
-            lines.append(f"| {op} | {count} |")
+            lines.append(f"  | {op} | {count} |")
         return header + "\n".join(lines)
 
     @property
