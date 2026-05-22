@@ -58,6 +58,26 @@ class TestExpression:
             }
         )
 
+    def test_init_as_int(self):
+        """Test that the __init__ method can handle an integer input for a constant expression."""
+        expr = Expression(5)
+        assert expr._data == {(): 5}
+        assert expr.vars == set()
+
+        expr = Expression(0)
+        assert expr._data == {}
+
+    def test_init_invalid_input(self):
+        """Test that the __init__ method raises a TypeError for invalid input types."""
+        with pytest.raises(TypeError):
+            Expression("foo")
+
+    def test_init_skip_normalization(self):
+        """Test that the __init__ method can skip normalization when _skip_normalization is True."""
+        data = {("x", "y"): 2, ("y", "x"): 3, ("z",): 1, ("foo",): 0, (): 4}
+        expr = Expression(data, _skip_normalization=True)
+        assert expr._data == data
+
     def test_init_normalizes(self):
         """Test that the __init__ method normalizes the input data correctly."""
         expr = Expression(

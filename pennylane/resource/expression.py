@@ -47,7 +47,7 @@ class Expression:
 
     def __init__(
         self,
-        data: dict[tuple[str, ...], int],
+        data: dict[tuple[str, ...], int] | int,
         vars: set[str] | None = None,
         _skip_copy: bool = False,
         _skip_normalization: bool = False,
@@ -56,16 +56,24 @@ class Expression:
         Initializes the expression with the given data.
 
         Args:
-            data (dict[tuple[str, ...], int]): A dictionary mapping tuples of variable names to their coefficients.
+            data (dict[tuple[str, ...], int] | int): A dictionary mapping tuples of variable names
+                to their coefficients, or an integer for a constant expression.
         """
-        if not isinstance(data, dict):
-            raise TypeError("Expression data must be a dictionary or tuples")
+        if not isinstance(data, (dict, int)):
+            raise TypeError("Expression data must be a dictionary of tuples or an integer")
 
         self._hashval = None
-        if _skip_copy:
+
+        if isinstance(data, int):
+            if data == 0:
+                self._data = {}
+            else:
+                self._data = {(): data}
+        elif _skip_copy:
             self._data = data
         else:
             self._data = data.copy()
+
         if not _skip_normalization:
             self._normalize()
             # Sort order of variable tuples for deterministic display and testing
@@ -77,6 +85,7 @@ class Expression:
                     key=lambda var_tuple: (len(var_tuple), var_tuple),
                 )
             }
+
         if vars is not None:
             self._vars = vars
         else:
