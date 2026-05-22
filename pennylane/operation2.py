@@ -162,7 +162,7 @@ class Operator2(ABC):
 
         # Every named signature parameter must appear in at least one *_argnames.
         sig_params = set(cls._sig.parameters.keys())
-        if unclassified := sig_params - seen.keys() - hybrid:
+        if unclassified := sig_params - set(seen.keys()) - hybrid:
             raise TypeError(
                 f"The following parameters of '{cls.__name__}' are not classified in "
                 f"any argnames tuples: {unclassified}."
@@ -434,7 +434,7 @@ class Operator2(ABC):
     # def __eq__(self, other) -> bool:
     #     return qp.equal(self, other)
 
-    def __copy__(self) -> "Operator2":
+    def __copy__(self) -> "qp.PauliX[0]":
         cls = type(self)
         copied_op = cls.__new__(cls)
         for attr, value in vars(self).items():
