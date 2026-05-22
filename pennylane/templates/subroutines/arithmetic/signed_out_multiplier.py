@@ -132,6 +132,10 @@ class SignedOutMultiplier(Operator):
     If we have a non-zero initial state :math:`z_i` in the output register, we will end up with :math:`xy + z_i` in the
     output register once the template has executed. This requires more work wires and a more costly decomposition.
 
+    Basically, we use auxiliary registers to first 1) compute the multiplication of the operands into a zeroed register,
+    2) use an Adder to add :math:`z_i` to this result (the outcome of the addition goes into a second auxiliary register) 3)
+    reset the output register and 4) copy the final outcome into the output register.
+
     **Example**
 
     This example performs the multiplication of two integers :math:`x=-3` and :math:`y=3`.
