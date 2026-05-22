@@ -38,20 +38,28 @@ def create_initial_state(
         array: The initial state of a circuit
     """
     num_wires = len(wires)
+    num_axes = 2 * num_wires
 
     if not prep_operation:
         return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
 
     if isinstance(prep_operation, qml.QubitDensityMatrix):
         rho = prep_operation.data
-        is_state_batched = True
+        batch_size = math.get_batch_size(rho, (QUDIT_DIM,) * num_axes, QUDIT_DIM**num_axes)
     else:
-        rho, is_state_batched = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
+        pure_state = prep_operation.state_vector(wire_order=wires)
+        batch_size = math.get_batch_size(
+            pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=QUDIT_DIM ** num_wires
+        )
+        if batch_size is None:
+            return _flatten_outer(pure_state)
+        return math.stack([_flatten_outer(s) for s in pure_state]), batch_size
 
-    return _post_process(rho, num_wires, like, is_state_batched)
+    is_state_batched = batch_size is not None
+    return _post_process(rho, num_axes, like, is_state_batched)
 
 
-def _post_process(rho, num_wires, like, is_state_batched):
+def _post_process(rho, num_axes, like, is_state_batched):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -59,8 +67,7 @@ def _post_process(rho, num_wires, like, is_state_batched):
     in the module (again from some legacy code).
     """
     # Ensure correct shape and remove batch dimension if unused.
-    rho = math.reshape(rho, (-1,) + (QUDIT_DIM, ) * (2 * num_wires))
-    rho = math.squeeze(rho)
+    rho = math.reshape(rho, (-1,) + (QUDIT_DIM, ) * num_axes)
 
     dtype = str(rho.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
@@ -70,28 +77,6 @@ def _post_process(rho, num_wires, like, is_state_batched):
     if not is_state_batched:
         rho = math.reshape(rho, (QUDIT_DIM,) * num_axes)
     return math.cast(math.asarray(rho, like=like), dtype)
-
-
-def _apply_state_vector(pure_state, num_wires):  # function is easy to abstract for qudit
-    """Initialize the internal state in a specified pure state.
-
-    Args:
-        state (array[complex]): normalized input state of length
-            ``QUDIT_DIM**num_wires``, where ``QUDIT_DIM`` is the dimension of the system.
-        num_wires (int): number of wires that get initialized in the state
-
-    Returns:
-        array[complex]: complex array of shape ``[QUDIT_DIM] * (2 * num_wires)``
-        representing the density matrix of this state, where ``QUDIT_DIM`` is
-        the dimension of the system.
-    """
-    # Don't assume the expected shape to be fixed
-    batch_size = math.get_batch_size(
-        pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=3**num_wires
-    )
-    if batch_size is None:
-        return _flatten_outer(pure_state)
-    return math.stack([_flatten_outer(s) for s in pure_state]), (batch_size is not None)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
