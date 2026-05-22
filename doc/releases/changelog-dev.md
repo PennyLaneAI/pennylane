@@ -200,6 +200,10 @@
   values sometimes incorrectly have the same hash.
   [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
+* Fixes a bug where the _rotate_dipole private function in `~.pennylane.qchem.vibrational`
+  submodule doesn't account for the correct number of modes.
+  [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
