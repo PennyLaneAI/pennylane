@@ -15,17 +15,14 @@
 A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 
-# pylint: disable=possibly-used-before-assignment
-
 from __future__ import annotations
 
 import warnings
 from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
-from importlib.util import find_spec
 
-from pennylane import ops, queuing
+from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import (
     DecompositionGraph,
@@ -197,12 +194,9 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = []
-                for w in _args[-num_wires:]:
-                    if is_abstract_qubit(w):
-                        wires.append(w)
-                    else:
-                        wires.append(jax.numpy.array(w))
+                wires = _args[-num_wires:]
+                if not any(is_abstract_qubit(w) for w in wires):
+                    wires = math.array(wires, like="jax")
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
