@@ -28,8 +28,6 @@ This module contains the abstractions for defining subroutines.
 
 """
 
-# pylint: disable=possibly-used-before-assignment
-
 import copy
 from collections import defaultdict
 from collections.abc import Callable
