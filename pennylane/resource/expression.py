@@ -17,7 +17,7 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import cache
-from typing import Union
+from typing import Any, Union
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
@@ -232,3 +232,14 @@ class Expression:
 
     def __radd__(self, other) -> "Expression":
         return self.__add__(other)
+
+
+def convert_int_vals_to_expression(data: dict[Any, Any]):
+    """Replaces all integer values in a dictionary with Expression objects.
+
+    Args:
+        data (dict[Any, Any]): The dictionary to convert.
+    """
+    for key, count in data.items():
+        if isinstance(count, int):
+            data[key] = Expression(count)

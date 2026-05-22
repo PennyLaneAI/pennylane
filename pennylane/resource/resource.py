@@ -31,7 +31,7 @@ from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
-from .expression import Expression
+from .expression import Expression, convert_int_vals_to_expression
 
 
 def _count_to_str(count: int | Expression) -> str:
@@ -430,24 +430,18 @@ class SymbolicSpecsResources(SpecsResources):
             object.__setattr__(
                 self,
                 "depth",
-                Expression({(): self.depth}, _skip_copy=True),
+                Expression(self.depth),
             )
         if isinstance(self.num_allocs, int):
             object.__setattr__(
                 self,
                 "num_allocs",
-                Expression({(): self.num_allocs}, _skip_copy=True),
+                Expression(self.num_allocs),
             )
 
-        for gate, count in self.gate_types.items():
-            if isinstance(count, int):
-                self.gate_types[gate] = Expression({(): count}, _skip_copy=True)
-        for size, count in self.gate_sizes.items():
-            if isinstance(count, int):
-                self.gate_sizes[size] = Expression({(): count}, _skip_copy=True)
-        for meas, count in self.measurements.items():
-            if isinstance(count, int):
-                self.measurements[meas] = Expression({(): count}, _skip_copy=True)
+        convert_int_vals_to_expression(self.gate_types)
+        convert_int_vals_to_expression(self.gate_sizes)
+        convert_int_vals_to_expression(self.measurements)
 
         vars = set()
 
@@ -455,6 +449,7 @@ class SymbolicSpecsResources(SpecsResources):
             vars |= self.depth.vars
         vars |= self.num_allocs.vars
 
+        # Union over all expressions
         for expr in self.gate_types.values():
             vars |= expr.vars
         for expr in self.gate_sizes.values():
