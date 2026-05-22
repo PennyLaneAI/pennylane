@@ -1530,9 +1530,9 @@ class SelectCopyQROM(ResourceOperator):
             should not be provided and will be determined from this value.
         batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
             loaded in parallel by adding more rows following Figure 1.C of
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (default value is 2).
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value is :math:`2`.
         bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
-            the number of bits to load per QROM iteration (default value is ``size_bitstring``).
+            the number of bits to load per QROM iteration. Default value is ``size_bitstring``.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
@@ -1723,10 +1723,10 @@ class SelectCopyQROM(ResourceOperator):
                   ``bits_per_iter`` should not be provided and will be determined from this value.
                 * batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                   loaded in parallel by adding more rows following Figure 1.C of
-                  `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (default value is 2).
+                  `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value is :math:`2`.
                 * bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
-                  representing the number of bits to load per QROM iteration (default value is
-                  ``size_bitstring``).
+                  representing the number of bits to load per QROM iteration. Default value is
+                  ``size_bitstring``.
         """
 
         return {
@@ -1757,9 +1757,9 @@ class SelectCopyQROM(ResourceOperator):
                 should not be provided and will be determined from this value.
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (default value is 2).
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value is :math:`2`.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
-                the number of bits to load per QROM iteration (default value is ``size_bitstring``).
+                the number of bits to load per QROM iteration. Default value is ``size_bitstring``.
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
@@ -1801,9 +1801,9 @@ class SelectCopyQROM(ResourceOperator):
                 should not be provided and will be determined from this value.
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (default value is 2).
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value is :math:`2`.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
-                the number of bits to load per QROM iteration (default value is ``size_bitstring``).
+                the number of bits to load per QROM iteration. Default value is ``size_bitstring``.
 
         Resources:
             The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_.
@@ -1910,9 +1910,9 @@ class SelectCopyQROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (default value is 2).
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value is :math:`2`.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
-                the number of bits to load per QROM iteration (default value is ``size_bitstring``).
+                the number of bits to load per QROM iteration. Default value is ``size_bitstring``.
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
