@@ -193,15 +193,31 @@
   :func:`~.controlled_resource_rep`, causing mismatches in the decomposition resource graph.
   [(#9460)](https://github.com/PennyLaneAI/pennylane/pull/9460)
 
+<<<<<<< Updated upstream
 * Fixes a bug where two ``MeasurementProcess`` of taken of different mid-circuit measurement
   values sometimes incorrectly have the same hash.
   [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
+
+=======
+>>>>>>> Stashed changes
+* Fixed a bug where :func:`~.two_qubit_decomposition` would raise a
+  ``TracerArrayConversionError`` when decomposing a :class:`~.QubitUnitary`
+  that requires 2 CNOTs under ``qjit``. The guard preventing the 2-CNOT
+  decomposition path from being traced with abstract arrays only checked
+  ``capture.enabled()``, missing the ``qjit`` context where
+  ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
+  ``two_qubit_decomp_rule`` are fixed.
+  [(pr#)](https://github.com/PennyLaneAI/pennylane/pull/pr#)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+<<<<<<< Updated upstream
 Usman Ahmed,
+=======
+Usman Ahmed
+>>>>>>> Stashed changes
 Guillermo Alonso,
 Astral Cai,
 Daniel Casota,

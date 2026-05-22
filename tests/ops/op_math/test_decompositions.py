@@ -1232,6 +1232,30 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("U", samples_2_cnots)
+    def test_two_qubit_decomposition_2_cnots_jax_jit(self, U, wires=[0, 1]):
+        """Regression test for #9016 - 2-CNOT path should not raise
+        TracerArrayConversionError under jax.jit."""
+        import jax
+        import jax.numpy as jnp
+
+        U = jnp.array(U, dtype=jnp.complex128)
+
+        def wrapped_decomposition(U):
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+            with qp.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qp.apply(op)
+
+            tape = qp.tape.QuantumScript.from_queue(q)
+            return qp.matrix(tape, wire_order=wires)
+
+        # Should not raise TracerArrayConversionError
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+    @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
