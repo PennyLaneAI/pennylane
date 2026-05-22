@@ -41,8 +41,8 @@ class TestInitializeState:
         state = create_initial_state([0, 1], like=interface)
         expected = np.zeros((3, 3, 3, 3))
         expected[0, 0, 0, 0] = 1
-        assert math.allequal(state, expected)
-        assert math.get_interface(state) == interface
+        assert qp.math.allequal(state, expected)
+        assert qp.math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ml_interfaces)
@@ -76,11 +76,11 @@ class TestInitializeState:
         num_wires = len(wires)
         state_correct = np.zeros((3, 3) * num_wires, dtype=complex)
         state_correct[(0, 0) * num_wires] = 1
-        state_correct = math.asarray(state_correct, like=interface)
-        prep_op = QutritDensityMatrix(math.array(state_correct, like=interface), wires=wires)
+        state_correct = qp.math.asarray(state_correct, like=interface)
+        prep_op = QutritDensityMatrix(qp.math.array(state_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
-        assert math.allequal(state, state_correct)
-        assert math.get_interface(state) == interface
+        assert qp.math.allequal(state, state_correct)
+        assert qp.math.get_interface(state) == interface
 
     @pytest.mark.parametrize("wires", [(0, 1), qp.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):
@@ -103,3 +103,31 @@ class TestInitializeState:
         prep_op = self.DefaultPrep([1 / np.sqrt(9)] * 9, wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
         assert qp.math.get_interface(state) == "torch"
+
+def test_qutrit_density_matrix_qnode_integration():
+    """Integration test for QutritDensityMatrix on entire set of wires using QNode.
+    """
+    n = 2
+    dev = qp.device("default.qutrit.mixed", wires=2 * n)
+
+    @qp.qnode(dev)
+    def test_circuit(rho):
+        # Initialize all 2n qutrits of rho
+        qp.QutritDensityMatrix(rho, wires=range(0, 2 * n))
+
+        # Apply THadamard gate to second set
+        for a in range(n, 2 * n):
+            qp.THadamard(a)
+
+        return qp.probs(wires=range(n))
+
+    # Define the 2-qutrit density matrix for GHZ state: (|00> + |11> + |22>)/sqrt(3)
+    ghz = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=complex) / np.sqrt(3)
+    ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (9, 9)
+
+    # This should not raise ValueError
+    result = test_circuit(np.kron(ghz_dm, ghz_dm))
+
+    # Expected: probabilities for GHZ state are [1/3, 0, 0,0, 1/3,0,0,0,1/3]
+    expected = np.array([1/3, 0, 0,0, 1/3,0,0,0,1/3])
+    assert np.allclose(result, expected, atol=1e-8)
