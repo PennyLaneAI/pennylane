@@ -49,7 +49,7 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
         if isinstance(circuit[0], qp.operation.StatePrepBase):
             prep = circuit[0]
         if isinstance(circuit[0], qp.QutritDensityMatrix):
-            if list(circuit.wires)==list(circuit[0].wires):
+            if list(circuit.wires) == list(circuit[0].wires):
                 prep = circuit[0]
     state = create_initial_state(
         sorted(circuit.op_wires), prep, like=Interface(interface).get_like()

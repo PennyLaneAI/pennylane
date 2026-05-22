@@ -210,6 +210,7 @@ def apply_identity(op: qp.Identity, state, is_state_batched: bool = False, debug
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
+
 @apply_operation.register
 def apply_density_matrix(
     op: qp.QutritDensityMatrix,

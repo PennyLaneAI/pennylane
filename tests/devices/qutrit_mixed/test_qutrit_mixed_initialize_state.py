@@ -104,9 +104,9 @@ class TestInitializeState:
         state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
         assert qp.math.get_interface(state) == "torch"
 
+
 def test_qutrit_density_matrix_qnode_integration():
-    """Integration test for QutritDensityMatrix on entire set of wires using QNode.
-    """
+    """Integration test for QutritDensityMatrix on entire set of wires using QNode."""
     n = 2
     dev = qp.device("default.qutrit.mixed", wires=2 * n)
 
@@ -129,5 +129,5 @@ def test_qutrit_density_matrix_qnode_integration():
     result = test_circuit(np.kron(ghz_dm, ghz_dm))
 
     # Expected: probabilities for GHZ state are [1/3, 0, 0,0, 1/3,0,0,0,1/3]
-    expected = np.array([1/3, 0, 0,0, 1/3,0,0,0,1/3])
+    expected = np.array([1 / 3, 0, 0, 0, 1 / 3, 0, 0, 0, 1 / 3])
     assert np.allclose(result, expected, atol=1e-8)

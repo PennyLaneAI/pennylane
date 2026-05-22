@@ -17,6 +17,7 @@ from collections.abc import Iterable
 
 import pennylane as qp
 from pennylane.operation import StatePrepBase
+
 from .utils import QUDIT_DIM
 
 
@@ -49,7 +50,7 @@ def create_initial_state(
     else:
         pure_state = prep_operation.state_vector(wire_order=wires)
         batch_size = qp.math.get_batch_size(
-            pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=QUDIT_DIM ** num_wires
+            pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=QUDIT_DIM**num_wires
         )
         if batch_size is None:
             rho = _flatten_outer(pure_state)
@@ -68,7 +69,7 @@ def _post_process(rho, num_axes, like, is_state_batched):
     in the module (again from some legacy code).
     """
     # Ensure correct shape and remove batch dimension if unused.
-    rho = qp.math.reshape(rho, (-1,) + (QUDIT_DIM, ) * num_axes)
+    rho = qp.math.reshape(rho, (-1,) + (QUDIT_DIM,) * num_axes)
 
     dtype = str(rho.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype

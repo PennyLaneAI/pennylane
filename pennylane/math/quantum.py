@@ -296,10 +296,14 @@ def partial_trace(matrix, indices, c_dtype="complex128", qudit_dim=2):
         batch_dim, dim = matrix.shape[:2]
 
     if math.get_interface(matrix) in ["autograd", "tensorflow"]:
-        return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim, qudit_dim)
+        return _batched_partial_trace_nonrep_indices(
+            matrix, is_batched, indices, batch_dim, dim, qudit_dim
+        )
 
     # Dimension and reshape
-    num_indices = int(np.log2(dim)) if qudit_dim == 2 else int(np.round(np.log(dim)/np.log(qudit_dim)))
+    num_indices = (
+        int(np.log2(dim)) if qudit_dim == 2 else int(np.round(np.log(dim) / np.log(qudit_dim)))
+    )
     rho_dim = 2 * num_indices
 
     matrix = np.reshape(matrix, [batch_dim] + [qudit_dim] * 2 * num_indices)
@@ -330,13 +334,15 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
 
-    num_indices = int(np.log2(dim)) if qudit_dim == 2 else int(np.round(np.log(dim)/np.log(qudit_dim)))
+    num_indices = (
+        int(np.log2(dim)) if qudit_dim == 2 else int(np.round(np.log(dim) / np.log(qudit_dim)))
+    )
     rho_dim = 2 * num_indices
     matrix = np.reshape(matrix, [batch_dim] + [qudit_dim] * 2 * num_indices)
 
     kraus = math.cast(np.eye(qudit_dim), matrix.dtype)
 
-    kraus = np.reshape(kraus, (qudit_dim, 1, qudit_dim)) #TODO
+    kraus = np.reshape(kraus, (qudit_dim, 1, qudit_dim))  # TODO
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
     kraus = math.convert_like(kraus, matrix)

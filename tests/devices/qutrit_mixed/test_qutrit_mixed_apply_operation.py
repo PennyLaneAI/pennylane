@@ -576,6 +576,7 @@ class TestChannelCalcGrad:
 
         self.compare_expected_result(p, state, probs, phi_jacobian)
 
+
 def get_valid_density_matrix(num_wires):
     """Helper function to create a valid density matrix"""
     # Create a pure state first
@@ -584,6 +585,7 @@ def get_valid_density_matrix(num_wires):
     state[-1] = 1 / np.sqrt(2)
     # Convert to density matrix
     return np.outer(state, state.conjugate())
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestDensityMatrix:
@@ -666,10 +668,10 @@ class TestDensityMatrix:
         initial_state = np.zeros((9, 9), dtype=complex)
         initial_state[0, 0] = 1.0
         initial_state = math.asarray(initial_state, like=ml_framework)
-        initial_state = math.reshape(initial_state, (QUDIT_DIM,)*4)
+        initial_state = math.reshape(initial_state, (QUDIT_DIM,) * 4)
 
         # Define the single-qutrit density matrix |+><+| = 1/3 * [[1,1,1],[1,1,1],[1,1,1]]
-        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex)/3
+        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex) / 3
         plus_state = math.asarray(plus_state, like=ml_framework)
 
         # Apply QutritDensityMatrix on the first wire (wire=0)
@@ -685,7 +687,7 @@ class TestDensityMatrix:
 
         assert math.allclose(result, expected, atol=1e-8)
 
-    def test_partial_trace_batched_update(self, ml_framework): # TODO
+    def test_partial_trace_batched_update(self, ml_framework):  # TODO
         """Minimal test for partial tracing when applying QutritDensityMatrix to a subset of wires, batched."""
 
         batch_size = 3
@@ -698,7 +700,7 @@ class TestDensityMatrix:
         initial_state = math.reshape(initial_state, [batch_size] + [QUDIT_DIM] * 4)
 
         # Define the single-qutrit density matrix |+><+| = 0.5 * [[1,1],[1,1]]
-        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex)/3
+        plus_state = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=complex) / 3
         plus_state = math.asarray(plus_state, like=ml_framework)
 
         # Apply QutritDensityMatrix on the first wire (wire=0)
@@ -715,7 +717,7 @@ class TestDensityMatrix:
 
         assert math.allclose(result, expected, atol=1e-8)
 
-    @pytest.mark.parametrize("wires", ([0,1], [0,2]))
+    @pytest.mark.parametrize("wires", ([0, 1], [0, 2]))
     def test_partial_trace_tensor_format_state(self, wires, ml_framework):
         """Test partial tracing with state in tensor format (as used by the actual mixed device).
 
@@ -730,7 +732,7 @@ class TestDensityMatrix:
         initial_state = math.asarray(initial_state, like=ml_framework)
 
         # Define the 2-qutrit density matrix for GHZ state: (|00> + |11> + |22>)/sqrt(3)
-        ghz = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=complex) /np.sqrt(3)
+        ghz = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype=complex) / np.sqrt(3)
         ghz_dm = np.outer(ghz, np.conj(ghz))  # shape (9, 9)
         ghz_dm = math.asarray(ghz_dm, like=ml_framework)
 
@@ -777,5 +779,5 @@ def test_qutrit_density_matrix_qnode_integration():
     result = test_circuit(ghz_dm)
 
     # Expected: probabilities for GHZ state are [1/3, 0, 0,0, 1/3,0,0,0,1/3]
-    expected = np.array([1/3, 0, 0,0, 1/3,0,0,0,1/3])
+    expected = np.array([1 / 3, 0, 0, 0, 1 / 3, 0, 0, 0, 1 / 3])
     assert np.allclose(result, expected, atol=1e-8)
