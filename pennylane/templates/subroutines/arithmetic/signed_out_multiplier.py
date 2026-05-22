@@ -39,7 +39,18 @@ class SignedOutMultiplier(Operator):
     r"""
     Implements the SignedOutMultiplier template :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|y|}\rangle`.
 
-    The inputs and output are given in 2s complement.
+    The inputs and output are given in 2s complement. The value :math:`x` of a number encoded using 2s complement into :math:`n` bits
+    is given by the following.
+
+    .. math::
+        \begin{align}
+            x = - 2^{n-1} x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j.
+        \end{align}
+
+    The first bit of the encoded bitstring gives the sign of the encoded number. :math:`1 \mapsto -`, :math:`0 \mapsto +`.
+    This is however not a sign-magnitude encoding. Iff the encoded number is negative, the rest of the bits do not give the
+    magnitude. Instead, the magnitude can be found by calculating :math:`\bar{x}`. This is done by flipping the bits of
+    :math:`x` and adding 1.
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
