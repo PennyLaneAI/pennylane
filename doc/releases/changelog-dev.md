@@ -16,7 +16,7 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
+* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
   ```python
@@ -46,7 +46,7 @@
 
   ```
 
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -209,7 +209,8 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Christina Lee,
+Anton Naim Ibrahim,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,
-David Wierichs
+David Wierichs.
