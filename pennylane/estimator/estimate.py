@@ -17,7 +17,6 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
-from pennylane.estimator.ops.identity import Identity
 from pennylane.estimator.ops.op_math.symbolic import (
     Adjoint,
     Controlled,
@@ -545,8 +544,15 @@ def _ops_to_compressed_reps(
     return cmp_rep_ops
 
 
-def _make_config_aware_symbolic_decomp(op_type, base_op_type, custom_base_decomp):
-    """Create a symbolic decomp function that uses the config's custom base decomposition."""
+def _build_symbolic_decomp_from_base(op_type, custom_base_decomp):
+    """Build an Adjoint or Controlled decomp function that uses a config-supplied base decomp.
+
+    The default ``adjoint_resource_decomp`` and ``controlled_resource_decomp`` on
+    ``ResourceOperator`` call ``cls.resource_decomp`` directly, bypassing any custom base
+    decomp registered in the config.  When the base op has not overridden those defaults,
+    we cannot simply call the method — we must build a replacement that calls the config's
+    version of the base decomp instead.
+    """
 
     if op_type is Adjoint:
 
@@ -557,35 +563,19 @@ def _make_config_aware_symbolic_decomp(op_type, base_op_type, custom_base_decomp
 
         return _adj_decomp
 
-    if op_type is Controlled:
+    # op_type is Controlled
+    def _ctrl_decomp(num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
+        target_resource_params = target_resource_params or {}
+        gate_lst = []
+        if num_zero_ctrl != 0:
+            x = resource_rep(X)
+            gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
+        decomp = custom_base_decomp(**target_resource_params)
+        for action in decomp:
+            gate_lst.append(apply_controlled(action, num_ctrl_wires, 0))
+        return gate_lst
 
-        def _ctrl_decomp(num_ctrl_wires, num_zero_ctrl, target_resource_params=None):
-            target_resource_params = target_resource_params or {}
-            gate_lst = []
-            if num_zero_ctrl != 0:
-                x = resource_rep(X)
-                gate_lst.append(GateCount(x, 2 * num_zero_ctrl))
-            decomp = custom_base_decomp(**target_resource_params)
-            for action in decomp:
-                gate_lst.append(apply_controlled(action, num_ctrl_wires, 0))
-            return gate_lst
-
-        return _ctrl_decomp
-
-    if op_type is Pow:
-
-        def _pow_decomp(pow_z, target_resource_params=None):
-            if pow_z == 0:
-                return [GateCount(resource_rep(Identity))]
-            target_resource_params = target_resource_params or {}
-            base_cmpr_op = base_op_type.resource_rep(**target_resource_params)
-            if pow_z == 1:
-                return [GateCount(base_cmpr_op)]
-            return [GateCount(base_cmpr_op, pow_z)]
-
-        return _pow_decomp
-
-    return None
+    return _ctrl_decomp
 
 
 def _get_decomposition_function_and_kwargs(
@@ -617,13 +607,20 @@ def _get_decomposition_function_and_kwargs(
             lookup_op_type, getattr(lookup_op_type, decomp_method_name)
         )
 
-        if lookup_op_type not in custom_decomp_dict and lookup_op_type in config.custom_decomps:
+        # No custom symbolic decomp, symbolic method inherited from ResourceOperator,
+        # but base resource_decomp overridden in config — build a replacement that calls
+        # the config's base decomp instead of cls.resource_decomp.
+        if (
+            lookup_op_type not in custom_decomp_dict
+            and lookup_op_type in config.custom_decomps
+            and op_type in (Adjoint, Controlled)
+        ):
             custom_base_decomp = config.custom_decomps[lookup_op_type]
+            # Only substitute when the base op uses the inherited default — if it has
+            # overridden the symbolic method, that override already encodes the right logic.
             default_method = getattr(ResourceOperator, decomp_method_name)
             if getattr(lookup_op_type, decomp_method_name).__func__ is default_method.__func__:
-                decomp_func = _make_config_aware_symbolic_decomp(
-                    op_type, lookup_op_type, custom_base_decomp
-                )
+                decomp_func = _build_symbolic_decomp_from_base(op_type, custom_base_decomp)
 
     kwargs = config.resource_op_precisions.get(lookup_op_type, {})
     decomp_func = custom_decomp_dict.get(lookup_op_type, decomp_func)
