@@ -144,7 +144,7 @@ def test_raises(wires, error_type, error_msg):
 )
 def test_ffft_circuit(wires, expected_circuit):
     @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft(wires):
+    def ffft(wires):  # pylint: disable=redefined-outer-name
         FFFT(wires)
         return sample(wires=wires)
 
@@ -158,10 +158,10 @@ def test_ffft_circuit(wires, expected_circuit):
 
 def fermionic_superposition_state(amplitudes):
     n = len(amplitudes)
-    state = np.zeros(1 << n)
+    st = np.zeros(1 << n)
     for m in range(n):
-        state[1 << (n - m - 1)] = amplitudes[m]
-    return state / np.linalg.norm(state)
+        st[1 << (n - m - 1)] = amplitudes[m]
+    return st / np.linalg.norm(st)
 
 
 @pytest.mark.parametrize(
