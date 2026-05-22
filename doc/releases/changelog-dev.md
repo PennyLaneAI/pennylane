@@ -2,6 +2,55 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
+  that can't be resolved at compile time.
+
+  ```python
+  @qp.qjit(autograph=True)
+  @qp.qnode(qp.device("lightning.qubit", wires=1))
+  def circuit(x):
+      qp.Hadamard(0)
+      qp.PauliX(0)
+      for _ in range(x):
+          qp.PauliX(0)
+      return qp.expval(qp.PauliX(0))
+
+  specs_result = qp.specs(circuit, level=0)(5)
+  ```
+
+  ```pycon
+  >>> print(specs_result)
+  Device: lightning.qubit
+  Device wires: 1
+  Shots: Shots(total=None)
+  Level: Before MLIR Passes
+  <BLANKLINE>
+  Symbolic Variables: a
+  Wire allocations: 1
+  Total gates: a + 2
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: a + 1
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+  ```
+
+  These symbolic resources have variables which can substituted for concrete values to compute the expected resources for a circuit.
+
+  ```pycon
+  >>> res = specs_result.resources
+  >>> print(res.subs(a=5))
+  Wire allocations: 1
+  Total gates: 7
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: 6
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -46,7 +95,7 @@
 
   ```
 
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -58,7 +107,7 @@
     ...     size_bitstring = 8,
     ...     available_dirty_aux = 300,
     ... )
-    >>> 
+    >>>
     >>> print(qre.estimate(qrom_op))
     --- Resources: ---
     Total wires: 308
