@@ -402,11 +402,11 @@ class Operator2(ABC):
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
     """The names of arguments corresponding to wires."""
 
-    dyn_argnames: ClassVar[tuple[str, ...]]
+    dynamic_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments corresponding to dynamic arguments. Dynamic arguments
     are those whose concrete values may not be known at compile-time."""
 
-    static_argnames: ClassVar[tuple[str, ...]]
+    static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments corresponding to static arguments. Static arguments
     are those whose concrete values must be known at compile-time."""
 
@@ -423,9 +423,6 @@ class Operator2(ABC):
 
     _sig: ClassVar[Signature]
     """The signature of the operator."""
-
-    resource_keys: ClassVar[set]
-    """The set of parameters that affects the resource requirement of the operator."""
 
     # ------------ Instance variables set automatically ------------
 
@@ -486,14 +483,58 @@ class Operator2(ABC):
         ) and (cls.has_decomposition == Operator2.has_decomposition):
             cls.has_decomposition = True
 
-        register_pytree(cls, cls._flatten, cls._unflatten)
-
-        # FIXME: Add dyn/static argnames setup
-
         cls._sig = signature(cls)
         _add_dynamic_properties(cls)
+        register_pytree(cls, cls._flatten, cls._unflatten)
 
-        cls.resource_keys = set(cls._sig.parameters.keys())
+        # Argnames setup
+        for attr in (
+            "dynamic_argnames",
+            "wire_argnames",
+            "static_argnames",
+            "hybrid_argnames",
+            "compilable_argnames",
+        ):
+            if isinstance(v := getattr(cls, attr), str):
+                setattr(cls, attr, (v,))
+
+        if cls.static_argnames and cls.compilable_argnames:
+            raise TypeError(
+                "Operators can only contain 'static_argnames' or 'compilable_argnames', not both."
+            )
+
+        # dynamic/wire/static/compilable argnames must be disjoint.
+        seen: dict[str, str] = {}
+        for group_name in (
+            "dynamic_argnames",
+            "wire_argnames",
+            "static_argnames",
+            "compilable_argnames",
+        ):
+            for name in getattr(cls, group_name):
+                if other := seen.get(name):
+                    raise TypeError(
+                        f"Argument '{name}' appears in both '{other}' and '{group_name}'; "
+                        "dynamic, wire, static, and compilable argnames must not overlap."
+                    )
+                seen[name] = group_name
+
+        # hybrid_argnames may overlap with wire_argnames, but not with the others.
+        hybrid = set(cls.hybrid_argnames)
+        non_wire = {n for n, g in seen.items() if g != "wire_argnames"}
+        if bad := hybrid & non_wire:
+            raise TypeError(
+                f"hybrid_argnames {bad} overlap with dynamic, static, or "
+                "compilable argnames; hybrid_argnames may only overlap with wire_argnames."
+            )
+
+        # Every named signature parameter must appear in at least one *_argnames.
+        sig_params = set(cls._sig.parameters.keys())
+        if unclassified := sig_params - seen.keys() - hybrid:
+            raise TypeError(
+                f"The following parameters of '{cls.__name__}' are not classified in "
+                f"any argnames tuples: {unclassified}."
+            )
 
     def _flatten(self) -> FlatPytree:
         """Serialize the operation into dynamic and static components.
@@ -521,7 +562,7 @@ class Operator2(ABC):
         hashable_data = []
 
         for k, v in self.arguments.items():
-            if k in (self.dyn_argnames + self.wire_argnames):
+            if k in (self.dynamic_argnames + self.wire_argnames):
                 dyn_data.append(v)
                 hashable_data.append((k, _DYNARG_MARKER))
             else:
@@ -579,10 +620,10 @@ class Operator2(ABC):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
-        dyn_args = tuple(self.dyn_args.values())
+        dynamic_args = tuple(self.dynamic_args.values())
 
         try:
-            ndims = tuple(qp.math.ndim(arg) for arg in dyn_args)
+            ndims = tuple(qp.math.ndim(arg) for arg in dynamic_args)
         except (
             ValueError
         ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -594,13 +635,15 @@ class Operator2(ABC):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(math.is_abstract(p) for p in dyn_args):
+            if any(math.is_abstract(p) for p in dynamic_args):
                 self._batch_size = None
-                self._ndim_params = (0,) * len(dyn_args)
+                self._ndim_params = (0,) * len(dynamic_args)
                 return
             raise e  # pragma: no cover
 
-        if any(len(qp.math.shape(arg)) >= 1 and qp.math.shape(arg)[0] is None for arg in dyn_args):
+        if any(
+            len(qp.math.shape(arg)) >= 1 and qp.math.shape(arg)[0] is None for arg in dynamic_args
+        ):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
@@ -620,7 +663,7 @@ class Operator2(ABC):
 
             first_dims = [
                 qp.math.shape(arg)[0]
-                for (_, batched), arg in zip(ndims_matches, dyn_args, strict=True)
+                for (_, batched), arg in zip(ndims_matches, dynamic_args, strict=True)
                 if batched
             ]
             if not qp.math.allclose(first_dims, first_dims[0]):
@@ -639,9 +682,9 @@ class Operator2(ABC):
         return self._bound_args.arguments
 
     @property
-    def dyn_args(self) -> dict[str, Any]:
+    def dynamic_args(self) -> dict[str, Any]:
         """Dictionary mapping dynamic argument names to their values."""
-        return {name: self.arguments[name] for name in self.dyn_argnames}
+        return {name: self.arguments[name] for name in self.dynamic_argnames}
 
     @property
     def static_args(self) -> dict[str, Any]:
@@ -652,6 +695,16 @@ class Operator2(ABC):
     def wire_args(self) -> dict[str, Any]:
         """Dictionary mapping wire argument names to their values."""
         return {name: self.arguments[name] for name in self.wire_argnames}
+
+    @property
+    def hybrid_args(self) -> dict[str, Any]:
+        """Dictionary mapping hybrid argument names to their values."""
+        return {name: self.arguments[name] for name in self.hybrid_argnames}
+
+    @property
+    def compilable_args(self) -> dict[str, Any]:
+        """Dictionary mapping compilable argument names to their values."""
+        return {name: self.arguments[name] for name in self.compilable_argnames}
 
     @property
     def name(self) -> str:
@@ -705,13 +758,13 @@ class Operator2(ABC):
 
     @property
     def data(self) -> tuple[Any, ...]:
-        """Dynamic data of the operator. In the same order as ``dyn_argnames``."""
-        return tuple(self.dyn_args.values())
+        """Dynamic data of the operator. In the same order as ``dynamic_argnames``."""
+        return tuple(self.dynamic_args.values())
 
     @property
     def parameters(self) -> list[Any, ...]:
         """Trainable parameters that the operator depends on."""
-        return list(self.dyn_args.values())
+        return list(self.dynamic_args.values())
 
     @property
     def num_params(self) -> int:
@@ -720,7 +773,7 @@ class Operator2(ABC):
         Returns:
             int: number of parameters
         """
-        return len(self.dyn_argnames)
+        return len(self.dynamic_argnames)
 
     @property
     def resource_params(self) -> dict[str, Any]:
@@ -834,12 +887,12 @@ class Operator2(ABC):
         """
         op_label = base_label or self.__class__.__name__
 
-        if len(self.dyn_argnames) == 0:
+        if len(self.dynamic_argnames) == 0:
             return op_label
 
         # Format each parameter individually, excluding those that lead to empty strings
         param_strings = [
-            out for p in self.dyn_args.values() if (out := _format(p, decimals, cache)) != ""
+            out for p in self.dynamic_args.values() if (out := _format(p, decimals, cache)) != ""
         ]
         inner_string = ",\n".join(param_strings)
 
@@ -1302,27 +1355,22 @@ class Operator2(ABC):
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
-        if self.dyn_argnames:
-            params = ", ".join([repr(self.arguments[d]) for d in self.dyn_argnames])
+        if self.dynamic_argnames:
+            params = ", ".join([repr(self.arguments[d]) for d in self.dynamic_argnames])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    def __hash__(self) -> int:
-        serialized_dyn = tuple(
-            (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dyn_args.items()
-        )
-        serialized_wires = tuple((n, tuple(w)) for n, w in self.wire_args.items())
-        serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
-        return hash((self.name, serialized_dyn, serialized_wires, serialized_static))
+    # TODO: Implement __hash__ and __eq__ after qp.equal supports `Operator2`
+    # def __hash__(self) -> int:
+    #     serialized_dyn = tuple(
+    #         (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dynamic_args.items()
+    #     )
+    #     serialized_wires = tuple((n, tuple(w)) for n, w in self.wire_args.items())
+    #     serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
+    #     return hash((self.name, serialized_dyn, serialized_wires, serialized_static))
 
-    def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
-
-    @property
-    def hash(self):
-        """Hash."""
-        # TODO: This is an artifact and should be removed if possible
-        return hash(self)
+    # def __eq__(self, other) -> bool:
+    #     return qp.equal(self, other)
 
     def __copy__(self) -> "Operator2":
         cls = type(self)
@@ -1415,7 +1463,6 @@ def _add_dynamic_properties(cls: type[Operator2]) -> None:
     for name in cls._sig.parameters.keys():
         if name not in vars(cls):
             dyn_property = partial(_dynamic_property, name=name)
-            # cls.__dict__[name] = property(dyn_property)
             setattr(cls, name, property(dyn_property))
 
 
