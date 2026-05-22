@@ -73,13 +73,15 @@ co_mol = qp.qchem.Molecule(
     unit="Angstrom",
 )
 
-h1_co = [[[5.59942098e-03, -3.15056848e-11], [-3.15056847e-11, 1.67303444e-02]]]
+h1_co = np.array([[[5.59942098e-03, -3.15056848e-11], [-3.15056847e-11, 1.67303444e-02]]])
 h2_co = np.zeros((1, 1, 2, 2, 2, 2))
-d1_co = [
-    [[[-1.46046580e-16, -2.55099407e-17], [-2.55099407e-17, -3.21514434e-17]]],
-    [[[1.46096092e-15, 1.31660290e-16], [1.31660290e-16, 9.47718559e-16]]],
-    [[[-4.04219964e-03, 3.22757939e-02], [3.22757939e-02, -1.21723538e-02]]],
-]
+d1_co = np.array(
+    [
+        [[[-1.46046580e-16, -2.55099407e-17], [-2.55099407e-17, -3.21514434e-17]]],
+        [[[1.46096092e-15, 1.31660290e-16], [1.31660290e-16, 9.47718559e-16]]],
+        [[[-4.04219964e-03, 3.22757939e-02], [3.22757939e-02, -1.21723538e-02]]],
+    ]
+)
 co_exp_result = {
     "h_data": [h1_co, h2_co],
     "dip_data": [d1_co],
@@ -154,24 +156,32 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
 
 @pytest.mark.parametrize(
     ("molecule", "exp_result"),
-    [
-        (co_mol, co_exp_result),
-    ],
+    [(co_mol, co_exp_result)],
 )
 def test_vscf_integrals_full(molecule, exp_result):
-    r"""Test that correct rotated Hamiltonian and dipole is produced when in the full workflow."""
+    r"""Test that correct rotated Hamiltonian and dipole is produced for the full workflow."""
     pes = vibrational.vibrational_pes(molecule, n_points=17, cubic=False, dipole_level=2)
     christiansen_ints = vibrational.christiansen_integrals(pes, n_states=8)
     christiansen_dip = vibrational.christiansen_integrals_dipole(pes, n_states=8)
-
     h_integrals = [christiansen_ints[0], christiansen_ints[1]]
     dipole_integrals = [christiansen_dip[0]]
-
     result_h, result_dip = vscf.vscf_integrals(h_integrals, dipole_integrals, modals=[2])
 
-    assert np.allclose(result_h[0], exp_result["h_data"][0])
-    assert np.allclose(result_h[1], exp_result["h_data"][1])
-    assert np.allclose(result_dip[0], exp_result["dip_data"][0])
+    nmodes = result_h[0].shape[0]
+    # VSCF eigenvectors may return with permuted modal ordering
+    for i in range(nmodes):
+        assert np.allclose(result_h[0][i], exp_result["h_data"][0][i]) or np.allclose(
+            result_h[0][i], exp_result["h_data"][0][i][::-1, ::-1]
+        )
+
+    assert np.allclose(result_h[1], exp_result["h_data"][1]) or np.allclose(
+        result_h[1], exp_result["h_data"][1][..., ::-1, ::-1, ::-1, ::-1]
+    )
+
+    for i in range(nmodes):
+        assert np.allclose(result_dip[0][:, i], exp_result["dip_data"][0][:, i]) or np.allclose(
+            result_dip[0][:, i], exp_result["dip_data"][0][:, i, ::-1, ::-1]
+        )
 
 
 @pytest.mark.parametrize(

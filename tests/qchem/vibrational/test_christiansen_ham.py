@@ -183,6 +183,15 @@ def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend, mpi4
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
 
 
+def test_christiansen_integrals_dipole_level2():
+    """Test that christiansen_integrals_dipole works with dipole_level=2."""
+    one, two = christiansen_integrals_dipole(
+        pes=pes_object_2D, n_states=4, num_workers=1, backend="serial"
+    )
+    assert np.allclose(abs(one), abs(D1), atol=1e-8)
+    assert np.allclose(abs(two), abs(D2), atol=1e-8)
+
+
 @pytest.mark.parametrize(
     ("pes", "n_states", "num_workers", "backend"),
     [
