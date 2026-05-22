@@ -39,7 +39,7 @@ class SignedOutMultiplier(Operator):
     r"""
     Implements the SignedOutMultiplier template :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|y|}\rangle`.
 
-    The inputs and output are given in 2s complement. The value :math:`x` of a number encoded using 2s complement into :math:`n` bits
+    The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. The value :math:`x` of a number encoded using 2s complement into :math:`n` bits
     is given by the following.
 
     .. math::
