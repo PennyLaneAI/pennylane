@@ -98,7 +98,7 @@ class _DecompInGraphInfo(_DecompInfo):
         distances = self._solution._visitor.distances
         unsolved_indices = filter(lambda idx: idx not in distances, all_op_node_indices)
         unsolved_ops = set(map(lambda idx: self._graph[idx].op, unsolved_indices))
-        return f"* Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
 
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
