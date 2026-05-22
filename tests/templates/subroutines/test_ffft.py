@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode, workflow
-from pennylane.measurements import sample
+from pennylane.measurements import sample, state
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoQubitFFT
@@ -26,12 +26,12 @@ from pennylane.wires import Wires
 dev = device("default.qubit")
 
 
-@qnode(dev, shots=1)
+@qnode(dev)
 def ffft(wires, input=None):
     if input is not None:
         BasisEmbedding(input, wires)
     FFFT(wires)
-    return sample(wires=wires)
+    return state()
 
 
 @pytest.mark.parametrize(
@@ -154,3 +154,41 @@ def test_ffft_circuit(wires, expected_circuit):
         assert op.hyperparameters == expected_circuit[i].hyperparameters
         assert op.data == expected_circuit[i].data
         assert op.wires == expected_circuit[i].wires
+
+
+def fermionic_superposition_state(amplitudes):
+    n = len(amplitudes)
+    state = np.zeros(1 << n)
+    for m in range(n):
+        state[1 << (n - m - 1)] = amplitudes[m]
+    return state / np.linalg.norm(state)
+
+
+@pytest.mark.parametrize(
+    "amplitudes",
+    [
+        (1, 0),
+        (0, 1),
+        (1, 0, 0, 0),
+        (0, 1, 0, 0),
+        (0, 0, 1, 0),
+        (0, 0, 0, 1),
+    ],
+)
+def test_ffft_correct(amplitudes):
+    n = len(amplitudes)
+
+    def ft(k, m):
+        return sum(np.exp(-2j * (k / m) * np.pi) ** j * amplitudes[j] for j in range(m)) / np.sqrt(
+            m
+        )
+
+    modes = [ft(k, n) for k in range(n)]
+
+    initial = fermionic_superposition_state(amplitudes)
+    expected = fermionic_superposition_state(modes)
+
+    result = ffft(list(range(n**2)), initial)
+
+    for elem in np.argwhere(expected):
+        assert elem in np.argwhere(result)
