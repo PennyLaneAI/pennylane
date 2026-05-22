@@ -37,7 +37,7 @@ from .out_multiplier import OutMultiplier
 
 class SignedOutMultiplier(Operator):
     r"""
-    Implements the SignedOutMultiplier template.
+    Implements the SignedOutMultiplier template :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|y|}\rangle`.
 
     The SignedOutMultiplier simply makes use of the :class:`~.OutMultiplier` template to multiply
     the magnitudes of the encoded inputs, and a quantum comparator on their sign bits to determine
