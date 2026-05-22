@@ -57,85 +57,6 @@ class SignedOutMultiplier(Operator):
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
             the operation.
 
-    We begin with three signed quantum registers, storing :math:`|x\rangle`, :math:`|y\rangle` and :math:`|0\rangle` with register sizes :math:`n`, :math:`m` and :math:`k`, respectively. We will turn to the case of non-zero initial states for the last register later.
-    Here, :math:`x` and :math:`y` are signed integers in two's complement representation:
-
-    .. math::
-        \begin{align}
-            x = - 2^{n-1} x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j.
-        \end{align}
-    We also have the magnitude of the signed integer which can be computed by flipping all bits of :math:`x` and incrementing by one,
-    both steps controlled on the sign bit of :math:`x`, :math:`x_{n-1}`.
-
-    The first step is to copy the sign bit of :math:`x` and :math:`y` to one auxiliary qubit each, and to compute the magnitude of the respective integer, as just described.
-    At this point we have the state
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |0\rangle_s |0\rangle,
-        \end{align}
-    where we interleaved the two auxiliary qubits with the input registers and the output register, and wrote the sign bit of the output register as a separate qubit, marked with an :math:`s` for clarity.
-
-    Next, we multiply the magnitude registers into the output register, obtaining
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |0\rangle_s |\bar{x}\bar{y}\rangle.
-        \end{align}
-
-    Then, we flip the sign bit of the output register controlled on the (cached) sign bits of each input, respectively:
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |x_{n-1}+y_{m-1} \rangle_s |\bar{x}\bar{y}\rangle.
-        \end{align}
-
-    From here on we write :math:`z_s = x_{n-1}+y_{m-1}`.
-    Then, we flip and increment the (non-sign) bits of the output register controlled on the output sign bit to get (where :math:`k` is the size of the output register including the sign bit):
-
-    .. math::
-        \begin{align}
-            |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y}+2^{k - 1} z_s\rangle.
-        \end{align}
-
-    Arrived at by the following arithmetic.
-
-    .. math::
-        \begin{align}
-            &(1 - z_s) \bar{x}\bar{y} + z_s (1 + \sum_{j=0}^{k-2} (1 - \bar{x}\bar{y}_j)2^j) \\
-            &=(1 - z_s) \bar{x}\bar{y} + z_s(1 + \sum_{j=0}^{k-2}2^j - \sum_{j=0}^{k-2} \bar{x}\bar{y}_j2^j) \\
-            &=(1 - z_s) \bar{x}\bar{y} + z_s(1 + 2^{k-1} - 1 - \bar{x}\bar{y}) \\
-            &=(1 - z_s) \bar{x}\bar{y} + z_s (2^{k-1} - \bar{x}\bar{y}) \\\
-            &=(-1)^{z_s}\bar{x}\bar{y}+2^{k - 1} z_s
-        \end{align}
-    Then we uncompute the magnitudes and the copied sign bits of the input registers, arriving at
-
-    .. math::
-        \begin{align}
-            |x\rangle |0\rangle |y\rangle |0\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y}+2^{k-1} z_s\rangle.
-        \end{align}
-
-    Interpreting the output register as signed integer, we find that we computed
-
-    .. math::
-        \begin{align}
-            z &= (-1)^{z_s}\bar{x}\bar{y}+2^{k-1}z_s - 2^{k-1} z_s\\
-            &=(-1)^{z_s} \bar{x}\bar{y} \\
-            &=(-1)^{x_{n-1}}\bar{x} (-1)^{y_{m-1}}\bar{y}\\
-            &= x y.
-        \end{align}
-
-    So we correctly arrive at the product of :math:`x` and :math:`y`.
-
-    **Non-zero initial state of output wires**
-
-    If we have a non-zero initial state :math:`z_i` in the output register, we will end up with :math:`xy + z_i` in the
-    output register once the template has executed. This requires more work wires and a more costly decomposition.
-
-    Basically, we use auxiliary registers to first 1) compute the multiplication of the operands into a zeroed register,
-    2) use an Adder to add :math:`z_i` to this result (the outcome of the addition goes into a second auxiliary register) 3)
-    reset the output register and 4) copy the final outcome into the output register.
-
     **Example**
 
     This example performs the multiplication of two integers :math:`x=-3` and :math:`y=3`.
@@ -165,6 +86,89 @@ class SignedOutMultiplier(Operator):
 
     The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of
     :math:`-3 \cdot 3 \; = -9` in 2's complement form.
+
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        We begin with three signed quantum registers, storing :math:`|x\rangle`, :math:`|y\rangle` and :math:`|0\rangle` with register sizes :math:`n`, :math:`m` and :math:`k`, respectively. We will turn to the case of non-zero initial states for the last register later.
+        Here, :math:`x` and :math:`y` are signed integers in two's complement representation:
+
+        .. math::
+            \begin{align}
+                x = - 2^{n-1} x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j.
+            \end{align}
+        We also have the magnitude of the signed integer which can be computed by flipping all bits of :math:`x` and incrementing by one,
+        both steps controlled on the sign bit of :math:`x`, :math:`x_{n-1}`.
+
+        The first step is to copy the sign bit of :math:`x` and :math:`y` to one auxiliary qubit each, and to compute the magnitude of the respective integer, as just described.
+        At this point we have the state
+
+        .. math::
+            \begin{align}
+                |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |0\rangle_s |0\rangle,
+            \end{align}
+        where we interleaved the two auxiliary qubits with the input registers and the output register, and wrote the sign bit of the output register as a separate qubit, marked with an :math:`s` for clarity.
+
+        Next, we multiply the magnitude registers into the output register, obtaining
+
+        .. math::
+            \begin{align}
+                |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |0\rangle_s |\bar{x}\bar{y}\rangle.
+            \end{align}
+
+        Then, we flip the sign bit of the output register controlled on the (cached) sign bits of each input, respectively:
+
+        .. math::
+            \begin{align}
+                |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |x_{n-1}+y_{m-1} \rangle_s |\bar{x}\bar{y}\rangle.
+            \end{align}
+
+        From here on we write :math:`z_s = x_{n-1}+y_{m-1}`.
+        Then, we flip and increment the (non-sign) bits of the output register controlled on the output sign bit to get (where :math:`k` is the size of the output register including the sign bit):
+
+        .. math::
+            \begin{align}
+                |\bar{x}\rangle |x_{n-1}\rangle |\bar{y}\rangle |y_{m-1}\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y}+2^{k - 1} z_s\rangle.
+            \end{align}
+
+        Arrived at by the following arithmetic.
+
+        .. math::
+            \begin{align}
+                &(1 - z_s) \bar{x}\bar{y} + z_s (1 + \sum_{j=0}^{k-2} (1 - \bar{x}\bar{y}_j)2^j) \\
+                &=(1 - z_s) \bar{x}\bar{y} + z_s(1 + \sum_{j=0}^{k-2}2^j - \sum_{j=0}^{k-2} \bar{x}\bar{y}_j2^j) \\
+                &=(1 - z_s) \bar{x}\bar{y} + z_s(1 + 2^{k-1} - 1 - \bar{x}\bar{y}) \\
+                &=(1 - z_s) \bar{x}\bar{y} + z_s (2^{k-1} - \bar{x}\bar{y}) \\\
+                &=(-1)^{z_s}\bar{x}\bar{y}+2^{k - 1} z_s
+            \end{align}
+        Then we uncompute the magnitudes and the copied sign bits of the input registers, arriving at
+
+        .. math::
+            \begin{align}
+                |x\rangle |0\rangle |y\rangle |0\rangle |z_s \rangle_s |(-1)^{z_s}\bar{x}\bar{y}+2^{k-1} z_s\rangle.
+            \end{align}
+
+        Interpreting the output register as signed integer, we find that we computed
+
+        .. math::
+            \begin{align}
+                z &= (-1)^{z_s}\bar{x}\bar{y}+2^{k-1}z_s - 2^{k-1} z_s\\
+                &=(-1)^{z_s} \bar{x}\bar{y} \\
+                &=(-1)^{x_{n-1}}\bar{x} (-1)^{y_{m-1}}\bar{y}\\
+                &= x y.
+            \end{align}
+
+        So we correctly arrive at the product of :math:`x` and :math:`y`.
+
+        **Non-zero initial state of output wires**
+
+        If we have a non-zero initial state :math:`z_i` in the output register, we will end up with :math:`xy + z_i` in the
+        output register once the template has executed. This requires more work wires and a more costly decomposition.
+
+        Basically, we use auxiliary registers to first 1) compute the multiplication of the operands into a zeroed register,
+        2) use an Adder to add :math:`z_i` to this result (the outcome of the addition goes into a second auxiliary register) 3)
+        reset the output register and 4) copy the final outcome into the output register.
     """
 
     resource_keys = {
