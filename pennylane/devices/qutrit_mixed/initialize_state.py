@@ -21,8 +21,8 @@ from .utils import QUDIT_DIM
 
 
 def create_initial_state(
-    wires: qp.wires.Wires, Iterable,
-    prep_operation: StatePrepBase | qml.QutritDensityMatrix | None = None,
+    wires: qp.wires.Wires | Iterable,
+    prep_operation: StatePrepBase | qp.QutritDensityMatrix | None = None,
     like: str = None,
 ):
     r"""
@@ -41,21 +41,22 @@ def create_initial_state(
     num_axes = 2 * num_wires
 
     if not prep_operation:
-        return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
+        return qp.math.asarray(_create_basis_state(num_wires, 0), like=like)
 
-    if isinstance(prep_operation, qml.QubitDensityMatrix):
+    is_state_batched = True
+    if isinstance(prep_operation, qp.QutritDensityMatrix):
         rho = prep_operation.data
-        batch_size = math.get_batch_size(rho, (QUDIT_DIM,) * num_axes, QUDIT_DIM**num_axes)
     else:
         pure_state = prep_operation.state_vector(wire_order=wires)
-        batch_size = math.get_batch_size(
+        batch_size = qp.math.get_batch_size(
             pure_state, expected_shape=(QUDIT_DIM,) * num_wires, expected_size=QUDIT_DIM ** num_wires
         )
         if batch_size is None:
-            return _flatten_outer(pure_state)
-        return math.stack([_flatten_outer(s) for s in pure_state]), batch_size
+            rho = _flatten_outer(pure_state)
+            is_state_batched = False
+        else:
+            rho = qp.math.stack([_flatten_outer(s) for s in pure_state]), batch_size
 
-    is_state_batched = batch_size is not None
     return _post_process(rho, num_axes, like, is_state_batched)
 
 
@@ -67,7 +68,7 @@ def _post_process(rho, num_axes, like, is_state_batched):
     in the module (again from some legacy code).
     """
     # Ensure correct shape and remove batch dimension if unused.
-    rho = math.reshape(rho, (-1,) + (QUDIT_DIM, ) * num_axes)
+    rho = qp.math.reshape(rho, (-1,) + (QUDIT_DIM, ) * num_axes)
 
     dtype = str(rho.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
@@ -75,8 +76,8 @@ def _post_process(rho, num_axes, like, is_state_batched):
     dtype = "complex128" if like == "tensorflow" else dtype
 
     if not is_state_batched:
-        rho = math.reshape(rho, (QUDIT_DIM,) * num_axes)
-    return math.cast(math.asarray(rho, like=like), dtype)
+        rho = qp.math.reshape(rho, (QUDIT_DIM,) * num_axes)
+    return qp.math.cast(qp.math.asarray(rho, like=like), dtype)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
@@ -98,5 +99,5 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
 
 def _flatten_outer(s):
     r"""Flattens the outer product of a vector."""
-    s_flatten = math.flatten(s)
-    return math.outer(s_flatten, math.conj(s_flatten))
+    s_flatten = qp.math.flatten(s)
+    return qp.math.outer(s_flatten, qp.math.conj(s_flatten))

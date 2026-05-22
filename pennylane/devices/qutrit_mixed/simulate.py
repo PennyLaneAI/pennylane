@@ -45,12 +45,12 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     circuit = circuit.map_to_standard_wires()
 
     prep = None
-    if len(circuit) > 0 and (
-        isinstance(circuit[0], qp.operation.StatePrepBase)
-        or isinstance(circuit[0], qp.QubitDensityMatrix)
-    ):
-        prep = circuit[0]
-
+    if len(circuit) > 0:
+        if isinstance(circuit[0], qp.operation.StatePrepBase):
+            prep = circuit[0]
+        if isinstance(circuit[0], qp.QutritDensityMatrix):
+            if list(circuit.wires)==list(circuit[0].wires):
+                prep = circuit[0]
     state = create_initial_state(
         sorted(circuit.op_wires), prep, like=Interface(interface).get_like()
     )

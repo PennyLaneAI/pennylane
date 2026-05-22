@@ -23,7 +23,7 @@ from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
 
-from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
+from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices, get_num_wires
 
 alphabet_array = np.array(list(alphabet))
 
@@ -210,5 +210,165 @@ def apply_identity(op: qp.Identity, state, is_state_batched: bool = False, debug
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
+@apply_operation.register
+def apply_density_matrix(
+    op: qp.QutritDensityMatrix,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
+):
+    """
+    Applies a QutritDensityMatrix operation by initializing or replacing
+    the quantum state with the provided density matrix.
 
-# TODO add special case speedups
+    - If the QutritDensityMatrix covers all wires, we directly return the provided density matrix as the new state.
+    - If only a subset of the wires is covered, we:
+      1. Partial trace out those wires from the current state to get the density matrix of the complement wires.
+      2. Take the tensor product of the complement density matrix and the provided density_matrix.
+      3. Reshape to the correct final shape and return.
+
+    Args:
+        op (qp.QutritDensityMatrix): The QutritDensityMatrix operation.
+        state (array-like): The current quantum state.
+        is_state_batched (bool): Whether the state is batched.
+        debugger: A debugger instance for diagnostics.
+        **execution_kwargs: Additional kwargs.
+
+    Returns:
+        array-like: The updated quantum state.
+
+    Raises:
+        ValueError: If the density matrix is invalid.
+    """
+    density_matrix = op.parameters[0]
+    num_wires = len(op.wires)
+    expected_dim = QUDIT_DIM**num_wires
+
+    # Cast density_matrix to the same type and device as state
+    density_matrix = math.cast_like(density_matrix, state)
+
+    # Extract total wires
+    num_state_wires = get_num_wires(state, is_state_batched)
+    all_wires = list(range(num_state_wires))
+    op_wires = op.wires
+    complement_wires = [w for w in all_wires if w not in op_wires]
+
+    # If the operation covers the full system, just return it
+    if len(op_wires) == num_state_wires:
+        # If batched, broadcast
+        if is_state_batched:
+            batch_size = math.shape(state)[0]
+            density_matrix = math.broadcast_to(
+                density_matrix, (batch_size,) + math.shape(density_matrix)
+            )
+
+        # Reshape to match final shape of state
+        return math.reshape(density_matrix, math.shape(state))
+
+    # Partial system update:
+    # 1. Partial trace out op_wires from state
+    # partial_trace reduces the dimension to only the complement wires
+    # Note: partial_trace expects state in 2D (dim, dim) or 3D (batch, dim, dim) format,
+    # but the mixed device stores state in tensor format (QUDIT_DIM, QUDIT_DIM, ..., QUDIT_DIM).
+    # We need to reshape state to 2D/3D format first.
+    state_dim = QUDIT_DIM**num_state_wires
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        state_2d = math.reshape(state, (batch_size, state_dim, state_dim))
+    else:
+        state_2d = math.reshape(state, (state_dim, state_dim))
+
+    sigma = qp.math.partial_trace(state_2d, indices=op_wires, qudit_dim=QUDIT_DIM)
+    # sigma now has shape:
+    # (batch_size, QUDIT_DIM^(n - num_wires), QUDIT_DIM^(n - num_wires)) where n = total wires
+
+    # 2. Take kron(sigma, density_matrix)
+    sigma_dim = QUDIT_DIM ** len(complement_wires)  # dimension of complement subsystem
+    dm_dim = expected_dim  # dimension of the replaced subsystem
+    if is_state_batched:
+        batch_size = math.shape(sigma)[0]
+        sigma_2d = math.reshape(sigma, (batch_size, sigma_dim, sigma_dim))
+        dm_2d = math.reshape(density_matrix, (dm_dim, dm_dim))
+
+        # Initialize new_dm and fill via a loop or vectorized kron if available
+        new_dm = []
+        for b in range(batch_size):
+            new_dm.append(math.kron(sigma_2d[b], dm_2d))
+        rho = math.stack(new_dm, axis=0)
+    else:
+        sigma_2d = math.reshape(sigma, (sigma_dim, sigma_dim))
+        dm_2d = math.reshape(density_matrix, (dm_dim, dm_dim))
+        rho = math.kron(sigma_2d, dm_2d)
+
+    # rho now has shape (batch_size?, QUDIT_DIM^n, QUDIT_DIM^n)
+
+    # 3. Reshape rho into the full tensor form [QUDIT_DIM]*(2*n) or [batch_size] + [QUDIT_DIM]*(2*n)
+    final_shape = ([batch_size] if is_state_batched else []) + [QUDIT_DIM] * (2 * num_state_wires)
+    rho = math.reshape(rho, final_shape)
+
+    # Return the updated state
+    return reorder_after_kron(rho, complement_wires, op_wires, is_state_batched)
+
+
+def reorder_after_kron(rho, complement_wires, op_wires, is_state_batched):
+    """
+    Reorder the wires of `rho` from [complement_wires + op_wires] back to [0,1,...,N-1].
+
+    Args:
+        rho (tensor): The density matrix after kron(sigma, density_matrix).
+        complement_wires (list[int]): The wires not affected by the QubitDensityMatrix update.
+        op_wires (Wires): The wires affected by the QubitDensityMatrix.
+        is_state_batched (bool): Whether the state is batched.
+
+    Returns:
+        tensor: The density matrix with wires in the original order.
+    """
+    # Final order after kron is complement_wires + op_wires (for both left and right sides).
+    all_wires = complement_wires + list(op_wires)
+    num_wires = len(all_wires)
+
+    batch_offset = 1 if is_state_batched else 0
+
+    # The current axis mapping is:
+    # Left side wires: offset to offset+num_wires-1
+    # Right side wires: offset+num_wires to offset+2*num_wires-1
+    #
+    # We want to reorder these so that the left side wires are [0,...,num_wires-1] and
+    # the right side wires are [num_wires,...,2*num_wires-1].
+
+    # Create a lookup from wire label to its position in the current order.
+    wire_to_pos = {w: i for i, w in enumerate(all_wires)}
+
+    # We'll construct a permutation of axes. `rho` has dimensions:
+    # [batch?] + [QUDIT_DIM]*num_wires (left side) + [QUDIT_DIM]*num_wires (right side)
+    #
+    # After transpose, dimension i in the new tensor should correspond to dimension new_axes[i] in the old tensor.
+
+    old_ndim = rho.ndim
+    new_axes = [None] * old_ndim
+
+    # If batched, batch dimension remains at axis 0
+    if is_state_batched:
+        new_axes[0] = 0
+
+    # For the left wires:
+    # Desired final order: 0,1,...,num_wires-1
+    # Currently: all_wires in some order
+    # old axis = batch_offset + wire_to_pos[w]
+    # new axis = batch_offset + w
+    for w in range(num_wires):
+        old_axis = batch_offset + wire_to_pos[w]
+        new_axes[batch_offset + w] = old_axis
+
+    # For the right wires:
+    # Desired final order: num_wires,...,2*num_wires-1
+    # Currently: batch_offset+num_wires+wire_to_pos[w]
+    # new axis: batch_offset+num_wires+w
+    for w in range(num_wires):
+        old_axis = batch_offset + num_wires + wire_to_pos[w]
+        new_axes[batch_offset + num_wires + w] = old_axis
+
+    # Apply the transpose
+    rho = math.transpose(rho, axes=tuple(new_axes))
+    return rho
