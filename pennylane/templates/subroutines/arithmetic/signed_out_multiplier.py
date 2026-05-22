@@ -226,7 +226,7 @@ class SignedOutMultiplier(Operator):
 
 
 def _zeroed_signed_out_multiplier_resources(
-    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, **_
 ):
     """
     Computes the resources for the SignedOutMultiplier.
@@ -279,7 +279,7 @@ def _zeroed_signed_out_multiplier_resources(
 
 
 def _not_zeroed_signed_out_multiplier_resources(
-    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, **_
 ):
     """
     Computes the resources for the SignedOutMultiplier.
@@ -538,7 +538,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
         measure(w, reset=True)
 
     # Load final value into output register
-    for i in range(len(add_temp)):
+    for i in range(len(add_temp)):  # pylint: disable=consider-using-enumerate
         CNOT([add_temp[i], output_wires[i]])
 
     # Return inputs to original state

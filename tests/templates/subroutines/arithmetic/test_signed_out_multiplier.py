@@ -115,24 +115,20 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
 
 
 @qnode(dev, shots=1)
-def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
+def signed_multiply(
+    x_wires, y_wires, work_wires, output_wires, init_state, zeroed
+):  # pylint: disable=to-many-arguments
     BasisEmbedding(
         init_state,
-        [i for i in range(len(x_wires))]
-        + [i for i in range(len(x_wires), len(x_wires) + len(y_wires))]
-        + [
-            i
-            for i in range(
-                len(y_wires) + len(x_wires), len(y_wires) + len(x_wires) + len(work_wires)
-            )
-        ]
-        + [
-            i
-            for i in range(
+        list(range(len(x_wires)))
+        + list(range(len(x_wires), len(x_wires) + len(y_wires)))
+        + list(range(len(y_wires) + len(x_wires), len(y_wires) + len(x_wires) + len(work_wires)))
+        + list(
+            range(
                 len(y_wires) + len(x_wires) + len(work_wires),
                 len(y_wires) + len(x_wires) + len(work_wires) + len(output_wires),
             )
-        ],
+        ),
     )
     SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
     return sample(wires=output_wires)
@@ -200,7 +196,7 @@ def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zero
 )
 def test_signed_out_multiplier_correct(
     x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):
+):  # pylint: disable=too-many-arguments
     """Tests with a few examples that the Template yields correct results."""
 
     # get the initial state of our inputs
