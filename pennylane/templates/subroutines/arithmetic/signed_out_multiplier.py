@@ -59,7 +59,9 @@ class SignedOutMultiplier(Operator):
             register is in a non-zero state :math:`z`, the solution will be added to this value
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
-            ``output_wires_zeroed``. Defaults to an empty tuple, i.e., no work wires.
+            ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
+            Otherwise, we need :math:`2 |output_wires| + 3` work wires. Defaults to an empty
+            tuple, i.e., no work wires.
         output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
             the operation.
