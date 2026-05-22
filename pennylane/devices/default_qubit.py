@@ -28,7 +28,7 @@ import numpy as np
 
 from pennylane import capture, math, ops
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -41,7 +41,6 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
