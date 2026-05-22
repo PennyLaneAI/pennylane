@@ -143,6 +143,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
+  [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
+
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
 
