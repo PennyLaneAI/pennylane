@@ -26,34 +26,14 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    from jax.core import AbstractValue
+    import jax
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False
-
-if has_jax:
-
-    class AbstractQubit(AbstractValue):
-        """An aval representing an allocated qubit"""
-
-        hash_value = hash("AbstractQubit")
-
-        def __eq__(self, other):
-            return isinstance(other, AbstractQubit)
-
-        def __hash__(self):
-            return self.hash_value
-
-        def _iter(self):  # pragma: no cover
-            return
-
-
-def is_abstract_qubit(v):
-    """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    return is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
 
 
 class AllocateState(StrEnum):

@@ -55,11 +55,9 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
-from pennylane.wires import Wires
+from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
-if has_jax:
-    from pennylane.allocation import is_abstract_qubit
 
 
 @dataclass(frozen=True)

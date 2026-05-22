@@ -40,10 +40,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-
-has_jax = find_spec("jax") is not None
-if has_jax:
-    from pennylane.allocation import is_abstract_qubit
+from pennylane.wires import is_abstract_qubit
 
 
 def null_postprocessing(results):
