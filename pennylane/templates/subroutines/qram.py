@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
+"""Contains four different implementations of QRAM: BBQRAM, HybridQRAM, SelectOnlyQRAM, and FFQRAM."""
 
 from collections import defaultdict
 from collections.abc import Sequence
@@ -36,6 +36,7 @@ from pennylane.ops import (
     adjoint,
     cond,
     ctrl,
+    RY,
 )
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike
@@ -1060,7 +1061,7 @@ def _select_only_qram_decomposition(
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
 
-    if select_value is not None and len(select_wires) > 0:
+    if select_value is not None and num_select > 0:
         BasisEmbedding(select_value, wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
@@ -1088,3 +1089,136 @@ def _select_only_qram_decomposition(
 
 
 add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
+
+
+class FFQRAM(Operation):
+    r"""
+    Flip-flop QRAM.
+    """
+
+    grad_method = None
+
+    # num of zero bits in address -> num of X flips
+    resource_keys = {"num_zero_bits", "num_address_wires", "num_entries"}
+
+    def __init__(
+        self, 
+        amplitudes: TensorLike, 
+        wires: WiresLike, 
+        address: TensorLike | Sequence[str]):
+        
+        wires = Wires(wires)
+
+        # use same input format as QROM
+        if isinstance(address[0], str):
+            address = math.array(
+                list(map(lambda bitstring: [int(bit) for bit in bitstring], address))
+            )
+
+        if isinstance(address, (list, tuple)):
+            address = math.array(address)
+
+        num_address_wires = len(wires) - 1
+
+        num_entries = math.shape(amplitudes)[-1]
+        if num_entries != len(address):
+            raise ValueError("The number of amplitudes must equal the number of addresses.")
+        if num_entries > 2**num_address_wires:
+            raise ValueError("The number of entries cannot exceed 2 ** num_address_wires.")
+
+        # hyperparameters should be hashable if we don't want to override `_flatten`
+        address_tuple = tuple(tuple(int(bit) for bit in row) for row in address)
+        self._address = math.array(address_tuple)
+
+        self._hyperparameters = {
+            "address": address_tuple,
+        }
+
+        super().__init__(amplitudes, wires=wires)
+
+    @property
+    def resource_params(self):
+        return {
+            "num_zero_bits": len(self._address.flatten()) - self._address.sum(),
+            "num_address_wires": len(self.wires) - 1,
+            "num_entries": len(self._address),
+        }
+
+    @property
+    def num_params(self):
+        return 1  # amplitude is the only trainable parameter
+
+    @property
+    def ndim_params(self):
+        return (1,)  # 1d amplitude (without broadcasting)
+
+    @staticmethod
+    def _normalize_amplitudes(amplitudes):
+        """Normalize along the last axis, supporting optional batching."""
+        batched = math.ndim(amplitudes) > 1
+
+        if batched:
+            norm = math.sqrt(math.sum(amplitudes**2, axis=-1))
+            return amplitudes / math.expand_dims(norm, axis=-1)
+
+        norm = math.sqrt(math.sum(amplitudes**2))
+        return amplitudes / norm
+
+def _flip_zero_bits(address_wires, addr_bits):
+    """
+    Apply X gates to where the addr_bits is zero.
+    """
+    for wire, bit in zip(address_wires, addr_bits):
+        if int(bit) == 0:
+            PauliX(wires=wire)
+
+def _ffqram_resources(address, num_address_wires, num_entries):
+    resources = defaultdict(int)
+
+    # one Hadamard gate per address wire to initialize the |+>^n state.
+    resources[resource_rep(Hadamard)] += num_address_wires
+
+    for i in range(num_entries):
+        addr_bits = address[i]
+        num_zero_bits = sum(int(bit) == 0 for bit in addr_bits)
+        # one "flip" and one "flop" for 0 bits
+        resources[resource_rep(PauliX)] += 2 * num_zero_bits
+
+        # controlled RY for each entry
+        resources[
+            controlled_resource_rep(
+                base_class=RY,
+                base_params={},
+                num_control_wires=num_address_wires,
+                num_zero_control_values=0,  # flipped to 1 already
+            )
+        ] += 1
+
+    return resources
+
+@register_resources(_ffqram_resources)
+def _ffqram_decomposition(amplitudes, wires, address, **_):
+    address_wires = wires[:-1]
+    reg_wire = wires[-1]
+
+    amplitudes = FFQRAM._normalize_amplitudes(amplitudes)
+    angles = 2 * math.arcsin(amplitudes)
+
+    # optional batch dimension: align with AngleEmbedding
+    batched = math.ndim(angles) > 1
+    angles = math.T(angles) if batched else angles
+
+    # Prepare initial state |+>^n
+    for wire in address_wires:
+        Hadamard(wires=wire)
+
+    for i, addr_bits in enumerate(address):
+        # flip
+        _flip_zero_bits(address_wires, addr_bits)
+        # register
+        ctrl(RY(angles[i], wires=reg_wire), control=address_wires)
+        # flop (unflip)
+        _flip_zero_bits(address_wires, addr_bits)
+
+
+add_decomps(FFQRAM, _ffqram_decomposition)
