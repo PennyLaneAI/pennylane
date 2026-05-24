@@ -1092,8 +1092,134 @@ add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
 
 
 class FFQRAM(Operation):
-    r"""
-    Flip-flop QRAM.
+    r"""Flip-flop QRAM (FF-QRAM) with an even-superposition initialization. FF-QRAM
+    is a probabilistic protocol that encodes classical bitstrings and real amplitudes into
+    a quantum circuit. For more theoretical details on how this algorithm works, please
+    consult `Scientific Reports 2019 <https://www.nature.com/articles/s41598-019-40439-3>`__
+    and `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
+
+    ``FFQRAM`` prepares a real-amplitude quantum state over a sparse list of computational
+    basis states using the flip-register-flop construction. Given :math:`L` distinct
+    :math:`m`-bit addresses :math:`d_l` and real amplitudes :math:`b_l`, where
+    :math:`L \leq N = 2^m`, the amplitudes are normalized internally as
+
+    .. math::
+
+        \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
+
+    The first :math:`m` wires are used as address wires and are initialized to
+    :math:`|+\rangle^{\otimes m}`. The last wire is a register qubit. For each address
+    :math:`d_l`, the circuit flips the zero bits of :math:`d_l`, applies a multi-controlled
+    :class:`~.RY` rotation with angle :math:`2\arcsin(\tilde{b}_l)` to the register qubit,
+    and then uncomputes the flips.
+
+    Before post-selection, the output state is
+
+    .. math::
+
+        \frac{1}{\sqrt{2^m}}
+        \left[
+        \sum_{x \notin D}|x\rangle|0\rangle
+        +
+        \sum_l |d_l\rangle
+        \left(
+        \sqrt{1 - \tilde{b}_l^2}|0\rangle
+        +
+        \tilde{b}_l|1\rangle
+        \right)
+        \right],
+
+    where :math:`D` is the set of supplied addresses. After post-selecting the register
+    qubit in :math:`|1\rangle`, the address register is prepared in
+
+    .. math::
+
+        \sum_l \tilde{b}_l |d_l\rangle.
+
+    The post-selection success probability is :math:`P(\mathrm{reg}=1)=1 / 2^m`.
+
+    Args:
+        amplitudes (TensorLike):
+            The real continuous amplitudes. The shape must be ``(L,)`` or
+            ``(batch_size, L)``, where ``L <= 2**m``.
+        wires (WiresLike):
+            The wires the template acts on. The first ``m`` wires are address wires and
+            the last wire is the register qubit used for post-selection.
+        address (TensorLike | Sequence[str]):
+            The classical address bitstrings as a 2-D array with shape ``(L, m)`` or as
+            a sequence of bitstrings.
+
+    Raises:
+        ValueError: if the number of entries indicated by ``amplitudes`` and ``address``
+            do not agree, or if the number of entries exceeds ``2**m``.
+
+    .. seealso::
+        :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`,
+        :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.AngleEmbedding`,
+        :class:`~.AmplitudeEmbedding`
+
+    .. note::
+
+        This template implements the state-preparation variant of FF-QRAM with an even
+        initial superposition, as proposed in Theorem 1 of
+        `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
+        It can be viewed as a probabilistic generalized amplitude encoding routine.
+
+    **Example:**
+
+    The following example is adapted from Section 4 of
+    `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__. The
+    data to be registered is
+
+    .. math::
+
+        \left\{(\sqrt{0.3}, |000\rangle), (\sqrt{0.7}, |001\rangle)\right\}.
+
+    Since ``num_entries = 2`` and ``m = 3``, this example uses three address wires and
+    one register wire.
+
+    .. code-block:: python
+
+        import pennylane as qp
+        import numpy as np
+
+        dev = qp.device("default.qubit", wires=4)
+        addrs = ["000", "001"]
+        amps = np.array([np.sqrt(0.3), np.sqrt(0.7)])
+
+        shots = 1000
+
+        @qp.set_shots(shots)
+        @qp.qnode(dev, interface=None)
+        def circuit():
+            qp.FFQRAM(amplitudes=amps, wires=[0, 1, 2, 3], address=addrs)
+            return qp.counts()
+
+        results = circuit()
+
+        # Post-select on register qubit = 1.
+        filtered_states = []
+        filtered_counts = []
+
+        for basis_state, count in results.items():
+            if basis_state[-1] == "1":
+                filtered_states.append(basis_state)
+                filtered_counts.append(count)
+
+        # Normalize to conditional probabilities.
+        filtered_counts = np.array(filtered_counts)
+        p_reg1 = filtered_counts.sum() / shots
+        conditioned_probs = filtered_counts / shots / p_reg1
+        obtained_amplitudes = np.sqrt(conditioned_probs)
+
+        print("expected success probability:", 1 / (2 ** len(addrs[0])))
+        print("obtained success probability:", p_reg1)
+
+        print("expected states:", [addr + "1" for addr in addrs])
+        print("obtained states:", filtered_states)
+
+        print("expected amplitudes:", amps)
+        print("obtained amplitudes:", obtained_amplitudes)
     """
 
     grad_method = None
