@@ -28,6 +28,7 @@ from pennylane.operation import Operation
 from pennylane.ops import (
     CNOT,
     CSWAP,
+    RY,
     SWAP,
     Controlled,
     Hadamard,
@@ -36,7 +37,6 @@ from pennylane.ops import (
     adjoint,
     cond,
     ctrl,
-    RY,
 )
 from pennylane.templates import BasisEmbedding
 from pennylane.typing import TensorLike
@@ -1095,8 +1095,8 @@ class FFQRAM(Operation):
     r"""Flip-flop QRAM (FF-QRAM) with an even-superposition initialization. FF-QRAM
     is a probabilistic protocol that encodes classical bitstrings and real amplitudes into
     a quantum circuit. For more theoretical details on how this algorithm works, please
-    consult `Scientific Reports 2019 <https://www.nature.com/articles/s41598-019-40439-3>`__
-    and `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
+    consult `Park et al. (2019) <https://www.nature.com/articles/s41598-019-40439-3>`__
+    and `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
 
     ``FFQRAM`` prepares a real-amplitude quantum state over a sparse list of computational
     basis states using the flip-register-flop construction. Given :math:`L` distinct
@@ -1162,13 +1162,13 @@ class FFQRAM(Operation):
 
         This template implements the state-preparation variant of FF-QRAM with an even
         initial superposition, as proposed in Theorem 1 of
-        `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
+        `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
         It can be viewed as a probabilistic generalized amplitude encoding routine.
 
     **Example:**
 
     The following example is adapted from Section 4 of
-    `IEEE Access 2020 <https://ieeexplore.ieee.org/abstract/document/9259210>`__. The
+    `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__. The
     data to be registered is
 
     .. math::
@@ -1276,18 +1276,6 @@ class FFQRAM(Operation):
     def ndim_params(self):
         return (1,)  # 1d amplitude (without broadcasting)
 
-    @staticmethod
-    def _normalize_amplitudes(amplitudes):
-        """Normalize along the last axis, supporting optional batching."""
-        batched = math.ndim(amplitudes) > 1
-
-        if batched:
-            norm = math.sqrt(math.sum(amplitudes**2, axis=-1))
-            return amplitudes / math.expand_dims(norm, axis=-1)
-
-        norm = math.sqrt(math.sum(amplitudes**2))
-        return amplitudes / norm
-
 
 def _flip_zero_bits(address_wires, addr_bits):
     """
@@ -1296,6 +1284,18 @@ def _flip_zero_bits(address_wires, addr_bits):
     for wire, bit in zip(address_wires, addr_bits):
         if int(bit) == 0:
             PauliX(wires=wire)
+
+
+def _normalize_amplitudes(amplitudes):
+    """Normalize along the last axis, supporting optional batching."""
+    batched = math.ndim(amplitudes) > 1
+
+    if batched:
+        norm = math.sqrt(math.sum(amplitudes**2, axis=-1))
+        return amplitudes / math.expand_dims(norm, axis=-1)
+
+    norm = math.sqrt(math.sum(amplitudes**2))
+    return amplitudes / norm
 
 
 def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
@@ -1325,7 +1325,7 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
-    amplitudes = FFQRAM._normalize_amplitudes(amplitudes)
+    amplitudes = _normalize_amplitudes(amplitudes)
     angles = 2 * math.arcsin(amplitudes)
 
     # optional batch dimension: align with AngleEmbedding

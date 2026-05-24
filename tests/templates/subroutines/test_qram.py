@@ -27,7 +27,7 @@ from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlled
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.tape import QuantumScript
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
+from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
 
 has_jax = True
 try:
@@ -1238,7 +1238,10 @@ def test_ffqram_postselected_probabilities():
     probability_register_one = filtered_probabilities.sum()
     filtered_probabilities = filtered_probabilities / probability_register_one
 
-    assert filtered_states == ["0001", "0011"]  # addresses to be encoded + post-selection (bus_wire = 1)
+    assert filtered_states == [
+        "0001",
+        "0011",
+    ]  # addresses to be encoded + post-selection (bus_wire = 1)
     assert np.allclose(filtered_probabilities, [0.3, 0.7])  # amplitudes to be encoded
     assert np.allclose(probability_register_one, 0.125)  # 1 / (2 ** 3) for 3 address wires
 

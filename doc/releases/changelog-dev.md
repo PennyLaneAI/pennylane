@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added :class:`~.FFQRAMEmbedding`, a template for probabilistic state preparation based on the flip-flop QRAM construction. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+* Added :class:`~.FFQRAM`, a template for probabilistic state preparation based on the flip-flop QRAM construction. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
 
 <h3>Improvements 🛠</h3>
 
