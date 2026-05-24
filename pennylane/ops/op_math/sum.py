@@ -237,9 +237,8 @@ class Sum(CompositeOp):
         if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         # Since addition is always commutative, we do not need to sort
         return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
@@ -420,7 +419,7 @@ class Sum(CompositeOp):
     def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
@@ -581,7 +580,7 @@ class _SumSummandsGrouping:
             coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
             self.add(summand=summand.base, coeff=coeff)
         else:
-            op_hash = summand.hash if op_hash is None else op_hash
+            op_hash = hash(summand) if op_hash is None else op_hash
             if op_hash in self.queue:
                 self.queue[op_hash][0] += coeff
             else:

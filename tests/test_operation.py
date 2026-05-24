@@ -316,8 +316,13 @@ class TestOperatorConstruction:
         op2 = DummyOp(0)
 
         assert len({op1, op2}) == 1
-        assert hash(op1) == op1.hash
-        assert hash(op2) == op2.hash
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            assert hash(op1) == op1.hash
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            assert hash(op2) == op2.hash
+
         assert hash(op1) == hash(op2)
 
     @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])

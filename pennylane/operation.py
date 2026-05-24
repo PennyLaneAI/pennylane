@@ -795,6 +795,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
+        warnings.warn(
+            "The Operator.hash property has been deprecated, use hash(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return hash(self)
+
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
+
+    def __hash__(self) -> int:
         return hash(
             (
                 str(self.name),
@@ -803,12 +813,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 _process_data(self),
             )
         )
-
-    def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
-
-    def __hash__(self) -> int:
-        return self.hash
 
     @staticmethod
     def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:

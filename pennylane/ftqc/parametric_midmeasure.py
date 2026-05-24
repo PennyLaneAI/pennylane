@@ -386,8 +386,7 @@ class ParametricMidMeasure(MidMeasure):
         """The angle in radians"""
         return self.hyperparameters["angle"]
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
         if is_abstract(self.angle):  # pragma: no cover
             # no unique value from tracer to values, hash based on object string

@@ -20,6 +20,7 @@ from functools import lru_cache
 
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
+from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -87,8 +88,7 @@ class PauliMeasure(Operator):
             return f"┤↗{postselect}{self.pauli_word}├"
         return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
 
-    @property
-    def hash(self) -> int:
+    def __hash__(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
         return hash(
             (self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.meas_uid)
@@ -203,4 +203,9 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         wires = (wires,) if math.shape(wires) == () else tuple(wires)
         return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
-    return _pauli_measure_impl(wires, pauli_word, postselect)
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.pauli_measure(pauli_word=pauli_word, wires=wires, postselect=postselect)
+
+    return _pauli_measure_impl(wires=wires, pauli_word=pauli_word, postselect=postselect)
