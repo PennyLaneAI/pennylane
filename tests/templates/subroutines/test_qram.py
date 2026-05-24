@@ -22,11 +22,12 @@ import pytest
 
 from pennylane import device, qnode, workflow
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import probs
+from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.tape import QuantumScript
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
+from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 
 has_jax = True
 try:
@@ -36,6 +37,12 @@ except ImportError:
 
 
 dev = device("default.qubit")
+
+
+@qnode(device("default.qubit", wires=4), interface=None)
+def ffqram_state(amplitudes, address):
+    FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=address)
+    return state()
 
 
 @qnode(dev)
@@ -1200,3 +1207,119 @@ def test_select_decomposition_new(
 
     for rule in list_decomps(SelectOnlyQRAM):
         _test_decomposition_rule(op, rule)
+
+
+def test_ffqram_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])
+    assert_valid(op, skip_capture=True)
+
+
+def test_ffqram_postselected_probabilities():
+    """Checks the postselected probabilities for a standard FF-QRAM example."""
+    amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
+    address = ["000", "001"]
+
+    result_state = ffqram_state(amplitudes, address)
+    probabilities = np.abs(result_state) ** 2
+
+    filtered_states = []
+    filtered_probabilities = []
+
+    for i, probability in enumerate(probabilities):
+        if probability < 1e-4:
+            continue
+        basis_state = f"{i:04b}"
+        if basis_state[-1] == "1":  # post-selection
+            filtered_states.append(basis_state)
+            filtered_probabilities.append(probability)
+
+    filtered_probabilities = np.array(filtered_probabilities)
+    probability_register_one = filtered_probabilities.sum()
+    filtered_probabilities = filtered_probabilities / probability_register_one
+
+    assert filtered_states == ["0001", "0011"]  # addresses to be encoded + post-selection (bus_wire = 1)
+    assert np.allclose(filtered_probabilities, [0.3, 0.7])  # amplitudes to be encoded
+    assert np.allclose(probability_register_one, 0.125)  # 1 / (2 ** 3) for 3 address wires
+
+
+class TestFFQRAMDecomposition:
+    """Tests that FFQRAM defines the correct decomposition."""
+
+    def test_decomposition_contents(self):
+        """Checks the decomposition for a standard FF-QRAM example."""
+        amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
+        op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])
+        tape = QuantumScript(op.decomposition())
+
+        expected_names = [
+            "Hadamard",
+            "Hadamard",
+            "Hadamard",
+            "PauliX",
+            "PauliX",
+            "PauliX",
+            "C(RY)",
+            "PauliX",
+            "PauliX",
+            "PauliX",
+            "PauliX",
+            "PauliX",
+            "C(RY)",
+            "PauliX",
+            "PauliX",
+        ]
+        expected_wires = [
+            [0],
+            [1],
+            [2],
+            [0],
+            [1],
+            [2],
+            [0, 1, 2, 3],
+            [0],
+            [1],
+            [2],
+            [0],
+            [1],
+            [0, 1, 2, 3],
+            [0],
+            [1],
+        ]
+
+        assert [gate.name for gate in tape.operations] == expected_names
+        assert [gate.wires.tolist() for gate in tape.operations] == expected_wires
+
+        expected_angles = 2 * np.arcsin(amplitudes)
+        assert np.allclose(tape.operations[6].parameters, [expected_angles[0]])
+        assert np.allclose(tape.operations[12].parameters, [expected_angles[1]])
+
+    @pytest.mark.capture
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])
+
+        for rule in list_decomps(FFQRAM):
+            _test_decomposition_rule(op, rule)
+
+    def test_decomposition_broadcasted(self):
+        """Checks the decomposition for broadcasted amplitudes."""
+        amplitudes = np.array(
+            [
+                [np.sqrt(0.3), np.sqrt(0.7)],
+                [np.sqrt(0.2), np.sqrt(0.8)],
+            ]
+        )
+
+        op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])
+        assert op.batch_size == 2
+
+        tape = QuantumScript(op.decomposition())
+        assert tape.operations[6].name == "C(RY)"
+        assert tape.operations[12].name == "C(RY)"
+        assert tape.operations[6].batch_size == 2
+        assert tape.operations[12].batch_size == 2
+
+        expected_angles = 2 * np.arcsin(amplitudes)
+        assert np.allclose(tape.operations[6].parameters[0], expected_angles[:, 0])
+        assert np.allclose(tape.operations[12].parameters[0], expected_angles[:, 1])

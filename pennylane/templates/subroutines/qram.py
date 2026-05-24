@@ -1102,11 +1102,9 @@ class FFQRAM(Operation):
     resource_keys = {"num_zero_bits", "num_address_wires", "num_entries"}
 
     def __init__(
-        self, 
-        amplitudes: TensorLike, 
-        wires: WiresLike, 
-        address: TensorLike | Sequence[str]):
-        
+        self, amplitudes: TensorLike, wires: WiresLike, address: TensorLike | Sequence[str]
+    ):
+
         wires = Wires(wires)
 
         # use same input format as QROM
@@ -1139,7 +1137,7 @@ class FFQRAM(Operation):
     @property
     def resource_params(self):
         return {
-            "num_zero_bits": len(self._address.flatten()) - self._address.sum(),
+            "num_zero_bits": int(len(self._address.flatten()) - self._address.sum()),
             "num_address_wires": len(self.wires) - 1,
             "num_entries": len(self._address),
         }
@@ -1164,6 +1162,7 @@ class FFQRAM(Operation):
         norm = math.sqrt(math.sum(amplitudes**2))
         return amplitudes / norm
 
+
 def _flip_zero_bits(address_wires, addr_bits):
     """
     Apply X gates to where the addr_bits is zero.
@@ -1172,29 +1171,28 @@ def _flip_zero_bits(address_wires, addr_bits):
         if int(bit) == 0:
             PauliX(wires=wire)
 
-def _ffqram_resources(address, num_address_wires, num_entries):
+
+def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     resources = defaultdict(int)
 
     # one Hadamard gate per address wire to initialize the |+>^n state.
     resources[resource_rep(Hadamard)] += num_address_wires
 
-    for i in range(num_entries):
-        addr_bits = address[i]
-        num_zero_bits = sum(int(bit) == 0 for bit in addr_bits)
-        # one "flip" and one "flop" for 0 bits
-        resources[resource_rep(PauliX)] += 2 * num_zero_bits
+    # one "flip" and one "flop" for 0 bits
+    resources[resource_rep(PauliX)] += 2 * num_zero_bits
 
-        # controlled RY for each entry
-        resources[
-            controlled_resource_rep(
-                base_class=RY,
-                base_params={},
-                num_control_wires=num_address_wires,
-                num_zero_control_values=0,  # flipped to 1 already
-            )
-        ] += 1
+    # controlled RY for each entry
+    resources[
+        controlled_resource_rep(
+            base_class=RY,
+            base_params={},
+            num_control_wires=num_address_wires,
+            num_zero_control_values=0,  # flipped to 1 already
+        )
+    ] += num_entries
 
     return resources
+
 
 @register_resources(_ffqram_resources)
 def _ffqram_decomposition(amplitudes, wires, address, **_):
