@@ -95,6 +95,24 @@ class TestExpression:
             (): 4,
         }
 
+    def test_normalize(self):
+        """Test that the _normalize method correctly combines like terms and removes zero terms."""
+        expr = Expression(
+            {
+                ("x", "y"): 2,
+                ("y", "x"): -2,
+                ("z",): 1,
+                ("foo",): 0,
+                (): 4,
+            },
+            _skip_normalization=True,
+        )
+        expr._normalize()
+        assert expr._data == {
+            ("z",): 1,
+            (): 4,
+        }
+
     def test_vars(self, sample_expr):
         """Test that the vars property returns the expected set of variables."""
         assert sample_expr.vars == {"x", "y", "z"}

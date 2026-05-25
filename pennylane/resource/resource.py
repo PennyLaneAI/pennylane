@@ -445,6 +445,10 @@ class SymbolicSpecsResources(SpecsResources):
 
         vars = set()
 
+        # Need to disable this since the type checker still thinks that many of these members are
+        # `int` and therefore do not contain a `var` member
+        # pylint: disable=no-member
+
         if self.depth is not None:
             vars |= self.depth.vars
         vars |= self.num_allocs.vars

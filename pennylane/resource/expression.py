@@ -16,17 +16,16 @@ Helper classes and functions for symbolic resource expressions.
 """
 
 from collections import defaultdict
-from functools import cache
+from functools import lru_cache
 from typing import Any, Union
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
     if not vars:
         return str(coeff)
-    elif coeff == 1:
+    if coeff == 1:
         return "*".join(vars)
-    else:
-        return f"{coeff}*{'*'.join(vars)}"
+    return f"{coeff}*{'*'.join(vars)}"
 
 
 class Expression:
@@ -146,7 +145,7 @@ class Expression:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
         return Expression(new_data, vars=self._vars.difference(substitutions.keys()))
 
-    @cache
+    @lru_cache
     def __str__(self) -> str:
         """
         Returns a string representation of the expression.
@@ -160,7 +159,7 @@ class Expression:
             return "0"
         return " + ".join([_term_to_str(vars, coeff) for vars, coeff in self._data.items()])
 
-    @cache
+    @lru_cache
     def __repr__(self) -> str:
         return f"Expression({self._data})"
 
