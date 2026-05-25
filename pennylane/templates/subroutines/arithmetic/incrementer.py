@@ -32,6 +32,7 @@ from .temporary_and import TemporaryAND
 has_jax = True
 try:
     from jax import lax
+    from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -237,11 +238,30 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
     @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i, wires, num_wires):
-        MultiControlledX(
-            [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
-            [1 for _ in range(i - 1)],
-            work_wires=work_wires,
-        )
+        if enabled():
+            target_wires = lax.dynamic_slice(wires, (-i,), (len(wires),))
+            ones = array(lax.dynamic_slice(wires, (-i,), (len(wires),)).at[:].set(1), like="jax")
+
+            def build_wires(j, passed):
+                (nw, tw, w, i) = passed
+                tw.at[j].set(lax.dynamic_index_in_dim(w, j + (nw - i), keepdims=False))
+                return (nw, tw, w, i)
+
+            (_, target_wires, _, _) = lax.fori_loop(0, i, build_wires, init_val=(num_wires, target_wires, wires, i))
+
+            target_wires = jnp.flip(array(target_wires, like="jax"))
+
+            MultiControlledX(
+                target_wires,
+                ones,
+                work_wires=work_wires,
+            )
+        else:
+            MultiControlledX(
+                [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
+                [1 for _ in range(i - 1)],
+                work_wires=work_wires,
+            )
         return wires, num_wires
 
     flip_wires(wires, len(wires))  # pylint: disable=no-value-for-parameter

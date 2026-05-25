@@ -35,6 +35,7 @@ def increment(wires, init_state, work_wires=None):
     return sample(wires=wires)
 
 
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, work_wires",
     [

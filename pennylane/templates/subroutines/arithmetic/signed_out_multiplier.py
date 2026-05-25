@@ -34,6 +34,12 @@ from .incrementer import Incrementer
 from .out_adder import OutAdder
 from .out_multiplier import OutMultiplier
 
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 class SignedOutMultiplier(Operator):
     r"""
@@ -448,10 +454,15 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
     invert()  # pylint: disable=no-value-for-parameter
 
+    if capture.enabled():
+        input = jnp.append(input_reg, work_wires)
+    else:
+        input = input_reg + work_wires
+
     # Add one
     Controlled(
         Incrementer(
-            wires=input_reg + work_wires,
+            wires=input,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=(aux_wire,),
@@ -466,7 +477,7 @@ def _not_zeroed_work_wire_condition(num_work_wires, num_output_wires, **_):
 def _zeroed_work_wire_condition(num_work_wires, **_):
     return (
         num_work_wires >= 2
-    )  # or max(len(x_wires), len(y_wires)) + 1 to use incrementer decomp with work wires
+    )
 
 
 def _zeroed_condition(output_wires_zeroed, **_):

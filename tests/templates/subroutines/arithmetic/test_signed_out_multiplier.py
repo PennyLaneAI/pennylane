@@ -100,6 +100,7 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
         SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
 
 
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
