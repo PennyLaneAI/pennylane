@@ -28,6 +28,9 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
+#: Threshold for identifying singular matrices in non-equidistant shift rules.
+_SINGULAR_MATRIX_THRESHOLD = 1e-6
+
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     """Utility function to process gradient rules.
@@ -177,7 +180,7 @@ def _get_shift_rule(frequencies, shifts=None):
     else:  # non-equidistant case
         sin_matrix = -4 * np.sin(np.outer(shifts, frequencies))
         det_sin_matrix = np.linalg.det(sin_matrix)
-        if abs(det_sin_matrix) < 1e-6:
+        if abs(det_sin_matrix) < _SINGULAR_MATRIX_THRESHOLD:
             warnings.warn(
                 f"Solving linear problem with near zero determinant ({det_sin_matrix}) "
                 "may give unstable results for the parameter shift rules."
@@ -198,7 +201,7 @@ def _iterate_shift_rule_with_multipliers(rule, order, period):
     for partial_rules in itertools.product(rule, repeat=order):
         c, m, s = np.stack(partial_rules).T
         cumul_shift = 0.0
-        for _m, _s in zip(m, s):
+        for _m, _s in zip(m, s, strict=True):
             cumul_shift *= _m
             cumul_shift += _s
         if period is not None:
@@ -383,7 +386,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     shifts = shifts or [None] * len(frequencies)
     orders = orders or [1] * len(frequencies)
 
-    for f, s, o in zip(frequencies, shifts, orders):
+    for f, s, o in zip(frequencies, shifts, orders, strict=True):
         rule = generate_shift_rule(f, shifts=s, order=o)
         rules.append(process_shifts(rule))
 
@@ -395,7 +398,7 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     rescaled and shifted as indicated by ``indices``, ``multipliers`` and ``shifts``."""
     all_ops = tape.circuit
 
-    for idx, shift, multiplier in zip(indices, shifts, multipliers):
+    for idx, shift, multiplier in zip(indices, shifts, multipliers, strict=True):
         _, op_idx, p_idx = tape.get_operation(idx)
         op = (
             all_ops[op_idx].obs
@@ -465,7 +468,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
 
     return tuple(
         _copy_and_shift_params(tape, [index], [shift], [multiplier])
-        for shift, multiplier in zip(shifts, multipliers)
+        for shift, multiplier in zip(shifts, multipliers, strict=True)
     )
 
 
@@ -496,7 +499,7 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
 
     tapes = [
         _copy_and_shift_params(tape, indices, _shifts, _multipliers, cast=True)
-        for _shifts, _multipliers in zip(shifts, multipliers)
+        for _shifts, _multipliers in zip(shifts, multipliers, strict=True)
     ]
 
     return tapes

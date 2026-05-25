@@ -861,7 +861,9 @@ class CNOT(ResourceOperator):
         Raises:
             ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
+        raise ResourcesUndefinedError(
+            f"{cls.__name__} does not have a resource decomposition defined."
+        )
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:

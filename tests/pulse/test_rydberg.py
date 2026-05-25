@@ -38,11 +38,12 @@ class TestRydbergInteraction:
     """Unit tests for the ``rydberg_interaction`` function."""
 
     def test_queuing(self):
-        """Test that the function does not queue any objects."""
+        """Test that the function only queues one Hamiltonian object."""
         with qp.queuing.AnnotatedQueue() as q:
-            rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+            H = rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
 
-        assert len(q) == 0
+        assert len(q) == 1
+        assert q.queue[0] == H
 
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
@@ -104,6 +105,14 @@ class TestRydbergInteraction:
 
 class TestRydbergDrive:
     """Unit tests for the ``rydberg_drive`` function"""
+
+    def test_queuing(self):
+        """Test that the function only queues one Hamiltonian object."""
+        with qp.queuing.AnnotatedQueue() as q:
+            Hd = rydberg_drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
+
+        assert len(q) == 1
+        assert q.queue[0] == Hd
 
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by

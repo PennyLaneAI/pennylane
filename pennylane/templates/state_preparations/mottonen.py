@@ -345,7 +345,7 @@ class MottonenStatePreparation(Operation):
     num_params = 1
     ndim_params = (1,)
 
-    def __init__(self, state_vector, wires, id=None):
+    def __init__(self, state_vector, wires):
         # check shape of `state_vector` param
         shape = qp.math.shape(state_vector)
         if len(shape) > 2:
@@ -366,7 +366,7 @@ class MottonenStatePreparation(Operation):
             if not qp.math.is_abstract(norms) and not qp.math.allclose(norms, 1.0, atol=1e-3):
                 raise ValueError(f"state_vector has to be of norm 1.0, got norm(s) {norms}")
 
-        super().__init__(state_vector, wires=wires, id=id)
+        super().__init__(state_vector, wires=wires)
 
     @staticmethod
     def compute_decomposition(state_vector, wires, **_):  # pylint: disable=arguments-differ

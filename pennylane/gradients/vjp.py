@@ -209,7 +209,7 @@ def compute_vjp_multi(dy, jac, num=None):
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
-        for d, j_ in zip(dy, jac):
+        for d, j_ in zip(dy, jac, strict=True):
             res.append(compute_vjp_single(d, j_, num=num))
         res = math.sum(math.stack(res), axis=0)
     # Multiple parameters
@@ -237,7 +237,7 @@ def compute_vjp_multi(dy, jac, num=None):
         # TODO: Catalogue and update for expected exception types
         except Exception:  # pylint: disable=broad-except
             res = []
-            for d, j_ in zip(dy, jac):
+            for d, j_ in zip(dy, jac, strict=True):
                 sub_res = []
                 for j in j_:
                     sub_res.append(math.squeeze(compute_vjp_single(d, j, num=num)))
@@ -381,7 +381,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         if not tape.shots.has_partitioned_shots:
             return comp_vjp_fn(dy, jac, num=num)
 
-        vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
+        vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac, strict=True)]
         return math.sum(math.stack(vjp_), 0)
 
     return gradient_tapes, processing_fn
@@ -506,7 +506,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     processing_fns = []
 
     # Loop through the tapes and dys vector
-    for tape, dy in zip(tapes, dys):
+    for tape, dy in zip(tapes, dys, strict=True):
         g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs=gradient_kwargs)
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)

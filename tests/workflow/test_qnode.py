@@ -41,20 +41,6 @@ from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots
 
 
-def test_transform_program_prop_is_deprecated():
-    """Tests that the deprecation warning is raised."""
-
-    @qp.qnode(qp.device("reference.qubit"))
-    def circuit():
-        return qp.expval(qp.Z(0))
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="The 'transform_program' property of the QNode has been renamed",
-    ):
-        _ = circuit.transform_program
-
-
 def dummyfunc():
     """dummy func."""
     return None
@@ -1206,76 +1192,17 @@ class TestShots:
             circuit.shots = 5
 
     # pylint: disable=unexpected-keyword-arg
-    def test_specify_shots_per_call_sample(self):
-        """Tests that shots can be set per call for a sample return type."""
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
-        ):
-            dev = qp.device("default.qubit", wires=1, shots=10)
-
-        @qnode(dev)
-        def circuit(a):
-            qp.RX(a, wires=0)
-            return qp.sample(qp.PauliZ(wires=0))
-
-        assert len(circuit(0.8)) == 10
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            assert len(circuit(0.8, shots=2)) == 2
-            assert len(circuit(0.8, shots=3178)) == 3178
-        assert len(circuit(0.8)) == 10
-
-    # pylint: disable=unexpected-keyword-arg, protected-access
-    def test_specify_shots_per_call_expval(self):
-        """Tests that shots can be set per call for an expectation value.
-        Note: this test has a vanishingly small probability to fail."""
-        dev = qp.device("default.qubit", wires=1)
-
-        @qnode(dev)
-        def circuit():
-            qp.Hadamard(wires=0)
-            return qp.expval(qp.PauliZ(wires=0))
-
-        # check that the circuit is analytic
-        res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.0
-        assert circuit.device._shots.total_shots is None
-
-        # check that the circuit is temporary non-analytic
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            res1 = [circuit(shots=1) for _ in range(100)]
-        assert np.std(res1) != 0.0
-
-        # check that the circuit is analytic again
-        res1 = [circuit() for _ in range(100)]
-        assert np.std(res1) == 0.0
-        assert circuit.device._shots.total_shots is None
-
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
-        ):
-            dev = qp.device("default.qubit", wires=2, shots=10)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(a, shots=0):
             qp.RX(a, wires=shots)
             return qp.sample(qp.PauliZ(wires=0))
 
-        with pytest.warns(
-            UserWarning, match="The 'shots' argument name is reserved for overriding"
-        ):
-            circuit = QNode(circuit, dev)
+        circuit = qp.set_shots(QNode(circuit, dev), 10)
 
         assert len(circuit(0.8)) == 10
         tape = qp.workflow.construct_tape(circuit)(0.8)
@@ -1303,11 +1230,7 @@ class TestShots:
             qp.RX(a, wires=shots)
             return qp.sample(qp.PauliZ(wires=0))
 
-        # assert that warning is still raised
-        with pytest.warns(
-            UserWarning, match="The 'shots' argument name is reserved for overriding"
-        ):
-            circuit = QNode(ansatz0, dev)
+        circuit = QNode(ansatz0, dev)
 
         assert len(circuit(0.8, 1)) == 10
         tape = qp.workflow.construct_tape(circuit)(0.8, 1)
@@ -1315,14 +1238,10 @@ class TestShots:
 
         dev = qp.device("default.qubit", wires=2)
 
-        with pytest.warns(
-            UserWarning, match="The 'shots' argument name is reserved for overriding"
-        ):
-
-            @qnode(dev, shots=10)
-            def ansatz1(a, shots):
-                qp.RX(a, wires=shots)
-                return qp.sample(qp.PauliZ(wires=0))
+        @qnode(dev, shots=10)
+        def ansatz1(a, shots):
+            qp.RX(a, wires=shots)
+            return qp.sample(qp.PauliZ(wires=0))
 
         assert len(ansatz1(0.8, shots=0)) == 10
         tape = qp.workflow.construct_tape(circuit)(0.8, 0)
@@ -1416,60 +1335,6 @@ class TestShots:
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
             qp.jacobian(circuit, argnums=0)(0.3)
-
-    # pylint: disable=unexpected-keyword-arg
-    @pytest.mark.parametrize(
-        "shots, total_shots, shot_vector",
-        [
-            (None, None, ()),
-            (1, 1, ((1, 1),)),
-            (10, 10, ((10, 1),)),
-            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
-        ],
-    )
-    def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
-        """test that shots are placed on the tape if they are specified during a call."""
-        dev = qp.device("default.qubit", wires=2)
-
-        def func(x, y):
-            qp.RX(x, wires=0)
-            qp.RY(y, wires=1)
-            return qp.expval(qp.PauliZ(0))
-
-        qn = QNode(func, dev)
-
-        # No override
-        tape = qp.workflow.construct_tape(qn)(0.1, 0.2)
-        assert tape.shots.total_shots is None
-
-        # Override
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            tape = qp.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
-        assert tape.shots.total_shots == total_shots
-        assert tape.shots.shot_vector == shot_vector
-
-        # Decorator syntax
-        @qnode(dev)
-        def qn2(x, y):
-            qp.RX(x, wires=0)
-            qp.RY(y, wires=1)
-            return qp.expval(qp.PauliZ(0))
-
-        # No override
-        tape = qp.workflow.construct_tape(qn2)(0.1, 0.2)
-        assert tape.shots.total_shots is None
-
-        # Override
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            tape = qp.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
-        assert tape.shots.total_shots == total_shots
-        assert tape.shots.shot_vector == shot_vector
 
     def test_shots_not_updated_with_device(self):
         """Test that _shots is not updated when updating the QNode with a new device."""
@@ -1751,16 +1616,6 @@ class TestNewDeviceIntegration:
 
         with pytest.raises(DeviceError, match="not accepted for analytic simulation"):
             circuit()
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
-            assert qp.math.allclose(results, np.zeros((10, 2)))
-
-            results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
-            assert qp.math.allclose(results, np.zeros((20, 2)))
 
 
 class TestMCMConfiguration:
@@ -2146,35 +2001,6 @@ class TestSetShots:
         qn_with_shots = qp.QNode(dummyfunc, dev_with_shots)
         assert qn_with_shots._shots == qp.measurements.Shots(42)
 
-    def test_shots_override_warning(self):
-        """Test that a warning is raised when both set_shots transform and shots parameter are used."""
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.Hadamard(wires=0)
-            return qp.sample(qp.PauliZ(0))
-
-        # First apply set_shots to override device shots
-        modified_circuit = qp.set_shots(circuit, shots=50)
-        assert modified_circuit._shots == qp.measurements.Shots(50)
-        assert modified_circuit._shots_override_device is True
-
-        # Then try to pass shots parameter when calling the QNode
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            with pytest.warns(
-                UserWarning,
-                match="Both 'shots=' parameter and 'set_shots' transform are specified. "
-                "The transform will take precedence over",
-            ):
-                result = modified_circuit(shots=25)
-
-        # Verify that the set_shots value (50) was used, not the parameter value (25)
-        assert len(result) == 50
-
     def test_set_shots_direct_decorator(self):
         """Test set_shots with partial decorator syntax."""
         dev = qp.device("default.qubit", wires=1)
@@ -2449,32 +2275,6 @@ class TestSetShots:
 
         # Original circuit should be unchanged
         assert circuit._shots == qp.measurements.Shots(50)
-
-    def test_no_warning_if_shots_not_updated(self):
-        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit():
-            return qp.sample(qp.PauliZ(0))
-
-        # No warning should be raised when calling with the same shots value
-        with warnings.catch_warnings(record=True) as record:
-            warnings.simplefilter("always")
-            with pytest.warns(
-                PennyLaneDeprecationWarning,
-                match="Specifying 'shots' when executing a QNode is deprecated",
-            ):
-                result = circuit.update(diff_method="parameter-shift")(shots=50)
-        # Filter for targeted warnings (by type and/or message)
-        targeted = [
-            w
-            for w in record
-            if issubclass(w.category, UserWarning)
-            and "Both 'shots=' parameter and 'set_shots' transform are specified." in str(w.message)
-        ]
-        assert len(targeted) == 0
-        assert len(result) == 50
 
     def test_no_warning_if_shots_not_updated_set_shots(self):
         """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
