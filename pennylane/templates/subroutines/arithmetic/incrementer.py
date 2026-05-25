@@ -162,6 +162,10 @@ def _base_work_wire_condition(base_params, num_control_wires, num_work_wires, **
     )
 
 
+def _capture_disabled_condition(*_, **__):
+    return not enabled()
+
+
 def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
     return not _work_wire_condition(num_wires, num_work_wires)
 
@@ -226,6 +230,7 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
     return resources
 
 
+@register_condition(_capture_disabled_condition)
 @register_condition(_work_wire_inverse_condition)
 @register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, work_wires, **_):
@@ -238,28 +243,11 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
     @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i, wires, num_wires):
-        if enabled():
-            target_wires = lax.dynamic_slice(wires, (-i,), (len(wires) - 1,))
-
-            def build_wires(j, passed):
-                (nw, tw, w, i) = passed
-                tw.at[j].set(lax.dynamic_index_in_dim(w, j + (nw - i), keepdims=False))
-                return (nw, tw, w, i)
-
-            (_, target_wires, _, _) = lax.fori_loop(0, i, build_wires, init_val=(num_wires, target_wires, wires, i))
-
-            target_wires = jnp.flip(array(target_wires, like="jax"))
-
-            MultiControlledX(
-                target_wires,
-                work_wires=work_wires,
-            )
-        else:
-            MultiControlledX(
-                [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
-                [1 for _ in range(i - 1)],
-                work_wires=work_wires,
-            )
+        MultiControlledX(
+            [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
+            [1 for _ in range(i - 1)],
+            work_wires=work_wires,
+        )
         return wires, num_wires
 
     flip_wires(wires, len(wires))  # pylint: disable=no-value-for-parameter
