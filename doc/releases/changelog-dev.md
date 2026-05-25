@@ -15,7 +15,7 @@
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
 * Added a dispatcher for `qp.pauli_measure` to call `catalyst.pauli_measure` when qjit is enabled
-  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for 
+  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
@@ -51,7 +51,7 @@
 
   ```
 
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -63,7 +63,7 @@
     ...     size_bitstring = 8,
     ...     available_dirty_aux = 300,
     ... )
-    >>> 
+    >>>
     >>> print(qre.estimate(qrom_op))
     --- Resources: ---
     Total wires: 308
@@ -148,6 +148,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 
@@ -216,6 +219,7 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Christina Lee,
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,

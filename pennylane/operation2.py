@@ -360,6 +360,11 @@ class Operator2(ABC):
     def wires(self) -> Wires:
         """Wires that the operator acts on.
 
+        .. note::
+
+            Work wires are **not included** in ``op.wires``. In particular, wire arguments
+            named ``work_wires`` or ``work_wire`` are excluded.
+
         Returns:
             Wires: wires
         """
@@ -464,8 +469,8 @@ class Operator2(ABC):
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
     # pylint: disable=protected-access
-    for name in cls._sig.parameters.keys():
-        if name not in vars(cls):
+    for name in cls._sig.parameters:
+        if not hasattr(cls, name):
             dyn_property = partial(_dynamic_property, name=name)
             setattr(cls, name, property(dyn_property))
 
