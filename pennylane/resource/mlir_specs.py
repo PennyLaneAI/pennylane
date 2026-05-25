@@ -93,8 +93,10 @@ def _mlir_resources_to_specs_resources(
     Args:
         all_data (dict[str, Any]): the full data output from the MLIR resource analysis
         focus (str): the name of the function to resolve resources for in this call
-        fn_resources (dict[str, SymbolicSpecsResources | None]): the mapping from function name to resolved
-            `SymbolicSpecsResources` objects
+        fn_resources (dict[str, SymbolicSpecsResources | None]): the mapping from function name to
+            resolved `SymbolicSpecsResources` objects. (modified in-place by this function)
+        display_names (dict[str, str]): a mapping from symbolic variable names to their display
+            names in the output. (modified in-place by this function)
     """
 
     if focus in fn_resources:
@@ -127,7 +129,7 @@ def _mlir_resources_to_specs_resources(
             # Separate out PPMs and PPRs by weight
             gate_name += f"-w{gate_size}"
 
-        gate_types[gate_name] += count
+        gate_types[gate_name] = count
         gate_sizes[int(gate_size)] += count
 
     # Recurse through all function calls and combine resources with the appropriate multiplicative factors

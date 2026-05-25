@@ -57,6 +57,10 @@ class Expression:
         Args:
             data (dict[tuple[str, ...], int] | int): A dictionary mapping tuples of variable names
                 to their coefficients, or an integer for a constant expression.
+            vars (set[str] | None): An optional set of variables that appear in the expression.
+                These must be a superset of the variables that appear in the keys of the data
+                dictionary. If not provided, the variables will be inferred from the keys of the
+                data dictionary.
         """
         if not isinstance(data, (dict, int)):
             raise TypeError("Expression data must be a dictionary of tuples or an integer")
