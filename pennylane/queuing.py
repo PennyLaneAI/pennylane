@@ -182,7 +182,6 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
-from typing import Optional, Union
 
 from pennylane.exceptions import QueuingError
 
@@ -251,7 +250,7 @@ class QueuingManager:
         return bool(cls._active_contexts)
 
     @classmethod
-    def active_context(cls) -> Optional["AnnotatedQueue"]:
+    def active_context(cls) -> "AnnotatedQueue" | None:
         """Returns the currently active queuing context."""
         return cls._active_contexts[-1] if cls.recording() else None
 
@@ -538,13 +537,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
-ops_or_meas = Union["pennylane.operation.Operator", "pennylane.measurements.MeasurementProcess"]
-
-
-# pylint: disable=protected-access
 def process_queue(
     queue: AnnotatedQueue,
-) -> tuple[list[ops_or_meas], list["pennylane.measurements.MeasurementProcess"]]:
+) -> tuple[list["pennylane.operation.Operator"], list["pennylane.measurements.MeasurementProcess"]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -552,37 +547,17 @@ def process_queue(
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)]:
+        tuple[list(.Operator), list(.MeasurementProcess)]:
         The list of tape operations, the list of tape measurements
 
-    Raises:
-        QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
-
     """
-    lists = {"_ops": [], "_measurements": []}
-    list_order = {"_ops": 1, "_measurements": 2}
-    current_list = "_ops"
+    # tach-ignore
+    from pennylane.measurements import MeasurementProcess  # pylint: disable=import-outside-toplevel
 
-    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
-    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
-    for obj, _ in queue.items():
-        if not hasattr(obj, "_queue_category"):
-            raise QueuingError(
-                f"{obj} encountered in AnnotatedQueue and is not an object that can "
-                "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
-            )
-        if obj._queue_category is None:
-            raise ValueError(
-                f"_queue_category can no longer be set to None. Got None on object {obj}"
-            )
-
-        if list_order[obj._queue_category] > list_order[current_list]:
-            current_list = obj._queue_category
-        elif list_order[obj._queue_category] < list_order[current_list]:
-            raise ValueError(
-                f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                f"to {current_list[1:]}. Please place earlier in the queue."
-            )
-        lists[obj._queue_category].append(obj)
-
-    return lists["_ops"], lists["_measurements"]
+    ops_and_meas = queue.queue
+    ind = 0
+    for obj in reversed(ops_and_meas):
+        if not isinstance(obj, MeasurementProcess):
+            break
+        ind -= 1
+    return ops_and_meas[:ind], ops_and_meas[ind:]

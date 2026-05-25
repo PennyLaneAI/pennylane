@@ -1560,19 +1560,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements"]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-        """
-        return "_ops"
-
     # pylint: disable=no-self-argument
     @classproperty
     def has_adjoint(cls) -> bool:
