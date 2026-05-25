@@ -118,7 +118,7 @@ class TestDecompositionGraph:
         )
         assert solution.resource_estimate(op) == expected_resource
 
-    def test_not_a_decomposition_rule(self, _):
+    def test_decomp_rule_is_missing_resources(self, _):
         """Tests that an error is raised for functions that does not have a resource estimate."""
 
         def custom_hadamard(wires):
