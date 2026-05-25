@@ -109,6 +109,7 @@ class SignedOutMultiplier(Operator):
             \begin{align}
                 x = - 2^{n-1} x_{n-1} + \sum_{j=0}^{n-2} x_j 2^j.
             \end{align}
+
         We also have the magnitude of the signed integer which can be computed by flipping all bits of :math:`x` and incrementing by one,
         both steps controlled on the sign bit of :math:`x`, :math:`x_{n-1}`.
 
@@ -251,6 +252,7 @@ class SignedOutMultiplier(Operator):
                                                             ┌─┴─┐        └───────┘       ▲
             |0⟩ ───────────[k]──────────────────────────────┤ + ├────────────────────────●──────
                                                             └───┘                     (Copy Result)
+
     """
 
     resource_keys = {
