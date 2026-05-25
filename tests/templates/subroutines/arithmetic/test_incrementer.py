@@ -103,6 +103,7 @@ def test_controlled(wires, init_state, expected, work_wires, control):
     assert np.all(result == expected)
 
 
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, work_wires",
     [

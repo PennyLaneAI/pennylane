@@ -168,10 +168,10 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
     def _increment():
         # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
-
-        if enabled():
-            all_wires = array(all_wires, like="jax")
+        zipped = sum(zip(wires[1:], work_wires), start=tuple())
+        if enabled:
+            zipped = array(zipped, like="jax")
+        all_wires = wires[:1] + zipped
 
         # Forward ladder
         @for_loop(len(wires) - 2)
@@ -270,7 +270,13 @@ def _controlled_incrementer_decomposition(
     base,
     **__,
 ):
-    _decompose_mcxs(base.wires, base.hyperparameters["work_wires"] + work_wires, control_wires)
+    wires = base.wires
+    work_wires = base.hyperparameters["work_wires"] + work_wires
+
+    if enabled():
+        wires, work_wires, control_wires = array(wires, like="jax"), array(work_wires, like="jax"), array(control_wires, like="jax")
+
+    _decompose_mcxs(wires, work_wires, control_wires)
 
 
 add_decomps(Incrementer, _incrementer_decomposition)
