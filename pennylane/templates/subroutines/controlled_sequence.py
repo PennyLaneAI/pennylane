@@ -110,13 +110,12 @@ class ControlledSequence(SymbolicOp, Operation):
         }
         return params
 
-    @property
-    def hash(self):
+    def __hash__(self):
         return hash(
             (
                 str(self.name),
                 self.control,
-                self.base.hash,
+                hash(self.base),
             )
         )
 

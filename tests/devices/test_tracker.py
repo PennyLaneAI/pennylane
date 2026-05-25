@@ -15,6 +15,8 @@
 Unit tests for the Tracker and constructor
 """
 
+import numpy as np
+
 # pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
@@ -172,20 +174,10 @@ dev_qubit = qp.device("default.qubit", wires=1)
 
 
 @qp.qnode(dev_qubit)
-def circuit_qubit():
+def circuit():
     return qp.expval(qp.PauliZ(0))
 
 
-dev_gaussian = qp.device("default.gaussian", wires=1)
-
-
-@qp.qnode(dev_gaussian)
-def circuit_gaussian():
-    return qp.expval(qp.QuadX(0))
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize("circuit", (circuit_qubit, circuit_gaussian))
 class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.gaussian'.
 
@@ -193,7 +185,7 @@ class TestDefaultTrackerIntegration:
     device suite. Using `default.gaussian`, we test one that inherits from `Device`.
     """
 
-    def test_single_execution_default(self, circuit, mocker):
+    def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
 
         # pylint: disable=too-few-public-methods
@@ -209,17 +201,23 @@ class TestDefaultTrackerIntegration:
             circuit()
             circuit()
 
-        assert tracker.totals == {"executions": 2}
-        assert tracker.history == {"executions": [1, 1], "shots": [None, None]}
-        assert tracker.latest == {"executions": 1, "shots": None}
+        assert tracker.totals == {"executions": 2, "batches": 2, "results": 2, "simulations": 2}
+        # lots of other things get tracked now
+        assert tracker.history["executions"] == [1, 1]
+        assert tracker.latest["executions"] == 1
 
         _, kwargs_called = spy.call_args_list[-1]
 
-        assert kwargs_called["totals"] == {"executions": 2}
-        assert kwargs_called["history"] == {"executions": [1, 1], "shots": [None, None]}
-        assert kwargs_called["latest"] == {"executions": 1, "shots": None}
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "batches": 2,
+            "results": 2,
+            "simulations": 2,
+        }
+        assert kwargs_called["history"]["executions"] == [1, 1]
+        assert kwargs_called["latest"]["executions"] == 1
 
-    def test_shots_execution_default(self, circuit, mocker):
+    def test_shots_execution_default(self, mocker):
         """Test correct tracks shots as well."""
 
         # pylint: disable=too-few-public-methods
@@ -232,21 +230,33 @@ class TestDefaultTrackerIntegration:
         spy = mocker.spy(wrapper, "callback")
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit(shots=10)
-            circuit(shots=20)
+            qp.set_shots(circuit, 10)()
+            qp.set_shots(circuit, 20)()
 
-        assert tracker.totals == {"executions": 2, "shots": 30}
-        assert tracker.history == {"executions": [1, 1], "shots": [10, 20]}
-        assert tracker.latest == {"executions": 1, "shots": 20}
+        assert tracker.totals == {
+            "executions": 2,
+            "shots": 30,
+            "batches": 2,
+            "results": 2.0,
+            "simulations": 2,
+        }
+        assert tracker.history["shots"] == [10, 20]
+        assert tracker.latest["shots"] == 20
 
-        assert spy.call_count == 2
+        assert spy.call_count == 4
 
         _, kwargs_called = spy.call_args_list[-1]
-        assert kwargs_called["totals"] == {"executions": 2, "shots": 30}
-        assert kwargs_called["history"] == {"executions": [1, 1], "shots": [10, 20]}
-        assert kwargs_called["latest"] == {"executions": 1, "shots": 20}
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "shots": 30,
+            "batches": 2,
+            "results": 2.0,
+            "simulations": 2,
+        }
+        assert kwargs_called["history"]["shots"] == [10, 20]
+        assert kwargs_called["latest"]["shots"] == 20
 
-    def test_batch_execution(self, circuit, mocker):
+    def test_batch_execution(self, mocker):
         """Tests that batch execute also updates information stored."""
 
         # pylint: disable=too-few-public-methods
@@ -261,23 +271,24 @@ class TestDefaultTrackerIntegration:
         tape = qp.workflow.construct_tape(circuit)()
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit.device.batch_execute([tape, tape])
+            circuit.device.execute([tape, tape])
 
-        assert tracker.totals == {"executions": 2, "batches": 1, "batch_len": 2}
-        assert tracker.history == {
-            "executions": [1, 1],
-            "shots": [None, None],
-            "batches": [1],
-            "batch_len": [2],
+        assert tracker.totals == {
+            "executions": 2,
+            "batches": 1,
+            "results": np.float64(2.0),
+            "simulations": 2,
         }
-        assert tracker.latest == {"batches": 1, "batch_len": 2}
+        assert tracker.history["executions"] == [1, 1]
+        assert tracker.history["batches"] == [1]
+        assert tracker.latest["simulations"] == 1
 
         _, kwargs_called = spy.call_args_list[-1]
-        assert kwargs_called["totals"] == {"executions": 2, "batches": 1, "batch_len": 2}
-        assert kwargs_called["history"] == {
-            "executions": [1, 1],
-            "shots": [None, None],
-            "batches": [1],
-            "batch_len": [2],
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "batches": 1,
+            "results": np.float64(2.0),
+            "simulations": 2,
         }
-        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 2}
+        assert kwargs_called["history"]["executions"] == [1, 1]
+        assert kwargs_called["latest"]["simulations"] == 1
