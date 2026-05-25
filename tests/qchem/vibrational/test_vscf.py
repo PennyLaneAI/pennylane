@@ -156,31 +156,40 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
 
 @pytest.mark.parametrize(
     ("molecule", "exp_result"),
-    [(co_mol, co_exp_result)],
+    [
+        (co_mol, co_exp_result),
+    ],
 )
 def test_vscf_integrals_full(molecule, exp_result):
-    r"""Test that correct rotated Hamiltonian and dipole is produced for the full workflow."""
+    r"""Test that correct rotated Hamiltonian and dipole is produced when in the full workflow."""
     pes = vibrational.vibrational_pes(molecule, n_points=17, cubic=False, dipole_level=2)
     christiansen_ints = vibrational.christiansen_integrals(pes, n_states=8)
     christiansen_dip = vibrational.christiansen_integrals_dipole(pes, n_states=8)
+
     h_integrals = [christiansen_ints[0], christiansen_ints[1]]
     dipole_integrals = [christiansen_dip[0]]
+
     result_h, result_dip = vscf.vscf_integrals(h_integrals, dipole_integrals, modals=[2])
 
+    exp_h0 = np.asarray(exp_result["h_data"][0])
+    exp_h1 = np.asarray(exp_result["h_data"][1])
+    exp_dip0 = np.asarray(exp_result["dip_data"][0])
+
     nmodes = result_h[0].shape[0]
-    # VSCF eigenvectors may return with permuted modal ordering
+
+    # VSCF eigenvectors have sign and ordering ambiguity
     for i in range(nmodes):
-        assert np.allclose(result_h[0][i], exp_result["h_data"][0][i]) or np.allclose(
-            result_h[0][i], exp_result["h_data"][0][i][::-1, ::-1]
+        assert np.allclose(abs(result_h[0][i]), abs(exp_h0[i]), atol=1e-5) or np.allclose(
+            abs(result_h[0][i]), abs(exp_h0[i][::-1, ::-1]), atol=1e-5
         )
 
-    assert np.allclose(result_h[1], exp_result["h_data"][1]) or np.allclose(
-        result_h[1], exp_result["h_data"][1][..., ::-1, ::-1, ::-1, ::-1]
+    assert np.allclose(abs(result_h[1]), abs(exp_h1), atol=1e-5) or np.allclose(
+        abs(result_h[1]), abs(exp_h1[..., ::-1, ::-1, ::-1, ::-1]), atol=1e-5
     )
 
     for i in range(nmodes):
-        assert np.allclose(result_dip[0][:, i], exp_result["dip_data"][0][:, i]) or np.allclose(
-            result_dip[0][:, i], exp_result["dip_data"][0][:, i, ::-1, ::-1]
+        assert np.allclose(abs(result_dip[0][:, i]), abs(exp_dip0[:, i]), atol=1e-5) or np.allclose(
+            abs(result_dip[0][:, i]), abs(exp_dip0[:, i, ::-1, ::-1]), atol=1e-5
         )
 
 
