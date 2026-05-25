@@ -29,6 +29,12 @@ from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
 
+has_jax = True
+try:
+    from jax import lax
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 class Incrementer(Operator):
     """
@@ -169,14 +175,17 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     def _increment():
         # Construct the wires on which the ladder will act.
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
-        if enabled:
+        if enabled():
             zipped = array(zipped, like="jax")
         all_wires = wires[:1] + zipped
 
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
+            if enabled():
+                TemporaryAND(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
+            else:
+                TemporaryAND(all_wires[2 * k : 2 * k + 3])
 
         forward_ladder()  # pylint: disable=no-value-for-parameter
 
@@ -184,7 +193,10 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
+            if enabled():
+                adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
+            else:
+                adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
@@ -248,10 +260,8 @@ def _incrementer_decomposition(wires, work_wires, **_):
     X(wires[-len(work_wires) - 1])
 
 
-def _controlled_incrementer_resources(base_params, num_control_wires, num_work_wires, **_):
-    resources = _incrementer_resources(
-        base_params["num_wires"] + num_control_wires, base_params["num_work_wires"] + num_work_wires
-    )
+def _controlled_incrementer_resources(base_params, **_):
+    resources = _incrementer_resources(base_params["num_wires"], base_params["num_work_wires"])
     resources[resource_rep(X)] = 0
     return resources
 
@@ -274,7 +284,11 @@ def _controlled_incrementer_decomposition(
     work_wires = base.hyperparameters["work_wires"] + work_wires
 
     if enabled():
-        wires, work_wires, control_wires = array(wires, like="jax"), array(work_wires, like="jax"), array(control_wires, like="jax")
+        wires, work_wires, control_wires = (
+            array(wires, like="jax"),
+            array(work_wires, like="jax"),
+            array(control_wires, like="jax"),
+        )
 
     _decompose_mcxs(wires, work_wires, control_wires)
 
