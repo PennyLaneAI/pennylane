@@ -184,7 +184,7 @@ def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend, mpi4
 
 
 def test_christiansen_integrals_dipole_level2():
-    """Test that christiansen_integrals_dipole works with dipole_level=2."""
+    """Test that christiansen_integrals_dipole works with `pes.dipole_level=2`."""
     one, two = christiansen_integrals_dipole(
         pes=pes_object_2D, n_states=4, num_workers=1, backend="serial"
     )
