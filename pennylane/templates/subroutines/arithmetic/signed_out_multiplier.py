@@ -475,9 +475,7 @@ def _not_zeroed_work_wire_condition(num_work_wires, num_output_wires, **_):
 
 
 def _zeroed_work_wire_condition(num_work_wires, **_):
-    return (
-        num_work_wires >= 2
-    )
+    return num_work_wires >= 2
 
 
 def _zeroed_condition(output_wires_zeroed, **_):

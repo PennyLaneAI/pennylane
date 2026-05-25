@@ -32,7 +32,6 @@ from .temporary_and import TemporaryAND
 has_jax = True
 try:
     from jax import lax
-    from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
