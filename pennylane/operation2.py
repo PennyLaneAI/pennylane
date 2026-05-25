@@ -433,17 +433,45 @@ class Operator2(ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    # TODO: [sc-120431] Implement __hash__ and __eq__ after qp.equal supports `Operator2`
-    # def __hash__(self) -> int:
-    #     serialized_dyn = tuple(
-    #         (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dynamic_args.items()
-    #     )
-    #     serialized_wires = tuple((n, tuple(w)) for n, w in self.wire_args.items())
-    #     serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
-    #     return hash((self.name, serialized_dyn, serialized_wires, serialized_static))
+    def __hash__(self) -> int:
+        serialized_dynamic = tuple(
+            (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dynamic_args.items()
+        )
+        serialized_wires = tuple(
+            (n, tuple(w)) for n, w in self.wire_args.items() if n not in self.hybrid_argnames
+        )
+        serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
+        serialized_compilable = tuple((n, str(s)) for n, s in self.compilable_args.items())
 
-    # def __eq__(self, other) -> bool:
-    #     return qp.equal(self, other)
+        serialized_hybrid = []
+        for h in self.hybrid_argnames:
+            leaves, tree = flatten(
+                self.arguments[h], is_leaf=lambda val: isinstance(val, (Wires, Operator2))
+            )
+            serialized_leaves = []
+            for l in leaves:
+                if isinstance(l, Wires):
+                    serialized_leaves.append(tuple(l))
+                elif isinstance(l, Operator2):
+                    serialized_leaves.append(hash(l))
+                else:
+                    serialized_leaves.append(l)
+
+            serialized_hybrid.append((tuple(serialized_leaves), tree))
+
+        return hash(
+            (
+                self.name,
+                serialized_dynamic,
+                serialized_wires,
+                serialized_static,
+                serialized_compilable,
+                tuple(serialized_hybrid),
+            )
+        )
+
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
 
     def __copy__(self) -> "Operator2":
         cls = type(self)

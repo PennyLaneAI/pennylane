@@ -28,6 +28,7 @@ from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
+from pennylane.operation2 import Operator2
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -365,6 +366,87 @@ def _equal_operators(
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
                 )
+
+    return True
+
+
+@_equal_dispatch.register
+def _equal_operators2(
+    op1: Operator2,
+    op2: Operator2,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check equality between Operator2 instances."""
+    # Check dynamic arguments
+    for (dname, dval1), (_, dval2) in zip(
+        op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
+    ):
+        if math.is_abstract(dval1) or math.is_abstract(dval2):
+            return (
+                f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
+                "tracers are assumed to be unique."
+            )
+
+        if not math.allclose(dval1, dval2, atol=atol, rtol=rtol):
+            return f"op1 and op2 have different values for '{dname}'.\n" f"Got {dval1} and {dval2}."
+
+        if check_interface:
+            interface1 = math.get_interface(dval1)
+            interface2 = math.get_interface(dval2)
+            if interface1 != interface2:
+                return (
+                    f"op1 and op2 have different interfaces for '{dname}'.\n"
+                    f"op1.{dname}'s interface is {interface1} and op2.{dname}'s "
+                    f"interface is {interface2}."
+                )
+
+        if check_trainability:
+            grad1 = "trainable" if math.requires_grad(dval1) else "not trainable"
+            grad2 = "trainable" if math.requires_grad(dval2) else "not trainable"
+            if grad1 != grad2:
+                return (
+                    f"op1 and op2 differ in trainability for '{dname}'.\n "
+                    f"op1.{dname} is {grad1} and op2.{dname} is {grad2}."
+                )
+
+    # Check static arguments
+    for (sname, sval1), (_, sval2) in zip(
+        op1.static_args.items(), op2.static_args.items(), strict=True
+    ):
+        if sval1 != sval2:
+            return f"op1 and op2 have different values for '{sname}'.\n" f"Got {sval1} and {sval2}."
+
+    # Check static, compilable arguments
+    for (cname, cval1), (_, cval2) in zip(
+        op1.compilable_args.items(), op2.compilable_args.items(), strict=True
+    ):
+        if cval1 != cval2:
+            return f"op1 and op2 have different values for '{cname}'.\n" f"Got {cval1} and {cval2}."
+
+    # Check wire arguments
+    for (wname, wval1), (_, wval2) in zip(
+        op1.wire_args.items(), op2.wire_args.items(), strict=True
+    ):
+        if wval1 != wval2:
+            if op1.wire_argnames == ("wires",):
+                return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+
+            return (
+                f"op1 and op2 have different wires for the '{wname}' argument.\n"
+                f"Got {wval1} and {wval2}."
+            )
+
+    # Check hybrid arguments
+    for (hname, hval1), (_, hval2) in zip(
+        op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
+    ):
+        if hname in op1.wire_argnames:
+            continue
+        if hval1 != hval2:
+            return f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
 
     return True
 
