@@ -445,8 +445,45 @@ def _equal_operators2(
     ):
         if hname in op1.wire_argnames:
             continue
-        if hval1 != hval2:
-            return f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
+
+        unequal_str = (
+            f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
+        )
+        leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
+        leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
+        if len(leaves1) != len(leaves2) or tree1 != tree2:
+            return unequal_str
+
+        for l1, l2 in zip(leaves1, leaves2, strict=True):
+            if isinstance(l1, Operator2):
+                if not isinstance(l2, Operator2):
+                    return unequal_str
+
+                ops_equal = _equal_operators2(
+                    l1,
+                    l2,
+                    check_interface=check_interface,
+                    check_trainability=check_trainability,
+                    atol=atol,
+                    rtol=rtol,
+                )
+                if isinstance(ops_equal, str):
+                    return (
+                        f"op1 and op2 have different values for '{hname}'. "
+                        f"The operator arguments do not match:\n{ops_equal}"
+                    )
+
+            elif isinstance(l2, Operator2):
+                return unequal_str
+
+            if math.is_abstract(l1) or math.is_abstract(l2):
+                return (
+                    f"At least one of op1 or op2 has a tracer value for '{hname}'. Abstract "
+                    "tracers are assumed to be unique."
+                )
+
+            if not math.allclose(l1, l2, atol=atol, rtol=rtol):
+                return unequal_str
 
     return True
 
