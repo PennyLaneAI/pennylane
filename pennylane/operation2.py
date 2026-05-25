@@ -18,15 +18,16 @@ TODO: [sc-120453] Fill docstring
 
 from abc import ABC
 from collections.abc import Hashable, Iterable
-from copy import deepcopy
+from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
-from pennylane.pytrees import flatten, register_pytree
+from pennylane.exceptions import AdjointUndefinedError, PowUndefinedError
+from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
+from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -38,7 +39,7 @@ class Operator2(ABC):
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
-    # ------------ Class variables set manually --------------------
+    # ----------------- Class variables set manually -------------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
     """The names of arguments corresponding to wires."""
@@ -66,17 +67,19 @@ class Operator2(ABC):
     type of all dynamic parameters is fixed, the number of wires is fixed, there are no
     static (compilable or non-compilable) arguments, and no hybrid arguments."""
 
-    # ------------ Class variables set automatically ---------------
+    # ----------------- Class variables set automatically --------------------
 
     _sig: ClassVar[Signature]
     """The signature of the operator."""
 
-    # ------------ Instance variables set automatically ------------
+    # ----------------- Instance variables set automatically -----------------
 
     _bound_args: BoundArguments
     """BoundArguments mapping arguments names to their values."""
 
-    # ------------------ Initialization ------------------
+    # ------------------------------------------------------------------------
+    # ----------------------------- Initialization ---------------------------
+    # ------------------------------------------------------------------------
 
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
@@ -319,7 +322,9 @@ class Operator2(ABC):
 
             self._batch_size = first_dims[0]
 
-    # ------------------ Public properties ------------------
+    # ------------------------------------------------------------------------
+    # -------------------------- Public properties ---------------------------
+    # ------------------------------------------------------------------------
 
     @property
     def arguments(self) -> dict[str, Any]:
@@ -402,29 +407,254 @@ class Operator2(ABC):
         return self._ndim_params
 
     @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 0
+
+    @property
+    def is_verified_hermitian(self) -> bool:
+        """This property determines if an operator is verified to be Hermitian.
+
+        .. note::
+
+            This property provides a fast, non-exhaustive check used for internal
+            optimizations. It relies on quick, provable shortcuts (e.g., operator
+            properties) rather than a full, computationally expensive check.
+
+            For a definitive check, use the :func:`pennylane.is_hermitian` function.
+            Please note that this comes with increased computational cost.
+
+        Returns:
+            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
+            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
+
+        Consider this operator,
+
+        >>> op = (qp.X(0) @ qp.Y(0) - qp.X(0) @ qp.Z(0)) * 1j
+
+        In this case, Hermicity cannot be verified and leads to an inconclusive result:
+
+        >>> op.is_verified_hermitian # inconclusive
+        False
+
+        However, using :func:`pennylane.is_hermitian` will give the correct answer:
+
+        >>> qp.is_hermitian(op) # definitive
+        True
+
+        """
+        return False
+
+    @property
     def pauli_rep(self) -> qp.pauli.PauliSentence | None:
-        """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
+        """A :class:`~.PauliSentence` representation of the Operator, or ``None``
+        if it doesn't have one."""
         return self._pauli_rep
+
+    # ------------------------------------------------------------------------
+    # --------------------------- Operator actions ---------------------------
+    # ------------------------------------------------------------------------
+
+    def label(
+        self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
+    ) -> str:
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qp.RX(1.23456, wires=0)
+        >>> op.label()
+        'RX'
+        >>> op.label(base_label="my_label")
+        'my_label'
+        >>> op = qp.RX(1.23456, wires=0)
+        >>> op.label()
+        'RX'
+        >>> op.label(decimals=2)
+        'RX\n(1.23)'
+        >>> op.label(base_label="my_label")
+        'my_label'
+        >>> op.label(decimals=2, base_label="my_label")
+        'my_label\n(1.23)'
+
+        Note that by default, operator wires and static inputs are not included in the label.
+        To override this behaviour, ``Operator2`` subclasses must override the ``label`` method.
+
+        If the operation has a matrix-valued parameter and a cache dictionary is provided,
+        unique matrices will be cached in the ``'matrices'`` key list. The label will contain
+        the index of the matrix in the ``'matrices'`` list.
+
+        >>> op2 = qp.QubitUnitary(np.eye(2), wires=0)
+        >>> cache = {'matrices': []}
+        >>> op2.label(cache=cache)
+        'U\n(M0)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+         [0., 1.]], requires_grad=True)]
+        >>> op3 = qp.QubitUnitary(np.eye(4), wires=(0,1))
+        >>> op3.label(cache=cache)
+        'U\n(M1)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+                [0., 1.]], requires_grad=True),
+        tensor([[1., 0., 0., 0.],
+                [0., 1., 0., 0.],
+                [0., 0., 1., 0.],
+                [0., 0., 0., 1.]], requires_grad=True)]
+
+        """
+        op_label = base_label or self.__class__.__name__
+
+        if len(self.dynamic_argnames) == 0:
+            return op_label
+
+        # Format each parameter individually, excluding those that lead to empty strings
+        param_strings = [
+            out
+            for p in self.dynamic_args.values()
+            if (out := _format_label_arg(p, decimals, cache)) != ""
+        ]
+        inner_string = ",\n".join(param_strings)
+
+        if inner_string == "":
+            return f"{op_label}"
+        return f"{op_label}\n({inner_string})"
+
+    def pow(self, z: float) -> list["Operator2"]:
+        """A list of new operators equal to this one raised to the given power. This method is used to simplify
+        :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+
+        ``Operator2.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        are the entry point for constructing generic powers to exponents.
+
+        Args:
+            z (float): exponent for the operator
+
+        Returns:
+            list[:class:`~.operation2.Operator2`]
+
+        >>> class MyClass(qp.operation2.Operator2):
+        ...
+        ...     def pow(self, z):
+        ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...
+        >>> op = MyClass(0.5, 0) ** 2
+        >>> op
+        MyClass(0.5, wires=[0])**2
+        >>> op.decomposition()
+        [MyClass(1.0, wires=[0])]
+        >>> op.simplify()
+        MyClass(1.0, wires=[0])
+
+        """
+        # Child methods may call super().pow(z%period) where op**period = I
+        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # Hence we define the non-negative integer cases here as a repeated list
+        if z == 0:
+            return []
+        if isinstance(z, int) and z > 0:
+            if QueuingManager.recording():
+                return [qp.apply(self) for _ in range(z)]
+            return [copy(self) for _ in range(z)]
+        raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
-        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+        # return self so pre-constructed Observables can be queued and returned in
+        # a single statement
+        return self
 
     @property
     def _queue_category(self) -> Literal["_ops", "_measurements"]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-        """
+        """Queue category
+        TODO: Remove once Operator._queue_category is removed."""
         return "_ops"
 
-    # ------------------ General dunder methods ------------------
+    @classproperty
+    @classmethod
+    def has_adjoint(cls) -> bool:
+        r"""Bool: Whether or not the Operator can compute its own adjoint.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.adjoint != Operator2.adjoint
+
+    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one. Used to simplify
+        :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
+        TODO: [sc-120432] Fix docstring after Adjoint is added
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        ``Operator2.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        is the entry point for constructing generic adjoint representations.
+
+        Returns:
+            The adjointed operation.
+
+        >>> class MyClass(qp.operation2.Operator2):
+        ...
+        ...     def adjoint(self):
+        ...         return self
+        ...
+        >>> op = qp.adjoint(MyClass(wires=0))
+        >>> op
+        Adjoint(MyClass(wires=[0]))
+        >>> op.decomposition()
+        [MyClass(wires=[0])]
+        >>> op.simplify()
+        MyClass(wires=[0])
+        """
+        raise AdjointUndefinedError
+
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
+        """Returns a shallow copy of the current operator with its wires changed according
+        to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator2: new operator
+        """
+        # pylint: disable=protected-access
+        new_op = copy(self)
+
+        for n, wires in self.wire_args.items():
+            leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
+            mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
+            new_wires = unflatten(mapped_leaves, tree)
+            new_op._bound_args.arguments[n] = new_wires
+
+        if (p_rep := self.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
+
+        return new_op
+
+    def simplify(self) -> "Operator2":
+        """Reduce the depth of nested operators to the minimum.
+
+        Returns:
+            .Operator2: simplified operator
+        """
+        return self
+
+    # ------------------------------------------------------------------------
+    # ------------------------ General dunder methods ------------------------
+    # ------------------------------------------------------------------------
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
@@ -466,6 +696,11 @@ class Operator2(ABC):
         return copied_op
 
 
+# ------------------------------------------------------------------------------
+# ------------------------------- Helper methods -------------------------------
+# ------------------------------------------------------------------------------
+
+
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
     # pylint: disable=protected-access
@@ -482,3 +717,29 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
+
+
+def _format_label_arg(x, decimals, cache):
+    """Format a scalar parameter or retrieve/store a matrix-valued parameter
+    from/to cache, formatting its position in the cache as parameter string."""
+    if len(qp.math.shape(x)) == 0:
+        # Scalar case
+        if decimals is None:
+            return ""
+        try:
+            return format(qp.math.toarray(x), f".{decimals}f")
+        except ValueError:
+            # If the parameter can't be displayed as a float
+            return format(x)
+
+    if cache is None or not isinstance(mat_cache := cache.get("matrices", None), list):
+        # No caching; matrices are not printed out fully, so no printing of this parameter
+        return ""
+
+    # Retrieve matrix location in cache, or write the matrix to cache as new entry
+    for i, mat in enumerate(mat_cache):
+        if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
+            return f"M{i}"
+    mat_num = len(mat_cache)
+    mat_cache.append(x)
+    return f"M{mat_num}"
