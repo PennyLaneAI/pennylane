@@ -87,9 +87,10 @@ class _DecompInGraphInfo(_DecompInfo):
         """The gate count and weighted cost in terms of the target gate set in Markdown."""
         assert self.is_reachable
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
-        gate_counts = self._make_table(gate_set_resource.gate_counts, "Gate", "Count")
+        entries = list(gate_set_resource.gate_counts.items())
+        gate_counts = self._make_table(entries, ("Full Expansion", "Count"))
         weighted_cost = gate_set_resource.weighted_cost
-        return f"* Full Expansion Gates:\n\n{gate_counts}\n\n* Weighted Cost: {weighted_cost}"
+        return f"{gate_counts}\n\nWeighted Cost: {weighted_cost}"
 
     @property
     def missing_ops(self) -> str:
@@ -115,14 +116,11 @@ class _DecompInGraphInfo(_DecompInfo):
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
-            gate_count_str = self._make_table(estimated_count, "Gate", "Count")
-            return f"* First-Level Expansion Gates:\n\n{gate_count_str}"
-        estimate = self._make_table(estimated_count, "Gate", "Count")
-        actual = self._make_table(actual_count, "Gate", "Count")
-        return (
-            f"* Estimated First-Level Expansion Gates:\n\n{estimate}\n\n"
-            f"* Actual First-Level Expansion Gates:\n\n{actual}"
-        )
+            entries = list(estimated_count.items())
+            return self._make_table(entries, ("First-Level Expansion", "Count"))
+        all_gates = set(estimated_count.keys()) | set(actual_count.keys())
+        entries = [(op, estimated_count.get(op, 0), actual_count.get(op, 0)) for op in all_gates]
+        return self._make_table(entries, ("First-Level Expansion", "Estimated", "Actual"))
 
 
 class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=too-few-public-methods

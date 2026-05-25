@@ -869,8 +869,8 @@ class _DecompInfo:
         actual_count, allocations = _count_gates(self._op, self._rule)
         gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
         if allocations:
-            alloc_str = self._make_table(allocations, "WireType", "Count")
-            gate_count_str += f"\n\n* Wire Allocations:\n\n{alloc_str}"
+            entries = list(allocations.items())
+            gate_count_str += "\n\n" + self._make_table(entries, ("Wire Type", "Num Allocated"))
         return gate_count_str
 
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
@@ -884,17 +884,20 @@ class _DecompInfo:
         """Get the section of the string that specifies the gate count."""
         estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
         if estimated_count == actual_count:
-            gate_count_str = self._make_table(estimated_count, "Gate", "Count")
-            return f"* Gate Count:\n\n{gate_count_str}"
-        estimate = self._make_table(estimated_count, "Gate", "Count")
-        actual = self._make_table(actual_count, "Gate", "Count")
-        return f"* Estimated Gate Count\n\n{estimate}\n\n* Actual Gate Count:\n\n{actual}"
+            entries = list(estimated_count.items())
+            return self._make_table(entries, ("Gate", "Count"))
+        all_ops = set(estimated_count.keys()) | set(actual_count.keys())
+        entries = [(op, estimated_count.get(op, 0), actual_count.get(op, 0)) for op in all_ops]
+        return self._make_table(entries, ("Gate", "Estimated", "Actual"))
 
-    def _make_table(self, entry_dict, key, value) -> str:
-        header = f"  | {key} | {value} |\n  | :--- | :--- |\n"
+    def _make_table(self, entries: Sequence[tuple], columns: Sequence[str]) -> str:
+        column_str = " | ".join(columns)
+        header_line = " | ".join((":---",) * len(columns))
+        header = f"| {column_str} |\n| {header_line} |\n"
         lines = []
-        for op, count in entry_dict.items():
-            lines.append(f"  | {op} | {count} |")
+        for entry in entries:
+            line_str = " | ".join(str(s) for s in entry)
+            lines.append(f"| {line_str} |")
         return header + "\n".join(lines)
 
     @property
