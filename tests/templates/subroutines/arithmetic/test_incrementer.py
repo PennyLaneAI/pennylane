@@ -44,7 +44,22 @@ def increment(wires, init_state, work_wires=None):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition(wires, work_wires):
+def test_decomposition_capture(wires, work_wires):
+    op = Incrementer(wires, work_wires)
+
+    for rule in list_decomps(Incrementer):
+        _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.parametrize(
+    "wires, work_wires",
+    [
+        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), []),  # no work wires
+    ],
+)
+def test_decomposition_capture(wires, work_wires):
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):

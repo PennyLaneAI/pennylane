@@ -240,7 +240,6 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     def flip_wires(i, wires, num_wires):
         if enabled():
             target_wires = lax.dynamic_slice(wires, (-i,), (len(wires),))
-            ones = array(lax.dynamic_slice(wires, (-i,), (len(wires),)).at[:].set(1), like="jax")
 
             def build_wires(j, passed):
                 (nw, tw, w, i) = passed
@@ -253,7 +252,6 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
             MultiControlledX(
                 target_wires,
-                ones,
                 work_wires=work_wires,
             )
         else:
