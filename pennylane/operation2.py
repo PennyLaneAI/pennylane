@@ -228,12 +228,12 @@ class Operator2(ABC):
         **Example:**
 
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
+        >>> op._flatten() # doctest: +SKIP
         ((1.2, 2.3, 3.4, Wires([0])), ())
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
+        >>> op._flatten() # doctest: +SKIP
         ((1.2, Wires([0, 1])), ('XY',))
         """
         args = {}

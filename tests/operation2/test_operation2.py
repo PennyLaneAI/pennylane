@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=redefined-outer-name,protected-access
+# pylint: disable=redefined-outer-name,protected-access,too-few-public-methods
 
 import copy
 
@@ -37,7 +37,7 @@ class TestInitSubclass:
             hybrid_argnames = "wires"
 
             def __init__(self, phi, pw, wires):
-                super().__init__(phi, pw, wires=Wires(wires))
+                super().__init__(phi, pw, wires=wires)
 
         assert Op.dynamic_argnames == ("phi",)
         assert Op.static_argnames == ("pw",)
@@ -95,7 +95,7 @@ class TestInitSubclass:
             hybrid_argnames = ("wires",)
 
             def __init__(self, wires):
-                super().__init__(wires=Wires(wires))
+                super().__init__(wires=wires)
 
         assert Op.hybrid_argnames == ("wires",)
 
@@ -221,7 +221,7 @@ class TestOperatorInit:
             wire_argnames = ("wires", "ctrl_wires")
 
             def __init__(self, wires, ctrl_wires):
-                super().__init__(wires, ctrl_wires)
+                super().__init__(Wires(wires), Wires(ctrl_wires))
 
         op = TwoWiresArgsOp(wires=[0, 1], ctrl_wires=2)
         assert op.wires == Wires([0, 1, 2])
@@ -233,7 +233,7 @@ class TestOperatorInit:
             wire_argnames = ("wires", "work_wires", "work_wire")
 
             def __init__(self, wires, work_wires, work_wire):
-                super().__init__(wires, work_wires, work_wire)
+                super().__init__(Wires(wires), Wires(work_wires), Wires(work_wire))
 
         op = WithWorkWires(wires=[0, 1], work_wires=[2, 3], work_wire=4)
         assert op.wires == Wires([0, 1])
@@ -393,10 +393,10 @@ class TestPytreeMethods:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            static_argnames = ("foo",)
+            static_argnames = ("static",)
 
-            def __init__(self, phi, foo, wires):
-                super().__init__(phi, foo, wires=Wires(wires))
+            def __init__(self, phi, static, wires):
+                super().__init__(phi, static, wires=Wires(wires))
 
         op = Op(0.5, "bar", wires=0)
         data, metadata = op._flatten()
@@ -413,10 +413,10 @@ class TestPytreeMethods:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            compilable_argnames = ("foo",)
+            compilable_argnames = ("static",)
 
-            def __init__(self, phi, foo, wires):
-                super().__init__(phi, foo, wires=Wires(wires))
+            def __init__(self, phi, static, wires):
+                super().__init__(phi, static, wires=Wires(wires))
 
         op = Op(1.5, "bar", wires=[0, 1])
         data, metadata = op._flatten()
