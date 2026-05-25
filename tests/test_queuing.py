@@ -467,19 +467,5 @@ def test_process_queue_error_if_not_operator_or_measurement():
     """
     q = AnnotatedQueue()
     q.append(1)
-    with pytest.raises(QueuingError, match="not an object that can be processed"):
-        qp.queuing.process_queue(q)
-
-
-def test_queue_category_none_removal():
-
-    class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-        _queue_category = None
-        num_wires = 1
-        num_params = 0
-
-    q = AnnotatedQueue()
-    q.append(DummyOp(wires=[0]))
-
-    with pytest.raises(ValueError, match="_queue_category can no longer be set to None."):
+    with pytest.raises(QueuingError, match="Encountered object 1 in queue while processing."):
         qp.queuing.process_queue(q)

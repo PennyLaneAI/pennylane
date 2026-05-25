@@ -148,6 +148,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isisntance` checks
+  when processing an `AnnotatedQueue` into a `QuantumScript`.
+
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 

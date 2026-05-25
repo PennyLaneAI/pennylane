@@ -537,6 +537,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
+# pylint: disable=protected-access
 def process_queue(
     queue: AnnotatedQueue,
 ) -> tuple[list["pennylane.operation.Operator"], list["pennylane.measurements.MeasurementProcess"]]:
@@ -547,17 +548,39 @@ def process_queue(
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operator), list(.MeasurementProcess)]:
+        tuple[list(.Operation), list(.MeasurementProcess)]:
         The list of tape operations, the list of tape measurements
 
-    """
-    # tach-ignore
-    from pennylane.measurements import MeasurementProcess  # pylint: disable=import-outside-toplevel
+    Raises:
+        QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
 
-    ops_and_meas = queue.queue
-    ind = 0
-    for obj in reversed(ops_and_meas):
-        if not isinstance(obj, MeasurementProcess):
-            break
-        ind -= 1
-    return ops_and_meas[:ind], ops_and_meas[ind:]
+    """
+    from pennylane.measurements import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        MeasurementProcess,
+    )
+    from pennylane.operation import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        Operator,
+    )
+    from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel # tach-ignore
+
+    ops = []
+    measurements = []
+    encountered_measurement = False
+
+    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
+    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
+    for obj, _ in queue.items():
+        if isinstance(obj, (Operator, QuantumTape)):
+            if encountered_measurement:
+                raise ValueError(f"{obj} must occur prior to any measurements.")
+            ops.append(obj)
+        elif isinstance(obj, MeasurementProcess):
+            measurements.append(obj)
+            encountered_measurement = True
+        else:
+            raise QueuingError(
+                f"Encountered object {obj} in queue while processing."
+                " AnnotatedQueue should only contain Operator's and MeasurementProcess's."
+            )
+
+    return ops, measurements
