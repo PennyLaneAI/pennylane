@@ -462,9 +462,7 @@ class TestWrappedObj:
 
 
 def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object that does not have a
-    _queue_category property
-    """
+    """Test that a QueuingError is raised if process queue encounters an object it cant handle."""
     q = AnnotatedQueue()
     q.append(1)
     with pytest.raises(QueuingError, match="Encountered object 1 in queue while processing."):
