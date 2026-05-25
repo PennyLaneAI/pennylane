@@ -573,7 +573,7 @@ def process_queue(
     for obj, _ in queue.items():
         if isinstance(obj, (Operator, QuantumTape)):
             if encountered_measurement:
-                raise ValueError(f"{obj} must occur prior to any measurements.")
+                raise ValueError(f"{obj} must occur prior to measurements.")
             ops.append(obj)
         elif isinstance(obj, MeasurementProcess):
             measurements.append(obj)
