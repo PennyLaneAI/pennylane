@@ -31,6 +31,7 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
+    ~prod
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +96,7 @@ Templates
     ~RegisterEquality
     ~LabsQROM
     ~SelectCopyQROM
+    ~ResourceQfunc
 
 """
 
@@ -136,6 +138,8 @@ from .templates import (
     select_thc_controlled_resource_decomp,
 )
 from .ops import (
+    prod,
+    ResourceQfunc,
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
     hadamard_controlled_resource_decomp,
