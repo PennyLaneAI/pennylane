@@ -384,7 +384,15 @@ def _add_measurement(
         meas_label = str(m)
 
     if len(m.wires) == 0:  # state or probability across all wires
+        # When a measurement spans every device wire implicitly (the StateMP
+        # / ProbabilityMP "broadcast over all wires" case), draw the
+        # multi-wire grouping symbols too. Without this branch the drawer
+        # rendered the measurement label flush against the right margin only
+        # when the device had been instantiated *without* an explicit
+        # ``wires=N`` parameter, while devices created with explicit wires
+        # got the ``╭ ├ ╰`` brackets — see issue #7807.
         n_wires = len(config.wire_map)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
         for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 

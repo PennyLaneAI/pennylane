@@ -408,7 +408,9 @@ class TestMidCircuitMeasurements:
         # Stripping to remove trailing white-space because length of white-space at the
         # end of the drawing depends on the length of each individual line
         drawing = qp.draw(func)().strip()
-        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
+        # Issue #7807: multi-wire all-wires measurements now render with
+        # grouping brackets even when ``m.wires`` is implicitly empty.
+        expected_drawing = f"0: ──X──┤↗├──X─┤ ╭{label}\n1: ──X───║───║─┤ ╰{label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
 
