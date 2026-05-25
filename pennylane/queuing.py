@@ -182,6 +182,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
+from typing import Union
 
 from pennylane.exceptions import QueuingError
 
@@ -250,7 +251,7 @@ class QueuingManager:
         return bool(cls._active_contexts)
 
     @classmethod
-    def active_context(cls) -> "AnnotatedQueue" | None:
+    def active_context(cls) -> Union["AnnotatedQueue", None]:
         """Returns the currently active queuing context."""
         return cls._active_contexts[-1] if cls.recording() else None
 
