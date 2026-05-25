@@ -51,11 +51,7 @@
 
   ```
 
-<<<<<<< new-operator-base
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
-=======
-* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
->>>>>>> main
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -224,11 +220,8 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Christina Lee,
-<<<<<<< new-operator-base
-Mudit Pandey,
-=======
 Anton Naim Ibrahim,
->>>>>>> main
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,
