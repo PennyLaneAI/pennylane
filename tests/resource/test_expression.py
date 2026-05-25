@@ -43,8 +43,8 @@ def test_term_to_str(vars, coeff, expected):
     assert _term_to_str(vars, coeff) == expected
 
 
-@pytest.fixture
-def sample_expr() -> Expression:
+@pytest.fixture(name="sample_expr")
+def fixture_sample_expr() -> Expression:
     """Helper method to create a simple expression for testing."""
     return Expression(
         {
@@ -210,7 +210,7 @@ class TestExpressionMath:
         assert expr + 3 == 3 + expr
 
     def test_add_invalid(self, sample_expr):
-        # pylint: ignore=pointless-statement
+        # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
             sample_expr + "not an expression"
         with pytest.raises(TypeError):
@@ -243,7 +243,7 @@ class TestExpressionMath:
         assert expr * 0 == 0 * expr == Expression({})
 
     def test_mul_invalid(self, sample_expr):
-        # pylint: ignore=pointless-statement
+        # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
             sample_expr * "not an expression"
         with pytest.raises(TypeError):
