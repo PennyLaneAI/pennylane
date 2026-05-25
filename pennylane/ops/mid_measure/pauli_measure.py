@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
+from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
@@ -239,4 +240,9 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         wires = _setup_wires(wires)
         return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
-    return _pauli_measure_impl(wires, pauli_word, postselect)
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.pauli_measure(pauli_word=pauli_word, wires=wires, postselect=postselect)
+
+    return _pauli_measure_impl(wires=wires, pauli_word=pauli_word, postselect=postselect)
