@@ -70,7 +70,7 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
+* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
   ```python
@@ -100,7 +100,7 @@
 
   ```
 
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -228,8 +228,9 @@
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
 <h3>Bug fixes 🐛</h3>
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
-  ([#9448](https://github.com/PennyLaneAI/pennylane/pull/9448))
+  [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
 * The `pl-device-test` no longer uses the deprecated syntax that sets the shots on the device.
   [(#9503)](https://github.com/PennyLaneAI/pennylane/pull/9503)
@@ -237,7 +238,7 @@
 * Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
   incorrect global phase (off by −1 per qubit). The decomposition used
   ``GlobalPhase(basis * π/2)`` instead of ``GlobalPhase(-basis * π/2)``, introduced in
-  [#9406](https://github.com/PennyLaneAI/pennylane/pull/9406).
+  [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406).
   [(#9492)](https://github.com/PennyLaneAI/pennylane/pull/9492)
 
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
@@ -265,7 +266,8 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Christina Lee,
+Anton Naim Ibrahim,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,
-David Wierichs
+David Wierichs.
