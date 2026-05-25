@@ -60,6 +60,12 @@ class Operator2(ABC):
     """The names of arguments which correspond to compilable static operator data.
     This feature is opt-in, but can be useful PauliString arguments and the like."""
 
+    # TODO: [sc-120517] Add proper fixed_sig support
+    fixed_sig: ClassVar[tuple[type, ...]]
+    """The expected signature of an operator. This must be set only if the shape and data
+    type of all dynamic parameters is fixed, the number of wires is fixed, there are no
+    static (compilable or non-compilable) arguments, and no hybrid arguments."""
+
     # ------------ Class variables set automatically ---------------
 
     _sig: ClassVar[Signature]
