@@ -445,7 +445,7 @@ class Operator2(ABC):
     # def __eq__(self, other) -> bool:
     #     return qp.equal(self, other)
 
-    def __copy__(self) -> "qp.PauliX[0]":
+    def __copy__(self) -> "Operator2":
         cls = type(self)
         copied_op = cls.__new__(cls)
         for attr, value in vars(self).items():
