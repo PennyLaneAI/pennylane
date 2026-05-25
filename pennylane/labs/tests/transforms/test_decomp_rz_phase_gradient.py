@@ -217,7 +217,7 @@ def test_capture_compatibility():
                 angle_wires, phase_grad_wires, work_wires
             )
 
-            gate_set = {"C(BasisEmbedding)", "C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
+            gate_set = {"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
 
             @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
             def f(phi):
