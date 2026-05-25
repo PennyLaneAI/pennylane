@@ -117,7 +117,7 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
 @qnode(dev, shots=1)
 def signed_multiply(
     x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):  # pylint: disable=to-many-arguments
+):  # pylint: disable=too-many-arguments
     BasisEmbedding(
         init_state,
         list(range(len(x_wires)))
