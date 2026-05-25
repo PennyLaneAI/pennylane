@@ -20,7 +20,7 @@
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
 * A more informative error message is raised when quantum functions without registered resource
-  estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.decompose` transform.
+  estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
