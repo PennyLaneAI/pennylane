@@ -59,7 +59,7 @@ def test_decomposition_capture(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_capture(wires, work_wires):
+def test_decomposition(wires, work_wires):
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):
