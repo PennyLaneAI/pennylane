@@ -63,6 +63,11 @@
   decompositions.
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
+* Added a dispatcher for `qp.pauli_measure` to call `catalyst.pauli_measure` when qjit is enabled
+  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for 
+  decomposition.
+  [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
@@ -191,6 +196,9 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 <h3>Internal changes ⚙️</h3>
+
+* Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
+  [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
