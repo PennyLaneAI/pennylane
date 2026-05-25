@@ -836,7 +836,13 @@ class _DecompInfo:
             avail = self._num_work_wires
             return f"_Insufficient work wires: requires {req} but only {avail} available._"
         circuit_drawing = "```\n" + self.circuit_drawing + "\n```"
-        return circuit_drawing + "\n" + self.gate_counts_and_allocations_md
+        gate_counts_title = "Gate Counts and Wire Allocations"
+        return (
+            circuit_drawing
+            + "\n"
+            + f"<details><summary>{gate_counts_title}</summary>\n\n"
+            + f"{self.gate_counts_and_allocations_md}\n</details>"
+        )
 
     @property
     def circuit_drawing(self) -> str:
