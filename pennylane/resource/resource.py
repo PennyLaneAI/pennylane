@@ -449,6 +449,8 @@ class SymbolicSpecsResources(SpecsResources):
         # `int` and therefore do not contain a `var` member
         # pylint: disable=no-member
 
+        # Need to take a union over all variables across the different expressions to
+        # ensure the top-level objects has the full set of variables
         if self.depth is not None:
             vars |= self.depth.vars
         vars |= self.num_allocs.vars

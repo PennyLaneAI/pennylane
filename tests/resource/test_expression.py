@@ -203,6 +203,12 @@ class TestExpression:
         assert new_expr._data == {("x",): 1, (): 5}
         assert expr + 3 == 3 + expr
 
+    def test_add_invalid(self, sample_expr):
+        with pytest.raises(TypeError):
+            sample_expr + "not an expression"
+        with pytest.raises(TypeError):
+            "not an expression" + sample_expr
+
     def test_mul(self):
         expr1 = Expression({("x",): 1, (): 2})
         expr2 = Expression({("y",): 3, (): 4})
@@ -222,3 +228,15 @@ class TestExpression:
         new_expr = expr * 3
         assert new_expr._data == {("x",): 3, (): 6}
         assert expr * 3 == 3 * expr
+
+    def test_mul_zero(self):
+        expr = Expression({("x",): 1, (): 2})
+        new_expr = expr * 0
+        assert new_expr._data == {}
+        assert expr * 0 == 0 * expr == Expression({})
+
+    def test_mul_invalid(self, sample_expr):
+        with pytest.raises(TypeError):
+            sample_expr * "not an expression"
+        with pytest.raises(TypeError):
+            "not an expression" * sample_expr
