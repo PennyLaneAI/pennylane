@@ -147,6 +147,14 @@ def _work_wire_condition(num_wires, num_work_wires, **_):
     return (num_work_wires + 1) >= (num_wires - num_work_wires)
 
 
+def _base_work_wire_condition(base_params, num_control_wires, num_work_wires, **_):
+    return _work_wire_condition(
+        base_params["num_wires"] + num_control_wires,
+        base_params["num_work_wires"] + num_work_wires,
+        **_,
+    )
+
+
 def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
     return not _work_wire_condition(num_wires, num_work_wires)
 
@@ -240,17 +248,19 @@ def _incrementer_decomposition(wires, work_wires, **_):
     X(wires[-len(work_wires) - 1])
 
 
-def _controlled_incrementer_resources(num_wires, num_work_wires, **_):
-    resources = _incrementer_resources(num_wires, num_work_wires)
+def _controlled_incrementer_resources(base_params, num_control_wires, num_work_wires, **_):
+    resources = _incrementer_resources(
+        base_params["num_wires"] + num_control_wires, base_params["num_work_wires"] + num_work_wires
+    )
     resources[resource_rep(X)] = 0
     return resources
 
 
-def _control_values_condition(control_values, **_):
-    return not sum(map(lambda val: not val, control_values))
+def _control_values_condition(num_zero_control_values, **_):
+    return num_zero_control_values == 0
 
 
-@register_condition(_work_wire_condition)
+@register_condition(_base_work_wire_condition)
 @register_condition(_control_values_condition)
 @register_resources(_controlled_incrementer_resources)
 def _controlled_incrementer_decomposition(
@@ -260,7 +270,7 @@ def _controlled_incrementer_decomposition(
     base,
     **__,
 ):
-    _decompose_mcxs(base.wires, work_wires, control_wires)
+    _decompose_mcxs(base.wires, base.hyperparameters["work_wires"] + work_wires, control_wires)
 
 
 add_decomps(Incrementer, _incrementer_decomposition)
