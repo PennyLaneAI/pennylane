@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import functools
 import warnings
-from collections.abc import Callable, Sequence, Iterable
+from collections.abc import Callable, Sequence, Iterable, Sized
 from copy import copy
 from inspect import signature
 from typing import Any, Literal, overload
@@ -597,7 +597,7 @@ class Controlled(SymbolicOp):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
-        if isinstance(control_wires, (str, int)) or (isinstance(control_wires, Iterable) and len(control_wires) != 0 and isinstance(control_wires[0], (str, int))):
+        if isinstance(control_wires, (str, int)) or (isinstance(control_wires, Sized) and len(control_wires) != 0 and isinstance(control_wires[0], (str, int))):
             control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base,
