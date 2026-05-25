@@ -43,20 +43,21 @@ def test_term_to_str(vars, coeff, expected):
     assert _term_to_str(vars, coeff) == expected
 
 
+@pytest.fixture
+def sample_expr() -> Expression:
+    """Helper method to create a simple expression for testing."""
+    return Expression(
+        {
+            ("z", "z"): 1,
+            ("x", "y"): 1,
+            ("x",): 2,
+            (): 5,
+        }
+    )
+
+
 class TestExpression:
     """Test the methods and attributes of the Expression class"""
-
-    @pytest.fixture
-    def sample_expr(self) -> Expression:
-        """Helper method to create a simple expression for testing."""
-        return Expression(
-            {
-                ("z", "z"): 1,
-                ("x", "y"): 1,
-                ("x",): 2,
-                (): 5,
-            }
-        )
 
     def test_init_as_int(self):
         """Test that the __init__ method can handle an integer input for a constant expression."""
@@ -137,14 +138,6 @@ class TestExpression:
         assert isinstance(new_expr3, int)
         assert new_expr3 == 32
 
-    def test_int(self):
-        assert Expression({}).__int__() == 0
-        assert Expression({(): 5}).__int__() == 5
-        with pytest.raises(ValueError):
-            Expression({("x",): 1}).__int__()
-        with pytest.raises(ValueError):
-            Expression({("x",): 1, ("y",): 1}).__int__()
-
     @pytest.mark.parametrize(
         "expr, expected",
         [
@@ -186,6 +179,16 @@ class TestExpression:
         assert Expression({}) == 0
         assert Expression({}) != 1
 
+
+class TestExpressionMath:
+    def test_int(self):
+        assert Expression({}).__int__() == 0
+        assert Expression({(): 5}).__int__() == 5
+        with pytest.raises(ValueError):
+            Expression({("x",): 1}).__int__()
+        with pytest.raises(ValueError):
+            Expression({("x",): 1, ("y",): 1}).__int__()
+
     def test_add(self):
         expr1 = Expression({("x",): 1, (): 1})
         expr2 = Expression({("y",): 2, (): 2})
@@ -207,6 +210,7 @@ class TestExpression:
         assert expr + 3 == 3 + expr
 
     def test_add_invalid(self, sample_expr):
+        # pylint: ignore=pointless-statement
         with pytest.raises(TypeError):
             sample_expr + "not an expression"
         with pytest.raises(TypeError):
@@ -239,6 +243,7 @@ class TestExpression:
         assert expr * 0 == 0 * expr == Expression({})
 
     def test_mul_invalid(self, sample_expr):
+        # pylint: ignore=pointless-statement
         with pytest.raises(TypeError):
             sample_expr * "not an expression"
         with pytest.raises(TypeError):
