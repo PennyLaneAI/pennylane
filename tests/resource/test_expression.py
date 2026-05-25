@@ -163,6 +163,9 @@ class TestExpression:
         # Needs to be separate since a fixture can't be used within parametrize
         assert str(sample_expr) == "z*z + x*y + 2*x + 5"
 
+    def test_repr(self, sample_expr):
+        assert repr(sample_expr) == f"Expression({sample_expr._data})"
+
     def test_eq(self):
         """Test that the __eq__ method correctly determines equality of expressions."""
         expr1 = Expression({("x",): 1, (): 2})

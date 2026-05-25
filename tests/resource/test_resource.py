@@ -922,29 +922,66 @@ class TestSymbolicSpecsResources:
     def test_subs_kwargs(self, example_resource):
         assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
 
+    def test_call(self, example_resource):
+        assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
+
     def test_eq(self):
         s1 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({(): 1})},
-            gate_sizes={1: Expression({(): 1})},
-            measurements={"expval(PauliZ)": Expression({(): 1})},
-            num_allocs=Expression({(): 1}),
-            depth=Expression({(): 1}),
+            gate_types={"Hadamard": Expression({("x,"): 1})},
+            gate_sizes={1: Expression({("x,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+        s2 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("x,"): 1})},
+            gate_sizes={1: Expression({("x,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+        s3 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("z,"): 1})},
+            gate_sizes={1: Expression({("z,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+
+        assert s1 == s2
+        assert s1 != s3
+        assert s2 != s3
+        assert s1 != SpecsResources(
+            gate_types={"Hadamard": 1},
+            gate_sizes={1: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_eq_no_var(self):
+        s1 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression(1)},
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
         )
 
         s2 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({(): 1})},
-            gate_sizes={1: Expression({(): 1})},
-            measurements={"expval(PauliZ)": Expression({(): 1})},
-            num_allocs=Expression({(): 1}),
-            depth=Expression({(): 1}),
+            gate_types={"Hadamard": Expression(1)},
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
         )
 
         s3 = SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({(): 2})},  # different value here
-            gate_sizes={1: Expression({(): 1})},
-            measurements={"expval(PauliZ)": Expression({(): 1})},
-            num_allocs=Expression({(): 1}),
-            depth=Expression({(): 1}),
+            gate_types={"Hadamard": Expression(2)},  # different value here
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
         )
 
         assert s1 == s2
@@ -958,6 +995,9 @@ class TestSymbolicSpecsResources:
             num_allocs=1,
             depth=1,
         )
+
+    def test_eq_invalid(self, example_resource):
+        assert example_resource != "not a SpecsResource"
 
     def test_str(self, example_resource):
         s = example_resource
