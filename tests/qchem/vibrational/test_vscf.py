@@ -177,7 +177,6 @@ def test_vscf_integrals_full(molecule, exp_result):
 
     nmodes = result_h[0].shape[0]
 
-    # VSCF eigenvectors have sign and ordering ambiguity
     for i in range(nmodes):
         assert np.allclose(abs(result_h[0][i]), abs(exp_h0[i]), atol=1e-5) or np.allclose(
             abs(result_h[0][i]), abs(exp_h0[i][::-1, ::-1]), atol=1e-5
