@@ -597,7 +597,8 @@ class Controlled(SymbolicOp):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
-        control_wires = control_wires
+        if isinstance(control_wires[0], (str, int)):
+            control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base,
             *control_wires,
