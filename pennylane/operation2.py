@@ -23,6 +23,8 @@ from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal
 
+import numpy as np
+
 import pennylane as qp
 from pennylane import math
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
@@ -435,29 +437,28 @@ class Operator2(ABC):
 
     def __hash__(self) -> int:
         serialized_dynamic = tuple(
-            (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dynamic_args.items()
+            _canonicalize_dynamic(self.arguments[d], self.name) for d in self.dynamic_argnames
         )
         serialized_wires = tuple(
-            (n, tuple(w)) for n, w in self.wire_args.items() if n not in self.hybrid_argnames
+            tuple(self.arguments[w]) for w in self.wire_argnames if w not in self.hybrid_argnames
         )
-        serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
-        serialized_compilable = tuple((n, str(s)) for n, s in self.compilable_args.items())
+        serialized_static = tuple(str(self.arguments[s]) for s in self.static_argnames)
+        serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
 
         serialized_hybrid = []
         for h in self.hybrid_argnames:
-            leaves, tree = flatten(
-                self.arguments[h], is_leaf=lambda val: isinstance(val, (Wires, Operator2))
-            )
+            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             serialized_leaves = []
             for l in leaves:
                 if isinstance(l, Wires):
                     serialized_leaves.append(tuple(l))
                 elif isinstance(l, Operator2):
-                    serialized_leaves.append(hash(l))
-                else:
                     serialized_leaves.append(l)
+                else:
+                    serialized_leaves.append(_canonicalize_dynamic(l))
 
-            serialized_hybrid.append((tuple(serialized_leaves), tree))
+            entry = (tuple(serialized_leaves), tree)
+            serialized_hybrid.append(entry)
 
         return hash(
             (
@@ -510,3 +511,27 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
         return self._bound_args.arguments[name]
 
     return object.__getattribute__(self, name)
+
+
+def _canonicalize_dynamic(d, op_name=None) -> Hashable:
+    """Canonicalize dynamic data for hashing."""
+
+    def _mod_and_round(x, mod_val):
+        x = x if mod_val is None else qp.math.real(x) % mod_val
+        return qp.math.round(x, 10)
+
+    # Use qp.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qp.state) requires complex typed inputs.
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
+
+    return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
+
+
+def _is_hash_leaf(l) -> bool:
+    """Check whether a value is a pytree leaf for hashing. For the purpose of
+    hashing, wires and operators are considered leaves."""
+    return isinstance(l, (Wires, Operator2))
