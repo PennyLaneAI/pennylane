@@ -239,7 +239,7 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     @for_loop(len(wires) - 1, 1, -1)
     def flip_wires(i, wires, num_wires):
         if enabled():
-            target_wires = lax.dynamic_slice(wires, (-i,), (len(wires),))
+            target_wires = lax.dynamic_slice(wires, (-i,), (len(wires) - 1,))
 
             def build_wires(j, passed):
                 (nw, tw, w, i) = passed
