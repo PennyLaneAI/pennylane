@@ -353,13 +353,13 @@ FERMI_WORDS_AND_OPS_EXTENDED = [
 @pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS + FERMI_WORDS_AND_OPS_EXTENDED)
 def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
     """Test that the jordan_wigner function returns the correct qubit operator."""
-    # convert FermiWord to PauliSentence and simplify
+    # convert FermiWord to PauliSentence and prune
     qubit_op = jordan_wigner(fermionic_op, ps=True)
-    qubit_op.simplify()
+    qubit_op.prune()
 
-    # get expected op as PauliSentence and simplify
+    # get expected op as PauliSentence and prune
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op.simplify()
+    expected_op.prune()
 
     assert qubit_op == expected_op
 
@@ -398,7 +398,7 @@ def test_jordan_wigner_for_identity_ps():
 def test_jordan_wigner_for_null_operator_fermi_word_ps(operator):
     """Test that the jordan_wigner function works when the result is 0"""
     # in PauliSentence return format, returns None
-    assert jordan_wigner(operator, ps=True).simplify() is None
+    assert jordan_wigner(operator, ps=True).prune() is None
 
     # in operation return format, '0 * I'
     op = jordan_wigner(operator).simplify()
@@ -422,7 +422,7 @@ def test_empty_fermi_sentence():
     op = FermiSentence({})
 
     ps_op = jordan_wigner(op, ps=True)
-    ps_op.simplify()
+    ps_op.prune()
     assert ps_op == PauliSentence({})
 
     op = jordan_wigner(op).simplify()
@@ -528,7 +528,7 @@ FERMI_AND_PAULI_SENTENCES = [
 @pytest.mark.parametrize("fermionic_op, result", FERMI_AND_PAULI_SENTENCES)
 def test_jordan_wigner_for_fermi_sentence_ps(fermionic_op, result):
     qubit_op = jordan_wigner(fermionic_op, ps=True)
-    qubit_op.simplify()
+    qubit_op.prune()
 
     assert qubit_op == result
 
@@ -635,8 +635,8 @@ def test_providing_wire_map_fermi_sentence_to_ps(wire_map, ops):
     result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
-    ps.simplify()
-    op.simplify()
+    ps.prune()
+    op.prune()
 
     assert ps == op
 
@@ -678,8 +678,7 @@ def test_providing_wire_map_fermi_word_to_operation(wire_map, ops):
 
     op = jordan_wigner(w, wire_map=wire_map)
     result = qp.sum(*ops)
-
-    op.simplify()
+    op = op.simplify()
 
     # converting to Pauli representation for comparison because
     # qp.equal isn't playing nicely with term ordering
@@ -694,8 +693,8 @@ def test_providing_wire_map_fermi_word_to_ps(wire_map, ops):
     result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
-    ps.simplify()
-    op.simplify()
+    ps.prune()
+    op.prune()
 
     assert ps == op
 

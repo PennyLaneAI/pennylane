@@ -66,8 +66,7 @@ class MutualInfoMP(StateMeasurement):
     def __repr__(self):
         return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
@@ -75,7 +74,6 @@ class MutualInfoMP(StateMeasurement):
             tuple(self.raw_wires[1].tolist()),
             self.log_base,
         )
-
         return hash(fingerprint)
 
     @property

@@ -350,7 +350,7 @@ class MPSPrep(Operation):
         self.hyperparameters["input_wires"] = qp.wires.Wires(wires)
         self.hyperparameters["right_canonicalize"] = right_canonicalize
 
-        if work_wires:
+        if work_wires is not None:
             self.hyperparameters["work_wires"] = qp.wires.Wires(work_wires)
             all_wires = self.hyperparameters["input_wires"] + self.hyperparameters["work_wires"]
         else:
