@@ -64,7 +64,7 @@ def _select_pauli_rot_phase_gradient(
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1])
 
     def inner_cob():
-        change_op_basis(compute_fn, target_fn)
+        return change_op_basis(compute_fn, target_fn)
 
     match rot_axis:
         case "X":
@@ -76,12 +76,12 @@ def _select_pauli_rot_phase_gradient(
         case "Y":
 
             def y_basis_comp():
-                qp.Hadamard(target_wire)
                 qp.adjoint(qp.S(target_wire))
+                qp.Hadamard(target_wire)
 
             def y_basis_uncomp():
-                qp.S(target_wire)
                 qp.Hadamard(target_wire)
+                qp.S(target_wire)
 
             return qp.change_op_basis(y_basis_comp, inner_cob, y_basis_uncomp)
 
