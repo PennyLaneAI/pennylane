@@ -19,6 +19,7 @@ import copy
 import numpy as np
 import pytest
 
+from pennylane.exceptions import AdjointUndefinedError, PowUndefinedError
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
@@ -202,12 +203,6 @@ class TestOperatorInit:
 
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
-
-    def test_pauli_rep_default_is_none(self, DynOp):
-        """Test that ``_pauli_rep`` is initialized to ``None``."""
-
-        op = DynOp(0.5, wires=0)
-        assert op.pauli_rep is None
 
     def test_wires_collected_from_wire_argnames(self, DynOp):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
@@ -554,3 +549,333 @@ class TestDunderMethods:
             assert getattr(op_deep, attr) == getattr(op, attr)
             # Deep copy so stored attributes must NOT be the same references
             assert getattr(op_deep, attr) is not getattr(op, attr)
+
+
+class TestPublicProperties:
+    """Tests for public properties of ``Operator2``."""
+
+    def test_arithmetic_depth_default(self, DynOp):
+        """Test that the default ``arithmetic_depth`` is 0."""
+        op = DynOp(0.5, wires=0)
+        assert op.arithmetic_depth == 0
+
+    def test_is_verified_hermitian_default(self, DynOp):
+        """Test that the default ``is_verified_hermitian`` is False."""
+        op = DynOp(0.5, wires=0)
+        assert op.is_verified_hermitian is False
+
+    def test_pauli_rep_default(self, DynOp):
+        """Test that ``pauli_rep`` is ``None`` by default."""
+
+        op = DynOp(0.5, wires=0)
+        assert op.pauli_rep is None
+
+
+class TestLabel:
+    """Tests for the ``label`` method."""
+
+    def test_no_dynamic_args(self):
+        """Test that ``label`` returns just the class name when there
+        are no dynamic args."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+
+        assert Op(wires=0).label() == "Op"
+
+    def test_no_dynamic_args_with_base_label(self):
+        """Test that ``base_label`` overrides the class name even with
+        no dynamic args."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+
+        assert Op(wires=0).label(base_label="custom") == "custom"
+
+    def test_scalar_decimals_none_excludes_param(self, DynOp):
+        """Test that scalar parameters are excluded from the label when
+        ``decimals`` is ``None``."""
+        op = DynOp(1.23456, wires=0)
+        assert op.label() == "_DynOp"
+
+    def test_scalar_decimals_formats_param(self, DynOp):
+        """Test that scalar parameters are formatted to ``decimals`` places."""
+        op = DynOp(1.23456, wires=0)
+        assert op.label(decimals=2) == "_DynOp\n(1.23)"
+
+    def test_base_label_with_decimals(self, DynOp):
+        """Test that ``base_label`` and ``decimals`` can be combined."""
+        op = DynOp(1.23456, wires=0)
+        assert op.label(decimals=3, base_label="custom") == "custom\n(1.235)"
+
+    def test_multiple_dynamic_args(self):
+        """Test that multiple dynamic params are joined with ``,\\n``."""
+
+        class TwoArgs(Operator2):
+            dynamic_argnames = ("phi", "theta")
+
+            def __init__(self, phi, theta, wires):
+                super().__init__(phi, theta, wires=Wires(wires))
+
+        op = TwoArgs(1.23, 4.567, wires=0)
+        assert op.label(decimals=2) == "TwoArgs\n(1.23,\n4.57)"
+
+    def test_matrix_param_no_cache_omitted(self):
+        """Test that a matrix parameter is omitted from the label when no
+        cache is provided."""
+
+        class MatOp(Operator2):
+            dynamic_argnames = ("U",)
+
+            def __init__(self, U, wires):
+                super().__init__(U, wires=Wires(wires))
+
+        op = MatOp(np.eye(2), wires=0)
+        # Without a cache, matrix-valued params produce empty strings.
+        assert op.label(decimals=2) == "MatOp"
+
+    def test_matrix_param_with_cache(self):
+        """Test that matrix parameters are recorded in the cache and referenced
+        as ``M{index}``."""
+
+        class MatOp(Operator2):
+            dynamic_argnames = ("U",)
+
+            def __init__(self, U, wires):
+                super().__init__(U, wires=Wires(wires))
+
+        cache = {"matrices": []}
+        op = MatOp(np.eye(2), wires=0)
+
+        assert op.label(cache=cache) == "MatOp\n(M0)"
+        assert len(cache["matrices"]) == 1
+        assert np.allclose(cache["matrices"][0], np.eye(2))
+
+    def test_matrix_param_cache_reuse(self):
+        """Test that the same matrix is reused from the cache rather than appended again."""
+
+        class MatOp(Operator2):
+            dynamic_argnames = ("U",)
+
+            def __init__(self, U, wires):
+                super().__init__(U, wires=Wires(wires))
+
+        cache = {"matrices": []}
+        op1 = MatOp(np.eye(2), wires=0)
+        op2 = MatOp(np.eye(2), wires=1)
+
+        assert op1.label(cache=cache) == "MatOp\n(M0)"
+        assert op2.label(cache=cache) == "MatOp\n(M0)"
+        assert len(cache["matrices"]) == 1
+
+    def test_matrix_param_cache_growth(self):
+        """Test that distinct matrices are appended with incrementing indices."""
+
+        class MatOp(Operator2):
+            dynamic_argnames = ("U",)
+
+            def __init__(self, U, wires):
+                super().__init__(U, wires=Wires(wires))
+
+        cache = {"matrices": []}
+        op1 = MatOp(np.eye(2), wires=0)
+        op2 = MatOp(np.eye(4), wires=[0, 1])
+
+        assert op1.label(cache=cache) == "MatOp\n(M0)"
+        assert op2.label(cache=cache) == "MatOp\n(M1)"
+        assert len(cache["matrices"]) == 2
+
+    def test_subclass_override(self):
+        """Test that a subclass can override ``label``."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+
+            def label(self, decimals=None, base_label=None, cache=None):
+                return "custom_label"
+
+        assert Op(wires=0).label() == "custom_label"
+
+
+class TestGeneralMethods:
+    """Tests for various general methods in ``Operator2``."""
+
+    def test_pow_zero_returns_empty(self, DynOp):
+        """Test that ``op.pow(0)`` returns an empty list."""
+        op = DynOp(0.5, wires=0)
+        assert op.pow(0) == []
+
+    def test_pow_one_returns_single(self, DynOp):
+        """Test that ``op.pow(1)`` returns a single-element list with a copy of the operator."""
+        op = DynOp(0.5, wires=0)
+        result = op.pow(1)
+
+        assert len(result) == 1
+        assert result[0] == op
+        assert result[0] is not op
+
+    def test_pow_positive_integer(self, DynOp):
+        """Test that ``op.pow(z)`` for positive integer ``z`` returns ``z`` copies."""
+        op = DynOp(0.5, wires=0)
+        result = op.pow(3)
+
+        assert len(result) == 3
+        assert all(r == op for r in result)
+        assert all(r is not op for r in result)
+
+        # Each op must be a new copy
+        assert len({id(r) for r in result}) == 3
+
+    def test_pow_queuing(self, DynOp):
+        """Test that ``op.pow(z)`` inside a queuing context queues ``z`` additional copies."""
+        with AnnotatedQueue() as q:
+            op = DynOp(0.5, wires=0)
+            result = op.pow(2)
+
+        # 1 entry from original op + 2 entries from pow.
+        assert len(q) == 3
+        assert len(result) == 2
+
+    @pytest.mark.parametrize("z", [-1, -2, 1.5, 0.5])
+    def test_pow_invalid_raises(self, DynOp, z):
+        """Test that ``op.pow`` raises ``PowUndefinedError`` for negative or non-integer exponents."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(PowUndefinedError):
+            _ = op.pow(z)
+
+    def test_subclass_pow_override(self):
+        """Test that a subclass can override ``pow``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=Wires(wires))
+
+            def pow(self, z):
+                return [type(self)(self.phi * z, wires=self.wires)]
+
+        op = Op(2.0, wires=0)
+        result = op.pow(3)
+        assert len(result) == 1
+        assert result[0].phi == 6.0
+
+    def test_map_wires_basic(self, DynOp):
+        """Test that ``map_wires`` maps the wires of the operator according
+        to the wire map."""
+        op = DynOp(0.5, wires=0)
+        new_op = op.map_wires({0: "a"})
+
+        # Check that the original op is unchanged
+        assert op.wires == Wires([0])
+        assert new_op == DynOp(0.5, wires="a")
+
+    def test_map_wires_unmapped_labels_preserved(self, DynOp):
+        """Test that wire labels missing from the wire map are kept as-is."""
+        op = DynOp(0.5, wires=[0, 1, 2])
+        new_op = op.map_wires({0: "a", 2: "c"})
+
+        assert new_op == DynOp(0.5, wires=["a", 1, "c"])
+
+    def test_map_wires_multiple_wire_args(self):
+        """Test that ``map_wires`` maps wires across multiple wire arguments."""
+
+        class TwoWireOp(Operator2):
+            wire_argnames = ("wires", "ctrl_wires")
+
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(Wires(wires), Wires(ctrl_wires))
+
+        op = TwoWireOp(wires=[0, 1], ctrl_wires=[2])
+        new_op = op.map_wires({0: "a", 1: "b", 2: "c"})
+
+        assert new_op == TwoWireOp(wires=["a", "b"], ctrl_wires=["c"])
+
+    def test_map_wires_pytree_hybrid_wires(self):
+        """Test that ``map_wires`` correctly maps pytree-structured wires inside a hybrid arg."""
+
+        class PytreeWiresOp(Operator2):
+            wire_argnames = ("wires",)
+            hybrid_argnames = ("wires",)
+
+            def __init__(self, wires):
+                wires = [Wires(w) for w in wires]
+                super().__init__(wires=wires)
+
+        op = PytreeWiresOp(wires=[[0], [1, 2]])
+        new_op = op.map_wires({0: "a", 1: "b"})
+
+        assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
+
+    def test_simplify_default(self, DynOp):
+        """Test that ``simplify`` returns the operator itself by default."""
+        op = DynOp(0.5, wires=0)
+        assert op.simplify() is op
+
+    def test_subclass_simplify_override(self):
+        """Test that a subclass can override ``simplify``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=Wires(wires))
+
+            def simplify(self):
+                return type(self)(0.0, wires=self.wires)
+
+        op = Op(0.5, wires=0)
+        simplified = op.simplify()
+
+        # Assert that the original op is left unchanged
+        assert op.phi == 0.5
+        assert simplified == Op(0.0, wires=0)
+
+
+class TestHasRepresentations:
+    """Tests for the ``has_**`` representation properties."""
+
+    def test_has_adjoint_default(self, DynOp):
+        """Test that ``has_adjoint`` is False by default."""
+        assert DynOp.has_adjoint is False
+        assert Operator2.has_adjoint is False
+
+    def test_has_adjoint_true_when_adjoint_overridden(self):
+        """Test that ``has_adjoint`` is True when the subclass overrides ``adjoint``."""
+
+        class SelfAdj(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+
+            def adjoint(self):
+                return self
+
+        assert SelfAdj.has_adjoint is True
+
+
+class TestRepresentations:
+    """Tests for the various operator representation methods
+    (and their corresponding ``compute_**`` static methods)."""
+
+    def test_adjoint_default_raises(self, DynOp):
+        """Test that the default ``adjoint`` raises ``AdjointUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(AdjointUndefinedError):
+            op.adjoint()
+
+    def test_subclass_adjoint_override(self):
+        """Test that a subclass can override ``adjoint``."""
+
+        class SelfAdj(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+
+            def adjoint(self):
+                return type(self)(wires=self.wires)
+
+        op = SelfAdj(wires=0)
+        adj = op.adjoint()
+        assert adj == op
