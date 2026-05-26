@@ -28,7 +28,6 @@ from pennylane.decomposition import (
 from pennylane.operation import Operator
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
-from pennylane.ops.qubit.non_parametric_ops import Hadamard
 from pennylane.wires import WireError, Wires
 
 
@@ -65,26 +64,26 @@ def _select_pauli_rot_phase_gradient(
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1])
 
     def inner_cob():
-        change_op_basis(compute_fn, target_fn, compute_fn)
+        change_op_basis(compute_fn, target_fn)
 
     match rot_axis:
         case "X":
 
-            def basis_comp():
+            def x_basis_comp():
                 qp.Hadamard(target_wire)
 
-            return qp.change_op_basis(basis_comp, inner_cob, basis_comp)
+            return qp.change_op_basis(x_basis_comp, inner_cob)
         case "Y":
 
-            def basis_comp():
+            def y_basis_comp():
                 qp.Hadamard(target_wire)
                 qp.adjoint(qp.S(target_wire))
 
-            def basis_uncomp():
+            def y_basis_uncomp():
                 qp.S(target_wire)
                 qp.Hadamard(target_wire)
 
-            return qp.change_op_basis(basis_comp, inner_cob, basis_uncomp)
+            return qp.change_op_basis(y_basis_comp, inner_cob, y_basis_uncomp)
 
     return inner_cob()
 
