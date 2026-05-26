@@ -143,15 +143,15 @@ class QutritDensityMatrix(QubitDensityMatrix):
         :title: Usage Details
         Example:
         .. code-block:: python
-            import pennylane as qml
+            import pennylane as qp
             nr_wires = 2
             rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
             rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
-            dev = qml.device("default.qutrit.mixed", wires=2)
-            @qml.qnode(dev)
+            dev = qp.device("default.qutrit.mixed", wires=2)
+            @qp.qnode(dev)
             def circuit():
-                qml.QutritDensityMatrix(rho, wires=[0, 1])
-                return qml.state()
+                qp.QutritDensityMatrix(rho, wires=[0, 1])
+                return qp.state()
         Running this circuit:
         >>> circuit()
         [[1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
