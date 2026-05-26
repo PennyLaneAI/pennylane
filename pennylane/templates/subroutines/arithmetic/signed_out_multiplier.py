@@ -465,7 +465,7 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
             wires=input,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
-        control_wires=(aux_wire,),
+        control_wires=aux_wire,
         control_values=(1,),
     )
 

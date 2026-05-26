@@ -597,16 +597,7 @@ class Controlled(SymbolicOp):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
-
-        contains_arr = False
-        if control_wires.__class__.__name__ == "DynamicJaxprTracer":
-            control_wires = Wires(control_wires)
-        elif isinstance(control_wires, Iterable):
-            for control_wire in control_wires:
-                if control_wire.__class__.__name__ == "ArrayImpl":
-                    contains_arr = True
-        if not contains_arr:
-            control_wires = Wires(control_wires)
+        control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base,
             *control_wires,
