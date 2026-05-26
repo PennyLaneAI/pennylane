@@ -15,6 +15,7 @@
 This submodule contains the template for QROM.
 """
 
+import math
 from collections import Counter
 from collections.abc import Sequence
 from functools import reduce
@@ -25,16 +26,21 @@ import pennylane.math as pl_math
 from pennylane import ops as qp_ops
 from pennylane.decomposition import (
     add_decomps,
+    controlled_resource_rep,
+    register_condition,
     register_resources,
     resource_rep,
 )
 from pennylane.math import ceil_log2
 from pennylane.operation import Operation
+from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
+from .arithmetic import TemporaryAND
 from .select import Select
 
 
@@ -576,4 +582,331 @@ def _qrom_decomposition(
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
-add_decomps(QROM, _qrom_decomposition)
+# --- Measurement-based QROM decomposition ---
+#
+# Uses Pauli measurements to uncompute TemporaryAND gates.
+# Reference: "Active volume" paper, Figure 18(a) SELECT/QROM circuit.
+#
+# Structure:
+#   - Outer: 4-quarter split (from select.py _add_first_k_units)
+#   - Inner: binary recursion with measurement uncomputation
+#   - XOR-relative encoding absorbs base corrections into measurements
+#
+# TemporaryAND count:
+#   Variant 3 (c_bar=0, K >= 3/4 * 2^c):  L-3
+#   Variant 2 (c_bar>0):                  L-2
+#   Variant 1 (l=1):                      L-2
+#
+# Wire layout (interleaved):
+#   [in[0], in[1], work[0], in[2], work[1], in[3], work[2], ...]
+
+
+def _xor(a, b):
+    """Bitwise XOR of two bitstring lists."""
+    return [(a[i] + b[i]) % 2 for i in range(len(a))]
+
+
+def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
+    """Measurement-based uncomputation on Fig 18. https://arxiv.org/pdf/2211.15465
+
+    Args:
+        work_wire: the AND output wire to uncompute
+        ctrl_wires: [ctrl0, ctrl1] — the two AND control wires (for CZ correction)
+        targets: target register wires
+        product: bitstring indicating which targets are entangled with work
+    """
+    x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
+
+    m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
+    cond(m1 == 1, CZ)(wires=ctrl_wires)
+
+    m2 = pauli_measure("Z", [work_wire])
+    cond(m2 == 1, X)(wires=work_wire)
+    for wire, bit in zip(targets, product):
+        if bit == 1:
+            cond(m2 == 1, X)(wires=wire)
+
+
+def _measurement_qrom_inner(controls, targets, bitstrings, k):
+    """Inner binary recursion with measurement-based uncomputation.
+
+    Each level opens a TemporaryAND, recurses into left/right halves,
+    then uncomputes via measurement. The XOR product between subtree
+    bases is absorbed into the measurement.
+
+    Args:
+        controls: interleaved [flag, sel, work, sel2, work2, ...]
+        targets: target register wires
+        bitstrings: k XOR-relative bitstrings
+        k: number of elements (produces k-1 TemporaryAND gates)
+    """
+    if k <= 1:
+        return
+
+    num_bits = math.ceil(math.log2(k))
+    needed = 2 * num_bits + 1
+    controls = list(controls[:1]) + list(controls[-(needed - 1) :])
+
+    flag, sel, work = controls[0], controls[1], controls[2]
+    child_controls = controls[2:]
+
+    k_left = 2 ** (num_bits - 1)
+
+    if k > 2:
+        TemporaryAND([flag, sel, work], control_values=[1, 0])
+        _measurement_qrom_inner(child_controls, targets, bitstrings[:k_left], k_left)
+        CNOT(wires=[flag, work])
+        _measurement_qrom_inner(child_controls, targets, bitstrings[k_left:], k - k_left)
+    else:
+        TemporaryAND([flag, sel, work], control_values=[1, 1])
+
+    product = _xor(bitstrings[0], bitstrings[k_left])
+    _measurement_uncompute(work, [flag, sel], targets, product)
+
+
+def _measurement_qrom_outer(controls, targets, bitstrings, k):
+    """Outer 4-quarter split with measurement-based uncomputation.
+
+    Splits k items into quarters [Q0, Q1 | Q2, Q3] and processes each.
+    Base corrections absorbed into measurements where possible (MID, CLOSE).
+    Remaining corrections (diff_q1 in variant 3, diff_q2) are explicit CNOTs.
+    """
+    a = math.ceil(math.log2(k))
+    controls = list(controls[: 2 * a - 1])
+
+    and_wires = controls[:3]
+    child_controls = controls[2:]
+
+    k01 = 2 ** (a - 1)
+    k0 = k1 = 2 ** (a - 2)
+    l = k - k01
+    k2 = int(math.ceil(2 ** (math.ceil(math.log2(l)) - 1))) if l > 1 else l
+    k3 = k - k01 - k2
+    n_t = len(bitstrings[0])
+
+    # --- OPEN ---
+    TemporaryAND(and_wires, control_values=[0, 0])
+
+    # --- Q0 ---
+    if k0 > 1:
+        _measurement_qrom_inner(child_controls, targets, bitstrings[:k0], k0)
+
+    # --- Q0 -> Q1 transition ---
+    ctrl(X(controls[2]), control=controls[0], control_values=[0])
+    diff_q1 = _xor(bitstrings[0], bitstrings[k0])
+
+    # --- Q1 ---
+    if k1 > 1:
+        _measurement_qrom_inner(child_controls, targets, bitstrings[k0:k01], k1)
+
+    # --- MIDDLE ---
+    if l == 1:
+        # Variant 1: close first half + single controlled op
+        _measurement_uncompute(controls[2], [controls[0], controls[1]], targets, diff_q1)
+        diff_single = _xor(bitstrings[0], bitstrings[k01])
+        for i, bit in enumerate(diff_single):
+            if bit == 1:
+                ctrl(X(targets[i]), control=controls[0], control_values=[1])
+        return
+
+    c_bar = 2 * (a - math.ceil(math.log2(l)) - 1)
+
+    if c_bar > 0:
+        # Variant 2: close first half via measurement, open new AND for second half
+        _measurement_uncompute(controls[2], [controls[0], controls[1]], targets, diff_q1)
+        sec_wires = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
+        sec_child = controls[c_bar + 2 :]
+        TemporaryAND(sec_wires, control_values=[1, 0])
+    else:
+        # Variant 3: merge close+open into 2 CNOTs (no measurement here)
+        for i, bit in enumerate(diff_q1):
+            if bit == 1:
+                CNOT(wires=[controls[2], targets[i]])
+        CNOT(wires=[and_wires[0], and_wires[2]])
+        CNOT(wires=[and_wires[1], and_wires[2]])
+        sec_wires = and_wires
+        sec_child = child_controls
+
+    # --- Q2 base correction (explicit, no measurement available here) ---
+    diff_q2 = _xor(bitstrings[0], bitstrings[k01])
+    for i, bit in enumerate(diff_q2):
+        if bit == 1:
+            CNOT(wires=[sec_wires[2], targets[i]])
+
+    # --- Q2 ---
+    if k2 > 1:
+        _measurement_qrom_inner(sec_child, targets, bitstrings[k01 : k01 + k2], k2)
+
+    # --- Q2 -> Q3 transition ---
+    CNOT(wires=[sec_wires[0], sec_wires[2]])
+
+    # --- Q3 ---
+    diff_q3 = _xor(bitstrings[0], bitstrings[k01 + k2])
+    if k3 > 1:
+        _measurement_qrom_inner(sec_child, targets, bitstrings[k01 + k2 :], k3)
+
+    # --- CLOSE: absorb diff_q3 into measurement ---
+    _measurement_uncompute(sec_wires[2], [sec_wires[0], sec_wires[1]], targets, diff_q3)
+
+
+def _measurement_qrom_count_TemporaryAnd(k):
+    """Count TemporaryAND gates for the measurement-based decomposition."""
+    if k <= 2:
+        return 0
+
+    def _inner_count(n):
+        if n <= 1:
+            return 0
+        bits = math.ceil(math.log2(n))
+        left = 2 ** (bits - 1)
+        return 1 + _inner_count(left) + _inner_count(n - left)
+
+    a = math.ceil(math.log2(k))
+    k01 = 2 ** (a - 1)
+    k0 = k1 = 2 ** (a - 2)
+    l = k - k01
+    k2 = int(math.ceil(2 ** (math.ceil(math.log2(l)) - 1))) if l > 1 else l
+    k3 = k - k01 - k2
+
+    # 1 outer AND + possible middle AND (variant 2) + inner recursions
+    outer = 1
+    if l == 1:
+        middle = 0
+    else:
+        c_bar = 2 * (a - math.ceil(math.log2(l)) - 1)
+        middle = 1 if c_bar > 0 else 0
+
+    return (
+        outer + middle + _inner_count(k0) + _inner_count(k1) + _inner_count(k2) + _inner_count(k3)
+    )
+
+
+def _qrom_measurement_resources(
+    num_bitstrings=None,
+    num_control_wires=None,
+    num_target_wires=None,
+    num_work_wires=None,
+    clean=None,
+    base_params=None,
+    **_,
+):
+    """Resource estimate for the measurement-based QROM decomposition.
+
+    Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
+      - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
+      - 1 CZ (phase correction conditioned on X measurement)
+      - conditional X gates on work + targets (Pauli frame update)
+
+    Exact gate counts for PauliX and CNOT are data-dependent (depend on Hamming
+    weights of XOR products between bitstrings), so this resource estimate is
+    marked as non-exact (exact=False). The listed counts are upper bounds.
+    """
+    if base_params is not None:
+        num_bitstrings = base_params["num_bitstrings"]
+        num_control_wires = base_params["num_control_wires"]
+        num_target_wires = base_params["num_target_wires"]
+        num_work_wires = base_params["num_work_wires"]
+    L = num_bitstrings
+
+    if L <= 1:
+        return {resource_rep(qp_ops.PauliX): num_target_wires}
+
+    if L == 2:
+        return {
+            resource_rep(qp_ops.PauliX): num_target_wires,
+            resource_rep(CNOT): num_target_wires,
+        }
+
+    num_ands = _measurement_qrom_count_TemporaryAnd(L)
+    num_measurements = 2 * num_ands  # X-type + Z per uncomputation
+    num_cz = num_ands  # CZ correction per uncomputation
+
+    return {
+        resource_rep(TemporaryAND): num_ands,
+        resource_rep(PauliMeasure): num_measurements,
+        resource_rep(CZ): num_cz,
+        resource_rep(CNOT): L - 1,
+        resource_rep(qp_ops.PauliX): num_target_wires * L,
+        controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+    }
+
+
+def _qrom_measurement_condition(
+    num_bitstrings=None,
+    num_control_wires=None,
+    num_target_wires=None,
+    num_work_wires=None,
+    clean=None,
+    base_params=None,
+    **_,
+):
+    """Condition: need at least ceil_log2(L)-1 work wires."""
+    if base_params is not None:
+        num_bitstrings = base_params["num_bitstrings"]
+        num_work_wires = base_params["num_work_wires"]
+    if num_bitstrings <= 2:
+        return True
+    n_input = max(1, math.ceil(math.log2(num_bitstrings)))
+    return num_work_wires >= n_input - 1
+
+
+@register_condition(_qrom_measurement_condition)
+@register_resources(_qrom_measurement_resources, exact=False)
+def _qrom_measurement_decomposition(
+    data=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None, **__
+):  # pylint: disable=unused-argument
+    """QROM decomposition using measurement-based uncomputation.
+
+    Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
+    PauliMeasure + conditional corrections instead of adjoint(TemporaryAND).
+
+    Requires: len(work_wires) >= ceil_log2(L) - 1.
+    """
+    # When called for Adjoint(QROM), extract params from the base operator
+    if base is not None:
+        data = base.data[0]
+        control_wires = base.hyperparameters["control_wires"]
+        target_wires = base.hyperparameters["target_wires"]
+        work_wires = base.hyperparameters["work_wires"]
+        clean = base.hyperparameters["clean"]
+
+    L = len(data)
+    n_input = len(control_wires)
+
+    if L == 1:
+        for i, wire in enumerate(target_wires):
+            if data[0][i] == 1:
+                X(wire)
+        return
+
+    if L == 2:
+        for i, wire in enumerate(target_wires):
+            if data[0][i] == 1:
+                X(wire)
+        diff = _xor(data[0], data[1])
+        for i, bit in enumerate(diff):
+            if bit == 1:
+                CNOT(wires=[control_wires[0], target_wires[i]])
+        return
+
+    # Load base bitstring
+    for i, wire in enumerate(target_wires):
+        if data[0][i] == 1:
+            X(wire)
+
+    # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
+    controls = [control_wires[0], control_wires[1]]
+    for i in range(len(work_wires)):
+        controls.append(work_wires[i])
+        if i + 2 < n_input:
+            controls.append(control_wires[i + 2])
+
+    # XOR-relative encoding: bitstrings[i] = data[i] XOR data[0]
+    base = list(data[0])
+    bitstrings = [_xor(row, base) for row in data]
+
+    _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
+
+
+add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
+add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
