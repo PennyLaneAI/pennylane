@@ -44,7 +44,6 @@ def test_standard_validity_left_comparator():
 class TestLeftClassicalComparator:
     """Test LeftClassicalComparator template."""
 
-    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
@@ -63,7 +62,7 @@ class TestLeftClassicalComparator:
         """Test the correctness of the LeftClassicalComparator template output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
-        def circuit():
+        def circuit(x_wires, L):
             qp.BasisState(x, wires=x_wires)
             LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
@@ -75,7 +74,7 @@ class TestLeftClassicalComparator:
 
         if qjit:
             circuit = qp.qjit(circuit)
-        output = circuit()
+        output = circuit(x_wires, L)
         expected = {"<": x < L, "<=": x <= L, ">": x > L, ">=": x >= L}[comparator]
         assert bool(output[0]) == expected
         assert np.isclose(sum(*output[1]), 0)  # work wires are clean

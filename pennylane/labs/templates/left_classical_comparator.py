@@ -37,9 +37,12 @@ class LeftClassicalComparator(Operation):
         \text{LeftClassicalComparator}_{<} \lvert x\rangle \lvert 0\rangle = \lvert x\rangle \lvert x < L\rangle \text{ if comparator} = \text{'<'}
 
     The decomposition is based on the left block in Figure 6 in Appendix E
-    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical
-    constant. Note that the decomposition uses auxiliary wires and in order to clean them,
-    one must apply the adjoint of this operator after using the target qubit.
+    of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical constant.
+
+    ..warning::
+
+        Note that the decomposition uses auxiliary wires and in order to clean them,
+        one must apply the adjoint of this operator after using the target qubit.
 
     Args:
         x_wires (WiresLike): The wires that store the quantum integer :math:`x`.
