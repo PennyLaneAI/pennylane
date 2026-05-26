@@ -59,7 +59,7 @@ class TestInitSubclass:
                 compilable_argnames = ("b",)
 
                 def __init__(self, a, b, wires):
-                    super().__init__(a, b, wires=Wires(wires))
+                    super().__init__(a, b, wires=wires)
 
     @pytest.mark.parametrize(
         "first, second",
@@ -108,7 +108,7 @@ class TestInitSubclass:
         or compilable argnames."""
 
         def __init__(self, x, wires):
-            Operator2.__init__(self, x, wires=Wires(wires))
+            Operator2.__init__(self, x, wires=wires)
 
         attrs = {"hybrid_argnames": ("x",), other_group: ("x",), "__init__": __init__}
 
@@ -125,7 +125,7 @@ class TestInitSubclass:
             class Op(Operator2):
                 # ``phi`` is not in any argnames tuple
                 def __init__(self, phi, wires):
-                    super().__init__(phi, wires=Wires(wires))
+                    super().__init__(phi, wires=wires)
 
     def test_signature_captured(self):
         """Test that ``cls._sig`` is set to the subclass's __init__ signature."""
@@ -134,7 +134,7 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
-                super().__init__(phi, wires=Wires(wires))
+                super().__init__(phi, wires=wires)
 
         assert list(Op._sig.parameters) == ["phi", "wires"]
         assert "self" not in Op._sig.parameters
@@ -146,7 +146,7 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
-                super().__init__(phi, wires=Wires(wires))
+                super().__init__(phi, wires=wires)
 
         assert Op in flatten_registrations
         assert Op in unflatten_registrations
@@ -160,7 +160,7 @@ def DynOp():
         dynamic_argnames = ("phi",)
 
         def __init__(self, phi, wires):
-            super().__init__(phi, wires=Wires(wires))
+            super().__init__(phi, wires=wires)
 
     return _DynOp
 
@@ -175,7 +175,7 @@ def FullOp():
         hybrid_argnames = ("hybrid",)
 
         def __init__(self, phi, static, hybrid, wires):
-            super().__init__(phi, static, hybrid, wires=Wires(wires))
+            super().__init__(phi, static, hybrid, wires=wires)
 
     return _FullOp
 
@@ -357,7 +357,7 @@ class TestProperties:
             compilable_argnames = ("pw",)
 
             def __init__(self, pw, wires):
-                super().__init__(pw, wires=Wires(wires))
+                super().__init__(pw, wires=wires)
 
         op = Op("XY", wires=[0, 1])
         assert op.compilable_args == {"pw": "XY"}
@@ -397,7 +397,7 @@ class TestBroadcasting:
             ndim_params = (0,)
 
             def __init__(self, phi, wires):
-                super().__init__(phi, wires=Wires(wires))
+                super().__init__(phi, wires=wires)
 
         op = Op(data, wires=0)
         assert op._batch_size is _UNSET_BATCH_SIZE
@@ -429,7 +429,7 @@ class TestBroadcasting:
             ndim_params = (0,)
 
             def __init__(self, phi, wires):
-                super().__init__(phi, wires=Wires(wires))
+                super().__init__(phi, wires=wires)
 
         op = Op([[[0.5]]], wires=0)
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions"):
@@ -443,7 +443,7 @@ class TestBroadcasting:
             ndim_params = (0, 0)
 
             def __init__(self, a, b, wires):
-                super().__init__(a, b, wires=Wires(wires))
+                super().__init__(a, b, wires=wires)
 
         op = Op([0.3] * 4, [0.4] * 3, wires=0)
         with pytest.raises(ValueError, match="Broadcasting was attempted"):
@@ -461,7 +461,7 @@ class TestPytreeMethods:
             static_argnames = ("static",)
 
             def __init__(self, phi, static, wires):
-                super().__init__(phi, static, wires=Wires(wires))
+                super().__init__(phi, static, wires=wires)
 
         op = Op(0.5, "bar", wires=0)
         data, metadata = op._flatten()
@@ -481,7 +481,7 @@ class TestPytreeMethods:
             compilable_argnames = ("static",)
 
             def __init__(self, phi, static, wires):
-                super().__init__(phi, static, wires=Wires(wires))
+                super().__init__(phi, static, wires=wires)
 
         op = Op(1.5, "bar", wires=[0, 1])
         data, metadata = op._flatten()
@@ -553,7 +553,7 @@ class TestDynamicProperties:
             phi = -1
 
             def __init__(self, phi, wires):
-                super().__init__(phi, wires=Wires(wires))
+                super().__init__(phi, wires=wires)
 
         op = Op(phi=100, wires=0)
         assert op.phi == -1
@@ -572,7 +572,7 @@ class TestDunderMethods:
 
         class Op(Operator2):
             def __init__(self, wires):
-                super().__init__(wires=Wires(wires))
+                super().__init__(wires=wires)
 
         op = Op(wires=0)
         assert repr(op) == "Op(wires=[0])"
