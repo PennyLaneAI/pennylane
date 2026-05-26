@@ -298,7 +298,7 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
         CNOT(wires=[used_work_wires[i - 1], used_work_wires[i]])
         cond(bit, X)(wires=[x_wires[i]])
 
-    _loop()
+    _loop()  # pylint: disable=no-value-for-parameter
 
     cond(comparator.startswith(">"), _negate_output)()
 

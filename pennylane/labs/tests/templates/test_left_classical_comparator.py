@@ -144,7 +144,9 @@ class TestLeftClassicalComparator:
         ],
     )
     @pytest.mark.parametrize("seed", [42, 123])
-    def test_no_phase_errors(self, x_wires, L, target_wire, work_wires, comparator, seed):
+    def test_no_phase_errors(  # pylint: disable=too-many-arguments
+        self, x_wires, L, target_wire, work_wires, comparator, seed
+    ):
         """Verify the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
@@ -164,7 +166,7 @@ class TestLeftClassicalComparator:
         x_state = rng.random(num_x)
         x_state /= np.linalg.norm(x_state)
 
-        state = circuit(x_state)
+        state = np.asarray(circuit(x_state))
 
         # All amplitudes must be real (no imaginary component)
         assert np.allclose(state.imag, 0.0), "Phase error: imaginary components detected"
