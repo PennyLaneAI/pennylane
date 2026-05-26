@@ -476,13 +476,13 @@ def _equal_operators2(
             elif isinstance(l2, Operator2):
                 return unequal_str
 
-            if math.is_abstract(l1) or math.is_abstract(l2):
+            elif math.is_abstract(l1) or math.is_abstract(l2):
                 return (
                     f"At least one of op1 or op2 has a tracer value for '{hname}'. Abstract "
                     "tracers are assumed to be unique."
                 )
 
-            if not math.allclose(l1, l2, atol=atol, rtol=rtol):
+            elif not math.allclose(l1, l2, atol=atol, rtol=rtol):
                 return unequal_str
 
     return True
