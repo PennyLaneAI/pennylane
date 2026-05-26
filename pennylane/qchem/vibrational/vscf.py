@@ -321,7 +321,7 @@ def _rotate_dipole(d_integrals, mode_rots, modals):
     """
     n = len(d_integrals)
 
-    nmodes = np.shape(d_integrals[0])[0]
+    nmodes = np.shape(d_integrals[0])[1]
     imax = np.max(modals)
     d1_rot = np.zeros((3, nmodes, imax, imax))
 

@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.devices.qubit import measure as apply_qubit_measurement
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
@@ -33,20 +33,6 @@ from pennylane.ftqc import (
 )
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
-
-
-@pytest.mark.parametrize("test_class", [ParametricMidMeasure, XMidMeasure, YMidMeasure])
-def test_id_deprecations(test_class):
-    """Tests that 'id' is deprecated properly."""
-
-    additional_kwargs = {}
-    if test_class is ParametricMidMeasure:
-        additional_kwargs = {"angle": 0, "plane": "XY"}
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
-    ):
-        _ = test_class(Wires(0), **additional_kwargs, id="something")
 
 
 class TestParametricMidMeasure:
@@ -62,12 +48,12 @@ class TestParametricMidMeasure:
         m6 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="ZX")
         m7 = ParametricMidMeasure(Wires(0), angle=1.23, meas_uid="m1", plane="XY")
 
-        assert m1.hash != m2.hash
-        assert m1.hash != m3.hash
-        assert m1.hash != m4.hash
-        assert m1.hash != m5.hash
-        assert m1.hash != m6.hash
-        assert m1.hash == m7.hash
+        assert hash(m1) != hash(m2)
+        assert hash(m1) != hash(m3)
+        assert hash(m1) != hash(m4)
+        assert hash(m1) != hash(m5)
+        assert hash(m1) != hash(m6)
+        assert hash(m1) == hash(m7)
 
     def test_flatten_unflatten(self):
         """Test that we can flatten and unflatten the ParametricMidMeasure"""
@@ -80,7 +66,7 @@ class TestParametricMidMeasure:
         unflattened_op = ParametricMidMeasure._unflatten(  # pylint: disable = protected-access
             data, metadata
         )
-        assert op.hash == unflattened_op.hash
+        assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax
     def test_flatten_unflatten_jax(self):
@@ -93,7 +79,7 @@ class TestParametricMidMeasure:
         leaves, struct = jax.tree_util.tree_flatten(op)
         unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
 
-        assert op.hash == unflattened_op.hash
+        assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.parametrize(
         "plane, angle, wire, expected",
@@ -245,10 +231,10 @@ class TestMidMeasureXAndY:
         m4 = ParametricMidMeasure(Wires(0), angle=angle, meas_uid="m1", plane="XY")
         m5 = mp_class(Wires(0), meas_uid="m1")
 
-        assert m1.hash != m2.hash
-        assert m1.hash != m3.hash
-        assert m1.hash != m4.hash
-        assert m1.hash == m5.hash
+        assert hash(m1) != hash(m2)
+        assert hash(m1) != hash(m3)
+        assert hash(m1) != hash(m4)
+        assert hash(m1) == hash(m5)
 
     @pytest.mark.parametrize("mp_class", [XMidMeasure, YMidMeasure])
     def test_flatten_unflatten(self, mp_class):
@@ -260,7 +246,7 @@ class TestMidMeasureXAndY:
         assert hash(metadata)  # metadata must be hashable
 
         unflattened_op = mp_class._unflatten(data, metadata)  # pylint: disable = protected-access
-        assert op.hash == unflattened_op.hash
+        assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("mp_class", [XMidMeasure, YMidMeasure])
@@ -274,7 +260,7 @@ class TestMidMeasureXAndY:
         leaves, struct = jax.tree_util.tree_flatten(op)
         unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
 
-        assert op.hash == unflattened_op.hash
+        assert hash(op) == hash(unflattened_op)
 
     @pytest.mark.parametrize(
         "wire, expected",

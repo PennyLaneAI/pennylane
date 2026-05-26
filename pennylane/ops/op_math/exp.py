@@ -81,13 +81,12 @@ def _find_equal_generator(base, coeff):
     return None
 
 
-def exp(op, coeff: float = 1.0, id: str | None = None):
+def exp(op, coeff: float = 1.0):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff (float): a scalar coefficient of the operator
-        id (str): id for the Exp operator. Default is None.
 
     Returns:
        :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
@@ -153,7 +152,7 @@ def exp(op, coeff: float = 1.0, id: str | None = None):
 
 
     """
-    return Exp(op, coeff, id=id)
+    return Exp(op, coeff)
 
 
 class Exp(ScalarSymbolicOp, Operation):
@@ -162,7 +161,6 @@ class Exp(ScalarSymbolicOp, Operation):
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
-        id (str): id for the Exp operator. Default is None.
 
     **Example**
 
@@ -216,10 +214,10 @@ class Exp(ScalarSymbolicOp, Operation):
         base, coeff = data
         return cls(base, coeff)
 
-    def __init__(self, base, coeff=1.0, id=None):
+    def __init__(self, base, coeff=1.0):
         if not isinstance(base, Operator):
             raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
-        super().__init__(base, scalar=coeff, id=id)
+        super().__init__(base, scalar=coeff)
         self.grad_recipe = [None]
 
     def __repr__(self):
@@ -229,9 +227,8 @@ class Exp(ScalarSymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
-    @property
-    def hash(self):
-        return hash((str(self.name), self.base.hash, str(self.coeff)))
+    def __hash__(self):
+        return hash((str(self.name), hash(self.base), str(self.coeff)))
 
     @property
     def coeff(self):

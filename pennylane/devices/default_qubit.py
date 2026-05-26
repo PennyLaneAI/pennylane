@@ -28,7 +28,7 @@ import numpy as np
 
 from pennylane import capture, math, ops
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -41,7 +41,6 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -385,7 +384,7 @@ class DefaultQubit(Device):
         max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
-            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+            issue, say using JAX, or Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
 
