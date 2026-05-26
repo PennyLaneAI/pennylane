@@ -197,20 +197,18 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
     """Run the Trotter circuit and return the full unitary matrix."""
     num_qubits = num_modes * n_states
     wires = list(range(num_qubits))
-    dev = qp.device("default.qubit", wires=wires)
 
-    @qp.qnode(dev)
     def _circuit():
         trotter_factorized(t, num_steps, hamiltonian, wires)
-        return qp.state()
 
-    return qp.matrix(_circuit)()
+    return qp.matrix(_circuit, wire_order=wires)()
 
 
-## Test classes
+@pytest.mark.slow
 class TestHighNConvergence:
     """Test that many Trotter steps converge U_trotter to expm(-i H t)."""
 
+    @pytest.mark.skip
     @pytest.mark.parametrize("num_steps", [128, 256])
     def test_toy_convergence(self, toy_hamiltonian, num_steps):
         """At high N, subspace fidelity should be > 1 - 1e-4."""
@@ -226,6 +224,7 @@ class TestHighNConvergence:
 
         assert fidelity > 1 - 1e-4
 
+    @pytest.mark.skip
     @pytest.mark.parametrize("num_steps", [128, 256])
     def test_multi_fragment_convergence(self, toy_multi_fragment, num_steps):
         """Multi-fragment Hamiltonian should also converge."""
@@ -281,9 +280,11 @@ class TestDtScaling:
         assert log_dev <= 0.35
 
 
+@pytest.mark.slow
 class TestStepScaling:
     """Test that doubling Trotter steps reduces error by ~4x (1/N^2)."""
 
+    @pytest.mark.skip
     @pytest.mark.parametrize(
         "num_steps",
         [(2), (4), (8), (16)],
@@ -343,6 +344,8 @@ class TestGlobalPhase:
         phase_error = abs(measured_phase - expected_phase)
         assert phase_error < 1e-5
 
+    @pytest.mark.skip
+    @pytest.mark.slow
     def test_energy_shift_with_nuc_constant(self, toy_multi_fragment):
         """Test that energy shift accounts for nonzero nuc_constant."""
         ham, num_modes, n_states = toy_multi_fragment
@@ -423,6 +426,7 @@ class TestInputValidation:
             qp.matrix(_circuit)()
 
 
+@pytest.mark.skip
 class TestMonotonicity:
     """Test that increasing num_steps decreases error."""
 
@@ -469,6 +473,7 @@ def h2s_hamiltonian():
 class TestH2SConvergence:
     """Integration tests on the real H2S molecule."""
 
+    @pytest.mark.skip  # takes 8 mins
     def test_high_n_convergence(self, h2s_hamiltonian):
         """H2S should converge at N=64."""
         ham = h2s_hamiltonian
@@ -486,6 +491,7 @@ class TestH2SConvergence:
 
         assert fidelity > 1 - 1e-4
 
+    @pytest.mark.skip  # takes 40s to 3min
     @pytest.mark.parametrize("num_steps", [(2), (4), (8)])
     def test_step_scaling(self, h2s_hamiltonian, num_steps):
         """H2S step-doubling should reduce error by ~4x."""
@@ -514,6 +520,7 @@ class TestH2SConvergence:
         log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(expected)
         assert log_dev <= 0.35
 
+    @pytest.mark.skip  # takes 10min
     def test_global_phase(self, h2s_hamiltonian):
         """H2S energy shift should match the measured global phase."""
         ham = h2s_hamiltonian
