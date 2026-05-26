@@ -234,9 +234,6 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
 @register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
-    if enabled():
-        wires = array(wires, like="jax")
-
     if len(work_wires) > 0:
         wires = wires[: -len(work_wires)]
 

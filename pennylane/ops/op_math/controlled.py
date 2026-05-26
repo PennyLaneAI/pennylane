@@ -601,8 +601,6 @@ class Controlled(SymbolicOp):
         contains_tracer = False
         if control_wires.__class__.__name__ == "DynamicJaxprTracer":
             control_wires = Wires(control_wires)
-        elif control_wires.__class__.__name__ == "ArrayImpl":
-            contains_tracer = True
         elif isinstance(control_wires, Iterable):
             for control_wire in control_wires:
                 if control_wire.__class__.__name__ == "ArrayImpl":
