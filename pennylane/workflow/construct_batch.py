@@ -239,16 +239,13 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        # Check if shots is being passed as parameter for deprecation warning
-        shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
-
         if is_torch_layer:
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        initial_tape = make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        initial_tape = make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = math.get_trainable_indices(params)
 

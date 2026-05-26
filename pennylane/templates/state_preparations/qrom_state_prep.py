@@ -105,7 +105,7 @@ class QROMStatePreparation(Operation):
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
-        self, state_vector, wires, precision_wires, work_wires=None, id=None
+        self, state_vector, wires, precision_wires, work_wires=None
     ):  # pylint: disable=too-many-arguments
 
         n_amplitudes = qp.math.shape(state_vector)[0]
@@ -133,7 +133,7 @@ class QROMStatePreparation(Operation):
             + self.hyperparameters["work_wires"]
         )
 
-        super().__init__(state_vector, wires=all_wires, id=id)
+        super().__init__(state_vector, wires=all_wires)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):

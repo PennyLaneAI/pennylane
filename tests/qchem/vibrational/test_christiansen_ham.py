@@ -101,7 +101,7 @@ with h5py.File(cform_file, "r") as f:
 def test_christiansen_bosonic(ordered):
     """Test that christiansen_bosonic produces the correct bosonic operator."""
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3, ordered=ordered)
-    christiansen_bos_op.simplify()
+    christiansen_bos_op.prune()
 
     ops, coeffs = zip(*list(christiansen_bos_op.items()))
 
@@ -116,7 +116,7 @@ def test_christiansen_bosonic(ordered):
 def test_christiansen_hamiltonian():
     """Test that christiansen_hamiltonian produces the expected hamiltonian."""
     cform_ham = christiansen_hamiltonian(pes=pes_object_3D, n_states=4, cubic=True)
-    cform_ham.simplify()
+    cform_ham = cform_ham.simplify()
     assert len(cform_ham.pauli_rep) == 4160
 
     # Tolerance is low here because values smaller than 1e-5 get converted to 0.0
@@ -181,6 +181,15 @@ def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend, mpi4
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
+
+
+def test_christiansen_integrals_dipole_level2():
+    """Test that christiansen_integrals_dipole works with `pes.dipole_level=2`."""
+    one, two = christiansen_integrals_dipole(
+        pes=pes_object_2D, n_states=4, num_workers=1, backend="serial"
+    )
+    assert np.allclose(abs(one), abs(D1), atol=1e-8)
+    assert np.allclose(abs(two), abs(D2), atol=1e-8)
 
 
 @pytest.mark.parametrize(
