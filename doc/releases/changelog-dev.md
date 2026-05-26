@@ -148,6 +148,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package pin to `v0.8.10`.
+  [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
+
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 
