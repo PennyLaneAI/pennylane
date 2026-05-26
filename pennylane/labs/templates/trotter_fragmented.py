@@ -29,7 +29,8 @@ except ImportError:
 def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
     r"""Second-order Trotter time evolution for a factorized Hamiltonian.
 
-    This template works for both electronic CDF and vibrational CGF Hamiltonians.
+    This template works for both electronic Compressed Double Factorization (CDF), see `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`__,
+    and vibrational Christiansen Greedy Fragmentation (CGF), see `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`__, Hamiltonians.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
@@ -43,6 +44,68 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, co
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
         control_wires (Wires | None): Optional control wires.
+
+    **Example**
+
+    Let us first create mock Hamiltonian data with the correct tensor shapes according to a CGF Hamiltonian.
+
+    .. code-block:: python
+
+        L = 2; M=2; N=2
+        hamiltonian = {
+            "core_tensors": np.random.rand(L, M, M, N, N),
+            "leaf_tensors": np.random.rand(L, M, N, N),
+            "nuc_constant": 0.5
+        }
+
+    With this, we can set up a simple Hadamard test circuit, consisting of a :class:`~Hadamard` gate and a controlled trotter circuit.
+
+    .. code-block:: python
+
+        registers = qp.registers({"hadamard": 1, "system": M*N})
+
+        target_gates= {
+                "Hadamard",
+                "BasisRotation",
+                "RZ",
+                "IsingZZ",
+                "CNOT",
+                "ForLoop",
+                }
+
+        @qp.qjit
+        @qp.transforms.decompose(
+            gate_set=target_gates,
+        )
+        @qp.qnode(qp.device("lightning.qubit"))
+        def trotter_circuit():
+            qp.H(registers["hadamard"])
+
+            trotter_factorized(
+                evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
+                wires=registers["system"],
+                control_wires=registers["hadamard"])
+
+            return qp.expval(qp.X(registers["hadamard"]))
+
+    We can now run this circuit consisting of just ``10`` Trotter steps.
+
+    >>> trotter_circuit()
+    Array(-0.83086507, dtype=float64)
+
+    Or check the quantum resources required for this task:
+
+    >>> specs = qp.specs(trotter_circuit)()["resources"].gate_types
+    >>> specs
+    {'PhaseShift': 1,
+     'IsingZZ': 80,
+     'CNOT': 240,
+     'RZ': 41,
+     'SingleExcitation': 62,
+     'Hadamard': 1}
+
+    The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into :class:`~.PhaseShift` and :class:`~.SingleExcitation`
+    on ``lightning.qubit``.
     """
 
     Z = hamiltonian["core_tensors"]
