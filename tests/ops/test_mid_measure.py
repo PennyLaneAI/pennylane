@@ -71,9 +71,9 @@ class TestMeasure:
         m3 = MidMeasure(Wires(1), meas_uid="m1")
         m4 = MidMeasure(Wires(0), meas_uid="m1")
 
-        assert m1.hash != m2.hash
-        assert m1.hash != m3.hash
-        assert m1.hash == m4.hash
+        assert hash(m1) != hash(m2)
+        assert hash(m1) != hash(m3)
+        assert hash(m1) == hash(m4)
 
     @pytest.mark.parametrize(
         "postselect, reset, expected",

@@ -227,9 +227,8 @@ class Exp(ScalarSymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
-    @property
-    def hash(self):
-        return hash((str(self.name), self.base.hash, str(self.coeff)))
+    def __hash__(self):
+        return hash((str(self.name), hash(self.base), str(self.coeff)))
 
     @property
     def coeff(self):

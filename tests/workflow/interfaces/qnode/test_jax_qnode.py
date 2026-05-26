@@ -1033,6 +1033,8 @@ class TestQubitIntegrationHigherOrder:
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["h"] = H_FOR_SPSA
+            gradient_kwargs["num_directions"] = 50
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"

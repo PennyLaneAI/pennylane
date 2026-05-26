@@ -657,8 +657,7 @@ class Controlled(SymbolicOp):
 
         super().__init__(base)
 
-    @property
-    def hash(self):
+    def __hash__(self):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
@@ -675,7 +674,7 @@ class Controlled(SymbolicOp):
                 )
             )
         else:
-            base_hash = self.base.hash
+            base_hash = hash(self.base)
         return hash(
             (
                 "Controlled",

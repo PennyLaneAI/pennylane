@@ -9,8 +9,26 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
-  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
+  whether or not two operations commute. For example, ``qp.is_commuting(op, qp.X(op.wires[0]))`` can
+  be used to determine if ``op`` is in the X basis.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
 
   - Deprecated in v0.46
   - Will be removed in v0.47
@@ -21,8 +39,14 @@ Pending deprecations
   :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
   subclasses of ``Operator``.
 
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -46,12 +70,6 @@ Pending deprecations
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
-  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
@@ -83,6 +101,21 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` has been removed.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
+
+  - Deprecated in v0.43
+  - Removed in v0.46
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
 
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
 

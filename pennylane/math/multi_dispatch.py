@@ -215,7 +215,7 @@ def concatenate(values, axis=0, like=None):
 
     .. warning::
 
-        Tensors that are incompatible (such as Torch and TensorFlow tensors)
+        Tensors that are incompatible (such as Torch tensors)
         cannot both be present.
 
     Args:
@@ -510,7 +510,7 @@ def stack(values, axis=0, like=None):
 
     .. warning::
 
-        Tensors that are incompatible (such as Torch and TensorFlow tensors)
+        Tensors that are incompatible (such as Torch tensors)
         cannot both be present.
 
     Args:
@@ -629,12 +629,7 @@ def where(condition, x=None, y=None):
 
     .. warning::
 
-        The output format for ``x=None`` and ``y=None`` follows the respective
-        interface and differs between TensorFlow and all other interfaces:
-        For TensorFlow, the output is a tensor with shape
-        ``(len(condition.shape), num_true)`` where ``num_true`` is the number
-        of entries in ``condition`` that are ``True`` .
-        For all other interfaces, the output is a tuple of tensor-like objects,
+        The output format for ``x=None`` and ``y=None`` is a tuple of tensor-like objects,
         with the ``j``\ th object indicating the ``j``\ th entries of all indices.
         Also see the examples below.
 
@@ -647,12 +642,7 @@ def where(condition, x=None, y=None):
     (tensor([0, 0, 1, 1]), tensor([0, 1, 1, 2]))
 
     This is not a single tensor-like object but corresponds to the shape
-    ``(2, 4)`` . For TensorFlow, on the other hand:
-
-    >>> math.where(tf.constant(a) < 1)
-    <tf.Tensor: shape=(2, 4), dtype=int64, numpy=
-    array([[0, 0, 1, 1],
-           [0, 1, 1, 2]])>
+    ``(2, 4)`` .
 
     Note that the number of dimensions of the output does *not* depend on the input
     shape, it is always two-dimensional.
@@ -1066,7 +1056,7 @@ def detach(tensor, like=None):
 @multi_dispatch(tensor_list=[1])
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
-    Calls ``array[idx]=val`` and returns the updated array unless JAX or Tensorflow.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
 
     Args:
         array (tensor_like): array to be modified

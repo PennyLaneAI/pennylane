@@ -20,6 +20,8 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 from scipy import sparse
@@ -40,6 +42,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     qjit_compatible_self_adjoint,
 )
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -327,7 +330,14 @@ class PauliX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 
@@ -614,7 +624,14 @@ class PauliY(Operation):
 
     resource_keys = set()
 
-    basis = "Y"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
 
     batch_size = None
 
@@ -865,7 +882,14 @@ class PauliZ(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1137,7 +1161,14 @@ class S(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1306,7 +1337,14 @@ class T(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1463,7 +1501,14 @@ class SX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 

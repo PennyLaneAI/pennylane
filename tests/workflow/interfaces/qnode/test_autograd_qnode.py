@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -474,27 +474,6 @@ class TestQNode:
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""
-
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
-    def test_changing_shots(self):
-        """Test that changing shots works on execution"""
-        dev = DefaultQubit()
-        a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        @qnode(dev, diff_method=qp.gradients.param_shift)
-        def circuit(a, b):
-            qp.RY(a, wires=0)
-            qp.RX(b, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.sample(wires=(0, 1))
-
-        # execute with device default shots (None)
-        with pytest.raises(DeviceError):
-            res = circuit(a, b)
-
-        # execute with shots=100
-        res = circuit(a, b, shots=100)
-        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
 
     @pytest.mark.xfail(reason="Param shift and shot vectors.")
     def test_gradient_integration(self):

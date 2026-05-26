@@ -112,12 +112,12 @@ class TestSupportedObservables:
     """Test that the device can implement all observables that it supports."""
 
     @pytest.mark.parametrize("observable", all_obs)
-    def test_supported_observables_can_be_implemented(self, device_kwargs, observable):
+    def test_supported_observables_can_be_implemented(self, device_kwargs, observable, shots):
         """Test that the device can implement all its supported observables."""
         device_kwargs["wires"] = 3
         dev = qp.device(**device_kwargs)
 
-        if dev.shots and observable == "SparseHamiltonian":
+        if shots and observable == "SparseHamiltonian":
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -127,7 +127,7 @@ class TestSupportedObservables:
 
         kwargs = {"diff_method": "parameter-shift"} if observable == "SparseHamiltonian" else {}
 
-        @qp.qnode(dev, **kwargs)
+        @qp.qnode(dev, shots=shots, **kwargs)
         def circuit(obs_circ):
             qp.PauliX(0)
             return qp.expval(obs_circ)
@@ -138,7 +138,7 @@ class TestSupportedObservables:
         else:
             assert isinstance(circuit(obs[observable]), (float, np.ndarray))
 
-    def test_tensor_observables_can_be_implemented(self, device_kwargs):
+    def test_tensor_observables_can_be_implemented(self, device_kwargs, shots):
         """Test that the device can implement a simple tensor observable.
         This test is skipped for devices that do not support tensor observables."""
         device_kwargs["wires"] = 2
@@ -149,7 +149,7 @@ class TestSupportedObservables:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.PauliX(0)
             return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
@@ -162,7 +162,7 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    def test_hamiltonian_diff(self, device_kwargs, tol):
+    def test_hamiltonian_diff(self, device_kwargs, tol, shots):
         """Tests a simple VQE gradient using parameter-shift rules."""
 
         device_kwargs["wires"] = 1
@@ -170,7 +170,7 @@ class TestHamiltonianSupport:
         coeffs = np.array([-0.05, 0.17])
         param = np.array(1.7, requires_grad=True)
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, shots=shots, diff_method="parameter-shift")
         def circuit(coeffs, param):
             qp.RX(param, wires=0)
             qp.RY(param, wires=0)
@@ -196,8 +196,8 @@ class TestHamiltonianSupport:
             qp.RY(param, wires=0)
             return qp.expval(qp.Z(0))
 
-        half1 = qp.QNode(circuit1, dev, diff_method="parameter-shift")
-        half2 = qp.QNode(circuit2, dev, diff_method="parameter-shift")
+        half1 = qp.QNode(circuit1, dev, shots=shots, diff_method="parameter-shift")
+        half2 = qp.QNode(circuit2, dev, shots=shots, diff_method="parameter-shift")
 
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
@@ -205,15 +205,15 @@ class TestHamiltonianSupport:
         grad_fn_expected = qp.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
 
-        assert np.allclose(grad[0], grad_expected[0], atol=tol(dev.shots))
-        assert np.allclose(grad[1], grad_expected[1], atol=tol(dev.shots))
+        assert np.allclose(grad[0], grad_expected[0], atol=tol)
+        assert np.allclose(grad[1], grad_expected[1], atol=tol)
 
 
 @flaky(max_runs=10)
 class TestExpval:
     """Test expectation values"""
 
-    def test_identity_expectation(self, device, tol):
+    def test_identity_expectation(self, device, tol, shots):
         """Test that identity expectation value (i.e. the trace) is 1."""
         n_wires = 2
         dev = device(n_wires)
@@ -221,7 +221,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -229,9 +229,9 @@ class TestExpval:
             return qp.expval(qp.Identity(wires=0)), qp.expval(qp.Identity(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.shots))
+        assert np.allclose(res, np.array([1, 1]), atol=tol)
 
-    def test_pauliz_expectation(self, device, tol):
+    def test_pauliz_expectation(self, device, tol, shots):
         """Test that PauliZ expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -239,7 +239,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -248,9 +248,9 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_paulix_expectation(self, device, tol):
+    def test_paulix_expectation(self, device, tol, shots):
         """Test that PauliX expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -258,7 +258,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RY(theta, wires=[0])
             qp.RY(phi, wires=[1])
@@ -267,9 +267,9 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_pauliy_expectation(self, device, tol):
+    def test_pauliy_expectation(self, device, tol, shots):
         """Test that PauliY expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -277,7 +277,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -286,9 +286,9 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([0.0, -np.cos(theta) * np.sin(phi)])
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_hadamard_expectation(self, device, tol):
+    def test_hadamard_expectation(self, device, tol, shots):
         """Test that Hadamard expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -296,7 +296,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RY(theta, wires=[0])
             qp.RY(phi, wires=[1])
@@ -307,9 +307,9 @@ class TestExpval:
         expected = np.array(
             [np.sin(theta) * np.sin(phi) + np.cos(theta), np.cos(theta) * np.cos(phi) + np.sin(phi)]
         ) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_hermitian_expectation(self, device, tol):
+    def test_hermitian_expectation(self, device, tol, shots):
         """Test that arbitrary Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -320,7 +320,7 @@ class TestExpval:
         theta = 0.432
         phi = 0.123
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RY(theta, wires=[0])
             qp.RY(phi, wires=[1])
@@ -336,9 +336,9 @@ class TestExpval:
         ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
         expected = np.array([ev1, ev2])
 
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_projector_expectation(self, device, tol):
+    def test_projector_expectation(self, device, tol, shots):
         """Test that arbitrary Projector expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -349,7 +349,7 @@ class TestExpval:
         theta = 0.732
         phi = 0.523
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RY(theta, wires=[0])
             qp.RY(phi, wires=[1])
@@ -358,25 +358,25 @@ class TestExpval:
 
         basis_state, state_vector = [0, 0], [1, 0, 0, 0]
         expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [0, 1], [0, 1, 0, 0]
         expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [1, 0], [0, 0, 1, 0]
         expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [1, 1], [0, 0, 0, 1]
         expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
-    def test_multi_mode_hermitian_expectation(self, device, tol):
+    def test_multi_mode_hermitian_expectation(self, device, tol, shots):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -395,7 +395,7 @@ class TestExpval:
             ]
         )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RY(theta, wires=[0])
             qp.RY(phi, wires=[1])
@@ -414,7 +414,7 @@ class TestExpval:
             - 6
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize(
         "o",
@@ -424,7 +424,7 @@ class TestExpval:
             qp.sum(qp.s_prod(0.1, qp.Z(0)), qp.prod(qp.X(0), qp.Z(1))),
         ],
     )
-    def test_op_arithmetic_matches_default_qubit(self, o, device, tol):
+    def test_op_arithmetic_matches_default_qubit(self, o, device, tol, shots):
         """Test that devices (which support the observable) match default.qubit results."""
         dev = device(2)
         if isinstance(dev, qp.devices.LegacyDevice) and o.name not in dev.observables:
@@ -435,17 +435,17 @@ class TestExpval:
             qp.CNOT([0, 1])
             return qp.expval(o)
 
-        res_dq = qp.QNode(circuit, qp.device("default.qubit"))()
-        res = qp.QNode(circuit, dev)()
+        res_dq = qp.QNode(circuit, qp.device("default.qubit"), shots=shots)()
+        res = qp.QNode(circuit, dev, shots=shots)()
         assert qp.math.shape(res) == ()
-        assert np.isclose(res, res_dq, atol=tol(dev.shots))
+        assert np.isclose(res, res_dq, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    def test_paulix_pauliy(self, device, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -456,7 +456,7 @@ class TestTensorExpval:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -468,9 +468,9 @@ class TestTensorExpval:
         res = circuit()
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_pauliz_hadamard(self, device, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -481,7 +481,7 @@ class TestTensorExpval:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -493,7 +493,7 @@ class TestTensorExpval:
         res = circuit()
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
@@ -501,7 +501,7 @@ class TestTensorExpval:
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
     def test_wire_order_in_tensor_prod_observables(
-        self, device, base_obs, permuted_obs, tol, skip_if
+        self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
         in the tensor observable, provided the wires each term acts on remain constant.
@@ -510,7 +510,7 @@ class TestTensorExpval:
         ob1 = qp.Z(0) @ qp.Y(1)
         ob2 = qp.Y(1) @ qp.Z(0)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circ(obs):
             return qp.expval(obs)
 
@@ -521,15 +521,15 @@ class TestTensorExpval:
         if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circ(ob):
             sub_routine(label_map=range(3))
             return qp.expval(ob)
 
-        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
-    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if, shots):
         """Test that when given a tensor observable the expectation value is the same regardless of how the
         wires are labelled, as long as they match the device order.
 
@@ -553,17 +553,17 @@ class TestTensorExpval:
             sub_routine(wire_labels)
             return qp.expval(qp.X(wire_labels[0]) @ qp.Y(wire_labels[1]) @ qp.Z(wire_labels[2]))
 
-        circ_base_label = qp.QNode(circ, device=dev)
-        circ_custom_label = qp.QNode(circ, device=dev_custom_labels)
+        circ_base_label = qp.QNode(circ, device=dev, shots=shots)
+        circ_custom_label = qp.QNode(circ, device=dev_custom_labels, shots=shots)
 
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
             circ_custom_label(wire_labels=label_map),
-            atol=tol(dev.shots),
+            atol=tol,
             rtol=0,
         )
 
-    def test_hermitian(self, device, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if, shots):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -586,7 +586,7 @@ class TestTensorExpval:
             ]
         )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -603,9 +603,9 @@ class TestTensorExpval:
             + 3 * np.cos(varphi) * np.sin(phi)
             + np.sin(phi)
         )
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_projector(self, device, tol, skip_if):
+    def test_projector(self, device, tol, skip_if, shots):
         """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -620,7 +620,7 @@ class TestTensorExpval:
         phi = 0.523
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -633,31 +633,31 @@ class TestTensorExpval:
         expected = (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
             np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
         ) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [0, 1], [0, 1, 0, 0]
         expected = (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
             np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)
         ) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [1, 0], [0, 0, 1, 0]
         expected = (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
             np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
         ) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
         basis_state, state_vector = [1, 1], [0, 0, 0, 1]
         expected = (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
             np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)
         ) ** 2
-        assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
-        assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit(basis_state), expected, atol=tol)
+        assert np.allclose(circuit(state_vector), expected, atol=tol)
 
-    def test_sparse_hamiltonian_expval(self, device, tol):
+    def test_sparse_hamiltonian_expval(self, device, tol, shots):
         """Test that expectation values of sparse Hamiltonians are properly calculated."""
         n_wires = 4
         dev = device(n_wires)
@@ -667,7 +667,7 @@ class TestTensorExpval:
                 pytest.skip(
                     "Skipped because device does not support the SparseHamiltonian observable."
                 )
-        if dev.shots:
+        if shots:
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
         h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
@@ -677,7 +677,7 @@ class TestTensorExpval:
         )
         h = csr_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, shots=shots, diff_method="parameter-shift")
         def result():
             qp.X(0)
             qp.X(2)
@@ -688,43 +688,43 @@ class TestTensorExpval:
 
         res = result()
         exp_res = 0.019833838076209875
-        assert np.allclose(res, exp_res, atol=tol(False))
+        assert np.allclose(res, exp_res, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestSample:
     """Tests for the sample return type."""
 
-    def test_sample_wires(self, device):
+    def test_sample_wires(self, device, shots):
         """Test that a device can return samples."""
 
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return qp.sample(wires=0)
 
         res = circuit()
         assert qp.math.allclose(res, 1)  # note, might be violated with a noisy device?
-        assert qp.math.shape(res) == (dev.shots.total_shots, 1)
+        assert qp.math.shape(res) == (shots, 1)
         assert qp.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
-    def test_sample_values(self, device, tol):
+    def test_sample_values(self, device, tol, shots):
         """Tests if the samples returned by sample have
         the correct values
         """
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(1.5708, wires=[0])
             return qp.sample(qp.Z(0))
@@ -732,16 +732,16 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol)
 
-    def test_sample_values_hermitian(self, device, tol):
+    def test_sample_values_hermitian(self, device, tol, shots):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
@@ -750,7 +750,7 @@ class TestSample:
         A_ = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             return qp.sample(qp.Hermitian(A_, wires=0))
@@ -760,24 +760,20 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol)
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
-        assert np.allclose(
-            np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol(False)
-        )
+        assert np.allclose(np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol)
         # the analytic variance is 0.25*(sin(theta)-4*cos(theta))^2
-        assert np.allclose(
-            np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, atol=tol(False)
-        )
+        assert np.allclose(np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, atol=tol)
 
-    def test_sample_values_projector(self, device, tol):
+    def test_sample_values_projector(self, device, tol, shots):
         """Tests if the samples of a Projector observable returned by sample have
         the correct values
         """
         n_wires = 1
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -785,7 +781,7 @@ class TestSample:
 
         theta = 0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RX(theta, wires=[0])
             return qp.sample(qp.Projector(state, wires=0))
@@ -794,38 +790,38 @@ class TestSample:
         res_basis = circuit([0]).flatten()
         res_state = circuit([1, 0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected - (expected) ** 2, atol=tol(False))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
+        assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol)
+        assert np.allclose(np.var(res_state), expected - (expected) ** 2, atol=tol)
 
         expected = np.sin(theta / 2) ** 2
         res_basis = circuit([1]).flatten()
         res_state = circuit([0, 1]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected - (expected) ** 2, atol=tol(False))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
+        assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol)
+        assert np.allclose(np.var(res_state), expected - (expected) ** 2, atol=tol)
 
         expected = 0.5
         res = circuit(np.array([1, 1]) / np.sqrt(2)).flatten()
-        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res), expected, atol=tol(False))
-        assert np.allclose(np.var(res), expected - (expected) ** 2, atol=tol(False))
+        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res), expected, atol=tol)
+        assert np.allclose(np.var(res), expected - (expected) ** 2, atol=tol)
 
-    def test_sample_values_hermitian_multi_qubit(self, device, tol):
+    def test_sample_values_hermitian_multi_qubit(self, device, tol, shots):
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
         the correct values
         """
         n_wires = 2
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Hermitian" not in dev.observables:
@@ -841,7 +837,7 @@ class TestSample:
             ]
         )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RY(2 * theta, wires=[1])
@@ -853,7 +849,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol)
 
         # make sure the mean matches the analytic mean
         expected = (
@@ -865,16 +861,16 @@ class TestSample:
             + 27 * np.cos(3 * theta)
             + 6
         ) / 32
-        assert np.allclose(np.mean(res), expected, atol=tol(dev.shots))
+        assert np.allclose(np.mean(res), expected, atol=tol)
 
-    def test_sample_values_projector_multi_qubit(self, device, tol):
+    def test_sample_values_projector_multi_qubit(self, device, tol, shots):
         """Tests if the samples of a multi-qubit Projector observable returned by sample have
         the correct values
         """
         n_wires = 2
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -882,7 +878,7 @@ class TestSample:
 
         theta = 0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RX(theta, wires=[0])
             qp.RY(2 * theta, wires=[1])
@@ -893,46 +889,46 @@ class TestSample:
         res_basis = circuit([0, 0]).flatten()
         res_state = circuit([1, 0, 0, 0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.cos(theta / 2) * np.sin(theta)) ** 2
         res_basis = circuit([0, 1]).flatten()
         res_state = circuit([0, 1, 0, 0]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.sin(theta / 2) * np.sin(theta)) ** 2
         res_basis = circuit([1, 0]).flatten()
         res_state = circuit([0, 0, 1, 0]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.sin(theta / 2) * np.cos(theta)) ** 2
         res_basis = circuit([1, 1]).flatten()
         res_state = circuit([0, 0, 0, 1]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_basis), expected, atol=tol(dev.shots))
-        assert np.allclose(np.mean(res_state), expected, atol=tol(dev.shots))
+        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected, atol=tol)
+        assert np.allclose(np.mean(res_state), expected, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestTensorSample:
     """Test tensor sample values."""
 
-    def test_paulix_pauliy(self, device, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -942,7 +938,7 @@ class TestTensorSample:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -954,11 +950,11 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol)
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, atol=tol(False))
+        assert np.allclose(mean, expected, atol=tol)
 
         var = np.var(res)
         expected = (
@@ -969,14 +965,14 @@ class TestTensorSample:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(var, expected, atol=tol(False))
+        assert np.allclose(var, expected, atol=tol)
 
-    def test_pauliz_hadamard(self, device, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -986,7 +982,7 @@ class TestTensorSample:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -998,11 +994,11 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol)
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, atol=tol(False))
+        assert np.allclose(mean, expected, atol=tol)
 
         var = np.var(res)
         expected = (
@@ -1011,14 +1007,14 @@ class TestTensorSample:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(var, expected, atol=tol(False))
+        assert np.allclose(var, expected, atol=tol)
 
-    def test_hermitian(self, device, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if, shots):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -1040,7 +1036,7 @@ class TestTensorSample:
             ]
         )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1055,7 +1051,7 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A_))
-        assert np.allclose(sorted(np.unique(res)), sorted(eigvals), atol=tol(False))
+        assert np.allclose(sorted(np.unique(res)), sorted(eigvals), atol=tol)
 
         mean = np.mean(res)
         expected = (
@@ -1068,7 +1064,7 @@ class TestTensorSample:
                 + np.sin(phi)
             )
         )
-        assert np.allclose(mean, expected, atol=tol(False))
+        assert np.allclose(mean, expected, atol=tol)
 
         var = np.var(res)
         expected = (
@@ -1105,14 +1101,14 @@ class TestTensorSample:
             )
             / 16
         )
-        assert np.allclose(var, expected, atol=tol(False))
+        assert np.allclose(var, expected, atol=tol)
 
-    def test_projector(self, device, tol, skip_if):  # pylint: disable=too-many-statements
+    def test_projector(self, device, tol, skip_if, shots):  # pylint: disable=too-many-statements
         """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
         if isinstance(dev, qp.devices.LegacyDevice):
@@ -1125,7 +1121,7 @@ class TestTensorSample:
         phi = 1.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1149,12 +1145,12 @@ class TestTensorSample:
             ** 2
         )
         # res should only contain the eigenvalues of the projector matrix tensor product Z, i.e. {-1, 0, 1}
-        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected_mean, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected_var, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected_var, atol=tol(False))
+        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol)
+        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol)
+        assert np.allclose(np.mean(res_state), expected_mean, atol=tol)
+        assert np.allclose(np.var(res_basis), expected_var, atol=tol)
+        assert np.allclose(np.var(res_state), expected_var, atol=tol)
 
         res_basis = circuit([0, 1]).flatten()
         res_state = circuit([0, 1, 0, 0]).flatten()
@@ -1170,12 +1166,12 @@ class TestTensorSample:
             )
             ** 2
         )
-        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected_mean, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected_var, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected_var, atol=tol(False))
+        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol)
+        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol)
+        assert np.allclose(np.mean(res_state), expected_mean, atol=tol)
+        assert np.allclose(np.var(res_basis), expected_var, atol=tol)
+        assert np.allclose(np.var(res_state), expected_var, atol=tol)
 
         res_basis = circuit([1, 0]).flatten()
         res_state = circuit([0, 0, 1, 0]).flatten()
@@ -1191,12 +1187,12 @@ class TestTensorSample:
             )
             ** 2
         )
-        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected_mean, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected_var, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected_var, atol=tol(False))
+        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol)
+        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol)
+        assert np.allclose(np.mean(res_state), expected_mean, atol=tol)
+        assert np.allclose(np.var(res_basis), expected_var, atol=tol)
+        assert np.allclose(np.var(res_state), expected_var, atol=tol)
 
         res_basis = circuit([1, 1]).flatten()
         res_state = circuit([0, 0, 0, 1]).flatten()
@@ -1212,12 +1208,12 @@ class TestTensorSample:
             )
             ** 2
         )
-        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol(False))
-        assert np.allclose(np.mean(res_state), expected_mean, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected_var, atol=tol(False))
-        assert np.allclose(np.var(res_state), expected_var, atol=tol(False))
+        assert np.allclose(sorted(np.unique(res_basis)), [-1, 0, 1], atol=tol)
+        assert np.allclose(sorted(np.unique(res_state)), [-1, 0, 1], atol=tol)
+        assert np.allclose(np.mean(res_basis), expected_mean, atol=tol)
+        assert np.allclose(np.mean(res_state), expected_mean, atol=tol)
+        assert np.allclose(np.var(res_basis), expected_var, atol=tol)
+        assert np.allclose(np.var(res_state), expected_var, atol=tol)
 
         res = circuit(np.array([1, 0, 0, 1]) / np.sqrt(2))
         expected_mean = 0.5 * (
@@ -1236,33 +1232,33 @@ class TestTensorSample:
             )
             - expected_mean**2
         )
-        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
-        assert np.allclose(np.mean(res), expected_mean, atol=tol(False))
-        assert np.allclose(np.var(res), expected_var, atol=tol(False))
+        assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol)
+        assert np.allclose(np.mean(res), expected_mean, atol=tol)
+        assert np.allclose(np.var(res), expected_var, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestSumExpval:
     """Test expectation values of Sum observables."""
 
-    def test_sum_containing_identity_on_no_wires(self, device, tol):
+    def test_sum_containing_identity_on_no_wires(self, device, tol, shots):
         """Test that the device can handle Identity on no wires."""
         dev = device(1)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return qp.expval(qp.sum(qp.Z(0) + 3 * qp.I()))
 
         res = circuit()
-        assert qp.math.allclose(res, 2.0, atol=tol(dev.shots))
+        assert qp.math.allclose(res, 2.0, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestVar:
     """Tests for the variance return type"""
 
-    def test_var(self, device, tol):
+    def test_var(self, device, tol, shots):
         """Tests if the samples returned by sample have
         the correct values
         """
@@ -1272,7 +1268,7 @@ class TestVar:
         phi = 0.543
         theta = 0.6543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(phi, wires=[0])
             qp.RY(theta, wires=[0])
@@ -1281,9 +1277,9 @@ class TestVar:
         res = circuit()
 
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_var_hermitian(self, device, tol):
+    def test_var_hermitian(self, device, tol, shots):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
@@ -1298,7 +1294,7 @@ class TestVar:
         # test correct variance for <H> of a rotated state
         H = 0.1 * np.array([[4, -1 + 6j], [-1 - 6j, 2]])
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(phi, wires=[0])
             qp.RY(theta, wires=[0])
@@ -1317,9 +1313,9 @@ class TestVar:
             )
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_var_projector(self, device, tol):
+    def test_var_projector(self, device, tol, shots):
         """Tests if the samples of a Projector observable returned by sample have
         the correct values
         """
@@ -1332,7 +1328,7 @@ class TestVar:
         phi = 0.543
         theta = 0.654
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.RX(phi, wires=[0])
             qp.RY(theta, wires=[1])
@@ -1344,46 +1340,46 @@ class TestVar:
         expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
             (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([0, 1])
         res_state = circuit([0, 1, 0, 0])
         expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2 - (
             (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([1, 0])
         res_state = circuit([0, 0, 1, 0])
         expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2 - (
             (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([1, 1])
         res_state = circuit([0, 0, 0, 1])
         expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
             (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res = circuit(np.array([1, 0, 0, 1]) / np.sqrt(2))
         expected_mean = 0.5 * (
             (np.cos(theta / 2) * np.cos(phi / 2)) ** 2 + (np.cos(theta / 2) * np.sin(phi / 2)) ** 2
         )
         expected_var = expected_mean - expected_mean**2
-        assert np.allclose(res, expected_var, atol=tol(dev.shots))
+        assert np.allclose(res, expected_var, atol=tol)
 
 
 @flaky(max_runs=10)
 class TestTensorVar:
     """Test tensor variance measurements."""
 
-    def test_paulix_pauliy(self, device, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -1394,7 +1390,7 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1413,9 +1409,9 @@ class TestTensorVar:
             + 2 * np.cos(2 * phi)
             + 14
         ) / 16
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_pauliz_hadamard(self, device, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if, shots):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -1426,7 +1422,7 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1443,7 +1439,7 @@ class TestTensorVar:
             - np.cos(2 * theta) * np.sin(varphi) ** 2
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     # pylint: disable=too-many-arguments
 
@@ -1452,7 +1448,7 @@ class TestTensorVar:
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
     def test_wire_order_in_tensor_prod_observables(
-        self, device, base_obs, permuted_obs, tol, skip_if
+        self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the variance is the same regardless of the order of terms
         in the tensor observable, provided the wires each term acts on remain constant.
@@ -1461,7 +1457,7 @@ class TestTensorVar:
         ob1 = qp.Z(0) @ qp.Y(1)
         ob2 = qp.Y(1) @ qp.Z(0)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circ(obs):
             return qp.var(obs)
 
@@ -1472,15 +1468,15 @@ class TestTensorVar:
         if isinstance(dev, qp.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circ(ob):
             sub_routine(label_map=range(3))
             return qp.var(ob)
 
-        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
-    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if, shots):
         """Test that when given a tensor observable the variance is the same regardless of how the
         wires are labelled, as long as they match the device order.
 
@@ -1503,17 +1499,17 @@ class TestTensorVar:
             sub_routine(wire_labels)
             return qp.var(qp.X(wire_labels[0]) @ qp.Y(wire_labels[1]) @ qp.Z(wire_labels[2]))
 
-        circ_base_label = qp.QNode(circ, device=dev)
-        circ_custom_label = qp.QNode(circ, device=dev_custom_labels)
+        circ_base_label = qp.QNode(circ, device=dev, shots=shots)
+        circ_custom_label = qp.QNode(circ, device=dev_custom_labels, shots=shots)
 
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
             circ_custom_label(wire_labels=label_map),
-            atol=tol(dev.shots),
+            atol=tol,
             rtol=0,
         )
 
-    def test_hermitian(self, device, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if, shots):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -1537,7 +1533,7 @@ class TestTensorVar:
             ]
         )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1583,9 +1579,9 @@ class TestTensorVar:
             / 16
         )
 
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_projector(self, device, tol, skip_if):
+    def test_projector(self, device, tol, skip_if, shots):
         """Test that a tensor product involving qp.Projector works correctly"""
         n_wires = 3
         dev = device(n_wires)
@@ -1600,7 +1596,7 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(basis_state):
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -1618,8 +1614,8 @@ class TestTensorVar:
             (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
             - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([0, 1])
         res_state = circuit([0, 1, 0, 0])
@@ -1630,8 +1626,8 @@ class TestTensorVar:
             (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
             - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([1, 0])
         res_state = circuit([0, 0, 1, 0])
@@ -1642,8 +1638,8 @@ class TestTensorVar:
             (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
             - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res_basis = circuit([1, 1])
         res_state = circuit([0, 0, 0, 1])
@@ -1654,8 +1650,8 @@ class TestTensorVar:
             (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
             - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
-        assert np.allclose(res_basis, expected, atol=tol(dev.shots))
-        assert np.allclose(res_state, expected, atol=tol(dev.shots))
+        assert np.allclose(res_basis, expected, atol=tol)
+        assert np.allclose(res_state, expected, atol=tol)
 
         res = circuit(np.array([1, 0, 0, 1]) / np.sqrt(2))
         expected_mean = 0.5 * (
@@ -1674,7 +1670,7 @@ class TestTensorVar:
             )
             - expected_mean**2
         )
-        assert np.allclose(res, expected_var, atol=tol(False))
+        assert np.allclose(res, expected_var, atol=tol)
 
 
 def _skip_test_for_braket(dev):
@@ -1692,13 +1688,13 @@ def _skip_test_for_ionq(dev):
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    def test_custom_sample_measurement(self, device):
+    def test_custom_sample_measurement(self, device, shots):
         """Test the execution of a custom sampled measurement."""
 
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("Shots must be specified in the device to compute a sampled measurement.")
 
         class MyMeasurement(SampleMeasurement):
@@ -1710,7 +1706,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return 1
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
@@ -1718,11 +1714,11 @@ class TestSampleMeasurement:
         res = circuit()
         assert qp.math.allequal(res, [1, 1])
 
-    def test_sample_measurement_without_shots(self, device):
+    def test_sample_measurement_without_shots(self, device, shots):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
         dev = device(2)
 
-        if dev.shots:
+        if shots:
             pytest.skip("If shots!=None no error is raised.")
 
         class MyMeasurement(SampleMeasurement):
@@ -1734,7 +1730,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return 1
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
@@ -1742,20 +1738,20 @@ class TestSampleMeasurement:
         with pytest.raises((ValueError, DeviceError)):
             circuit()
 
-    def test_method_overriden_by_device(self, device):
+    def test_method_overriden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):
             pytest.skip("test specific for old device interface.")
         _skip_test_for_braket(dev)
 
-        if dev.shots is None:
+        if shots is None:
             pytest.skip(
                 "The number of shots has to be explicitly set on the device when using "
                 "sample-based measurements."
             )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return qp.sample(wires=0), qp.sample(wires=1)
@@ -1769,12 +1765,12 @@ class TestSampleMeasurement:
 class TestStateMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    def test_custom_state_measurement(self, device):
+    def test_custom_state_measurement(self, device, shots):
         """Test the execution of a custom state measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if dev.shots:
+        if shots:
             pytest.skip("Some plugins don't update state information when shots is not None.")
 
         class MyMeasurement(StateMeasurement):
@@ -1786,19 +1782,19 @@ class TestStateMeasurement:
             def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
 
-    def test_sample_measurement_with_shots(self, device):
+    def test_sample_measurement_with_shots(self, device, shots):
         """Test that executing a state measurement with shots raises a warning."""
         dev = device(2)
         _skip_test_for_braket(dev)
 
-        if not dev.shots:
+        if not shots:
             pytest.skip("If shots=None no warning is raised.")
 
         class MyMeasurement(StateMeasurement):
@@ -1810,7 +1806,7 @@ class TestStateMeasurement:
             def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return MyMeasurement()
@@ -1825,7 +1821,7 @@ class TestStateMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self, device):
+    def test_method_overriden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
 
@@ -1833,7 +1829,7 @@ class TestStateMeasurement:
         if isinstance(dev, qp.devices.Device):
             pytest.skip("test is specific to old device interface")
 
-        @qp.qnode(dev, interface="autograd", diff_method=None)
+        @qp.qnode(dev, shots=shots, interface="autograd", diff_method=None)
         def circuit():
             qp.X(0)
             return qp.state()
@@ -1847,7 +1843,7 @@ class TestStateMeasurement:
 class TestCustomMeasurement:
     """Tests for the CustomMeasurement class."""
 
-    def test_custom_measurement(self, device):
+    def test_custom_measurement(self, device, shots):
         """Test the execution of a custom measurement."""
         dev = device(2)
         _skip_test_for_braket(dev)
@@ -1866,27 +1862,27 @@ class TestCustomMeasurement:
             except DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return MyMeasurement()
 
         assert circuit() == 1
 
-    def test_method_overriden_by_device(self, device):
+    def test_method_overriden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):
             pytest.skip("test specific to old device interface.")
         _skip_test_for_braket(dev)
 
-        if dev.shots is None:
+        if shots is None:
             pytest.skip(
                 "The number of shots has to be explicitly set on the device when using "
                 "sample-based measurements."
             )
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.X(0)
             return qp.classical_shadow(wires=0)

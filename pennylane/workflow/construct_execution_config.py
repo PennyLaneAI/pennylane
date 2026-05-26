@@ -122,8 +122,7 @@ def construct_execution_config(
                 kwargs = {
                     **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
                 }
-            shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
-            tape = qp.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            tape = qp.tape.make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
             batch, _ = qnode.compile_pipeline((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)
 

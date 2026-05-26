@@ -151,8 +151,8 @@ class QuantumScript:
     def hash(self) -> int:
         """int: returns an integer hash uniquely representing the quantum script"""
         fingerprint = []
-        fingerprint.extend(op.hash for op in self.operations)
-        fingerprint.extend(m.hash for m in self.measurements)
+        fingerprint.extend(hash(op) for op in self.operations)
+        fingerprint.extend(hash(m) for m in self.measurements)
         fingerprint.extend(self.trainable_params)
         fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
