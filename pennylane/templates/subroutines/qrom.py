@@ -584,8 +584,8 @@ def _qrom_decomposition(
 
 # --- Measurement-based QROM decomposition ---
 #
-# Uses Pauli measurements to uncompute TemporaryAND gates.
-# Reference: "Active volume" paper, Figure 18(a) SELECT/QROM circuit.
+# Uses Pauli measurements to uncompute TemporaryAND gates (no adjoint needed).
+# Reference: "Active volume" paper, Figure (a) SELECT/QROM circuit.
 #
 # Structure:
 #   - Outer: 4-quarter split (from select.py _add_first_k_units)
@@ -593,7 +593,7 @@ def _qrom_decomposition(
 #   - XOR-relative encoding absorbs base corrections into measurements
 #
 # TemporaryAND count:
-#   Variant 3 (c_bar=0, K >= 3/4 * 2^c):  L-3
+#   Variant 3 (c_bar=0, K >= 3/4 * 2^c): L-3
 #   Variant 2 (c_bar>0):                  L-2
 #   Variant 1 (l=1):                      L-2
 #
@@ -608,6 +608,10 @@ def _xor(a, b):
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     """Measurement-based uncomputation on Fig 18. https://arxiv.org/pdf/2211.15465
+
+    Replaces adjoint(TemporaryAND) with two Pauli measurements:
+      1. Joint X measurement on work + target qubits where product=1
+      2. Z measurement on work + conditional X corrections
 
     Args:
         work_wire: the AND output wire to uncompute
@@ -664,7 +668,7 @@ def _measurement_qrom_inner(controls, targets, bitstrings, k):
     _measurement_uncompute(work, [flag, sel], targets, product)
 
 
-def _measurement_qrom_outer(controls, targets, bitstrings, k):
+def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disable=too-many-branches
     """Outer 4-quarter split with measurement-based uncomputation.
 
     Splits k items into quarters [Q0, Q1 | Q2, Q3] and processes each.
@@ -682,7 +686,6 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     l = k - k01
     k2 = int(math.ceil(2 ** (math.ceil(math.log2(l)) - 1))) if l > 1 else l
     k3 = k - k01 - k2
-    n_t = len(bitstrings[0])
 
     # --- OPEN ---
     TemporaryAND(and_wires, control_values=[0, 0])
@@ -781,14 +784,8 @@ def _measurement_qrom_count_TemporaryAnd(k):
     )
 
 
-def _qrom_measurement_resources(
-    num_bitstrings=None,
-    num_control_wires=None,
-    num_target_wires=None,
-    num_work_wires=None,
-    clean=None,
-    base_params=None,
-    **_,
+def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
+    num_bitstrings=None, num_target_wires=None, base_params=None, **_
 ):
     """Resource estimate for the measurement-based QROM decomposition.
 
@@ -803,9 +800,7 @@ def _qrom_measurement_resources(
     """
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
-        num_control_wires = base_params["num_control_wires"]
         num_target_wires = base_params["num_target_wires"]
-        num_work_wires = base_params["num_work_wires"]
     L = num_bitstrings
 
     if L <= 1:
@@ -831,15 +826,7 @@ def _qrom_measurement_resources(
     }
 
 
-def _qrom_measurement_condition(
-    num_bitstrings=None,
-    num_control_wires=None,
-    num_target_wires=None,
-    num_work_wires=None,
-    clean=None,
-    base_params=None,
-    **_,
-):
+def _qrom_measurement_condition(num_bitstrings=None, num_work_wires=None, base_params=None, **_):
     """Condition: need at least ceil_log2(L)-1 work wires."""
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
@@ -852,13 +839,14 @@ def _qrom_measurement_condition(
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(
-    data=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None, **__
-):  # pylint: disable=unused-argument
+def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
+    data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
+):
     """QROM decomposition using measurement-based uncomputation.
 
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
     PauliMeasure + conditional corrections instead of adjoint(TemporaryAND).
+    Work wires are always left clean (via measurement-based uncomputation).
 
     Requires: len(work_wires) >= ceil_log2(L) - 1.
     """
@@ -868,7 +856,6 @@ def _qrom_measurement_decomposition(
         control_wires = base.hyperparameters["control_wires"]
         target_wires = base.hyperparameters["target_wires"]
         work_wires = base.hyperparameters["work_wires"]
-        clean = base.hyperparameters["clean"]
 
     L = len(data)
     n_input = len(control_wires)
@@ -896,8 +883,8 @@ def _qrom_measurement_decomposition(
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
     controls = [control_wires[0], control_wires[1]]
-    for i in range(len(work_wires)):
-        controls.append(work_wires[i])
+    for i, w_wire in enumerate(work_wires):
+        controls.append(w_wire)
         if i + 2 < n_input:
             controls.append(control_wires[i + 2])
 
