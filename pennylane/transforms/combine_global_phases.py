@@ -16,13 +16,21 @@
 Provides a transform to combine all ``qp.GlobalPhase`` gates in a circuit into a single one applied at the end.
 """
 
+from functools import partial
+
 import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-@transform
+def _combine_global_phases_setup_inputs():
+    return (), {}
+
+
+@partial(
+    transform, pass_name="combine-global-phases", setup_inputs=_combine_global_phases_setup_inputs
+)
 def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Combine all ``qp.GlobalPhase`` gates into a single ``qp.GlobalPhase`` operation.
 
@@ -62,6 +70,62 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     0: ──Y────╭GlobalPhase(0.76)─┤ ╭<X@Z>
     1: ──H─╭●─├GlobalPhase(0.76)─┤ ╰<X@Z>
     2: ────╰X─╰GlobalPhase(0.76)─┤
+
+    .. details::
+        :title: Usage with qjit
+
+        There are two key differences to note when using ``combine_global_phases`` with ``qjit``:
+
+        * ``combine_global_phases`` must be applied to a QNode. Quantum functions are not supported as input.
+
+        * When used with ``qjit``, the ``combine_global_phases`` compilation pass will merge
+          operations surrounding control flow together, while those within the control flow are merged
+          together separately (i.e., no formal loop-boundary optimizations).
+
+        Consider the following example:
+
+        .. code-block:: python
+
+            import pennylane as qp
+
+            n = 3
+            dev = qp.device('null.qubit', wires=n)
+
+            @qp.qjit(keep_intermediate=True, capture=True)
+            @qp.transforms.combine_global_phases
+            @qp.qnode(dev)
+            def circuit():
+                qp.GlobalPhase(0.1, wires = 2)
+                qp.X(n-1)
+                qp.GlobalPhase(0.1, wires = 1)
+                qp.H(n-2)
+
+                @qp.for_loop(0, 2)
+                def loop(i):
+                    qp.GlobalPhase(0.1967, wires=i)
+                    qp.GlobalPhase(0.7691, wires=i)
+
+                loop()
+
+                qp.GlobalPhase(0.1, wires=0)
+                qp.GlobalPhase(0.1, wires=0)
+
+                return qp.expval(qp.Z(0))
+
+        The two ``GlobalPhase`` operations within the ``for_loop`` context will be merged together.
+        However, they will not be merged together with the ``GlobalPhase`` operations that occur
+        before and after the ``for_loop``.
+
+        This behaviour is shown in the image below, where the application of
+        ``combine_global_phases`` results in two ``GlobalPhase`` instances (one inside of a
+        ``for_loop`` and the other from the ``GlobalPhase`` instances outside of the ``for_loop``).
+
+        >>> qp.specs(circuit, level="device")().resources.gate_counts
+        {'GlobalPhase': 3, 'Hadamard': 1, 'PauliX': 1}
+        >>> print(qp.draw_graph(circuit)()) # doctest: +SKIP
+
+        .. figure:: ../../_static/catalyst-combine-global-phases-example.png
+            :align: left
 
     """
 

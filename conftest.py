@@ -15,6 +15,8 @@
 # pylint: disable = missing-module-docstring
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
+
+import pytest
 from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
@@ -35,7 +37,6 @@ except ImportError:
 
 namespace = {
     "qp": qp,
-    "qml": qp,
     "np": base_numpy,
     "sp": base_scipy,
     "pnp": qp.numpy,
@@ -59,6 +60,20 @@ def reset_pennylane_state(namespace):
     base_numpy.set_printoptions(precision=8)
 
 
+@pytest.fixture(scope="module")
+def local_decomp_context():
+    """enable and disable graph-decomposition around each test."""
+    with qp.decomposition.local_decomps():
+        yield
+
+
+def pytest_configure(config):
+    """Used to amend to the pytest.ini used for testing."""
+    config.addinivalue_line(
+        "filterwarnings", "error::pennylane.exceptions.PennyLaneDeprecationWarning"
+    )
+
+
 pytest_collect_file = Sybil(
     setup=lambda ns: ns.update(namespace),
     parsers=[
@@ -66,6 +81,7 @@ pytest_collect_file = Sybil(
         PythonCodeBlockParser(),
         MarkDownPythonCodeBlockParser(),
     ],
+    fixtures=["local_decomp_context"],
     patterns=["*.rst", "*.py", "*.md"],
     teardown=reset_pennylane_state,
 ).pytest()

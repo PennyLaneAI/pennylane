@@ -30,14 +30,14 @@ be installed alongside PennyLane:
 
 The following Python packages are optional:
 
-* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
-* ``matplotlib``: for ``qml.draw_mpl`` and associated code
+* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qp.qchem`` module
+* ``matplotlib``: for ``qp.draw_mpl`` and associated code
 * ``quimb``: for the ``default.tensor`` device
-* ``pyzx``: for ``qml.transforms.to_zx`` and ``qml.transforms.from_zx``
+* ``pyzx``: for ``qp.transforms.to_zx`` and ``qp.transforms.from_zx``
 * ``stim``: for ``default.clifford``
-* ``openqasm3`` and ``antlr3_python3_runtime``: for ``qml.from_qasm3``
+* ``openqasm3`` and ``antlr3_python3_runtime``: for ``qp.from_qasm3``
 * ``kahypar`` and ``opt_einsum`` for ``qcut``
-* ``cvxopt``for ``qml.kernels.closest_psd_matrix``
+* ``cvxopt``for ``qp.kernels.closest_psd_matrix``
 
 .. _install_interfaces:
 

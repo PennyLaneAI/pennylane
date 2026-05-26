@@ -135,7 +135,7 @@ def test_recursive_nested_commutator(A, B, alpha, final_op):
         m_computed = qp.matrix(computed_op, wire_order=final_op.wires)
     except qp.operation.DecompositionUndefinedError:
         pr = computed_op.pauli_rep
-        pr.simplify()
+        pr.prune()
         m_computed = pr.to_mat(wire_order=final_op.wires.tolist())
 
     assert qnp.allclose(m_computed, m_expected)

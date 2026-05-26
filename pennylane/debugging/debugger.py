@@ -105,17 +105,20 @@ class PLDB(pdb.Pdb):
     @classmethod
     def _execute(cls, batch_tapes):
         """Execute the batch of tapes on the active device"""
-        dev = cls.get_active_device()
+        # NOTE: We should not be executing within an active context
+        with QueuingManager.stop_recording():
 
-        valid_batch = batch_tapes
-        if dev.wires:
-            valid_batch = validate_device_wires(batch_tapes, wires=dev.wires)[0]
+            dev = cls.get_active_device()
 
-        program, new_config = dev.preprocess()
-        new_batch, fn = program(valid_batch)
+            valid_batch = batch_tapes
+            if dev.wires:
+                valid_batch = validate_device_wires(batch_tapes, wires=dev.wires)[0]
 
-        # TODO: remove [0] index once compatible with transforms
-        return fn(dev.execute(new_batch, new_config))[0]
+            program, new_config = dev.preprocess()
+            new_batch, fn = program(valid_batch)
+
+            # TODO: remove [0] index once compatible with transforms
+            return fn(dev.execute(new_batch, new_config))[0]
 
 
 @contextmanager

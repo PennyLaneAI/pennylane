@@ -74,7 +74,7 @@ class CustomOpWithReconstructor(qp.operation.Operator):  # pylint: disable=too-f
 
 @register_reconstructor(CustomOpWithReconstructor)
 def _reconstruct_custom_op(*_, wires, **__):
-    return CustomOpWithReconstructor(wires)
+    return CustomOpWithReconstructor(*_, wires)
 
 
 @pytest.mark.unit
@@ -561,7 +561,9 @@ class TestControlledDecomposition:
                 name=f"controlled({base_decomposition.name})",
             )
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
-                zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+                zero_control_wires = [
+                    w for w, val in zip(control_wires, control_values, strict=True) if not val
+                ]
                 for w in zero_control_wires:
                     qp.PauliX(w)
                 # We're extracting control wires and base wires from the wires argument instead
@@ -881,10 +883,12 @@ class TestControlledDecomposition:
                 _resource_fn,
                 work_wires=inner_decomp._work_wire_spec,
                 exact=inner_decomp.exact_resources,
-                name=f"flip_zero_ctrl_values({inner_decomp.name})",
+                name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
-                zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+                zero_control_wires = [
+                    w for w, val in zip(control_wires, control_values, strict=True) if not val
+                ]
                 for w in zero_control_wires:
                     qp.PauliX(w)
                 inner_decomp(

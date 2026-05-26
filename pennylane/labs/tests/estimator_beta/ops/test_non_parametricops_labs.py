@@ -147,7 +147,6 @@ class TestHadamard:
                 qre.Hadamard(), num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl
             )
         )
-        print(result)
         assert result == expected_res
 
     ctrl_data = (

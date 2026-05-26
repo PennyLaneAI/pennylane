@@ -434,6 +434,48 @@ class TestControlledDecompBisect:
         assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, su, atol=tol, rtol=tol)
 
     @pytest.mark.unit
+    def test_bisect_compute_a_jit_compatible(self, tol):
+        """Test that _bisect_compute_a works under JAX tracing (jax.jit)."""
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(u):
+            return _bisect_compute_a(u)
+
+        # SU(2) matrix with non-zero off-diagonal
+        U = jax.numpy.array([[1 + 0j, 1 + 0j], [-1 + 0j, 1 + 0j]]) * 2**-0.5
+        result = f(U)
+        assert result.shape == (2, 2)
+        assert jax.numpy.iscomplexobj(result)
+
+        sx = qp.PauliX.compute_matrix()
+        at = _matrix_adjoint(np.array(result))
+        a = np.array(result)
+        assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, np.array(U), atol=tol, rtol=tol)
+
+    @pytest.mark.unit
+    def test_bisect_compute_b_jit_compatible(self, tol):
+        """Test that _bisect_compute_b works under JAX tracing (jax.jit)."""
+
+        jax = pytest.importorskip("jax")
+
+        @jax.jit
+        def f(u):
+            return _bisect_compute_b(u)
+
+        # SU(2) matrix with zero main-diagonal
+        U = jax.numpy.array([[0 + 0j, 0 + 1j], [0 + 1j, 0 + 0j]])
+        result = f(U)
+        assert result.shape == (2, 2)
+        assert jax.numpy.iscomplexobj(result)
+
+        sx = qp.PauliX.compute_matrix()
+        sh = qp.Hadamard.compute_matrix()
+        bt = _matrix_adjoint(np.array(result))
+        b = np.array(result)
+        assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, np.array(U), atol=tol, rtol=tol)
+
+    @pytest.mark.unit
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(
@@ -1087,3 +1129,54 @@ class TestMCXDecomposition:
             _ = _decompose_mcx_with_two_workers_old(
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires",
+        [(4, 1), (4, 2)],
+    )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):
+        """Test that MultiControlledX decomposition is QJIT compatible with JAX-traced wires."""
+        jax = pytest.importorskip("jax")
+        from catalyst.device.decomposition import catalyst_decompose
+
+        jnp = jax.numpy
+        qp.decomposition.enable_graph()
+
+        gate_set = {
+            "X",
+            "CNOT",
+            "Toffoli",
+            "TemporaryAND",
+            "Adjoint(TemporaryAND)",
+            "Cond",
+            "HybridAdjoint",
+            "ForLoop",
+            "S",
+            "T",
+            "Adjoint(S)",
+            "Adjoint(T)",
+            "RZ",
+            "Hadamard",
+            "GlobalPhase",
+        }
+
+        wires = jnp.arange(num_control_wires + 1)
+        work_wires = jnp.arange(num_control_wires + 1, num_control_wires + 1 + num_work_wires)
+        cvals = (0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0)[:num_control_wires]
+
+        @qp.qjit(capture=False, static_argnums=2)
+        @catalyst_decompose(capabilities=None, target_gates=gate_set)
+        @qp.qnode(qp.device("lightning.qubit"))
+        def circuit(wires, work_wires, cvals):
+            qp.MultiControlledX(
+                wires,
+                work_wires=work_wires,
+                control_values=cvals,
+                work_wire_type=work_wire_type,
+            )
+            return qp.probs(wires=wires)
+
+        result = circuit(wires, work_wires, cvals)
+        assert result is not None

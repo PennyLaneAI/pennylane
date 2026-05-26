@@ -256,7 +256,7 @@
 <h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
 
 New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
-are now available! With this release, you can query the solutions of the graph-based system to
+are now available! With this release, you can query the solutions of the graph-based system to 
 understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
 
 * It is now possible to assign custom names to decomposition rules using the ``name`` argument in

@@ -4,6 +4,8 @@
 # This workflow maintains a single source of truth for the versions of these dependencies.
 
 name: Determine Package Versions to use for testing certain PennyLane Interfaces
+permissions:
+  contents: read
 on:
   workflow_call:
     inputs:

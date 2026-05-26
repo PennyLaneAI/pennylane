@@ -19,11 +19,14 @@ import copy
 import json
 import os
 import re
+import tempfile
+import time
 import warnings
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import partial
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pennylane as qp
 
@@ -33,7 +36,9 @@ if TYPE_CHECKING:
     from pennylane.transforms.core import CompilePipeline
 
 # Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_FILEPATH = "__qp_specs_qjit_resources.json"
+_RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
+# Used for MLIR analysis pass JSON filenames with pass-by-pass specs
+_RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
@@ -99,30 +104,30 @@ def _specs_qjit_device_level_tracking(
     if compute_depth is None:
         compute_depth = True
 
-    # When running at the device level, execute on null.qubit directly with resource tracking,
-    # which will give resource usage information for after all compiler passes have completed
-    # TODO: Find a way to inherit all devices args from input
-    original_device = original_qnode.device
-    spoofed_dev = NullQubit(
-        target_device=original_device,
-        wires=original_device.wires,
-        track_resources=True,
-        resources_filename=_RESOURCE_TRACKING_FILEPATH,
-        compute_depth=compute_depth,
-    )
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
 
-    new_qnode = qjit.original_function.update(device=spoofed_dev)
-    new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+        # When running at the device level, execute on null.qubit directly with resource tracking,
+        # which will give resource usage information for after all compiler passes have completed
+        # TODO: Find a way to inherit all devices args from input
+        original_device = original_qnode.device
+        spoofed_dev = NullQubit(
+            target_device=original_device,
+            wires=original_device.wires,
+            track_resources=True,
+            resources_filename=str(filepath),
+            compute_depth=compute_depth,
+        )
 
-    if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-        # TODO: Warn that something has gone wrong here
-        os.remove(_RESOURCE_TRACKING_FILEPATH)
+        new_qnode = qjit.original_function.update(device=spoofed_dev)
+        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
-    try:
         # Execute on null.qubit with resource tracking
         new_qjit(*args, **kwargs)
 
-        with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
+        with filepath.open("r", encoding="utf-8") as f:
             resource_data = json.load(f)
 
         return SpecsResources(
@@ -132,10 +137,6 @@ def _specs_qjit_device_level_tracking(
             num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
-    finally:
-        # Ensure we clean up the resource tracking file
-        if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
-            os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
 def _get_last_tape_transform_level(compile_pipeline: CompilePipeline) -> int:
@@ -222,39 +223,240 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     return level_sorted
 
 
-def _mlir_resources_to_specs_resources(resources) -> SpecsResources:  # pragma: no cover
-    # This is function is covered by integration tests within the Catalyst frontend
-    """Helper function to convert the output of mlir_specs (which is in terms of ResourcesResult) to SpecsResources."""
+def _mlir_resources_to_specs_resources(
+    resources: dict[str, Any],
+) -> SpecsResources:  # pragma: no cover
+    # This function is covered by integration tests within the Catalyst frontend
+    """Helper function to convert the output of resource analysis pass into SpecsResources."""
 
-    gate_types = {}
+    # Sort the gate and measurement dictionaries by key to ensure consistent ordering, which is helpful for testing and readability of results
+    resources["operations"] = {
+        k: resources["operations"][k] for k in sorted(resources["operations"].keys())
+    }
+    resources["measurements"] = {
+        k: resources["measurements"][k] for k in sorted(resources["measurements"].keys())
+    }
+
+    gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
 
-    for res_name, sizes in resources.operations.items():
-        for size, count in sizes.items():
-            gate_sizes[size] += count
+    for res_name, count in resources["operations"].items():
+        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
+        gate_name, gate_size = match.groups() if match else (res_name, 0)
 
-        if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
             # Separate out PPMs and PPRs by weight
-            for size, count in sizes.items():
-                gate_types[f"{res_name}-w{size}"] = count
-        else:
-            gate_types[res_name] = sum(sizes.values())
+            gate_name += f"-w{gate_size}"
+
+        gate_types[gate_name] += count
+        gate_sizes[int(gate_size)] += count
+
+    if resources["has_dyn_loop"]:
+        warnings.warn(
+            "Specs was unable to determine the number of loop iterations. "
+            "The results will assume the loop runs only once. "
+            "This may be fixed in some cases by inlining dynamic arguments.",
+            UserWarning,
+        )
+
+    if resources["has_branches"]:
+        warnings.warn(
+            "Specs was unable to determine the branch of a conditional or switch statement."
+            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
+            UserWarning,
+        )
 
     return SpecsResources(
-        gate_types=gate_types,
+        gate_types=dict(gate_types),
         gate_sizes=dict(gate_sizes),
-        measurements=dict(resources.measurements),
-        num_allocs=resources.num_allocs,
+        measurements=resources["measurements"],
+        num_allocs=resources["num_qubits"],
         depth=None,  # Can't get depth from MLIR pass results
     )
 
 
+def _execute_analysis_pass(
+    new_qnode,
+    compile_options,
+    *args,
+    **kwargs,
+):  # pragma: no cover
+    """
+    Helper function to compile the QNode with the resource analysis pass inserted, which will output
+    the necessary JSON files for MLIR analysis.
+
+    This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
+    compilation strategy.
+    """
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+
+    # pylint: disable=import-outside-toplevel,protected-access
+    try:
+        from catalyst import QJIT
+    except ImportError as e:
+        raise ImportError(
+            "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
+            "Please install Catalyst and try again."
+        ) from e
+
+    new_qjit = QJIT(new_qnode, compile_options=compile_options)
+
+    # Force a compilation, which will output the necessary JSON files
+    # This code snippet is adapted from the source code of `QJIT.jit_compile`
+    if new_qjit.mlir_module is None:
+        new_qjit.workspace = new_qjit._get_workspace()
+        new_qjit.jaxed_function = None
+        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+            new_qjit.compiled_function.shared_object.close()
+
+        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
+            args, **kwargs
+        )
+
+        new_qjit.mlir_module = new_qjit.generate_ir()
+
+    # Force resolution of this property to finish going through all MLIR passes
+    if new_qjit.mlir_opt is None:
+        raise ValueError(
+            "Specs failed to compile the QNode with the specified passes for MLIR analysis."
+        )
+
+
+def _specs_from_analysis_pass(
+    qjit,
+    original_qnode,
+    level: int | tuple[int] | list[int],
+    num_tape_levels: int,
+    level_to_markers: dict[int, list[str]],
+    level_to_name: dict[int, str],
+    *args,
+    **kwargs,
+) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
+    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+    """
+    Helper function to get specs information from MLIR analysis passes inserted at the specified
+    levels.
+
+    It works by creating a new compile pipeline with extra resources analysis passes inserted at
+    the appropriate levels, then compiles the QNode with this pipeline to get the resource
+    information from the output JSON files.
+
+    Args:
+        qjit (:class:`~catalyst.QJIT`): the QNode to calculate the specifications for.
+        original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
+        level (int | tuple[int] | list[int]): the levels at which to insert resource analysis passes
+            for resource counting
+        num_tape_levels (int): the number of tape transform levels in the compile pipeline
+        level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
+        level_to_name (dict[int, str]): mapping from level number to the name to use for that level
+            in the output. Note that this argument is mutated by this function
+        *args: the arguments to pass to the QNode when compiling
+        **kwargs: the keyword arguments to pass to the QNode when compiling
+    Returns:
+        dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
+            corresponding resource information.
+    """
+
+    # pylint: disable=protected-access,too-many-arguments
+
+    new_qnode = copy.deepcopy(original_qnode)
+    iter_pipeline = new_qnode._compile_pipeline
+    new_compile_pipeline = qp.CompilePipeline()
+
+    max_level = max(level) if isinstance(level, (list, tuple)) else level
+    max_legal_level = len(iter_pipeline)
+    fname_to_level = {}
+
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
+
+        if num_tape_levels > 0:
+            # Account for the inserted lowering pass which comes after all tape transforms
+            max_legal_level += 1
+
+            # Add all tape transforms first, which come before any MLIR passes
+            new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
+            iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
+
+        if max_level > max_legal_level:
+            bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
+            raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
+
+        if num_tape_levels in level:
+            fname = f"{fname_prefix}before.json"
+            fname_to_level[fname] = (
+                num_tape_levels  # num_tape_levels == the level of the lowering pass
+            )
+            level_to_name[num_tape_levels] = (
+                ", ".join(level_to_markers[num_tape_levels])
+                if num_tape_levels in level_to_markers
+                else "Before MLIR Passes"
+            )
+            new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                output_json=True, output_fname=fname
+            )
+
+        for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
+            if i > max_level:
+                break
+            new_compile_pipeline += comp_pass
+            if i in level:
+                fname = f"{fname_prefix}{i}.json"
+                level_name = (
+                    ", ".join(level_to_markers[i])
+                    if i in level_to_markers
+                    else comp_pass.pass_name or f"Level {i}"
+                )
+                level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
+                fname_to_level[fname] = i
+                level_to_name[i] = level_name
+                new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                    output_json=True, output_fname=fname
+                )
+
+        new_qnode._compile_pipeline = new_compile_pipeline
+        compile_options = copy.deepcopy(qjit.compile_options)
+        compile_options.target = "mlir"
+        compile_options.lower_to_llvm = False
+        if compile_options.pipelines is None:
+            # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
+            # limiting which passes are applied to just the necessary ones. In this case, only
+            # the set of user-specified transforms (the quantum-compilation-stage) are run
+            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+
+        # Partially compile the QNode, producing JSON data with resource info
+        _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
+
+        results = {}
+
+        for res_file, curr_level in fname_to_level.items():
+            res_file = Path(res_file)
+            with res_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            cur_level_resources = [
+                _mlir_resources_to_specs_resources(res)
+                for res in data.values()
+                if res[
+                    "qnode"
+                ]  # Only include information about qnodes, ignoring any extra functions
+            ]
+
+            if len(cur_level_resources) == 1:
+                cur_level_resources = cur_level_resources[0]
+
+            results[level_to_name[curr_level]] = cur_level_resources
+
+    return results
+
+
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
-    SpecsResources | list[SpecsResources] | dict[int, SpecsResources | list[SpecsResources]],
-    dict[int, str],
+    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
+    str | dict[int, str],
 ]:  # pragma: no cover
-    # pylint: disable=import-outside-toplevel,too-many-branches,too-many-statements
-    from catalyst.python_interface.inspection import mlir_specs
+    # pylint: disable=too-many-branches,too-many-statements
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
@@ -279,19 +481,14 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     level_to_markers = defaultdict(list)
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
-    mlir_level_to_markers = {
-        lvl - num_tape_levels: markers
-        for lvl, markers in level_to_markers.items()
-        if lvl >= num_tape_levels
-    }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    output_level: dict[int, str] = {}  # This will be a map of level to its name
+    level_to_name: dict[int, str] = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
-    mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
+    mlir_levels = [lvl for lvl in level if lvl >= num_tape_levels]
 
     resources = {}
 
@@ -314,47 +511,33 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            trans_name = _make_level_name_unique(trans_name, set(output_level.values()))
+            trans_name = _make_level_name_unique(trans_name, set(level_to_name.values()))
             resources[trans_name] = res
-            output_level[tape_level] = trans_name
+            level_to_name[tape_level] = trans_name
 
     # Handle MLIR passes
     if len(mlir_levels) > 0:
-        try:
-            results = mlir_specs(
+        resources.update(
+            _specs_from_analysis_pass(
                 qjit,
+                original_qnode,
                 mlir_levels,
+                num_tape_levels,
+                level_to_markers,
+                level_to_name,
                 *args,
                 **kwargs,
-                level_to_markers=mlir_level_to_markers,
-                existing_level_names=set(output_level.values()),
             )
-        except ValueError as ve:
-            levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
-            bad_levels = [str(int(lvl) + num_tape_levels) for lvl in levels[1].split(", ")]
-            raise ValueError(
-                f"Requested specs levels {', '.join(bad_levels)} not found in MLIR pass list."
-            ) from ve
-
-        for lvl, (level_name, result) in zip(mlir_levels, results.items()):
-            output_level[lvl + num_tape_levels] = level_name
-
-            if isinstance(result, list):
-                result = [_mlir_resources_to_specs_resources(res) for res in result]
-            else:
-                result = _mlir_resources_to_specs_resources(result)
-
-            resources[level_name] = result
+        )
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
         resources = next(iter(resources.values()))
-        output_level = next(iter(output_level.values()))
+        level_to_name = next(iter(level_to_name.values()))
 
-    return resources, output_level
+    return resources, level_to_name
 
 
-# NOTE: Some information is missing from specs_qjit compared to specs_qnode
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
@@ -404,7 +587,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
 def specs(
     qnode,
-    level: str | int | slice | None = None,
+    level: str | int | slice[int] | Iterable[int | str] | None = None,
     compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides the specifications of a quantum circuit.
@@ -416,13 +599,13 @@ def specs(
         qnode (:class:`~pennylane.QNode` | :class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
 
     Keyword Args:
-        level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
+        level (str | int | slice | iter[int | str] | None): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
-            on the available levels. For ``qjit``-compiled workflows, see the sections below for more information.
-            Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
+            on the available levels without ``qjit``. For ``qjit``-compiled workflows, see the sections below for more information.
+            When set to ``None`` (the default), this is treated as ``"device"`` for ``qjit``-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
-            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
+            depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis for ``qjit``-compiled workflows.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -433,6 +616,16 @@ def specs(
 
         Computing circuit depth is computationally expensive and can lead to slower ``specs`` calculations.
         If circuit depth is not needed, set ``compute_depth=False``.
+
+    .. note::
+
+        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
+        There are two broad ways to use ``specs`` on ``qjit``-compiled QNodes:
+
+        * Runtime resource tracking via mock circuit execution
+        * Pass-by-pass resource collection for user applied compilation passes
+
+        See related sections below for details regarding use with Catalyst.
 
     **Example**
 
@@ -471,13 +664,11 @@ def specs(
     - probs(all wires): 1
     Depth: 98
 
-    .. note::
+    The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
+    access to the data fields. For example:
 
-        The available options for ``levels`` are different for circuits which have been compiled using Catalyst.
-        There are 2 broad ways to use ``specs`` on ``qjit`` compiled QNodes:
-
-        * Runtime resource tracking via mock circuit execution
-        * Pass-by-pass resource collection for user applied compilation passes
+    >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
+    {'RX': 1, 'CNOT': 1, 'Evolution': 96}
 
     .. details::
         :title: Specs with Tape Transforms
@@ -503,8 +694,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.X(0) + qp.Y(1))
 
-        First, we can check the resource information of the QNode without any modifications by specifying ``level=0``. Note that ``level=top`` would
-        return the same results:
+        First, we can inspect the unmodified QNode by setting ``level=0``. Note that ``level="top"`` is equivalent:
 
         >>> print(qp.specs(circuit, level=0)(0.1).resources)
         Wire allocations: 2
@@ -532,7 +722,21 @@ def specs(
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Depth: 3
 
-        We can then check the resources after applying all transforms with ``level="device"`` (which, in this particular example, would be equivalent to ``level=3``):
+        We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
+        would be equivalent to ``level=3``). The two rotations merge and cancel out, leaving us with only ``RandomLayers``:
+
+        >>> print(qp.specs(circuit, level="user")(0.1).resources)
+        Wire allocations: 2
+        Total gates: 1
+        Gate counts:
+        - RandomLayers: 1
+        Measurements:
+        - expval(Sum(num_wires=2, num_terms=2)): 1
+        Depth: 1
+
+        After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
+        resources after all transforms are applied, we can use ``level="device"``. In this case, ``RandomLayers`` is not
+        device-compatible and is further decomposed before handing the circuit off to the device:
 
         >>> print(qp.specs(circuit, level="device")(0.1).resources)
         Wire allocations: 2
@@ -544,9 +748,8 @@ def specs(
         - expval(Sum(num_wires=2, num_terms=2)): 1
         Depth: 1
 
-        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
-        desired transforms, the specs output's resources field is instead returned as a list with a
-        :class:`~.resource.SpecsResources` for each resulting tape:
+        If a QNode with a tape-splitting transform is supplied to the function, the output will provide
+        resource information separately for each tape:
 
         .. code-block:: python
 
@@ -560,29 +763,47 @@ def specs(
                 qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qp.expval(H)
 
-        >>> from pprint import pprint
-        >>> pprint(qp.specs(circuit, level="user")())
-        CircuitSpecs(device_name='default.qubit',
-                     num_device_wires=None,
-                     shots=Shots(total_shots=None, shot_vector=()),
-                     level='user',
-                     resources=[SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=2,
-                                               depth=1),
-                                SpecsResources(gate_types={'RandomLayers': 1},
-                                               gate_sizes={2: 1},
-                                               measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                                               num_allocs=3,
-                                               depth=1)])
+        >>> print(qp.specs(circuit, level="user")())
+        Device: default.qubit
+        Device wires: None
+        Shots: Shots(total=None)
+        Level: user
+        <BLANKLINE>
+        Batched tape a:
+            Wire allocations: 2
+            Total gates: 1
+            Gate counts:
+            - RandomLayers: 1
+            Measurements:
+            - expval(Prod(num_wires=2, num_terms=2)): 1
+            Depth: 1
+        <BLANKLINE>
+        Batched tape b:
+            Wire allocations: 3
+            Total gates: 1
+            Gate counts:
+            - RandomLayers: 1
+            Measurements:
+            - expval(Prod(num_wires=2, num_terms=2)): 1
+            Depth: 1
+
+        In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
+        :class:`~.resource.SpecsResources` for each resulting tape:
+
+        >>> qp.specs(circuit, level="user")().resources
+        [SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
+         SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
 
     .. details::
         :title: Runtime Specs with Catalyst
 
+        .. note::
+
+            This functionality is specific to workflows with ``qjit``.
+
         **Runtime resource tracking** (specified by ``level="device"``) works by mock-executing the desired
         workflow and tracking the number of times a given gate has been applied. This mock-execution happens
-        after all compilation steps, and should be highly accurate to the final gatecounts of running on
+        after all compilation steps, and should be highly accurate to the final gate counts of running on
         a real device.
 
         .. code-block:: python
@@ -616,8 +837,18 @@ def specs(
         - probs(all wires): 1
         Depth: 2
 
+        .. note::
+
+            The resources shown when using ``level="device"`` may reflect changes to the circuit beyond those applied
+            by the user transforms added to the QNode. Theses changes are a result of additional passes applied to ensure
+            compatibility with lowering to MLIR and/or execution on the chosen device.
+
     .. details::
         :title: Pass-by-pass Specs with Catalyst
+
+        .. note::
+
+            This functionality is specific to workflows with ``qjit``.
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
@@ -625,7 +856,7 @@ def specs(
         .. warning::
             Some resource information from pass-by-pass specs may be estimated, since it is not always
             possible to determine exact resource usage from intermediate representations.
-            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will only be counted as if one iteration occurred.
+            For example, resources contained in a ``for`` loop with a non-static range or a ``while`` loop will be counted as if only one iteration occurred.
             Additionally, resources contained in conditional branches from ``if`` or ``switch`` statements will take a union of resources over all branches, providing a tight upper-bound.
 
             Due to similar technical limitations, depth computation is not available for pass-by-pass specs.
@@ -641,17 +872,39 @@ def specs(
         * The string ``"user"``: To provide information after all user-specified transforms have been applied
 
         .. note::
-            The level arguments only take into account user-applied transforms and compilation passes.
+            The ``level`` argument is based on user-applied transforms and compilation passes.
             Level ``0`` always corresponds to the original circuit before any user-specified
             tape transforms or compilation passes have been applied,
             and incremental levels correspond to the aggregate of user-specified transforms and passes
             in the order in which they are applied.
 
-            This may include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
-            further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
-            but before all other MLIR passes.
+            In addition to the user-passes, pass-by-pass inspection will indicate where the MLIR
+            "lowering" occurs with the ``Before MLIR Passes`` stage. This will be placed after all tape
+            transforms, but before all other MLIR passes. Note that this may be at level ``0`` if there are no tape transforms.
+            In some cases, the pass to lower to MLIR will
+            apply additional transforms to the circuit to ensure compatibility with the MLIR representation
+            and/or with the device, so resources may change as a result of this pass.
 
-        Here is an example using ``level="all"`` on the circuit from the previous code example:
+
+        Consider the following circuit:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=3)
+
+            @qp.qjit
+            @qp.transforms.merge_rotations
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev)
+            def circuit(x):
+                qp.RX(x, wires=0)
+                qp.RX(x, wires=0)
+                qp.X(0)
+                qp.X(0)
+                qp.CNOT([0, 1])
+                return qp.probs()
+
+        We can get a pass-by-pass overview of the resources using ``level="all"``:
 
         >>> all_specs = qp.specs(circuit, level="all")(1.23)
         >>> print(all_specs)
@@ -668,41 +921,22 @@ def specs(
         Wire allocations   |  3 |  3 |  3
         Total gates        |  5 |  3 |  2
         Gate counts:       |
-        - RX               |  2 |  2 |  1
-        - PauliX           |  2 |  0 |  0
         - CNOT             |  1 |  1 |  1
+        - PauliX           |  2 |  0 |  0
+        - RX               |  2 |  2 |  1
         Measurements:      |
         - probs(all wires) |  1 |  1 |  1
 
-        When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
-        object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
-        :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. To use the int
-        level name directly, use the ``level`` attribute of the returned :class:`~.resource.CircuitSpecs` object, which
-        maps int levels to their associated transform or pass name. For example, the level names for the above example
-
-        >>> print(all_specs.level)
-        {0: 'Before MLIR Passes', 1: 'cancel-inverses', 2: 'merge-rotations'}
-
-        The resources associated with a particular level can be accessed using the returned level name as follows:
+        When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
+        accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
+        the name of a pass or marker. For example:
 
         >>> print(all_specs.resources['merge-rotations'])
         Wire allocations: 3
         Total gates: 2
         Gate counts:
-        - RX: 1
         - CNOT: 1
-        Measurements:
-        - probs(all wires): 1
-        Depth: Not computed
-
-        Or, equivalently, by using the int level directly:
-
-        >>> print(all_specs.resources[all_specs.level[2]])
-        Wire allocations: 3
-        Total gates: 2
-        Gate counts:
         - RX: 1
-        - CNOT: 1
         Measurements:
         - probs(all wires): 1
         Depth: Not computed
@@ -715,16 +949,16 @@ def specs(
         Wire allocations: 3
         Total gates: 2
         Gate counts:
-        - RX: 1
         - CNOT: 1
+        - RX: 1
         Measurements:
         - probs(all wires): 1
         Depth: Not computed
 
         .. warning::
-            Certain transforms, like the ``split-non-commuting`` transform, can result in multiple output tapes.
-            In this case, the resources for that level will be returned as a list of :class:`~.resource.SpecsResources`
-            objects. When printed, these split tapes will be shown as individual columns.
+            Certain transforms, like the ``split_non_commuting`` transform, can result in splitting a single execution
+            into multiple executions. In this case, the resources for that level will be returned as a list of
+            :class:`~.resource.SpecsResources` objects. When printed, these split tapes will be shown as individual columns.
 
         .. code-block:: python
 
@@ -749,20 +983,19 @@ def specs(
         - 2: Before MLIR Passes
         - 3: cancel-inverses
         <BLANKLINE>
-        ↓Metric   Level→ |    0 |  1-a |  1-b |    2 |    3
-        ---------------------------------------------------
-        Wire allocations |    1 |    1 |    1 |    6 |    6
-        Total gates      |    2 |    2 |    2 |    4 |    0
+        ↓Metric   Level→ |    0 |  1-a |  1-b |  2-a |  2-b |  3-a |  3-b
+        -----------------------------------------------------------------
+        Wire allocations |    1 |    1 |    1 |    3 |    3 |    3 |    3
+        Total gates      |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Gate counts:     |
-        - PauliX         |    2 |    2 |    2 |    4 |    0
+        - PauliX         |    2 |    2 |    2 |    2 |    2 |    0 |    0
         Measurements:    |
-        - expval(PauliZ) |    1 |    1 |    0 |    1 |    1
-        - expval(PauliX) |    1 |    0 |    1 |    1 |    1
+        - expval(PauliZ) |    1 |    1 |    0 |    1 |    0 |    1 |    0
+        - expval(PauliX) |    1 |    0 |    1 |    0 |    1 |    0 |    1
 
-        Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
-        ``1-a`` and ``1-b`` in the output. The resources for these tapes are shown separately, and the level name for
-        both tapes is the same since they come from the same transform. Multiple tapes may not display as separate
-        columns for MLIR passes since MLIR passes do not operate on tapes directly.
+        Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
+        which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
+        returned and displayed separately, though the level name for both is the same, since they come from the same transform.
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed

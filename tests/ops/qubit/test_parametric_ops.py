@@ -2926,6 +2926,20 @@ class TestPauliRot:
         assert decomp_ops[0].wires == Wires([0])
         assert decomp_ops[0].data[0] == theta
 
+    @pytest.mark.jax
+    def test_PauliRot_jax_traced_wires_jit_compatible(self, tol):
+        """Validate that ``len(self._wires)`` used by PauliRot works with JAX-traced wires."""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        def circuit():
+            return qp.PauliRot(0.37, "Z", wires=jnp.array(0)).matrix()
+
+        traced_mat = jax.jit(circuit)()
+        expected = circuit()
+
+        assert np.allclose(np.asarray(traced_mat), expected, atol=tol, rtol=tol)
+
     def test_PauliRot_all_Identity(self):
         """Test handling of the all-identity Pauli."""
 
