@@ -1531,10 +1531,10 @@ class SelectCopyQROM(ResourceOperator):
         batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
             loaded in parallel by adding more rows following Figure 1.C of
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value of :math:`2` is used
-            if ``available_dirty_aux`` is not provided and this parameter is None.
+            if ``available_dirty_aux`` is not provided and ``batch_size`` is None.
         bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
             the number of bits to load per QROM iteration. Default value of ``size_bitstring`` is used
-            if ``available_dirty_aux`` is not provided and this parameter is None.
+            if ``available_dirty_aux`` is not provided and ``bits_per_iter`` is None.
         wires (WiresLike | None): The wires the operation acts on (control and target), excluding
             any additional qubits allocated or borrowed during the decomposition (e.g unary
             iteration wires).
@@ -1634,10 +1634,10 @@ class SelectCopyQROM(ResourceOperator):
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value of :math:`2` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``batch_size`` is None.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. Default value of ``size_bitstring`` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``bits_per_iter`` is None.
 
         Raises:
             ValueError: If ``batch_size`` is not a positive integer power of 2.
@@ -1728,11 +1728,11 @@ class SelectCopyQROM(ResourceOperator):
                 * batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                   loaded in parallel by adding more rows following Figure 1.C of
                   `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value of :math:`2` is
-                  used if ``available_dirty_aux`` is not provided and this parameter is None.
+                  used if ``available_dirty_aux`` is not provided and ``batch_size`` is None.
                 * bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil`
                   representing the number of bits to load per QROM iteration. Default value of
-                  ``size_bitstring`` is used if ``available_dirty_aux`` is not provided and this
-                  parameter is None.
+                  ``size_bitstring`` is used if ``available_dirty_aux`` is not provided and ``bits_per_iter``
+                  is None.
         """
 
         return {
@@ -1764,10 +1764,10 @@ class SelectCopyQROM(ResourceOperator):
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value of :math:`2` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``batch_size`` is None.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. Default value of ``size_bitstring`` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``bits_per_iter`` is None.
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
@@ -1810,10 +1810,10 @@ class SelectCopyQROM(ResourceOperator):
             batch_size (int | None): A parameter :math:`\lambda` that determines if data will be
                 loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Default value of :math:`2` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``batch_size`` is None.
             bits_per_iter (int | None): A parameter :math:`\lceil \frac{b}{\alpha} \rceil` representing
                 the number of bits to load per QROM iteration. Default value of ``size_bitstring`` is
-                used if ``available_dirty_aux`` is not provided and this parameter is None.
+                used if ``available_dirty_aux`` is not provided and ``bits_per_iter`` is None.
 
         Resources:
             The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_.
