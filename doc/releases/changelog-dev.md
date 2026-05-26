@@ -24,7 +24,7 @@
 * Updated the `make_rz_to_phase_gradient_decomp` decomposition rule factory to be compatible with program capture.
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
-* Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
+* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
   ```python
