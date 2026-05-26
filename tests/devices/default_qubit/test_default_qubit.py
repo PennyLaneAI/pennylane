@@ -2087,8 +2087,7 @@ class TestPostselection:
     def test_postselection_invalid_finite_shots(
         self, mp, expected_shape, shots, interface, use_jit
     ):
-        """Test that the results of a qnode are nan values of the correct shape if the state
-        that we are postselecting has a zero probability of occurring with finite shots."""
+        """Test the result of zero-probability postselection with finite shots."""
 
         if use_jit and interface != "jax":
             pytest.skip("Can't jit with non-jax interfaces.")
@@ -2110,6 +2109,11 @@ class TestPostselection:
             )
             # import jax
             # circ = jax.jit(circ)
+
+        if isinstance(mp, qp.measurements.SampleMP):
+            with pytest.raises(RuntimeError, match="probability of the postselected"):
+                circ()
+            return
 
         res = circ()
 

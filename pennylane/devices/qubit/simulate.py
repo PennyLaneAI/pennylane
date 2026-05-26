@@ -38,7 +38,7 @@ from pennylane.measurements import (
 from pennylane.operation import StatePrepBase
 from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
-from pennylane.transforms.dynamic_one_shot import gather_mcm
+from pennylane.transforms.dynamic_one_shot import _raise_impossible_postselection_error, gather_mcm
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -131,6 +131,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
     postselect_mode = execution_kwargs.get("postselect_mode", None)
+    has_sample_measurement = execution_kwargs.get("has_sample_measurement", False)
 
     # The floor function is being used here so that a norm very close to zero becomes exactly
     # equal to zero so that the state can become invalid. This way, execution can continue, and
@@ -139,6 +140,8 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     norm = math.norm(state)
 
     if not math.is_abstract(state) and math.allclose(norm, 0.0):
+        if has_sample_measurement and shots:
+            _raise_impossible_postselection_error()
         if postselect_mode == "fill-shots" and shots:
             raise RuntimeError(
                 "The probability of the postselected mid-circuit measurement outcome is 0. "
@@ -211,6 +214,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     key = prng_key
+    has_sample_measurement = any(isinstance(m, SampleMP) for m in circuit.measurements)
 
     for op in circuit.operations[bool(prep) :]:
         if isinstance(op, MidMeasure):
@@ -228,7 +232,12 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         if isinstance(op, qp.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
-                state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
+                state,
+                is_state_batched,
+                circuit.shots,
+                prng_key=key,
+                has_sample_measurement=has_sample_measurement,
+                **execution_kwargs,
             )
             circuit._shots = new_shots
 
@@ -941,6 +950,8 @@ def _(original_measurement: SampleMP, measures):
     new_sample = tuple(
         math.atleast_1d(m[1]) for m in measures.values() if m[0] and m[1] is not tuple()
     )
+    if not new_sample:
+        _raise_impossible_postselection_error()
     return math.concatenate(new_sample)
 
 

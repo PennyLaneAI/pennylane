@@ -251,6 +251,13 @@ def _measurement_with_no_shots(measurement):
     )
 
 
+def _raise_impossible_postselection_error():
+    raise RuntimeError(
+        "The probability of the postselected mid-circuit measurement outcome is 0. "
+        "This leads to invalid sample results."
+    )
+
+
 def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = math.array(
@@ -366,6 +373,8 @@ def _handle_measurement(
     is_valid,
 ):
     if interface != "jax" and not has_valid:
+        if isinstance(m, SampleMP):
+            _raise_impossible_postselection_error()
         return _measurement_with_no_shots(m), m_count + int(m.mv is None)
 
     if m.mv is not None:

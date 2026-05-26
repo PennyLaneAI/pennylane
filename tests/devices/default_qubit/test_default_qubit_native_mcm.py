@@ -80,6 +80,23 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
         assert np.all(np.isnan(r2))
 
 
+@pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred", "tree-traversal"])
+@pytest.mark.parametrize("shots", [10, [10, 10]])
+def test_impossible_postselected_sample_raises(mcm_method, shots):
+    """Test that impossible postselection raises instead of returning invalid samples."""
+    dev = qp.device("default.qubit")
+
+    @qp.qnode(dev, mcm_method=mcm_method)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        m0 = qp.measure(0, postselect=1)
+        qp.cond(m0, qp.X)(wires=1)
+        return qp.sample(wires=1)
+
+    with pytest.raises(RuntimeError, match="probability of the postselected"):
+        qp.set_shots(circuit, shots=shots)(0.0)
+
+
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 def test_unsupported_measurement(mcm_method):
     """Test that circuits with unsupported measurements raise the correct error."""
