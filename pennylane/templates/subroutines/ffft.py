@@ -38,8 +38,8 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 class TwoQubitFFT(Operator):
     r"""
-    The two-qubit unitary operator that corresponds to a Fourier transform on
-    Fermions, encoded using a Jordan-Wigner Transformation (JWT).
+    The two-qubit unitary operator that corresponds to a Fourier transform on fermions, encoded
+    using a Jordan-Wigner transformation.
 
     .. math::
 
