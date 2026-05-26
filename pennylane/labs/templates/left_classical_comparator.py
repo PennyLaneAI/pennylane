@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the LeftClassicalComparator template for performing inequality test of a quantum register and a classical integer."""
+"""Contains the LeftClassicalComparator template for performing an inequality
+test of a quantum register and a classical integer."""
 
 from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.decomposition import (
@@ -29,8 +30,7 @@ class LeftClassicalComparator(Operation):
     r"""This operator performs an inequality test between a quantum register :math:`\lvert x\rangle` and a
     classical integer :math:`L`, storing the result in a target qubit.
 
-    Depending on the value of the ``comparator`` argument, the operator evaluates one of four
-    possible relations:
+    The operator evaluates the following relation, given by the ``comparator="<"`` argument
 
     .. math::
 
@@ -110,7 +110,7 @@ class LeftClassicalComparator(Operation):
         if x_wires.intersection(target_wire):
             raise ValueError("None of the wires in x_wires should be the target wire.")
         if not math.is_abstract(L) and L >= 2 ** len(x_wires):
-            raise ValueError("L must be less than 2**len(x_wires).")
+            raise ValueError(f"L must be less than 2**len(x_wires). Got {L=} and {2**len(x_wires)=}")
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["L"] = L
@@ -257,8 +257,7 @@ def _left_classical_comparator(
     if comparator in ["<=", ">"]:
         L += 1
 
-    cond(comparator == ">", _negate_output)()
-    cond(comparator == ">=", _negate_output)()
+    cond(comparator.startswith(">"), _negate_output)()
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
     bit = _get_specific_bit(L, 0)
