@@ -390,7 +390,11 @@ def _equal_operators2(
                 "tracers are assumed to be unique."
             )
 
-        if not math.allclose(dval1, dval2, atol=atol, rtol=rtol):
+        # Need to check shape along with math.allclose to handle the case where one
+        # value is broadcasted. math.allclose might pass in that case.
+        if math.shape(dval1) != math.shape(dval2) or not math.allclose(
+            dval1, dval2, atol=atol, rtol=rtol
+        ):
             return f"op1 and op2 have different values for '{dname}'.\n" f"Got {dval1} and {dval2}."
 
         if check_interface:
@@ -408,7 +412,7 @@ def _equal_operators2(
             grad2 = "trainable" if math.requires_grad(dval2) else "not trainable"
             if grad1 != grad2:
                 return (
-                    f"op1 and op2 differ in trainability for '{dname}'.\n "
+                    f"op1 and op2 differ in trainability for '{dname}'.\n"
                     f"op1.{dname} is {grad1} and op2.{dname} is {grad2}."
                 )
 
@@ -459,7 +463,7 @@ def _equal_operators2(
                 if not isinstance(l2, Operator2):
                     return unequal_str
 
-                ops_equal = _equal_operators2(
+                ops_equal = _equal(
                     l1,
                     l2,
                     check_interface=check_interface,
@@ -482,7 +486,11 @@ def _equal_operators2(
                     "tracers are assumed to be unique."
                 )
 
-            elif not math.allclose(l1, l2, atol=atol, rtol=rtol):
+            # Need to check shape along with math.allclose to handle the case where one
+            # value is broadcasted. math.allclose might pass in that case.
+            elif math.shape(l1) != math.shape(l2) or not math.allclose(
+                l1, l2, atol=atol, rtol=rtol
+            ):
                 return unequal_str
 
     return True
