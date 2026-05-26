@@ -89,7 +89,7 @@ class TestLeftClassicalComparator:
                 1,
                 [1],
                 "<",
-                "At least 2 work_wires should be provided.",
+                "At least 2 work_wires are required, but only 1 were provided",
             ),
             (
                 6,
@@ -97,7 +97,7 @@ class TestLeftClassicalComparator:
                 1,
                 [6, 7],
                 "<=",
-                "None of the wires in work_wires should be the target wire.",
+                r"work_wires and target_wire must be disjoint, but share: \[6\]",
             ),
             (
                 8,
@@ -105,7 +105,7 @@ class TestLeftClassicalComparator:
                 1,
                 [1, 6],
                 ">=",
-                "None of the wires in work_wires should be included in x_wires.",
+                r"work_wires and x_wires must be disjoint, but share: \[1\]",
             ),
             (
                 1,
@@ -113,7 +113,7 @@ class TestLeftClassicalComparator:
                 1,
                 [6, 7],
                 "<=",
-                "None of the wires in x_wires should be the target wire.",
+                r"x_wires and target_wire must be disjoint, but share: \[1\]",
             ),
             (
                 8,

@@ -105,15 +105,36 @@ class LeftClassicalComparator(Operation):
             raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
 
         if len(work_wires) < len(x_wires) - 1:
-            raise ValueError(f"At least {len(x_wires)-1} work_wires should be provided.")
-        if work_wires.intersection(target_wire):
-            raise ValueError("None of the wires in work_wires should be the target wire.")
-        if work_wires.intersection(x_wires):
-            raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if x_wires.intersection(target_wire):
-            raise ValueError("None of the wires in x_wires should be the target wire.")
+            raise ValueError(
+                f"At least {len(x_wires) - 1} work_wires are required, but only "
+                f"{len(work_wires)} were provided. (x_wires={list(x_wires)}, "
+                f"work_wires={list(work_wires)})"
+            )
+
+        overlap = work_wires.intersection(target_wire)
+        if overlap:
+            raise ValueError(
+                f"work_wires and target_wire must be disjoint, but share: {list(overlap)}. "
+                f"(work_wires={list(work_wires)}, target_wire={list(target_wire)})"
+            )
+
+        overlap = work_wires.intersection(x_wires)
+        if overlap:
+            raise ValueError(
+                f"work_wires and x_wires must be disjoint, but share: {list(overlap)}. "
+                f"(work_wires={list(work_wires)}, x_wires={list(x_wires)})"
+            )
+
+        overlap = x_wires.intersection(target_wire)
+        if overlap:
+            raise ValueError(
+                f"x_wires and target_wire must be disjoint, but share: {list(overlap)}. "
+                f"(x_wires={list(x_wires)}, target_wire={list(target_wire)})"
+            )
         if not math.is_abstract(L) and L >= 2 ** len(x_wires):
-            raise ValueError(f"L must be less than 2**len(x_wires). Got {L=} and {2**len(x_wires)=}")
+            raise ValueError(
+                f"L must be less than 2**len(x_wires). Got {L=} and {2**len(x_wires)=}"
+            )
         self.hyperparameters["target_wire"] = target_wire
         self.hyperparameters["x_wires"] = x_wires
         self.hyperparameters["L"] = L
