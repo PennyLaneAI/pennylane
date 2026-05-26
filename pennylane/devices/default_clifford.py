@@ -389,7 +389,7 @@ class DefaultClifford(Device):
                 return qp.counts()
 
         >>> circuit()
-        {np.str_('0000'): np.int64(398), np.str_('0100'): np.int64(110), np.str_('1011'): np.int64(101), np.str_('1111'): np.int64(415)}
+        {np.str_('0000'): np.int64(388), np.str_('0100'): np.int64(120), np.str_('1011'): np.int64(119), np.str_('1111'): np.int64(397)}
 
     .. details::
         :title: Tracking
