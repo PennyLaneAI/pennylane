@@ -4,6 +4,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
+  [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
+
 * Added three decompositions of :class:`~.OutMultiplier` that use significantly fewer costly gates
   than the existing QFT-based decomposition, at the cost of more auxiliary wires.
   In addition added a new argument ``output_wires_zeroed`` to ``OutMultiplier`` that can be
@@ -11,9 +14,14 @@
   decompositions.
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
+* Added a dispatcher for `qp.pauli_measure` to call `catalyst.pauli_measure` when qjit is enabled
+  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for 
+  decomposition.
+  [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
+* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
   ```python
@@ -74,6 +82,34 @@
     >>> print(bool(output)) # 3 >= 2
     True
   
+  ```
+
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+  decomposition to estimate the cost for QROM.
+  [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+
+  ```pycon
+    >>> import pennylane.labs.estimator_beta as qre
+    >>>
+    >>> qrom_op = qre.SelectCopyQROM(
+    ...     num_bitstrings = 10**8,
+    ...     size_bitstring = 8,
+    ...     available_dirty_aux = 300,
+    ... )
+    >>> 
+    >>> print(qre.estimate(qrom_op))
+    --- Resources: ---
+    Total wires: 308
+      algorithmic wires: 35
+      allocated wires: 273
+        zero state: 273
+        any state: 0
+    Total gates : 4.781E+8
+      'Toffoli': 3.520E+6,
+      'CNOT': 4.570E+8,
+      'X': 7.036E+6,
+      'Hadamard': 1.055E+7
+
   ```
 
 <h3>Breaking changes 💔</h3>
@@ -145,6 +181,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package pin to `v0.8.10`.
+  [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
+
+* Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
+  [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
+
 * Documentation testing workflow now raises `PennyLaneDeprecationWarning` as errors.
   [(#9475)](https://github.com/PennyLaneAI/pennylane/pull/9475)
 
@@ -169,10 +211,16 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
+  [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
+ 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
+  [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
 * The `pl-device-test` no longer uses the deprecated syntax that sets the shots on the device.
   [(#9503)](https://github.com/PennyLaneAI/pennylane/pull/9503)
@@ -180,7 +228,7 @@
 * Fixed a sign error in the abstract decomposition of :class:`~.BasisState` that produced an
   incorrect global phase (off by −1 per qubit). The decomposition used
   ``GlobalPhase(basis * π/2)`` instead of ``GlobalPhase(-basis * π/2)``, introduced in
-  [#9406](https://github.com/PennyLaneAI/pennylane/pull/9406).
+  [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406).
   [(#9492)](https://github.com/PennyLaneAI/pennylane/pull/9492)
 
 * Fixed a bug where `qp.qnn.TorchLayer` produced incorrect output shape `(n_measurements, batch, 1)`
@@ -197,6 +245,9 @@
   values sometimes incorrectly have the same hash.
   [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
+* Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
+  [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -208,6 +259,8 @@ Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
 Christina Lee,
+Anton Naim Ibrahim,
 Andrija Paurevic,
+Jay Soni,
 Paul Haochen Wang,
-David Wierichs
+David Wierichs.
