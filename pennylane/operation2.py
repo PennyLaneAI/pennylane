@@ -43,24 +43,47 @@ class Operator2(ABC):
     # ------------ Class variables set manually --------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
-    """The names of arguments corresponding to wires."""
+    """The names of arguments corresponding to wires. Values for these arguments are
+    automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
+    When a name also appears in ``hybrid_argnames``, however, ``Operator2`` does not
+    descend into its pytree structure, so subclasses must ensure every wire leaf inside
+    a hybrid wire argument is already a :class:`~.Wires` object before forwarding it to
+    ``super().__init__``.
+
+    The order in which names appear in ``wire_argnames`` determines the order in which
+    their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
+    arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
+    order. Wires contributed by :class:`~.Operator2` leaves found inside non-wire
+    ``hybrid_argnames`` are appended *after* all ``wire_argnames`` wires. The special
+    names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
+    but their wires are excluded from ``op.wires``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to dynamic arguments. Dynamic arguments
-    are those whose concrete values may not be known at compile-time."""
+    """The names of arguments that are treated as dynamic. Dynamic arguments are those
+    whose concrete values may not be known at compile-time."""
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to static arguments. Static arguments
-    are those whose concrete values must be known at compile-time."""
-
-    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to dynamic data wrapped in static
-    structures (known as Pytrees). This feature is opt-in, but is required for cases
-    where arrays, operators, and wires are supplied within a collection."""
+    """The names of arguments that are treated as static. Static arguments are those
+    whose concrete values are known when capturing the program. Arguments in this
+    category cannot be lowered to a compiler intermediate representation. An
+    operator can only specify ``static_argnames`` or ``compilable_argnames``, but
+    not both."""
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to compilable static operator data.
-    This feature is opt-in, but can be useful PauliString arguments and the like."""
+    """The names of arguments that are treated as **compilable** static arguments.
+    Like ``static_argnames``, these arguments have concrete values that are known
+    when capturing the program; unlike ``static_argnames``, they can be lowered to
+    a compiler intermediate representation. This feature is opt-in, but is useful
+    for making static data visible to the compiler. An operator can only specify
+    ``static_argnames`` or ``compilable_argnames``, but not both."""
+
+    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
+    """The names of arguments that represent dynamic data wrapped in static
+    structures (known as Pytrees). Names in this category must be disjoint from
+    ``dynamic_argnames``, ``static_argnames``, and ``compilable_argnames``, but may
+    overlap with ``wire_argnames`` when wire arguments contain nested structures of
+    wires. This feature is opt-in, but is required for cases where arrays,
+    operators, and wires are supplied within a collection."""
 
     # TODO: [sc-120517] Add proper fixed_sig support
     fixed_sig: ClassVar[tuple[type, ...]]
@@ -99,12 +122,30 @@ class Operator2(ABC):
         all_wires = []
 
         for w in self.wire_argnames:
-            # Work wires are NOT included in the full wires list.
-            if w not in ("work_wires", "work_wire"):
+            if w not in self.hybrid_argnames:
+                canonical_wires = Wires(self._bound_args.arguments[w])
+                self._bound_args.arguments[w] = canonical_wires
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.append(canonical_wires)
+
+            # Pytree wires handling
+            else:
                 leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=_is_wires)
-                all_wires.extend(leaves)
+                if not all(isinstance(l, Wires) for l in leaves):
+                    raise TypeError(
+                        f"Hybrid wires argument '{w}' have not been cast to "
+                        "'qp.wires.Wires' correctly."
+                    )
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.extend(leaves)
 
         for h in self.hybrid_argnames:
+            if h in self.wire_argnames:
+                continue
             leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=_is_op)
             ops = filter(_is_op, leaves)
             all_wires.extend(op.wires for op in ops)
@@ -358,6 +399,24 @@ class Operator2(ABC):
     def wires(self) -> Wires:
         """Wires that the operator acts on.
 
+        The returned :class:`~.Wires` are collected from the operator's arguments in
+        the following order:
+
+        1. For each name in ``wire_argnames`` (in declaration order):
+
+           * If the name is **not** in ``hybrid_argnames``, the canonical
+             value of that argument is added.
+           * If the name **is** in ``hybrid_argnames``, every :class:`~.Wires` leaf of
+             the argument's pytree is added in pytree traversal order.
+
+        2. After all ``wire_argnames`` have been processed, for each name in
+           ``hybrid_argnames`` that is **not** in ``wire_argnames``, the wires of any
+           :class:`~.Operator2` leaves inside that argument are appended to the end
+           in pytree traversal order.
+
+        Duplicate wires are removed while preserving the first occurrence, so the
+        final result is the ordered union of all wires above.
+
         .. note::
 
             Work wires are **not included** in ``op.wires``. In particular, wire arguments
@@ -506,7 +565,9 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
         return self._bound_args.arguments[name]
 
-    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'.")
+    raise AttributeError(
+        f"'{type(self).__name__}' object has no attribute '{name}'."
+    )  # pragma: no cover
 
 
 def _is_wires(val: Any) -> bool:
