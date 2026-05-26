@@ -20,6 +20,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vscf
 
@@ -62,6 +63,28 @@ h2s_exp_result = {
     "dip_data": [d1_h2s, d2_h2s, d3_h2s],
     "energy": energy,
     "u_mat": u_mat,
+}
+
+co_mol = qp.qchem.Molecule(
+    symbols=["C", "O"],
+    coordinates=np.array([(0.0, 0.0, 0.0), (0.0, 0.0, 1.0)]),
+    charge=0,
+    mult=1,
+    unit="Angstrom",
+)
+
+h1_co = np.array([[[5.59942098e-03, -3.15056848e-11], [-3.15056847e-11, 1.67303444e-02]]])
+h2_co = np.zeros((1, 1, 2, 2, 2, 2))
+d1_co = np.array(
+    [
+        [[[-1.46046580e-16, -2.55099407e-17], [-2.55099407e-17, -3.21514434e-17]]],
+        [[[1.46096092e-15, 1.31660290e-16], [1.31660290e-16, 9.47718559e-16]]],
+        [[[-4.04219964e-03, 3.22757939e-02], [3.22757939e-02, -1.21723538e-02]]],
+    ]
+)
+co_exp_result = {
+    "h_data": [h1_co, h2_co],
+    "dip_data": [d1_co],
 }
 
 
@@ -129,6 +152,44 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
     assert np.allclose(result_dip[0], expected_dip[0])
     assert np.allclose(result_dip[1], expected_dip[1])
     assert np.allclose(result_dip[2], expected_dip[2])
+
+
+@pytest.mark.parametrize(
+    ("molecule", "exp_result"),
+    [
+        (co_mol, co_exp_result),
+    ],
+)
+def test_vscf_integrals_full(molecule, exp_result):
+    r"""Test that correct rotated Hamiltonian and dipole is produced when in the full workflow."""
+    pes = vibrational.vibrational_pes(molecule, n_points=17, cubic=False, dipole_level=2)
+    christiansen_ints = vibrational.christiansen_integrals(pes, n_states=8)
+    christiansen_dip = vibrational.christiansen_integrals_dipole(pes, n_states=8)
+
+    h_integrals = [christiansen_ints[0], christiansen_ints[1]]
+    dipole_integrals = [christiansen_dip[0]]
+
+    result_h, result_dip = vscf.vscf_integrals(h_integrals, dipole_integrals, modals=[2])
+
+    exp_h0 = np.asarray(exp_result["h_data"][0])
+    exp_h1 = np.asarray(exp_result["h_data"][1])
+    exp_dip0 = np.asarray(exp_result["dip_data"][0])
+
+    nmodes = result_h[0].shape[0]
+
+    for i in range(nmodes):
+        assert np.allclose(abs(result_h[0][i]), abs(exp_h0[i]), atol=1e-5) or np.allclose(
+            abs(result_h[0][i]), abs(exp_h0[i][::-1, ::-1]), atol=1e-5
+        )
+
+    assert np.allclose(abs(result_h[1]), abs(exp_h1), atol=1e-5) or np.allclose(
+        abs(result_h[1]), abs(exp_h1[..., ::-1, ::-1, ::-1, ::-1]), atol=1e-5
+    )
+
+    for i in range(nmodes):
+        assert np.allclose(abs(result_dip[0][:, i]), abs(exp_dip0[:, i]), atol=1e-5) or np.allclose(
+            abs(result_dip[0][:, i]), abs(exp_dip0[:, i, ::-1, ::-1]), atol=1e-5
+        )
 
 
 @pytest.mark.parametrize(
