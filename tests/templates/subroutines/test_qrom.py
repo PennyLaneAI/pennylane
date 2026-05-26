@@ -24,6 +24,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _measurement_qrom_count_TemporaryAnd,
@@ -31,8 +32,6 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_decomposition,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
-
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 
 gate_set = {
     qp.H,
@@ -597,11 +596,12 @@ class TestMeasurementQROM:
         """Test that TemporaryAND count matches expected values."""
         assert _measurement_qrom_count_TemporaryAnd(L) == expected_ands
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "L",
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
     )
-    def test_correctness_random_bitstrings(self, L):
+    def test_correctness(self, L):
         """Test correctness of measurement-based QROM for various sizes."""
         rng = random.Random(42 + L)
         n_target = 3
