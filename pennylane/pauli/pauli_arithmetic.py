@@ -14,6 +14,8 @@
 """The Pauli arithmetic abstract reduced representation classes"""
 
 # pylint:disable=protected-access
+
+import warnings
 from copy import copy
 from functools import lru_cache, reduce
 
@@ -22,6 +24,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -1060,7 +1063,16 @@ class PauliSentence(dict):
 
         .. seealso:: :meth:`~.prune`
 
+        .. warning::
+
+            The ``simplify`` method is deprecated and will be removed in v0.47. Please use
+            the :meth:`~.prune` method instead.
+
         """
+        warnings.warn(
+            "PauliSentence.simplify is deprecated. Please use PauliSentence.prune instead.",
+            PennyLaneDeprecationWarning,
+        )
         self.prune(tol)
 
     def map_wires(self, wire_map: dict) -> "PauliSentence":
