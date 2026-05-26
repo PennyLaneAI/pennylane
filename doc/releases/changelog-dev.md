@@ -44,7 +44,8 @@
 
   ```
   
-* Created a new ``~.labs.templates.LeftClassicalComparator`` template for performing inequality test of a quantum register and an integer.
+* Created a new ``~.labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
   [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
 
   ```python
