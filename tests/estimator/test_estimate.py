@@ -20,7 +20,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qp
-from pennylane.estimator.estimate import estimate
+from pennylane.estimator.estimate import _build_symbolic_decomp_from_base, estimate
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
@@ -630,6 +630,11 @@ class TestEstimateResources:
         ctrl_op = Controlled(BasisRotation(3), 1, 0)
         result = estimate(ctrl_op, config=cfg)
         assert result.total_gates == 42  # explicit ctrl override wins
+
+    def test_build_symbolic_decomp_from_base_invalid_type(self):
+        """_build_symbolic_decomp_from_base raises TypeError for unsupported op types."""
+        with pytest.raises(TypeError, match="only supports Adjoint and Controlled"):
+            _build_symbolic_decomp_from_base(Pow, lambda: [])
 
     def test_nested_symbolic_propagates_precision(self):
         """Precision from ResourceConfig must reach the leaf op through nested symbolic wrappers.
