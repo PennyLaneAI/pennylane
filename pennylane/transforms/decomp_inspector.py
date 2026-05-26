@@ -58,7 +58,7 @@ class _DecompInGraphInfo(_DecompInfo):
             return result
         if not self.is_reachable:
             return result + "\n" + self.missing_ops
-        return result + "\n" + self.gate_set_resources
+        return result
 
     def _repr_markdown_(self) -> str:
         result = super()._repr_markdown_()
@@ -66,7 +66,7 @@ class _DecompInGraphInfo(_DecompInfo):
             return result
         if not self.is_reachable:
             return result + "\n\n" + self.missing_ops
-        return result + "\n\n" + self.gate_set_resources_md
+        return result
 
     @property
     def is_reachable(self) -> bool:
@@ -74,23 +74,35 @@ class _DecompInGraphInfo(_DecompInfo):
         return self._decomp_node_idx in self._solution._visitor.distances
 
     @property
-    def gate_set_resources(self) -> str:
+    @override
+    def gate_counts_and_allocations(self) -> str:
         """The gate count and weighted cost in terms of the target gate set."""
-        assert self.is_reachable
+        if not self.is_reachable:
+            return super().gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         gate_counts = gate_set_resource.gate_counts
         weighted_cost = gate_set_resource.weighted_cost
-        return f"Full Expansion Gates: {gate_counts}\nWeighted Cost: {weighted_cost}"
+        return (
+            super().gate_counts_and_allocations
+            + f"\nFull Expansion Gates: {gate_counts}"
+            + f"\nWeighted Cost: {weighted_cost}"
+        )
 
     @property
-    def gate_set_resources_md(self) -> str:
+    @override
+    def gate_counts_and_allocations_md(self) -> str:
         """The gate count and weighted cost in terms of the target gate set in Markdown."""
-        assert self.is_reachable
+        if not self.is_reachable:
+            return super().gate_counts_and_allocations_md
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         entries = list(gate_set_resource.gate_counts.items())
         gate_counts = self._make_table(entries, ("Full Expansion", "Count"))
         weighted_cost = gate_set_resource.weighted_cost
-        return f"{gate_counts}\n\nWeighted Cost: {weighted_cost}"
+        return (
+            super().gate_counts_and_allocations_md
+            + f"\n\n{gate_counts}"
+            + f"\n\nWeighted Cost: {weighted_cost}"
+        )
 
     @property
     def missing_ops(self) -> str:
