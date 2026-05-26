@@ -152,38 +152,30 @@ class TestInitSubclass:
         assert Op in unflatten_registrations
 
 
-@pytest.fixture
-def DynOp():
+class DynOp(Operator2):
     """A simple operator with one dynamic param and wires."""
 
-    class _DynOp(Operator2):
-        dynamic_argnames = ("phi",)
+    dynamic_argnames = ("phi",)
 
-        def __init__(self, phi, wires):
-            super().__init__(phi, wires=wires)
-
-    return _DynOp
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
 
 
-@pytest.fixture
-def FullOp():
+class FullOp(Operator2):
     """An operator using all argname groups."""
 
-    class _FullOp(Operator2):
-        dynamic_argnames = ("phi",)
-        static_argnames = ("static",)
-        hybrid_argnames = ("hybrid",)
+    dynamic_argnames = ("phi",)
+    static_argnames = ("static",)
+    hybrid_argnames = ("hybrid",)
 
-        def __init__(self, phi, static, hybrid, wires):
-            super().__init__(phi, static, hybrid, wires=wires)
-
-    return _FullOp
+    def __init__(self, phi, static, hybrid, wires):
+        super().__init__(phi, static, hybrid, wires=wires)
 
 
 class TestOperatorInit:
     """Tests for ``Operator2.__init__``."""
 
-    def test_arguments_bound(self, DynOp):
+    def test_arguments_bound(self):
         """Test that constructor positional/keyword arguments are bound into ``arguments``."""
 
         op = DynOp(0.5, wires=0)
@@ -203,13 +195,13 @@ class TestOperatorInit:
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
 
-    def test_pauli_rep_default_is_none(self, DynOp):
+    def test_pauli_rep_default_is_none(self):
         """Test that ``_pauli_rep`` is initialized to ``None``."""
 
         op = DynOp(0.5, wires=0)
         assert op.pauli_rep is None
 
-    def test_wires_collected_from_wire_argnames(self, DynOp):
+    def test_wires_collected_from_wire_argnames(self):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
 
         op = DynOp(0.5, wires=[0, 2])
@@ -239,7 +231,7 @@ class TestOperatorInit:
         op = WithWorkWires(wires=[0, 1], work_wires=[2, 3], work_wire=4)
         assert op.wires == Wires([0, 1])
 
-    def test_hybrid_arg_operator_wires_collected(self, DynOp):
+    def test_hybrid_arg_operator_wires_collected(self):
         """Test that operators inside ``hybrid_argnames`` contribute their wires."""
 
         class Composite(Operator2):
@@ -307,7 +299,7 @@ class TestOperatorInit:
         with pytest.raises(TypeError, match="Hybrid wires argument 'wires' have not been cast"):
             _ = Op(wires=[0, [1, 2]])
 
-    def test_op_is_queued_on_init(self, DynOp):
+    def test_op_is_queued_on_init(self):
         """Test that instantiating an operator appends it to the active queue."""
 
         with AnnotatedQueue() as q:
@@ -320,7 +312,7 @@ class TestOperatorInit:
 class TestProperties:
     """Tests for public properties of ``Operator2``."""
 
-    def test_arguments(self, FullOp):
+    def test_arguments(self):
         """Test that ``arguments`` maps all arguments to their values."""
         op = FullOp(0.5, "info", [], wires=0)
         assert op.arguments == {
@@ -330,22 +322,22 @@ class TestProperties:
             "wires": Wires([0]),
         }
 
-    def test_dynamic_args(self, FullOp):
+    def test_dynamic_args(self):
         """Test that ``dynamic_args`` is set correctly."""
         op = FullOp(0.5, "info", [], wires=0)
         assert op.dynamic_args == {"phi": 0.5}
 
-    def test_static_args(self, FullOp):
+    def test_static_args(self):
         """Test that ``static_args`` is set correctly."""
         op = FullOp(0.5, "info", [], wires=0)
         assert op.static_args == {"static": "info"}
 
-    def test_wire_args(self, FullOp):
+    def test_wire_args(self):
         """Test that ``wire_args`` is set correctly."""
         op = FullOp(0.5, "info", [], wires=0)
         assert op.wire_args == {"wires": Wires([0])}
 
-    def test_hybrid_args(self, FullOp):
+    def test_hybrid_args(self):
         """Test that ``hybrid_args`` is set correctly."""
         op = FullOp(0.5, "info", [], wires=0)
         assert op.hybrid_args == {"hybrid": []}
@@ -362,7 +354,7 @@ class TestProperties:
         op = Op("XY", wires=[0, 1])
         assert op.compilable_args == {"pw": "XY"}
 
-    def test_name(self, DynOp):
+    def test_name(self):
         """Test that ``name`` is the same as the class name."""
         op = DynOp(0.5, wires=0)
         assert op.name == op.__class__.__name__
@@ -379,7 +371,7 @@ class TestProperties:
         op = Op([0, 1], [2, 3, 4])
         assert op.wires == Wires([2, 3, 4, 0, 1])
 
-    def test_queue_category(self, DynOp):
+    def test_queue_category(self):
         op = DynOp(0.5, wires=0)
         assert op._queue_category == "_ops"
 
@@ -493,7 +485,7 @@ class TestPytreeMethods:
         assert new_op.arguments == op.arguments
         assert new_op.wires == op.wires
 
-    def test_flatten_order_dynamic_wire_hybrid(self, FullOp):
+    def test_flatten_order_dynamic_wire_hybrid(self):
         """Test that data is ordered as dynamic, then wires, then non-wire hybrid."""
 
         op = FullOp(0.5, "static", [-1, -2, -3], wires=0)
@@ -531,14 +523,14 @@ class TestPytreeMethods:
 class TestDynamicProperties:
     """Tests for the dynamic properties generated using operator parameters."""
 
-    def test_non_existent_attr(self, DynOp):
+    def test_non_existent_attr(self):
         """Test that an attribute error is raised if trying to access a property
         that doesn't exist."""
         op = DynOp(phi=1.5, wires=0)
         with pytest.raises(AttributeError, match="object has no attribute"):
             _ = op.invalid_attr
 
-    def test_signature_parameter_property(self, FullOp):
+    def test_signature_parameter_property(self):
         """Test that operator parameters are exposed as properties."""
         op = FullOp(phi=0.5, static="static", hybrid=[], wires=0)
         assert op.phi == 0.5
@@ -562,10 +554,10 @@ class TestDynamicProperties:
 class TestDunderMethods:
     """Tests for ``Operator2`` dunder methods."""
 
-    def test_repr_with_dynamic_args(self, DynOp):
+    def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
-        assert repr(op) == "_DynOp(0.5, wires=[0, 1])"
+        assert repr(op) == "DynOp(0.5, wires=[0, 1])"
 
     def test_repr_without_dynamic_args(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
@@ -577,7 +569,7 @@ class TestDunderMethods:
         op = Op(wires=0)
         assert repr(op) == "Op(wires=[0])"
 
-    def test_copy(self, FullOp):
+    def test_copy(self):
         """Test that shallow copies of operators are created correctly."""
         op = FullOp(0.5, static="static", hybrid=[], wires=0)
         op_copy = copy.copy(op)
@@ -590,7 +582,7 @@ class TestDunderMethods:
             # Shallow copy so stored attributes must be the same references
             assert getattr(op_copy, attr) is getattr(op, attr)
 
-    def test_deepcopy(self, FullOp):
+    def test_deepcopy(self):
         """Test that deep copies of operators are created correctly."""
         # Putting phi in a container because integer pointers have special handling in Python
         phi = {0.5}
