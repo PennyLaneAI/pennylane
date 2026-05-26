@@ -306,12 +306,6 @@ class TestInputs:
         # No normalization error is raised
         circuit(x=inputs)
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
-        assert template.id == "a"
-
 
 def circuit_template(features, pad_with=None, normalize=False):
     """AmplitudeEmbedding circuit. For three wires, all test features match
