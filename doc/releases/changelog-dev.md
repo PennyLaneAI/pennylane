@@ -58,6 +58,7 @@
 * Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+  [(#9516)](https://github.com/PennyLaneAI/pennylane/pull/9516)
 
   ```pycon
     >>> import pennylane.labs.estimator_beta as qre
