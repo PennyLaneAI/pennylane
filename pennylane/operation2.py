@@ -292,7 +292,7 @@ class Operator2(ABC):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
-            return
+            return  # pragma: no cover
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:
@@ -481,4 +481,4 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
         return self._bound_args.arguments[name]
 
-    return object.__getattribute__(self, name)
+    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'.")
