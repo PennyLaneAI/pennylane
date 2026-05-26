@@ -930,6 +930,9 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
     def _title(self, index, rule) -> str:
         return f"Decomposition {index} (name: {rule.name})"
 
+    def _title_md(self, index, rule) -> str:
+        return f"#### Decomposition {index} (name: {rule.name})"
+
     def __str__(self) -> str:
         if not self._n_rules_original:
             return "No available decomposition rules."
@@ -943,7 +946,7 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
             return "No available decomposition rules."
         if not self._rules:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
-        lines = (f"{self._title(i, rule)}\n\n{rule._repr_markdown_()}" for i, rule in self._rules)
+        lines = (f"{self._title_md(i, d)}\n\n{d._repr_markdown_()}" for i, d in self._rules)
         return "\n\n---\n\n".join(lines).rstrip("\n")
 
     def __repr__(self) -> str:
