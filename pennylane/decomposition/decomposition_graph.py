@@ -267,8 +267,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {to_name(k): v for k, v in fixed_decomps.items()}
-        self._alt_decomps = {to_name(k): v for k, v in alt_decomps.items()}
+        self._fixed_decomps = {to_name(k): _validate_rule(v) for k, v in fixed_decomps.items()}
+        self._alt_decomps = {to_name(k): _validate_rule(v) for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
@@ -604,6 +604,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
         )
+
+
+def _validate_rule(rule):
+    if isinstance(rule, Iterable):
+        return [_validate_rule(r) for r in rule]
+    if not isinstance(rule, DecompositionRule):
+        raise TypeError(
+            f"{rule.__name__} is missing a resource estimate! A quantum function must be "
+            "decorated with @qp.register_resources to be used as a decomposition rule."
+        )
+    return rule
 
 
 class DecompGraphSolution:
