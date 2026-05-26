@@ -24,6 +24,8 @@ from pennylane.labs.transforms.decomp_selectpaulirot_phase_gradient import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import WireError
 
 
@@ -83,7 +85,6 @@ def test_as_fixed_decomps(prec, num_controls):
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
-
         angles = (
             np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
             @ np.array([1 / 2, 1 / 4, 1 / 8])
@@ -203,3 +204,69 @@ def test_integration_multi_wire(seed):
         out_state_expected = np.kron(zeros, out_state_expected)
 
         assert np.allclose(out_state, out_state_expected)
+
+
+@pytest.mark.jax
+def test_capture_compatibility():
+    """Ensures capture compatibility."""
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    qp.capture.enable()
+    try:
+        with qp.decomposition.toggle_graph_ctx(True):
+            prec = 3
+            num_controls = 2
+            control_wires = list(range(num_controls))
+            target_wire = num_controls
+            first_aux = num_controls + 1
+
+            angle_wires = list(range(first_aux, first_aux + prec))
+            phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
+            num_work_wires = max(prec, num_controls + 1) - 1
+            work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
+
+            angles = np.array(
+                [
+                    (1 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+                    (1 / 2 + 1 / 4 + 0 / 8) * 4 * np.pi,
+                    (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi,
+                    (0 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+                ]
+            )
+
+            custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+                angle_wires, phase_grad_wires, work_wires
+            )
+
+            gate_set = {
+                "QROM",
+                "Adjoint(QROM)",
+                "SemiAdder",
+                "CNOT",
+                "Adjoint(CNOT)",
+                "PauliX",
+                "Adjoint(PauliX)",
+                "GlobalPhase",
+            }
+
+            @DecomposeInterpreter(
+                gate_set=gate_set, fixed_decomps={qp.SelectPauliRot: custom_decomp}
+            )
+            def f(angles):
+                qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
+                return qp.state()
+
+            cjaxpr = jax.make_jaxpr(f)(angles)
+            print(cjaxpr)
+
+            collector = CollectOpsandMeas()
+            collector.eval(cjaxpr.jaxpr, cjaxpr.consts, angles)
+
+            op_names = {op.name for op in collector.state["ops"]}
+            assert op_names.issubset(
+                gate_set
+            ), f"Following ops are present but not in gateset: {op_names - gate_set}"
+    finally:
+        qp.capture.disable()
