@@ -85,7 +85,7 @@ def test_as_fixed_decomps(phi, p):
         }
 
         custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-        gate_set = {"SemiAdder", "C(BasisEmbedding)", "GlobalPhase"}
+        gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
 
         @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
         @qp.qnode(qp.device("null.qubit"))
@@ -94,7 +94,7 @@ def test_as_fixed_decomps(phi, p):
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
-        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisEmbedding)": 2}
+        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
         assert expected_specs == specs
 
 
@@ -117,7 +117,7 @@ def test_as_alt_decomps(phi, p):
         }
 
         custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-        gate_set = {"SemiAdder", "C(BasisEmbedding)", "GlobalPhase"}
+        gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
 
         @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
         @qp.qnode(qp.device("null.qubit"))
@@ -126,7 +126,7 @@ def test_as_alt_decomps(phi, p):
             return qp.state()
 
         specs = qp.specs(circuit)()["resources"].gate_types
-        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisEmbedding)": 2}
+        expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
         assert expected_specs == specs
 
 
@@ -158,7 +158,7 @@ def test_integration_multi_wire(seed):
             gate_set={
                 "StatePrep",
                 "Adjoint(StatePrep)",
-                "C(BasisEmbedding)",
+                "C(BasisState)",
                 "SemiAdder",
                 "CNOT",
                 "GlobalPhase",

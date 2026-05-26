@@ -38,15 +38,15 @@ def _rz_phase_gradient(
     Note that the global phases are collected and added as one big global phase in the main function
     """
     precision = len(angle_wires)
-    # BasisEmbedding can handle integer inputs, no need to actually translate to binary
+    # BasisState can handle integer inputs, no need to actually translate to binary
     binary_int = 2 ** np.arange(precision - 1, -1, -1) @ math.binary_decimals(
         phi, precision, unit=2 * np.pi
     )
 
     # NOTE: To be capture compatible, must wrap in function
-    # so 'BasisEmbedding' is only constructed when compute_fn is called
+    # so 'BasisState' is only constructed when compute_fn is called
     def compute_fn():
-        return qp.ctrl(qp.BasisEmbedding(binary_int, wires=angle_wires), control=wire)
+        return qp.ctrl(qp.BasisState(binary_int, wires=angle_wires), control=wire)
 
     target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
