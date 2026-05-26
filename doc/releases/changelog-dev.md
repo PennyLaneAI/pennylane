@@ -47,7 +47,8 @@
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
-  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which led to compilation errors when using the old catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
+  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which 
+  led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
   [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
 
 * Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
