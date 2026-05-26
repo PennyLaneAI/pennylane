@@ -255,6 +255,58 @@ class TestOperatorInit:
         # Wires are ordered using wire_argnames, so `wires` come before `pytree_wires`
         assert op.wires == Wires([5, 6, 0, 1, 2, 3, 4, 7, 8])
 
+    def test_non_hybrid_wire_arg_auto_wrapped_in_constructor(self):
+        """Test that non-hybrid wire arguments are wrapped in ``Wires`` by the
+        ``Operator2`` constructor even if the subclass forwards a raw value."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                # No Wires() wrapping here — the constructor should do it.
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=0)
+        assert isinstance(op.arguments["wires"], Wires)
+        assert op.arguments["wires"] == Wires([0])
+
+    @pytest.mark.parametrize(
+        "raw_wires, expected",
+        [
+            (0, Wires([0])),
+            ([0, 1, 2], Wires([0, 1, 2])),
+            ((0, 1), Wires([0, 1])),
+            (range(3), Wires([0, 1, 2])),
+            (Wires([3, 4]), Wires([3, 4])),
+        ],
+    )
+    def test_non_hybrid_wire_arg_auto_wrapped_various_inputs(self, raw_wires, expected):
+        """Test that the constructor accepts a variety of raw inputs for wire
+        arguments and canonicalizes them to a ``Wires`` instance."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = Op(wires=raw_wires)
+        assert op.arguments["wires"] == expected
+        assert op.wires == expected
+
+    def test_hybrid_wire_arg_with_non_wires_leaf_raises(self):
+        """Test that a hybrid wire argument whose leaves are not ``Wires``
+        instances raises a ``TypeError``."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires",)
+            hybrid_argnames = ("wires",)
+
+            def __init__(self, wires):
+                # Forwards the raw list without wrapping each leaf in Wires.
+                super().__init__(wires=wires)
+
+        with pytest.raises(TypeError, match="Hybrid wires argument 'wires' have not been cast"):
+            _ = Op(wires=[0, [1, 2]])
+
     def test_op_is_queued_on_init(self, DynOp):
         """Test that instantiating an operator appends it to the active queue."""
 

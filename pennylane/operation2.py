@@ -40,9 +40,13 @@ class Operator2(ABC):
 
     # ------------ Class variables set manually --------------------
 
+    # FIXME: add info about wire ordering
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
-    """The names of arguments corresponding to wires. Subclasses are responsible for
-    wrapping wire arguments in :class:`~.Wires` objects before forwarding them to
+    """The names of arguments corresponding to wires. Values for these arguments are
+    automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
+    When a name also appears in ``hybrid_argnames``, however, ``Operator2`` does not
+    descend into its pytree structure, so subclasses must ensure every wire leaf inside
+    a hybrid wire argument is already a :class:`~.Wires` object before forwarding it to
     ``super().__init__``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
@@ -109,12 +113,30 @@ class Operator2(ABC):
         all_wires = []
 
         for w in self.wire_argnames:
-            # Work wires are NOT included in the full wires list.
-            if w not in ("work_wires", "work_wire"):
+            if w not in self.hybrid_argnames:
+                canonical_wires = Wires(self._bound_args.arguments[w])
+                self._bound_args.arguments[w] = canonical_wires
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.append(canonical_wires)
+
+            # Pytree wires handling
+            else:
                 leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=_is_wires)
-                all_wires.extend(leaves)
+                if not all(isinstance(l, Wires) for l in leaves):
+                    raise TypeError(
+                        f"Hybrid wires argument '{w}' have not been cast to "
+                        "'qp.wires.Wires' correctly."
+                    )
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.extend(leaves)
 
         for h in self.hybrid_argnames:
+            if h in self.wire_argnames:
+                continue
             leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=_is_op)
             ops = filter(_is_op, leaves)
             all_wires.extend(op.wires for op in ops)
@@ -367,6 +389,7 @@ class Operator2(ABC):
     @property
     def wires(self) -> Wires:
         """Wires that the operator acts on.
+        # FIXME: add info about wire ordering
 
         .. note::
 
