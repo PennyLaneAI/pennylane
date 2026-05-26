@@ -81,47 +81,37 @@ class TwoQubitFFT(Operator):
 
 
 class FFFT(Operator):
-    r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that
-    the fermions are encoded using the Jordan-Wigner transformation. Assumes the Fermions are encoded using the ordering
-    of the wires as passed to the FFFT.
+    r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on
+    `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that fermions are encoded
+    using the Jordan-Wigner transformation, where the supplied ordering of the `wires` passed to
+    `FFFT` is used therein.
 
-    Instead of performing the bit-reversal permutation that is typical at the beginning or end of a Fourier transform,
-    this template expects the user to keep track of these indices. The relevant initial permutation is given by the following,
-    where f is the first number that factors `num_wires`.
-
-    `permutation = [(i // f) + (i % f) * (num_wires // f) for i in range(num_wires)]`
-
-    The FFFT over a number of wires :math:`n` (a power of two)
-    is decomposed recursively into two parallel FFFTs over :math:`\tfrac{n}{2}`
-    sites in each iteration of the recursion. These parallel Fourier transforms are followed by a series of
-    2-site linear gates.
+    The FFFT over a number of wires :math:`n = 2^k` is decomposed recursively into two parallel
+    FFFTs over :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier
+    transforms are followed by a series of two-site linear gates.
 
     .. math::
 
         \sum_{x=0}^{n-1} e^{\frac{2 \pi i k x}{n}} c_x^\dagger = \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'}^\dagger + e^{\frac{2 \pi i k}{n}} \sum_{x'=0}^{n/2-1} e^{\frac{2 \pi i k x'}{n/2}} c_{2x'+1}^\dagger
 
+    Here, :math:`k` is the momentum mode with wave number :math:`2 \pi k / n`, :math:`x` is a site
+    targeted by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
 
-    This is a transform between real and momentum space. The momentum mode is
-    :math:`k`, wave number :math:`2 \pi k / n`. :math:`x` is a site targeted
-    by an operator such as the Fermionic creation operator :math:`c_{x}^\dagger`.
+    Iterating this decomposition :math:`k` times realizes the full Fourier transform over
+    :math:`n = 2^{k}` sites.
 
-    A phase-delay implemented using Pauli Z gates raised to various powers is
-    necessary to take into account the twiddle-factor :math:`e^{\frac{2 \pi i k}{n}}`.
-
-    Iterating the decomposition :math:`k` times realizes the full Fourier transform over
-    :math:`2^{k}` sites.
+    .. see-also:: :class:`~.TwoQubitFFT`
 
     Args:
 
-        wires (WiresLike): The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or equal to 2.
+        wires (WiresLike):
+            The wires to apply the FFFT to. The number of wires must be a power of 2 greater than or
+            equal to 2.
 
     Raises:
 
         ValueError: If ``len(wires)`` is not at least 2.
         NotImplementedError: If ``len(wires)`` is not a power of 2.
-
-    .. note::
-        This template is not compatible with ``default.tensor``. Please try ``default.qubit``.
 
     **Example**
 
@@ -151,7 +141,8 @@ class FFFT(Operator):
     3: ··· ─╰fSWAP(3.14)─┤  State
 
 
-    The FFFT operation is decomposed recursively into :class:`~.TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
+    The FFFT operation is decomposed recursively into :class:`~.TwoQubitFFT` operations (two-site
+    Fermionic Fourier transforms) according to the equation above.
     """
 
     resource_keys = {"num_wires"}
