@@ -133,3 +133,41 @@ class TestLeftClassicalComparator:
             qp.labs.templates.LeftClassicalComparator(
                 x_wires, L, target_wire, work_wires, comparator=comparator
             )
+
+    @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
+    @pytest.mark.parametrize(
+        ("x_wires", "L", "target_wire", "work_wires"),
+        [
+            ([0, 3, 6, 9], 1, 11, [2, 5, 8]),
+            ([0, 3, 6, 9], 2, 11, [2, 5, 8]),
+            ([0, 3, 6], 5, 11, [2, 5]),
+        ],
+    )
+    @pytest.mark.parametrize("seed", [42, 123])
+    def test_no_phase_errors(self, x_wires, L, target_wire, work_wires, comparator, seed):
+        """Verify the comparator introduces no complex phases.
+        A correct classical reversible circuit is a real permutation matrix,
+        so a real positive input must produce a real positive output."""
+
+        all_wires = x_wires + [target_wire] + work_wires
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def circuit(x_state):
+            qp.StatePrep(x_state, x_wires)
+            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            return qp.state()
+
+        num_x = 2 ** len(x_wires)
+        rng = np.random.default_rng(seed)
+
+        # Real positive superposition: all components strictly > 0
+        x_state = rng.random(num_x)
+        x_state /= np.linalg.norm(x_state)
+
+        state = circuit(x_state)
+
+        # All amplitudes must be real (no imaginary component)
+        assert np.allclose(state.imag, 0.0), "Phase error: imaginary components detected"
+        # All non-zero amplitudes must be non-negative
+        assert np.all(state.real >= -1e-10), "Phase error: negative amplitudes detected"

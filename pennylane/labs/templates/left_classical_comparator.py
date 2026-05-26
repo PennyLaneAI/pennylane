@@ -268,11 +268,7 @@ def _left_classical_comparator_resources(num_x_wires, L, comparator):
 
 
 @register_resources(_left_classical_comparator_resources, exact=True)
-def _left_classical_comparator(
-    x_wires, L, target_wire, work_wires, comparator, **_
-):  # pylint: disable=too-many-arguments
-
-    # revert to follow PL convention
+def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 
     def _negate_output():
@@ -281,7 +277,6 @@ def _left_classical_comparator(
     if comparator in ["<=", ">"]:
         L += 1
 
-    cond(comparator.startswith(">"), _negate_output)()
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
     bit = _get_specific_bit(L, 0)
@@ -293,7 +288,6 @@ def _left_classical_comparator(
         x_wires = math.array(x_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
-    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         bit = _get_specific_bit(L, i)
@@ -305,6 +299,8 @@ def _left_classical_comparator(
         cond(bit, X)(wires=[x_wires[i]])
 
     _loop()
+
+    cond(comparator.startswith(">"), _negate_output)()
 
 
 add_decomps(LeftClassicalComparator, _left_classical_comparator)
