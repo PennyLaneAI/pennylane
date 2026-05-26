@@ -27,13 +27,13 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import adjoint_resource_rep
-from pennylane.operation import (
+from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
     MatrixUndefinedError,
-    Operator,
     SparseMatrixUndefinedError,
 )
+from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint, ctrl, prod
 
 from .composite import CompositeOp, handle_recursion_error
