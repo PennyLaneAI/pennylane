@@ -43,7 +43,13 @@ class OutSquare(Operation):
     :math:`2^m` into an :math:`m`-qubit output register:
 
     .. math::
-        \text{OutSquare} |x \rangle |y \rangle = |x \rangle |(y + x^2) \; \text{mod} \; 2^m \rangle,
+        \text{OutSquare} |x \rangle |y \rangle = |x \rangle |(y + x^2) \; \text{mod} \; 2^m \rangle.
+
+    There are two implementations available, differing in their :class:`~.Toffoli` and auxiliary
+    qubit counts. The first is based on Schoolbook multiplication, using a cache qubit and
+    controlled addition. The second uses controlled add-subtract blocks that also are used by
+    Litinski in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__ to reduce the
+    cost of multiplication.
 
     .. seealso:: :class:`~.OutMultiplier`, :class:`~.SemiAdder` , and :class:`~.Multiplier`.
 
@@ -62,7 +68,7 @@ class OutSquare(Operation):
     **Example**
 
     Let's compute the square of :math:`x=3` and :math:`x=7` in superposition, added to a
-    :math:`m=6`-qubit register that holds the value :math`y=5` initially.
+    :math:`m=6`-qubit register that holds the value :math:`y=5` initially.
     The computation will be modulo :math:`2^m=2^6=64`.
 
     .. code-block:: python
@@ -71,24 +77,22 @@ class OutSquare(Operation):
 
         n = 3
         m = 6
-        x_wires = list(range(n))
-        output_wires = list(range(n, n + m))
-        work_wires = list(range(n + m, n + 2 * m))
+        wires = qp.registers({"x": n, "out": m, "work": m})
 
         dev = qp.device("lightning.qubit", wires=n + 2 * m, seed=295)
 
         @qp.qnode(dev, shots=1_000)
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
-            qp.H(x_wires[0]) # Superposition between 0 and 4
-            qp.BasisEmbedding(3, wires=x_wires[1:]) # Add 3, by preparing lower-precision wires
+            qp.H(wires["x"][0]) # Superposition between 0 and 4
+            qp.BasisEmbedding(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
             # Prepare initial state on output wires
             qp.BasisEmbedding(5, wires=output_wires)
             # Square
-            qp.OutSquare(x_wires, output_wires, work_wires)
+            qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
 
-    >>> counts = circuit(output_wires)
+    >>> counts = circuit(wires["out"])
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
     {14: np.int64(498), 54: np.int64(502)}
@@ -96,12 +100,10 @@ class OutSquare(Operation):
     We correctly obtain the squared numbers added to :math:`y=5`, namely
     :math:`5+3^2=14` and :math:`5+7^2=54`.
 
-    Note that reducing the size of the output register changes the computed numbers via the reduced
-    modulus:
+    Note that reducing the size of the output register (here from ``m=6`` to ``m=3``)
+    changes the computed numbers via the reduced modulus:
 
-    >>> m = 3
-    >>> output_wires = list(range(n, n + m))
-    >>> counts = circuit(output_wires)
+    >>> counts = circuit(wires["out"][:3])
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
     {6: np.int64(1000)}
@@ -112,21 +114,6 @@ class OutSquare(Operation):
 
     .. details::
         :title: Usage Details
-
-        This template takes as input three wire registers.
-
-        The first one is ``x_wires`` which encodes the integer :math:`x` to be squared.
-
-        The second one is ``output_wires``, which encodes the integer
-        :math:`y+ x^2 \; \text{mod} \; 2^m`, where :math:`m` denotes the length of the register.
-
-        The third register is ``work_wires``, which consists of the auxiliary qubits used to
-        perform the squaring operation. The required number of work wires depends
-        on whether we are guaranteed that :math:`y=0` in the ``output_wires`` before the
-        computation, which needs to be passed via ``output_wires_zeroed`` (see below for an
-        example). If ``output_wires_zeroed=False`` (the default), :math:`m` work wires are
-        required. If ``output_wires_zeroed=True``, :math:`min(m, n+1)` work wires are required,
-        where :math:`n` denotes the length of the first register ``x_wires``.
 
         **Cheaper decomposition for zeroed output state**
 
