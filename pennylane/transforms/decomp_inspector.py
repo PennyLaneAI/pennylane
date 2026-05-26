@@ -161,6 +161,13 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
             title = "CHOSEN: " + title
         return title
 
+    @override
+    def _title_md(self, index, rule) -> str:
+        title = f"Decomposition {index} (name: {rule.name})"
+        if index == self._chosen_idx:
+            return f"#### **CHOSEN:** {title}"
+        return f"#### {title}"
+
 
 # pylint: disable=protected-access,too-few-public-methods
 class DecompGraphInspector:
