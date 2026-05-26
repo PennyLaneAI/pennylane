@@ -178,6 +178,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
+  [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
+ 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
