@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import functools
 import warnings
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 from copy import copy
 from inspect import signature
 from typing import Any, Literal, overload
