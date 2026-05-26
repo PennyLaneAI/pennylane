@@ -13,8 +13,6 @@
 # limitations under the License.
 r"""Core resource estimation logic."""
 
-from __future__ import annotations
-
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
