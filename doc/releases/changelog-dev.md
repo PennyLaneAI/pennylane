@@ -181,6 +181,11 @@
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
+* The `allocate` PLxPR primitive now returns a list of `AbstractQubit` abstract values instead of a
+  list of abstract integer values. This is to better define the set of operations allowed on
+  allocated qubits.
+  [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
+
 <h3>Documentation 📝</h3>
 
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
