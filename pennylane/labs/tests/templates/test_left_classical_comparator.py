@@ -149,7 +149,6 @@ class TestLeftClassicalComparator:
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
 
-        all_wires = x_wires + [target_wire] + work_wires
         dev = qp.device("default.qubit")
 
         @qp.qnode(dev)
