@@ -40,14 +40,21 @@ class Operator2(ABC):
 
     # ------------ Class variables set manually --------------------
 
-    # FIXME: add info about wire ordering
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
     """The names of arguments corresponding to wires. Values for these arguments are
     automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
     When a name also appears in ``hybrid_argnames``, however, ``Operator2`` does not
     descend into its pytree structure, so subclasses must ensure every wire leaf inside
     a hybrid wire argument is already a :class:`~.Wires` object before forwarding it to
-    ``super().__init__``."""
+    ``super().__init__``.
+
+    The order in which names appear in ``wire_argnames`` determines the order in which
+    their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
+    arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
+    order. Wires contributed by :class:`~.Operator2` leaves found inside non-wire
+    ``hybrid_argnames`` are appended *after* all ``wire_argnames`` wires. The special
+    names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
+    but their wires are excluded from ``op.wires``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as dynamic. Dynamic arguments are those
@@ -389,7 +396,24 @@ class Operator2(ABC):
     @property
     def wires(self) -> Wires:
         """Wires that the operator acts on.
-        # FIXME: add info about wire ordering
+
+        The returned :class:`~.Wires` are collected from the operator's arguments in
+        the following order:
+
+        1. For each name in ``wire_argnames`` (in declaration order):
+
+           * If the name is **not** in ``hybrid_argnames``, the canonical
+             value of that argument is added.
+           * If the name **is** in ``hybrid_argnames``, every :class:`~.Wires` leaf of
+             the argument's pytree is added in pytree traversal order.
+
+        2. After all ``wire_argnames`` have been processed, for each name in
+           ``hybrid_argnames`` that is **not** in ``wire_argnames``, the wires of any
+           :class:`~.Operator2` leaves inside that argument are appended to the end
+           in pytree traversal order.
+
+        Duplicate wires are removed while preserving the first occurrence, so the
+        final result is the ordered union of all wires above.
 
         .. note::
 
