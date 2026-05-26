@@ -110,20 +110,16 @@ class Conditional(SymbolicOp, Operation):
     Args:
         expr (qp.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Operation, id=None):
+    def __init__(self, expr, then_op: Operation):
         # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
-        self._id = id
         self._pauli_rep = None
         self.queue()
         self._wires = then_op.wires
-        self.__queue_category = then_op._queue_category  # pylint: disable=protected-access
 
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
@@ -135,10 +131,6 @@ class Conditional(SymbolicOp, Operation):
     def meas_val(self):
         """the measurement outcome value to consider from `expr` argument"""
         return self.hyperparameters["meas_val"]
-
-    @property
-    def _queue_category(self):
-        return self.__queue_category  # pylint: disable=protected-access
 
     @property
     def num_params(self):
@@ -299,13 +291,9 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = zip(self.preds[1:], self.branch_fns[1:], strict=True)  # skip true branch
-        true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
-        flat_true_fn = FlatFn(true_fn)
-        branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
-
-        # consts go after the len(branches) conditions, first const at len(branches)
-        end_const_ind = len(branches)
+        # consts go after the len(branches) +1 conditions, first const at len(branches) +1
+        # +1 due to `True` inserted for otherwise_fn
+        end_const_ind = len(self.branch_fns) + 1
         conditions = []
         jaxpr_branches = []
         consts = []
@@ -313,7 +301,13 @@ class CondCallable:
 
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
 
-        for pred, fn in branches:
+        for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
+            # otherwise_fn always has pred=True
+            pred = self.preds[i] if i < len(self.preds) else True
+            fn = _no_return(_fn)
+            if i == 0:
+                flat_true_fn = FlatFn(fn)
+                fn = flat_true_fn
             if (pred_shape := math.shape(pred)) != ():
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             if getattr(pred, "dtype", None) != jax.numpy.bool:

@@ -417,9 +417,3 @@ class TestInputs:
                 qp.Permute(permutation_order, wires=wire_labels)
 
         qp.tape.QuantumScript.from_queue(q)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
-        assert template.id == "a"

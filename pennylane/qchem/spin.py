@@ -191,7 +191,7 @@ def spin2(electrons, orbitals):
                 ): i[4]
             }
         )
-    sentence.simplify()
+    sentence.prune()
 
     return qubit_observable(sentence)
 
@@ -253,6 +253,6 @@ def spinz(orbitals):
                 ): i[2]
             }
         )
-    sentence.simplify()
+    sentence.prune()
 
     return qubit_observable(sentence)

@@ -563,8 +563,8 @@ class TestLinearCombination:
             H = qp.ops.LinearCombination(coeffs, ops)
         pr = H.pauli_rep
         if simplify:
-            pr.simplify()
-            true_pauli.simplify()
+            pr.prune()
+            true_pauli.prune()
         assert pr is not None
         assert pr == true_pauli
 

@@ -51,10 +51,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
-    .. warning::
-
-        The ``id`` keyword argument is deprecated and will be removed in v0.46.
-
     Args:
         obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
             is to be measured as part of the measurement process. Not all measurement processes
@@ -63,8 +59,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): **Deprecated** custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = None
@@ -81,7 +75,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         cls._mcm_primitive = create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
-    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
+    def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, **kwargs):
         """Called instead of ``type.__call__`` if ``qp.capture.enabled()``.
 
         Measurements have three "modes":
@@ -96,7 +90,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         if cls._obs_primitive is None:
             # safety check if primitives aren't set correctly.
-            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, id=id, **kwargs)
+            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, **kwargs)
         if obs is None:
             wires = () if wires is None else wires
             if eigvals is None:
@@ -173,7 +167,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
-        id: str | None = None,
     ):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
@@ -185,14 +178,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         else:
             self.obs = obs
             self.mv = None
-
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument is deprecated and will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-                stacklevel=2,
-            )
-        self.id = id
 
         if wires is not None:
             if not capture_enabled() and len(wires) == 0:
@@ -275,7 +260,14 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return equal(self, other)
 
     def __hash__(self):
-        return self.hash
+        fingerprint = (
+            self.__class__.__name__,
+            hash(self.obs),
+            hash(tuple(self.mv)) if isinstance(self.mv, list) else hash(self.mv),
+            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
+            tuple(self.wires.tolist()),
+        )
+        return hash(fingerprint)
 
     def __repr__(self):
         """Representation of this class."""
@@ -403,15 +395,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
-        fingerprint = (
-            self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
-            getattr(self.mv, "hash", "None"),
-            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
-            tuple(self.wires.tolist()),
+        warnings.warn(
+            "The MeasurementProcess.hash property has been deprecated, please use hash(mp) instead.",
+            PennyLaneDeprecationWarning,
         )
-
-        return hash(fingerprint)
+        return hash(self)
 
     def simplify(self):
         """Reduce the depth of the observable to the minimum.

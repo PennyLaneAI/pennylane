@@ -261,45 +261,34 @@ class TestDecomposition:
         assert np.allclose(circuit(weights), exp_state, atol=tol)
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+@pytest.mark.parametrize(
+    ("weights", "n_wires", "msg_match"),
+    [
+        (np.ones((4, 3)), 4, "Weights tensor must"),
+        (np.ones((4, 2, 2)), 4, "Weights tensor must"),
+        (np.ones((4, 3, 1)), 4, "Weights tensor must"),
+        (
+            np.ones((4, 3, 1)),
+            1,
+            "Expected the number of qubits",
+        ),
+    ],
+)
+def test_exceptions(weights, n_wires, msg_match):
+    """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
+    shape."""
 
-    @pytest.mark.parametrize(
-        ("weights", "n_wires", "msg_match"),
-        [
-            (np.ones((4, 3)), 4, "Weights tensor must"),
-            (np.ones((4, 2, 2)), 4, "Weights tensor must"),
-            (np.ones((4, 3, 1)), 4, "Weights tensor must"),
-            (
-                np.ones((4, 3, 1)),
-                1,
-                "Expected the number of qubits",
-            ),
-        ],
-    )
-    def test_exceptions(self, weights, n_wires, msg_match):
-        """Test that ParticleConservingU1 throws an exception if the parameter array has an illegal
-        shape."""
+    wires = range(n_wires)
+    init_state = np.array([1, 1, 0, 0])
+    dev = qp.device("default.qubit", wires=n_wires)
 
-        wires = range(n_wires)
-        init_state = np.array([1, 1, 0, 0])
-        dev = qp.device("default.qubit", wires=n_wires)
+    @qp.qnode(dev)
+    def circuit():
+        qp.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+        return qp.expval(qp.PauliZ(0))
 
-        @qp.qnode(dev)
-        def circuit():
-            qp.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
-            return qp.expval(qp.PauliZ(0))
-
-        with pytest.raises(ValueError, match=msg_match):
-            circuit()
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.ParticleConservingU1(
-            weights=np.array([[[0.2, -0.6]]]), wires=range(2), init_state=np.array([1, 1]), id="a"
-        )
-        assert template.id == "a"
+    with pytest.raises(ValueError, match=msg_match):
+        circuit()
 
 
 class TestAttributes:

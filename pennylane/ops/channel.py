@@ -65,9 +65,9 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires: WiresLike, id=None):
+    def __init__(self, gamma, wires: WiresLike):
         wires = Wires(wires)
-        super().__init__(gamma, wires=wires, id=id)
+        super().__init__(gamma, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -148,8 +148,8 @@ class GeneralizedAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires, id=None):
-        super().__init__(gamma, p, wires=wires, id=id)
+    def __init__(self, gamma, p, wires):
+        super().__init__(gamma, p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
@@ -231,8 +231,8 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, id=None):
-        super().__init__(gamma, wires=wires, id=id)
+    def __init__(self, gamma, wires):
+        super().__init__(gamma, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -318,8 +318,8 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -400,8 +400,8 @@ class BitFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -484,8 +484,8 @@ class ResetError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires, id=None):
-        super().__init__(p0, p1, wires=wires, id=id)
+    def __init__(self, p0, p1, wires):
+        super().__init__(p0, p1, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
@@ -590,9 +590,9 @@ class PauliError(Channel):
 
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires: WiresLike, id=None):
+    def __init__(self, operators, p, wires: WiresLike):
         wires = Wires(wires)
-        super().__init__(p, wires=wires, id=id)
+        super().__init__(p, wires=wires)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z", "I"}):
@@ -716,8 +716,8 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, id=None):
-        super().__init__(p, wires=wires, id=id)
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -766,9 +766,9 @@ class QubitChannel(Channel):
 
     grad_method = None
 
-    def __init__(self, K_list, wires: WiresLike, id=None):
+    def __init__(self, K_list, wires: WiresLike):
         wires = Wires(wires)
-        super().__init__(*K_list, wires=wires, id=id)
+        super().__init__(*K_list, wires=wires)
 
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):
@@ -798,7 +798,7 @@ class QubitChannel(Channel):
 
     # pylint: disable=arguments-differ, unused-argument
     @classmethod
-    def _primitive_bind_call(cls, K_list, wires: WiresLike, id=None):
+    def _primitive_bind_call(cls, K_list, wires: WiresLike):
         wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 
@@ -917,8 +917,8 @@ class ThermalRelaxationError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tg, wires, id=None):
-        super().__init__(pe, t1, t2, tg, wires=wires, id=id)
+    def __init__(self, pe, t1, t2, tg, wires):
+        super().__init__(pe, t1, t2, tg, wires=wires)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ

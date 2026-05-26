@@ -15,6 +15,7 @@ r"""This module contains resource operators for PennyLane subroutines and templa
 
 from .subroutines import (
     LabsQROM,
+    SelectCopyQROM,
     selectpaulirot_controlled_resource_decomp,
     aqft_resource_decomp,
     qft_phase_grad_resource_decomp,

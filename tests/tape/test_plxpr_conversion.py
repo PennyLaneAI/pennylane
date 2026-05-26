@@ -264,7 +264,16 @@ class TestCollectOpsandMeas:
 
         def f():
             m0 = qp.measure(0)
-            qp.cond(m0, qp.RX, false_fn=qp.RY)(0.5, 0)
+
+            def true_fn():
+                qp.RX(0.5, wires=0)
+                return 0
+
+            def false_fn():
+                qp.RY(0.5, wires=0)
+                return 1
+
+            qp.cond(m0, true_fn, false_fn)()
 
         collector = CollectOpsandMeas()
         with pytest.raises(ValueError, match="Conditional branches of mid circuit measurements"):
