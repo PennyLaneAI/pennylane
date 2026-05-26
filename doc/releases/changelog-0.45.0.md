@@ -323,7 +323,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   Gate Count: {Hadamard: 2, CRZ: 1}
   ```
 
-* A new function called :func:`~.transforms.decomp_inspector` is available for verifying how
+* A new function called :func:`~.transforms.decomp_inspector` is available for verifying how 
   the decomposition graph chooses decomposition rules for each operator instance in a circuit.
   [(#9359)](https://github.com/PennyLaneAI/pennylane/pull/9359)
   [(#9436)](https://github.com/PennyLaneAI/pennylane/pull/9436)
@@ -349,7 +349,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   inspector = circuit()
   ```
 
-  We can then call the ``inspector``'s ``inspect_decomps`` method and provide the ``MultiRZ``
+  We can then call the ``inspector``'s ``inspect_decomps`` method and provide the ``MultiRZ`` 
   instance of interest to see which decomposition rules were considered.
 
   ```pycon
@@ -384,14 +384,14 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   inspector provides a summary of its weighted cost, wire allocations, and the "Full Expansion"
   (the final gate counts produced after decomposing all the way down to the target gate set).
 
-  Similar to the :func:`qp.decompose <pennylane.transforms.decompose>`
+  Similar to the :func:`qp.decompose <pennylane.transforms.decompose>` 
   transform, the :func:`~.transforms.decomp_inspector` provides the ability to inject new
   decomposition rules via the keyword arguments `fixed_decomps` and `alt_decomps`.
   For more details on the inspection capabilities please consult the documentation for :func:`~.transforms.decomp_inspector`.
 
 * The :func:`~pennylane.list_decomps` function now returns an object that is easier to interact with,
   including better legibility when printing the entire set of available decomposition rules and when
-  printing individual ones. Additionally, the object returned supports accessing a specific rule by index
+  printing individual ones. Additionally, the object returned supports accessing a specific rule by index 
   or by name.
   [(#9260)](https://github.com/PennyLaneAI/pennylane/pull/9260)
 
@@ -425,7 +425,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   - ``qp.gate_sets.IDENTITY`` which contains the ``Identity`` and the ``GlobalPhase`` gates.
 
   Here is an example using the ``ROTATIONS_PLUS_CNOT`` gate set to decompose a controlled ``MultiRZ`` gate:
-
+  
   ```python
   qp.decomposition.enable_graph()
 
