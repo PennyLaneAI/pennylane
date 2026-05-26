@@ -12,10 +12,11 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=redefined-outer-name,protected-access
+# pylint: disable=redefined-outer-name,protected-access,too-few-public-methods
 
 import copy
 
+import numpy as np
 import pytest
 
 from pennylane.operation import _UNSET_BATCH_SIZE
@@ -37,7 +38,7 @@ class TestInitSubclass:
             hybrid_argnames = "wires"
 
             def __init__(self, phi, pw, wires):
-                super().__init__(phi, pw, wires=Wires(wires))
+                super().__init__(phi, pw, wires=wires)
 
         assert Op.dynamic_argnames == ("phi",)
         assert Op.static_argnames == ("pw",)
@@ -95,7 +96,7 @@ class TestInitSubclass:
             hybrid_argnames = ("wires",)
 
             def __init__(self, wires):
-                super().__init__(wires=Wires(wires))
+                super().__init__(wires=wires)
 
         assert Op.hybrid_argnames == ("wires",)
 
@@ -221,7 +222,7 @@ class TestOperatorInit:
             wire_argnames = ("wires", "ctrl_wires")
 
             def __init__(self, wires, ctrl_wires):
-                super().__init__(wires, ctrl_wires)
+                super().__init__(Wires(wires), Wires(ctrl_wires))
 
         op = TwoWiresArgsOp(wires=[0, 1], ctrl_wires=2)
         assert op.wires == Wires([0, 1, 2])
@@ -233,7 +234,7 @@ class TestOperatorInit:
             wire_argnames = ("wires", "work_wires", "work_wire")
 
             def __init__(self, wires, work_wires, work_wire):
-                super().__init__(wires, work_wires, work_wire)
+                super().__init__(Wires(wires), Wires(work_wires), Wires(work_wire))
 
         op = WithWorkWires(wires=[0, 1], work_wires=[2, 3], work_wire=4)
         assert op.wires == Wires([0, 1])
@@ -253,13 +254,6 @@ class TestOperatorInit:
         op = Composite(inner, [0, [1, 2], [3, 4]], [5, 6])
         # Wires are ordered using wire_argnames, so `wires` come before `pytree_wires`
         assert op.wires == Wires([5, 6, 0, 1, 2, 3, 4, 7, 8])
-
-    def test_batch_size_and_ndim_params_unset_at_init(self, DynOp):
-        """Test that ``batch_size`` and ``ndim_params`` are unset until accessed."""
-
-        op = DynOp(0.5, wires=0)
-        assert op._batch_size is _UNSET_BATCH_SIZE
-        assert op._ndim_params is _UNSET_BATCH_SIZE
 
     def test_op_is_queued_on_init(self, DynOp):
         """Test that instantiating an operator appends it to the active queue."""
@@ -354,7 +348,26 @@ class TestBroadcasting:
                 super().__init__(phi, wires=Wires(wires))
 
         op = Op(data, wires=0)
+        assert op._batch_size is _UNSET_BATCH_SIZE
         assert op.batch_size == exp_batch_size
+
+    @pytest.mark.parametrize(
+        "data", [(np.empty((2, 2)), np.empty((4, 4, 4, 4))), (np.array(1.5), np.empty((4,)))]
+    )
+    def test_inferred_ndim_params(self, data):
+        """Test that ``ndim_params`` is assumed to be the same as the number of dimensions of
+        input dynamic parameters if not set as a class variable."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("a", "b")
+
+            def __init__(self, a, b, wires):
+                super().__init__(a, b, Wires(wires))
+
+        op = Op(*data, wires=0)
+        expected_ndims = tuple(d.ndim for d in data)
+        assert op._ndim_params is _UNSET_BATCH_SIZE
+        assert op.ndim_params == expected_ndims
 
     def test_wrong_ndim_raises(self):
         """Test that parameters with wrong dimensionality raise an error."""
@@ -393,15 +406,15 @@ class TestPytreeMethods:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            static_argnames = ("foo",)
+            static_argnames = ("static",)
 
-            def __init__(self, phi, foo, wires):
-                super().__init__(phi, foo, wires=Wires(wires))
+            def __init__(self, phi, static, wires):
+                super().__init__(phi, static, wires=Wires(wires))
 
         op = Op(0.5, "bar", wires=0)
         data, metadata = op._flatten()
 
-        assert data == (0.5, Wires([0]))
+        assert data == ([0.5], [Wires([0])], [])
         assert metadata == ("bar",)
 
         new_op = Op._unflatten(data, metadata)
@@ -413,15 +426,15 @@ class TestPytreeMethods:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            compilable_argnames = ("foo",)
+            compilable_argnames = ("static",)
 
-            def __init__(self, phi, foo, wires):
-                super().__init__(phi, foo, wires=Wires(wires))
+            def __init__(self, phi, static, wires):
+                super().__init__(phi, static, wires=Wires(wires))
 
         op = Op(1.5, "bar", wires=[0, 1])
         data, metadata = op._flatten()
 
-        assert data == (1.5, Wires([0, 1]))
+        assert data == ([1.5], [Wires([0, 1])], [])
         assert metadata == ("bar",)
 
         new_op = Op._unflatten(data, metadata)
@@ -434,7 +447,7 @@ class TestPytreeMethods:
         op = FullOp(0.5, "static", [-1, -2, -3], wires=0)
         data, metadata = op._flatten()
 
-        assert data == (0.5, Wires([0]), [-1, -2, -3])
+        assert data == ([0.5], [Wires([0])], [[-1, -2, -3]])
         assert metadata == ("static",)
 
         new_op = FullOp._unflatten(data, metadata)
@@ -455,7 +468,7 @@ class TestPytreeMethods:
         op = Op(wires=[0, [1, 2], (3,)])
         data, metadata = op._flatten()
 
-        assert data == ([Wires([0]), Wires([1, 2]), Wires([3])],)
+        assert data == ([], [[Wires([0]), Wires([1, 2]), Wires([3])]], [])
         assert metadata == ()
 
         new_op = Op._unflatten(data, metadata)
@@ -465,6 +478,13 @@ class TestPytreeMethods:
 
 class TestDynamicProperties:
     """Tests for the dynamic properties generated using operator parameters."""
+
+    def test_non_existent_attr(self, DynOp):
+        """Test that an attribute error is raised if trying to access a property
+        that doesn't exist."""
+        op = DynOp(phi=1.5, wires=0)
+        with pytest.raises(AttributeError, match="object has no attribute"):
+            _ = op.invalid_attr
 
     def test_signature_parameter_property(self, FullOp):
         """Test that operator parameters are exposed as properties."""
