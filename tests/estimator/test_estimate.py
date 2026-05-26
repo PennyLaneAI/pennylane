@@ -32,6 +32,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.resources_base import Resources
+from pennylane.estimator.templates.stateprep import QROMStatePreparation
 from pennylane.estimator.templates.subroutines import BasisRotation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
@@ -647,4 +648,54 @@ class TestEstimateResources:
         adj_ctrl_op = Adjoint(ctrl_op)
 
         result = estimate(adj_ctrl_op)
+        assert result.total_gates > 0
+
+    def test_deep_nesting_three_levels(self):
+        """Controlled(Adjoint(Controlled(QROMStatePreparation))) resolves without error."""
+        op = QROMStatePreparation(20)
+        inner_ctrl = Controlled(op, 1, 0)
+        adj_inner_ctrl = Adjoint(inner_ctrl)
+        outer_ctrl = Controlled(adj_inner_ctrl, 2, 0)
+
+        result = estimate(outer_ctrl)
+        assert result.total_gates > 0
+
+    def test_deep_nesting_four_levels(self):
+        """Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation)))) resolves without error."""
+        op = QROMStatePreparation(20)
+        c1 = Controlled(op, 1, 0)
+        a1 = Adjoint(c1)
+        c2 = Controlled(a1, 2, 0)
+        a2 = Adjoint(c2)
+
+        result = estimate(a2)
+        assert result.total_gates > 0
+
+    def test_deep_nesting_pow_over_controlled(self):
+        """Pow(Controlled(QROMStatePreparation), z=3) resolves without error."""
+        op = QROMStatePreparation(20)
+        ctrl_op = Controlled(op, 2, 0)
+        pow_op = Pow(ctrl_op, 3)
+
+        result = estimate(pow_op)
+        assert result.total_gates > 0
+
+    def test_deep_nesting_simple_no_precision(self):
+        """Adjoint(Hadamard) — operators without precision still work after the recursive fix."""
+        adj_h = Adjoint(Hadamard(wires=0))
+        result = estimate(adj_h)
+        assert result.total_gates > 0
+
+    @pytest.mark.parametrize(
+        "build_op",
+        [
+            lambda: Adjoint(Controlled(QROMStatePreparation(20), 1, 0)),
+            lambda: Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0),
+            lambda: Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0)),
+            lambda: Pow(Controlled(QROMStatePreparation(20), 2, 0), 3),
+        ],
+    )
+    def test_deep_nesting_parametrized(self, build_op):
+        """Arbitrary nesting of Adjoint/Controlled/Pow over an op with precision returns a result."""
+        result = estimate(build_op())
         assert result.total_gates > 0

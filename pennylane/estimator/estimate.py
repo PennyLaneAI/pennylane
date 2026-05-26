@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Core resource estimation logic."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
@@ -420,14 +422,39 @@ def _resources_from_pl_ops(
     )
 
 
-def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs):
+def _apply_config_precisions_recursive(cmpr_op, config):
+    """Recursively fill None-valued params in a CompressedResourceOp tree from config.
+
+    Walks the nested base_cmpr_op chain and, at each node, fills any param that
+    is None with the corresponding value from config.resource_op_precisions.
+    """
+    op_type = cmpr_op.op_type
+    config_kwargs = config.resource_op_precisions.get(op_type, {})
+    for k, v in config_kwargs.items():
+        if k in cmpr_op.params and cmpr_op.params[k] is None:
+            cmpr_op.params[k] = v
+
+    for value in cmpr_op.params.values():
+        if isinstance(value, CompressedResourceOp):
+            _apply_config_precisions_recursive(value, config)
+
+
+def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs, config=None):
     """Get resource decomposition for symbolic operators."""
     base_cmpr_op = params.pop("base_cmpr_op")
 
-    target_params = base_cmpr_op.params.copy()
-    for k, v in filtered_kwargs.items():
-        if k not in target_params or target_params[k] is None:
-            target_params[k] = v
+    if config is not None:
+        # Recursively fill config precisions throughout the entire nested tree before building
+        # target_params. This ensures precision reaches leaf ops regardless of nesting depth,
+        # and avoids injecting leaf-level precision keys into intermediate wrapper params (which
+        # would cause TypeError in resource_rep calls that don't accept those keys).
+        _apply_config_precisions_recursive(base_cmpr_op, config)
+        target_params = base_cmpr_op.params.copy()
+    else:
+        target_params = base_cmpr_op.params.copy()
+        for k, v in filtered_kwargs.items():
+            if k not in target_params or target_params[k] is None:
+                target_params[k] = v
 
     params["target_resource_params"] = target_params
 
@@ -453,7 +480,7 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
 
     op_type = comp_res_op.op_type
     if op_type in (Adjoint, Controlled, Pow):
-        return _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs)
+        return _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs, config)
 
     return decomp_func(**params, **filtered_kwargs)
 
