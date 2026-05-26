@@ -100,17 +100,16 @@ class OutSquare(Operation):
     We correctly obtain the squared numbers added to :math:`y=5`, namely
     :math:`5+3^2=14` and :math:`5+7^2=54`.
 
-    Note that reducing the size of the output register (here from ``m=6`` to ``m=3``)
+    Note that reducing the size of the output register (here from ``m=6`` to ``m=4``)
     changes the computed numbers via the reduced modulus:
 
-    >>> counts = circuit(wires["out"][:3])
+    >>> counts = circuit(wires["out"][:4])
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
-    {6: np.int64(1000)}
+    {6: np.int64(501), 14: np.int64(499)}
 
-    Why do we obtain a single result? This is simply because :math:`(5+3^2)\!\mod\!8=6` and
-    :math:`(5+7^2)\!\mod\!8=6` happen to be equal.
-
+    The new results are consistent with the previous ones: the smaller output :math:`14` remains
+    unchanged because :math:`14 < 16=2^4`, and :math:`54` is changed to :math:`54\!\mod\!2^4=6`.
 
     .. details::
         :title: Usage Details
