@@ -52,8 +52,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
         return qp.probs(wires=total_wires)
 
     if use_jit:
-        fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
-        qp.qjit(qp.decompose(circuit, max_expansion=2, fixed_decomps=fixed_decomps))
+        qp.qjit(qp.decompose(circuit, max_expansion=2))
 
     rng = np.random.default_rng(seed)
 
