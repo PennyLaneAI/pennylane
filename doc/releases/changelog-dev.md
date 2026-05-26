@@ -152,8 +152,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* :func:`~.equal` supports `Operator2` instances.
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+
 * A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
 
 * Bump `autoray` package pin to `v0.8.10`.
   [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
@@ -187,7 +191,7 @@
 
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
   [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
- 
+
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
