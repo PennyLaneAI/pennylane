@@ -145,7 +145,7 @@ class OutSquare(Operation):
 
         >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
         >>> print(specs_false)
-        {'PauliX': 3, 'CNOT': 8, 'C(SemiAdder)': 4}
+        {'BasisEmbedding': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
 
         When we do pass the information, we replace one controlled :class:`~.SemiAdder` by
         some :class:`~.TemporaryAND` gates and some of
@@ -153,7 +153,7 @@ class OutSquare(Operation):
 
         >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
         >>> print(specs_true)
-        {'PauliX': 3, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
+        {'BasisEmbedding': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 
@@ -166,45 +166,45 @@ class OutSquare(Operation):
         To conclude, we draw the two circuit variants:
 
         >>> print(qp.draw(circuit)(False))
-         0: ──X────╭SemiAdder───────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
-         1: ──X────├SemiAdder───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
-         2: ───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
-         3: ──X─╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
-         4: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ╭Counts
-         5: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         6: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         7: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         8: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         9: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
-        10: ────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
-        11: ────│──├SemiAdder─│──│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
-        12: ────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
-        13: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        14: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        15: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────╰SemiAdder────┤
-        17: ───────├SemiAdder───────├SemiAdder───────╰SemiAdder─────────────────────┤
-        18: ───────├SemiAdder───────╰SemiAdder──────────────────────────────────────┤
-        19: ───────╰SemiAdder───────────────────────────────────────────────────────┤
+         0: ─╭|Ψ⟩────╭SemiAdder───────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
+         1: ─├|Ψ⟩────├SemiAdder───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
+         2: ─├|Ψ⟩────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
+         3: ─╰|Ψ⟩─╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
+         4: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ╭Counts
+         5: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         6: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         7: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         8: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         9: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
+        10: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
+        11: ──────│──├SemiAdder─│──│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
+        12: ──────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
+        13: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        14: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        15: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        16: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────╰SemiAdder────┤
+        17: ─────────├SemiAdder───────├SemiAdder───────╰SemiAdder─────────────────────┤
+        18: ─────────├SemiAdder───────╰SemiAdder──────────────────────────────────────┤
+        19: ─────────╰SemiAdder───────────────────────────────────────────────────────┤
 
         >>> print(qp.draw(circuit)(True))
-         0: ──X──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
-         1: ──X───────╭●─│─────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
-         2: ───────╭●─│──│──╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
-         3: ──X─╭●─├●─├●─├●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
-         4: ────│──│──│──│──│──│──────────│──│──│──────────│──│──├SemiAdder─│──┤ ╭Counts
-         5: ────│──│──│──│──│──│──────────│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         6: ────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         7: ────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         8: ────│──│──│──╰⊕─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         9: ────│──│──╰⊕────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
-        10: ────│──╰⊕───────│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
-        11: ────╰X──────────│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
-        12: ────────────────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
-        13: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        14: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        15: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
+         0: ─╭|Ψ⟩──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
+         1: ─├|Ψ⟩───────╭●─│─────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
+         2: ─├|Ψ⟩────╭●─│──│──╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
+         3: ─╰|Ψ⟩─╭●─├●─├●─├●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
+         4: ──────│──│──│──│──│──│──────────│──│──│──────────│──│──├SemiAdder─│──┤ ╭Counts
+         5: ──────│──│──│──│──│──│──────────│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         6: ──────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         7: ──────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         8: ──────│──│──│──╰⊕─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         9: ──────│──│──╰⊕────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
+        10: ──────│──╰⊕───────│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
+        11: ──────╰X──────────│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
+        12: ──────────────────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
+        13: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        14: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        15: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        16: ─────────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
 
     """
 
