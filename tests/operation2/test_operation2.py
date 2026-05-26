@@ -414,7 +414,7 @@ class TestPytreeMethods:
         op = Op(0.5, "bar", wires=0)
         data, metadata = op._flatten()
 
-        assert data == (0.5, Wires([0]))
+        assert data == ([0.5], [Wires([0])], [])
         assert metadata == ("bar",)
 
         new_op = Op._unflatten(data, metadata)
@@ -434,7 +434,7 @@ class TestPytreeMethods:
         op = Op(1.5, "bar", wires=[0, 1])
         data, metadata = op._flatten()
 
-        assert data == (1.5, Wires([0, 1]))
+        assert data == ([1.5], [Wires([0, 1])], [])
         assert metadata == ("bar",)
 
         new_op = Op._unflatten(data, metadata)
@@ -447,7 +447,7 @@ class TestPytreeMethods:
         op = FullOp(0.5, "static", [-1, -2, -3], wires=0)
         data, metadata = op._flatten()
 
-        assert data == (0.5, Wires([0]), [-1, -2, -3])
+        assert data == ([0.5], [Wires([0])], [[-1, -2, -3]])
         assert metadata == ("static",)
 
         new_op = FullOp._unflatten(data, metadata)
@@ -468,7 +468,7 @@ class TestPytreeMethods:
         op = Op(wires=[0, [1, 2], (3,)])
         data, metadata = op._flatten()
 
-        assert data == ([Wires([0]), Wires([1, 2]), Wires([3])],)
+        assert data == ([], [[Wires([0]), Wires([1, 2]), Wires([3])]], [])
         assert metadata == ()
 
         new_op = Op._unflatten(data, metadata)

@@ -223,12 +223,12 @@ class Operator2(ABC):
 
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])]), ())
+        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])]), ('XY',))
+        (([1.2], [Wires([0, 1])], []), ('XY',))
         """
         args = {}
 
@@ -248,7 +248,7 @@ class Operator2(ABC):
         # Process static data
         hashable_argnames = cls.static_argnames or cls.compilable_argnames
         for name, value in zip(hashable_argnames, metadata):
-            args[name] = metadata[value]
+            args[name] = value
 
         return cls(**args)
 
