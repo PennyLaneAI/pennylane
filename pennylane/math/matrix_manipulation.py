@@ -413,7 +413,7 @@ def convert_to_su2(U) -> tuple:
     Returns:
         array[complex], float:
             A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is equivalent to
-            U up to a global phase, and the global phase.
+            ``U`` up to a global phase, and the global phase.
 
     """
     # Compute the determinant
