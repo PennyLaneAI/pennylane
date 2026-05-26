@@ -197,22 +197,20 @@ class Operator2(ABC):
         PauliRot(1.2, XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
-        dyn_data = []
-
-        dyn_data.extend(self._bound_args.arguments[d] for d in self.dynamic_argnames)
-        dyn_data.extend(self._bound_args.arguments[w] for w in self.wire_argnames)
-        dyn_data.extend(
-            self._bound_args.arguments[h]
+        dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
+        wires = [self._bound_args.arguments[w] for w in self.wire_argnames]
+        hybrid_args = [self._bound_args.arguments[h]
             for h in self.hybrid_argnames
             if h not in self.wire_argnames
-        )
+        ]
+        leaves = (dyn_args, wires, hybrid_args)
 
         # Put static/compilable args in hashable_data
-        hashable_data = []
-        hashable_data.extend(self._bound_args.arguments[s] for s in self.static_argnames)
-        hashable_data.extend(self._bound_args.arguments[c] for c in self.compilable_argnames)
-
-        return tuple(dyn_data), tuple(hashable_data)
+        hashable_data = (
+            tuple(self._bound_args.arguments[s] for s in self.static_argnames),
+            tuple(self._bound_args.arguments[c] for c in self.compilable_argnames),
+        )
+        return leaves, hashable_data
 
     @classmethod
     def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
