@@ -630,3 +630,16 @@ class TestEstimateResources:
         ctrl_op = Controlled(BasisRotation(3), 1, 0)
         result = estimate(ctrl_op, config=cfg)
         assert result.total_gates == 42  # explicit ctrl override wins
+
+    def test_nested_symbolic_propagates_precision(self):
+        """Precision from ResourceConfig must reach the leaf op through nested symbolic wrappers.
+
+        Regression test: Adjoint(Controlled(op)) where op needs precision from ResourceConfig
+        previously failed with TypeError because precision was not propagated through the nesting.
+        """
+        op = RZ(wires=0)
+        ctrl_op = Controlled(op, 1, 0)
+        adj_ctrl_op = Adjoint(ctrl_op)
+
+        result = estimate(adj_ctrl_op)
+        assert result.total_gates > 0

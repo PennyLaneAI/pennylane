@@ -426,7 +426,7 @@ def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs):
 
     target_params = base_cmpr_op.params.copy()
     for k, v in filtered_kwargs.items():
-        if k in target_params and target_params[k] is None:
+        if k not in target_params or target_params[k] is None:
             target_params[k] = v
 
     params["target_resource_params"] = target_params
@@ -622,7 +622,17 @@ def _get_decomposition_function_and_kwargs(
             if getattr(lookup_op_type, decomp_method_name).__func__ is default_method.__func__:
                 decomp_func = _build_symbolic_decomp_from_base(op_type, custom_base_decomp)
 
-    kwargs = config.resource_op_precisions.get(lookup_op_type, {})
+    precision_lookup_type = lookup_op_type
+    if op_type in _SYMBOLIC_DECOMP_MAP:
+        temp = comp_res_op.params["base_cmpr_op"]
+        while precision_lookup_type in _SYMBOLIC_DECOMP_MAP:
+            inner = temp.params.get("base_cmpr_op")
+            if inner is None:
+                break
+            precision_lookup_type = inner.op_type
+            temp = inner
+
+    kwargs = config.resource_op_precisions.get(precision_lookup_type, {})
     decomp_func = custom_decomp_dict.get(lookup_op_type, decomp_func)
 
     return decomp_func, kwargs
