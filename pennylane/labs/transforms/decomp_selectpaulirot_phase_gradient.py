@@ -79,11 +79,7 @@ def _select_pauli_rot_phase_gradient(
                 qp.adjoint(qp.S(target_wire))
                 qp.Hadamard(target_wire)
 
-            def y_basis_uncomp():
-                qp.Hadamard(target_wire)
-                qp.S(target_wire)
-
-            return qp.change_op_basis(y_basis_comp, inner_cob, y_basis_uncomp)
+            return qp.change_op_basis(y_basis_comp, inner_cob)
 
     return inner_cob()
 
