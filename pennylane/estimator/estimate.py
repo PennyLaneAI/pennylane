@@ -554,6 +554,11 @@ def _build_symbolic_decomp_from_base(op_type, custom_base_decomp):
     version of the base decomp instead.
     """
 
+    if op_type not in (Adjoint, Controlled):
+        raise TypeError(
+            f"_build_symbolic_decomp_from_base only supports Adjoint and Controlled, got {op_type}"
+        )
+
     if op_type is Adjoint:
 
         def _adj_decomp(target_resource_params=None):
