@@ -489,7 +489,9 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
         return self._bound_args.arguments[name]
 
-    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'.")
+    raise AttributeError(
+        f"'{type(self).__name__}' object has no attribute '{name}'."
+    )  # pragma: no cover
 
 
 def _is_wires(val: Any) -> bool:
