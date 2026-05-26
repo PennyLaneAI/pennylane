@@ -584,6 +584,28 @@ class TestLabel:
 
         assert Op(wires=0).label() == "Op"
 
+    @pytest.mark.parametrize(
+        "category", ["static_argnames", "compilable_argnames", "hybrid_argnames"]
+    )
+    def test_non_dynamic_not_included(self, category):
+        """Test that arguments not in ``dynamic_argnames`` aren't included
+        in the label."""
+
+        def __init__(self, phi, arg, wires):
+            Operator2.__init__(self, phi, arg, Wires(wires))
+
+        attrs = {
+            "dynamic_argnames": ("phi",),
+            "wire_argnames": ("wires",),
+            category: ("arg",),
+            "__init__": __init__,
+        }
+        # This creates a class while allowing us to parametrize the attributes
+        # that we want to test.
+        OpClass = type("OpClass", (Operator2,), attrs)
+
+        assert OpClass(phi=1.5, arg=[1, 2, 3], wires=0).label() == "OpClass"
+
     def test_no_dynamic_args_with_base_label(self):
         """Test that ``base_label`` overrides the class name even with
         no dynamic args."""
