@@ -41,24 +41,36 @@ class Operator2(ABC):
     # ------------ Class variables set manually --------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
-    """The names of arguments corresponding to wires."""
+    """The names of arguments corresponding to wires. Subclasses are responsible for
+    wrapping wire arguments in :class:`~.Wires` objects before forwarding them to
+    ``super().__init__``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to dynamic arguments. Dynamic arguments
-    are those whose concrete values may not be known at compile-time."""
+    """The names of arguments that are treated as dynamic. Dynamic arguments are those
+    whose concrete values may not be known at compile-time."""
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to static arguments. Static arguments
-    are those whose concrete values must be known at compile-time."""
-
-    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to dynamic data wrapped in static
-    structures (known as Pytrees). This feature is opt-in, but is required for cases
-    where arrays, operators, and wires are supplied within a collection."""
+    """The names of arguments that are treated as static. Static arguments are those
+    whose concrete values are known when capturing the program. Arguments in this
+    category cannot be lowered to a compiler intermediate representation. An
+    operator can only specify ``static_argnames`` or ``compilable_argnames``, but
+    not both."""
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to compilable static operator data.
-    This feature is opt-in, but can be useful PauliString arguments and the like."""
+    """The names of arguments that are treated as **compilable** static arguments.
+    Like ``static_argnames``, these arguments have concrete values that are known
+    when capturing the program; unlike ``static_argnames``, they can be lowered to
+    a compiler intermediate representation. This feature is opt-in, but is useful
+    for making static data visible to the compiler. An operator can only specify
+    ``static_argnames`` or ``compilable_argnames``, but not both."""
+
+    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
+    """The names of arguments that represent dynamic data wrapped in static
+    structures (known as Pytrees). Names in this category must be disjoint from
+    ``dynamic_argnames``, ``static_argnames``, and ``compilable_argnames``, but may
+    overlap with ``wire_argnames`` when wire arguments contain nested structures of
+    wires. This feature is opt-in, but is required for cases where arrays,
+    operators, and wires are supplied within a collection."""
 
     # TODO: [sc-120517] Add proper fixed_sig support
     fixed_sig: ClassVar[tuple[type, ...]]
