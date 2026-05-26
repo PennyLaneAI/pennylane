@@ -15,14 +15,9 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
-from functools import partial
-
-import jax.numpy as jnp
-
 import pennylane as qml
-from pennylane import math
 from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
-from pennylane.ops.op_math import change_op_basis
+from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import WireError
 
 
@@ -126,21 +121,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     @qml.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):
-        target_wire = wires
         qml.GlobalPhase(phi / 2)
-
-        precision = len(angle_wires)
-        binary_int = 2 ** jnp.arange(precision - 1, -1, -1) @ math.binary_decimals(
-            phi, precision, unit=2 * jnp.pi
-        )
-
-        # NOTE: Must wrap in function so 'BasisEmbedding' is only constructed when compute_fn is called
-        def compute_fn():
-            return qml.ctrl(qml.BasisEmbedding(binary_int, wires=angle_wires), control=target_wire)
-
-        target_fn = partial(qml.SemiAdder, angle_wires, phase_grad_wires, work_wires)
-
-        # NOTE: Compute function is self-inverse, pass it for the uncompute function
-        change_op_basis(compute_fn, target_fn, compute_fn)
+        _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
 
     return _decomp_fn
