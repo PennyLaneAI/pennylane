@@ -24,21 +24,21 @@
 
   ```pycon
   >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoQubitFFT────────────────────╭TwoQubitFFT─────────────────────────────────────── ···
-  1: ─╰TwoQubitFFT───────╭fSWAP(3.14)─╰TwoQubitFFT─╭fSWAP(3.14)──────────────╭TwoQubitFFT ···
-  2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰fSWAP(3.14)──────────────╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT ···
-  3: ─╰TwoQubitFFT──Z⁰⋅⁵────────────────────────────────────────╰fSWAP(3.14)───────────── ···
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT────────────────────────────────────── ···
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)──────────────╭TwoWireFFT ···
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─────────────╰FSWAP(3.14)─╭FSWAP(3.14)─╰TwoWireFFT ···
+  3: ─╰TwoWireFFT──Z⁰⋅⁵───────────────────────────────────────╰FSWAP(3.14)──────────── ···
 
-  0: ··· ──────────────┤  State
-  1: ··· ──────────────┤  State
-  2: ··· ─╭fSWAP(3.14)─┤  State
-  3: ··· ─╰fSWAP(3.14)─┤  State
+  0: ··· ──────────────┤ ╭State
+  1: ··· ──────────────┤ ├State
+  2: ··· ─╭FSWAP(3.14)─┤ ├State
+  3: ··· ─╰FSWAP(3.14)─┤ ╰State
   ```
 
-  Alongisde the addition of :class:`~.FFFT`, two new operations called :class:`~.TwoQubitFFT` and
-  :class:`~.fSWAP` have been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.TwoQubitFFT` operations (two-site Fermionic Fourier
-  transforms).
+  Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
+  has been added to enable its implementation: the :class:`~.FFFT` operation is
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
 
