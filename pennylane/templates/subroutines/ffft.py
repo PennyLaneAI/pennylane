@@ -140,17 +140,15 @@ class FFFT(Operator):
     (two-site Fermionic Fourier transforms) according to the equation above.
     """
 
-    resource_keys = {"num_wires", "parallelize_swaps"}
+    resource_keys = {"num_wires"}
 
-    def __init__(self, wires: WiresLike, parallelize_swaps: bool = True):
+    def __init__(self, wires: WiresLike):
         if len(wires) <= 1:
             raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
         if not math.log2(len(wires)).is_integer():
             raise NotImplementedError(
                 "FFFT is currently only implemented for numbers of wires that are powers of two."
             )
-
-        self.hyperparameters["parallelize_swaps"] = parallelize_swaps
 
         super().__init__(wires=wires)
 
@@ -162,11 +160,10 @@ class FFFT(Operator):
     def resource_params(self) -> dict:
         return {
             "num_wires": len(self.wires),
-            "parallelize_swaps": self.hyperparameters["parallelize_swaps"],
         }
 
 
-def _fast_fermionic_fourier_transform_resources(num_wires, parallelize_swaps):
+def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
     two_qubit_gates = num_wires * math.log2(num_wires) // 2
@@ -183,33 +180,31 @@ def _fast_fermionic_fourier_transform_resources(num_wires, parallelize_swaps):
     resources = _count_one_recursive(num_wires, resources)
 
     if num_wires > 2:
-        resources[resource_rep(FermionicSWAP)] = num_wires * (num_wires - math.log2(num_wires) - 1)
-    if parallelize_swaps:
-        resources[resource_rep(FermionicSWAP)] /= 2
+        resources[resource_rep(FermionicSWAP)] = (
+            num_wires * (num_wires - math.log2(num_wires) - 1) / 2
+        )
 
     return resources
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(
-    *_, wires: WiresLike, parallelize_swaps: bool, **__
-):
+def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")
 
     # Rather than performing a bit-reversal permutation, we expect the user to label their wires
     # correctly at the beginning.
 
-    _recursive_decompose(wires, parallelize_swaps)
+    _recursive_decompose(wires)
 
 
-def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
+def _recursive_decompose(wires: WiresLike):
     # base case is that we have two wires
     if len(wires) == 2:
         TwoWireFFT(wires)
     else:
-        _recursive_decompose(wires[: len(wires) // 2], parallelize_swaps)
-        _recursive_decompose(wires[len(wires) // 2 :], parallelize_swaps)
+        _recursive_decompose(wires[: len(wires) // 2])
+        _recursive_decompose(wires[len(wires) // 2 :])
 
         @for_loop(len(wires) // 2)
         def twiddle(mode):
@@ -217,15 +212,7 @@ def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
 
         twiddle()  # pylint: disable=no-value-for-parameter
 
-        if parallelize_swaps:
-            _permute_and_apply_parallel(wires, TwoWireFFT)
-        else:
-
-            @for_loop(len(wires) // 2)
-            def fouriers(i):
-                _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)
-
-            fouriers()  # pylint: disable=no-value-for-parameter
+        _permute_and_apply_parallel(wires, TwoWireFFT)
 
 
 def _permute_and_apply_parallel(wires, operator):
@@ -275,46 +262,6 @@ def _permute_and_apply_parallel(wires, operator):
 
     # applies the inverse permutation
     permutation_out_layers(len(wires) // 2 - 1, len(wires) // 2 - 2, wires)
-
-
-def _permute_and_apply(order, wires, operator):
-    """
-    Makes the sites in question adjacent in the ordering, applies the given operator,
-    and permutes them back.
-
-    Args:
-        wires (WiresLike): The wires to permute.
-        operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
-    """
-    if capture.enabled() and has_jax:
-        first = jnp.argmax(jnp.where(order == wires[0], order, 0))
-        second = jnp.argmax(jnp.where(order == wires[1], order, 0))
-    else:
-        first = list(order).index(wires[0])
-        second = list(order).index(wires[1])
-
-    second_copy = copy.copy(second)
-
-    # permute into adjacency
-    @while_loop(lambda s: s > first + 1)
-    def permute_in(s):
-        FermionicSWAP(np.pi, [order[s], order[s - 1]])
-        s -= 1
-        return s
-
-    permute_in(second)  # pylint: disable=no-value-for-parameter
-
-    # apply the operator
-    operator([order[first], order[first + 1]])
-
-    # permute back
-    @while_loop(lambda s: s < second_copy)
-    def permute_out(s):
-        FermionicSWAP(np.pi, [order[s], order[s + 1]])
-        s += 1
-        return s
-
-    permute_out(first + 1)  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)

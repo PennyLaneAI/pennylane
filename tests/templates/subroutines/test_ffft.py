@@ -27,10 +27,10 @@ dev = device("default.qubit")
 
 
 @qnode(dev)
-def ffft(wires, input=None, parallel=False):
+def ffft(wires, input=None):
     if input is not None:
         BasisEmbedding(input, wires)
-    FFFT(wires, parallel)
+    FFFT(wires)
     return state()
 
 
@@ -65,84 +65,9 @@ def test_raises(wires, error_type, error_msg):
 
 @pytest.mark.capture
 @pytest.mark.parametrize(
-    "wires, expected_circuit, parallel",
+    "wires, expected_circuit",
     [
-        ((0, 1), [TwoWireFFT(Wires([0, 1]))], False),
-        (
-            (0, 1, 2, 3),
-            [
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
-                FermionicSWAP(np.pi, wires=[2, 1]),
-                TwoWireFFT(wires=[0, 1]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[3, 2]),
-                TwoWireFFT(wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-            ],
-            False,
-        ),
-        (
-            (0, 1, 2, 3, 4, 5, 6, 7),
-            [
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
-                FermionicSWAP(np.pi, wires=[2, 1]),
-                TwoWireFFT(wires=[0, 1]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[3, 2]),
-                TwoWireFFT(wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-                TwoWireFFT(wires=[4, 5]),
-                TwoWireFFT(wires=[6, 7]),
-                PauliZ(6) ** 0.0,
-                PauliZ(7) ** 0.5,
-                FermionicSWAP(np.pi, wires=[6, 5]),
-                TwoWireFFT(wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[7, 6]),
-                TwoWireFFT(wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[6, 7]),
-                PauliZ(4) ** 0.0,
-                PauliZ(5) ** 0.25,
-                PauliZ(6) ** 0.5,
-                PauliZ(7) ** 0.75,
-                FermionicSWAP(np.pi, wires=[4, 3]),
-                FermionicSWAP(np.pi, wires=[3, 2]),
-                FermionicSWAP(np.pi, wires=[2, 1]),
-                TwoWireFFT(wires=[0, 1]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[5, 4]),
-                FermionicSWAP(np.pi, wires=[4, 3]),
-                FermionicSWAP(np.pi, wires=[3, 2]),
-                TwoWireFFT(wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[6, 5]),
-                FermionicSWAP(np.pi, wires=[5, 4]),
-                FermionicSWAP(np.pi, wires=[4, 3]),
-                TwoWireFFT(wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[7, 6]),
-                FermionicSWAP(np.pi, wires=[6, 5]),
-                FermionicSWAP(np.pi, wires=[5, 4]),
-                TwoWireFFT(wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[6, 7]),
-            ],
-            False,
-        ),
-        ((0, 1), [TwoWireFFT(Wires([0, 1]))], True),
+        ((0, 1), [TwoWireFFT(Wires([0, 1]))]),
         (
             (0, 1, 2, 3),
             [
@@ -155,7 +80,6 @@ def test_raises(wires, error_type, error_msg):
                 TwoWireFFT(wires=[2, 3]),
                 FermionicSWAP(np.pi, wires=[1, 2]),
             ],
-            True,
         ),
         (
             (0, 1, 2, 3, 4, 5, 6, 7),
@@ -197,17 +121,16 @@ def test_raises(wires, error_type, error_msg):
                 FermionicSWAP(np.pi, wires=[4, 5]),
                 FermionicSWAP(np.pi, wires=[3, 4]),
             ],
-            True,
         ),
     ],
 )
-def test_ffft_circuit(wires, expected_circuit, parallel):
+def test_ffft_circuit(wires, expected_circuit):
     @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft_simple(wires, parallel):  # pylint: disable=redefined-outer-name
-        FFFT(wires, parallel)
+    def ffft_simple(wires):  # pylint: disable=redefined-outer-name
+        FFFT(wires)
         return sample(wires=wires)
 
-    tape = workflow.construct_tape(ffft_simple, level="device")(wires, parallel)
+    tape = workflow.construct_tape(ffft_simple, level="device")(wires)
     for i, op in enumerate(tape.operations):
         assert type(op) == type(expected_circuit[i])
         assert op.hyperparameters == expected_circuit[i].hyperparameters
@@ -247,12 +170,7 @@ def test_ffft_correct(amplitudes):
     initial = fermionic_superposition_state(amplitudes)
     expected = fermionic_superposition_state(modes)
 
-    result = ffft(list(range(n**2)), initial, False)
+    result = ffft(list(range(n**2)), initial)
 
     for elem in np.argwhere(expected):
         assert elem in np.argwhere(result)
-
-    result_parallel = ffft(list(range(n**2)), initial, True)
-
-    for elem in np.argwhere(expected):
-        assert elem in np.argwhere(result_parallel)
