@@ -259,7 +259,6 @@ def test_capture_compatibility():
                 return qp.state()
 
             cjaxpr = jax.make_jaxpr(f)(angles)
-            print(cjaxpr)
 
             collector = CollectOpsandMeas()
             collector.eval(cjaxpr.jaxpr, cjaxpr.consts, angles)
