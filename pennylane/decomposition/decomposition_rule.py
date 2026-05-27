@@ -912,7 +912,8 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
         return self._conditions_met and self._enough_work_wires
 
 
-class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods
+class _DecompInfoCollection:
     """A collection of _DecompInfo."""
 
     def __init__(
@@ -924,14 +925,14 @@ class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
         indexed_rule_infos = enumerate(rule_infos)
         self._show_not_applicable = show_not_applicable
         if not show_not_applicable:
-            indexed_rule_infos = filter(lambda p: p[1].is_applicable, indexed_rule_infos)
+            indexed_rule_infos = filter(lambda p: p[1]._is_applicable, indexed_rule_infos)
         self._rules = list(indexed_rule_infos)
 
     def _title(self, index, rule) -> str:
-        return f"Decomposition {index} (name: {rule.name})"
+        return f"Decomposition {index} (name: {rule._name})"
 
     def _title_md(self, index, rule) -> str:
-        return f"#### Decomposition {index} (name: {rule.name})"
+        return f"#### Decomposition {index} (name: {rule._name})"
 
     def __str__(self) -> str:
         if not self._n_rules_original:

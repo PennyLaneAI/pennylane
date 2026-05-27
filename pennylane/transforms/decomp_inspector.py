@@ -156,14 +156,14 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
 
     @override
     def _title(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule.name})"
+        title = f"Decomposition {index} (name: {rule._name})"
         if index == self._chosen_idx:
             title = "CHOSEN: " + title
         return title
 
     @override
     def _title_md(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule.name})"
+        title = f"Decomposition {index} (name: {rule._name})"
         if index == self._chosen_idx:
             return f"#### **CHOSEN:** {title}"
         return f"#### {title}"
