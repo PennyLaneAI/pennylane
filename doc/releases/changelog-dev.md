@@ -24,15 +24,10 @@
 
   ```pycon
   >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT────────────────────────────────────── ···
-  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)──────────────╭TwoWireFFT ···
-  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─────────────╰FSWAP(3.14)─╭FSWAP(3.14)─╰TwoWireFFT ···
-  3: ─╰TwoWireFFT──Z⁰⋅⁵───────────────────────────────────────╰FSWAP(3.14)──────────── ···
-
-  0: ··· ──────────────┤ ╭State
-  1: ··· ──────────────┤ ├State
-  2: ··· ─╭FSWAP(3.14)─┤ ├State
-  3: ··· ─╰FSWAP(3.14)─┤ ╰State
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
   ```
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
