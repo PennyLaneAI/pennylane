@@ -316,13 +316,13 @@ class TestMeasurementReset:
             assert context.vars["a"].val[i].wires == Wires([f"q[{i}]"])
 
     def test_post_processing_measurement(self, mocker):
-        import pennylane
+        import pennylane as qp
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/post_processing.qasm").read(), permissive=True)
 
         # setup mocks
-        eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
+        eval_binary = mocker.spy(qp.io.qasm_interpreter, "_eval_binary_op")
 
         mock_one = MagicMock(return_value=1)
         mock_zero = MagicMock(return_value=0)
