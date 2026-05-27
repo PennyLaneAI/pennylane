@@ -17,7 +17,7 @@ TODO: [sc-120453] Fill docstring
 """
 
 from abc import ABC
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
@@ -99,6 +99,12 @@ class Operator2(ABC):
     wires. This feature is opt-in, but is required for cases where arrays,
     operators, and wires are supplied within a collection."""
 
+    wire_sizes: ClassVar[tuple[int | None, ...]]
+    """The expected number of wire labels for each wire argument. If any wire arguments
+    support an arbitrary size, ``None`` must be used. By default, all wire arguments are
+    assumed to support arbitrary sizes. For hybrid wire arguments, the wire size must
+    always be ``None``."""
+
     # TODO: [sc-120517] Add proper fixed_sig support
     fixed_sig: ClassVar[tuple[type, ...]]
     """The expected signature of an operator. This must be set only if the shape and data
@@ -137,32 +143,38 @@ class Operator2(ABC):
         #   3. Append operator argument wires to _wires
         all_wires = []
 
-        for w in self.wire_argnames:
-            if w not in self.hybrid_argnames:
-                canonical_wires = Wires(self._bound_args.arguments[w])
-                self._bound_args.arguments[w] = canonical_wires
+        for wname, wsize in zip(self.wire_argnames, self.wire_sizes):
+            if wname not in self.hybrid_argnames:
+                canonical_wires = Wires(self._bound_args.arguments[wname])
+                self._bound_args.arguments[wname] = canonical_wires
+
+                if wsize is not None and len(canonical_wires) != wsize:
+                    raise TypeError(
+                        f"Incorrect number of wires for '{self.name}.{wname}'. Expected {wsize} "
+                        f"wires but got {len(canonical_wires)}."
+                    )
 
                 # Work wires are NOT included in the full wires list.
-                if w not in ("work_wires", "work_wire"):
+                if wname not in ("work_wires", "work_wire"):
                     all_wires.append(canonical_wires)
 
             # Pytree wires handling
             else:
-                leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=_is_wires)
+                leaves, _ = flatten(self._bound_args.arguments[wname], is_leaf=_is_wires)
                 if not all(isinstance(l, Wires) for l in leaves):
                     raise TypeError(
-                        f"Hybrid wires argument '{w}' have not been cast to "
+                        f"Hybrid wires argument '{wname}' have not been cast to "
                         "'qp.wires.Wires' correctly."
                     )
 
                 # Work wires are NOT included in the full wires list.
-                if w not in ("work_wires", "work_wire"):
+                if wname not in ("work_wires", "work_wire"):
                     all_wires.extend(leaves)
 
-        for h in self.hybrid_argnames:
-            if h in self.wire_argnames:
+        for hname in self.hybrid_argnames:
+            if hname in self.wire_argnames:
                 continue
-            leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=_is_op)
+            leaves, _ = flatten(self._bound_args.arguments[hname], is_leaf=_is_op)
             ops = filter(_is_op, leaves)
             all_wires.extend(op.wires for op in ops)
 
@@ -174,7 +186,7 @@ class Operator2(ABC):
 
         self.queue()
 
-    def __init_subclass__(cls: type["Operator2"]) -> None:
+    def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
@@ -221,6 +233,29 @@ class Operator2(ABC):
                 f"hybrid_argnames {bad} overlap with dynamic, static, or "
                 "compilable argnames; hybrid_argnames may only overlap with wire_argnames."
             )
+
+        # Wire sizes setup
+        if hasattr(cls, "wire_sizes"):
+            if not isinstance(cls.wire_sizes, Sequence):
+                cls.wire_sizes = (cls.wire_sizes,)
+
+            if len(cls.wire_sizes) != len(cls.wire_argnames):
+                raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
+
+            for wn, ws in zip(cls.wire_argnames, cls.wire_sizes):
+                if wn in cls.hybrid_argnames and ws is not None:
+                    raise TypeError(
+                        f"Expected wire_size == None for '{wn}' as it is a hybrid wire argument."
+                    )
+
+                if not ((isinstance(ws, int) and ws > 0) or ws is None):
+                    raise TypeError(
+                        f"'{cls.__name__}.wire_sizes' is invalid. 'wire_sizes' must be a sequence "
+                        f"of positive integers or 'None' values, but got {cls.wire_sizes}."
+                    )
+
+        else:
+            cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
 
         # Every named signature parameter must appear in at least one *_argnames.
         sig_params = set(cls._sig.parameters.keys())
