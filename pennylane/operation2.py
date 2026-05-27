@@ -64,17 +64,29 @@ class Operator2(ABC):
     static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as static. Static arguments are those
     whose concrete values are known when capturing the program. Arguments in this
-    category are not lowered to a compiler intermediate representation. An
-    operator can only specify ``static_argnames`` or ``compilable_argnames``, but
-    not both."""
+    category are not lowered to a compiler intermediate representation (IR). Thus, if a
+    static argument is not guaranteed to be lowerable, its name should be in ``static_argnames``.
+
+    .. note::
+
+        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
+        both; if **any** static arguments are not or cannot be lowered to the IR, then all
+        static arguments are assumed to not be lowerable.
+    """
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as **compilable** static arguments.
-    Like ``static_argnames``, these arguments have concrete values that are known
-    when capturing the program; unlike ``static_argnames``, they can be lowered to
-    a compiler intermediate representation. This feature is opt-in, but is useful
-    for making static data visible to the compiler. An operator can only specify
-    ``static_argnames`` or ``compilable_argnames``, but not both."""
+    Compilable static arguments are a subset of static arguments—these these arguments
+    have concrete values that are known when capturing the program. But, unlike
+    ``static_argnames``, they are lowered to the compiler intermediate representation.
+    This feature is opt-in, but is useful for making static data visible to the compiler.
+
+    .. note::
+
+        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
+        both; if **any** static arguments are not or cannot be lowered to the IR, then all
+        static arguments are assumed to not be lowerable.
+    """
 
     hybrid_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that represent dynamic data wrapped in static
