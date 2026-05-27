@@ -225,6 +225,7 @@ def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
         if parallelize_swaps:
             _permute_and_apply_parallel(wires, TwoWireFFT)
         else:
+
             @for_loop(len(wires) // 2)
             def fouriers(i):
                 _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)

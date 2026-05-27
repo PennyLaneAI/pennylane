@@ -146,14 +146,14 @@ def test_raises(wires, error_type, error_msg):
         (
             (0, 1, 2, 3),
             [
-                TwoWireFFT(wires=[0, 1]), 
+                TwoWireFFT(wires=[0, 1]),
                 TwoWireFFT(wires=[2, 3]),
-                PauliZ(2)**0.0,
-                PauliZ(3)**0.5,
+                PauliZ(2) ** 0.0,
+                PauliZ(3) ** 0.5,
                 FermionicSWAP(np.pi, wires=[1, 2]),
-                TwoWireFFT(wires=[0, 1]), 
-                TwoWireFFT(wires=[2, 3]), 
-                FermionicSWAP(np.pi, wires=[1, 2])
+                TwoWireFFT(wires=[0, 1]),
+                TwoWireFFT(wires=[2, 3]),
+                FermionicSWAP(np.pi, wires=[1, 2]),
             ],
             True,
         ),
@@ -195,7 +195,7 @@ def test_raises(wires, error_type, error_msg):
                 FermionicSWAP(np.pi, wires=[5, 6]),
                 FermionicSWAP(np.pi, wires=[2, 3]),
                 FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[3, 4])
+                FermionicSWAP(np.pi, wires=[3, 4]),
             ],
             True,
         ),
