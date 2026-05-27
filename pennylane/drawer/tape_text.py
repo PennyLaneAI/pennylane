@@ -67,9 +67,9 @@ class _Config:
 
     def wire_filler(self, row: int, next_layer: bool = False) -> str:
         """The filler character for wires at the current"""
-        layer = self.cur_layer + 1 if next_layer else self.cur_layer
-        if layer >= self.num_op_layers:
+        if self.cur_layer >= self.num_op_layers:
             return " "
+        layer = self.cur_layer + 1 if next_layer else self.cur_layer
         for layer_stretch in self.wire_layers[row]:
             if layer_stretch[0] < layer <= layer_stretch[-1]:
                 return "─"
@@ -104,10 +104,10 @@ def _initialize_wire_and_bit_totals(
     prefix = "··· " if continuation else ""
 
     if show_wire_labels:
-        wire_totals = [
-            f"{wire}: " + prefix if not isinstance(wire, DynamicWire) else " "
-            for wire in config.wire_map
-        ]
+        wire_totals = [" "] * len(config.wire_map)
+        for wire, line in config.wire_map.items():
+            if not isinstance(wire, DynamicWire):
+                wire_totals[line] = f"{wire}: " + prefix
         line_length = max(len(s) for s in wire_totals)
         wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
         bit_totals = [" " * line_length] * config.n_bits

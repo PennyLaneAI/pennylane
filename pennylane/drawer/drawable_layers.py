@@ -200,12 +200,12 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
         if _dynamic_wires and isinstance(op, Allocate):
             op_layer = 0
             queue = [op]
-            for w in op.wires:
-                waiting_dynamic_wires[w] = queue
-        elif _dynamic_wires and all(w in waiting_dynamic_wires for w in op.wires):
+            waiting_dynamic_wires[tuple(op.wires)] = queue
+        elif _dynamic_wires and all(isinstance(w, DynamicWire) for w in op.wires):
             op_layer = 0
-            for w in op.wires:
-                waiting_dynamic_wires[w].append(op)
+            for dynamic_register, queue in waiting_dynamic_wires.items():
+                if all(w in dynamic_register for w in op.wires):
+                    queue.append(op)
         else:
             if isinstance(op, MeasurementProcess) and op.mv is not None:
                 # Only terminal measurements that collect mid-circuit measurement statistics have
@@ -239,8 +239,11 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
                 op_occupied_cwires = set()
 
                 for w in op.wires:
-                    if _dynamic_wires and w in waiting_dynamic_wires:
-                        queue = waiting_dynamic_wires[w]
+                    if _dynamic_wires and any(w in reg for reg in waiting_dynamic_wires):
+                        for reg, queue in waiting_dynamic_wires.items():
+                            if w in reg:
+                                break
+                        del waiting_dynamic_wires[reg]
                         inner_layers = drawable_layers(
                             queue, wire_map=wire_map, bit_map=bit_map, _dynamic_wires=False
                         )
@@ -254,8 +257,6 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
                                 occupied_wires_per_layer.insert(0, set())
                                 used_cwires_per_layer.insert(0, set())
                             ops_in_layer[insert_layer].extend(layer)
-                        for w in inner_layers[0][0].wires:
-                            del waiting_dynamic_wires[w]
 
             # see if need to add new layer
             if op_layer > max_layer:

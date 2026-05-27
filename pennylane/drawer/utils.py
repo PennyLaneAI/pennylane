@@ -30,25 +30,30 @@ from pennylane.templates import SubroutineOp
 
 def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
     """Determine the extent of wires."""
-    extent = {}
+    dynamic_wire_extent = {}
+    dynamic_wire_map = {}
+    num_encountered = 0
     for layer_idx, layer in enumerate(layers):
         for op in layer:
             if isinstance(op, Allocate):
                 for w in op.wires:
-                    extent[wire_map[w]] = [layer_idx]
+                    dynamic_wire_map[w] = num_encountered
+                    num_encountered += 1
+                    dynamic_wire_extent[dynamic_wire_map[w]] = [layer_idx]
             if isinstance(op, Deallocate):
                 for w in op.wires:
-                    extent[wire_map[w]].append(layer_idx)
-    for w in wire_map:
-        if wire_map[w] not in extent:
-            if isinstance(w, DynamicWire):
-                extent[wire_map[w]] = [-2, -2]
-            else:
-                extent[wire_map[w]] = [-1, len(layers)]
+                    dynamic_wire_extent[dynamic_wire_map[w]].append(layer_idx)
 
-    print(extent)
-    wire_map, connected_layers, _ = _try_line_reuse(wire_map, extent, None)
-    return wire_map, connected_layers
+    new_wire_map, connected_layers, _ = _try_line_reuse(dynamic_wire_map, dynamic_wire_extent, None)
+    num_normal_wires = sum(1 for w in wire_map if not isinstance(w, DynamicWire))
+    new_wire_map = {w: l + num_normal_wires for w, l in new_wire_map.items()}
+    new_connected_layers = {l + num_normal_wires: val for l, val in connected_layers.items()}
+    for w in wire_map:
+        if not isinstance(w, DynamicWire):
+            new_wire_map[w] = wire_map[w]
+            new_connected_layers[wire_map[w]] = [[-1, len(layers) + 2]]
+
+    return new_wire_map, new_connected_layers
 
 
 def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
@@ -303,7 +308,6 @@ def cwire_connections(layers, bit_map):
                 if con_wire is not None:
                     connected_wires[cwire].append(con_wire)
 
-    print(connected_layers)
     bit_map, connected_layers, connected_wires = _try_line_reuse(
         bit_map, connected_layers, connected_wires
     )
@@ -322,7 +326,6 @@ def _try_line_reuse(order_map, connected_layers, connected_wires):
     # Write a map from old cwires to new cwires
     squash_map = {}
     for cwire, occ in occupation.items():
-        print(cwire, occ)
         if occ[0] < 0:
             squash_map[cwire] = cwire
             occ_ends[cwire] = occ[-1]
@@ -336,8 +339,6 @@ def _try_line_reuse(order_map, connected_layers, connected_wires):
             occ_ends[new_cwire] = occ[1]
     # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
     inv_squash_map = {new_cwire: [] for new_cwire in squash_map.values()}
-    print(squash_map)
-    print(inv_squash_map)
     for old_cwire in order_map.values():
         inv_squash_map[squash_map[old_cwire]].append(old_cwire)
 
