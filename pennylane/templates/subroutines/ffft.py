@@ -83,8 +83,8 @@ class TwoWireFFT(Operator):
 class FFFT(Operator):
     r"""Performs a Fast Fermionic Fourier Transform (FFFT) operation based on
     `arXiv:1310.7605 <https://arxiv.org/pdf/1310.7605>`_. This assumes that fermions are encoded
-    using the Jordan-Wigner transformation, where the supplied ordering of the `wires` passed to
-    `FFFT` is used therein.
+    using the Jordan-Wigner transformation, where the supplied ordering of the ``wires`` passed to
+    ``FFFT`` is used therein.
 
     The FFFT over a number of wires :math:`n = 2^k` is decomposed recursively into two parallel
     FFFTs over :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier
@@ -100,7 +100,7 @@ class FFFT(Operator):
     Iterating this decomposition :math:`k` times realizes the full Fourier transform over
     :math:`n = 2^{k}` sites.
 
-    .. see-also:: :class:`~.TwoQubitFFT`
+    .. see-also:: :class:`~.TwoWireFFT`
 
     Args:
 
@@ -115,7 +115,7 @@ class FFFT(Operator):
 
     **Example**
 
-    Consider the FFFT operation performed on 4 wires:
+    Consider the ``FFFT`` operation performed on 4 wires:
 
     .. code-block:: python
 
@@ -141,8 +141,8 @@ class FFFT(Operator):
     3: ··· ─╰FSWAP(3.14)─┤ ╰State
 
 
-    The FFFT operation is decomposed recursively into :class:`~.TwoQubitFFT` operations (two-site
-    Fermionic Fourier transforms) according to the equation above.
+    The ``FFFT`` operation is decomposed recursively into :class:`~.TwoWireFFT` operations
+    (two-site Fermionic Fourier transforms) according to the equation above.
     """
 
     resource_keys = {"num_wires", "parallelize_swaps"}
