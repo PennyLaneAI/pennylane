@@ -65,9 +65,9 @@ def test_raises(wires, error_type, error_msg):
 
 @pytest.mark.capture
 @pytest.mark.parametrize(
-    "wires, expected_circuit",
+    "wires, expected_circuit, parallel",
     [
-        ((0, 1), [TwoWireFFT(Wires([0, 1]))]),
+        ((0, 1), [TwoWireFFT(Wires([0, 1]))], False),
         (
             (0, 1, 2, 3),
             [
@@ -82,6 +82,7 @@ def test_raises(wires, error_type, error_msg):
                 TwoWireFFT(wires=[1, 2]),
                 FermionicSWAP(np.pi, wires=[2, 3]),
             ],
+            False,
         ),
         (
             (0, 1, 2, 3, 4, 5, 6, 7),
@@ -139,16 +140,17 @@ def test_raises(wires, error_type, error_msg):
                 FermionicSWAP(np.pi, wires=[5, 6]),
                 FermionicSWAP(np.pi, wires=[6, 7]),
             ],
+            False,
         ),
     ],
 )
-def test_ffft_circuit(wires, expected_circuit):
+def test_ffft_circuit(wires, expected_circuit, parallel):
     @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft(wires):  # pylint: disable=redefined-outer-name
-        FFFT(wires)
+    def ffft(wires, parallel):  # pylint: disable=redefined-outer-name
+        FFFT(wires, parallel)
         return sample(wires=wires)
 
-    tape = workflow.construct_tape(ffft, level="device")(wires)
+    tape = workflow.construct_tape(ffft, level="device")(wires, parallel)
     for i, op in enumerate(tape.operations):
         assert type(op) == type(expected_circuit[i])
         assert op.hyperparameters == expected_circuit[i].hyperparameters
@@ -188,7 +190,12 @@ def test_ffft_correct(amplitudes):
     initial = fermionic_superposition_state(amplitudes)
     expected = fermionic_superposition_state(modes)
 
-    result = ffft(list(range(n**2)), initial)
+    result = ffft(list(range(n**2)), initial, False)
 
     for elem in np.argwhere(expected):
         assert elem in np.argwhere(result)
+
+    result_parallel = ffft(list(range(n**2)), initial, True)
+
+    for elem in np.argwhere(expected):
+        assert elem in np.argwhere(result_parallel)

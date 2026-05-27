@@ -145,15 +145,17 @@ class FFFT(Operator):
     Fermionic Fourier transforms) according to the equation above.
     """
 
-    resource_keys = {"num_wires"}
+    resource_keys = {"num_wires", "parallelize_swaps"}
 
-    def __init__(self, wires: WiresLike):
+    def __init__(self, wires: WiresLike, parallelize_swaps: bool = True):
         if len(wires) <= 1:
             raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
         if not math.log2(len(wires)).is_integer():
             raise NotImplementedError(
                 "FFFT is currently only implemented for numbers of wires that are powers of two."
             )
+
+        self.hyperparameters["parallelize_swaps"] = parallelize_swaps
 
         super().__init__(wires=wires)
 
@@ -163,10 +165,13 @@ class FFFT(Operator):
 
     @property
     def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+        return {
+            "num_wires": len(self.wires),
+            "parallelize_swaps": self.hyperparameters["parallelize_swaps"],
+        }
 
 
-def _fast_fermionic_fourier_transform_resources(num_wires):
+def _fast_fermionic_fourier_transform_resources(num_wires, parallelize_swaps):
     resources = defaultdict(int)
 
     two_qubit_gates = num_wires * math.log2(num_wires) // 2
@@ -184,22 +189,26 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 
     if num_wires > 2:
         resources[resource_rep(FermionicSWAP)] = num_wires * (num_wires - math.log2(num_wires) - 1)
+    if parallelize_swaps:
+        resources[resource_rep(FermionicSWAP)] /= 2
 
     return resources
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
+def _fast_fermionic_fourier_transform_decomposition(
+    *_, wires: WiresLike, parallelize_swaps: bool, **__
+):
     if capture.enabled():
         wires = math.array(wires, like="jax")
 
     # Rather than performing a bit-reversal permutation, we expect the user to label their wires
     # correctly at the beginning.
 
-    _recursive_decompose(wires)
+    _recursive_decompose(wires, parallelize_swaps)
 
 
-def _recursive_decompose(wires: WiresLike):
+def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
     # base case is that we have two wires
     if len(wires) == 2:
         TwoWireFFT(wires)
@@ -213,11 +222,64 @@ def _recursive_decompose(wires: WiresLike):
 
         twiddle()  # pylint: disable=no-value-for-parameter
 
-        @for_loop(len(wires) // 2)
-        def fouriers(i):
-            _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)
+        if parallelize_swaps:
+            _permute_and_apply_parallel(wires, TwoWireFFT)
+        else:
 
-        fouriers()  # pylint: disable=no-value-for-parameter
+            @for_loop(len(wires) // 2)
+            def fouriers(i):
+                _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)
+
+            fouriers()  # pylint: disable=no-value-for-parameter
+
+
+def _permute_and_apply_parallel(wires, operator):
+    """
+    A permutation algorithm specific to permuting all the 2-site fourier inputs into range
+    at the same time, parallelizing as many FSWAPs as possible and cutting the total number
+    of them in half.
+
+    Args:
+        wires (WiresLike): The wires to permute.
+        operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
+    """
+
+    @while_loop(lambda i, count, num_parallel_swaps, wires: count < num_parallel_swaps)
+    def apply_swaps(i, count, num_parallel_swaps, wires):
+        # apply the FSWAP
+        FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
+
+        # increase index of next FSWAP and count of FSWAPs
+        return i + 1, count + 1, num_parallel_swaps, wires
+
+    @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps < len(wires) // 2)
+    def permutation_in_layers(num_parallel_swaps, curr_start, wires):
+        # applies a layer of parallel FSWAPs
+        apply_swaps((len(wires) - 2) // 2 - curr_start, 0, num_parallel_swaps, wires)
+
+        return num_parallel_swaps + 1, curr_start + 1, wires
+
+    # applies several layers of FSWAPs that achieve the parallel permutation of all needed indices
+    permutation_in_layers(1, 0, wires)
+
+    # applies the operator on the indices that are now in range
+    @for_loop(len(wires) // 2)
+    def apply_op(i):
+        # apply the op
+        operator([wires[2 * i], wires[2 * i + 1]])
+
+    apply_op()  # pylint: disable=no-value-for-parameter
+
+    @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps > 0)
+    def permutation_out_layers(num_parallel_swaps, curr_start, wires):
+        # applies a layer of parallel FSWAPs
+        apply_swaps((len(wires) - 2) // 2 - curr_start, 0, num_parallel_swaps, wires)
+
+        # number of parallel swaps and their starting index is decreasing this time
+        return num_parallel_swaps - 1, curr_start - 1, wires
+
+    # applies the inverse permutation
+    permutation_out_layers(len(wires) // 2 - 1, len(wires) // 2 - 2, wires)
 
 
 def _permute_and_apply(order, wires, operator):
