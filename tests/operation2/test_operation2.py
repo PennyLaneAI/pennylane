@@ -151,6 +151,71 @@ class TestInitSubclass:
         assert Op in flatten_registrations
         assert Op in unflatten_registrations
 
+    def test_wire_sizes_defaults_to_none_per_wire_arg(self):
+        """Test that when ``wire_sizes`` is not declared, it defaults to a tuple
+        of ``None`` matching the length of ``wire_argnames``."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires", "ctrl_wires")
+
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(wires=wires, ctrl_wires=ctrl_wires)
+
+        assert Op.wire_sizes == (None, None)
+
+    def test_wire_sizes_scalar_converted_to_tuple(self):
+        """Test that a non-sequence ``wire_sizes`` is converted to a 1-tuple."""
+
+        class Op(Operator2):
+            wire_sizes = 2
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert Op.wire_sizes == (2,)
+
+    def test_wire_sizes_length_mismatch_error(self):
+        """Test that ``wire_sizes`` must have the same length as ``wire_argnames``."""
+
+        with pytest.raises(
+            TypeError, match="'wire_sizes' must have the same length as 'wire_argnames'"
+        ):
+            # pylint: disable=unused-variable
+            class Op(Operator2):
+                wire_argnames = ("wires", "ctrl_wires")
+                wire_sizes = (1, 1, 1)
+
+                def __init__(self, wires, ctrl_wires):
+                    super().__init__(wires=wires, ctrl_wires=ctrl_wires)
+
+    def test_hybrid_wire_size_must_be_none(self):
+        """Test that a hybrid wire argument cannot declare a fixed wire size."""
+
+        with pytest.raises(
+            TypeError,
+            match="Expected wire_size == None for 'pytree_wires' as it is a hybrid wire argument",
+        ):
+            # pylint: disable=unused-variable
+            class Op(Operator2):
+                wire_argnames = ("pytree_wires",)
+                hybrid_argnames = ("pytree_wires",)
+                wire_sizes = (2,)
+
+                def __init__(self, pytree_wires):
+                    super().__init__([Wires(w) for w in pytree_wires])
+
+    @pytest.mark.parametrize("invalid_size", [0, -1, 1.5, "two"])
+    def test_wire_sizes_invalid_value_error(self, invalid_size):
+        """Test that ``wire_sizes`` entries must be positive integers or ``None``."""
+
+        with pytest.raises(TypeError, match="'wire_sizes' must be a sequence of"):
+            # pylint: disable=unused-variable
+            class Op(Operator2):
+                wire_sizes = (invalid_size,)
+
+                def __init__(self, wires):
+                    super().__init__(wires=wires)
+
 
 class DynOp(Operator2):
     """A simple operator with one dynamic param and wires."""
@@ -298,6 +363,72 @@ class TestOperatorInit:
 
         with pytest.raises(TypeError, match="Hybrid wires argument 'wires' have not been cast"):
             _ = Op(wires=[0, [1, 2]])
+
+    def test_wire_size_match(self):
+        """Test that a wire argument matching the declared ``wire_sizes`` is accepted."""
+
+        class Op(Operator2):
+            wire_sizes = (2,)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = Op(wires=[0, 1])
+        assert op.arguments["wires"] == Wires([0, 1])
+
+    def test_wire_size_mismatch_error(self):
+        """Test that supplying a different number of wires than ``wire_sizes`` raises an error."""
+
+        class Op(Operator2):
+            wire_sizes = (2,)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        with pytest.raises(
+            TypeError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 3"
+        ):
+            Op(wires=[0, 1, 2])
+
+    @pytest.mark.paramtrize("num_wires", (1, 3, 7))
+    def test_wire_size_none_accepts_any_count(self, num_wires):
+        """Test that ``wire_sizes`` of ``None`` (default) accepts any number of wires."""
+
+        class Op(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        _ = Op(wires=list(range(num_wires)))
+
+    def test_wire_sizes_mixed(self):
+        """Test that fixed and ``None`` wire sizes are individually enforced."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires", "ctrl_wires")
+            wire_sizes = (2, None)
+
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(wires=wires, ctrl_wires=ctrl_wires)
+
+        _ = Op(wires=[0, 1], ctrl_wires=[2, 3, 4])
+
+        with pytest.raises(
+            TypeError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
+        ):
+            Op(wires=[0], ctrl_wires=[1])
+
+    def test_wire_sizes_none_skips_check_for_hybrid_wire_arg(self):
+        """Test that a hybrid wire argument is not size-checked."""
+
+        class Op(Operator2):
+            wire_argnames = ("pytree_wires",)
+            hybrid_argnames = ("pytree_wires",)
+
+            def __init__(self, pytree_wires):
+                super().__init__([Wires(w) for w in pytree_wires])
+
+        # Varying leaf counts and per-leaf sizes are all accepted.
+        _ = Op([[0, 1, 2], [3], [4, 5]])
 
     def test_op_is_queued_on_init(self):
         """Test that instantiating an operator appends it to the active queue."""
