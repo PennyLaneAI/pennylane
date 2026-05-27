@@ -15,7 +15,6 @@
 This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
 by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
-import copy
 from collections import defaultdict
 
 import numpy as np
@@ -26,12 +25,6 @@ from pennylane.decomposition import add_decomps, pow_resource_rep, register_reso
 from pennylane.operation import Operator
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import WiresLike
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
