@@ -19,6 +19,10 @@
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* A more informative error message is raised when quantum functions without registered resource
+  estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
+  [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
@@ -148,8 +152,16 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* :func:`~.equal` supports `Operator2` instances.
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+
 * A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+  [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+
+* Bump `autoray` package pin to `v0.8.10`.
+  [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
 
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
@@ -177,6 +189,9 @@
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
 <h3>Documentation 📝</h3>
+
+* Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
+  [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)

@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,6 +23,7 @@ from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal
 
+import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qp
@@ -55,24 +56,47 @@ class Operator2(ABC):
     # ----------------- Class variables set manually -------------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
-    """The names of arguments corresponding to wires."""
+    """The names of arguments corresponding to wires. Values for these arguments are
+    automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
+    When a name also appears in ``hybrid_argnames``, however, ``Operator2`` does not
+    descend into its pytree structure, so subclasses must ensure every wire leaf inside
+    a hybrid wire argument is already a :class:`~.Wires` object before forwarding it to
+    ``super().__init__``.
+
+    The order in which names appear in ``wire_argnames`` determines the order in which
+    their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
+    arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
+    order. Wires contributed by :class:`~.Operator2` leaves found inside non-wire
+    ``hybrid_argnames`` are appended *after* all ``wire_argnames`` wires. The special
+    names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
+    but their wires are excluded from ``op.wires``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to dynamic arguments. Dynamic arguments
-    are those whose concrete values may not be known at compile-time."""
+    """The names of arguments that are treated as dynamic. Dynamic arguments are those
+    whose concrete values may not be known at compile-time."""
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments corresponding to static arguments. Static arguments
-    are those whose concrete values must be known at compile-time."""
-
-    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to dynamic data wrapped in static
-    structures (known as Pytrees). This feature is opt-in, but is required for cases
-    where arrays, operators, and wires are supplied within a collection."""
+    """The names of arguments that are treated as static. Static arguments are those
+    whose concrete values are known when capturing the program. Arguments in this
+    category cannot be lowered to a compiler intermediate representation. An
+    operator can only specify ``static_argnames`` or ``compilable_argnames``, but
+    not both."""
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments which correspond to compilable static operator data.
-    This feature is opt-in, but can be useful PauliString arguments and the like."""
+    """The names of arguments that are treated as **compilable** static arguments.
+    Like ``static_argnames``, these arguments have concrete values that are known
+    when capturing the program; unlike ``static_argnames``, they can be lowered to
+    a compiler intermediate representation. This feature is opt-in, but is useful
+    for making static data visible to the compiler. An operator can only specify
+    ``static_argnames`` or ``compilable_argnames``, but not both."""
+
+    hybrid_argnames: ClassVar[tuple[str, ...]] = ()
+    """The names of arguments that represent dynamic data wrapped in static
+    structures (known as Pytrees). Names in this category must be disjoint from
+    ``dynamic_argnames``, ``static_argnames``, and ``compilable_argnames``, but may
+    overlap with ``wire_argnames`` when wire arguments contain nested structures of
+    wires. This feature is opt-in, but is required for cases where arrays,
+    operators, and wires are supplied within a collection."""
 
     # TODO: [sc-120517] Add proper fixed_sig support
     fixed_sig: ClassVar[tuple[type, ...]]
@@ -110,20 +134,35 @@ class Operator2(ABC):
         #   1. Union of all wire_argnames into _wires
         #   2. Flatten pytree arguments and look for operators
         #   3. Append operator argument wires to _wires
-        # pylint: disable=unnecessary-lambda-assignment
-        is_wires = lambda v: isinstance(v, Wires)
-        is_op = lambda v: isinstance(v, Operator2)
         all_wires = []
 
         for w in self.wire_argnames:
-            # Work wires are NOT included in the full wires list.
-            if w not in ("work_wires", "work_wire"):
-                leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=is_wires)
-                all_wires.extend(leaves)
+            if w not in self.hybrid_argnames:
+                canonical_wires = Wires(self._bound_args.arguments[w])
+                self._bound_args.arguments[w] = canonical_wires
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.append(canonical_wires)
+
+            # Pytree wires handling
+            else:
+                leaves, _ = flatten(self._bound_args.arguments[w], is_leaf=_is_wires)
+                if not all(isinstance(l, Wires) for l in leaves):
+                    raise TypeError(
+                        f"Hybrid wires argument '{w}' have not been cast to "
+                        "'qp.wires.Wires' correctly."
+                    )
+
+                # Work wires are NOT included in the full wires list.
+                if w not in ("work_wires", "work_wire"):
+                    all_wires.extend(leaves)
 
         for h in self.hybrid_argnames:
-            leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=is_op)
-            ops = filter(is_op, leaves)
+            if h in self.wire_argnames:
+                continue
+            leaves, _ = flatten(self._bound_args.arguments[h], is_leaf=_is_op)
+            ops = filter(_is_op, leaves)
             all_wires.extend(op.wires for op in ops)
 
         self._wires = Wires.all_wires(all_wires)
@@ -213,22 +252,19 @@ class Operator2(ABC):
         PauliRot(1.2, XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
-        dyn_data = []
-
-        dyn_data.extend(self._bound_args.arguments[d] for d in self.dynamic_argnames)
-        dyn_data.extend(self._bound_args.arguments[w] for w in self.wire_argnames)
-        dyn_data.extend(
+        dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
+        wires = [self._bound_args.arguments[w] for w in self.wire_argnames]
+        hybrid_args = [
             self._bound_args.arguments[h]
             for h in self.hybrid_argnames
             if h not in self.wire_argnames
-        )
+        ]
+        leaves = (dyn_args, wires, hybrid_args)
 
         # Put static/compilable args in hashable_data
-        hashable_data = []
-        hashable_data.extend(self._bound_args.arguments[s] for s in self.static_argnames)
-        hashable_data.extend(self._bound_args.arguments[c] for c in self.compilable_argnames)
-
-        return tuple(dyn_data), tuple(hashable_data)
+        hashable_argnames = self.static_argnames or self.compilable_argnames
+        hashable_data = tuple(self._bound_args.arguments[name] for name in hashable_argnames)
+        return leaves, hashable_data
 
     @classmethod
     def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
@@ -245,30 +281,32 @@ class Operator2(ABC):
 
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten() # doctest: +SKIP
-        ((1.2, 2.3, 3.4, Wires([0])), ())
+        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
         >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten() # doctest: +SKIP
-        ((1.2, Wires([0, 1])), ('XY',))
+        (([1.2], [Wires([0, 1])], []), ('XY',))
         """
         args = {}
 
         # Process dynamic data
-        i = 0
-        for n in cls.dynamic_argnames + cls.wire_argnames:
-            args[n] = data[i]
-            i += 1
-        for n in cls.hybrid_argnames:
-            if n not in cls.wire_argnames:
-                args[n] = data[i]
-                i += 1
+        for name, value in zip(cls.dynamic_argnames, data[0], strict=True):
+            args[name] = value
+        for name, value in zip(cls.wire_argnames, data[1], strict=True):
+            args[name] = value
 
-        # Process static data. The length of metadata should be the same as the length
-        # of static_argnames + compilable_argnames. Additionally, only one of them will
-        # ever have values inside, so adding them like below is safe.
-        for i, n in enumerate(cls.static_argnames + cls.compilable_argnames):
-            args[n] = metadata[i]
+        i = 0
+        for name in cls.hybrid_argnames:
+            if name in cls.wire_argnames:
+                continue
+            args[name] = data[2][i]
+            i += 1
+
+        # Process static data
+        hashable_argnames = cls.static_argnames or cls.compilable_argnames
+        for name, value in zip(hashable_argnames, metadata):
+            args[name] = value
 
         return cls(**args)
 
@@ -308,7 +346,7 @@ class Operator2(ABC):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
-            return
+            return  # pragma: no cover
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:
@@ -377,6 +415,24 @@ class Operator2(ABC):
     @property
     def wires(self) -> Wires:
         """Wires that the operator acts on.
+
+        The returned :class:`~.Wires` are collected from the operator's arguments in
+        the following order:
+
+        1. For each name in ``wire_argnames`` (in declaration order):
+
+           * If the name is **not** in ``hybrid_argnames``, the canonical
+             value of that argument is added.
+           * If the name **is** in ``hybrid_argnames``, every :class:`~.Wires` leaf of
+             the argument's pytree is added in pytree traversal order.
+
+        2. After all ``wire_argnames`` have been processed, for each name in
+           ``hybrid_argnames`` that is **not** in ``wire_argnames``, the wires of any
+           :class:`~.Operator2` leaves inside that argument are appended to the end
+           in pytree traversal order.
+
+        Duplicate wires are removed while preserving the first occurrence, so the
+        final result is the ordered union of all wires above.
 
         .. note::
 
@@ -1013,17 +1069,44 @@ class Operator2(ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
-    # TODO: [sc-120431] Implement __hash__ and __eq__ after qp.equal supports `Operator2`
-    # def __hash__(self) -> int:
-    #     serialized_dyn = tuple(
-    #         (n, str(id(d) if math.is_abstract(d) else d)) for n, d in self.dynamic_args.items()
-    #     )
-    #     serialized_wires = tuple((n, tuple(w)) for n, w in self.wire_args.items())
-    #     serialized_static = tuple((n, str(s)) for n, s in self.static_args.items())
-    #     return hash((self.name, serialized_dyn, serialized_wires, serialized_static))
+    def __hash__(self) -> int:
+        serialized_dynamic = tuple(
+            _canonicalize_dynamic(self.arguments[d], self.name) for d in self.dynamic_argnames
+        )
+        serialized_wires = tuple(
+            tuple(self.arguments[w]) for w in self.wire_argnames if w not in self.hybrid_argnames
+        )
+        serialized_static = tuple(str(self.arguments[s]) for s in self.static_argnames)
+        serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
 
-    # def __eq__(self, other) -> bool:
-    #     return qp.equal(self, other)
+        serialized_hybrid = []
+        for h in self.hybrid_argnames:
+            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
+            serialized_leaves = []
+            for l in leaves:
+                if isinstance(l, Wires):
+                    serialized_leaves.append(tuple(l))
+                elif isinstance(l, Operator2):
+                    serialized_leaves.append(l)
+                else:
+                    serialized_leaves.append(_canonicalize_dynamic(l))
+
+            entry = (tuple(serialized_leaves), tree)
+            serialized_hybrid.append(entry)
+
+        return hash(
+            (
+                self.name,
+                serialized_dynamic,
+                serialized_wires,
+                serialized_static,
+                serialized_compilable,
+                tuple(serialized_hybrid),
+            )
+        )
+
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
 
     def __copy__(self) -> "Operator2":
         cls = type(self)
@@ -1066,7 +1149,9 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
         return self._bound_args.arguments[name]
 
-    return object.__getattribute__(self, name)
+    raise AttributeError(
+        f"'{type(self).__name__}' object has no attribute '{name}'."
+    )  # pragma: no cover
 
 
 def _format_label_arg(x, decimals, cache):
@@ -1093,3 +1178,37 @@ def _format_label_arg(x, decimals, cache):
     mat_num = len(mat_cache)
     mat_cache.append(x)
     return f"M{mat_num}"
+
+
+def _is_wires(val: Any) -> bool:
+    """Check whether a value is a Wires object."""
+    return isinstance(val, Wires)
+
+
+def _is_op(val: Any) -> bool:
+    """Check whether a value is an Operator2 object."""
+    return isinstance(val, Operator2)
+
+
+def _canonicalize_dynamic(d, op_name=None) -> Hashable:
+    """Canonicalize dynamic data for hashing."""
+
+    def _mod_and_round(x, mod_val):
+        x = x if mod_val is None else qp.math.real(x) % mod_val
+        return qp.math.round(x, 10)
+
+    # Use qp.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qp.state) requires complex typed inputs.
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        mod_val = 2 * np.pi
+    else:
+        mod_val = None
+
+    return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
+
+
+def _is_hash_leaf(l) -> bool:
+    """Check whether a value is a pytree leaf for hashing. For the purpose of
+    hashing, wires and operators are considered leaves."""
+    return _is_op(l) or _is_wires(l)
