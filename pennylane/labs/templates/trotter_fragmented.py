@@ -36,10 +36,12 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, co
         evolution_time (float): Total evolution time ``t``.
         num_trotter_steps (int): Number of second-order Trotter steps.
         hamiltonian (dict): A Hamiltonian in the form of a dictionary with keys ``nuc_constant``, ``core_tensors``, and ``leaf_tensors``.
+
             * CDF shapes: ``core_tensors: (L+1, N, N)`` (diagonal per fragment),
               ``leaf_tensors: (L+1, N, N)``, where N is the number of orbitals, and L is the number of two-body fragments.
             * CGF shapes: ``core_tensors: (L+1, M, M, N, N)``,
               ``leaf_tensors:  (L+1, M, N, N)``, where M is the number of modes, N is the number of modals per mode, and L is the number of two-body fragments.
+
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
