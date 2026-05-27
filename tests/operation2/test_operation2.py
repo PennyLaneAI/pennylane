@@ -196,7 +196,7 @@ class TestOperatorInit:
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
 
-    def test_wires_collected_from_wire_argnames(self, DynOp):
+    def test_wires_collected_from_wire_argnames(self):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
 
         op = DynOp(0.5, wires=[0, 2])
@@ -751,17 +751,17 @@ class TestDunderMethods:
 class TestPublicProperties:
     """Tests for public properties of ``Operator2``."""
 
-    def test_arithmetic_depth_default(self, DynOp):
+    def test_arithmetic_depth_default(self):
         """Test that the default ``arithmetic_depth`` is 0."""
         op = DynOp(0.5, wires=0)
         assert op.arithmetic_depth == 0
 
-    def test_is_verified_hermitian_default(self, DynOp):
+    def test_is_verified_hermitian_default(self):
         """Test that the default ``is_verified_hermitian`` is False."""
         op = DynOp(0.5, wires=0)
         assert op.is_verified_hermitian is False
 
-    def test_pauli_rep_default(self, DynOp):
+    def test_pauli_rep_default(self):
         """Test that ``pauli_rep`` is ``None`` by default."""
 
         op = DynOp(0.5, wires=0)
@@ -813,18 +813,18 @@ class TestLabel:
 
         assert Op(wires=0).label(base_label="custom") == "custom"
 
-    def test_scalar_decimals_none_excludes_param(self, DynOp):
+    def test_scalar_decimals_none_excludes_param(self):
         """Test that scalar parameters are excluded from the label when
         ``decimals`` is ``None``."""
         op = DynOp(1.23456, wires=0)
-        assert op.label() == "_DynOp"
+        assert op.label() == "DynOp"
 
-    def test_scalar_decimals_formats_param(self, DynOp):
+    def test_scalar_decimals_formats_param(self):
         """Test that scalar parameters are formatted to ``decimals`` places."""
         op = DynOp(1.23456, wires=0)
-        assert op.label(decimals=2) == "_DynOp\n(1.23)"
+        assert op.label(decimals=2) == "DynOp\n(1.23)"
 
-    def test_base_label_with_decimals(self, DynOp):
+    def test_base_label_with_decimals(self):
         """Test that ``base_label`` and ``decimals`` can be combined."""
         op = DynOp(1.23456, wires=0)
         assert op.label(decimals=3, base_label="custom") == "custom\n(1.235)"
@@ -913,6 +913,7 @@ class TestLabel:
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
+            # pylint: disable=unused-argument
             def label(self, decimals=None, base_label=None, cache=None):
                 return "custom_label"
 
@@ -922,12 +923,12 @@ class TestLabel:
 class TestGeneralMethods:
     """Tests for various general methods in ``Operator2``."""
 
-    def test_pow_zero_returns_empty(self, DynOp):
+    def test_pow_zero_returns_empty(self):
         """Test that ``op.pow(0)`` returns an empty list."""
         op = DynOp(0.5, wires=0)
         assert op.pow(0) == []
 
-    def test_pow_one_returns_single(self, DynOp):
+    def test_pow_one_returns_single(self):
         """Test that ``op.pow(1)`` returns a single-element list with a copy of the operator."""
         op = DynOp(0.5, wires=0)
         result = op.pow(1)
@@ -936,7 +937,7 @@ class TestGeneralMethods:
         assert result[0] == op
         assert result[0] is not op
 
-    def test_pow_positive_integer(self, DynOp):
+    def test_pow_positive_integer(self):
         """Test that ``op.pow(z)`` for positive integer ``z`` returns ``z`` copies."""
         op = DynOp(0.5, wires=0)
         result = op.pow(3)
@@ -948,7 +949,7 @@ class TestGeneralMethods:
         # Each op must be a new copy
         assert len({id(r) for r in result}) == 3
 
-    def test_pow_queuing(self, DynOp):
+    def test_pow_queuing(self):
         """Test that ``op.pow(z)`` inside a queuing context queues ``z`` additional copies."""
         with AnnotatedQueue() as q:
             op = DynOp(0.5, wires=0)
@@ -959,7 +960,7 @@ class TestGeneralMethods:
         assert len(result) == 2
 
     @pytest.mark.parametrize("z", [-1, -2, 1.5, 0.5])
-    def test_pow_invalid_raises(self, DynOp, z):
+    def test_pow_invalid_raises(self, z):
         """Test that ``op.pow`` raises ``PowUndefinedError`` for negative or non-integer exponents."""
         op = DynOp(0.5, wires=0)
         with pytest.raises(PowUndefinedError):
@@ -982,7 +983,7 @@ class TestGeneralMethods:
         assert len(result) == 1
         assert result[0].phi == 6.0
 
-    def test_map_wires_basic(self, DynOp):
+    def test_map_wires_basic(self):
         """Test that ``map_wires`` maps the wires of the operator according
         to the wire map."""
         op = DynOp(0.5, wires=0)
@@ -992,7 +993,7 @@ class TestGeneralMethods:
         assert op.wires == Wires([0])
         assert new_op == DynOp(0.5, wires="a")
 
-    def test_map_wires_unmapped_labels_preserved(self, DynOp):
+    def test_map_wires_unmapped_labels_preserved(self):
         """Test that wire labels missing from the wire map are kept as-is."""
         op = DynOp(0.5, wires=[0, 1, 2])
         new_op = op.map_wires({0: "a", 2: "c"})
@@ -1029,7 +1030,7 @@ class TestGeneralMethods:
 
         assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
 
-    def test_simplify_default(self, DynOp):
+    def test_simplify_default(self):
         """Test that ``simplify`` returns the operator itself by default."""
         op = DynOp(0.5, wires=0)
         assert op.simplify() is op
@@ -1057,7 +1058,7 @@ class TestGeneralMethods:
 class TestHasRepresentations:
     """Tests for the ``has_**`` representation properties."""
 
-    def test_has_adjoint_default(self, DynOp):
+    def test_has_adjoint_default(self):
         """Test that ``has_adjoint`` is False by default."""
         assert DynOp.has_adjoint is False
         assert Operator2.has_adjoint is False
@@ -1079,7 +1080,7 @@ class TestRepresentations:
     """Tests for the various operator representation methods
     (and their corresponding ``compute_**`` static methods)."""
 
-    def test_adjoint_default_raises(self, DynOp):
+    def test_adjoint_default_raises(self):
         """Test that the default ``adjoint`` raises ``AdjointUndefinedError``."""
         op = DynOp(0.5, wires=0)
         with pytest.raises(AdjointUndefinedError):
