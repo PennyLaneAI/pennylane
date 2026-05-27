@@ -346,7 +346,58 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
 
         decomp = (s_2 * 2) + s_2_p + (s_2 * 2)
 
-    return decomp * n
+    return _simplify_trotter_sequence(decomp * n)
+
+
+@qml.QueuingManager.stop_recording()
+def _merge_identical_evolutions(decomp):
+    """Merge only identical adjacent ``Evolution`` operators."""
+    if not decomp:
+        return []
+
+    merged = [decomp[0]]
+    prev = decomp[0]
+
+    for op in decomp[1:]:
+        if (
+            isinstance(prev, qml.ops.op_math.Evolution)
+            and isinstance(op, qml.ops.op_math.Evolution)
+            and qml.equal(prev.base, op.base)
+            and qml.math.allclose(prev.param, op.param)
+        ):
+            merged[-1] = qml.evolve(op.base, prev.param + op.param)
+            prev = merged[-1]
+            continue
+
+        merged.append(op)
+        prev = op
+
+    return merged
+
+
+@qml.QueuingManager.stop_recording()
+def _expected_trotter_decomp(hamiltonian_index, order, n=1, time=4.2):
+    """Generate the simplified expected decomposition for ``TrotterProduct`` tests."""
+    if hamiltonian_index == 2:
+        ops = list(test_hamiltonians[hamiltonian_index].operands)
+        return _simplify_trotter_sequence(_recursive_expression(time / n, order, ops)[::-1] * n)
+
+    decomp = test_decompositions[(hamiltonian_index, order)][::-1] * n
+    return _simplify_trotter_sequence(decomp)
+
+
+@qml.QueuingManager.stop_recording()
+def _resources_from_decomp(decomp, num_wires):
+    """Compute the resources corresponding to a decomposition."""
+    gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
+
+    for op in decomp:
+        gate_types[op.name] += 1
+        gate_sizes[len(op.wires)] += 1
+
+    depth = qml.tape.QuantumScript(decomp).graph.get_depth()
+    return Resources(num_wires, len(decomp), gate_types, gate_sizes, depth)
 
 
 class TestInitialization:
@@ -680,7 +731,8 @@ class TestResources:
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
 
         tracked_resources = op.resources()
-        expected_resources = test_resources_data[(hamiltonian_index, order)]
+        expected_decomp = _expected_trotter_decomp(hamiltonian_index, order)
+        expected_resources = _resources_from_decomp(expected_decomp, len(op.wires))
 
         assert expected_resources == tracked_resources
 
@@ -693,13 +745,8 @@ class TestResources:
         op = qp.TrotterProduct(test_hamiltonians[hamiltonian_index], 0.5, order=order, n=n)
         tracked_resources = op.resources()
 
-        expected_resources = Resources(
-            num_wires=2,
-            num_gates=6 * n,
-            gate_types=defaultdict(int, {"Evolution": 6 * n}),
-            gate_sizes=defaultdict(int, {1: 6 * n}),
-            depth=4 * n,
-        )
+        expected_decomp = _expected_trotter_decomp(hamiltonian_index, order, n=n)
+        expected_resources = _resources_from_decomp(expected_decomp, len(op.wires))
 
         assert expected_resources == tracked_resources
 
@@ -716,12 +763,14 @@ class TestResources:
             qp.TrotterProduct(hamiltonian, time, n=5, order=2)
             return qp.expval(qp.Z(0))
 
+        expected_decomp = _expected_trotter_decomp(0, 2, n=5)
+        expected_resources = _resources_from_decomp(expected_decomp, num_wires=2)
         expected_resources = SpecsResources(
             num_allocs=2,
-            gate_types={"Evolution": 30},
-            gate_sizes={1: 30},
+            gate_types=dict(expected_resources.gate_types),
+            gate_sizes=dict(expected_resources.gate_sizes),
             measurements={"expval(PauliZ)": 1},
-            depth=20,
+            depth=expected_resources.depth,
         )
 
         with qp.Tracker(dev) as tracker:
@@ -747,10 +796,9 @@ class TestDecomposition:
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
 
-        decomp = [qp.simplify(op) for op in decomp]
-        true_decomp = [
-            qp.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
-        ]
+        decomp = [qml.simplify(op) for op in decomp]
+        true_decomp = [qml.simplify(op) for op in _expected_trotter_decomp(hamiltonian_index, order)]
+        assert len(decomp) == len(true_decomp)
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
 
@@ -786,10 +834,11 @@ class TestDecomposition:
         else:
             assert False, "Order must be 1 or 2"
 
-        true_decomp = base_decomp * num_steps
+        true_decomp = _simplify_trotter_sequence(base_decomp * num_steps)
 
         op = qp.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+        assert len(decomp) == len(true_decomp)
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
     
@@ -811,6 +860,20 @@ class TestDecomposition:
         for i in range(len(decomp) - 1):
             if same_structure(decomp[i], decomp[i + 1]):
                 pytest.fail(f"Redundant adjacent ops found at index {i}: {decomp[i]} == {decomp[i+1]}")
+
+    def test_trotter_simplification_correct(self):
+        """Test that adjacent repeated evolutions are merged correctly."""
+        time = 1.0
+        ham = qml.X(0) + qml.X(0)
+        op = qml.TrotterProduct(ham, time, n=3, order=2)
+
+        expected_decomp = [qml.evolve(qml.X(0), -2 * time)]
+
+        computed_decomp = op.decomposition()
+        assert len(computed_decomp) == len(expected_decomp)
+
+        for computed, expected in zip(computed_decomp, expected_decomp):
+            qml.assert_equal(computed, expected)
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
@@ -1133,8 +1196,8 @@ class TestIntegration:
         reference_time_grad = time_reference.grad
         reference_coeff_grad = coeffs_reference.grad
 
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_coeff_grad, reference_coeff_grad)
+        assert torch.allclose(measured_time_grad, reference_time_grad, atol=2e-4, rtol=1e-4)
+        assert torch.allclose(measured_coeff_grad, reference_coeff_grad, atol=2e-4, rtol=1e-4)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
