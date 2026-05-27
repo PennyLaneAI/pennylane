@@ -31,7 +31,7 @@ from pennylane.typing import PostprocessingFn
 from .decompose import _resolve_gate_set
 
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 class _DecompInGraphInfo(_DecompInfo):
     """Information about a decomposition rule in a graph for inspection."""
 
@@ -54,58 +54,58 @@ class _DecompInGraphInfo(_DecompInfo):
 
     def __str__(self) -> str:
         result = super().__str__()
-        if not self.is_applicable:
+        if not self._is_applicable:
             return result
-        if not self.is_reachable:
-            return result + "\n" + self.missing_ops
+        if not self._is_reachable:
+            return result + "\n" + self._missing_ops
         return result
 
     def _repr_markdown_(self) -> str:
         result = super()._repr_markdown_()
-        if not self.is_applicable:
+        if not self._is_applicable:
             return result
-        if not self.is_reachable:
-            return result + "\n\n" + self.missing_ops
+        if not self._is_reachable:
+            return result + "\n\n" + self._missing_ops
         return result
 
     @property
-    def is_reachable(self) -> bool:
+    def _is_reachable(self) -> bool:
         """Whether this decomposition rule is reachable from the target gate set."""
         return self._decomp_node_idx in self._solution._visitor.distances
 
     @property
     @override
-    def gate_counts_and_allocations(self) -> str:
+    def _gate_counts_and_allocations(self) -> str:
         """The gate count and weighted cost in terms of the target gate set."""
-        if not self.is_reachable:
-            return super().gate_counts_and_allocations
+        if not self._is_reachable:
+            return super()._gate_counts_and_allocations
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         gate_counts = gate_set_resource.gate_counts
         weighted_cost = gate_set_resource.weighted_cost
         return (
-            super().gate_counts_and_allocations
+            super()._gate_counts_and_allocations
             + f"\nFull Expansion Gates: {gate_counts}"
             + f"\nWeighted Cost: {weighted_cost}"
         )
 
     @property
     @override
-    def gate_counts_and_allocations_md(self) -> str:
+    def _gate_counts_and_allocations_md(self) -> str:
         """The gate count and weighted cost in terms of the target gate set in Markdown."""
-        if not self.is_reachable:
-            return super().gate_counts_and_allocations_md
+        if not self._is_reachable:
+            return super()._gate_counts_and_allocations_md
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         entries = list(gate_set_resource.gate_counts.items())
         gate_counts = self._make_table(entries, ("Full Expansion", "Count"))
         weighted_cost = gate_set_resource.weighted_cost
         return (
-            super().gate_counts_and_allocations_md
+            super()._gate_counts_and_allocations_md
             + f"\n\n{gate_counts}"
             + f"\n| **Weighted Cost** | {weighted_cost} |"
         )
 
     @property
-    def missing_ops(self) -> str:
+    def _missing_ops(self) -> str:
         """Report on any unsolved ops required for this decomposition rule."""
         all_op_node_indices = self._graph.predecessor_indices(self._decomp_node_idx)
         distances = self._solution._visitor.distances

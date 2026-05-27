@@ -806,7 +806,7 @@ def local_decomps():
         _decompositions_var.reset(token)
 
 
-class _DecompInfo:
+class _DecompInfo:  # pylint: disable=too-few-public-methods
     """A data structure that stores a decomposition rule and an operator for inspectability."""
 
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
@@ -825,7 +825,7 @@ class _DecompInfo:
             req = self._work_wire_spec.total
             avail = self._num_work_wires
             return f"Insufficient work wires: requires {req} but only {avail} available."
-        return self.circuit_drawing + "\n" + self.gate_counts_and_allocations
+        return self._circuit_drawing + "\n" + self._gate_counts_and_allocations
 
     def _repr_markdown_(self) -> str:
         """The string representation of this rule in Markdown format."""
@@ -835,29 +835,29 @@ class _DecompInfo:
             req = self._work_wire_spec.total
             avail = self._num_work_wires
             return f"_Insufficient work wires: requires {req} but only {avail} available._"
-        circuit_drawing = "```\n" + self.circuit_drawing + "\n```"
+        circuit_drawing = "```\n" + self._circuit_drawing + "\n```"
         gate_counts_title = "Gate Counts and Wire Allocations"
         return (
             circuit_drawing
             + "\n"
             + f"<details><summary>{gate_counts_title}</summary>\n\n"
-            + f"{self.gate_counts_and_allocations_md}\n</details>"
+            + f"{self._gate_counts_and_allocations_md}\n</details>"
         )
 
     @property
-    def circuit_drawing(self) -> str:
+    def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
         assert self._conditions_met and self._enough_work_wires
         kwargs = get_decomp_kwargs(self._op)
         return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **kwargs)
 
     @property
-    def name(self) -> str:
+    def _name(self) -> str:
         """The name of the decomposition rule."""
         return self._rule.name
 
     @property
-    def gate_counts_and_allocations(self) -> str:
+    def _gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
         assert self._conditions_met and self._enough_work_wires
         estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
@@ -868,7 +868,7 @@ class _DecompInfo:
         return gate_count_str
 
     @property
-    def gate_counts_and_allocations_md(self) -> str:
+    def _gate_counts_and_allocations_md(self) -> str:
         """The actual and estimated gate counts of this rule in the Markdown format."""
         assert self._conditions_met and self._enough_work_wires
         estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
@@ -907,7 +907,7 @@ class _DecompInfo:
         return header + "\n".join(lines)
 
     @property
-    def is_applicable(self) -> bool:
+    def _is_applicable(self) -> bool:
         """Whether the decomposition rule is applicable."""
         return self._conditions_met and self._enough_work_wires
 
