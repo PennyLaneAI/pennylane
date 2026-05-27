@@ -38,25 +38,15 @@ def _rz_phase_gradient(
     Note that the global phases are collected and added as one big global phase in the main function
     """
     precision = len(angle_wires)
-<<<<<<< fix/rz-phase-grad-capture-compat
-    # BasisState can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ math.binary_decimals(
-        phi, precision, unit=2 * np.pi
-    )
+
+    binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
     # NOTE: To be capture compatible, must wrap in function
     # so 'BasisState' is only constructed when compute_fn is called
     def compute_fn():
-        return qp.ctrl(qp.BasisState(binary_int, wires=angle_wires), control=wire)
+        return qp.ctrl(qp.BasisState(state=binary_int, wires=angle_wires), control=wire)
 
     target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
-=======
-
-    binary_int = qp.math.binary_decimals(phi, precision, unit=2 * np.pi)
-
-    compute_op = qp.ctrl(qp.BasisState(state=binary_int, wires=angle_wires), control=wire)
-    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
->>>>>>> main
 
     # NOTE: Compute function is self-inverse, pass it for the uncompute function
     return change_op_basis(compute_fn, target_fn, compute_fn)
