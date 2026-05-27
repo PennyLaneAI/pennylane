@@ -403,8 +403,8 @@ class TestHybridArgs:
         op1 = HybridOp([DynOp(np.array(0.5), wires=1)], wires=0)
         op2 = HybridOp([DynOp(pnp.array(0.5, requires_grad=False), wires=1)], wires=0)
         assert qp.equal(op1, op2) is False
-        assert qp.equal(op1, op2, check_trainability=False) is True
-        qp.assert_equal(op1, op2, check_trainability=False)
+        assert qp.equal(op1, op2, check_interface=False) is True
+        qp.assert_equal(op1, op2, check_interface=False)
 
 
 class TestEqualFullOperator:
