@@ -2,6 +2,40 @@
 
 <h3>New features since last release</h3>
 
+* A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
+  This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
+  efficient simulation of quantum materials and chemistry systems.
+  [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
+
+  The :class:`~.FFFT` template is decomposed recursively into two parallel FFFTs over
+  :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier transforms
+  are followed by a series of two-site linear gates.
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev)
+  def circuit():
+      qp.FFFT(wires=(0, 1, 2, 3))
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> print(qp.draw(circuit, level="device")())
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+
+  ```
+
+  Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
+  has been added to enable its implementation: the :class:`~.FFFT` operation is
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  (two-site Fermionic Fourier transforms).
+
 <h3>Improvements 🛠</h3>
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
