@@ -2,9 +2,43 @@
 
 <h3>New features since last release</h3>
 
-* A new template for Fast Fermionic Fourier Transforms has been added based on
-  [Ferris (2013)](https://arxiv.org/abs/1310.7605), for efficient simulation of quantum materials and chemistry systems.
+* A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
+  This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
+  efficient simulation of quantum materials and chemistry systems.
   [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
+
+  The :class:`~.FFFT` template is decomposed recursively into two parallel FFFTs over
+  :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier transforms
+  are followed by a series of two-site linear gates.
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev)
+  def circuit():
+      qp.FFFT(wires=(0, 1, 2, 3))
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> print(qp.draw(circuit, level="device")())
+  0: ─╭TwoQubitFFT────────────────────╭TwoQubitFFT─────────────────────────────────────── ···
+  1: ─╰TwoQubitFFT───────╭fSWAP(3.14)─╰TwoQubitFFT─╭fSWAP(3.14)──────────────╭TwoQubitFFT ···
+  2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰fSWAP(3.14)──────────────╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT ···
+  3: ─╰TwoQubitFFT──Z⁰⋅⁵────────────────────────────────────────╰fSWAP(3.14)───────────── ···
+
+  0: ··· ──────────────┤  State
+  1: ··· ──────────────┤  State
+  2: ··· ─╭fSWAP(3.14)─┤  State
+  3: ··· ─╰fSWAP(3.14)─┤  State
+  ```
+
+  Alongisde the addition of :class:`~.FFFT`, two new operations called :class:`~.TwoQubitFFT` and
+  :class:`~.fSWAP` have been added to enable its implementation: the :class:`~.FFFT` operation is
+  decomposed recursively into :class:`~.TwoQubitFFT` operations (two-site Fermionic Fourier
+  transforms).
 
 <h3>Improvements 🛠</h3>
 
@@ -50,7 +84,7 @@
 
   ```
 
-* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+* Created a new ``~.labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
 
@@ -62,7 +96,7 @@
     ...     size_bitstring = 8,
     ...     available_dirty_aux = 300,
     ... )
-    >>> 
+    >>>
     >>> print(qre.estimate(qrom_op))
     --- Resources: ---
     Total wires: 308
