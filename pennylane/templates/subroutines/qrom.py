@@ -594,11 +594,6 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
       1. Joint X measurement on work + target qubits where product=1
       2. Z measurement on work + conditional X corrections
 
-    The CZ phase correction must target the subspace where work_wire was 1,
-    which corresponds to the AND polarity given by control_values. When
-    control_values contains a 0, we conjugate the CZ with X on that wire
-    so the phase is applied to the correct computational basis state.
-
     Args:
         work_wire: the AND output wire to uncompute
         ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction)
