@@ -19,6 +19,10 @@
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* A more informative error message is raised when quantum functions without registered resource
+  estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
+  [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
@@ -51,9 +55,15 @@
 
   ```
 
+* Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
+  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which 
+  led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
+  [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
+
 * Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+  [(#9516)](https://github.com/PennyLaneAI/pennylane/pull/9516)
 
   ```pycon
     >>> import pennylane.labs.estimator_beta as qre
@@ -148,6 +158,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `autoray` package pin to `v0.8.10`.
+  [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
+
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 
@@ -173,8 +186,16 @@
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
+* The `allocate` PLxPR primitive now returns a list of `AbstractQubit` abstract values instead of a
+  list of abstract integer values. This is to better define the set of operations allowed on
+  allocated qubits.
+  [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
+
 <h3>Documentation 📝</h3>
 
+* Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
+  [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
+ 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
@@ -219,6 +240,7 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 Andrija Paurevic,
