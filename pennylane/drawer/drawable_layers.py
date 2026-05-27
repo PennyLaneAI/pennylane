@@ -17,7 +17,7 @@ This module contains a helper function to sort operations into layers.
 
 from functools import singledispatch
 
-from pennylane.allocation import Allocate, DynamicWire
+from pennylane.allocation import Allocate
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import (
     Conditional,
@@ -193,19 +193,18 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
     used_cwires_per_layer = [set()]
-    waiting_dynamic_wires = {}
+    waiting_dynamic_wires = []
+    waiting_dynamic_ops = []
 
     # loop over operations
     for op in operations:
         if _dynamic_wires and isinstance(op, Allocate):
             op_layer = 0
-            queue = [op]
-            waiting_dynamic_wires[tuple(op.wires)] = queue
-        elif _dynamic_wires and all(isinstance(w, DynamicWire) for w in op.wires):
+            waiting_dynamic_ops.append(op)
+            waiting_dynamic_wires.extend(op.wires)
+        elif _dynamic_wires and all(w in waiting_dynamic_wires for w in op.wires):
             op_layer = 0
-            for dynamic_register, queue in waiting_dynamic_wires.items():
-                if all(w in dynamic_register for w in op.wires):
-                    queue.append(op)
+            waiting_dynamic_ops.append(op)
         else:
             if isinstance(op, MeasurementProcess) and op.mv is not None:
                 # Only terminal measurements that collect mid-circuit measurement statistics have
@@ -238,25 +237,25 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
                     ) from e
                 op_occupied_cwires = set()
 
-                for w in op.wires:
-                    if _dynamic_wires and any(w in reg for reg in waiting_dynamic_wires):
-                        for reg, queue in waiting_dynamic_wires.items():
-                            if w in reg:
-                                break
-                        del waiting_dynamic_wires[reg]
-                        inner_layers = drawable_layers(
-                            queue, wire_map=wire_map, bit_map=bit_map, _dynamic_wires=False
-                        )
-                        for i, layer in enumerate(reversed(inner_layers)):
+                if _dynamic_wires and any(w in waiting_dynamic_wires for w in op.wires):
+                    inner_layers = drawable_layers(
+                        waiting_dynamic_ops,
+                        wire_map=wire_map,
+                        bit_map=bit_map,
+                        _dynamic_wires=False,
+                    )
+                    for i, layer in enumerate(reversed(inner_layers)):
+                        insert_layer = op_layer - i - 1
+                        if insert_layer < 0:
+                            ops_in_layer.insert(0, [])
+                            op_layer += 1
+                            max_layer += 1
                             insert_layer = op_layer - i - 1
-                            if insert_layer < 0:
-                                ops_in_layer.insert(0, [])
-                                op_layer += 1
-                                max_layer += 1
-                                insert_layer = op_layer - i - 1
-                                occupied_wires_per_layer.insert(0, set())
-                                used_cwires_per_layer.insert(0, set())
-                            ops_in_layer[insert_layer].extend(layer)
+                            occupied_wires_per_layer.insert(0, set())
+                            used_cwires_per_layer.insert(0, set())
+                        ops_in_layer[insert_layer].extend(layer)
+                    waiting_dynamic_wires = []
+                    waiting_dynamic_ops = []
 
             # see if need to add new layer
             if op_layer > max_layer:
