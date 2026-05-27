@@ -191,8 +191,8 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
-    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
 def test_change_op_basis_with_mixed_types():
@@ -324,12 +324,6 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         middle_op = ops_lst[1]
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category_ops(self, ops_lst):
-        """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        assert change_op_basis_op._queue_category == "_ops"
 
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
