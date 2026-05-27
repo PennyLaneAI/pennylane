@@ -72,8 +72,8 @@ class BasisEmbedding(BasisState):
     def _primitive_bind_call(cls, features, wires, **kwargs):
         return super()._primitive_bind_call(features, wires, **kwargs)
 
-    def __init__(self, features, wires, id=None):
-        super().__init__(features, wires=wires, id=id)
+    def __init__(self, features, wires):
+        super().__init__(features, wires=wires)
 
 
 BasisEmbedding._primitive = BasisState._primitive  # pylint: disable=protected-access

@@ -46,8 +46,6 @@ class CountsMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
     """
@@ -60,14 +58,13 @@ class CountsMP(SampleMeasurement):
         obs: Operator | None = None,
         wires=None,
         eigvals=None,
-        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
         self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
-        super().__init__(obs, wires, eigvals, id)
+        super().__init__(obs, wires, eigvals)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
@@ -95,12 +92,11 @@ class CountsMP(SampleMeasurement):
             "CountsMP returns a dictionary, which is not compatible with capture."
         )
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
+            hash(self.obs),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
             self.all_outcomes,

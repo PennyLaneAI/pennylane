@@ -138,7 +138,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
         if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator
 
@@ -157,7 +157,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
             if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator
 
@@ -274,7 +274,7 @@ def _(bose_operator: BoseWord, n_states, tol=None):
     for pw in qubit_operator:
         if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = math.real(qubit_operator[pw])
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator
 
@@ -293,7 +293,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
             if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator
 
@@ -388,7 +388,7 @@ def _(bose_operator: BoseWord, tol=None):
         if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator
 
@@ -407,6 +407,6 @@ def _(bose_operator: BoseSentence, tol=None):
             if tol is not None and abs(math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = math.real(qubit_operator[pw])
 
-    qubit_operator.simplify(tol=1e-16)
+    qubit_operator.prune(tol=1e-16)
 
     return qubit_operator

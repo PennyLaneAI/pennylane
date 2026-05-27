@@ -36,7 +36,7 @@ class TestTracker:
 
         assert isinstance(dev.tracker, qp.Tracker)
 
-    def test_tracker_updated_in_execution_mode(self, device):
+    def test_tracker_updated_in_execution_mode(self, device, shots):
         """Tests that device update and records during tracking mode"""
 
         dev = device(1)
@@ -46,7 +46,7 @@ class TestTracker:
         ):
             pytest.skip("Device does not support a tracker")
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, shots=shots, diff_method="parameter-shift")
         def circ():
             return qp.expval(qp.X(0))
 

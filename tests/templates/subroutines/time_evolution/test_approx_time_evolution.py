@@ -263,13 +263,6 @@ class TestInputs:
         ):
             circuit()
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        h = qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(0)])
-        template = qp.ApproxTimeEvolution(h, 2, 3, id="a")
-        assert template.id == "a"
-
     def test_wire_indices(self):
         """Tests that correct wires are set."""
         wire_indices = [0, 1]

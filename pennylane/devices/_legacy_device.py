@@ -647,7 +647,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         .. warning::
 
             This method will be tracked by autodifferentiation libraries,
-            such as Autograd, JAX, TensorFlow, and Torch. Please make sure
+            such as Autograd, JAX, and Torch. Please make sure
             to use ``qp.math`` for autodiff-agnostic tensor processing
             if required.
 

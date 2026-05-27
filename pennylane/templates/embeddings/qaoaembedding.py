@@ -176,7 +176,7 @@ class QAOAEmbedding(Operation):
 
     resource_keys = {"repeat", "n_features", "num_wires", "local_field"}
 
-    def __init__(self, features, weights, wires, local_field="Y", id=None):
+    def __init__(self, features, weights, wires, local_field="Y"):
         if local_field == "Z":
             local_field = RZ
         elif local_field == "X":
@@ -220,7 +220,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
-        super().__init__(features, weights, wires=wires, id=id)
+        super().__init__(features, weights, wires=wires)
 
     @property
     def num_params(self):
