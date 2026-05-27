@@ -593,6 +593,7 @@ class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
+# pylint: disable=protected-access
 class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
 
@@ -682,6 +683,45 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
             """).strip()
 
+        assert result._repr_markdown_() == dedent("""
+            #### Decomposition 0 (name: simple)
+
+            ```
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
+            1: ───────────╰X───────────┤  
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | Gate | Count |
+            | :--- | :--- |
+            | RZ | 2 |
+            | CNOT | 1 |
+            </details>
+
+            ---
+
+            #### Decomposition 1 (name: general_decomp)
+
+            ```
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
+            1: ───────────╰Z──H─╰Z───────────┤  
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | Gate | Count |
+            | :--- | :--- |
+            | RX | 2 |
+            | CZ | 2 |
+            | Hadamard | 1 |
+            </details>
+
+            ---
+
+            #### Decomposition 2 (name: with-aux)
+
+            _Not applicable (provided operator instance does not meet all conditions for this rule)._
+            """).strip()
+
         assert repr(result) == str(result)
 
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]))
@@ -709,6 +749,61 @@ class TestInspectDecomps:
             Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
             Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
             Wire Allocations: {'zero': 2}
+            """).strip()
+
+        assert result._repr_markdown_() == dedent("""
+            #### Decomposition 0 (name: simple)
+
+            _Not applicable (provided operator instance does not meet all conditions for this rule)._
+
+            ---
+
+            #### Decomposition 1 (name: general_decomp)
+
+            ```
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | Gate | Count |
+            | :--- | :--- |
+            | RX | 2 |
+            | CZ | 8 |
+            | Hadamard | 1 |
+            </details>
+
+            ---
+
+            #### Decomposition 2 (name: with-aux)
+
+            ```
+            <DynamicWire>: ─╭Allocate─╭Z─╭●───────────────────RX(0.50)─────────────╭●─╭Z─╭Deallocate─┤  
+            <DynamicWire>: ─╰Allocate─│──╰Z─╭●──H────────┤↗├──║─────────────────╭●─╰Z─│──╰Deallocate─┤  
+                        0: ───────────╰●────╰Z─╭●─────────║───║──────────────╭●─╰Z────╰●─────────────┤  
+                        1: ────────────────────├●─╭●──────║───║───────────╭●─├●──────────────────────┤  
+                        2: ────────────────────╰X─├●─╭●───║───║────────╭●─├●─╰X──────────────────────┤  
+                        3: ───────────────────────╰X─├●───║───║────────├●─╰X─────────────────────────┤  
+                        4: ──────────────────────────╰X───║───║────────╰X────────────────────────────┤  
+                                                          ╚═══╝                                         
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | Gate | Estimated | Actual |
+            | :--- | :--- | :--- |
+            | Toffoli | 8 | 6 |
+            | MidMeasure | 1 | 1 |
+            | RX | 1 | 1 |
+            | Hadamard | 1 | 1 |
+            | CZ | 6 | 6 |
+
+            | Wire Type | Num Allocated |
+            | :--- | :--- |
+            | zero | 2 |
+            </details>
             """).strip()
 
     def test_exclude_not_applicable(self):
@@ -775,6 +870,38 @@ class TestInspectDecomps:
 
             Decomposition 2 (name: with-aux)
             Insufficient work wires: requires 2 but only 1 available.
+            """).strip()
+
+        assert result._repr_markdown_() == dedent("""
+            #### Decomposition 0 (name: simple)
+
+            _Not applicable (provided operator instance does not meet all conditions for this rule)._
+
+            ---
+
+            #### Decomposition 1 (name: general_decomp)
+
+            ```
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
+            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | Gate | Count |
+            | :--- | :--- |
+            | RX | 2 |
+            | CZ | 8 |
+            | Hadamard | 1 |
+            </details>
+
+            ---
+
+            #### Decomposition 2 (name: with-aux)
+
+            _Insufficient work wires: requires 2 but only 1 available._
             """).strip()
 
         result = qp.inspect_decomps(
