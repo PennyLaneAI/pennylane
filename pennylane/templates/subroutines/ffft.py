@@ -213,8 +213,8 @@ def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
     if len(wires) == 2:
         TwoWireFFT(wires)
     else:
-        _recursive_decompose(wires[: len(wires) // 2])
-        _recursive_decompose(wires[len(wires) // 2 :])
+        _recursive_decompose(wires[: len(wires) // 2], parallelize_swaps)
+        _recursive_decompose(wires[len(wires) // 2 :], parallelize_swaps)
 
         @for_loop(len(wires) // 2)
         def twiddle(mode):
@@ -225,7 +225,6 @@ def _recursive_decompose(wires: WiresLike, parallelize_swaps: bool = True):
         if parallelize_swaps:
             _permute_and_apply_parallel(wires, TwoWireFFT)
         else:
-
             @for_loop(len(wires) // 2)
             def fouriers(i):
                 _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)
@@ -250,7 +249,7 @@ def _permute_and_apply_parallel(wires, operator):
         FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
 
         # increase index of next FSWAP and count of FSWAPs
-        return i + 1, count + 1, num_parallel_swaps, wires
+        return i + 2, count + 1, num_parallel_swaps, wires
 
     @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps < len(wires) // 2)
     def permutation_in_layers(num_parallel_swaps, curr_start, wires):
