@@ -65,7 +65,7 @@ class _DecompInGraphInfo(_DecompInfo):
         if not self._is_applicable:
             return result
         if not self._is_reachable:
-            return result + "\n\n" + self._missing_ops
+            return result + "\n\n" + self._missing_ops_md
         return result
 
     @property
@@ -107,11 +107,21 @@ class _DecompInGraphInfo(_DecompInfo):
     @property
     def _missing_ops(self) -> str:
         """Report on any unsolved ops required for this decomposition rule."""
+        unsolved_ops = self._unsolved_ops()
+        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+
+    @property
+    def _missing_ops_md(self) -> str:
+        """The unsolved ops required for this decomposition in Markdown."""
+        unsolved_ops = map(str, self._unsolved_ops())
+        rows = "\n".join(f"| {op} |" for op in sorted(unsolved_ops))
+        return f"| Missing Ops |\n| :--- |\n{rows}" if unsolved_ops else ""
+
+    def _unsolved_ops(self):
         all_op_node_indices = self._graph.predecessor_indices(self._decomp_node_idx)
         distances = self._solution._visitor.distances
         unsolved_indices = filter(lambda idx: idx not in distances, all_op_node_indices)
-        unsolved_ops = set(map(lambda idx: self._graph[idx].op, unsolved_indices))
-        return f"Missing Ops: {unsolved_ops}" if unsolved_ops else ""
+        return set(map(lambda idx: self._graph[idx].op, unsolved_indices))
 
     @override
     def _get_gate_count_str(self, estimated_count, actual_count) -> str:
@@ -149,10 +159,17 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
         self._chosen_idx = chosen
         self._override_txt = override_txt
 
+    @override
     def __str__(self) -> str:
         if self._override_txt is not None:
             return self._override_txt
         return super().__str__()
+
+    @override
+    def _repr_markdown_(self) -> str:
+        if self._override_txt is not None:
+            return self._override_txt
+        return super()._repr_markdown_()
 
     @override
     def _title(self, index, rule) -> str:

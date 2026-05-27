@@ -924,6 +924,7 @@ class TestInspectDecomps:
 
         result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
         assert str(result) == "No available decomposition rules."
+        assert result._repr_markdown_() == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
         @qp.register_resources({})
@@ -936,6 +937,10 @@ class TestInspectDecomps:
 
         assert (
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
+        )
+        assert (
+            result._repr_markdown_()
+            == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
 
     def test_show_decomp_by_name(self):
