@@ -159,6 +159,7 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+  [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9527)
 
 * Bump `autoray` package pin to `v0.8.10`.
   [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
