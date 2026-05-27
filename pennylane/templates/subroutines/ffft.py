@@ -100,7 +100,7 @@ class FFFT(Operator):
     Iterating this decomposition :math:`k` times realizes the full Fourier transform over
     :math:`n = 2^{k}` sites.
 
-    .. see-also:: :class:`~.TwoQubitFFT`
+    .. see-also:: :class:`~.TwoWireFFT`
 
     Args:
 
@@ -141,7 +141,7 @@ class FFFT(Operator):
     3: ··· ─╰FSWAP(3.14)─┤ ╰State
 
 
-    The ``FFFT`` operation is decomposed recursively into :class:`~.TwoQubitFFT` operations
+    The ``FFFT`` operation is decomposed recursively into :class:`~.TwoWireFFT` operations
     (two-site Fermionic Fourier transforms) according to the equation above.
     """
 
