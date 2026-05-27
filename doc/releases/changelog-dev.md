@@ -190,7 +190,7 @@
   list of abstract integer values. This is to better define the set of operations allowed on
   allocated qubits.
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
-  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+  [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
 
