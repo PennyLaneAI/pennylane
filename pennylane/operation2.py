@@ -234,6 +234,14 @@ class Operator2(ABC):
                 "compilable argnames; hybrid_argnames may only overlap with wire_argnames."
             )
 
+        # Every named signature parameter must appear in at least one *_argnames.
+        sig_params = set(cls._sig.parameters.keys())
+        if unclassified := sig_params - set(seen.keys()) - hybrid:
+            raise TypeError(
+                f"The following parameters of '{cls.__name__}' are not classified in "
+                f"any argnames tuples: {unclassified}."
+            )
+
         # Wire sizes setup
         if hasattr(cls, "wire_sizes"):
             if not isinstance(cls.wire_sizes, Sequence):
@@ -256,14 +264,6 @@ class Operator2(ABC):
 
         else:
             cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
-
-        # Every named signature parameter must appear in at least one *_argnames.
-        sig_params = set(cls._sig.parameters.keys())
-        if unclassified := sig_params - set(seen.keys()) - hybrid:
-            raise TypeError(
-                f"The following parameters of '{cls.__name__}' are not classified in "
-                f"any argnames tuples: {unclassified}."
-            )
 
     def _flatten(self) -> FlatPytree:
         """Serialize the operation into dynamic and static components.
