@@ -1034,6 +1034,7 @@ class TestGeneralMethods:
     def test_map_wires_pauli_rep(self):
         """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly."""
         op = DynOp(1.5, wires=[0, 1])
+        # pylint: disable=attribute-defined-outside-init
         op._pauli_rep = PauliSentence({PauliWord({0: "X", 1: "Y"}): 1.0})
 
         new_op = op.map_wires({0: "a", 1: "b"})

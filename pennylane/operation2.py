@@ -557,7 +557,7 @@ class Operator2(ABC):
         'U\n(M0)'
         >>> cache['matrices']
         [array([[1., 0.],
-               [0., 1.]]]
+               [0., 1.]])]
         >>> op3 = qp.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
         'U\n(M1)'
@@ -607,7 +607,7 @@ class Operator2(ABC):
         ...         super().__init__(phi, wires)
         ..
         ...     def pow(self, z):
-        ...     return [MyClass(self.phi*z, self.wires)]
+        ...         return [MyClass(self.phi*z, self.wires)]
         ...
         >>> MyClass(0.5, 0).pow(2)
         [MyClass(1.0, wires=[0])]
@@ -665,11 +665,11 @@ class Operator2(ABC):
         ...
         ...     def __init__(self, phi, wires):
         ...         super().__init__(phi, wires)
-        ..
+        ...
         ...     def adjoint(self):
         ...         return self
         ...
-        >>> op = MyClass(wires=0).adjoint()
+        >>> op = MyClass(0.5, wires=0).adjoint()
         >>> op
         MyClass(wires=[0])
         """
