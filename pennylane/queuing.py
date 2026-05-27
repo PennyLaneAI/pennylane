@@ -597,7 +597,7 @@ def process_queue(
         else:
             raise QueuingError(
                 f"Encountered object {obj} in queue while processing."
-                " AnnotatedQueue should only contain Operator's and MeasurementProcess's."
+                " AnnotatedQueue should only contain `Operator`s and `MeasurementProcess`es."
             )
 
     return ops, measurements
