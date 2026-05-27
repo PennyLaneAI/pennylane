@@ -210,7 +210,7 @@ from pennylane.exceptions import (
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 from .pytrees import register_pytree
 
@@ -740,7 +740,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            if isinstance(wires, array_types) and wires.shape == ():
+            if is_abstract_qubit(wires):
+                wires = (wires,)
+            elif isinstance(wires, array_types) and wires.shape == ():
                 wires = (wires,)
             elif isinstance(wires, iterable_wires_types):
                 wires = tuple(wires)
@@ -749,6 +751,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             kwargs["n_wires"] = len(wires)
             args += wires
         # If not in kwargs, check if the last positional argument represents wire(s).
+        elif is_abstract_qubit(args[-1]):
+            kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
