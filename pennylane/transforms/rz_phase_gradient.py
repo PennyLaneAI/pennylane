@@ -42,7 +42,7 @@ def _rz_phase_gradient(
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
     # NOTE: To be capture compatible, must wrap in function
-    # so 'BasisState' is only constructed when compute_fn is called
+    # so operators are only constructed when called
     compute_fn = partial(qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires)
     target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
