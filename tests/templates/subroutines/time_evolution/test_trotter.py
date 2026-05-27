@@ -805,7 +805,7 @@ class TestDecomposition:
         def same_structure(o1, o2):
             return (
                 type(o1) == type(o2)
-                and qml.equal(o1.base, o2.base)
+                and qp.equal(o1.base, o2.base)
                 and getattr(o1, "parameters", None) == getattr(o2, "parameters", None)
                 and getattr(o1, "wires", None) == getattr(o2, "wires", None)
         )
