@@ -36,7 +36,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 INV_SQRT2 = 1 / math.sqrt(2)
 
 
-class TwoQubitFFT(Operator):
+class TwoWireFFT(Operator):
     r"""
     The two-qubit unitary operator that corresponds to a Fourier transform on
     Fermions, encoded using a Jordan-Wigner Transformation (JWT).
@@ -140,18 +140,18 @@ class FFFT(Operator):
 
 
     >>> print(qp.draw(circuit, level="device")())
-    0: ─╭TwoQubitFFT────────────────────╭TwoQubitFFT─────────────────────────────────────── ···
-    1: ─╰TwoQubitFFT───────╭fSWAP(3.14)─╰TwoQubitFFT─╭fSWAP(3.14)──────────────╭TwoQubitFFT ···
-    2: ─╭TwoQubitFFT──Z⁰⋅⁰─╰fSWAP(3.14)──────────────╰fSWAP(3.14)─╭fSWAP(3.14)─╰TwoQubitFFT ···
-    3: ─╰TwoQubitFFT──Z⁰⋅⁵────────────────────────────────────────╰fSWAP(3.14)───────────── ···
+    0: ─╭TwoWireFFT────────────────────╭TwoWireFFT────────────────────────────────────── ···
+    1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)──────────────╭TwoWireFFT ···
+    2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─────────────╰FSWAP(3.14)─╭FSWAP(3.14)─╰TwoWireFFT ···
+    3: ─╰TwoWireFFT──Z⁰⋅⁵───────────────────────────────────────╰FSWAP(3.14)──────────── ···
     <BLANKLINE>
-    0: ··· ──────────────┤  State
-    1: ··· ──────────────┤  State
-    2: ··· ─╭fSWAP(3.14)─┤  State
-    3: ··· ─╰fSWAP(3.14)─┤  State
+    0: ··· ──────────────┤ ╭State
+    1: ··· ──────────────┤ ├State
+    2: ··· ─╭FSWAP(3.14)─┤ ├State
+    3: ··· ─╰FSWAP(3.14)─┤ ╰State
 
 
-    The FFFT operation is decomposed recursively into :class:`~.TwoQubitFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
+    The FFFT operation is decomposed recursively into :class:`~.TwoWireFFT` operations (2-site Fermionic Fourier transforms) according to the equation above.
     """
 
     resource_keys = {"num_wires"}
@@ -179,7 +179,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = defaultdict(int)
 
     two_qubit_gates = num_wires * math.log2(num_wires) // 2
-    resources[resource_rep(TwoQubitFFT)] = two_qubit_gates
+    resources[resource_rep(TwoWireFFT)] = two_qubit_gates
 
     def _count_one_recursive(wires, resources):
         if wires > 2:
@@ -211,7 +211,7 @@ def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
 def _recursive_decompose(wires: WiresLike):
     # base case is that we have two wires
     if len(wires) == 2:
-        TwoQubitFFT(wires)
+        TwoWireFFT(wires)
     else:
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
@@ -224,7 +224,7 @@ def _recursive_decompose(wires: WiresLike):
 
         @for_loop(len(wires) // 2)
         def fouriers(i):
-            _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoQubitFFT)
+            _permute_and_apply(wires, [wires[i], wires[len(wires) // 2 + i]], TwoWireFFT)
 
         fouriers()  # pylint: disable=no-value-for-parameter
 
