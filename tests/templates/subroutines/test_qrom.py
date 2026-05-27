@@ -666,6 +666,7 @@ class TestMeasurementQROM:
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
+
             for wire in target_wires:
                 qp.Hadamard(wire)
 

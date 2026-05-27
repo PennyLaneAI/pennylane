@@ -605,17 +605,12 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
         targets: target register wires
         product: bitstring indicating which targets are entangled with work
         control_values: list of 0/1 indicating the effective AND polarity at the
-                       point of uncomputation. If None, defaults to [1, 1] (standard
-                       AND polarity where work=1 when both controls are 1).
+                       point of uncomputation. If None, defaults to [1, 1].
     """
     x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
 
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
-    # Conjugate CZ with X gates to match the effective AND polarity.
-    # CZ natively applies phase -1 to |1,1>. If the AND had control_value=0
-    # on a wire, work was active when that wire was 0, so we flip it before/after
-    # CZ to redirect the phase correction to the correct subspace.
     if control_values is not None:
         for wire, cv in zip(ctrl_wires, control_values):
             if cv == 0:
@@ -668,9 +663,6 @@ def _measurement_qrom_inner(controls, targets, bitstrings, k):
     else:
         TemporaryAND([flag, sel, work], control_values=[1, 1])
 
-    # After CNOT (k>2): work = flag AND sel -> standard [1,1] polarity
-    # For k==2: control_values=[1,1] directly -> standard [1,1] polarity
-    # In both cases CZ on [flag, sel] correctly targets |1,1> where work was active
     product = _xor(bitstrings[0], bitstrings[k_left])
     _measurement_uncompute(work, [flag, sel], targets, product)
 
