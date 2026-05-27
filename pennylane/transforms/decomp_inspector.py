@@ -101,7 +101,7 @@ class _DecompInGraphInfo(_DecompInfo):
         return (
             super().gate_counts_and_allocations_md
             + f"\n\n{gate_counts}"
-            + f"\n\nWeighted Cost: {weighted_cost}"
+            + f"\n| **Weighted Cost** | {weighted_cost} |"
         )
 
     @property
