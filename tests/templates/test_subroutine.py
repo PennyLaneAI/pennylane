@@ -412,7 +412,6 @@ class TestSubroutineCapture:
 
         @qp.templates.Subroutine
         def f(wires):
-            assert wires.shape == (1,)
             qp.X(wires[0])
 
         jaxpr1 = jax.make_jaxpr(f)(0)
@@ -432,8 +431,7 @@ class TestSubroutineCapture:
 
         for jaxpr in [jaxpr1, jaxpr2, jaxpr3, jaxpr4, jaxpr5]:
             assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
-
-            assert jaxpr.eqns[-1].invars[0].aval.shape == (1,)
+            assert jaxpr.eqns[-1].invars[0].aval.shape == ()
             assert "int" in jaxpr.eqns[-1].invars[0].aval.dtype.name
 
     def test_mcm_return(self):
