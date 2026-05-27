@@ -556,18 +556,17 @@ class Operator2(ABC):
         >>> op2.label(cache=cache)
         'U\n(M0)'
         >>> cache['matrices']
-        [tensor([[1., 0.],
-         [0., 1.]], requires_grad=True)]
+        [array([[1., 0.],
+               [0., 1.]]]
         >>> op3 = qp.QubitUnitary(np.eye(4), wires=(0,1))
         >>> op3.label(cache=cache)
         'U\n(M1)'
         >>> cache['matrices']
-        [tensor([[1., 0.],
-                [0., 1.]], requires_grad=True),
-        tensor([[1., 0., 0., 0.],
-                [0., 1., 0., 0.],
-                [0., 0., 1., 0.],
-                [0., 0., 0., 1.]], requires_grad=True)]
+        [array([[1., 0.],
+               [0., 1.]]), array([[1., 0., 0., 0.],
+               [0., 1., 0., 0.],
+               [0., 0., 1., 0.],
+               [0., 0., 0., 1.]])]
 
         """
         op_label = base_label or self.__class__.__name__
@@ -590,6 +589,7 @@ class Operator2(ABC):
     def pow(self, z: float) -> list["Operator2"]:
         """A list of new operators equal to this one raised to the given power. This method is used to simplify
         :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+        TODO: [sc-120843] Fix docstring after Pow is added
 
         ``Operator2.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
         are the entry point for constructing generic powers to exponents.
@@ -601,18 +601,16 @@ class Operator2(ABC):
             list[:class:`~.operation2.Operator2`]
 
         >>> class MyClass(qp.operation2.Operator2):
+        ...     dynamic_argnames = ("phi",)
         ...
+        ...     def __init__(self, phi, wires):
+        ...         super().__init__(phi, wires)
+        ..
         ...     def pow(self, z):
-        ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...     return [MyClass(self.phi*z, self.wires)]
         ...
-        >>> op = MyClass(0.5, 0) ** 2
-        >>> op
-        MyClass(0.5, wires=[0])**2
-        >>> op.decomposition()
+        >>> MyClass(0.5, 0).pow(2)
         [MyClass(1.0, wires=[0])]
-        >>> op.simplify()
-        MyClass(1.0, wires=[0])
-
         """
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
@@ -650,7 +648,7 @@ class Operator2(ABC):
     def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
-        TODO: [sc-120432] Fix docstring after Adjoint is added
+        TODO: [sc-120844] Fix docstring after Adjoint is added
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
@@ -663,16 +661,16 @@ class Operator2(ABC):
             The adjointed operation.
 
         >>> class MyClass(qp.operation2.Operator2):
+        ...     dynamic_argnames = ("phi",)
         ...
+        ...     def __init__(self, phi, wires):
+        ...         super().__init__(phi, wires)
+        ..
         ...     def adjoint(self):
         ...         return self
         ...
-        >>> op = qp.adjoint(MyClass(wires=0))
+        >>> op = MyClass(wires=0).adjoint()
         >>> op
-        Adjoint(MyClass(wires=[0]))
-        >>> op.decomposition()
-        [MyClass(wires=[0])]
-        >>> op.simplify()
         MyClass(wires=[0])
         """
         raise AdjointUndefinedError
