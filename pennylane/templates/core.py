@@ -827,6 +827,8 @@ class Subroutine:
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
                     wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
+                    if not any(is_abstract_qubit(w) for w in wires):
+                        wires = math.array(wires, like="jax")
                     bound_args.arguments[wire_argname] = wires
 
             else:

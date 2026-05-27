@@ -153,15 +153,15 @@ class TestDecomposeInterpreter:
             f(x, (1, 2))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
-        eqn1 = jaxpr.eqns[0]  # the first subroutine prim
-        eqn2 = jaxpr.eqns[1]  # the second subroutine prim
+        eqn1 = jaxpr.eqns[3]  # the first subroutine prim
+        eqn2 = jaxpr.eqns[7]  # the second subroutine prim
 
         for eqn in [eqn1, eqn2]:
             assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
-            assert j.eqns[0].primitive == qp.CNOT._primitive
-            assert j.eqns[1].primitive == qp.RX._primitive
-            assert j.eqns[2].primitive == qp.CNOT._primitive
+            assert j.eqns[4].primitive == qp.CNOT._primitive
+            assert j.eqns[5].primitive == qp.RX._primitive
+            assert j.eqns[6].primitive == qp.CNOT._primitive
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
 
