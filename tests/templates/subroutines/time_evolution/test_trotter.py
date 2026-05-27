@@ -791,7 +791,7 @@ class TestDecomposition:
         op = qp.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
         for op1, op2 in zip(decomp, true_decomp):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
     
     @pytest.mark.parametrize("order", (2, 4, 6))
     @pytest.mark.parametrize("n", (1, 2, 4))
