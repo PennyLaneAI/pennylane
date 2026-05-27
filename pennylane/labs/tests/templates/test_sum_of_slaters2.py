@@ -74,13 +74,18 @@ class TestSumOfSlatersPrep2:
         # In this case, assert_valid actually asserts that compute_decomposition raises an error.
         assert op.has_decomposition is False
 
+    @pytest.mark.parametrize("use_qjit", [False, True])
     @pytest.mark.parametrize(
         "num_wires,num_entries",
         [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (7, 63)],
     )
-    def test_decomposition_prepares_state(self, num_wires, num_entries, seed):
+    def test_decomposition_prepares_state(self, num_wires, num_entries, seed, use_qjit):
         """Test that the decomposition of SumOfSlatersPrep2 actually prepares the desired state."""
         # pylint: disable=unsubscriptable-object
+        if num_entries == 63 and use_qjit:
+            pytest.skip(
+                reason="This test case takes over a minute and does not provide unique value"
+            )
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, num_wires)
@@ -93,14 +98,17 @@ class TestSumOfSlatersPrep2:
             for rule in qp.list_decomps(SumOfSlatersPrep2):
 
                 @qp.qnode(qp.device("lightning.qubit"))
-                def func():
+                def func(coefficients):
                     # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
                     qp.Identity(target_wires)
                     rule(coefficients, target_wires=target_wires, **work_wires, indices=indices)
                     return qp.state()
 
-                out_state = func()
+                if use_qjit:
+                    func = qp.qjit(func)
+
+                out_state = func(coefficients)
 
                 # We infer the total and aux wire counts from the state shape, because small-scale
                 # edge cases often have fewer work wires than the general case.
