@@ -53,7 +53,7 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
-from pennylane.wires import Wires
+from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 
@@ -825,8 +825,10 @@ class Subroutine:
                 import jax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
-                    # don't stack if already a jax array
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+                    # convert the integers in wires to tracers
+                    wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
+                    bound_args.arguments[wire_argname] = wires
+
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
