@@ -582,47 +582,51 @@ def _qrom_decomposition(
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
-# --- Measurement-based QROM decomposition ---
-#
-# Uses Pauli measurements to uncompute TemporaryAND gates (no adjoint needed).
-# Reference: "Active volume" paper, Figure (a) SELECT/QROM circuit.
-#
-# Structure:
-#   - Outer: 4-quarter split (from select.py _add_first_k_units)
-#   - Inner: binary recursion with measurement uncomputation
-#   - XOR-relative encoding absorbs base corrections into measurements
-#
-# TemporaryAND count:
-#   Variant 3 (c_bar=0, K >= 3/4 * 2^c): L-3
-#   Variant 2 (c_bar>0):                  L-2
-#   Variant 1 (l=1):                      L-2
-#
-# Wire layout (interleaved):
-#   [in[0], in[1], work[0], in[2], work[1], in[3], work[2], ...]
-
-
 def _xor(a, b):
     """Bitwise XOR of two bitstring lists."""
     return [(a[i] + b[i]) % 2 for i in range(len(a))]
 
 
-def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
+def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_values=None):
     """Measurement-based uncomputation on Fig 18. https://arxiv.org/pdf/2211.15465
 
     Replaces adjoint(TemporaryAND) with two Pauli measurements:
       1. Joint X measurement on work + target qubits where product=1
       2. Z measurement on work + conditional X corrections
 
+    The CZ phase correction must target the subspace where work_wire was 1,
+    which corresponds to the AND polarity given by control_values. When
+    control_values contains a 0, we conjugate the CZ with X on that wire
+    so the phase is applied to the correct computational basis state.
+
     Args:
         work_wire: the AND output wire to uncompute
-        ctrl_wires: [ctrl0, ctrl1] — the two AND control wires (for CZ correction)
+        ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction)
         targets: target register wires
         product: bitstring indicating which targets are entangled with work
+        control_values: list of 0/1 indicating the effective AND polarity at the
+                       point of uncomputation. If None, defaults to [1, 1] (standard
+                       AND polarity where work=1 when both controls are 1).
     """
     x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
 
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
+
+    # Conjugate CZ with X gates to match the effective AND polarity.
+    # CZ natively applies phase -1 to |1,1>. If the AND had control_value=0
+    # on a wire, work was active when that wire was 0, so we flip it before/after
+    # CZ to redirect the phase correction to the correct subspace.
+    if control_values is not None:
+        for wire, cv in zip(ctrl_wires, control_values):
+            if cv == 0:
+                X(wires=wire)
+
     cond(m1 == 1, CZ)(wires=ctrl_wires)
+
+    if control_values is not None:
+        for wire, cv in zip(ctrl_wires, control_values):
+            if cv == 0:
+                X(wires=wire)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -664,6 +668,9 @@ def _measurement_qrom_inner(controls, targets, bitstrings, k):
     else:
         TemporaryAND([flag, sel, work], control_values=[1, 1])
 
+    # After CNOT (k>2): work = flag AND sel -> standard [1,1] polarity
+    # For k==2: control_values=[1,1] directly -> standard [1,1] polarity
+    # In both cases CZ on [flag, sel] correctly targets |1,1> where work was active
     product = _xor(bitstrings[0], bitstrings[k_left])
     _measurement_uncompute(work, [flag, sel], targets, product)
 
@@ -705,7 +712,9 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     # --- MIDDLE ---
     if l == 1:
         # Variant 1: close first half + single controlled op
-        _measurement_uncompute(controls[2], [controls[0], controls[1]], targets, diff_q1)
+        _measurement_uncompute(
+            controls[2], [controls[0], controls[1]], targets, diff_q1, control_values=[0, 1]
+        )
         diff_single = _xor(bitstrings[0], bitstrings[k01])
         for i, bit in enumerate(diff_single):
             if bit == 1:
@@ -716,7 +725,9 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
 
     if c_bar > 0:
         # Variant 2: close first half via measurement, open new AND for second half
-        _measurement_uncompute(controls[2], [controls[0], controls[1]], targets, diff_q1)
+        _measurement_uncompute(
+            controls[2], [controls[0], controls[1]], targets, diff_q1, control_values=[0, 1]
+        )
         sec_wires = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
         sec_child = controls[c_bar + 2 :]
         TemporaryAND(sec_wires, control_values=[1, 0])

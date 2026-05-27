@@ -638,3 +638,45 @@ class TestMeasurementQROM:
 
             output_wires = [int(x) for x in circuit(j)[1].flatten()]
             assert output_wires == [0] * n_work, f"j={j}: work wires not clean, got {output_wires}"
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
+    def test_no_phases_error(self, L):
+        """Test that QROM introduces no relative phases on the control register."""
+        rng = np.random.default_rng(42 + L)
+        n_target = 3
+        n_input = math.ceil(math.log2(L))
+        n_work = n_input - 1
+
+        bitstrings = rng.integers(0, 2, size=(L, n_target)).tolist()
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        control_wires = list(range(n_input))
+        work_wires = list(range(n_input, n_input + n_work))
+        target_wires = list(range(n_input + n_work, total_wires))
+
+        x_state = rng.random(L) + 1j * rng.random(L)
+        x_state /= np.linalg.norm(x_state)
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev)
+        def circuit():
+            qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
+            for wire in target_wires:
+                qp.Hadamard(wire)
+
+            _qrom_measurement_decomposition(
+                data=bitstrings,
+                control_wires=control_wires,
+                target_wires=target_wires,
+                work_wires=work_wires,
+                clean=True,
+            )
+
+            qp.adjoint(qp.StatePrep(x_state, wires=control_wires, pad_with=0.0))
+            return qp.probs(wires=control_wires)
+
+        assert np.isclose(circuit()[0], 1.0)
