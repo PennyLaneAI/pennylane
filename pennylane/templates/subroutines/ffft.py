@@ -100,7 +100,7 @@ class FFFT(Operator):
     Iterating this decomposition :math:`k` times realizes the full Fourier transform over
     :math:`n = 2^{k}` sites.
 
-    .. see-also:: :class:`~.TwoWireFFT`
+    .. seealso:: :class:`~.TwoWireFFT`
 
     Args:
 
