@@ -388,7 +388,7 @@ class DefaultClifford(Device):
                 qp.BitFlip(0.2, wires=[1])
                 return qp.counts()
 
-        >>> circuit() # doctest: +SKIP
+        >>> circuit()
         {np.str_('0000'): np.int64(388), np.str_('0100'): np.int64(120), np.str_('1011'): np.int64(119), np.str_('1111'): np.int64(397)}
 
     .. details::
