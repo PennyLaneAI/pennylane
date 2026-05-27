@@ -164,7 +164,7 @@ class SignedOutMultiplier(Operator):
             |0⟩_s     ───────────────────────┼───────────
                                         ┌────┴────┐
             |0⟩       ─────────[k-1]────┤ Unsigned├──────
-                                        │  Mult   │
+                                        │  Mult x*y   │
                                         └─────────┘
 
         Then, we flip the sign bit of the output register controlled on the (cached) sign bits of each input, respectively:
