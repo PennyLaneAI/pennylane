@@ -46,10 +46,11 @@ class Operator2(ABC):
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
     """The names of arguments corresponding to wires. Values for these arguments are
     automatically wrapped in :class:`~.Wires` objects by the ``Operator2`` constructor.
-    When a name also appears in ``hybrid_argnames``, however, ``Operator2`` does not
-    descend into its pytree structure, so subclasses must ensure every wire leaf inside
-    a hybrid wire argument is already a :class:`~.Wires` object before forwarding it to
-    ``super().__init__``.
+    If an argument is expected to be a structure that wraps wires (known as pytrees), such
+    as a list of wire registers, make sure to include its name in ``hybrid_argnames`` as well.
+    Additionally, ``Operator2`` does not descend into the pytree structure of such arguments,
+    so subclasses must ensure every wire leaf inside a hybrid wire argument is already a
+    :class:`~.Wires` object before forwarding it to ``super().__init__``.
 
     The order in which names appear in ``wire_argnames`` determines the order in which
     their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
@@ -57,7 +58,7 @@ class Operator2(ABC):
     order. Wires contributed by :class:`~.Operator2` leaves found inside non-wire
     ``hybrid_argnames`` are appended *after* all ``wire_argnames`` wires. The special
     names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
-    but their wires are excluded from ``op.wires``."""
+    but their values are excluded from ``op.wires``."""
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as dynamic. Dynamic arguments are those
@@ -66,7 +67,7 @@ class Operator2(ABC):
     static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as static. Static arguments are those
     whose concrete values are known when capturing the program. Arguments in this
-    category cannot be lowered to a compiler intermediate representation. An
+    category are not lowered to a compiler intermediate representation. An
     operator can only specify ``static_argnames`` or ``compilable_argnames``, but
     not both."""
 
