@@ -56,7 +56,6 @@ def process_queue(
         ValueError: If the queue contains objects that cannot be processed into a QuantumScript
 
     """
-    from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel # tach-ignore
 
     ops = []
     measurements = []
@@ -65,7 +64,7 @@ def process_queue(
     # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
     # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
     for obj, _ in queue.items():
-        if isinstance(obj, (Operator, QuantumTape)):
+        if isinstance(obj, (Operator, QuantumScript)):
             if encountered_measurement:
                 raise ValueError(f"{obj} must occur prior to measurements.")
             ops.append(obj)
