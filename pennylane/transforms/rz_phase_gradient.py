@@ -43,9 +43,7 @@ def _rz_phase_gradient(
 
     # NOTE: To be capture compatible, must wrap in function
     # so 'BasisState' is only constructed when compute_fn is called
-    def compute_fn():
-        return qp.ctrl(qp.BasisState(state=binary_int, wires=angle_wires), control=wire)
-
+    compute_fn = partial(qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires)
     target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
     # NOTE: Compute function is self-inverse, pass it for the uncompute function
