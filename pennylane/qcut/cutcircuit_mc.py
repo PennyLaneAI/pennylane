@@ -460,8 +460,10 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+    # In the following we have strict=False because there may be more device wires than wires
+    # in a given fragment tape
     fragment_tapes = [
-        ops.functions.map_wires(t, dict(zip(t.wires, device_wires, strict=True)))[0][0]
+        ops.functions.map_wires(t, dict(zip(t.wires, device_wires, strict=False)))[0][0]
         for t in fragment_tapes
     ]
 
