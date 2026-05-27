@@ -25,6 +25,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
+  This variant handles work wires explicitly instead of allocating them dynamically in the
+  decomposition. This makes it possible to use `SumOfSlatersPrep2` with `qp.qjit` with capture disabled,
+  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
+
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
