@@ -901,6 +901,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
         header_line = " | ".join((":---",) * len(columns))
         header = f"| {column_str} |\n| {header_line} |\n"
         lines = []
+        entries = sorted(tuple(str(x) for x in entry) for entry in entries)
         for entry in entries:
             line_str = " | ".join(str(s) for s in entry)
             lines.append(f"| {line_str} |")

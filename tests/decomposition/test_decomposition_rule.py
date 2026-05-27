@@ -694,8 +694,8 @@ class TestInspectDecomps:
 
             | Gate | Count |
             | :--- | :--- |
-            | RZ | 2 |
             | CNOT | 1 |
+            | RZ | 2 |
             </details>
 
             ---
@@ -710,9 +710,9 @@ class TestInspectDecomps:
 
             | Gate | Count |
             | :--- | :--- |
-            | RX | 2 |
             | CZ | 2 |
             | Hadamard | 1 |
+            | RX | 2 |
             </details>
 
             ---
@@ -771,9 +771,9 @@ class TestInspectDecomps:
 
             | Gate | Count |
             | :--- | :--- |
-            | RX | 2 |
             | CZ | 8 |
             | Hadamard | 1 |
+            | RX | 2 |
             </details>
 
             ---
@@ -794,11 +794,11 @@ class TestInspectDecomps:
 
             | Gate | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Toffoli | 8 | 6 |
+            | CZ | 6 | 6 |
+            | Hadamard | 1 | 1 |
             | MidMeasure | 1 | 1 |
             | RX | 1 | 1 |
-            | Hadamard | 1 | 1 |
-            | CZ | 6 | 6 |
+            | Toffoli | 8 | 6 |
 
             | Wire Type | Num Allocated |
             | :--- | :--- |
@@ -892,9 +892,9 @@ class TestInspectDecomps:
 
             | Gate | Count |
             | :--- | :--- |
-            | RX | 2 |
             | CZ | 8 |
             | Hadamard | 1 |
+            | RX | 2 |
             </details>
 
             ---
