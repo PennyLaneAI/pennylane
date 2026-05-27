@@ -15,7 +15,7 @@
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
 * Added a dispatcher for `qp.pauli_measure` to call `catalyst.pauli_measure` when qjit is enabled
-  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for 
+  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
@@ -56,11 +56,11 @@
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
-  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which 
+  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which
   led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
   [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
 
-* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
   [(#9516)](https://github.com/PennyLaneAI/pennylane/pull/9516)
@@ -73,7 +73,7 @@
     ...     size_bitstring = 8,
     ...     available_dirty_aux = 300,
     ... )
-    >>> 
+    >>>
     >>> print(qre.estimate(qrom_op))
     --- Resources: ---
     Total wires: 308
@@ -190,12 +190,13 @@
   list of abstract integer values. This is to better define the set of operations allowed on
   allocated qubits.
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
+  [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
 
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
   [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
- 
+
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
