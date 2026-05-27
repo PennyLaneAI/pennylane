@@ -18,7 +18,6 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 import copy
 from collections import defaultdict
 
-import pennylane as qml
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
