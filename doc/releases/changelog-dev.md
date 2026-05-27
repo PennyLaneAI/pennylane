@@ -28,6 +28,7 @@
   1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
   2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
   3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+
   ```
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
