@@ -20,6 +20,7 @@ This module contains templates, which are pre-coded routines that can be used in
     :toctree: api
 
     ~LeftQuantumComparator
+    ~SumOfSlatersPrep2
 """
 
 from .left_quantum_comparator import LeftQuantumComparator

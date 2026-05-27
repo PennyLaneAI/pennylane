@@ -48,11 +48,17 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         target_wires (~.WiresLike): Wires on which to prepare the state.
-        enumeration_wires (~.WiresLike): Work wires used for the enumeration register.
+        enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
         identification_wires (~.WiresLike): Work wires used for the identification register.
-        qrom_work_wires (~.WiresLike): Work wires used by the :class:`~.QROM` subroutine.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-1` for :math:`d` entries in the state.
+        qrom_work_wires (~.WiresLike): Work wires used by the :class:`~.QROM` subroutine. For
+            :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil - 1` qubits are required.
         mcx_cache_wires (~.WiresLike): Work wires used for caching AND values when uncomputing
             the enumeration register with multicontrolled bit flips.
+            The required number of qubits depends on the particular ``indices`` of the sparse state,
+            but it is at most :math:`2d-2` for :math:`d` entries in the state.
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
 
@@ -90,11 +96,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
         from pennylane.labs.templates import SumOfSlatersPrep2
 
-        v_bits = qp.math.int_to_binary(np.array(indices), n).T
-        selected_ids, _ = qp.select_sos_rows(v_bits)
-        registers = SumOfSlatersPrep2.required_register_sizes(len(indices), len(selected_ids), n)
-        work_wires = qp.registers(registers)
-        work_wires.pop("wires") # Remove the target wires
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
 
     With our work wires set up, we can construct the state preparation circuit and check the
     prepared state for correctness:
@@ -194,14 +196,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
             n = 5
             target_wires = list(range(n))
 
-            v_bits = qp.math.int_to_binary(np.array(indices), n).T
-            selected_ids, _ = qp.select_sos_rows(v_bits)
-            registers = SumOfSlatersPrep2.required_register_sizes(len(indices), len(selected_ids), n)
-            registers.pop("identification_wires")
-            num_wires = sum(registers.values())
-            work_wires = qp.registers(registers)
-            work_wires.pop("wires") # Remove the target wires
-            work_wires["identification_wires"] = [] # Add empty identification wires
+            work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
 
             @qp.decompose(gate_set=gate_set)
             @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
@@ -304,6 +299,26 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
+
+    @staticmethod
+    def make_work_wire_registers(indices, num_wires):
+        """Create work wire registers required for a given set of indices and number of target
+        wires for SumOfSlatersPrep2. The size of the required registers is computed with
+        ``SumOfSlatersPrep.required_register_sizes`` and ``qp.registers`` is used to produce the
+        registers themselves. Note that this function implicitly assumes that ``SumOfSlatersPrep2``
+        has the first ``num_wires`` wires as target wires and the work wires have the subsequent
+        consecutive integers as labels."""
+        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
+        selection, _ = qp.select_sos_rows(v_bits)
+        registers = SumOfSlatersPrep2.required_register_sizes(
+            len(indices), len(selection), num_wires
+        )
+        empty_registers = {k for k, val in registers.items() if val == 0}
+        registers = {k: val for k, val in registers.items() if val > 0}
+        work_wires = qp.registers(registers)
+        work_wires.pop("wires")  # Remove the target wires
+        work_wires |= {k: Wires([]) for k in empty_registers}
+        return work_wires
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)
