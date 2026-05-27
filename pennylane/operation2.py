@@ -812,7 +812,7 @@ def _format_label_arg(x, decimals, cache):
             return ""
         try:
             return format(qp.math.toarray(x), f".{decimals}f")
-        except ValueError:
+        except ValueError:  # pragma: no cover
             # If the parameter can't be displayed as a float
             return format(x)
 
