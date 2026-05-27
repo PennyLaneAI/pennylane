@@ -191,8 +191,8 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
-    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
 def test_change_op_basis_with_mixed_types():
