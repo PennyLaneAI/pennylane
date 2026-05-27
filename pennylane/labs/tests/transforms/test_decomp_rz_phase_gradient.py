@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane.labs.transforms.decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import WireError
 
 
@@ -215,10 +216,12 @@ def test_capture_compatibility():
             custom_decomp = make_rz_to_phase_gradient_decomp(
                 angle_wires, phase_grad_wires, work_wires
             )
+
             gate_set = {"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"}
 
+            @DecomposeInterpreter(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
             def f(phi):
-                custom_decomp(phi, 0)
+                qp.RZ(phi, 0)
                 return qp.state()
 
             phi_val = jnp.pi
