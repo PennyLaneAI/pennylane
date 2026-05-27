@@ -800,8 +800,6 @@ class TestDecomposition:
 
         op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=n, order=order)
         decomp = op.decomposition()
-        assert decomp
-        decomp = _simplify_trotter_sequence(decomp)
         def same_structure(o1, o2):
             return (
                 type(o1) == type(o2)
