@@ -1072,12 +1072,6 @@ def _sos_state_prep_with_wires(
     def left_elbow_ladder(i):
         qp.TemporaryAND(elbow_triples[i])
 
-    if qp.compiler.active():
-        enumeration_wires = qp.math.array(enumeration_wires, like="jax")
-        b_bits = qp.math.array(b_bits, like="jax")
-        mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
-        elbow_triples = qp.math.array(elbow_triples, like="jax")
-
     @for_loop(d)
     def cnot_loop(j, k):
         bit_is_set = (k >> (d - 1 - j)) & 1
