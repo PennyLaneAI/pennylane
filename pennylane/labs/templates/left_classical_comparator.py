@@ -39,7 +39,7 @@ class LeftClassicalComparator(Operation):
     The decomposition is based on the left block in Figure 6 in Appendix E
     of `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_, adapted for a classical constant.
 
-    ..warning::
+    .. warning::
 
         Note that the decomposition uses auxiliary wires and in order to clean them,
         one must apply the adjoint of this operator after using the target qubit.
