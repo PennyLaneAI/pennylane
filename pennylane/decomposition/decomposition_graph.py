@@ -282,6 +282,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # op that we're still exploring (e.g., if we find ourselves exploring decomposition
         # rules for C(RX) during exploration of RX itself), we stop.
         self._in_progress = []
+        self._num_ctrl_wires_in_progress = defaultdict(list)
 
         self._construct_graph(operations)
 
@@ -334,7 +335,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         use_reconstructor = decomps_use_reconstructor(op.op_type, op.params)
 
-        self._in_progress.append(op)
+        self._push_in_progress(op)
         rules = self._get_decompositions(op, use_reconstructor)
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -343,7 +344,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # this op unless there is no other choice.
             self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
-            self._in_progress.pop()
+            self._pop_in_progress(op)
             return op_node_idx
 
         op_reachable = False
@@ -377,8 +378,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
-        self._in_progress.pop()
+        self._pop_in_progress(op)
         return op_node_idx
+
+    def _push_in_progress(self, op):
+        self._in_progress.append(op)
+        if op.op_type is qp.ops.Controlled:
+            base_rep = _get_base_rep_if_applicable(op)
+            num_ctrl_wires = op.params["num_control_wires"]
+            self._num_ctrl_wires_in_progress[base_rep].append(num_ctrl_wires)
+
+    def _pop_in_progress(self, op):
+        self._in_progress.pop()
+        if op.op_type is qp.ops.Controlled:
+            base_rep = _get_base_rep_if_applicable(op)
+            self._num_ctrl_wires_in_progress[base_rep].pop()
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
         original_node = self._graph[idx]
@@ -430,7 +444,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if (base := _get_base_rep_if_applicable(op)) and base in self._in_progress:
+            if self._base_in_progress(op):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
@@ -451,6 +465,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
+
+    def _base_in_progress(self, op):
+        if not (base := _get_base_rep_if_applicable(op)):
+            return False
+        if base in self._in_progress:
+            return True
+        return (
+            op.op_type is qp.ops.Controlled
+            and (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base])
+            and op.params["num_control_wires"] > ctrl_wires_in_progress[-1]
+        )
 
     def _get_decompositions(
         self, op: CompressedResourceOp, use_reconstructor: bool = False
