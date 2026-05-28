@@ -300,10 +300,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     # construction methods
     # ========================================================
 
-    # This is a temporary attribute to fix the operator queuing behaviour.
-    # Tapes may be nested and therefore processed into the `_ops` list.
-    _queue_category = "_ops"
-
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
