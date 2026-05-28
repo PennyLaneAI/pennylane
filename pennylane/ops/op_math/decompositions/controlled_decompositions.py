@@ -452,10 +452,6 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     extra_work_wires = work_wires[num_work_wires:]
     work_wires = work_wires[:num_work_wires]
 
-    if compiler.active() or qp.capture.enabled():
-        control_wires = math.array(control_wires, like="jax")
-        work_wires = math.array(work_wires, like="jax")
-
     if work_wire_type == "borrowed":
         up_gate = down_gate = ops.Toffoli
     else:
@@ -956,7 +952,8 @@ def _bisect_compute_a(u):
         mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
         ai = zi * mul
         br = x * mul
-        return _param_su2(ar, ai, br)
+        bi = 0
+        return _param_su2(ar, ai, br, bi)
 
     return math.cond(
         math.allclose(zr, -1),
@@ -1028,7 +1025,7 @@ def _bisect_compute_b(u):
         (),
     )
 
-    return _param_su2(c, d, b)
+    return _param_su2(c, d, b, 0)
 
 
 def _single_control_zyz(phi, theta, omega, wires):
