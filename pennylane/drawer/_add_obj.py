@@ -70,8 +70,8 @@ def _add_cond_grouping_symbols(op, layer_str, config):
         ctrl_symbol = "╝"
     layer_str[max_b + n_wires] = f"═{ctrl_symbol}"
 
-    for w in range(max_w + 1, max(config.wire_map.values()) + 1):
-        layer_str[w] = "─║"
+    for row in range(max_w + 1, config.n_wires):
+        layer_str[row] = config.wire_filler(row) + "║"
 
     for b in range(max_b):
         if b in mapped_bits:
@@ -122,8 +122,8 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
     bit = config.bit_map[op] + n_wires
     layer_str[bit] += " ╚"
 
-    for w in range(mapped_wire + 1, n_wires):
-        layer_str[w] += "─║"
+    for row in range(mapped_wire + 1, config.n_wires):
+        layer_str[row] += config.wire_filler(row) + "║"
 
     for b in range(n_wires, bit):
         filler = " " if layer_str[b][-1] == " " else "═"
