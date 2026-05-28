@@ -28,7 +28,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 from .out_multiplier import _add_plus_one, _c_add_sub, _increment
@@ -286,51 +285,9 @@ class OutSquare(Operation):
             self.hyperparameters["output_wires_zeroed"],
         )
 
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        x_wires: WiresLike,
-        output_wires: WiresLike,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool,
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            x_wires (WiresLike): wires that store the integer :math:`x`.
-            output_wires (WiresLike): wires that store the squaring result. If the register
-                initially encodes a non-zero value :math:`y`, the solution will be added to this
-                value. If the register is guaranteed to be in the zero state, it is recommended to
-                set ``output_wires_zeroed=True``.
-            work_wires (WiresLike): the auxiliary wires to use for the squaring.
-                :math:`m` work wires are required if ``output_wires_zeroed=False``,
-                otherwise :math:`\min(m, n+1)` work wires are required.
-            output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
-                :math:`|0\rangle` initially. Defaults to ``False``.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> all_wires = ([0, 1], [2, 3], [4, 5])
-        >>> qp.OutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
-        [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2]), control_wires=[4], work_wires=[5]), CNOT(wires=[0, 4])]
-        """
-        with AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed)
-
-        if QueuingManager.recording():
-            for op in q.queue:
-                apply(op)
-
-        return q.queue
 
 
 def _out_square_with_adder_condition(

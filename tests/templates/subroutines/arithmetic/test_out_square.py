@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops import Controlled
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 
 
@@ -81,55 +80,6 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
 
 class TestOutSquare:
     """Test the OutSquare template."""
-
-    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-    @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "work_wires"),
-        [
-            (
-                [0, 1],
-                [3, 4, 5],
-                [6, 7, 8],
-            ),
-            (
-                [0, 1, 2],
-                [3, 4, 5, 6, 7],
-                [8, 9, 10, 11, 12],
-            ),
-            (
-                [0, 1, 2],
-                [3, 4, 5, 6, 7, 8, 9],
-                [10, 11, 12, 13, 14, 15, 16],
-            ),
-            (
-                [0, 1, 2, 3],
-                [4, 5, 6, 7, 8],
-                [9, 10, 11, 12, 13],
-            ),
-            (
-                [0, 1, 2, 3],
-                [4, 5, 6, 7],
-                [9, 10, 11, 12, 13],
-            ),
-        ],
-    )
-    @pytest.mark.parametrize(
-        "use_jit", [pytest.param(True, marks=(pytest.mark.external, pytest.mark.catalyst)), False]
-    )
-    def test_operation_result(
-        self,
-        x_wires,
-        output_wires,
-        work_wires,
-        output_wires_zeroed,
-        use_jit,
-        seed,
-    ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the OutSquare template output."""
-        all_wires = (x_wires, output_wires, work_wires)
-        _test_square_correctness(
-            all_wires, OutSquare.compute_decomposition, seed, output_wires_zeroed, use_jit
-        )
 
     @pytest.mark.catalyst
     @pytest.mark.external
@@ -229,85 +179,6 @@ class TestOutSquare:
                 OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
         else:
             OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
-
-    def test_decomposition_output_wires_zeroed(self):
-        """Test that compute_decomposition and decomposition work as expected with
-        ``output_wires_zeroed=True``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
-        decomp = OutSquare(x_wires, output_wires, work_wires, True).decomposition()
-        compute_decomp = OutSquare.compute_decomposition(x_wires, output_wires, work_wires, True)
-
-        expected = [
-            # controlled copy
-            qp.CNOT([2, 6]),
-            qp.TemporaryAND([2, 1, 5]),
-            qp.TemporaryAND([2, 0, 4]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
-        ]
-        assert decomp == compute_decomp == expected
-
-    def test_decomposition_output_wires_not_zeroed(self):
-        """Test that compute_decomposition and decomposition work as expected with
-        ``output_wires_zeroed=False``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
-        decomp = OutSquare(x_wires, output_wires, work_wires, False).decomposition()
-        compute_decomp = OutSquare.compute_decomposition(x_wires, output_wires, work_wires, False)
-
-        expected = [
-            # controlled copy (="zeroth" CNOT-wrapped controlled adder)
-            qp.CNOT([2, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]),
-                control_wires=[7],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([2, 7]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
-        ]
-
-        assert decomp == compute_decomp == expected
 
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "output_wires_zeroed", "applicable_rules"),
