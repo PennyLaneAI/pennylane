@@ -33,7 +33,7 @@
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
   has been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
@@ -199,10 +199,6 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
-
-* `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
-  when processing an `AnnotatedQueue` into a `QuantumScript`.
-  [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
