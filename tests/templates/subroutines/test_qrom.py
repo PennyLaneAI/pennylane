@@ -15,6 +15,9 @@
 Tests for the QROM template.
 """
 
+import math
+import random
+
 import numpy
 import pytest
 
@@ -22,8 +25,40 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.qrom import _calculate_n_select_work_wires, _qrom_decomposition
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.qrom import (
+    _calculate_n_select_work_wires,
+    _measurement_qrom_count_TemporaryAnd,
+    _qrom_decomposition,
+    _qrom_measurement_decomposition,
+)
 from pennylane.templates.subroutines.select import _select_decomp_unary
+
+gate_set = {
+    qp.H,
+    qp.T,
+    qp.S,
+    qp.X,
+    qp.Y,
+    qp.Z,
+    qp.CNOT,
+    qp.CZ,
+    qp.CY,
+    qp.PauliX,
+    qp.PauliY,
+    qp.PauliZ,
+    qp.Hadamard,
+    qp.RX,
+    qp.RY,
+    qp.RZ,
+    qp.Rot,
+    qp.PhaseShift,
+    qp.GlobalPhase,
+    qp.BasisState,
+    qp.Toffoli,
+    qp.SWAP,
+    PauliMeasure,
+}
 
 has_jax = True
 try:
@@ -532,3 +567,118 @@ def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected
     )
 
     assert result == expected
+
+
+class TestMeasurementQROM:
+    """Test the correctness of the measurement-based QROM decomposition."""
+
+    @pytest.mark.parametrize(
+        ("L", "expected_ands"),
+        [
+            (1, 0),
+            (2, 0),
+            (3, 1),
+            (4, 1),
+            (5, 3),
+            (6, 4),
+            (7, 4),
+            (8, 5),
+            (9, 7),
+            (10, 8),
+            (11, 9),
+            (12, 10),
+            (13, 10),
+            (14, 11),
+            (15, 12),
+            (16, 13),
+        ],
+    )
+    def test_count_TemporaryAnd(self, L, expected_ands):
+        """Test that TemporaryAND count matches expected values."""
+        assert _measurement_qrom_count_TemporaryAnd(L) == expected_ands
+
+    @pytest.mark.external
+    @pytest.mark.parametrize(
+        "L",
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
+    )
+    def test_correctness(self, L):
+        """Test correctness of measurement-based QROM for various sizes."""
+        rng = random.Random(42 + L)
+        n_target = 3
+        n_input = math.ceil(math.log2(L))
+        n_work = n_input - 1
+
+        bitstrings = [[rng.randint(0, 1) for _ in range(n_target)] for _ in range(L)]
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        control_wires = list(range(n_input))
+        work_wires = list(range(n_input, n_input + n_work))
+        target_wires = list(range(n_input + n_work, total_wires))
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisState(j, wires=control_wires)
+            _qrom_measurement_decomposition(
+                data=bitstrings,
+                control_wires=control_wires,
+                target_wires=target_wires,
+                work_wires=work_wires,
+                clean=True,
+            )
+            return qp.sample(wires=target_wires), qp.sample(wires=work_wires)
+
+        for j in range(L):
+            result = [int(x) for x in circuit(j)[0].flatten()]
+            assert result == bitstrings[j], f"L={L}, j={j}: got {result}, expected {bitstrings[j]}"
+
+            output_wires = [int(x) for x in circuit(j)[1].flatten()]
+            assert output_wires == [0] * n_work, f"j={j}: work wires not clean, got {output_wires}"
+
+    @pytest.mark.external
+    @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
+    def test_no_phases_error(self, L):
+        """Test that QROM introduces no relative phases on the control register."""
+        rng = np.random.default_rng(42 + L)
+        n_target = 3
+        n_input = math.ceil(math.log2(L))
+        n_work = n_input - 1
+
+        bitstrings = rng.integers(0, 2, size=(L, n_target)).tolist()
+
+        total_wires = n_input + n_work + n_target
+        dev = qp.device("lightning.qubit", wires=total_wires)
+
+        control_wires = list(range(n_input))
+        work_wires = list(range(n_input, n_input + n_work))
+        target_wires = list(range(n_input + n_work, total_wires))
+
+        x_state = rng.random(L) + 1j * rng.random(L)
+        x_state /= np.linalg.norm(x_state)
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev)
+        def circuit():
+            qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
+
+            for wire in target_wires:
+                qp.Hadamard(wire)
+
+            _qrom_measurement_decomposition(
+                data=bitstrings,
+                control_wires=control_wires,
+                target_wires=target_wires,
+                work_wires=work_wires,
+                clean=True,
+            )
+
+            qp.adjoint(qp.StatePrep(x_state, wires=control_wires, pad_with=0.0))
+            return qp.probs(wires=control_wires)
+
+        assert np.isclose(circuit()[0], 1.0)
