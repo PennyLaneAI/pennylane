@@ -38,7 +38,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 
 class Incrementer(Operator):
     """
-    Increment the input `wires` by one, using zeroed `work_wires`.
+    Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
     Args:
         wires (Wires): The wires that the incrementer acts on.
