@@ -158,10 +158,11 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-    0: ──────────────H────╭●─╭●────┤  <Z>
-         |0>├─╭SWAP──┤    │  │
-         |0>├─╰SWAP──┤    │  │
-                     |0>├─╰X─╰X──┤
+    0: ──H────╭●────╭●────┤  <Z>
+         |0>├─╰X────╰X──┤
+         |0>├─╭SWAP──┤
+         |0>├─╰SWAP──┤
+
 
     Here, three dynamic wires were allocated in the circuit originally. When PennyLane determines
     which concrete values to use for dynamic wires to send to the device for execution, we can see
@@ -276,10 +277,11 @@ def allocate(
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-    0: ───────────H─┤  <Z>
-    1: ───────────H─┤
+    0: ──H──────────┤  <Z>
+    1: ──H──────────┤
          |0>├──H──┤
          |0>├──H──┤
+
 
     Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
     handling:
@@ -318,12 +320,12 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit)())
-        0: ──────────────────H─────╭●───────────╭●────┤  <Z>
-            |0>├──┤↗│  │0⟩────────│──────────┤ │
-            ├──────║────────Z─────╰X─────────┤ │
-                   ║        ║|0>├──┤↗│  │0⟩────│───┤
-                   ║        ║├──────║────────Z─╰X──┤
-                   ╚════════╝       ╚════════╝
+        0: ──H─────────────────────╭●───────────╭●────┤  <Z>
+             |0>├──┤↗│  │0⟩────────│──────────┤ │
+             ├──────║────────Z─────╰X─────────┤ │
+                    ║        ║|0>├──┤↗│  │0⟩────│───┤
+                    ║        ║├──────║────────Z─╰X──┤
+                    ╚════════╝       ╚════════╝
 
         The user-level circuit drawing shows four separate allocations and deallocations (two per
         loop iteration). However, the circuit that the device receives gets automatically compiled
@@ -356,9 +358,9 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit, level="user")())
-        0: ──────────────────────┤  <Z>
+        0: ─────────────┤  <Z>
+            |0>├──H──┤
             |0>├──X──┤
-                    |0>├──H──┤
         >>> print(qp.draw(circuit, level="device")())
         0: ─────────────────┤  <Z>
         1: ──H──┤↗│  │0⟩──X─┤

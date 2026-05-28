@@ -182,7 +182,8 @@ class LayersData:
 
     def add_to_layer(self, op, op_layer, occupied_wires, used_cwires):
         """Adds an operation to a layer."""
-        if op_layer > self.max_layer:
+        while op_layer > self.max_layer:
+            # when in insert_waiting_ops, may need multiple new layers
             self.occupied_wires_per_layer.append(set())
             self.ops_in_layer.append([])
             self.used_cwires_per_layer.append(set())
@@ -199,15 +200,12 @@ class LayersData:
             bit_map=bit_map,
             _dynamic_wires=False,
         )
+        # if not enough space, bump op_layer
+        op_layer = max(op_layer, len(inner_layers))
         for i, layer in enumerate(reversed(inner_layers)):
             insert_layer = op_layer - i - 1
-            if insert_layer < 0:
-                self.ops_in_layer.insert(0, [])
-                op_layer += 1
-                insert_layer = op_layer - i - 1
-                self.occupied_wires_per_layer.insert(0, set())
-                self.used_cwires_per_layer.insert(0, set())
-            self.ops_in_layer[insert_layer].extend(layer)
+            for op in layer:
+                self.add_to_layer(op, insert_layer, {}, {})
         self.waiting_dynamic_wires = []
         self.waiting_dynamic_ops = []
         return op_layer
