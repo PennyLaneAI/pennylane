@@ -329,9 +329,15 @@ class TestHybridArgs:
         other (with matching pytree structure) compare unequal."""
         op1 = HybridOp([DynOp(0.5, wires=1)], wires=0)
         op2 = HybridOp([0.5], wires=0)
+
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="different values for 'ops'"):
             qp.assert_equal(op1, op2)
+
+        # Check reverse order
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="different values for 'ops'"):
+            qp.assert_equal(op2, op1)
 
     def test_hybrid_wires(self):
         """Test that operators with a hybrid argument that is also a wire argument
