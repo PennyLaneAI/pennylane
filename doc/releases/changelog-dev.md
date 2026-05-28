@@ -57,6 +57,10 @@
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
 
+* The output of :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` are
+  better formatted when used in a Jupyter notebook environment.
+  [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
