@@ -551,7 +551,7 @@ class Operator2(ABC):
         return False
 
     @property
-    def pauli_rep(self) -> qp.pauli.PauliSentence | None:
+    def pauli_rep(self) -> "qp.pauli.PauliSentence | None":
         """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
         return self._pauli_rep
