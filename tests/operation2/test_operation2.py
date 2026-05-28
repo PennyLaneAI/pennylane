@@ -845,6 +845,18 @@ class TestDunderMethods:
         op = Op(wires=0)
         assert repr(op) == "Op(wires=[0])"
 
+    def test_repr_with_hybrid_wires(self):
+        """Test that __repr__ prints correctly if there are hybrid wire arguments."""
+
+        class Op(Operator2):
+            hybrid_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=[Wires(w) for w in wires])
+
+        op = Op(wires=[[0], 1, [2, 3]])
+        assert repr(op) == "Op(wires=[[0], [1], [2, 3]])"
+
     def test_copy(self):
         """Test that shallow copies of operators are created correctly."""
         op = FullOp(0.5, static="static", hybrid=[], wires=0)
