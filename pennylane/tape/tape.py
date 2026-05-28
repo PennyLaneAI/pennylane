@@ -25,9 +25,9 @@ import pennylane as qp
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
-from .qscript import QuantumScript
+from .qscript import QuantumScript, process_queue
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):

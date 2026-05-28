@@ -27,7 +27,6 @@ This module contains the classes for placing objects into queues.
     ~QueuingManager
     ~AnnotatedQueue
     ~apply
-    ~process_queue
 
 
 Description
@@ -158,7 +157,7 @@ Only the operators that will end up in the circuit will remain.
 [X(0)]
 [X(0)**1.5]
 
-Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
+Once the queue is constructed, the :meth:`~pennylane.tape.QuantumScript.from_queue` method converts it into the operations
 and measurements in the final circuit. This step eliminates any object that has an owner.
 
 .. code-block:: python
@@ -169,16 +168,11 @@ and measurements in the final circuit. This step eliminates any object that has 
         pow_op = base ** 1.5
         qp.expval(qp.Z(0) @ qp.X(1))
 
->>> ops, measurements = qp.queuing.process_queue(q)
->>> ops
+>>> tape = qp.tape.QuantumScript.from_queue(q)
+>>> tape.operations
 [StatePrep(array([1., 0.]), wires=[0]), X(0)**1.5]
->>> measurements
+>>> tape.measurements
 [expval(Z(0) @ X(1))]
-
-These lists can be used to construct a :class:`~.QuantumScript`:
-
->>> qp.tape.QuantumScript(ops, measurements)
-<QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
 use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
@@ -554,50 +548,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
-# pylint: disable=protected-access
-def process_queue(
-    queue: AnnotatedQueue,
-) -> tuple[list["pennylane.operation.Operator"], list["pennylane.measurements.MeasurementProcess"]]:
-    """Process the annotated queue, creating a list of quantum
-    operations and measurement processes.
-
-    Args:
-        queue (.AnnotatedQueue): The queue to be processed into individual lists
-
-    Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)]:
-        The list of tape operations, the list of tape measurements
-
-    Raises:
-        QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
-
-    """
-    from pennylane.measurements import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        MeasurementProcess,
-    )
-    from pennylane.operation import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        Operator,
-    )
-    from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel # tach-ignore
-
-    ops = []
-    measurements = []
-    encountered_measurement = False
-
-    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
-    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
-    for obj, _ in queue.items():
-        if isinstance(obj, (Operator, QuantumTape)):
-            if encountered_measurement:
-                raise ValueError(f"{obj} must occur prior to measurements.")
-            ops.append(obj)
-        elif isinstance(obj, MeasurementProcess):
-            measurements.append(obj)
-            encountered_measurement = True
-        else:
-            raise QueuingError(
-                f"Encountered object {obj} in queue while processing."
-                " AnnotatedQueue should only contain `Operator`s and `MeasurementProcess`es."
-            )
-
-    return ops, measurements
+def __getattr__(key):
+    if key == "process_queue":
+        raise AttributeError(
+            "pennylane.queuing.process_queue has been moved to qp.tape.qscript.from_queue"
+        )
+    raise AttributeError(f"module 'pennylane.queuing' has no attribute '{key}'")
