@@ -26,7 +26,7 @@ from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
-from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
+from pennylane.exceptions import TransformError
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.pytrees import flatten
@@ -924,23 +924,6 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def tape_transform(self) -> Callable | None:
         """The raw tape transform definition for the transform."""
         return self._transform.tape_transform
-
-    @property
-    def transform(self) -> Callable | None:
-        """The raw tape transform definition of the transform.
-
-        .. warning::
-            This property is deprecated and will be removed in v0.46.
-            Please use :attr:`~.BoundTransform.tape_transform` instead.
-
-        """
-        warnings.warn(
-            "The 'BoundTransform.transform' property is deprecated and will be removed in v0.46. "
-            "Please use 'BoundTransform.tape_transform' instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.tape_transform
 
     @property
     def expand_transform(self) -> BoundTransform | None:

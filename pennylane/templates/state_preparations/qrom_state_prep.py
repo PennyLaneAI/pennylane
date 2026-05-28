@@ -19,6 +19,9 @@ import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
+#: Small constant to prevent division by zero in state preparation.
+_DIVISION_EPS = 1e-15
+
 
 def _float_to_binary(val, num_bits):
     r"""Converts a value within the range [0, 1) to its binary representation with a specified precision.
@@ -102,7 +105,7 @@ class QROMStatePreparation(Operation):
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
-        self, state_vector, wires, precision_wires, work_wires=None, id=None
+        self, state_vector, wires, precision_wires, work_wires=None
     ):  # pylint: disable=too-many-arguments
 
         n_amplitudes = qp.math.shape(state_vector)[0]
@@ -130,7 +133,7 @@ class QROMStatePreparation(Operation):
             + self.hyperparameters["work_wires"]
         )
 
-        super().__init__(state_vector, wires=all_wires, id=id)
+        super().__init__(state_vector, wires=all_wires)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -186,7 +189,6 @@ class QROMStatePreparation(Operation):
 
         probs = qp.math.abs(state_vector) ** 2
         phases = qp.math.angle(state_vector) % (2 * np.pi)
-        eps = 1e-15  # Small constant to avoid division by zero
 
         decomp_ops = []
         num_iterations = int(qp.math.log2(qp.math.shape(probs)[0]))
@@ -207,7 +209,7 @@ class QROMStatePreparation(Operation):
                 _float_to_binary(
                     2
                     * qp.math.arccos(
-                        qp.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                        qp.math.sqrt(probs_numerator[j] / (probs_denominator[j] + _DIVISION_EPS))
                     )
                     / np.pi,
                     len(precision_wires),

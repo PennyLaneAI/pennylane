@@ -18,11 +18,13 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import overload
+from warnings import warn
 
 import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
@@ -342,7 +344,7 @@ class Adjoint(SymbolicOp):
             base = pytrees.unflatten(*pytrees.flatten(base))
         return cls._primitive.bind(base, **kwargs)
 
-    def __new__(cls, base=None, id=None):
+    def __new__(cls, base=None):
         """Returns an uninitialized type with the necessary mixins.
 
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
@@ -355,9 +357,9 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, id=None):
+    def __init__(self, base=None):
         self._name = f"Adjoint({base.name})"
-        super().__init__(base, id=id)
+        super().__init__(base)
         if self.base.pauli_rep:
             pr = {pw: qp.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
             self._pauli_rep = qp.pauli.PauliSentence(pr)
@@ -457,6 +459,11 @@ class AdjointOperation(Adjoint, Operation):
 
     @property
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return self.base.basis
 
     @property

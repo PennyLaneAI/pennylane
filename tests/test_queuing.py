@@ -462,25 +462,8 @@ class TestWrappedObj:
 
 
 def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object that does not have a
-    _queue_category property
-    """
+    """Test that a QueuingError is raised if process queue encounters an object it cant handle."""
     q = AnnotatedQueue()
     q.append(1)
-    with pytest.raises(QueuingError, match="not an object that can be processed"):
-        qp.queuing.process_queue(q)
-
-
-def test_queue_category_none_deprecation():
-
-    class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-        _queue_category = None
-        num_wires = 1
-        num_params = 0
-
-    q = AnnotatedQueue()
-    q.append(DummyOp(wires=[0]))
-    match = "an object from being queued via `_queue_category=None` is deprecated"
-
-    with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning, match=match):
+    with pytest.raises(QueuingError, match="Encountered object 1 in queue while processing."):
         qp.queuing.process_queue(q)

@@ -284,18 +284,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
             [0.+0.j, 0.+0.j]],
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
-
-    The partial trace can also be computed with respect to multiple indices within different frameworks such as TensorFlow.
-
-    >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    ... [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
-    >>> partial_trace(x, indices=[1])
-    <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
-    array([[[1.+0.j, 0.+0.j],
-            [0.+0.j, 0.+0.j]],
-           [[0.+0.j, 0.+0.j],
-            [0.+0.j, 1.+0.j]]])>
-
     """
     # Autograd does not support same indices sum in backprop, and tensorflow
     # has a limit of 8 dimensions if same indices are used
@@ -601,7 +589,7 @@ def _compute_purity(density_matrix):
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the Von Neumann entropy from a density matrix on a given subsystem. It supports all
-    interfaces (NumPy, Autograd, Torch, TensorFlow and Jax).
+    interfaces (NumPy, Autograd, Torch and Jax).
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
@@ -693,7 +681,7 @@ def mutual_info(
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
     one system by measuring the other system. It supports all interfaces
-    (NumPy, Autograd, Torch, TensorFlow and Jax).
+    (NumPy, Autograd, Torch and Jax).
 
     Each state must be given as a density matrix. To find the mutual information given
     a pure state, call :func:`~.math.dm_from_state_vector` first.
@@ -1266,7 +1254,7 @@ def _check_state_vector(state_vector):
 
 def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the maximum entropy of a density matrix on a given subsystem. It supports all
-    interfaces (NumPy, Autograd, Torch, TensorFlow and Jax).
+    interfaces (NumPy, Autograd, Torch and Jax).
 
     .. math::
         S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))

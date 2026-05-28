@@ -371,7 +371,6 @@ class TestSampling:
 
     # 20 % failure rate; need to revise and fix soon
     # FIXME: [sc-95722]
-    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     def test_projector_samples_hw_like(self, seed, n_postselects):
         """Test that hw-like postselect_mode causes the number of samples to change as expected."""
