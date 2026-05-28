@@ -38,7 +38,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 
 class Incrementer(Operator):
     """
-    Increment the input `wires` by one, using zeroed `work_wires`.
+    Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
     Args:
         wires (Wires): The wires that the incrementer acts on.
@@ -95,7 +95,7 @@ class Incrementer(Operator):
     see "Incrementer from n-2 Zeroed bits".
 
     The Controlled(Incrementer) decomposition provided is a similar decomposition to the default,
-    except that there are is no X gate at the end of the circuit, and the MCXs have one
+    except that there is no ``X`` gate at the end of the circuit, and the ``MultiControlledX`` gates have one
     additional control. It is therefore 'cut-off', and we can follow the same logic as the default
     decomposition, excluding only the trivial X which is not decomposed into elbows and CNOTs
     or cancelled in any case.
@@ -193,7 +193,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
     def _increment():
         # Construct the wires on which the ladder will act.
-        zipped = sum(zip(wires[1:], work_wires), start=tuple())
+        zipped = sum(zip(wires[1:], work_wires, strict=True), start=tuple())
         if enabled():
             zipped = array(zipped, like="jax")
         all_wires = wires[:1] + zipped

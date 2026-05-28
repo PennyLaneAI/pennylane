@@ -66,7 +66,7 @@ class SignedOutMultiplier(Operator):
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
-            Otherwise, we need :math:`2 |output\_wires| + 3` work wires. Defaults to an empty
+            Otherwise, we need :math:`2 |\texttt{output\_wires}| + 3` work wires. Defaults to an empty
             tuple, i.e., no work wires.
         output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
@@ -164,7 +164,7 @@ class SignedOutMultiplier(Operator):
             |0⟩_s     ───────────────────────┼───────────
                                         ┌────┴────┐
             |0⟩       ─────────[k-1]────┤ Unsigned├──────
-                                        │  Mult   │
+                                        │  Mult x*y   │
                                         └─────────┘
 
         Then, we flip the sign bit of the output register controlled on the (cached) sign bits of each input, respectively:
