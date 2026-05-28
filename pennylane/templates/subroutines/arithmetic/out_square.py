@@ -521,12 +521,14 @@ def _out_square_with_caddsub(
 
     ..math :: =2x^2-x\left(\sum_{j=0}^{n-1}2^j\right) + 2^n \left(\sum_{j=0}^{n-1} 2^j\right) - 2^n x
 
-    ..math :: =2x^2-2^{n}x+x+2^n(2^n-1-x).
+    ..math :: =2x^2-2^{n}x+x+2^n(2^n-1-x)
 
-    Then, we subtract x, add 2^nx, and subtract 2^n(2^n-1-x) to arrive at 2x^2 overall.
+    ..math :: =2x^2-2^{n+1}x-(2^n-x)+2^{2n}.
+
+    Then, we subtract 2^{2n}, add (2^n-x), and add 2^{n+1}x to arrive at 2x^2 overall.
     In a last step we divide by two simply by splitting off the auxiliary qubit we had added as
-    LSB in the beginning. This qubit is guaranteed to be zeroed because we computed an even
-    number before.
+    LSB in the beginning (we do not have to do anything for this in code).
+    This qubit is guaranteed to be zeroed because we computed an even number before.
     """
     # First work wire is used for caching control bits
     c_wire = work_wires[0]
@@ -552,7 +554,9 @@ def _out_square_with_caddsub(
         _output = output_wires[: m - 2 * n]
         adjoint(_increment, lazy=False)(_output, work_wires)
 
-    # Add (2^n-1-x) + 1
+    # Add (2^n-1-x) + 1. This is done by flipping the x_wires (transforming x-> 2^n-1-x), performing
+    # addition plus one (so we transform the output with +(2^n-1-x)+1), and flipping the x_wires
+    # back to the original value (2^n-1-x -> 2^n-1-(2^n-1-x)=x).
     _ = [X(w) for w in x_wires]
     _add_plus_one(x_wires, output_wires, work_wires)
     _ = [X(w) for w in x_wires]
