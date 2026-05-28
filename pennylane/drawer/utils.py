@@ -52,6 +52,11 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
     ...     with qp.allocate(1) as wires:
     ...         wire_map[wires[0]] = 2
     ...         qp.CZ((0, wires[0]))
+    CNOT(wires=[0, <DynamicWire>])
+    Barrier(wires=[])
+    CZ(wires=[0, <DynamicWire>])
+    >>> with qp.queuing.AnnotatedQueue() as q2:
+    ...     qp.X(0)
     >>> layers = drawable_layers(q.queue, wire_map)
     >>> layers
     [[Allocate(wires=[<DynamicWire>])],
@@ -64,7 +69,7 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
     >>> wire_map
     {<DynamicWire>: 1, <DynamicWire>: 1, 0: 0}
     >>> wire_layers
-    {1: [[0, 2], [3, 5]], 0: [[-1, 8]]}
+    {1: [[0, 2], [3, 5]], 0: [[-1, 6]]}
 
     Both ``<DynamicWire>``'s now occur in the same line.  The first one goes from layer
     ``0`` to layer ``2``, and the second one goes from ``3`` to layer ``5``.
