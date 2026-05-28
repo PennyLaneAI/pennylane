@@ -130,7 +130,6 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     @qml.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):
-        print(f"Decomposing RZ on {wires} with angle {phi}.")
         target_wire = wires
         qml.GlobalPhase(phi / 2)
 

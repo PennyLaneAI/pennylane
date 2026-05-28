@@ -185,7 +185,12 @@ def create_controlled_op(
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = qp.wires.Wires(control)
-    control_values = _coerce_control_values(control_values, len(control))
+    if isinstance(control_values, (int, bool)):
+        control_values = [control_values]
+    elif control_values is None:
+        control_values = [True] * len(control)
+    elif isinstance(control_values, tuple):
+        control_values = list(control_values)
 
     ctrl_op = _try_wrap_in_custom_ctrl_op(
         op,
@@ -430,18 +435,6 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
     )
 
 
-def _coerce_control_values(control_values, num_controls):
-    if control_values is None:
-        return [True] * num_controls
-    if math.is_abstract(control_values):
-        return list(math.atleast_1d(control_values).astype(bool))
-    if isinstance(control_values, Sequence) and math.is_abstract(control_values[0]):
-        return [val.astype(bool) for val in control_values]
-    if isinstance(control_values, int):
-        return [bool(control_values)]
-    return [bool(val) for val in control_values]
-
-
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
     r"""Symbolic operator denoting a controlled operator.
@@ -623,21 +616,22 @@ class Controlled(SymbolicOp):
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         control_wires = Wires(control_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_controls = len(control_wires)
-        control_values = _coerce_control_values(control_values, num_controls)
+        if control_values is None:
+            control_values = [True] * len(control_wires)
+        else:
+            control_values = (
+                [bool(control_values)]
+                if isinstance(control_values, int)
+                else [bool(control_value) for control_value in control_values]
+            )
 
-        if len(control_values) != num_controls:
-            raise ValueError("control_values should be the same length as control_wires")
+            if len(control_values) != len(control_wires):
+                raise ValueError("control_values should be the same length as control_wires")
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
-            print(
-                f"Trying to create a controlled instance of {base}"
-                f"on wires {base.wires}, with {control_wires=} and {work_wires=} and {control_values=}"
-            )
             raise ValueError("The control wires must be different from the base operation wires.")
-
-        work_wires = Wires(() if work_wires is None else work_wires)
 
         if len(Wires.shared_wires([work_wires, base.wires + control_wires])) != 0:
             raise ValueError(
