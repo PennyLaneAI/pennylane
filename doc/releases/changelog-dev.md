@@ -38,6 +38,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Allowed `qp.registers` to produce empty registers.
+  [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
+
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
   [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
 
