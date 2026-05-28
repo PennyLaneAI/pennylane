@@ -26,7 +26,7 @@ from typing import Any, ClassVar
 import pennylane as qp
 from pennylane import math
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
-from pennylane.pytrees import flatten, register_pytree
+from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -63,9 +63,9 @@ class Operator2(ABC):
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as static. Static arguments are those
-    whose concrete values are known when capturing the program. Arguments in this
-    category are not lowered to a compiler intermediate representation (IR). Thus, if a
-    static argument is not guaranteed to be lowerable, its name should be in ``static_argnames``.
+    whose concrete values are known when capturing the program. Arguments specified
+    here are not lowered to a compiler intermediate representation (IR). Alternatively,
+    if an argument is of a type that can be lowered, it can be moved to ``compilable_argnames``.
 
     .. note::
 
@@ -76,10 +76,13 @@ class Operator2(ABC):
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as **compilable** static arguments.
-    Compilable static arguments are a subset of static arguments—these these arguments
-    have concrete values that are known when capturing the program. But, unlike
-    ``static_argnames``, they are lowered to the compiler intermediate representation.
-    This feature is opt-in, but is useful for making static data visible to the compiler.
+    Compilable static arguments are a subset of static arguments—arguments whose
+    concrete values are known when capturing the program. But, unlike ``static_argnames``,
+    they are lowered to the compiler intermediate representation, making their values
+    visible to the compiler, which may be useful if the compiler needs to interact with
+    such values. Such values may include numbers, strings, and lists, tuples, or dictionaries
+    thereof. This feature is opt-in; if any static arguments are not guaranteed to be
+    compilable, it is safer to place them in ``static_argnames``.
 
     .. note::
 
@@ -132,54 +135,59 @@ class Operator2(ABC):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
-        # Initialize wires:
-        #   1. Union of all wire_argnames into _wires
-        #   2. Flatten pytree arguments and look for operators
-        #   3. Append operator argument wires to _wires
-        all_wires = []
-
-        for wname, wsize in zip(self.wire_argnames, self.wire_sizes):
-            if wname not in self.hybrid_argnames:
-                canonical_wires = Wires(self._bound_args.arguments[wname])
-                self._bound_args.arguments[wname] = canonical_wires
-
-                if wsize is not None and len(canonical_wires) != wsize:
-                    raise TypeError(
-                        f"Incorrect number of wires for '{self.name}.{wname}'. Expected {wsize} "
-                        f"wires but got {len(canonical_wires)}."
-                    )
-
-                # Work wires are NOT included in the full wires list.
-                if wname not in ("work_wires", "work_wire"):
-                    all_wires.append(canonical_wires)
-
-            # Pytree wires handling
-            else:
-                leaves, _ = flatten(self._bound_args.arguments[wname], is_leaf=_is_wires)
-                if not all(isinstance(l, Wires) for l in leaves):
-                    raise TypeError(
-                        f"Hybrid wires argument '{wname}' have not been cast to "
-                        "'qp.wires.Wires' correctly."
-                    )
-
-                # Work wires are NOT included in the full wires list.
-                if wname not in ("work_wires", "work_wire"):
-                    all_wires.extend(leaves)
-
-        for hname in self.hybrid_argnames:
-            if hname in self.wire_argnames:
-                continue
-            leaves, _ = flatten(self._bound_args.arguments[hname], is_leaf=_is_op)
-            ops = filter(_is_op, leaves)
-            all_wires.extend(op.wires for op in ops)
-
-        self._wires = Wires.all_wires(all_wires)
+        self.__init_wires()
 
         # Broadcasting-related initialization
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.queue()
+
+    def __init_wires(self):
+        """Initialize operator wires.
+
+        * Union of all wire_argnames into _wires
+        * Flatten pytree arguments and look for operators
+        * Append operator argument wires to _wires
+        """
+        all_algorithmic_wires = []
+
+        for wname, wsize in zip(self.wire_argnames, self.wire_sizes, strict=True):
+            if wname not in self.hybrid_argnames:
+                canonical_wires = Wires(self._bound_args.arguments[wname])
+                self._bound_args.arguments[wname] = canonical_wires
+
+                if wsize is not None and len(canonical_wires) != wsize:
+                    raise ValueError(
+                        f"Incorrect number of wires for '{self.name}.{wname}'. Expected {wsize} "
+                        f"wires but got {len(canonical_wires)}."
+                    )
+
+                # Work wires are NOT included in the full wires list.
+                if wname not in ("work_wires", "work_wire"):
+                    all_algorithmic_wires.append(canonical_wires)
+
+            # Pytree wires handling
+            else:
+                leaves, _ = flatten(self._bound_args.arguments[wname], is_leaf=_is_wires)
+                if not all(isinstance(l, Wires) for l in leaves):
+                    raise ValueError(
+                        f"Hybrid wires argument '{wname}' is invalid. All leaf values must be "
+                        "cast to 'qp.wires.Wires'."
+                    )
+
+                # Work wires are NOT included in the full wires list.
+                if wname not in ("work_wires", "work_wire"):
+                    all_algorithmic_wires.extend(leaves)
+
+        for hname in self.hybrid_argnames:
+            if hname in self.wire_argnames:
+                continue
+            leaves, _ = flatten(self._bound_args.arguments[hname], is_leaf=_is_op)
+            ops = filter(_is_op, leaves)
+            all_algorithmic_wires.extend(op.wires for op in ops)
+
+        self._wires = Wires.all_wires(all_algorithmic_wires)
 
     def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
@@ -245,7 +253,7 @@ class Operator2(ABC):
             if len(cls.wire_sizes) != len(cls.wire_argnames):
                 raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
 
-            for wn, ws in zip(cls.wire_argnames, cls.wire_sizes):
+            for wn, ws in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
                 if wn in cls.hybrid_argnames and ws is not None:
                     raise TypeError(
                         f"Expected wire_size == None for '{wn}' as it is a hybrid wire argument."
@@ -275,12 +283,13 @@ class Operator2(ABC):
 
         **Example:**
 
+        # TODO: [sc-120453] Remove doctest: +SKIP
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
+        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
+        >>> qp.PauliRot._unflatten(*op._flatten()) # doctest: +SKIP
+        PauliRot(theta=1.2, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -310,11 +319,12 @@ class Operator2(ABC):
 
         **Example:**
 
+        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten() # doctest: +SKIP
         (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
+        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten() # doctest: +SKIP
         (([1.2], [Wires([0, 1])], []), ('XY',))
@@ -327,16 +337,15 @@ class Operator2(ABC):
         for name, value in zip(cls.wire_argnames, data[1], strict=True):
             args[name] = value
 
-        i = 0
-        for name in cls.hybrid_argnames:
-            if name in cls.wire_argnames:
-                continue
+        non_wire_hybrid_argnames = (
+            name for name in cls.hybrid_argnames if name not in cls.wire_argnames
+        )
+        for i, name in enumerate(non_wire_hybrid_argnames):
             args[name] = data[2][i]
-            i += 1
 
         # Process static data
         hashable_argnames = cls.static_argnames or cls.compilable_argnames
-        for name, value in zip(hashable_argnames, metadata):
+        for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
         return cls(**args)
@@ -352,28 +361,8 @@ class Operator2(ABC):
         self._batch_size = None
         dynamic_args = tuple(self.dynamic_args.values())
 
-        try:
-            ndims = tuple(qp.math.ndim(arg) for arg in dynamic_args)
-        except (
-            ValueError
-        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # When using tf.function with an input_signature that contains
-            # an unknown-shaped input, ndim() will not be able to determine the number of
-            # dimensions because they are not specified yet. Failing example: Let `fun` be
-            # a single-parameter QNode.
-            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be
-            # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(math.is_abstract(p) for p in dynamic_args):
-                self._batch_size = None
-                self._ndim_params = (0,) * len(dynamic_args)
-                return
-            raise e  # pragma: no cover
-
-        if any(
-            len(qp.math.shape(arg)) >= 1 and qp.math.shape(arg)[0] is None for arg in dynamic_args
-        ):
+        ndims = tuple(math.ndim(arg) for arg in dynamic_args)
+        if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
@@ -392,11 +381,11 @@ class Operator2(ABC):
                 )
 
             first_dims = [
-                qp.math.shape(arg)[0]
+                math.shape(arg)[0]
                 for (_, batched), arg in zip(ndims_matches, dynamic_args, strict=True)
                 if batched
             ]
-            if not qp.math.allclose(first_dims, first_dims[0]):
+            if not math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
@@ -517,11 +506,25 @@ class Operator2(ABC):
     # ------------------ General dunder methods ------------------
 
     def __repr__(self) -> str:
-        """Constructor-call-like representation."""
-        if self.dynamic_argnames:
-            params = ", ".join([repr(self.arguments[d]) for d in self.dynamic_argnames])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+        inputs = []
+
+        for key, value in self.arguments.items():
+            # Non-wire arguments
+            if key not in self.wire_argnames:
+                res = value
+            # Non-hybrid wire arguments
+            elif key not in self.hybrid_argnames:
+                res = value.tolist()
+            # Hybrid wire arguments
+            else:
+                leaves, tree = flatten(value, is_leaf=_is_wires)
+                leaves = [w.tolist() for w in leaves]
+                res = unflatten(leaves, tree)
+
+            inputs.append(f"{key}={res}")
+
+        inputs = ", ".join(inputs)
+        return f"{self.name}({inputs})"
 
     # TODO: [sc-120431] Implement __hash__ and __eq__ after qp.equal supports `Operator2`
     # def __hash__(self) -> int:
