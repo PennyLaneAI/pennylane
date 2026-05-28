@@ -557,7 +557,10 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
 # pylint: disable=protected-access
 def process_queue(
     queue: AnnotatedQueue,
-) -> tuple[list["pennylane.operation.Operator"], list["pennylane.measurements.MeasurementProcess"]]:
+) -> tuple[
+    list["pennylane.operation.Operator | pennylane.operation2.Operator2"],
+    list["pennylane.measurements.MeasurementProcess"],
+]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -565,7 +568,7 @@ def process_queue(
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)]:
+        tuple[list[.Operator | .Operator2], list[.MeasurementProcess]]:
         The list of tape operations, the list of tape measurements
 
     Raises:
@@ -578,6 +581,9 @@ def process_queue(
     from pennylane.operation import (  # pylint: disable=import-outside-toplevel # tach-ignore
         Operator,
     )
+    from pennylane.operation2 import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        Operator2,
+    )
     from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel # tach-ignore
 
     ops = []
@@ -587,7 +593,7 @@ def process_queue(
     # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
     # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
     for obj, _ in queue.items():
-        if isinstance(obj, (Operator, QuantumTape)):
+        if isinstance(obj, (Operator, Operator2, QuantumTape)):
             if encountered_measurement:
                 raise ValueError(f"{obj} must occur prior to measurements.")
             ops.append(obj)

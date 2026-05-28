@@ -390,7 +390,7 @@ class TestOperatorInit:
         ):
             Op(wires=[0, 1, 2])
 
-    @pytest.mark.paramtrize("num_wires", (1, 3, 7))
+    @pytest.mark.parametrize("num_wires", (1, 3, 7))
     def test_wire_size_none_accepts_any_count(self, num_wires):
         """Test that ``wire_sizes`` of ``None`` (default) accepts any number of wires."""
 
@@ -501,10 +501,6 @@ class TestProperties:
 
         op = Op([0, 1], [2, 3, 4])
         assert op.wires == Wires([2, 3, 4, 0, 1])
-
-    def test_queue_category(self):
-        op = DynOp(0.5, wires=0)
-        assert op._queue_category == "_ops"
 
 
 class TestBroadcasting:

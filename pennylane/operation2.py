@@ -21,7 +21,7 @@ from collections.abc import Hashable, Iterable, Sequence
 from copy import deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 import pennylane as qp
 from pennylane import math
@@ -513,19 +513,6 @@ class Operator2(ABC):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
-
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements"]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-        """
-        return "_ops"
 
     # ------------------ General dunder methods ------------------
 
