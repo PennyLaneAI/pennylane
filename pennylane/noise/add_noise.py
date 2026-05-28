@@ -18,7 +18,8 @@ from functools import lru_cache
 from pennylane import math, templates
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.functions import equal
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import make_qscript
