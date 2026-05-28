@@ -357,7 +357,7 @@ class TestOperatorInit:
                 # Forwards the raw list without wrapping each leaf in Wires.
                 super().__init__(wires=wires)
 
-        with pytest.raises(TypeError, match="Hybrid wires argument 'wires' have not been cast"):
+        with pytest.raises(ValueError, match="Hybrid wires argument 'wires' is invalid"):
             _ = Op(wires=[0, [1, 2]])
 
     def test_wire_size_match(self):
@@ -382,7 +382,7 @@ class TestOperatorInit:
                 super().__init__(wires=wires)
 
         with pytest.raises(
-            TypeError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 3"
+            ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 3"
         ):
             Op(wires=[0, 1, 2])
 
@@ -409,7 +409,7 @@ class TestOperatorInit:
         _ = Op(wires=[0, 1], ctrl_wires=[2, 3, 4])
 
         with pytest.raises(
-            TypeError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
+            ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
         ):
             Op(wires=[0], ctrl_wires=[1])
 
@@ -833,7 +833,7 @@ class TestDunderMethods:
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
-        assert repr(op) == "DynOp(0.5, wires=[0, 1])"
+        assert repr(op) == "DynOp(phi=0.5, wires=[0, 1])"
 
     def test_repr_without_dynamic_args(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""

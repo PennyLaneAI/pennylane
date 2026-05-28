@@ -470,7 +470,8 @@ def test_process_queue_error_if_not_operator_or_measurement():
         qp.queuing.process_queue(q)
 
 
-class TestOp2(Operator2):
+# pylint: disable=too-few-public-methods
+class Op2(Operator2):
     """A simple ``Operator2`` subclass for testing."""
 
     dynamic_argnames = ("phi",)
@@ -485,7 +486,7 @@ class TestProcessQueueOperator2:
     def test_operator2_collected_as_op(self):
         """Test that an ``Operator2`` instance in the queue ends up in the ``ops`` list."""
         with AnnotatedQueue() as q:
-            op = TestOp2(0.5, wires=0)
+            op = Op2(0.5, wires=0)
             m = qp.expval(qp.PauliZ(0))
 
         ops, measurements = qp.queuing.process_queue(q)
@@ -496,7 +497,7 @@ class TestProcessQueueOperator2:
         """Test that an ``Operator2`` appearing after a measurement raises an error."""
         with AnnotatedQueue() as q:
             qp.expval(qp.PauliZ(0))
-            TestOp2(0.5, wires=0)
+            Op2(0.5, wires=0)
 
         with pytest.raises(ValueError, match="must occur prior to measurements"):
             qp.queuing.process_queue(q)
@@ -506,7 +507,7 @@ class TestProcessQueueOperator2:
         ``ops`` and preserve insertion order."""
         with AnnotatedQueue() as q:
             o1 = qp.PauliX(0)
-            o2 = TestOp2(0.5, wires=1)
+            o2 = Op2(0.5, wires=1)
             o3 = qp.PauliY(2)
             m = qp.expval(qp.PauliZ(0))
 
