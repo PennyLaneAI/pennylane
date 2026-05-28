@@ -21,7 +21,7 @@ from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 import numpy as np
 
@@ -677,12 +677,6 @@ class Operator2(ABC):
         # return self so pre-constructed Observables can be queued and returned in
         # a single statement
         return self
-
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements"]:
-        """Queue category
-        TODO: Remove once Operator._queue_category is removed."""
-        return "_ops"
 
     @classproperty
     @classmethod
