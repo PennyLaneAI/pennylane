@@ -2408,7 +2408,7 @@ class TestSelectCopyQROM:
                 None,
                 4,
                 None,
-                (4, 2),
+                (4, 1),
             ),
             (
                 100,

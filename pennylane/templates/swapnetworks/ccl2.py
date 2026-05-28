@@ -53,11 +53,11 @@ class TwoLocalSwapNetwork(Operation):
     ...    qp.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
     ...    return qp.state()
     >>> print(qp.draw(swap_network_circuit, level='device')())
-    0: ─╭●─╭FSWAP(3.14)─────────────────╭●─╭FSWAP(3.14)─────────────────╭●─╭FSWAP(3.14)─┤ ╭State
-    1: ─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─┤ ├State
-    2: ─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─┤ ├State
-    3: ─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─╭●─╭FSWAP(3.14)─╰X─╰FSWAP(3.14)─┤ ├State
-    4: ─────────────────╰X─╰FSWAP(3.14)─────────────────╰X─╰FSWAP(3.14)─────────────────┤ ╰State
+    0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤ ╭State
+    1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤ ├State
+    3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
+    4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤ ╰State
 
     .. details::
         :title: Usage Details

@@ -31,7 +31,6 @@ from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
-from pennylane import operation2
 from pennylane import allocation
 from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition

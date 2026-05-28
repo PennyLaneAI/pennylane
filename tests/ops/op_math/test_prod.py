@@ -944,6 +944,12 @@ class TestProperties:
         for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qp.is_hermitian(op) == hermitian_state
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_queue_category_ops(self, ops_lst):
+        """Test _queue_category property is '_ops' when all factors are `_ops`."""
+        prod_op = prod(*ops_lst)
+        assert prod_op._queue_category == "_ops"
+
     def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))

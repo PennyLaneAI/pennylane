@@ -1531,7 +1531,7 @@ class FermionicSWAP(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
-        return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
+        return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)
 
 
 def _fermionic_swap_decomp_resources():

@@ -16,7 +16,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 """
 
 import pennylane as qml
-from pennylane.decomposition import change_op_basis_resource_rep
+from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import WireError
 
@@ -65,7 +65,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         )
 
         @qp.transforms.decompose(
-                gate_set={"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"},
+                gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},
                 fixed_decomps={qp.RZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
@@ -79,7 +79,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'GlobalPhase': 1, 'C(BasisState)': 2, 'SemiAdder': 1}
+    {'GlobalPhase': 1, 'C(BasisEmbedding)': 2, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
          0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤  State
      aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤  State
@@ -115,14 +115,11 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             num_y_wires=len(phase_grad_wires),
             num_work_wires=len(work_wires),
         )
-        compute_op = uncompute_op = qml.resource_rep(
-            qml.ops.Controlled,
-            base_class=qml.BasisState,
+        compute_op = uncompute_op = controlled_resource_rep(
+            qml.BasisEmbedding,
             base_params={"num_wires": len(angle_wires)},
             num_control_wires=1,
             num_zero_control_values=0,
-            num_work_wires=0,
-            work_wire_type="borrowed",
         )
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 

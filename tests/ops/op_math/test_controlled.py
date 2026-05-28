@@ -384,6 +384,15 @@ class TestControlledProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
 
+    def test_queue_cateogry(self):
+        """Test that Controlled belongs in the ops."""
+
+        class DummyOp(Operator):
+            pass
+
+        op = Controlled(DummyOp(1), 0)
+        assert op._queue_category == "_ops"
+
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test that Controlled defers `is_hermitian` to base operator."""

@@ -14,22 +14,6 @@
 r"""
 This module contains the classes for placing objects into queues.
 
-.. warning::
-
-    Unless you are a PennyLane developer, you likely do not need
-    to use these classes directly.
-
-.. currentmodule:: pennylane.queuing
-
-.. autosummary::
-    :toctree: api
-
-    ~QueuingManager
-    ~AnnotatedQueue
-    ~apply
-    ~process_queue
-
-
 Description
 -----------
 
@@ -198,7 +182,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
-from typing import Optional
+from typing import Optional, Union
 
 from pennylane.exceptions import QueuingError
 
@@ -554,13 +538,13 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
+ops_or_meas = Union["pennylane.operation.Operator", "pennylane.measurements.MeasurementProcess"]
+
+
 # pylint: disable=protected-access
 def process_queue(
     queue: AnnotatedQueue,
-) -> tuple[
-    list["pennylane.operation.Operator | pennylane.operation2.Operator2"],
-    list["pennylane.measurements.MeasurementProcess"],
-]:
+) -> tuple[list[ops_or_meas], list["pennylane.measurements.MeasurementProcess"]]:
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
@@ -568,42 +552,37 @@ def process_queue(
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list[.Operator | .Operator2], list[.MeasurementProcess]]:
+        tuple[list(.Operation), list(.MeasurementProcess)]:
         The list of tape operations, the list of tape measurements
 
     Raises:
         QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
 
     """
-    from pennylane.measurements import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        MeasurementProcess,
-    )
-    from pennylane.operation import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        Operator,
-    )
-    from pennylane.operation2 import (  # pylint: disable=import-outside-toplevel # tach-ignore
-        Operator2,
-    )
-    from pennylane.tape import QuantumTape  # pylint: disable=import-outside-toplevel # tach-ignore
-
-    ops = []
-    measurements = []
-    encountered_measurement = False
+    lists = {"_ops": [], "_measurements": []}
+    list_order = {"_ops": 1, "_measurements": 2}
+    current_list = "_ops"
 
     # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
     # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
     for obj, _ in queue.items():
-        if isinstance(obj, (Operator, Operator2, QuantumTape)):
-            if encountered_measurement:
-                raise ValueError(f"{obj} must occur prior to measurements.")
-            ops.append(obj)
-        elif isinstance(obj, MeasurementProcess):
-            measurements.append(obj)
-            encountered_measurement = True
-        else:
+        if not hasattr(obj, "_queue_category"):
             raise QueuingError(
-                f"Encountered object {obj} in queue while processing."
-                " AnnotatedQueue should only contain `Operator`s and `MeasurementProcess`es."
+                f"{obj} encountered in AnnotatedQueue and is not an object that can "
+                "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
+            )
+        if obj._queue_category is None:
+            raise ValueError(
+                f"_queue_category can no longer be set to None. Got None on object {obj}"
             )
 
-    return ops, measurements
+        if list_order[obj._queue_category] > list_order[current_list]:
+            current_list = obj._queue_category
+        elif list_order[obj._queue_category] < list_order[current_list]:
+            raise ValueError(
+                f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                f"to {current_list[1:]}. Please place earlier in the queue."
+            )
+        lists[obj._queue_category].append(obj)
+
+    return lists["_ops"], lists["_measurements"]

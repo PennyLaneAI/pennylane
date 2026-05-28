@@ -8,8 +8,6 @@ qp.wires
     Unless you are a PennyLane or plugin developer, you likely do not need
     to use the ``Wires`` class.
 
-.. autosummary::
-    :toctree: api
-
-    ~Wires
-    ~AbstractQubit
+.. automodapi:: pennylane.wires
+    :no-heading:
+    :skip: Sequence, Iterable, Hashable, WiresLike, register_pytree, WireError

@@ -126,6 +126,15 @@ class TestProperties:
         assert op.base.data == (new_phi,)
         assert op.scalar == new_coeff
 
+    # pylint: disable=protected-access
+    def test_queue_category_ops(self):
+        """Test the _queue_category property."""
+        assert Exp(qp.PauliX(0), -1.234j)._queue_category == "_ops"
+
+        assert Exp(qp.PauliX(0), 1 + 2j)._queue_category == "_ops"
+
+        assert Exp(qp.RX(1.2, 0), -1.2j)._queue_category == "_ops"
+
     def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
         assert Exp(qp.PauliX(0), -1.0).is_verified_hermitian

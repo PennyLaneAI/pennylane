@@ -34,7 +34,6 @@ from .grover import GroverOperator
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .fable import FABLE
-from .ffft import FFFT, TwoWireFFT
 from .select import Select
 from .prepselprep import PrepSelPrep
 from .reflection import Reflection
@@ -92,8 +91,6 @@ __all__ = [
     "BasisRotation",
     "QuantumMonteCarlo",
     "FABLE",
-    "FFFT",
-    "TwoWireFFT",
     "Select",
     "SelectOnlyQRAM",
     "PrepSelPrep",

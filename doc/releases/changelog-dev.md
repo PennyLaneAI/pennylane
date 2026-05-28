@@ -2,40 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
-  This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
-  efficient simulation of quantum materials and chemistry systems.
-  [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
-
-  The :class:`~.FFFT` template is decomposed recursively into two parallel FFFTs over
-  :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier transforms
-  are followed by a series of two-site linear gates.
-
-  ```python
-  import pennylane as qp
-
-  dev = qp.device("default.qubit")
-
-  @qp.qnode(dev)
-  def circuit():
-      qp.FFFT(wires=(0, 1, 2, 3))
-      return qp.state()
-  ```
-
-  ```pycon
-  >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
-  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
-  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
-  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
-
-  ```
-
-  Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
-  has been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
-  (two-site Fermionic Fourier transforms).
-
 <h3>Improvements 🛠</h3>
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -89,15 +55,9 @@
 
   ```
 
-* Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
-  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which
-  led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
-  [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
-
 * Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
-  [(#9516)](https://github.com/PennyLaneAI/pennylane/pull/9516)
 
   ```pycon
     >>> import pennylane.labs.estimator_beta as qre
@@ -201,10 +161,6 @@
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9527)
 
-* `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
-  when processing an `AnnotatedQueue` into a `QuantumScript`.
-  [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
-
 * Bump `autoray` package pin to `v0.8.10`.
   [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
 
@@ -232,12 +188,6 @@
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
-
-* The `allocate` PLxPR primitive now returns a list of `AbstractQubit` abstract values instead of a
-  list of abstract integer values. This is to better define the set of operations allowed on
-  allocated qubits.
-  [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
-  [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
 
@@ -288,7 +238,6 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
-Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 Mudit Pandey,
