@@ -174,6 +174,15 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
+The following utility functions can be used to inspect the decomposition graph and understand how it chooses
+decomposition rules for operators in the circuit:
+
+.. autosummary::
+   :toctree: api
+
+   ~transforms.decomp_inspector
+   ~transforms.DecompGraphInspector
+
 Chaining circuit transforms together
 ------------------------------------
 
@@ -454,14 +463,6 @@ from .commutation_dag import (
     CommutationDAG,
     CommutationDAGNode,
 )
-from .tape_expand import (
-    expand_invalid_trainable,
-    expand_multipar,
-    expand_nonunitary_gen,
-    expand_trainable_multipar,
-    create_expand_fn,
-    create_expand_trainable_multipar,
-)
 from .transpile import transpile
 from .zx import (
     to_zx,
@@ -471,10 +472,10 @@ from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 from .intermediate_reps import (
     parity_matrix,
-    parity_synth,
     phase_polynomial,
     rowcol,
 )
 from .rz_phase_gradient import rz_phase_gradient
+from .decomp_inspector import decomp_inspector, DecompGraphInspector
 
 __all__, __getattr__, __dir__ = _setup_entry_points(__name__, "pennylane.transforms")

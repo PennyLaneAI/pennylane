@@ -289,37 +289,28 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+@pytest.mark.parametrize(
+    ("weight", "wires1", "wires2", "msg_match"),
+    [
+        (0.2, [0], [1, 2], "expected at least two wires representing the occupied"),
+        (0.2, [0, 1], [2], "expected at least two wires representing the unoccupied"),
+        (0.2, [0], [1], "expected at least two wires representing the occupied"),
+        ([0.2, 1.1], [0, 2], [4, 6], "Weight must be a scalar"),
+    ],
+)
+def test_double_excitation_unitary_exceptions(weight, wires1, wires2, msg_match):
+    """Test exception if ``weight`` or
+    ``pphh`` parameter has illegal shapes, types or values."""
+    dev = qp.device("default.qubit", wires=10)
 
-    @pytest.mark.parametrize(
-        ("weight", "wires1", "wires2", "msg_match"),
-        [
-            (0.2, [0], [1, 2], "expected at least two wires representing the occupied"),
-            (0.2, [0, 1], [2], "expected at least two wires representing the unoccupied"),
-            (0.2, [0], [1], "expected at least two wires representing the occupied"),
-            ([0.2, 1.1], [0, 2], [4, 6], "Weight must be a scalar"),
-        ],
-    )
-    def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
-        """Test exception if ``weight`` or
-        ``pphh`` parameter has illegal shapes, types or values."""
-        dev = qp.device("default.qubit", wires=10)
+    def circuit(weight):
+        qp.FermionicDoubleExcitation(weight=weight, wires1=wires1, wires2=wires2)
+        return qp.expval(qp.PauliZ(0))
 
-        def circuit(weight):
-            qp.FermionicDoubleExcitation(weight=weight, wires1=wires1, wires2=wires2)
-            return qp.expval(qp.PauliZ(0))
+    qnode = qp.QNode(circuit, dev)
 
-        qnode = qp.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match=msg_match):
-            qnode(weight)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")
-        assert template.id == "a"
+    with pytest.raises(ValueError, match=msg_match):
+        qnode(weight)
 
 
 def circuit_template(weight):

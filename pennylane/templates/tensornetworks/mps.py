@@ -172,7 +172,6 @@ class MPS(Operation):
         n_params_block,
         template_weights=None,
         offset=None,
-        id=None,
         **kwargs,
     ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(
@@ -181,7 +180,6 @@ class MPS(Operation):
             block=block,
             n_params_block=n_params_block,
             template_weights=template_weights,
-            id=id,
             offset=offset,
             **kwargs,
         )
@@ -202,7 +200,6 @@ class MPS(Operation):
         n_params_block=0,
         template_weights=None,
         offset=None,
-        id=None,
         **kwargs,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
@@ -223,9 +220,9 @@ class MPS(Operation):
         self._hyperparameters = {"ind_gates": ind_gates, "block": block, **kwargs}
 
         if self._weights is None:
-            super().__init__(wires=wires, id=id)
+            super().__init__(wires=wires)
         else:
-            super().__init__(self._weights, wires=wires, id=id)
+            super().__init__(self._weights, wires=wires)
 
     @property
     def num_params(self):

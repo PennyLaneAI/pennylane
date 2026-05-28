@@ -513,7 +513,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
 
         # for each operation in the layer, get the generator
         j = 0
-        for p, op in zip(param_idx, curr_ops):
+        for p, op in zip(param_idx, curr_ops, strict=True):
             layers_ids.append(i)
             if p in argnum:
                 obs, s = generator(op)
@@ -534,9 +534,8 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
         # TODO: Maybe there are gates that do not affect the
         # generators of interest and thus need not be applied.
 
-        for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
-            if param_in_argnum:
-                queue.extend(o.diagonalizing_gates())
+        for o in layer_obs:
+            queue.extend(o.diagonalizing_gates())
 
         layer_tape = QuantumScript(queue, [probs(wires=tape.wires)], shots=tape.shots)
         metric_tensor_tapes.append(layer_tape)
@@ -658,12 +657,12 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     ]
 
     # Iterate over differentiated operation in first layer
-    for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds):
+    for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds, strict=True):
         gen_op_i = _get_gen_op(WrappedObj(diffed_op_i), allow_nonunitary, aux_wire)
 
         # Iterate over differentiated operation in second layer
         # There will be one tape per pair of differentiated operations
-        for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
+        for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds, strict=True):
             gen_op_j = _get_gen_op(WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
 
             ops = [
@@ -725,7 +724,7 @@ def _metric_tensor_hadamard(
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
     layers = []
 
-    for layer, in_argnum in zip(graph.iterate_parametrized_layers(), in_argnum_list):
+    for layer, in_argnum in zip(graph.iterate_parametrized_layers(), in_argnum_list, strict=True):
         if not any(in_argnum):
             # no tapes need to be constructed for this layer
             continue
@@ -734,7 +733,7 @@ def _metric_tensor_hadamard(
         new_ops = []
         new_param_idx = []
 
-        for o, idx, param_in_argnum in zip(ops, param_idx, in_argnum):
+        for o, idx, param_in_argnum in zip(ops, param_idx, in_argnum, strict=True):
             if param_in_argnum:
                 new_ops.append(o)
                 new_param_idx.append(par_idx_to_trainable_idx[idx])
@@ -793,7 +792,7 @@ def _metric_tensor_hadamard(
         if ids:
             off_diag_res = math.stack(off_diag_res, 1)[0]
 
-            for loc, r in zip(ids, off_diag_res):
+            for loc, r in zip(ids, off_diag_res, strict=True):
                 # not sure if we can promise ordering of locations
                 # so need to loop over indices for compatibility with catalyst
                 first_term = math.scatter_element_add(first_term, loc, r)
@@ -802,7 +801,7 @@ def _metric_tensor_hadamard(
         # Second terms of off block-diagonal metric tensor
         expvals = math.zeros_like(first_term[0])
 
-        for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
+        for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids, strict=True)):
             if layer_i is not None and obs_i is not None:
                 prob = diag_res[layer_i]
                 o = obs_list[layer_i][obs_i]

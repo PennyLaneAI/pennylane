@@ -90,12 +90,12 @@ class GQSP(Operation):
 
     resource_keys = {"unitary", "num_iters"}
 
-    def __init__(self, unitary, angles, control, id=None):
+    def __init__(self, unitary, angles, control):
         total_wires = Wires(control) + unitary.wires
 
         self._hyperparameters = {"unitary": unitary, "control": control}
 
-        super().__init__(angles, *unitary.data, wires=total_wires, id=id)
+        super().__init__(angles, *unitary.data, wires=total_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -105,17 +105,17 @@ class GQSP(Operation):
         }
 
     def _flatten(self):
-        return (*self.data, self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
+        return (self.data[0], self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         # Data contains (angles, derived_data_from_unitary, unitary)
-        return cls(unitary=data[-1], angles=data[0], control=metadata[0])
+        return cls(angles=data[0], unitary=data[-1], control=metadata[0])
 
     # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control, id=None):
-        return super()._primitive_bind_call(unitary, angles, wires=control, id=id)
+    def _primitive_bind_call(cls, unitary, angles, control):
+        return super()._primitive_bind_call(unitary, angles, wires=control)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import inspect
-import warnings
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
@@ -492,13 +491,63 @@ class DecompositionRule:
 
 
 class DecompCollection:
-    """A collection of decomposition rules.
+    """An ordered, name-addressable collection of :class:`~.DecompositionRule` objects.
 
-    The :func:`~pennylane.list_decomps` function returns a ``DecompCollection`` for an operator,
-    which is an ordered sequence of decomposition rules. Individual decomposition rules within a
-    collection can be accessed by index or by name.
+    A ``DecompCollection`` is exclusively returned by :func:`~pennylane.list_decomps`, which
+    retrieves all registered decomposition rules for a given operator. Each rule in the collection
+    has a unique name (derived from the decorated function name by default, or explicitly set via
+    :func:`~pennylane.register_resources` with ``name="..."``).
 
-    .. seealso:: :func:`~pennylane.list_decomps`
+    Individual rules can be accessed by integer index or by string name. The collection supports
+    :func:`len`, iteration, membership checks (by name or by :class:`~.DecompositionRule`
+    instance), :meth:`copy`, :meth:`append`, :meth:`extend`, ``+``, and ``+=``.  Duplicate names
+    within a collection are rejected with a ``ValueError``.
+
+    .. important::
+
+        A ``DecompCollection`` returned by :func:`~pennylane.list_decomps` is a **copy** of the
+        internally registered rules.  Mutating it (e.g. with :meth:`append` or :meth:`extend`)
+        does **not** update the global decomposition registry.  Use :func:`~pennylane.add_decomps`
+        to register new decomposition rules globally.
+
+    .. seealso::
+
+        :class:`~.DecompositionRule`,
+        :func:`~pennylane.register_resources`,
+        :func:`~pennylane.list_decomps`,
+        :func:`~pennylane.add_decomps`,
+        :func:`~pennylane.inspect_decomps`
+
+    **Examples**
+
+    Retrieve and explore decomposition rules for an operator:
+
+    >>> decomps = qp.list_decomps(qp.CRX)
+    >>> len(decomps)
+    4
+    >>> print(decomps)
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
+
+    Access rules by index or by name:
+
+    >>> decomps[0]
+    DecompositionRule(name=_crx_to_rx_cz)
+    >>> decomps["_crx_to_ppr"]
+    DecompositionRule(name=_crx_to_ppr)
+
+    Check membership:
+
+    >>> "_crx_to_ppr" in decomps
+    True
+
+    Iterate through rule names:
+
+    >>> [rule.name for rule in decomps]
+    ['_crx_to_rx_cz', '_crx_to_rz_ry', '_crx_to_h_crz', '_crx_to_ppr']
 
     """
 
@@ -675,6 +724,12 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
 
+    .. important::
+
+        The returned :class:`~.DecompCollection` is a **copy** of the registered
+        rules.  Mutating it does not update the global decomposition registry; use
+        :func:`~pennylane.add_decomps` to register rules globally.
+
     **Example**
 
     >>> import pennylane as qp
@@ -757,15 +812,16 @@ class _DecompInfo:
     def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
         self._op = op
         self._rule = rule
-        self._is_applicable = rule.is_applicable(**op.resource_params)
+        self._conditions_met = rule.is_applicable(**op.resource_params)
         self._work_wire_spec = rule.get_work_wire_spec(**op.resource_params)
-        self._is_feasible = num_work_wires is None or self._work_wire_spec.total <= num_work_wires
+        n_work_wires = self._work_wire_spec.total
+        self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
         self._num_work_wires = num_work_wires
 
     def __str__(self) -> str:
-        if not self._is_applicable:
+        if not self._conditions_met:
             return "Not applicable (provided operator instance does not meet all conditions for this rule)."
-        if not self._is_feasible:
+        if not self._enough_work_wires:
             req = self._work_wire_spec.total
             avail = self._num_work_wires
             return f"Insufficient work wires: requires {req} but only {avail} available."
@@ -774,7 +830,7 @@ class _DecompInfo:
     @property
     def circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
-        assert self._is_applicable and self._is_feasible
+        assert self._conditions_met and self._enough_work_wires
         kwargs = get_decomp_kwargs(self._op)
         return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **kwargs)
 
@@ -786,18 +842,54 @@ class _DecompInfo:
     @property
     def gate_counts_and_allocations(self) -> str:
         """The actual and estimated gate counts of this rule."""
-        assert self._is_applicable and self._is_feasible
+        assert self._conditions_met and self._enough_work_wires
         estimated_count = self._rule.compute_resources(**self._op.resource_params).gate_counts
         actual_count, allocations = _count_gates(self._op, self._rule)
-        gate_count_str = _get_gate_count_str(estimated_count, actual_count)
+        gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
         if allocations:
             gate_count_str += f"\nWire Allocations: {allocations}"
         return gate_count_str
 
+    def _get_gate_count_str(self, estimated_count, actual_count) -> str:
+        """Get the section of the string that specifies the gate count."""
+        estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        if estimated_count == actual_count:
+            return f"Gate Count: {estimated_count}"
+        return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
+
     @property
-    def is_usable(self) -> bool:
-        """Whether the decomposition rule is usable."""
-        return self._is_applicable and self._is_feasible
+    def is_applicable(self) -> bool:
+        """Whether the decomposition rule is applicable."""
+        return self._conditions_met and self._enough_work_wires
+
+
+class _DecompInfoCollection:  # pylint: disable=too-few-public-methods
+    """A collection of _DecompInfo."""
+
+    def __init__(
+        self,
+        rule_infos: Sequence[_DecompInfo],
+        show_not_applicable: bool = True,
+    ) -> None:
+        self._n_rules_original = len(rule_infos)
+        indexed_rule_infos = enumerate(rule_infos)
+        self._show_not_applicable = show_not_applicable
+        if not show_not_applicable:
+            indexed_rule_infos = filter(lambda p: p[1].is_applicable, indexed_rule_infos)
+        self._rule_infos = list(indexed_rule_infos)
+
+    def _title(self, index, rule) -> str:
+        return f"Decomposition {index} (name: {rule.name})"
+
+    def __str__(self) -> str:
+        if not self._n_rules_original:
+            return "No available decomposition rules."
+        if not self._rule_infos:
+            return "No applicable decomposition rules (non-applicable rules are excluded)."
+        return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rule_infos)
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 def inspect_decomps(
@@ -805,7 +897,7 @@ def inspect_decomps(
     *rules: str | DecompositionRule,
     show_not_applicable: bool = True,
     num_work_wires: int | None = None,
-) -> str:
+) -> _DecompInfoCollection:
     """Inspect the decomposition rules of an operator.
 
     Takes an operator instance and displays how the operator is decomposed
@@ -833,13 +925,13 @@ def inspect_decomps(
             which puts no constraint on the maximum number of work wires.
 
     Returns:
-        str: The string that displays how the operator is decomposed.
+        a displayable object with information about decomposition rules.
 
     **Example**
 
     By default, this function displays all available decomposition rules for an operator.
 
-    >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1])))
+    >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
     Decomposition 0 (name: _crx_to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -861,10 +953,11 @@ def inspect_decomps(
     Gate Count: {PauliRot(pauli_word=ZX): 1, PauliRot(pauli_word=X): 1}
 
     For each decomposition rule, the output includes its name, circuit diagram, gate
-    count, and wire allocation (if any). Alternatively, you can inspect a single decomposition rule by passing its name.
+    count, and wire allocation (if any). Alternatively, you can inspect a single
+    decomposition rule by passing its name.
 
-    >>> print(qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz"))
-    Name: _crx_to_h_crz
+    >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+    Decomposition 0 (name: _crx_to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
     Gate Count: {Hadamard: 2, CRZ: 1}
@@ -879,8 +972,8 @@ def inspect_decomps(
             qp.CNOT(wires)
             qp.H(wires[1])
 
-    >>> print(qp.inspect_decomps(qp.CZ([0, 1]), my_cz))
-    Name: my_cz
+    >>> qp.inspect_decomps(qp.CZ([0, 1]), my_cz)
+    Decomposition 0 (name: my_cz)
     0: ────╭●────┤
     1: ──H─╰X──H─┤
     Gate Count: {CNOT: 1, Hadamard: 2}
@@ -893,38 +986,13 @@ def inspect_decomps(
             "first argument, not an operator type."
         )
 
-    if rules and not show_not_applicable:
-        warnings.warn(
-            "show_not_applicable=False is only relevant when qp.inspect_decomps is "
-            "called on an operator instance alone. If specific decomposition rules "
-            "are explicitly requested, all rules will be displayed."
-        )
-        show_not_applicable = True
-
     display_rules = list_decomps(op)
+
     if rules:
         display_rules = [display_rules[rule] if isinstance(rule, str) else rule for rule in rules]
 
-    if len(display_rules) == 0:
-        return "No available decomposition rules."
-
-    if len(rules) == 1:
-        rule = _DecompInfo(op, display_rules[0], num_work_wires)
-        return f"Name: {rule.name}\n{rule}"
-
     rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
-    display_infos = [
-        (i, rule) for i, rule in enumerate(rule_infos) if (show_not_applicable or rule.is_usable)
-    ]
-
-    if len(display_infos) == 0:
-        return "No applicable decomposition rules."
-
-    decomp_strings = []
-    for i, rule in display_infos:
-        decomp_strings.append(f"Decomposition {i} (name: {rule.name})\n{rule}")
-
-    return "\n\n".join(decomp_strings)
+    return _DecompInfoCollection(rule_infos, show_not_applicable)
 
 
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
@@ -948,13 +1016,6 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)
-
-
-def _get_gate_count_str(estimated_count, actual_count) -> str:
-    estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
-    if estimated_count == actual_count:
-        return f"Gate Count: {estimated_count}"
-    return f"Estimated Gate Count: {estimated_count}\nActual Gate Count: {actual_count}"
 
 
 @register_resources({})

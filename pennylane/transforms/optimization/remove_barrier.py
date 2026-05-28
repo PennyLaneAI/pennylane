@@ -23,7 +23,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     """Quantum transform to remove Barrier gates.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
@@ -34,6 +34,8 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     .. code-block:: python
 
+        import pennylane as qp
+
         @remove_barrier
         @qp.qnode(qp.device('default.qubit'))
         def circuit(x, y):
@@ -43,7 +45,11 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qp.X(0)
             return qp.expval(qp.Z(0))
 
-    The barrier is then removed before execution.
+    >>> print(qp.draw(circuit)(0.1, 0.2))
+    0: ──H──X─┤  <Z>
+    1: ──H────┤
+
+    The barrier is removed before execution.
 
     .. details::
         :title: Usage Details
@@ -66,7 +72,6 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         >>> print(qp.draw(qnode)(1, 2))
         0: ──H─╭||──X─┤  <Z>
         1: ──H─╰||────┤
-
 
         We can remove the Barrier by running the ``remove_barrier`` transform:
 

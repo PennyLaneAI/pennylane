@@ -165,7 +165,7 @@ class DoubleFactorization(Operation):
             self.beta,
         )
 
-        super().__init__(wires=range(self._qubits))
+        super().__init__(self.one_electron, self.two_electron, wires=range(self._qubits))
 
     def _flatten(self):
         return (self.one_electron, self.two_electron), (

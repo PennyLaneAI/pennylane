@@ -372,7 +372,7 @@ def simulate(
                 )
 
             results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
-            results = tuple(zip(*results))
+            results = tuple(zip(*results, strict=True))
         else:
             for i in range(circuit.shots.total_shots):
                 results.append(
@@ -431,7 +431,7 @@ def simulate_tree_mcm(
         prng_key = execution_kwargs.pop("prng_key", None)
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
-        for k, s in zip(keys, circuit.shots):
+        for k, s in zip(keys, circuit.shots, strict=True):
             aux_circuit = circuit.copy(shots=s)
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
@@ -477,7 +477,7 @@ def simulate_tree_mcm(
     mcm_current = math.zeros(n_mcms + 1, dtype=int)
     # `mid_measurements` maps the elements of `mcm_current` to their respective MCMs
     # This is used by `get_final_state::apply_operation` for `Conditional` operations
-    mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist()))
+    mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist(), strict=True))
     # Split circuit into segments
     circuits = split_circuit_at_mcms(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
@@ -514,7 +514,7 @@ def simulate_tree_mcm(
                 mcm_current[depth] = 1
             # Update MCM values
             mid_measurements.update(
-                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist())
+                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist(), strict=True)
             )
             continue
 
@@ -588,7 +588,7 @@ def simulate_tree_mcm(
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
-                stack.probs[depth] = dict(zip([False, True], measurements))
+                stack.probs[depth] = dict(zip([False, True], measurements, strict=True))
                 samples = None
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
@@ -767,7 +767,7 @@ def counts_to_probs(counts):
     """Converts counts to probs."""
     probs = math.array(list(counts.values()))
     probs = probs / math.sum(probs)
-    return dict(zip(counts.keys(), probs))
+    return dict(zip(counts.keys(), probs, strict=True))
 
 
 def prune_mcm_samples(mcm_samples):
@@ -825,7 +825,7 @@ def variance_transform(circuit):
         """Compute the global variance from expectation value measurements of both the observable and the observable square."""
         new_results = list(results[0])
         offset = len(circuit.measurements)
-        for i, (r, m) in enumerate(zip(new_results, circuit.measurements)):
+        for i, (r, m) in enumerate(zip(new_results, circuit.measurements, strict=True)):
             if isinstance(m, VarianceMP):
                 expval = new_results.pop(offset)
                 new_results[i] = r - expval**2

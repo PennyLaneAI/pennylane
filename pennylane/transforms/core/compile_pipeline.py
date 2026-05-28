@@ -131,7 +131,9 @@ class CompilePipeline:
         *transforms (Optional[Sequence[Transform | BoundTransform]]): A sequence of
             transforms with which to initialize the program.
         cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
-            ``args``, and ``kwargs`` required to compute classical cotransforms.
+            ``args``, and ``kwargs`` required to compute classical cotransforms. This argument is
+            for use when applying gradient transforms internally before execution, and is not needed
+            when defining compilation pipelines to decorate a QNode.
 
     **Example:**
 
@@ -158,7 +160,7 @@ class CompilePipeline:
             qp.transforms.cancel_inverses(recursive=True),
             qp.transforms.merge_rotations,
         )
-        # Add a marker for inspectibility
+        # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
         @pipeline
@@ -174,16 +176,19 @@ class CompilePipeline:
             qp.RX(y, wires=0)
             return qp.expval(qp.Z(1))
 
-    >>> print(circuit.compile_pipeline)
+    >>> from pennylane.workflow import get_compile_pipeline
+    >>> print(get_compile_pipeline(circuit)(0.1, 0.2))
     CompilePipeline(
        ├─▶ no-transforms
       [1] commute_controlled(),
       [2] cancel_inverses(recursive=True),
       [3] merge_rotations()
     )
+
     >>> print(qp.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
     0: ─╭X──X─╭X──H──H──X──RX(0.10)──RX(0.20)─┤
     1: ─╰●────╰●──────────────────────────────┤  <Z>
+
     >>> print(qp.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
@@ -276,6 +281,7 @@ class CompilePipeline:
           [3] merge_rotations()
            └─▶ final-transform
         )
+
         >>> pipeline.add_marker("after-commute-controlled", 1)
         >>> print(pipeline)
         CompilePipeline(
@@ -302,6 +308,7 @@ class CompilePipeline:
 
         >>> print(pipeline.get_marker_level("final-transform"))
         3
+
         >>> print(pipeline.get_marker_level("after-merge-rotations"))
         3
 
@@ -338,6 +345,7 @@ class CompilePipeline:
           [5] <cancel_inverses()>,
           [6] <merge_rotations()>
         )
+
         >>> pipeline + qp.transforms.undo_swaps
         CompilePipeline(
           [1] <commute_controlled()>,
@@ -347,8 +355,10 @@ class CompilePipeline:
            ├─▶ after-merge-rotations
           [4] <undo_swaps()>
         )
+
         >>> pipeline.pop()
         <merge_rotations()>
+
         >>> print(pipeline)
         CompilePipeline(
           [1] commute_controlled(),
@@ -356,6 +366,7 @@ class CompilePipeline:
           [2] cancel_inverses()
            └─▶ after-merge-rotations
         )
+
         >>> pipeline[1:] # Get everything after the second transform
         CompilePipeline(
            ├─▶ after-commute-controlled

@@ -37,6 +37,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
+from pennylane.wires import is_abstract_qubit
 
 
 def null_postprocessing(results):
@@ -193,7 +194,9 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = math.array(_args[-num_wires:], like="jax")
+                wires = _args[-num_wires:]
+                if not any(is_abstract_qubit(w) for w in wires):
+                    wires = math.array(wires, like="jax")
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
@@ -381,14 +384,14 @@ def decompose(
         :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
 
     Args:
-        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
         gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled). If ``None``, the gate set is considered to be
             all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
-            for this list.
+            for this list. Operators that belong in the target gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -511,10 +514,14 @@ def decompose(
             )
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=0))())
-    0: ──H─╭QuantumPhaseEstimation─┤
-    1: ────├QuantumPhaseEstimation─┤
-    2: ────├QuantumPhaseEstimation─┤
-    3: ────╰QuantumPhaseEstimation─┤
+    0: ──H─╭QuantumPhaseEstimation(M0)─┤
+    1: ────├QuantumPhaseEstimation(M0)─┤
+    2: ────├QuantumPhaseEstimation(M0)─┤
+    3: ────╰QuantumPhaseEstimation(M0)─┤
+    <BLANKLINE>
+    M0 =
+    [[0.877...+0.j         0.        -0.479...j]
+     [0.        -0.479...j 0.877...+0.j        ]]
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
@@ -612,7 +619,6 @@ def decompose(
         1: ──H─╰RZ(0.10)──H─├●─┤
         2: ─────────────────╰X─┤
 
-
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
         *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
         efficient.
@@ -643,8 +649,8 @@ def decompose(
             def stopping_condition(op):
 
                 if isinstance(op, qp.QubitUnitary):
-                    identity = math.eye(2 ** len(op.wires))
-                    return math.allclose(op.matrix(), identity)
+                    identity = qp.math.eye(2 ** len(op.wires))
+                    return qp.math.allclose(op.matrix(), identity)
 
                 return False
 
@@ -683,7 +689,8 @@ def decompose(
         .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-        certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
+        certain operators if they need to be decomposed (i.e., when they're not in the target gate
+        set), whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
         In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``

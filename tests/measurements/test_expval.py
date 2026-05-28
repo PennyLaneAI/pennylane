@@ -139,6 +139,7 @@ class TestExpval:
             res = func(phi)
             assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
 
+    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
@@ -278,26 +279,26 @@ class TestExpval:
         o1 = qp.prod(qp.PauliX(0), qp.PauliY(1))
         o2 = qp.prod(qp.PauliX(0), qp.PauliZ(1))
 
-        assert qp.expval(o1).hash == qp.expval(o1).hash
-        assert qp.expval(o2).hash == qp.expval(o2).hash
-        assert qp.expval(o1).hash != qp.expval(o2).hash
+        assert hash(qp.expval(o1)) == hash(qp.expval(o1))
+        assert hash(qp.expval(o2)) == hash(qp.expval(o2))
+        assert hash(qp.expval(o1)) != hash(qp.expval(o2))
 
         o3 = qp.sum(qp.PauliX("a"), qp.PauliY("b"))
-        assert qp.expval(o1).hash != qp.expval(o3).hash
+        assert hash(qp.expval(o1)) != hash(qp.expval(o3))
 
     def test_eigvals(self):
         """Test that the eigvals property controls the hash property."""
         m1 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(0))
         m2 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(0))
 
-        assert m1.hash == m2.hash
+        assert hash(m1) == hash(m2)
 
         m3 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(1))
-        assert m1.hash != m3.hash
+        assert hash(m1) != hash(m3)
 
         m4 = ExpectationMP(eigvals=[-1, 1], wires=qp.wires.Wires(1))
-        assert m1.hash != m4.hash
-        assert m3.hash != m4.hash
+        assert hash(m1) != hash(m4)
+        assert hash(m3) != hash(m4)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(

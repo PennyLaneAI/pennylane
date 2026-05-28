@@ -85,7 +85,9 @@ def center(
     Returns:
         List[Union[Operator, PauliSentence]]: The center of the Lie algebra ``g``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`, `Demo: Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__
+    .. seealso:: 
+        :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`,
+        and our demo :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     **Example**
 
@@ -182,11 +184,13 @@ def center(
             return []
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in kernel_intersection.T]
+    res = [
+        sum(c * x for c, x in zip(c_coeffs, g, strict=True)) for c_coeffs in kernel_intersection.T
+    ]
 
     have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:
-        _ = [el.simplify() for el in res]
+        _ = [el.prune() for el in res]
         if not pauli:
             res = [el.operation() for el in res]
     else:
