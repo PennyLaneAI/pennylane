@@ -28,7 +28,7 @@ from pennylane.tape.qscript import QuantumScript, process_queue
 
 
 def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object it cant handle."""
+    """Test that a QueuingError is raised if process queue encounters an object it can't handle."""
     q = qp.queuing.AnnotatedQueue()
     q.append(1)
     with pytest.raises(ValueError, match="Encountered object 1 in queue while processing."):
