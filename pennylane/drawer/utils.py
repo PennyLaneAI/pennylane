@@ -55,8 +55,6 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
     CNOT(wires=[0, <DynamicWire>])
     Barrier(wires=[])
     CZ(wires=[0, <DynamicWire>])
-    >>> with qp.queuing.AnnotatedQueue() as q2:
-    ...     qp.X(0)
     >>> layers = drawable_layers(q.queue, wire_map)
     >>> layers
     [[Allocate(wires=[<DynamicWire>])],
