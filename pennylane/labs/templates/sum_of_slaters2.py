@@ -88,15 +88,30 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
     and ``target_wires``. The ``indices`` correspond to the computational basis states interpreted
     via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
     or :math:`|3\rangle = |011\rangle` for three qubits).
-    However, we also need to provide multiple sets of work wires, whose size we can compute
-    with the class method ``required_register_sizes``. This requires a few steps, which is why
-    using ``SumOfSlatersPrep2`` is a little less convenient to use than ``SumOfSlatersPrep``.
+    However, we also need to provide multiple sets of work wires. There is a convenience function
+    for this:
 
     .. code-block:: python
 
         from pennylane.labs.templates import SumOfSlatersPrep2
 
         work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
+
+    Note, however, that these work wires will be hard coded to start at the qubit index ``0`` and
+    consist of consecutive integers. For a more fine-grained control, the size of the registers
+    can be computed with the class method ``required_register_sizes``. This requires a few steps,
+    which is why using ``SumOfSlatersPrep2`` is a little less convenient to use than
+    ``SumOfSlatersPrep``:
+
+    .. code-block:: python
+
+        v_bits = qp.math.int_to_binary(np.array(indices), n).T
+        selection, _ = qp.select_sos_rows(v_bits)
+        sizes = SumOfSlatersPrep2.required_register_sizes(len(indices), len(selection), n)
+
+    >>> print(sizes)
+    {'wires': 7, 'enumeration_wires': 3, 'identification_wires': 5, 'qrom_work_wires': 2, 'mcx_cache_wires': 4}
+
 
     With our work wires set up, we can construct the state preparation circuit and check the
     prepared state for correctness:
@@ -107,7 +122,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 
-        num_wires = sum(registers.values())
+        num_wires = sum(sizes.values())
 
         @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
@@ -197,6 +212,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
             target_wires = list(range(n))
 
             work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
+            num_wires = sum(len(w) for w in work_wires.values()) + n
 
             @qp.decompose(gate_set=gate_set)
             @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
