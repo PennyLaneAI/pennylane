@@ -73,8 +73,11 @@ def _select_ops(
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
-        new_ops = _new_ops(depth, target_wires, control_wires, swap_wires, data)
-        Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
+        Select(
+            _new_ops(depth, target_wires, control_wires, swap_wires, data),
+            control=control_select_wires,
+            work_wires=select_work_wires,
+        )
     else:
         _new_ops(depth, target_wires, control_wires, swap_wires, data)
 
@@ -88,21 +91,6 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
                 swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
                 swap_wires[(j + 2**i) * len(target_wires) : (j + 2 ** (i + 1)) * len(target_wires)],
             )
-
-
-def _check_wire_overlaps(wires_a, wires_b, name_b, name_a):
-    if pl_math.is_abstract(wires_a) or any(pl_math.is_abstract(w) for w in wires_a):
-        return
-    if pl_math.is_abstract(wires_b):
-        return
-    for wire in wires_b:
-        if pl_math.is_abstract(wire):
-            continue
-        if wire in wires_a:
-            raise ValueError(
-                f"{name_b} wires should be different from {name_a} wires. Found {wire} in both."
-            )
-    return
 
 
 class QROM(Operation):
