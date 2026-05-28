@@ -29,7 +29,9 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
     _find_single_w,
+    _preprocess,
     _sos_state_prep,
+    _sos_state_prep_with_wires,
     compute_sos_encoding,
     select_sos_rows,
 )
@@ -606,3 +608,42 @@ class TestSumOfSlatersPrep:
                 )
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    @pytest.mark.external
+    def test_qjit_on_subroutine(self, seed):
+        """Test that the subroutine of the SumOfSlatersPrep decomposition
+        that uses already allocated wires is qjit compatible."""
+
+        n = 6
+        num_entries = 28
+        target_wires = list(range(n))
+        coefficients, indices = self.make_random_data(n, num_entries, seed=seed)
+
+        v_bits = qp.math.int_to_binary(np.array(indices), n).T
+
+        selected_target_wires, *data = _preprocess(v_bits, target_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(num_entries, data[-1], n)
+        data = (coefficients, v_bits, *data)
+        sizes = {"target_wires": sizes.pop("wires")} | sizes
+        empty_id_wires = False
+        if sizes["identification_wires"] == 0:
+            sizes.pop("identification_wires")
+            empty_id_wires = True
+        all_wires = qp.registers(sizes)
+        if empty_id_wires:
+            all_wires["identification_wires"] = qp.wires.Wires([])
+
+        all_wires["selected_target_wires"] = selected_target_wires
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit"))
+        def func():
+            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+            return qp.probs(wires=target_wires)
+
+        output = func()
+        expected = np.zeros(2**n)
+        for c, idx in zip(coefficients, indices, strict=True):
+            expected[idx] = c**2
+
+        assert np.allclose(output, expected)
