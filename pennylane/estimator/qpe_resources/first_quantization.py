@@ -137,7 +137,7 @@ class FirstQuantization(Operation):
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
-        super().__init__(wires=range(self._qubits))
+        super().__init__(self.n, self.eta, wires=range(self._qubits))
 
     def _flatten(self):
         return (self.n, self.eta), (

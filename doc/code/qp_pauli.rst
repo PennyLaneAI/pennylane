@@ -153,4 +153,4 @@ the groups of observables:
 [[4.21], [1.43, 0.97]]
 
 For a larger example of how grouping can be used with PennyLane, check out the
-`Measurement Optimization demo <https://pennylane.ai/qml/demos/tutorial_measurement_optimize/>`_.
+:doc:`Measurement Optimization demo <demo:demos/tutorial_measurement_optimize>`.

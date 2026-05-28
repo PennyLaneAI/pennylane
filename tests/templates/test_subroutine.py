@@ -358,18 +358,6 @@ class TestSubroutineCall:
         op = q.queue[0]
         assert op.bound_args.arguments["metadata"] == "default_value"
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_handle_id(self):
-        """Test that Subroutine's can handle accepting an id."""
-
-        @Subroutine
-        def f(wires):
-            pass
-
-        op = f.operator(0, id="val")
-
-        assert op.id == "val"
-
     def test_mcm_outputs(self):
         """Test that a subroutine can return mcms."""
 
@@ -444,7 +432,6 @@ class TestSubroutineCapture:
 
         for jaxpr in [jaxpr1, jaxpr2, jaxpr3, jaxpr4, jaxpr5]:
             assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
-
             assert jaxpr.eqns[-1].invars[0].aval.shape == (1,)
             assert "int" in jaxpr.eqns[-1].invars[0].aval.dtype.name
 
@@ -510,20 +497,31 @@ class TestSubroutineCapture:
         inner_xpr = subroutine_eqn.params["jaxpr"]
         assert inner_xpr.eqns[-1].primitive == qp.capture.primitives.cond_prim
 
-    def test_id_ignored(self):
-        """Test that id is ignored with program capture."""
+    def test_stack_wires(self):
+        """Test that wire arguments to a subroutine are stacked"""
 
         import jax  # pylint: disable=import-outside-toplevel
 
         @Subroutine
         def f(wires):
-            pass
+            @qp.for_loop(len(wires))
+            def l(i):
+                qp.X(wires[i])
 
-        def w():
-            return f(0, id="val")
+            l()
 
-        jaxpr = jax.make_jaxpr(w)()
-        assert "id" not in jaxpr.eqns[-1].params
+        def c():
+            f((0, 1, 2))
+
+        jaxpr = jax.make_jaxpr(c)()
+
+        subroutine_eqn = jaxpr.eqns[-1]
+        assert subroutine_eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
+        assert len(subroutine_eqn.invars) == 1
+        assert subroutine_eqn.invars[0].aval.shape == (3,)
+
+        inner_xpr = subroutine_eqn.params["jaxpr"]
+        assert inner_xpr.eqns[-1].primitive == qp.capture.primitives.for_loop_prim
 
 
 @pytest.mark.capture

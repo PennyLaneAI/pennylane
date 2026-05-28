@@ -297,7 +297,6 @@ errors may occur. Currently, this includes:
 * :func:`~.pennylane.transforms.single_qubit_fusion`
 * :func:`~.pennylane.transforms.transpile`
 * :func:`~.pennylane.transforms.unitary_to_rot`
-* :func:`~.pennylane.transforms.transpile`
 * :func:`~.pennylane.transforms.rz_phase_gradient`
 * :func:`~.pennylane.transforms.zx.optimize_t_count`
 * :func:`~.pennylane.transforms.zx.push_hadamards`

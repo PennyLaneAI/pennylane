@@ -147,8 +147,11 @@ class TestInitialization:
     def test_init(self, params, coeffs):
         """Test the initialization."""
         ops = [qp.PauliX(0), qp.PauliY(1)]
-        H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=params, t=2, dense=True)
+        with qp.queuing.AnnotatedQueue() as q:
+            H = ParametrizedHamiltonian(coeffs, ops)
+            ev = ParametrizedEvolution(H=H, params=params, t=2, dense=True)
+        assert len(q.queue) == 1
+        assert q.queue[0] == ev
 
         assert ev.H is H
         assert qp.math.allequal(ev.t, [0, 2])
@@ -291,9 +294,9 @@ class TestInitialization:
         operator is removed from the queue."""
         ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
-        H = ParametrizedHamiltonian(coeffs, ops)
 
         with QuantumTape() as tape:
+            H = ParametrizedHamiltonian(coeffs, ops)
             op = qp.evolve(H)
             op2 = op(params=[], t=6)
 
@@ -366,13 +369,13 @@ class TestInitialization:
         diff_ret_intmdt = ParametrizedEvolution(H_0, params_0, t_0, True, False, atol=atol_0)
         diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, False, True, atol=atol_0)
 
-        assert compare_to.hash == equal.hash
-        assert compare_to.hash != diff_H.hash
-        assert compare_to.hash != diff_params.hash
-        assert compare_to.hash != diff_t.hash
-        assert compare_to.hash != diff_atol.hash
-        assert compare_to.hash != diff_ret_intmdt.hash
-        assert compare_to.hash != diff_complementary.hash
+        assert hash(compare_to) == hash(equal)
+        assert hash(compare_to) != hash(diff_H)
+        assert hash(compare_to) != hash(diff_params)
+        assert hash(compare_to) != hash(diff_t)
+        assert hash(compare_to) != hash(diff_atol)
+        assert hash(compare_to) != hash(diff_ret_intmdt)
+        assert hash(compare_to) != hash(diff_complementary)
 
     @pytest.mark.parametrize(
         "params",

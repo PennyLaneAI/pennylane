@@ -206,9 +206,7 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_x_wires", "num_y_wires", "num_work_wires"}
 
-    def __init__(
-        self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
-    ):
+    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -233,7 +231,7 @@ class SemiAdder(Operation):
         else:
             all_wires = Wires.all_wires([x_wires, y_wires])
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -262,11 +260,7 @@ class SemiAdder(Operation):
             for key in ["x_wires", "y_wires", "work_wires"]
         }
 
-        return SemiAdder(
-            new_dict["x_wires"],
-            new_dict["y_wires"],
-            new_dict["work_wires"],
-        )
+        return SemiAdder(new_dict["x_wires"], new_dict["y_wires"], new_dict["work_wires"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -306,6 +300,8 @@ class SemiAdder(Operation):
 
 
 def _semiadder_resources(num_x_wires, num_y_wires, **_):
+    if num_y_wires == 1:
+        return {CNOT: 1}
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
     # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs

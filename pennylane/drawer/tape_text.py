@@ -212,7 +212,11 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
 
     # Process classical bits - join accumulated bit strings with current layer strings
     for j, (bt, s) in enumerate(
-        zip(totals.bit_totals, layer_str[config.n_wires : config.n_wires + config.n_bits])
+        zip(
+            totals.bit_totals,
+            layer_str[config.n_wires : config.n_wires + config.n_bits],
+            strict=True,
+        )
     ):
         totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
