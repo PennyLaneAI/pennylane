@@ -15,7 +15,6 @@
 This module contains some useful utility functions for circuit drawing.
 """
 
-from collections import defaultdict
 from functools import singledispatch
 from itertools import chain
 
@@ -29,7 +28,48 @@ from pennylane.templates import SubroutineOp
 
 
 def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
-    """Determine the extent of wires."""
+    """Determine the start and end points of quantum wires and reuse lines
+    for dynamic wires when possible.
+
+    Args:
+        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+            into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
+        wire_map (dict): map from the wires to the horizontal line
+
+    Returns:
+        dict, dict: The first dictionary is an updated wire_map that may have collapsed
+            dynamic wires into one line. The second is a map from horizontal line to
+            a list of wire extents.
+
+    >>> from pennylane.drawer.utils import dynamic_wire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
+    >>> wire_map = {0:0}
+    >>> with qp.queuing.AnnotatedQueue() as q:
+    ...     with qp.allocate(1) as wires:
+    ...         wire_map[wires[0]] = 1
+    ...         qp.CNOT((0, wires[0]))
+    ...     qp.Barrier()
+    ...     with qp.allocate(1) as wires:
+    ...         wire_map[wires[0]] = 2
+    ...         qp.CZ((0, wires[0]))
+    >>> layers = drawable_layers(q.queue, wire_map)
+    >>> layers
+    [[Allocate(wires=[<DynamicWire>])],
+    [CNOT(wires=[0, <DynamicWire>])],
+    [Deallocate(wires=[<DynamicWire>])],
+    [Barrier(wires=[]), Allocate(wires=[<DynamicWire>])],
+    [CZ(wires=[0, <DynamicWire>])],
+    [Deallocate(wires=[<DynamicWire>])]]
+    >>> wire_map, wire_layers = dynamic_wire_connections(layers, wire_map)
+    >>> wire_map
+    {<DynamicWire>: 1, <DynamicWire>: 1, 0: 0}
+    >>> wire_layers
+    {1: [[0, 2], [3, 5]], 0: [[-1, 8]]}
+
+    Both ``<DynamicWire>``'s now occur in the same line.  The first one goes from layer
+    ``0`` to layer ``2``, and the second one goes from ``3`` to layer ``5``.
+
+    """
     dynamic_wire_extent = {}
     dynamic_wire_map = {}
     num_encountered = 0
@@ -45,13 +85,16 @@ def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
                     dynamic_wire_extent[dynamic_wire_map[w]].append(layer_idx)
 
     new_wire_map, connected_layers, _ = _try_line_reuse(dynamic_wire_map, dynamic_wire_extent, None)
+
+    # shift to occur after all the normal wires
     num_normal_wires = sum(1 for w in wire_map if not isinstance(w, DynamicWire))
     new_wire_map = {w: l + num_normal_wires for w, l in new_wire_map.items()}
     new_connected_layers = {l + num_normal_wires: val for l, val in connected_layers.items()}
+    # add normal wires into connected_layers
     for w in wire_map:
         if not isinstance(w, DynamicWire):
             new_wire_map[w] = wire_map[w]
-            new_connected_layers[wire_map[w]] = [[-1, len(layers) + 2]]
+            new_connected_layers[wire_map[w]] = [[-1, len(layers)]]
 
     return new_wire_map, new_connected_layers
 

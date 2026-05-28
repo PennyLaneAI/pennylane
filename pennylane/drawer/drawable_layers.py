@@ -15,9 +15,10 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from dataclasses import dataclass, field
 from functools import singledispatch
 
-from pennylane.allocation import Allocate
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.measurements import MeasurementProcess
 from pennylane.ops import (
     Conditional,
@@ -148,6 +149,70 @@ def _handle_cond(op: Conditional, wire_map, bit_map):
     return set(range(min_wire, max_wire + 1))
 
 
+@dataclass
+class LayersData:
+    """Data for putting operations into layers."""
+
+    ops_in_layer: list[list] = field(default_factory=lambda: [[]])
+    """Lists of which operators should be placed in each layer."""
+
+    occupied_wires_per_layer: list[set[int]] = field(default_factory=lambda: [set()])
+    """The mapped wires that will be occupied in the drawing at each layer."""
+
+    used_cwires_per_layer: list[set[int]] = field(default_factory=lambda: [set()])
+    """The clasical wires that will be occupied in each layer."""
+
+    waiting_dynamic_wires: list[DynamicWire] = field(default_factory=list)
+    """DynamicWires that are waiting for the first interaction between
+    the dynamic wires and an algorithmic wire. 
+    
+    This allows us to push the allocation and initial setup to the right and conserve
+    drawer space, keeping things together.  See ``insert_waiting_ops``.
+    """
+
+    waiting_dynamic_ops: list = field(default_factory=list)
+    """The Allocate instructions and operators that are waiting on the first interaction between
+    the waiting_dynamic_wires and an algorithmic wire.
+    """
+
+    @property
+    def max_layer(self) -> int:
+        """The maximum number of layers present."""
+        return len(self.ops_in_layer) - 1
+
+    def add_to_layer(self, op, op_layer, occupied_wires, used_cwires):
+        """Adds an operation to a layer."""
+        if op_layer > self.max_layer:
+            self.occupied_wires_per_layer.append(set())
+            self.ops_in_layer.append([])
+            self.used_cwires_per_layer.append(set())
+
+        self.ops_in_layer[op_layer].append(op)
+        self.occupied_wires_per_layer[op_layer].update(occupied_wires)
+        self.used_cwires_per_layer[op_layer].update(used_cwires)
+
+    def insert_waiting_ops(self, op_layer, wire_map, bit_map):
+        """Insert ops in ``waiting_dynamic_ops`` before ``op_layer``."""
+        inner_layers = drawable_layers(
+            self.waiting_dynamic_ops,
+            wire_map=wire_map,
+            bit_map=bit_map,
+            _dynamic_wires=False,
+        )
+        for i, layer in enumerate(reversed(inner_layers)):
+            insert_layer = op_layer - i - 1
+            if insert_layer < 0:
+                self.ops_in_layer.insert(0, [])
+                op_layer += 1
+                insert_layer = op_layer - i - 1
+                self.occupied_wires_per_layer.insert(0, set())
+                self.used_cwires_per_layer.insert(0, set())
+            self.ops_in_layer[insert_layer].extend(layer)
+        self.waiting_dynamic_wires = []
+        self.waiting_dynamic_ops = []
+        return op_layer
+
+
 def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True):
     """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
@@ -158,6 +223,8 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
         wire_map (dict): A map from wire label to non-negative integers. Defaults to None.
         bit_map (dict): A map containing mid-circuit measurements used for classical conditions
             or collecting statistics as keys. Defaults to None.
+        _dynamic_wires (bool): **Internal**.  Whether or not try pushing allocations and ops
+            on only dynamic wires to the right next to the first time the dynamic wires are used.
 
     Returns:
         (list[set[~.Operator]], list[set[~.MeasurementProcess]]) : Each index is a set of operations
@@ -189,84 +256,57 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
     bit_map = bit_map or {}
 
     # initialize for operation layers
-    max_layer = 0
-    occupied_wires_per_layer = [set()]
-    ops_in_layer = [[]]
-    used_cwires_per_layer = [set()]
-    waiting_dynamic_wires = []
-    waiting_dynamic_ops = []
+    data = LayersData()
 
     # loop over operations
     for op in operations:
         if _dynamic_wires and isinstance(op, Allocate):
-            op_layer = 0
-            waiting_dynamic_ops.append(op)
-            waiting_dynamic_wires.extend(op.wires)
-        elif _dynamic_wires and all(w in waiting_dynamic_wires for w in op.wires):
-            op_layer = 0
-            waiting_dynamic_ops.append(op)
+            data.waiting_dynamic_ops.append(op)
+            data.waiting_dynamic_wires.extend(op.wires)
+
+        elif (
+            _dynamic_wires
+            and all(w in data.waiting_dynamic_wires for w in op.wires)
+            and op.wires  # if no wires (GlobalPhase) then do not put into waiting_dynamic_ops
+            and not isinstance(op, Deallocate)  # deallocate should force putting into circuit
+        ):
+            data.waiting_dynamic_ops.append(op)
+        elif isinstance(op, MeasurementProcess) and op.mv is not None:
+            # Only terminal measurements that collect mid-circuit measurement statistics have
+            # op.mv != None.
+            # Get the occupied classical wires of the measurement process and find which layer
+            # to put it in.
+            op_occupied_wires = set()
+            mapped_cwires = (
+                [bit_map[m.measurements[0]] for m in op.mv]
+                if isinstance(op.mv, list)
+                else [bit_map[m] for m in op.mv.measurements]
+            )
+            op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
+            op_layer = _recursive_find_mcm_stats_layer(
+                data.max_layer, op_occupied_cwires, data.used_cwires_per_layer
+            )
+
+            data.add_to_layer(op, op_layer, op_occupied_wires, op_occupied_cwires)
+
         else:
-            if isinstance(op, MeasurementProcess) and op.mv is not None:
-                # Only terminal measurements that collect mid-circuit measurement statistics have
-                # op.mv != None.
-                # Get the occupied classical wires of the measurement process and find which layer
-                # to put it in.
-                op_occupied_wires = set()
-                mapped_cwires = (
-                    [bit_map[m.measurements[0]] for m in op.mv]
-                    if isinstance(op.mv, list)
-                    else [bit_map[m] for m in op.mv.measurements]
+            # Find occupied wires of the operator/measurement process and find which layer to
+            # put it in.
+            op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
+            try:
+                op_layer = _recursive_find_layer(
+                    data.max_layer, op_occupied_wires, data.occupied_wires_per_layer
                 )
-                op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
-                op_layer = _recursive_find_mcm_stats_layer(
-                    max_layer, op_occupied_cwires, used_cwires_per_layer
-                )
+            except RecursionError as e:
+                raise RecursionError(
+                    f"Drawer is currently at depth {data.max_layer}, which is too deep to handle. "
+                    "Try drawing a smaller subset of your circuit instead."
+                ) from e
+            op_occupied_cwires = set()
 
-            else:
-                # Find occupied wires of the operator/measurement process and find which layer to
-                # put it in.
-                op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
-                try:
-                    op_layer = _recursive_find_layer(
-                        max_layer, op_occupied_wires, occupied_wires_per_layer
-                    )
-                except RecursionError as e:
-                    raise RecursionError(
-                        f"Drawer is currently at depth {max_layer}, which is too deep to handle. "
-                        "Try drawing a smaller subset of your circuit instead."
-                    ) from e
-                op_occupied_cwires = set()
+            if _dynamic_wires and any(w in data.waiting_dynamic_wires for w in op.wires):
+                op_layer = data.insert_waiting_ops(op_layer, wire_map, bit_map)
 
-                if _dynamic_wires and any(w in waiting_dynamic_wires for w in op.wires):
-                    inner_layers = drawable_layers(
-                        waiting_dynamic_ops,
-                        wire_map=wire_map,
-                        bit_map=bit_map,
-                        _dynamic_wires=False,
-                    )
-                    for i, layer in enumerate(reversed(inner_layers)):
-                        insert_layer = op_layer - i - 1
-                        if insert_layer < 0:
-                            ops_in_layer.insert(0, [])
-                            op_layer += 1
-                            max_layer += 1
-                            insert_layer = op_layer - i - 1
-                            occupied_wires_per_layer.insert(0, set())
-                            used_cwires_per_layer.insert(0, set())
-                        ops_in_layer[insert_layer].extend(layer)
-                    waiting_dynamic_wires = []
-                    waiting_dynamic_ops = []
+            data.add_to_layer(op, op_layer, op_occupied_wires, op_occupied_cwires)
 
-            # see if need to add new layer
-            if op_layer > max_layer:
-                max_layer += 1
-                occupied_wires_per_layer.append(set())
-                ops_in_layer.append([])
-                used_cwires_per_layer.append(set())
-
-            # add to op_layer
-            ops_in_layer[op_layer].append(op)
-            occupied_wires_per_layer[op_layer].update(op_occupied_wires)
-            used_cwires_per_layer[op_layer].update(op_occupied_cwires)
-
-    return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]
+    return list(filter(None, data.ops_in_layer[:-1])) + data.ops_in_layer[-1:]

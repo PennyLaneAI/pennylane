@@ -66,7 +66,7 @@ class _Config:
     """A map from the wire to a tuple of their start layer and stop layer."""
 
     def wire_filler(self, row: int, next_layer: bool = False) -> str:
-        """The filler character for wires at the current"""
+        """The filler character for wires at the current layer and row."""
         if self.cur_layer >= self.num_op_layers:
             return " "
         layer = self.cur_layer + 1 if next_layer else self.cur_layer
@@ -106,7 +106,9 @@ def _initialize_wire_and_bit_totals(
     if show_wire_labels:
         wire_totals = [" "] * len(config.wire_map)
         for wire, line in config.wire_map.items():
-            if not isinstance(wire, DynamicWire):
+            if isinstance(wire, DynamicWire):
+                wire_totals[line] = prefix
+            else:
                 wire_totals[line] = f"{wire}: " + prefix
         line_length = max(len(s) for s in wire_totals)
         wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
