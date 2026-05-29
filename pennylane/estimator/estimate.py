@@ -22,7 +22,7 @@ from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
-from pennylane.workflow.qnode import QNode
+from pennylane.workflow import QNode
 
 from .resource_config import ResourceConfig
 from .resource_mapping import _map_to_resource_op
