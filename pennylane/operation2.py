@@ -52,14 +52,24 @@ class Operator2(ABC):
     The order in which names appear in ``wire_argnames`` determines the order in which
     their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
     arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
-    order. Wires contributed by arguments which are themselves :class:`~.Operator2` 
+    order. Wires contributed by arguments which are themselves :class:`~.Operator2`
     objects are appended *after* all ``wire_argnames`` wires. The special
     names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
-    but their values are excluded from ``op.wires``."""
+    but their values are excluded from ``op.wires``.
+    """
 
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
-    """The names of arguments that are treated as dynamic. Dynamic arguments are those
-    whose concrete values may not be known at compile-time."""
+    """The names of arguments that are treated as dynamic. Dynamic arguments are numerical
+    arguments whose concrete values may not be known at compile-time, such as rotation angles,
+    matrices, etc., and may include trainable data. Additionally, dynamic arguments the only
+    ones used to infer :attr:`~.Operator2.batch_size`, necessary for broadcasting support.
+
+    Inputs for these arguments must be scalars, arrays, or castable to arrays (e.g. multi-
+    dimensional lists with homogenous shapes), and operator constructors will be responsible
+    for "canonicalizing" them (such as casting a list input to an array). At compile-time,
+    the concrete values of these arguments are assumed to be unknown—only their shapes and
+    data types are known.
+    """
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as static. Static arguments are those
@@ -96,20 +106,29 @@ class Operator2(ABC):
     structures (known as Pytrees). Names in this category must be disjoint from
     ``dynamic_argnames``, ``static_argnames``, and ``compilable_argnames``, but may
     overlap with ``wire_argnames`` when those arguments contain nested structures of
-    wires. This feature is opt-in, but is required for cases where arrays,
-    operators, and wires are supplied within a collection."""
+    wires. Examples of hybrid arguments include collections of wires or dynamic arrays,
+    operators, etc.
+    """
 
-    wire_sizes: ClassVar[tuple[int | None, ...]]
+    wire_sizes: ClassVar[tuple[int | None, ...] | None] = None
     """The expected number of wire labels for each wire argument. If any wire arguments
     support an arbitrary size, ``None`` must be used. By default, all wire arguments are
     assumed to support arbitrary sizes. For hybrid wire arguments, the wire size must
-    always be ``None``."""
+    always be ``None``.
+    """
 
-    # TODO: [sc-120517] Add proper fixed_sig support
+    # TODO: [sc-120517] Add proper fixed_sig support and update docs accordingly
     fixed_sig: ClassVar[tuple[type, ...]]
-    """The expected signature of an operator. This must be set only if the shape and data
-    type of all dynamic parameters is fixed, the number of wires is fixed, there are no
-    static (compilable or non-compilable) arguments, and no hybrid arguments."""
+    """The expected signature of an operator. If set, it must have the same length as
+    the total number of arguments, and be in the same order as the order of the arguments
+    in an operator's constructor. This attribute is optional—not setting it has no loss
+    of functionality. Additionally, it can only be set if:
+
+    * the shape and data type of all dynamic parameters is fixed,
+    * the number of wires is fixed,
+    * there are no static (compilable or non-compilable) arguments, and,
+    * there are no hybrid arguments.
+    """
 
     # ------------ Class variables set automatically ---------------
 
@@ -119,7 +138,7 @@ class Operator2(ABC):
     # ------------ Instance variables set automatically ------------
 
     _bound_args: BoundArguments
-    """BoundArguments mapping arguments names to their values."""
+    """``BoundArguments`` mapping arguments names to their values."""
 
     # ------------------ Initialization ------------------
 
@@ -246,7 +265,7 @@ class Operator2(ABC):
             )
 
         # Wire sizes setup
-        if hasattr(cls, "wire_sizes"):
+        if cls.wire_sizes is not None:
             if not isinstance(cls.wire_sizes, Sequence):
                 cls.wire_sizes = (cls.wire_sizes,)
 
@@ -283,13 +302,15 @@ class Operator2(ABC):
 
         **Example:**
 
-        # TODO: [sc-120453] Remove doctest: +SKIP
+        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
         >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten() # doctest: +SKIP
+        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
         >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
         Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qp.PauliRot._unflatten(*op._flatten()) # doctest: +SKIP
-        PauliRot(theta=1.2, pauli_word=XY, wires=[0, 1])
+        >>> op._flatten() # doctest: +SKIP
+        (([1.2], [Wires([0, 1])], []), ('XY',))
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -325,9 +346,6 @@ class Operator2(ABC):
         (([1.2, 2.3, 3.4], [Wires([0])], []), ())
         >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
         Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
         """
         args = {}
 
