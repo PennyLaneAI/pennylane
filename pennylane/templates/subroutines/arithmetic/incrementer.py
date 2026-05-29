@@ -44,8 +44,8 @@ class Incrementer(Operator):
         wires (Wires): The wires that the incrementer acts on.
         work_wires (Wires): The auxiliary wires that the incrementer may use in its decomposition.
 
-    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via MCX gates if
+    We use a left elbow ladder together with a :class:`~.CNOT` + right :class:`~.TemporaryAND` uncompute ladder.
+    This is a manually reduced decomposition of the standard incrementer via :class:`~.MultiControlledX` gates if
     work wires are available.
 
     Generic decomposition:
