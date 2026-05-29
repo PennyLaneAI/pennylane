@@ -21,12 +21,17 @@ from functools import singledispatch, wraps
 from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
+from pennylane.labs.estimator_beta import _map_to_resource_op
 from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
-from pennylane.labs.estimator_beta.wires_manager.wire_counting import estimate_wires_from_circuit
+from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
+    estimate_wires_from_circuit,
+    estimate_wires_from_resources,
+)
+from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
-from .resource_profile import ProfileNode, add_dicts, mul_dict
+from .resource_profile import ProfileNode, add_dicts
 
 # pylint: disable=too-many-arguments
 
@@ -54,7 +59,7 @@ def _profile_resources_dispatch(
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
-    """Internal singledispatch function for resource estimation."""
+    """Internal singledispatch function for resource profiling."""
     raise TypeError(
         f"Could not obtain resources for workflow of type {type(workflow)}. workflow must be one of Resources, Callable, ResourceOperator, or list"
     )
@@ -117,6 +122,99 @@ def _profile_from_qfunc(
         return (root_node, resources)
 
     return wrapper
+
+
+@_profile_resources_dispatch.register
+def _profile_from_resource(
+    workflow: Resources,
+    gate_set: set[str] | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
+    tight_wires_budget: bool = False,
+    config: LabsResourceConfig | None = None,
+) -> Resources:
+    """Generate a resource profile from a Resources object (i.e. a Resources object that
+    contains high-level operators can be analyzed with respect to a lower-level gate set)."""
+    config = config or LabsResourceConfig()
+    gate_set = gate_set or DefaultGateSet
+
+    root_node = ProfileNode()
+    for cmpr_rep_op, count in workflow.gate_types.items():
+        child_node = _extract_gate_counts_from_compressed_res_op(
+            cmpr_rep_op,
+            local_scalar=count,
+            cumulative_scalar=count,
+            gate_set=gate_set,
+            config=config,
+        )
+
+        root_node.children.append(child_node)
+        add_dicts(root_node.gate_data, child_node.gate_data)  # Updates base dict inplace
+
+    new_any_state, new_zeroed = estimate_wires_from_resources(
+        workflow=workflow,
+        gate_set=gate_set,
+        config=config,
+        zeroed=zeroed,
+        any_state=any_state,
+    )
+
+    if tight_wires_budget:
+        if (new_zeroed + new_any_state) > (zeroed + any_state):
+            raise ValueError(
+                f"Allocated more wires than the prescribed wire budget. Allocated {new_zeroed + new_any_state} qubits with a budget of {zeroed + any_state}"
+            )
+
+    resources = Resources(
+        zeroed_wires=new_zeroed,
+        any_state_wires=new_any_state,
+        algo_wires=workflow.algo_wires,
+        gate_types=root_node.gate_data,
+    )
+    return (root_node, resources)
+
+
+@_profile_resources_dispatch.register
+def _profile_from_resource_operator(
+    workflow: ResourceOperator,
+    gate_set: set[str] | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
+    tight_wires_budget: bool = False,
+    config: LabsResourceConfig | None = None,
+) -> Resources:
+    """Extract resources from a resource operator."""
+    resources = 1 * workflow
+    return _profile_from_resource(
+        workflow=resources,
+        gate_set=gate_set,
+        zeroed=zeroed,
+        any_state=any_state,
+        tight_wires_budget=tight_wires_budget,
+        config=config,
+    )
+
+
+@_profile_resources_dispatch.register
+def _profile_from_pl_ops(
+    workflow: Operation,
+    gate_set: set[str] | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
+    tight_wires_budget: bool = False,
+    config: LabsResourceConfig | None = None,
+) -> Resources:
+    """Extract resources from a pl operator."""
+    workflow = _map_to_resource_op(workflow)
+    resources = 1 * workflow
+    return _profile_from_resource(
+        workflow=resources,
+        gate_set=gate_set,
+        zeroed=zeroed,
+        any_state=any_state,
+        tight_wires_budget=tight_wires_budget,
+        config=config,
+    )
 
 
 def _extract_gate_counts_from_compressed_res_op(
