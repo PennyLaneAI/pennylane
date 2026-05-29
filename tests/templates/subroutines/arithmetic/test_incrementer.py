@@ -22,7 +22,7 @@ from pennylane import Incrementer, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample
 from pennylane.ops import Controlled, PauliX
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 
 dev = device("default.qubit")
@@ -35,6 +35,19 @@ def increment(wires, init_state, work_wires=None):
     return sample(wires=wires)
 
 
+@pytest.mark.parametrize(
+    "wires, work_wires",
+    [
+        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), []),  # no work wires
+    ],
+)
+def test_assert_valid(wires, work_wires):
+    op = Incrementer(wires, work_wires)
+    assert_valid(op)
+
+
 @pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, work_wires",
@@ -45,21 +58,6 @@ def increment(wires, init_state, work_wires=None):
     ],
 )
 def test_decomposition_capture(wires, work_wires):
-    op = Incrementer(wires, work_wires)
-
-    for rule in list_decomps(Incrementer):
-        _test_decomposition_rule(op, rule)
-
-
-@pytest.mark.parametrize(
-    "wires, work_wires",
-    [
-        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
-        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
-        ((0, 1, 2), []),  # no work wires
-    ],
-)
-def test_decomposition(wires, work_wires):
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):

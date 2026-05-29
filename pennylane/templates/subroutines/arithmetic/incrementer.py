@@ -164,6 +164,15 @@ class Incrementer(Operator):
             "num_work_wires": num_work_wires,
         }
 
+    def map_wires(self, wire_map: dict):
+        work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
+        wires = [wire_map.get(w, w) for w in (set(self.wires) - set(self.hyperparameters["work_wires"]))]
+
+        return Incrementer(
+            wires,
+            work_wires,
+        )
+
 
 def _incrementer_resources(num_wires, **_):
     resources = {}
