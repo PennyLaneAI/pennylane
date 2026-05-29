@@ -1158,13 +1158,6 @@ class FFQRAM(Operation):
         :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.AngleEmbedding`,
         :class:`~.AmplitudeEmbedding`
 
-    .. note::
-
-        This template implements the state-preparation variant of FF-QRAM with an even
-        initial superposition, as proposed in Theorem 1 of
-        `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
-        It can be viewed as a probabilistic generalized amplitude encoding routine.
-
     **Example:**
 
     The following example is adapted from Section 4 of
@@ -1212,14 +1205,23 @@ class FFQRAM(Operation):
         conditioned_probs = filtered_counts / shots / p_reg1
         obtained_amplitudes = np.sqrt(conditioned_probs)
 
-        print("expected success probability:", 1 / (2 ** len(addrs[0])))
-        print("obtained success probability:", p_reg1)
+        >>> print("expected success probability:", 1 / (2 ** len(addrs[0])))
+        expected success probability: 0.125
 
-        print("expected states:", [addr + "1" for addr in addrs])
-        print("obtained states:", filtered_states)
+        >>> print("obtained success probability:", p_reg1)  # doctest: +SKIP
+        obtained success probability: 0.095
 
-        print("expected amplitudes:", amps)
-        print("obtained amplitudes:", obtained_amplitudes)
+        >>> print("expected states:", [addr + "1" for addr in addrs])
+        expected states: ['0001', '0011']
+
+        >>> print("obtained states:", filtered_states)
+        obtained states: [np.str_('0001'), np.str_('0011')]
+
+        >>> print("expected amplitudes:", amps)
+        expected amplitudes: [0.54772256 0.83666003]
+
+        >>> print("obtained amplitudes:", obtained_amplitudes)  # doctest: +SKIP
+        obtained amplitudes: [0.54289671 0.83979947]
     """
 
     grad_method = None
@@ -1270,7 +1272,7 @@ class FFQRAM(Operation):
 
     @property
     def num_params(self):
-        return 1  # amplitude is the only trainable parameter
+        return 1  # amplitudes is the only trainable parameter
 
     @property
     def ndim_params(self):
@@ -1281,7 +1283,7 @@ def _flip_zero_bits(address_wires, addr_bits):
     """
     Apply X gates to where the addr_bits is zero.
     """
-    for wire, bit in zip(address_wires, addr_bits):
+    for wire, bit in zip(address_wires, addr_bits, strict=True):
         if int(bit) == 0:
             PauliX(wires=wire)
 
@@ -1299,25 +1301,21 @@ def _normalize_amplitudes(amplitudes):
 
 
 def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
-    resources = defaultdict(int)
-
-    # one Hadamard gate per address wire to initialize the |+>^n state.
-    resources[resource_rep(Hadamard)] += num_address_wires
-
-    # one "flip" and one "flop" for 0 bits
-    resources[resource_rep(PauliX)] += 2 * num_zero_bits
-
-    # controlled RY for each entry
-    resources[
+    """
+    - One Hadamard gate per address wire to initialize the |+>^n state.
+    - One "flip" and one "flop" for 0 bits.
+    - One controlled RY for each entry.
+    """
+    return {
+        resource_rep(Hadamard): num_address_wires,
+        resource_rep(PauliX): 2 * num_zero_bits,
         controlled_resource_rep(
             base_class=RY,
             base_params={},
             num_control_wires=num_address_wires,
             num_zero_control_values=0,  # flipped to 1 already
-        )
-    ] += num_entries
-
-    return resources
+        ): num_entries,
+    }
 
 
 @register_resources(_ffqram_resources)
