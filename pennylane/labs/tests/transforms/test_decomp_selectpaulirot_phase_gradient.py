@@ -245,9 +245,7 @@ def test_capture_compatibility():
                 "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
-                "Adjoint(CNOT)",
                 "PauliX",
-                "Adjoint(PauliX)",
                 "GlobalPhase",
             }
 
@@ -264,6 +262,9 @@ def test_capture_compatibility():
             collector.eval(cjaxpr.jaxpr, cjaxpr.consts, angles)
 
             op_names = {op.name for op in collector.state["ops"]}
+            # NOTE: Because `adjoint` is lazy in ChangeOpBasis,
+            # unsimplified operators will be collected.
+            gate_set |= {"Adjoint(CNOT)", "Adjoint(PauliX)"}
             assert op_names.issubset(
                 gate_set
             ), f"Following ops are present but not in gateset: {op_names - gate_set}"
