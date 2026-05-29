@@ -61,7 +61,7 @@ class Operator2(ABC):
     dynamic_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as dynamic. Dynamic arguments are numerical
     arguments whose concrete values may not be known at compile-time, such as rotation angles,
-    matrices, etc., and may include trainable data. Additionally, dynamic arguments the only
+    matrices, etc., and may include trainable data. Additionally, dynamic arguments are the only
     ones used to infer :attr:`~.Operator2.batch_size`, necessary for broadcasting support.
 
     Inputs for these arguments must be scalars, arrays, or castable to arrays (e.g. multi-
@@ -114,7 +114,8 @@ class Operator2(ABC):
     """The expected number of wire labels for each wire argument. If any wire arguments
     support an arbitrary size, ``None`` must be used. By default, all wire arguments are
     assumed to support arbitrary sizes. For hybrid wire arguments, the wire size must
-    always be ``None``.
+    always be ``None``. Specifying wire sizes allows for additional automatic validation
+    to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
     # TODO: [sc-120517] Add proper fixed_sig support and update docs accordingly
