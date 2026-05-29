@@ -20,7 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
+from pennylane.ops.op_math import Controlled
+from pennylane.templates.subroutines.arithmetic.out_square import OutSquare, _out_square_with_adder
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -70,6 +71,13 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
         y_state /= np.linalg.norm(y_state)
 
     output_state = np.zeros((num_x, num_y), dtype=complex)
+    # To compute the output state, we populate the slice of the total state corresponding to
+    # basis state `x` on `x_wires` with the amplitudes of `y_state`, multiplied by that particular
+    # amplitude for `x` from `x_state` and permuted by the classical reversible logic of the
+    # template, which is just to add the square of `x` to the computational basis state. np.roll
+    # accomplished exactly this permutation, including the periodic behaviour across the end
+    # of the state vector (represented by the fact that we compute everything modulus the size of
+    # the output register).
     for x in range(num_x):
         output_state[x] = x_state[x] * np.roll(y_state, x**2)
     output_state = output_state.reshape(-1)
@@ -224,3 +232,82 @@ class TestOutSquare:
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    def test_adder_decomposition_output_wires_zeroed(self):
+        """Test that the controlled adder decomposition has the expected structure with
+        ``output_wires_zeroed=True``."""
+        x_wires, output_wires, work_wires = (
+            [0, 1, 2],
+            [3, 4, 5, 6],
+            [7, 8, 9, 10],
+        )
+        with qp.queuing.AnnotatedQueue() as q:
+            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=True)
+
+        expected = [
+            # controlled copy
+            qp.CNOT([2, 6]),
+            qp.TemporaryAND([2, 1, 5]),
+            qp.TemporaryAND([2, 0, 4]),
+            # First CNOT-wrapped controlled adder, shifted by 1
+            qp.CNOT([1, 7]),
+            Controlled(
+                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
+                control_wires=[7],
+                work_wires=[10],
+                work_wire_type="zeroed",
+            ),
+            qp.CNOT([1, 7]),
+            # Second CNOT-wrapped controlled adder, shifted by 2
+            qp.CNOT([0, 7]),
+            Controlled(
+                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
+                control_wires=[7],
+                work_wires=[9, 10],
+                work_wire_type="zeroed",
+            ),
+            qp.CNOT([0, 7]),
+        ]
+        assert q.queue == expected
+
+    def test_adder_decomposition_output_wires_not_zeroed(self):
+        """Test that the controlled adder decomposition has the expected structure with
+        ``output_wires_zeroed=False``."""
+        x_wires, output_wires, work_wires = (
+            [0, 1, 2],
+            [3, 4, 5, 6],
+            [7, 8, 9, 10],
+        )
+        with qp.queuing.AnnotatedQueue() as q:
+            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=False)
+
+        expected = [
+            # controlled copy (="zeroth" CNOT-wrapped controlled adder)
+            qp.CNOT([2, 7]),
+            Controlled(
+                qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]),
+                control_wires=[7],
+                work_wire_type="zeroed",
+            ),
+            qp.CNOT([2, 7]),
+            # First CNOT-wrapped controlled adder, shifted by 1
+            qp.CNOT([1, 7]),
+            Controlled(
+                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
+                control_wires=[7],
+                work_wires=[10],
+                work_wire_type="zeroed",
+            ),
+            qp.CNOT([1, 7]),
+            # Second CNOT-wrapped controlled adder, shifted by 2
+            qp.CNOT([0, 7]),
+            Controlled(
+                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
+                control_wires=[7],
+                work_wires=[9, 10],
+                work_wire_type="zeroed",
+            ),
+            qp.CNOT([0, 7]),
+        ]
+
+        assert q.queue == expected
