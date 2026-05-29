@@ -277,7 +277,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._min_work_wires = 0
         self._start = self._graph.add_node(None)
 
-        # The purpose of this is to keep track of which operators we're still exploring
+        # The purpose of the following two "in_progress" variables is to keep track of which operators we're still exploring
         # decomposition paths for during **graph construction**. If we loop back to an
         # op that we're still exploring (e.g., if we find ourselves exploring decomposition
         # rules for C(RX) during exploration of RX itself), we stop.
