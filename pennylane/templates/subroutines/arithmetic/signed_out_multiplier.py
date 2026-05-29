@@ -598,7 +598,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     SemiAdder(
         mult_temp,
         output_wires,
-        work_wires=work_wires[len(output_wires) + 3 :],
+        work_wires=work_wires[len(output_wires) + 3 : 2 * len(output_wires) + 2],
     )
 
     # Return inputs to original state
