@@ -62,7 +62,7 @@ class TestProcessQueueOperator2:
             op = Op2(0.5, wires=0)
             m = qp.expval(qp.PauliZ(0))
 
-        ops, measurements = qp.queuing.process_queue(q)
+        ops, measurements = process_queue(q)
         assert ops == [op]
         assert measurements == [m]
 
@@ -73,7 +73,7 @@ class TestProcessQueueOperator2:
             Op2(0.5, wires=0)
 
         with pytest.raises(ValueError, match="must occur prior to measurements"):
-            qp.queuing.process_queue(q)
+            process_queue(q)
 
     def test_mixed_operator_and_operator2(self):
         """Test that legacy ``Operator`` and new ``Operator2`` instances both end up in
@@ -84,7 +84,7 @@ class TestProcessQueueOperator2:
             o3 = qp.PauliY(2)
             m = qp.expval(qp.PauliZ(0))
 
-        ops, measurements = qp.queuing.process_queue(q)
+        ops, measurements = process_queue(q)
         assert ops == [o1, o2, o3]
         assert measurements == [m]
 
