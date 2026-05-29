@@ -95,13 +95,11 @@ class TestConstructTape:
     def test_handle_qfunc_with_dynamic_shots(self):
         """Tests that dynamic shots can be handled properly."""
 
-        with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
-
-            @qp.qnode(qp.device("default.qubit"))
-            def circuit(shots):
-                for _ in range(shots):
-                    qp.X(0)
-                return qp.expval(qp.PauliZ(0))
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(shots):
+            for _ in range(shots):
+                qp.X(0)
+            return qp.expval(qp.PauliZ(0))
 
         num_shots = 10
         tape = construct_tape(circuit)(shots=num_shots)

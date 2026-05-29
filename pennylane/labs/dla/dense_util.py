@@ -224,7 +224,9 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     H_ops = []
     for _coeffs in coeffs:
         ids = qp.math.where(qp.math.abs(_coeffs) > tol)[0]
-        sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
+        sentence = PauliSentence(
+            {_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids, strict=True)}
+        )
         if pauli:
             H_ops.append(sentence)
         else:
@@ -325,7 +327,7 @@ def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | Operator]):
         u1 = PauliSentence({})
         for j in range(num_pw):
             u1 += _idx_to_pw[j] * OM[j, i]
-        u1.simplify()
+        u1.prune()
         generators_orthogonal.append(u1)
 
     return generators_orthogonal

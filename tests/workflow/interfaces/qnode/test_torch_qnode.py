@@ -22,7 +22,6 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qp
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.torch
 
@@ -580,27 +579,6 @@ class TestQNode:
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     differentiates it."""
-
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
-    def test_changing_shots(self):
-        """Test that changing shots works on execution"""
-        dev = DefaultQubit()
-        a, b = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
-
-        @qnode(dev, interface="torch", diff_method=qp.gradients.param_shift)
-        def circuit(a, b):
-            qp.RY(a, wires=0)
-            qp.RX(b, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.sample(wires=(0, 1))
-
-        # execute with device default shots (None)
-        with pytest.raises(DeviceError):
-            circuit(a, b)
-
-        # execute with shots=100
-        res = circuit(a, b, shots=100)
-        assert res.shape == (100, 2)
 
     # TODO: add this test after shot vectors addition
     @pytest.mark.xfail

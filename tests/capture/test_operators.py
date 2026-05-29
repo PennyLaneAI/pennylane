@@ -253,7 +253,7 @@ class TestSpecialOps:
         eqn = jaxpr.eqns[0]
 
         assert eqn.primitive == qp.PauliRot._primitive
-        assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+        assert eqn.params == {"pauli_word": "XY", "n_wires": 2}
 
         assert len(eqn.invars) == 3  # The rotation parameter and the two wires
         assert jaxpr.jaxpr.invars == eqn.invars
@@ -421,6 +421,31 @@ class TestOpmath:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
         assert eqn.params == {}
 
+    def test_controlled_with_non_int_control_wires(self):
+        """Tests that controlled works with non int control wires."""
+
+        def qfunc(control_wire):
+            qp.ctrl(qp.X(0), control=control_wire)
+
+        cjaxpr = jax.make_jaxpr(qfunc)(jax.numpy.array(1))
+
+        assert len(cjaxpr.eqns) == 2
+
+        base_eqn = cjaxpr.eqns[0]
+        assert base_eqn.primitive == qp.X._primitive
+
+        ctrl_eqn = cjaxpr.eqns[1]
+        assert ctrl_eqn.primitive == qp.ops.Controlled._primitive
+        assert ctrl_eqn.invars[0] == base_eqn.outvars[0]
+        assert ctrl_eqn.invars[1] == cjaxpr.jaxpr.invars[0]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(cjaxpr.jaxpr, cjaxpr.consts, jax.numpy.array(1))
+
+        assert len(q) == 1
+        expected = qp.ctrl(qp.X(0), control=1)
+        qp.assert_equal(q.queue[0], expected)
+
     def test_Controlled(self):
         """Test a nested control operation."""
 
@@ -500,7 +525,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"grouping_type": None, "id": None, "method": "lf"}
+        assert eqn.params == {"grouping_type": None, "method": "lf"}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
@@ -522,7 +547,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"id": None}
+        assert eqn.params == {}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
