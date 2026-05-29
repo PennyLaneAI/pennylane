@@ -51,68 +51,21 @@ jobs:
 
       - name: Detect duration anomalies
         id: anomaly_check
-        run: |
-          python3 << 'PYEOF'
-          import json, os
-
-          anomaly_lines = []
-          for fname in ["core_tests_durations.json", "jax_tests_durations.json"]:
-              old_path = f"repo/.github/durations/{fname}"
-              new_path = f"durations/{fname}"
-              if not os.path.exists(old_path) or not os.path.exists(new_path):
-                  continue
-              with open(old_path) as f:
-                  old = json.load(f)
-              with open(new_path) as f:
-                  new = json.load(f)
-
-              inflated = []
-              for test, new_dur in new.items():
-                  old_dur = old.get(test, 0)
-                  if old_dur > 1.0 and new_dur > 10.0:
-                      ratio = new_dur / old_dur
-                      if ratio > 10:
-                          inflated.append((test, old_dur, new_dur, ratio))
-
-              if inflated:
-                  inflated.sort(key=lambda x: -x[3])
-                  anomaly_lines.append(f"### {fname}")
-                  anomaly_lines.append(f"**{len(inflated)} tests with >10x duration increase (old >1s, new >10s):**")
-                  anomaly_lines.append("| Test | Old | New | Ratio |")
-                  anomaly_lines.append("|------|-----|-----|-------|")
-                  for test, od, nd, r in inflated[:20]:
-                      short = test.split("::")[-1][:60]
-                      anomaly_lines.append(f"| `{short}` | {od:.1f}s | {nd:.1f}s | **{r:.0f}x** |")
-                  if len(inflated) > 20:
-                      anomaly_lines.append(f"| ... and {len(inflated) - 20} more | | | |")
-
-          if anomaly_lines:
-              body = "## ⚠️ Duration Anomalies Detected\\n\\n"
-              body += "The following tests show suspicious duration increases, "
-              body += "which may indicate CI contention rather than real slowdowns. "
-              body += "Review before merging.\\n\\n"
-              body += "\\n".join(anomaly_lines)
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                  f.write(f"has_anomalies=true\n")
-                  # Write body to a file to avoid escaping issues
-              with open("anomaly_report.md", "w") as f:
-                  f.write(body.replace("\\n", "\n"))
-          else:
-              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                  f.write("has_anomalies=false\n")
-              with open("anomaly_report.md", "w") as f:
-                  f.write("No duration anomalies detected.")
-          PYEOF
+        run: >
+          python3 repo/.github/scripts/detect_duration_anomalies.py
+            --old-dir repo/.github/durations
+            --new-dir durations
+            --report anomaly_report.md
 
       - name: Print anomaly report
+        if: always()
         run: cat anomaly_report.md
 
-      - name: Fail if anomalies detected
-        if: steps.anomaly_check.outputs.has_anomalies == 'true'
+      - name: Handle anomaly detection failure
+        if: failure() && steps.anomaly_check.outcome == 'failure'
         run: |
           echo "::error::Duration anomalies detected — likely CI contention. Review the anomaly report above before updating durations."
           cat anomaly_report.md >> $GITHUB_STEP_SUMMARY
-          exit 1
 
       - name: Upload combined durations artifacts
         uses: actions/upload-artifact@v6
