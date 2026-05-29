@@ -26,7 +26,8 @@ from typing import Optional
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
-from pennylane.core.operator import Operator, _get_abstract_operator
+from pennylane.core.operator import Operator
+from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,

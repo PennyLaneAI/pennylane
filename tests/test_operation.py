@@ -1838,7 +1838,7 @@ def test_symmetric_matrix_early_return(op, mocker):
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
 
-    spy = mocker.spy(qp.core.operator, "expand_matrix")
+    spy = mocker.spy(qp.core.operator.base, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
 
     spy.assert_not_called()
