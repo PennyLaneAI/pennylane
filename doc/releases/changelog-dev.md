@@ -234,6 +234,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
   [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
@@ -325,6 +328,7 @@ Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,
