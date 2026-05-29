@@ -162,7 +162,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
             )
         conditions = get_mcm_predicates(mcm_conditions)
 
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = all_args[slice(*const_slice)]
         if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
