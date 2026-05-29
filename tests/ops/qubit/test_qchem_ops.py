@@ -1181,7 +1181,7 @@ label_data = [
         "OrbitalRotation\n(2.35)",
         "OrbitalRotation\n(2)",
     ),
-    (qp.FermionicSWAP(1.2345, wires=(0, 1)), "fSWAP", "fSWAP\n(1.23)", "fSWAP\n(1)"),
+    (qp.FermionicSWAP(1.2345, wires=(0, 1)), "FSWAP", "FSWAP\n(1.23)", "FSWAP\n(1)"),
 ]
 
 

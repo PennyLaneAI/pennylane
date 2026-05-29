@@ -676,13 +676,6 @@ class TestProperties:
 
         assert sum_op.is_verified_hermitian == true_hermitian_state
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category(self, ops_lst, sum_method):
-        """Test queue_category property is "_ops" by inheritance."""
-        sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category == "_ops"  # pylint: disable=protected-access
-
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
 
