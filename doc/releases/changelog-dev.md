@@ -74,7 +74,8 @@
 
   dev = qp.device("lightning.qubit")
 
-  @qp.qnode(dev, shots=1)
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
   def circuit(a, comparator, b):
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
@@ -93,6 +94,38 @@
     >>> print(bool(output))
     True
 
+  ```
+  
+* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
+  
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
