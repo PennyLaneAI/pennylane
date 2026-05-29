@@ -123,9 +123,9 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H──────╭●────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -155,8 +155,8 @@ def change_op_basis(
         circuit3 = qp.decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
-    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
-    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
 
     .. warning::
 

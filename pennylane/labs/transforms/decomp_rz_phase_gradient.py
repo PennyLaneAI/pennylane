@@ -81,15 +81,15 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     >>> specs
     {'GlobalPhase': 1, 'C(BasisState)': 2, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
-         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤  State
-     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤  State
-     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤  State
-     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤  State
-     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤  State
+         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤ ╭State
+     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤ ├State
+     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤ ├State
+     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤ ├State
+     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤ ╰State
 
     """
     if len(angle_wires) != len(phase_grad_wires):
