@@ -38,6 +38,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+  [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
+
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
   [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
 
@@ -59,6 +62,9 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_rz_to_phase_gradient_decomp` decomposition rule factory to be compatible with program capture.
+  [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
+
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
@@ -68,7 +74,8 @@
 
   dev = qp.device("lightning.qubit")
 
-  @qp.qnode(dev, shots=1)
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
   def circuit(a, comparator, b):
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
@@ -87,6 +94,38 @@
     >>> print(bool(output))
     True
 
+  ```
+  
+* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
+  
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
@@ -124,6 +163,9 @@
   ```
 
 <h3>Breaking changes 💔</h3>
+
+* `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
+  [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
   shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
@@ -222,6 +264,7 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
+  [(#9413)](https://github.com/PennyLaneAI/pennylane/pull/9413)
 
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
