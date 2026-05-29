@@ -239,8 +239,7 @@ class SignedOutMultiplier(Operator):
         output register once the template has executed. This requires more work wires and a more costly decomposition.
 
         Basically, we use auxiliary registers to first 1) compute the multiplication of the operands into a zeroed register,
-        2) use an Adder to add :math:`z_i` to this result (the outcome of the addition goes into a second auxiliary register) 3)
-        reset the output register and 4) copy the final outcome into the output register.
+        2) use an Adder to add :math:`z_i` to this result.
 
 
         .. code-block::
