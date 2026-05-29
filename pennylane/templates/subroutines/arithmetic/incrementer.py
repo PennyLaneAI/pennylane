@@ -32,6 +32,7 @@ from .temporary_and import TemporaryAND
 has_jax = True
 try:
     from jax import lax
+    from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -166,7 +167,9 @@ class Incrementer(Operator):
 
     def map_wires(self, wire_map: dict):
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
-        wires = [wire_map.get(w, w) for w in (set(self.wires) - set(self.hyperparameters["work_wires"]))]
+        wires = [
+            wire_map.get(w, w) for w in (set(self.wires) - set(self.hyperparameters["work_wires"]))
+        ]
 
         return Incrementer(
             wires,
@@ -210,7 +213,10 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     if control_wires is None:
         wires = wires[::-1]
     else:
-        wires = control_wires + wires
+        if enabled() and control_wires.shape[0] > 0:
+            wires = jnp.concatenate([jnp.atleast_1d(control_wires), wires])
+        else:
+            wires = control_wires + wires
         wires = wires[::-1]
 
     def _increment():
@@ -218,7 +224,9 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
         if enabled():
             zipped = array(zipped, like="jax")
-        all_wires = wires[:1] + zipped
+            all_wires = jnp.concatenate([wires[:1], zipped])
+        else:
+            all_wires = wires[:1] + zipped
 
         # Forward ladder
         @for_loop(len(wires) - 2)
@@ -302,8 +310,8 @@ def _incrementer_decomposition(wires, work_wires, **_):
     X(wires[-1])
 
 
-def _controlled_incrementer_resources(base_params, **_):
-    resources = _incrementer_resources(base_params["num_wires"])
+def _controlled_incrementer_resources(base_params, num_control_wires, **_):
+    resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[resource_rep(X)] = 0
     return resources
 
@@ -323,7 +331,6 @@ def _controlled_incrementer_decomposition(
     **__,
 ):
     wires = base.wires
-    work_wires = base.hyperparameters["work_wires"] + work_wires
 
     if enabled():
         wires, work_wires, control_wires = (
@@ -331,9 +338,18 @@ def _controlled_incrementer_decomposition(
             array(work_wires, like="jax"),
             array(control_wires, like="jax"),
         )
+        base_work_wires = array(base.hyperparameters["work_wires"], like="jax")
+        if base_work_wires.shape[0] > 0 and work_wires.shape[0] > 0:
+            work_wires = jnp.concatenate(
+                [jnp.atleast_1d(base_work_wires), jnp.atleast_1d(work_wires)]
+            )
+        elif base_work_wires.shape[0] > 0 and work_wires.shape[0] == 0:
+            work_wires = base_work_wires
+    else:
+        work_wires = base.hyperparameters["work_wires"] + work_wires
 
-    if len(work_wires) > 0:
-        wires = wires[: -len(work_wires)]
+    if len(base.hyperparameters["work_wires"]) > 0:
+        wires = wires[: -len(base.hyperparameters["work_wires"])]
 
     _decompose_mcxs(wires, work_wires, control_wires)
 

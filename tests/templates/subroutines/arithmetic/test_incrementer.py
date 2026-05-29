@@ -134,8 +134,6 @@ def test_controlled(wires, init_state, expected, work_wires, control):
 )
 def test_controlled_decomposition_new(wires, work_wires):
     """Tests the decomposition rule implemented with the new system."""
-    op = Controlled(
-        Incrementer(wires + work_wires, work_wires), [len(wires + work_wires)], control_values=[1]
-    )
+    op = Controlled(Incrementer(wires, work_wires), [len(wires + work_wires)], control_values=[1])
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
