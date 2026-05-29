@@ -158,14 +158,14 @@ class Incrementer(Operator):
 
     @property
     def resource_params(self):
+        num_work_wires = len(self.hyperparameters["work_wires"])
         return {
-            "num_wires": len(self.wires),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "num_wires": len(self.wires) - num_work_wires,
+            "num_work_wires": num_work_wires,
         }
 
 
-def _incrementer_resources(num_wires, num_work_wires, **_):
-    num_wires = num_wires - num_work_wires
+def _incrementer_resources(num_wires, **_):
     resources = {}
     if num_wires > 1:
         # Forward ladder
@@ -178,7 +178,7 @@ def _incrementer_resources(num_wires, num_work_wires, **_):
 
 
 def _work_wire_condition(num_wires, num_work_wires, **_):
-    return (num_work_wires + 1) >= (num_wires - num_work_wires)
+    return (num_work_wires + 1) >= num_wires
 
 
 def _base_work_wire_condition(base_params, num_control_wires, num_work_wires, **_):
@@ -241,7 +241,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
     resources = {}
 
-    for i in range(num_wires - num_work_wires - 1, 1, -1):
+    for i in range(num_wires - 1, 1, -1):
         resources[
             resource_rep(
                 MultiControlledX,
@@ -290,11 +290,11 @@ def _incrementer_decomposition(wires, work_wires, **_):
         wires = wires[: -len(work_wires)]
 
     _decompose_mcxs(wires, work_wires)
-    X(wires[-len(work_wires) - 1])
+    X(wires[-1])
 
 
 def _controlled_incrementer_resources(base_params, **_):
-    resources = _incrementer_resources(base_params["num_wires"], base_params["num_work_wires"])
+    resources = _incrementer_resources(base_params["num_wires"])
     resources[resource_rep(X)] = 0
     return resources
 
