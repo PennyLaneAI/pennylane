@@ -24,6 +24,9 @@ from pennylane import math
 from pennylane.capture.autograph import wraps
 from pennylane.workflow.qnode import QNode
 
+#: Threshold for identifying ill-conditioned Fourier transform matrices.
+_ILL_CONDITIONED_THRESHOLD = 1e8
+
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     r"""Reconstruct a univariate Fourier series with consecutive integer
@@ -76,7 +79,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
 
     def _reconstruction(x):
         """Univariate reconstruction based on equidistant shifts and Dirichlet kernels.
-        The derivative at of ``sinc`` are not well-implemented in TensorFlow and Autograd,
+        The derivative at of ``sinc`` are not well-implemented in Autograd,
         use the Fourier transform reconstruction if this derivative is needed.
         """
         _x = x - x0 - shifts
@@ -164,7 +167,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
 
     # Solve the system of linear equations
     cond = math.linalg.cond(C)
-    if cond > 1e8:
+    if cond > _ILL_CONDITIONED_THRESHOLD:
         warnings.warn(
             f"The condition number of the Fourier transform matrix is very large: {cond}.",
             UserWarning,
@@ -394,11 +397,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     `Wierichs, Izaac, Wang and Lin (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__ .
     An introduction to the concept of quantum circuits as Fourier series can also be found in
     the
-    `Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`__
-    and
-    `General parameter-shift rules <demos/tutorial_general_parshift>`__
-    demos as well as the
-    :mod:`qml.fourier <pennylane.fourier>` module docstring.
+    :doc:`Quantum models as Fourier series <demo:demos/tutorial_expressivity_fourier_series>`
+    and :doc:`General parameter-shift rules <demo:demos/tutorial_general_parshift>` demos as well
+    as the :mod:`qp.fourier <pennylane.fourier>` module docstring.
 
     **Example**
 
@@ -406,16 +407,16 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, Y):
-            qml.RX(x, wires=0)
-            qml.RY(Y[0], wires=0)
-            qml.RY(Y[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RY(5*Y[1], wires=1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(x, wires=0)
+            qp.RY(Y[0], wires=0)
+            qp.RY(Y[1], wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RY(5*Y[1], wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         x = pnp.array(0.4)
         Y = pnp.array([1.9, -0.5])
@@ -431,8 +432,8 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     spectrum if it is not known):
 
     >>> nums_frequency = {"Y": {(0,): 1, (1,): 6}}
-    >>> with qml.Tracker(circuit.device) as tracker:
-    ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(0,), (1,)]}, nums_frequency)(x, Y)
+    >>> with qp.Tracker(circuit.device) as tracker:
+    ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(0,), (1,)]}, nums_frequency)(x, Y)
     >>> rec.keys()
     dict_keys(['Y'])
     >>> print(*rec["Y"].items(), sep="\n")
@@ -458,7 +459,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     to compute the spectrum first. This can be done with
     :func:`.fourier.qnode_spectrum` :
 
-    >>> spectra = qml.fourier.qnode_spectrum(circuit)(x, Y)
+    >>> spectra = qp.fourier.qnode_spectrum(circuit)(x, Y)
     >>> spectra.keys()
     dict_keys(['x', 'Y'])
     >>> spectra["x"]
@@ -535,7 +536,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         .. warning::
 
-            When using ``TensorFlow`` or ``Autograd`` *and* ``nums_frequency`` ,
+            When using ``Autograd`` *and* ``nums_frequency`` ,
             the reconstructed functions are not differentiable at the point of
             reconstruction. One workaround for this is to use ``spectra`` as
             input instead and to thereby use the Fourier transform instead of
@@ -549,14 +550,14 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x, Y, f=1.0):
-                qml.RX(f * x, wires=0)
-                qml.RY(Y[0], wires=0)
-                qml.RY(Y[1], wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(5*  Y[1], wires=1)
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                qp.RX(f * x, wires=0)
+                qp.RY(Y[0], wires=0)
+                qp.RY(Y[1], wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(5*  Y[1], wires=1)
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
             f = 2.3
 
@@ -567,8 +568,8 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         Note that even though information about ``Y[0]`` is contained in ``nums_frequency`` ,
         ``ids`` determines which reconstructions are performed.
 
-        >>> with qml.Tracker(circuit.device) as tracker:
-        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
+        >>> with qp.Tracker(circuit.device) as tracker:
+        ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
         >>> tracker.totals
         {'batches': 13, 'simulations': 13, 'executions': 13}
 
@@ -578,7 +579,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> spectra = {"Y": {(1,): [0., 1., 4., 5., 6.]}}
         >>> with tracker:
-        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
+        ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
         >>> tracker.totals
         {'batches': 9, 'simulations': 9, 'executions': 9}
 
@@ -601,7 +602,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> spectra = {"x": {(): [0., f]}, "Y": {(0,): [0., 1.]}}
         >>> with tracker:
-        ...     rec = qml.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
+        ...     rec = qp.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
         >>> tracker.totals
         {'batches': 5, 'simulations': 5, 'executions': 5}
         >>> recon_x = rec["x"][()]

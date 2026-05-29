@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.bind_new_parameters function.
+This module contains the qp.bind_new_parameters function.
 """
 
 # pylint:disable=missing-function-docstring
@@ -122,7 +122,7 @@ def bind_new_parameters_fermionic_double_excitation(
 
 @bind_new_parameters.register
 def bind_new_parameters_angle_embedding(op: AngleEmbedding, params: Sequence[TensorLike]):
-    rotation = op.hyperparameters["rotation"].basis
+    rotation = op.hyperparameters["rotation"].__name__[-1]  # RX -> X, RY-> Y, RZ -> Z
     return AngleEmbedding(params[0], wires=op.wires, rotation=rotation)
 
 

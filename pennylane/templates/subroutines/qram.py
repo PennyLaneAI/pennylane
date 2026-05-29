@@ -166,8 +166,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -175,19 +175,19 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.BBQRAM(
+            qp.BBQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(bb_quantum()))  # doctest: +SKIP
@@ -215,7 +215,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-        id: str | None = None,
     ):  # pylint: disable=too-many-arguments
         control_wires = Wires(control_wires)
 
@@ -265,7 +264,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             "wire_manager": wire_manager,
         }
 
-        super().__init__(data, wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -440,8 +439,8 @@ class HybridQRAM(Operation):
         num_control_wires = 3
         num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -456,20 +455,20 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def hybrid_qram():
             # prepare an address, e.g., |010> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.HybridQRAM(
+            qp.HybridQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work"],
                 k=k
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(hybrid_qram()))
@@ -494,7 +493,6 @@ class HybridQRAM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
-        id: str | None = None,
     ):  # pylint: disable=too-many-arguments
 
         if isinstance(data, (list, tuple)):
@@ -554,7 +552,7 @@ class HybridQRAM(Operation):
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
 
-        super().__init__(data, wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires)
 
         self._hyperparameters = {
             "select_wires": select_wires,
@@ -863,8 +861,6 @@ class SelectOnlyQRAM(Operation):
             If provided, only entries whose select bits match this value are loaded.
             The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
             and cannot be used if no ``select_wires`` are provided.
-        id (str or None):
-            Optional name for the operation.
 
     Raises:
         ValueError: if the ``data`` are of the wrong length, a ``select_value`` is provided without
@@ -901,8 +897,8 @@ class SelectOnlyQRAM(Operation):
         num_select_wires = 1
         select_value = 0
 
-        import pennylane as qml
-        reg = qml.registers(
+        import pennylane as qp
+        reg = qp.registers(
             {
                 "control": num_control_wires,
                 "target": bitstring_size,
@@ -917,20 +913,20 @@ class SelectOnlyQRAM(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def select_only_qram():
             # prepare an address, e.g., |010> (index 2)
-            qml.BasisEmbedding(2, wires=reg["control"])
+            qp.BasisEmbedding(2, wires=reg["control"])
 
-            qml.SelectOnlyQRAM(
+            qp.SelectOnlyQRAM(
                 data,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 select_wires=reg["select"],
                 select_value=select_value,
             )
-            return qml.probs(wires=reg["target"])
+            return qp.probs(wires=reg["target"])
 
     >>> import numpy as np
     >>> print(np.round(select_only_qram()))
@@ -957,7 +953,6 @@ class SelectOnlyQRAM(Operation):
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
         select_value: int | None = None,
-        id: str | None = None,
     ):
 
         if isinstance(data, (list, tuple)):
@@ -1002,9 +997,7 @@ class SelectOnlyQRAM(Operation):
             "select_value": select_value,
         }
 
-        super().__init__(
-            data, wires=list(control_wires) + list(target_wires) + list(select_wires), id=id
-        )
+        super().__init__(data, wires=list(control_wires) + list(target_wires) + list(select_wires))
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):

@@ -64,23 +64,23 @@ class PrepSelPrep(Operation):
 
     We define an operator and a block-encoding circuit as:
 
-    >>> lcu = qml.dot([0.3, -0.1], [qml.X(2), qml.Z(2)])
+    >>> lcu = qp.dot([0.3, -0.1], [qp.X(2), qp.Z(2)])
     >>> control = [0, 1]
-    >>> @qml.qnode(qml.device("default.qubit"))
+    >>> @qp.qnode(qp.device("default.qubit"))
     ... def circuit(lcu, control):
-    ...     qml.PrepSelPrep(lcu, control)
-    ...     return qml.state()
+    ...     qp.PrepSelPrep(lcu, control)
+    ...     return qp.state()
 
     We can see that the operator matrix, up to a normalization constant, is block encoded in the
     circuit matrix:
 
-    >>> matrix_psp = qml.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
+    >>> matrix_psp = qp.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
     >>> print(matrix_psp.real[0:2, 0:2])
     [[-0.25  0.75]
      [ 0.75  0.25]]
 
-    >>> matrix_lcu = qml.matrix(lcu)
-    >>> print(qml.matrix(lcu).real / sum(abs(np.array(lcu.terms()[0]))))
+    >>> matrix_lcu = qp.matrix(lcu)
+    >>> print(qp.matrix(lcu).real / sum(abs(np.array(lcu.terms()[0]))))
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """
@@ -95,7 +95,7 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike, id=None) -> None:
+    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike) -> None:
         control = Wires(control)
         target_wires = lcu.wires
 
@@ -107,7 +107,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires, id=id)
+        super().__init__(*self.data, wires=all_wires)
 
     def _flatten(self):
         return (self.lcu,), (self.control,)
@@ -134,7 +134,7 @@ class PrepSelPrep(Operation):
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         op_label = base_label or self.__class__.__name__
         if cache is None or not isinstance(cache.get("matrices", None), list):
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label
 
         coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
@@ -146,7 +146,7 @@ class PrepSelPrep(Operation):
             cache["matrices"].append(coeffs)
             str_wo_id = f"{op_label}(M{mat_num})"
 
-        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
+        return str_wo_id
 
     @staticmethod
     def compute_decomposition(lcu, control):

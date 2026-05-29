@@ -53,7 +53,7 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
-from pennylane.wires import Wires
+from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 
@@ -195,9 +195,9 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         from functools import partial
 
         def S_resources(params, wires, rotation):
-            return {qml.resource_rep(rotation): params.shape[0]}
+            return {qp.resource_rep(rotation): params.shape[0]}
 
-        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
+        @partial(qp.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
             for x in params:
                 rotation(x, wires)
@@ -209,33 +209,33 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
         from pennylane.templates import AbstractArray, subroutine_resource_rep
 
-        class MyOp(qml.operation.Operation):
+        class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = AbstractArray((4, ), float)
         abstract_wires = AbstractArray(()) # a single wire
-        S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qml.RX)
+        S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qml.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.register_resources({S_rep: 1})
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
-            S(params, wires, qml.RX)
+            S(params, wires, qp.RX)
 
-        qml.add_decomps(MyOp, my_op_decomposition)
+        qp.add_decomps(MyOp, my_op_decomposition)
 
     We can now see ``MyOp`` decompose into the relevant subroutine:
 
     .. code-block:: python
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
-        @qml.qnode(qml.device('reference.qubit', wires=1))
+        @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
             MyOp(wires=0)
-            return qml.state()
+            return qp.state()
 
-    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.decompose(c, max_expansion=1))())
     0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
@@ -367,7 +367,6 @@ class SubroutineOp(Operation):
         bound_args: BoundArguments,
         decomposition: list[Operation],
         output: Any = None,
-        id: None | str = None,
     ):
         self._subroutine = subroutine
         self._bound_args = bound_args
@@ -383,7 +382,7 @@ class SubroutineOp(Operation):
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         data = flatten(dynamic_args)[0]
-        super().__init__(*data, wires=wires, id=id)
+        super().__init__(*data, wires=wires)
 
         self._hyperparameters = {
             "decomposition": tuple(decomposition),
@@ -492,21 +491,21 @@ class Subroutine:
 
         @Subroutine
         def MyTemplate(x, y, wires):
-            qml.RX(x, wires[0])
-            qml.RY(y, wires[0])
+            qp.RX(x, wires[0])
+            qp.RY(y, wires[0])
 
-        @qml.qnode(qml.device('default.qubit'))
+        @qp.qnode(qp.device('default.qubit'))
         def c():
             MyTemplate(0.1, 0.2, 0)
-            return qml.state()
+            return qp.state()
 
         c()
 
-    >>> print(qml.draw(c)())
+    >>> print(qp.draw(c)())
     0: ──MyTemplate(0.10,0.20)─┤  State
-    >>> print(qml.draw(c, level="device")())
+    >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
-    >>> print(qml.specs(c)().resources)
+    >>> print(qp.specs(c)().resources)
     Wire allocations: 1
     Total gates: 1
     Gate counts:
@@ -525,16 +524,16 @@ class Subroutine:
         @partial(Subroutine, wire_argnames=("register1", "register2"))
         def MultiRegisterTemplate(register1, register2):
             for wire in register1:
-                qml.X(wire)
+                qp.X(wire)
             for wire in register2:
-                qml.Z(wire)
+                qp.Z(wire)
 
-    >>> print(qml.draw(MultiRegisterTemplate)(0, [1,2]))
+    >>> print(qp.draw(MultiRegisterTemplate)(0, [1,2]))
     0: ─╭MultiRegisterTemplate─┤
     1: ─├MultiRegisterTemplate─┤
     2: ─╰MultiRegisterTemplate─┤
 
-    Static arguments are treated as compile-time constant with ``qml.qjit``, and must
+    Static arguments are treated as compile-time constant with ``qp.qjit``, and must
     be hashable. These are any inputs that are not numerical data or Operators. In the below
     example, the ``pauli_word`` argument is a string that is a static argument.
 
@@ -542,7 +541,7 @@ class Subroutine:
 
         @partial(Subroutine, static_argnames="pauli_word")
         def WithStaticArg(x, wires, pauli_word: str):
-            qml.PauliRot(x, pauli_word, wires)
+            qp.PauliRot(x, pauli_word, wires)
 
     **Setup Inputs:**
 
@@ -560,10 +559,10 @@ class Subroutine:
         @partial(Subroutine, static_argnames="pauli_words", setup_inputs=setup_inputs)
         def WithSetup(x, wires, pauli_words: list[str] | tuple[str,...]):
             for word in pauli_words:
-                qml.PauliRot(x, word, wires)
+                qp.PauliRot(x, word, wires)
 
 
-    >>> print(qml.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
+    >>> print(qp.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
 
@@ -623,12 +622,12 @@ class Subroutine:
     .. code-block:: python
 
         def RXLayerResources(params, wires):
-            return {qml.RX: qml.math.shape(params)[0]}
+            return {qp.RX: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RX(params[i], wires[i])
+                qp.RX(params[i], wires[i])
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
@@ -646,42 +645,42 @@ class Subroutine:
 
         from pennylane.templates import AbstractArray, subroutine_resource_rep
 
-        class MyOp(qml.operation.Operation):
+        class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = AbstractArray((3, ), float)
         abstract_wires = AbstractArray((3, ))
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qml.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.register_resources({rxlayer_rep: 1})
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)
 
-        qml.add_decomps(MyOp, MyOpDecomposition)
+        qp.add_decomps(MyOp, MyOpDecomposition)
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
+        @qp.qnode(qp.device('default.qubit'))
         def c():
             MyOp((0,1,2))
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
 
-    >>> print(qml.draw(c)())
+    >>> print(qp.draw(c)())
     0: ─╭MyOp─┤  <Z>
     1: ─├MyOp─┤
     2: ─╰MyOp─┤
-    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.decompose(c, max_expansion=1))())
     0: ─╭RXLayer(M0)─┤  <Z>
     1: ─├RXLayer(M0)─┤
     2: ─╰RXLayer(M0)─┤
     <BLANKLINE>
     M0 =
     [0. 1. 2.]
-    >>> print(qml.draw(qml.decompose(c, max_expansion=2))())
+    >>> print(qp.draw(qp.decompose(c, max_expansion=2))())
     0: ──RX(0.00)─┤  <Z>
     1: ──RX(1.00)─┤
     2: ──RX(2.00)─┤
@@ -698,44 +697,44 @@ class Subroutine:
 
     .. code-block:: python
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(x, wires):
             if x < 0:
-                qml.X(wires)
+                qp.X(wires)
             else:
-                qml.Y(wires)
+                qp.Y(wires)
 
-        @qml.qjit(autograph=True)
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device('lightning.qubit', wires=1))
         def c(x):
             f(x, 0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     >>> c(0.5) # doctest: +SKIP
     Traceback (most recent call last):
         ...
     CaptureError: Autograph must be used when Python control flow is dependent on a dynamic variable
     (a function input). Please ensure that autograph is being correctly enabled with
-    `qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or
-    consider using PennyLane native control flow functions like `qml.for_loop`, `qml.while_loop`,
-    or `qml.cond`.
+    `qp.capture.run_autograph` or disabled with `qp.capture.disable_autograph` or
+    consider using PennyLane native control flow functions like `qp.for_loop`, `qp.while_loop`,
+    or `qp.cond`.
 
     In order to support a conditional on a dynamic value, we should either ``run_autograph`` to the
-    quantum function definition itself or use ``qml.cond`` manually:
+    quantum function definition itself or use ``qp.cond`` manually:
 
     .. code-block:: python
 
-        @qml.templates.Subroutine
-        @qml.capture.run_autograph
+        @qp.templates.Subroutine
+        @qp.capture.run_autograph
         def UsingAutograph(x, wires):
             if x < 0:
-                qml.X(wires)
+                qp.X(wires)
             else:
-                qml.Y(wires)
+                qp.Y(wires)
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def UsingCond(x, wires):
-            qml.cond(x  > 0, qml.X, qml.Y)(wires)
+            qp.cond(x  > 0, qp.X, qp.Y)(wires)
 
     """
 
@@ -826,8 +825,12 @@ class Subroutine:
                 import jax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
-                    # don't stack if already a jax array
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+                    # convert the integers in wires to tracers
+                    wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
+                    if not any(is_abstract_qubit(w) for w in wires):
+                        wires = math.array(wires, like="jax")
+                    bound_args.arguments[wire_argname] = wires
+
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
@@ -852,18 +855,18 @@ class Subroutine:
 
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
-    def operator(self, *args, id: str | None = None, **kwargs) -> SubroutineOp:
+    def operator(self, *args, **kwargs) -> SubroutineOp:
         """Create a ``SubroutineOp`` from the template."""
         bound_args = self._full_setup_inputs(*args, **kwargs)
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
-        return SubroutineOp(self, bound_args, decomposition.queue, output, id=id)
+        return SubroutineOp(self, bound_args, decomposition.queue, output)
 
-    def __call__(self, *args, id: str | None = None, **kwargs):
+    def __call__(self, *args, **kwargs):
         if capture.enabled():
             bound_args = self._full_setup_inputs(*args, **kwargs)
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
-        op = self.operator(*args, id=id, **kwargs)
+        op = self.operator(*args, **kwargs)
         return op.output
 
 

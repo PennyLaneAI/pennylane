@@ -29,15 +29,15 @@ import math
 import numpy as np
 from scipy.special import factorial as fac
 
-import pennylane as qml
+import pennylane as qp
 from pennylane._version import __version__
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity
 
 from ._legacy_device import Device
 
-# tolerance for numerical errors
-tolerance = 1e-10
+#: Threshold for considering a Gaussian displacement vector to be zero.
+_DISPLACEMENT_ZERO_THRESHOLD = 1e-10
 
 
 # ========================================================
@@ -150,7 +150,7 @@ def fock_prob(cov, mu, event, hbar=2.0):
     # extend the indices for xp-ordering of the Gaussian state
     ind += [i + N for i in ind]
 
-    if np.linalg.norm(beta) < tolerance:
+    if np.linalg.norm(beta) < _DISPLACEMENT_ZERO_THRESHOLD:
         # state has no displacement
         part = partitions(ind, include_singles=False)
     else:
@@ -568,7 +568,7 @@ def poly_quad_expectations(cov, mu, wires, device_wires, params, hbar=2.0):
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
     # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
-    op = qml.PolyXP(Q, wires=wires)
+    op = qp.PolyXP(Q, wires=wires)
     Q = op.heisenberg_obs(device_wires)
 
     if Q.ndim == 1:
@@ -895,5 +895,5 @@ class DefaultGaussian(Device):
 
     def batch_execute(self, circuits):
         results = super().batch_execute(circuits)
-        results = [qml.math.squeeze(res) for res in results]
+        results = [qp.math.squeeze(res) for res in results]
         return results

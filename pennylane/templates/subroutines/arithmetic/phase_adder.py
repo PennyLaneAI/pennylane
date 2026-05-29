@@ -92,15 +92,15 @@ class PhaseAdder(Operation):
         x_wires =[0,1,2,3]
         work_wire=[5]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.QFT(wires=x_wires)
-            qml.PhaseAdder(k, x_wires, mod, work_wire)
-            qml.adjoint(qml.QFT)(wires=x_wires)
-            return qml.sample(wires=x_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.QFT(wires=x_wires)
+            qp.PhaseAdder(k, x_wires, mod, work_wire)
+            qp.adjoint(qp.QFT)(wires=x_wires)
+            return qp.sample(wires=x_wires)
 
     >>> print(circuit())
     [[1 1 0 1]]
@@ -137,7 +137,7 @@ class PhaseAdder(Operation):
     resource_keys = {"num_x_wires", "mod"}
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None):
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
         x_wires = Wires(x_wires)
@@ -168,7 +168,7 @@ class PhaseAdder(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["x_wires"] = x_wires
-        super().__init__(wires=x_wires, id=id)
+        super().__init__(wires=x_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -230,7 +230,7 @@ class PhaseAdder(Operation):
 
         **Example**
 
-        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
+        >>> qp.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
         [PhaseShift(6.28..., wires=[0]), PhaseShift(3.141..., wires=[1]), PhaseShift(1.57..., wires=[2])]
         """
         op_list = []

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.counts measurement.
+This module contains the qp.counts measurement.
 """
 
 import warnings
@@ -46,8 +46,6 @@ class CountsMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
     """
@@ -60,14 +58,13 @@ class CountsMP(SampleMeasurement):
         obs: Operator | None = None,
         wires=None,
         eigvals=None,
-        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
         self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
-        super().__init__(obs, wires, eigvals, id)
+        super().__init__(obs, wires, eigvals)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
@@ -95,12 +92,11 @@ class CountsMP(SampleMeasurement):
             "CountsMP returns a dictionary, which is not compatible with capture."
         )
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
-            getattr(self.obs, "hash", "None"),
+            hash(self.obs),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
             self.all_outcomes,
@@ -158,12 +154,12 @@ class CountsMP(SampleMeasurement):
             >>> samples = math.array(samples)
 
             By default, this will return:
-            >>> mp = qml.counts()
+            >>> mp = qp.counts()
             >>> mp._samples_to_counts(samples)
             {np.str_('00'): np.int64(2), np.str_('10'): np.int64(1)}
 
             However, if ``all_outcomes=True``, this will return:
-            >>> mp = qml.counts(all_outcomes=True)
+            >>> mp = qp.counts(all_outcomes=True)
             >>> mp._samples_to_counts(samples)
             {'00': np.int64(2), '01': np.int64(0), '10': np.int64(1), '11': np.int64(0)}
 
@@ -213,15 +209,17 @@ class CountsMP(SampleMeasurement):
         batched = len(shape) == batched_ndims
         if not batched:
             samples = samples[None]
+            shape = (1, *shape)
 
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+
         results = [math.unique(batch, return_counts=True) for batch in samples]
 
-        for result, outcome_dict in zip(results, outcome_dicts):
+        for result, outcome_dict in zip(results, outcome_dicts, strict=True):
             states, _counts = result
-            for state, count in zip(math.unwrap(states), _counts):
+            for state, count in zip(math.unwrap(states), _counts, strict=True):
                 outcome_dict[state] = count
 
         def outcome_to_eigval(outcome: str):
@@ -264,7 +262,7 @@ class CountsMP(SampleMeasurement):
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
         """
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
 
         mapped_counts = {}
@@ -399,15 +397,15 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=43, wires=2)
+        dev = qp.device("default.qubit", seed=43, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.Y(0))
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.counts(qp.Y(0))
 
     Executing this QNode:
 
@@ -421,15 +419,15 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42, wires=2)
+        dev = qp.device("default.qubit", seed=42, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(all_outcomes=True)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.counts(all_outcomes=True)
 
     Executing this QNode:
 
@@ -440,13 +438,13 @@ def counts(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42, wires=2)
+        dev = qp.device("default.qubit", seed=42, wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.counts()
+            qp.X(0)
+            return qp.counts()
 
     Executing this QNode shows only the observed outcomes:
 
@@ -457,11 +455,11 @@ def counts(
 
     .. code-block:: python
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit():
-            qml.X(0)
-            return qml.counts(all_outcomes=True)
+            qp.X(0)
+            return qp.counts(all_outcomes=True)
 
     Executing this QNode shows counts for all states:
 

@@ -493,14 +493,14 @@ class FermionicDoubleExcitation(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=5)
+            dev = qp.device('default.qubit', wires=5)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weight, wires1, wires2):
-                qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-                return qml.expval(qml.Z(0))
+                qp.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
+                return qp.expval(qp.Z(0))
 
             weight = 1.34817
             print(circuit(weight, wires1=[0, 1], wires2=[2, 3, 4]))
@@ -523,7 +523,7 @@ class FermionicDoubleExcitation(Operation):
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
-    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
+    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike):
         wires1 = Wires(wires1)
         wires2 = Wires(wires2)
         if len(wires1) < 2:
@@ -550,7 +550,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
         wires = wires1 + wires2
-        super().__init__(weight, wires=wires, id=id)
+        super().__init__(weight, wires=wires)
 
     @property
     def resource_params(self) -> dict:

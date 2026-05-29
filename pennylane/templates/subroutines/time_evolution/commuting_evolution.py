@@ -93,21 +93,21 @@ class CommutingEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             n_wires = 2
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
             coeffs = [1, -1]
-            obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
-            hamiltonian = qml.Hamiltonian(coeffs, obs)
+            obs = [qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.X(1)]
+            hamiltonian = qp.Hamiltonian(coeffs, obs)
             frequencies = (2, 4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(time):
-                qml.X(0)
-                qml.CommutingEvolution(hamiltonian, time, frequencies)
-                return qml.expval(qml.Z(0))
+                qp.X(0)
+                qp.CommutingEvolution(hamiltonian, time, frequencies)
+                return qp.expval(qp.Z(0))
 
         >>> circuit(1)
         np.float64(0.653...)
@@ -136,7 +136,7 @@ class CommutingEvolution(Operation):
             "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
         }
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
             "shifts": shifts,
         }
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

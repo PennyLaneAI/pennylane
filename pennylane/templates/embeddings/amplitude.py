@@ -37,8 +37,6 @@ class AmplitudeEmbedding(StatePrep):
         wires (Any or Iterable[Any]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
 
     Example:
@@ -48,14 +46,14 @@ class AmplitudeEmbedding(StatePrep):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2))
+                return qp.state()
 
             state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
@@ -76,10 +74,10 @@ class AmplitudeEmbedding(StatePrep):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                return qp.state()
 
             state = circuit(f=[15, 15, 15, 15])
 
@@ -95,10 +93,10 @@ class AmplitudeEmbedding(StatePrep):
 
             from math import sqrt
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
+                return qp.state()
 
             state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
@@ -113,16 +111,13 @@ class AmplitudeEmbedding(StatePrep):
     def resource_params(self):
         return {"num_wires": len(self.wires)}
 
-    def __init__(
-        self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
-    ):
+    def __init__(self, features, wires, *, pad_with=None, normalize=False, validate_norm=True):
         super().__init__(
             features,
             wires=wires,
             pad_with=pad_with,
             normalize=normalize,
             validate_norm=validate_norm,
-            id=id,
         )
 
 

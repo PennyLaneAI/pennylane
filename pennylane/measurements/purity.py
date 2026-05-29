@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module contains the qml.purity measurement.
+This module contains the qp.purity measurement.
 """
 
 from pennylane.math import dm_from_state_vector
@@ -31,8 +31,6 @@ class PurityMP(StateMeasurement):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some
-            applications where the instance has to be identified
     """
 
     def __str__(self):
@@ -40,8 +38,8 @@ class PurityMP(StateMeasurement):
 
     _shortname = "purity"
 
-    def __init__(self, wires: Wires, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires):
+        super().__init__(wires=wires)
 
     @property
     def numeric_type(self):
@@ -51,13 +49,13 @@ class PurityMP(StateMeasurement):
         return ()
 
     def process_state(self, state: TensorLike, wire_order: Wires):
-        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         indices = [wire_map[w] for w in self.wires]
         state = dm_from_state_vector(state)
         return math_purity(state, indices=indices, c_dtype=state.dtype)
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         indices = [wire_map[w] for w in self.wires]
         return math_purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
 
@@ -82,15 +80,15 @@ def purity(wires) -> PurityMP:
 
     .. code-block:: python
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_purity(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=[0,1])
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.BitFlip(p, wires=0)
+            qp.BitFlip(p, wires=1)
+            return qp.purity(wires=[0,1])
 
     >>> print(circuit_purity(0.1))
     0.7048...

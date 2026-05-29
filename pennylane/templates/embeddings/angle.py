@@ -53,8 +53,6 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Any or Iterable[Any]): wires that the template acts on
         rotation (str): type of rotations used
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Example:
 
@@ -62,20 +60,20 @@ class AngleEmbedding(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=3)
+            dev = qp.device('default.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(feature_vector):
-                qml.AngleEmbedding(features=feature_vector, wires=range(3), rotation='Z')
-                qml.Hadamard(0)
-                return qml.probs(wires=range(3))
+                qp.AngleEmbedding(features=feature_vector, wires=range(3), rotation='Z')
+                qp.Hadamard(0)
+                return qp.probs(wires=range(3))
 
             X = [1,2,3]
 
         Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(X))
+        >>> print(qp.draw(circuit, level="device")(X))
         0: ──RZ(1.00)──H─┤ ╭Probs
         1: ──RZ(2.00)────┤ ├Probs
         2: ──RZ(3.00)────┤ ╰Probs
@@ -93,7 +91,7 @@ class AngleEmbedding(Operation):
     def __repr__(self):
         return f"AngleEmbedding({self.data[0]}, wires={self.wires.tolist()}, rotation={self._rotation})"
 
-    def __init__(self, features, wires, rotation="X", id=None):
+    def __init__(self, features, wires, rotation="X"):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
@@ -108,7 +106,7 @@ class AngleEmbedding(Operation):
         self._hyperparameters = {"rotation": ROT[rotation]}
 
         wires = wires[:n_features]
-        super().__init__(features, wires=wires, id=id)
+        super().__init__(features, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -143,7 +141,7 @@ class AngleEmbedding(Operation):
         **Example**
 
         >>> features = torch.tensor([1., 2.])
-        >>> qml.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qml.RX)
+        >>> qp.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qp.RX)
         [RX(tensor(1.), wires=['a']),
          RX(tensor(2.), wires=['b'])]
         """

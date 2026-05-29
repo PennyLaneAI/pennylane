@@ -8,8 +8,8 @@ To enable logging support in your PennyLane work-flow simply run the following l
 
 .. code:: python
 
-   import pennylane as qml
-   qml.logging.enable_logging()
+   import pennylane as qp
+   qp.logging.enable_logging()
 
 
 This will ensure all levels of the execution pipeline log function entries and
@@ -83,7 +83,7 @@ level.
 
 PennyLane logging defaults are contained in a configuration file in the logging module titled 
 ``log_config.toml``, which is imported when logging is enabled. 
-The file path can be accessed with :func:`qml.logging.config_path()`. To change log-levels that are 
+The file path can be accessed with :func:`qp.logging.config_path()`. To change log-levels that are 
 reporting on a package or module-wide basis, it is possible to do so by 
 modifying the entries in the ``log_config.toml`` file, under the ``[loggers]``
 section. In addition, if we want to send the logs elsewhere, we can
@@ -121,10 +121,10 @@ sections to discuss how these can be adjusted to suit needs:
    ###############################################################################
 
    [formatters]
-   [formatters.qml_default_formatter]
+   [formatters.qp_default_formatter]
    "()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
 
-   [formatters.qml_alt_formatter]
+   [formatters.qp_alt_formatter]
    "()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
 
    [formatters.local_detailed]
@@ -148,11 +148,11 @@ as ``false`` unless required otherwise.
 
    [filters]
    # Filter to show messages from the same local process as the Python script
-   [filters.qml_LocalProcessFilter]
+   [filters.qp_LocalProcessFilter]
    "()" = "pennylane.logging.filter.LocalProcessFilter"
 
    # Filter to show debug level messages only
-   [filters.qml_DebugOnlyFilter]
+   [filters.qp_DebugOnlyFilter]
    "()" = "pennylane.logging.filter.DebugOnlyFilter"
 
 The above section defines how to filter log messages (known as
@@ -168,32 +168,32 @@ can be used in the next section.
    ###############################################################################
 
    [handlers]
-   [handlers.qml_debug_stream]
+   [handlers.qp_debug_stream]
    class = "logging.StreamHandler"
-   formatter = "qml_default_formatter"
+   formatter = "qp_default_formatter"
    level = "DEBUG"
    stream = "ext://sys.stdout"
 
-   [handlers.qml_debug_stream_alt]
+   [handlers.qp_debug_stream_alt]
    class = "logging.StreamHandler"
-   formatter = "qml_alt_formatter"
+   formatter = "qp_alt_formatter"
    level = "DEBUG"
    stream = "ext://sys.stdout"
 
-   [handlers.qml_debug_file]
+   [handlers.qp_debug_file]
    class = "logging.handlers.RotatingFileHandler"
    formatter = "local_standard"
    level = "DEBUG"
-   filename ='qml_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+   filename ='qp_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
    maxBytes = 16777216 # 16MB per file before splitting
-   backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+   backupCount = 10 # Create 'qp_debug.log.1', ... 'qp_debug.log.backupCount' files and rollover when maxBytes is reached
 
    [handlers.local_filtered_detailed_stdout]
    class = "logging.StreamHandler"
    formatter = "local_standard"
    level = "DEBUG"
    stream = "ext://sys.stdout"
-   filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
+   filters = ["qp_LocalProcessFilter", "qp_DebugOnlyFilter"]
 
 The above defines how ``LogRecord`` messages are handled, and directs
 them to the appropriate sink. The logging framework supports many such
@@ -214,20 +214,20 @@ formatters so that the consumed message fits the needs of the user.
 
    # Control JAX logging 
    [loggers.jax]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "WARN"
    propagate = false
 
    # Control logging across pennylane
    [loggers.pennylane]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
    # Control logging specifically in the pennylane.qnode module
    # Note the required quotes to overcome TOML nesting issues
    [loggers."pennylane.qnode"]
-   handlers = ["qml_debug_stream_alt",]
+   handlers = ["qp_debug_stream_alt",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
@@ -238,13 +238,13 @@ across the packages we are using. Python’s logging framework follows a
 parent-child hierarchy, where a logging configuration set at a parent
 level will set all child levels with the same features. In this
 instance, we have configured JAX, PennyLane and our script to all log
-into the ``qml_debug_stream`` handler we defined earlier, and modified
+into the ``qp_debug_stream`` handler we defined earlier, and modified
 the child logger ``"pennylane.qnode"`` (quotes needed due to TOML
 parsing limitations) to use a different logger, in this case
-``qml_debug_stream_alt``. We are free to define the module/package
+``qp_debug_stream_alt``. We are free to define the module/package
 log-level here (we opt for ``DEBUG`` for all), and to also use multiple
 handlers per logger (such as for logging to the standard output and
-files through ``qml_debug_stream`` and ``qml_debug_file``
+files through ``qp_debug_stream`` and ``qp_debug_file``
 simultaneously). Given the complexity explosion with configuring these
 options, the default features in ``log_config.toml`` all use the same
 log-level, and handler, which can be adjusted based on developer needs.
@@ -263,7 +263,7 @@ file as:
 .. code:: toml
 
    [loggers.jax]
-   handlers = ["qml_debug_stream"]
+   handlers = ["qp_debug_stream"]
    level = "DEBUG"
    propagate = false
 
@@ -279,7 +279,7 @@ warnings and more severe, by making the following change:
 .. code:: toml
 
    [loggers.pennylane]
-   handlers = ["qml_debug_stream"]
+   handlers = ["qp_debug_stream"]
    level = "WARN"
    propagate = false
 
@@ -288,13 +288,13 @@ process, and surrounding operations:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import jax, jax.numpy as jnp
     from jax import jacfwd, jacrev
     import logging
 
     # Enable logging
-    qml.logging.enable_logging()
+    qp.logging.enable_logging()
 
     # Get logger for use by this script only.
     logger = logging.getLogger(__name__)
@@ -305,14 +305,14 @@ process, and surrounding operations:
     @jax.jit
     def circuit(key, param):
        logger.info(f"Creating {dev_name} device with {num_wires} wires with {key} PNRG")
-       dev = qml.device(dev_name, wires=num_wires, prng_key=key)
+       dev = qp.device(dev_name, wires=num_wires, prng_key=key)
 
-       @qml.set_shots(shots=num_shots)
-       @qml.qnode(dev, interface="jax", diff_method="backprop")
+       @qp.set_shots(shots=num_shots)
+       @qp.qnode(dev, interface="jax", diff_method="backprop")
        def my_circuit():
-           qml.RX(param, wires=0)
-           qml.CNOT(wires=[0, 1])
-           return qml.expval(qml.PauliZ(0))
+           qp.RX(param, wires=0)
+           qp.CNOT(wires=[0, 1])
+           return qp.expval(qp.PauliZ(0))
 
        logger.info(f"Created QNODE={my_circuit}")
        res =  my_circuit()
@@ -337,7 +337,7 @@ messages from JAX, and info-level messages for the given script. To modify the l
 
    # Control logging in the executing Python script
    [loggers.__main__]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "INFO"
    propagate = false
 
@@ -354,10 +354,10 @@ tie-into the execution pipeline for devices without backprop supports:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import logging
 
-    qml.logging.enable_logging()
+    qp.logging.enable_logging()
 
     logger = logging.getLogger(__name__)
     dev_name = "lightning.qubit"
@@ -366,14 +366,14 @@ tie-into the execution pipeline for devices without backprop supports:
 
     def circuit(param):
        logger.info(f"Creating {dev_name} device with {num_wires} wires")
-       dev = qml.device(dev_name, wires=num_wires)
+       dev = qp.device(dev_name, wires=num_wires)
 
-       @qml.set_shots(shots=num_shots)
-       @qml.qnode(dev, diff_method="adjoint")
+       @qp.set_shots(shots=num_shots)
+       @qp.qnode(dev, diff_method="adjoint")
        def my_circuit(param):
-           qml.RX(param, wires=0)
-           qml.CNOT(wires=[0, 1])
-           return qml.expval(qml.PauliZ(0))
+           qp.RX(param, wires=0)
+           qp.CNOT(wires=[0, 1])
+           return qp.expval(qp.PauliZ(0))
 
        logger.info(f"Created QNODE={my_circuit}")
        res =  my_circuit(param)
@@ -381,14 +381,14 @@ tie-into the execution pipeline for devices without backprop supports:
 
        return res
 
-    par = qml.numpy.array([0.1,0.2])
+    par = qp.numpy.array([0.1,0.2])
 
     logger.info(f"Running circuit with par={par[0]}")
     circuit(par[0])
     logger.info(f"Running circuit with par={par[1]}")
     circuit(par[1])
     logger.info(f"Calculating jacobian circuit with par={par}")
-    logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
+    logger.info(f"Jacobian={qp.jacobian(circuit)(par[0])}")
 
 By using ``lightning.qubit`` we can now treat the execution environment
 as a black-box, and see the log-level messages as they hit the custom

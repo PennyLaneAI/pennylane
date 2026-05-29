@@ -74,13 +74,13 @@ class Multiplier(Operation):
         x_wires = [0,1,2]
         work_wires = [3,4,5,6,7]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.Multiplier(k, x_wires, mod, work_wires)
-            return qml.sample(wires=x_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.Multiplier(k, x_wires, mod, work_wires)
+            return qp.sample(wires=x_wires)
 
     >>> print(circuit())
     [[1 0 1]]
@@ -118,7 +118,7 @@ class Multiplier(Operation):
     resource_keys = {"num_x_wires", "mod", "num_work_wires"}
 
     def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -150,7 +150,7 @@ class Multiplier(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
         all_wires = x_wires + work_wires
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -214,7 +214,7 @@ class Multiplier(Operation):
 
         **Example**
 
-        >>> ops = qml.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
+        >>> ops = qp.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
         >>> from pprint import pprint
         >>> pprint(ops)
         [(Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(wires=[3, 4, 5]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]),

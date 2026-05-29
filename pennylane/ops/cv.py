@@ -105,8 +105,8 @@ class Rotation(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule,)
 
-    def __init__(self, phi, wires, id=None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -159,8 +159,8 @@ class Squeezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, id=None):
-        super().__init__(r, phi, wires=wires, id=id)
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -215,8 +215,8 @@ class Displacement(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, a, phi, wires, id=None):
-        super().__init__(a, phi, wires=wires, id=id)
+    def __init__(self, a, phi, wires):
+        super().__init__(a, phi, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -273,8 +273,8 @@ class Beamsplitter(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
-    def __init__(self, theta, phi, wires, id=None):
-        super().__init__(theta, phi, wires=wires, id=id)
+    def __init__(self, theta, phi, wires):
+        super().__init__(theta, phi, wires=wires)
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -341,8 +341,8 @@ class TwoModeSqueezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, id=None):
-        super().__init__(r, phi, wires=wires, id=id)
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -404,8 +404,8 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, id=None):
-        super().__init__(s, wires=wires, id=id)
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -458,8 +458,8 @@ class ControlledAddition(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, id=None):
-        super().__init__(s, wires=wires, id=id)
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -516,8 +516,8 @@ class ControlledPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, id=None):
-        super().__init__(s, wires=wires, id=id)
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -556,8 +556,8 @@ class Kerr(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, kappa, wires, id=None):
-        super().__init__(kappa, wires=wires, id=id)
+    def __init__(self, kappa, wires):
+        super().__init__(kappa, wires=wires)
 
     def adjoint(self):
         return Kerr(-self.parameters[0], wires=self.wires)
@@ -586,8 +586,8 @@ class CrossKerr(CVOperation):
     num_wires = 2
     grad_method = "F"
 
-    def __init__(self, kappa, wires, id=None):
-        super().__init__(kappa, wires=wires, id=id)
+    def __init__(self, kappa, wires):
+        super().__init__(kappa, wires=wires)
 
     def adjoint(self):
         return CrossKerr(-self.parameters[0], wires=self.wires)
@@ -616,8 +616,8 @@ class CubicPhase(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, id=None):
-        super().__init__(gamma, wires=wires, id=id)
+    def __init__(self, gamma, wires):
+        super().__init__(gamma, wires=wires)
 
     def adjoint(self):
         return CubicPhase(-self.parameters[0], wires=self.wires)
@@ -666,8 +666,8 @@ class InterferometerUnitary(CVOperation):
     grad_method = None
     grad_recipe = None
 
-    def __init__(self, U, wires, id=None):
-        super().__init__(U, wires=wires, id=id)
+    def __init__(self, U, wires):
+        super().__init__(U, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -718,8 +718,8 @@ class CoherentState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, wires, id=None):
-        super().__init__(a, phi, wires=wires, id=id)
+    def __init__(self, a, phi, wires):
+        super().__init__(a, phi, wires=wires)
 
 
 class SqueezedState(CVOperation):
@@ -743,8 +743,8 @@ class SqueezedState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, r, phi, wires, id=None):
-        super().__init__(r, phi, wires=wires, id=id)
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires)
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -778,8 +778,8 @@ class DisplacedSqueezedState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi_a, r, phi_r, wires, id=None):
-        super().__init__(a, phi_a, r, phi_r, wires=wires, id=id)
+    def __init__(self, a, phi_a, r, phi_r, wires):
+        super().__init__(a, phi_a, r, phi_r, wires=wires)
 
 
 class ThermalState(CVOperation):
@@ -802,8 +802,8 @@ class ThermalState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, nbar, wires, id=None):
-        super().__init__(nbar, wires=wires, id=id)
+    def __init__(self, nbar, wires):
+        super().__init__(nbar, wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Thermal", cache=cache)
@@ -830,8 +830,8 @@ class GaussianState(CVOperation):
     num_params = 2
     grad_method = "F"
 
-    def __init__(self, V, r, wires, id=None):
-        super().__init__(V, r, wires=wires, id=id)
+    def __init__(self, V, r, wires):
+        super().__init__(V, r, wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Gaussian", cache=cache)
@@ -857,8 +857,8 @@ class FockState(CVOperation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, n, wires, id=None):
-        super().__init__(n, wires=wires, id=id)
+    def __init__(self, n, wires):
+        super().__init__(n, wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -875,7 +875,7 @@ class FockState(CVOperation):
 
         **Example:**
 
-        >>> qml.FockState(7, wires=0).label()
+        >>> qp.FockState(7, wires=0).label()
         '|7⟩'
 
         """
@@ -911,14 +911,14 @@ class FockStateVector(CVOperation):
 
         .. code-block::
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=4)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=4)
 
             state = np.array([0, 0, 1, 0])
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(state, wires=0)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(state, wires=0)
+                return qp.expval(qp.NumberOperator(wires=0))
 
         For multiple modes, the input is the tensor product of single mode
         kets. For example, given a set of :math:`M` single mode vectors of
@@ -929,7 +929,7 @@ class FockStateVector(CVOperation):
             used_wires = [0, 3]
             cutoff_dim = 5
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
 
             state_1 = np.array([0, 1, 0, 0, 0])
             state_2 = np.array([0, 0, 0, 1, 0])
@@ -938,18 +938,18 @@ class FockStateVector(CVOperation):
                 (cutoff_dim, ) * len(used_wires)
             )
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(combined_state, wires=used_wires)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(combined_state, wires=used_wires)
+                return qp.expval(qp.NumberOperator(wires=0))
 
     """
 
     num_params = 1
     grad_method = "F"
 
-    def __init__(self, state, wires, id=None):
-        super().__init__(state, wires=wires, id=id)
+    def __init__(self, state, wires):
+        super().__init__(state, wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -966,7 +966,7 @@ class FockStateVector(CVOperation):
 
         **Example:**
 
-        >>> qml.FockStateVector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateVector([1,2,3], wires=(0,1,2)).label()
         '|123⟩'
 
         """
@@ -996,8 +996,8 @@ class FockDensityMatrix(CVOperation):
     num_params = 1
     grad_method = "F"
 
-    def __init__(self, state, wires, id=None):
-        super().__init__(state, wires=wires, id=id)
+    def __init__(self, state, wires):
+        super().__init__(state, wires=wires)
 
 
 class CatState(CVOperation):
@@ -1032,8 +1032,8 @@ class CatState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, p, wires, id=None):
-        super().__init__(a, phi, p, wires=wires, id=id)
+    def __init__(self, a, phi, p, wires):
+        super().__init__(a, phi, p, wires=wires)
 
 
 # =============================================================================
@@ -1109,7 +1109,7 @@ class TensorN(CVObservable):
 
         Example for multiple modes:
 
-        >>> cv_obs = qml.TensorN(wires=[0, 1])
+        >>> cv_obs = qp.TensorN(wires=[0, 1])
         >>> cv_obs
         TensorN(wires=[0, 1])
         >>> cv_obs.ev_order is None
@@ -1117,7 +1117,7 @@ class TensorN(CVObservable):
 
         Example for a single mode (yields a :class:`~.NumberOperator`):
 
-        >>> cv_obs = qml.TensorN(wires=[1])
+        >>> cv_obs = qp.TensorN(wires=[1])
         >>> cv_obs
         NumberOperator(wires=[1])
         >>> cv_obs.ev_order
@@ -1243,8 +1243,8 @@ class QuadOperator(CVObservable):
     grad_method = "A"
     ev_order = 1
 
-    def __init__(self, phi, wires, id=None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1266,7 +1266,7 @@ class QuadOperator(CVObservable):
 
         **Example:**
 
-        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op = qp.QuadOperator(1.234, wires=0)
         >>> op.label()
         'cos(φ)x\n+sin(φ)p'
         >>> op.label(decimals=2)
@@ -1321,8 +1321,8 @@ class PolyXP(CVObservable):
     grad_method = "F"
     ev_order = 2
 
-    def __init__(self, q, wires, id=None):
-        super().__init__(q, wires=wires, id=id)
+    def __init__(self, q, wires):
+        super().__init__(q, wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1379,8 +1379,8 @@ class FockStateProjector(CVObservable):
     grad_method = None
     ev_order = None
 
-    def __init__(self, n, wires, id=None):
-        super().__init__(n, wires=wires, id=id)
+    def __init__(self, n, wires):
+        super().__init__(n, wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -1397,7 +1397,7 @@ class FockStateProjector(CVObservable):
 
         **Example:**
 
-        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateProjector([1,2,3], wires=(0,1,2)).label()
         '|123⟩⟨123|'
 
         """

@@ -18,18 +18,18 @@ Integration tests for the draw transform
 # pylint: disable=import-outside-toplevel
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.drawer import draw
 
 
-@qml.qnode(qml.device("default.qubit", wires=(0, "a", 1.234)))
+@qp.qnode(qp.device("default.qubit", wires=(0, "a", 1.234)))
 def circuit(x, y, z):
     """A quantum circuit on three wires."""
-    qml.RX(x, wires=0)
-    qml.RY(y, wires="a")
-    qml.RZ(z, wires=1.234)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(x, wires=0)
+    qp.RY(y, wires="a")
+    qp.RZ(z, wires=1.234)
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestLabelling:
@@ -49,13 +49,13 @@ class TestLabelling:
 
         def f(x, y, z):
             """A quantum circuit on three wires."""
-            qml.RX(x, wires=0)
-            qml.RY(y, wires="a")
-            qml.RZ(z, wires=1.234)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires="a")
+            qp.RZ(z, wires=1.234)
+            return qp.expval(qp.PauliZ(0))
 
         if as_qnode:
-            f = qml.QNode(f, qml.device("default.qubit", wires=(0, "a", 1.234)))
+            f = qp.QNode(f, qp.device("default.qubit", wires=(0, "a", 1.234)))
 
         split_str = draw(f, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "1.234:"
@@ -65,9 +65,9 @@ class TestLabelling:
     def test_show_all_wires(self):
         """Test show_all_wires=True forces empty wires to display."""
 
-        @qml.qnode(qml.device("default.qubit", wires=(0, 1)))
+        @qp.qnode(qp.device("default.qubit", wires=(0, 1)))
         def circ():
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         split_str = draw(circ, show_all_wires=True)().split("\n")
         assert split_str[0][:2] == "0:"
@@ -76,9 +76,9 @@ class TestLabelling:
     def test_show_all_wires_and_wire_order(self):
         """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circ():
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         split_str = draw(circ, wire_order=[0, "a"], show_all_wires=True)().split("\n")
         assert split_str[0][:2] == "0:"
@@ -87,9 +87,9 @@ class TestLabelling:
     def test_hiding_labels(self):
         """Test that printing wire labels can be skipped with show_wire_labels=False."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circ():
-            return qml.expval(qml.Z(0) @ qml.X(1))
+            return qp.expval(qp.Z(0) @ qp.X(1))
 
         split_str = draw(circ, show_wire_labels=False)().split("\n")
         assert split_str[0].startswith("─")
@@ -115,15 +115,15 @@ class TestDecimals:
         """Test all decimals places display when requested value is bigger than number precision."""
 
         out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤     \n1.234: ──RZ(3.0000)─┤     "
-        assert qml.draw(circuit, decimals=4)(1, 2, 3) == out
+        assert qp.draw(circuit, decimals=4)(1, 2, 3) == out
 
     def test_decimals_multiparameters(self):
         """Test decimals also displays parameters when the operation has multiple parameters."""
 
-        @qml.qnode(qml.device("default.qubit", wires=[0]))
+        @qp.qnode(qp.device("default.qubit", wires=[0]))
         def circ(x):
-            qml.Rot(*x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Rot(*x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         expected = "0: ──Rot(1.2,2.3,3.5)─┤  <Z>"
         assert draw(circ, decimals=1)([1.234, 2.345, 3.456]) == expected
@@ -134,7 +134,7 @@ class TestDecimals:
         expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
         assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
-    def test_qml_numpy_parameters(self):
+    def test_qp_numpy_parameters(self):
         """Test numpy parameters display as normal numbers."""
 
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
@@ -181,11 +181,11 @@ class TestMatrixParameters:
     def test_matrix_parameters(self):
         """Test matrix valued parameters remembered and printed out upon request."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def matrices_circuit():
-            qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(pnp.eye(2), wires=0)
-            return qml.expval(qml.Hermitian(pnp.eye(2), wires=0))
+            qp.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
+            qp.QubitUnitary(pnp.eye(2), wires=0)
+            return qp.expval(qp.Hermitian(pnp.eye(2), wires=0))
 
         expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
@@ -202,13 +202,13 @@ class TestMatrixParameters:
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
-        @qml.gradients.param_shift(shifts=[(0.2,)])
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.gradients.param_shift(shifts=[(0.2,)])
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def matrices_circuit(x):
-            qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(pnp.eye(2, requires_grad=False), wires=0)
-            qml.RX(x, wires=1)
-            return qml.expval(qml.Hermitian(pnp.eye(2, requires_grad=False), wires=1))
+            qp.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
+            qp.QubitUnitary(pnp.eye(2, requires_grad=False), wires=0)
+            qp.RX(x, wires=1)
+            return qp.expval(qp.Hermitian(pnp.eye(2, requires_grad=False), wires=1))
 
         expected1 = (
             "0: ─╭|Ψ⟩──U(M0)────┤         \n"
@@ -236,11 +236,11 @@ class TestMaxLength:
     def test_max_length_default(self):
         """Test max length default to 100."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(100):
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+                qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
 
         out = draw(long_circuit)()
 
@@ -252,11 +252,11 @@ class TestMaxLength:
     def test_setting_max_length(self, ml):
         """Test that setting a maximal length works as expected."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(10):
-                qml.PauliX(0)
-            return [qml.expval(qml.PauliZ(0)) for _ in range(4)]
+                qp.PauliX(0)
+            return [qp.expval(qp.PauliZ(0)) for _ in range(4)]
 
         out = draw(long_circuit, max_length=ml)()
 
@@ -269,10 +269,10 @@ class TestLayering:
     def test_adjacent_ops(self):
         """Test non-blocking gates end up on same layer."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qp.qnode(qp.device("default.qubit", wires=3))
         def circ():
-            _ = [qml.PauliX(i) for i in range(3)]
-            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+            _ = [qp.PauliX(i) for i in range(3)]
+            return [qp.expval(qp.PauliZ(i)) for i in range(3)]
 
         expected = "0: ──X─┤  <Z>\n1: ──X─┤  <Z>\n2: ──X─┤  <Z>"
         assert draw(circ)() == expected
@@ -280,10 +280,10 @@ class TestLayering:
     def test_blocking_ops(self):
         """Test single qubits gates on the same wire block each other."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circ():
-            _ = [qml.PauliX(0) for i in range(3)]
-            return qml.expval(qml.PauliZ(0))
+            _ = [qp.PauliX(0) for i in range(3)]
+            return qp.expval(qp.PauliZ(0))
 
         expected = "0: ──X──X──X─┤  <Z>"
         assert draw(circ)() == expected
@@ -291,12 +291,12 @@ class TestLayering:
     def test_blocking_multiwire_gate(self):
         """Test gate gets blocked by multi-wire gate."""
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qp.qnode(qp.device("default.qubit", wires=3))
         def circ():
-            qml.PauliX(0)
-            qml.IsingXX(1.234, wires=(0, 2))
-            qml.PauliX(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.PauliX(0)
+            qp.IsingXX(1.234, wires=(0, 2))
+            qp.PauliX(1)
+            return qp.expval(qp.PauliZ(0))
 
         expected = (
             "0: ──X─╭IsingXX(1.23)────┤  <Z>\n"
@@ -315,16 +315,16 @@ class TestMidCircuitMeasurements:
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
         """Test that a circuit containing mid-circuit measurements is transformed by the drawer
         to use deferred measurements if the device uses the new device API."""
-        dev = qml.device(device_name)
+        dev = qp.device(device_name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.probs(wires=0)
+            qp.PauliX(0)
+            qp.measure(0)
+            return qp.probs(wires=0)
 
-        draw_qnode = qml.draw(circ)
-        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        draw_qnode = qp.draw(circ)
+        spy = mocker.spy(qp.defer_measurements, "_tape_transform")
 
         drawing = draw_qnode()
         spy.assert_not_called()
@@ -346,12 +346,12 @@ class TestMidCircuitMeasurements:
         """Test that mid-circuit measurements are drawn correctly."""
 
         def func():
-            qml.Hadamard(0)
-            qml.measure(0, reset=reset, postselect=postselect)
-            qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(0)
+            qp.measure(0, reset=reset, postselect=postselect)
+            qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(func)()
+        drawing = qp.draw(func)()
         expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
 
         assert drawing == expected_drawing
@@ -359,10 +359,10 @@ class TestMidCircuitMeasurements:
     @pytest.mark.parametrize(
         "op, grouped",
         [
-            (qml.GlobalPhase(0.1), True),
-            (qml.Identity(), True),
-            (qml.Snapshot(), False),
-            (qml.Barrier(), False),
+            (qp.GlobalPhase(0.1), True),
+            (qp.Identity(), True),
+            (qp.Snapshot(), False),
+            (qp.Barrier(), False),
         ],
     )
     @pytest.mark.parametrize("decimals", [None, 2])
@@ -370,16 +370,16 @@ class TestMidCircuitMeasurements:
         """Test that operators acting on all wires are drawn correctly"""
 
         def func():
-            qml.X(0)
-            qml.X(1)
-            m = qml.measure(0)
-            qml.cond(m, qml.X)(0)
-            qml.apply(op)
-            return qml.expval(qml.Z(0))
+            qp.X(0)
+            qp.X(1)
+            m = qp.measure(0)
+            qp.cond(m, qp.X)(0)
+            qp.apply(op)
+            return qp.expval(qp.Z(0))
 
         # Stripping to remove trailing white-space because length of white-space at the
         # end of the drawing depends on the length of each individual line
-        drawing = qml.draw(func, decimals=decimals)().strip()
+        drawing = qp.draw(func, decimals=decimals)().strip()
         label = op.label(decimals=decimals).replace("\n", "")
         if grouped:
             expected_drawing = (
@@ -393,21 +393,21 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
     @pytest.mark.parametrize(
-        "mp, label", [(qml.sample(), "Sample"), (qml.probs(), "Probs"), (qml.counts(), "Counts")]
+        "mp, label", [(qp.sample(), "Sample"), (qp.probs(), "Probs"), (qp.counts(), "Counts")]
     )
     def test_draw_all_wire_measurements(self, mp, label):
         """Test that operators acting on all wires are drawn correctly"""
 
         def func():
-            qml.X(0)
-            qml.X(1)
-            m = qml.measure(0)
-            qml.cond(m, qml.X)(0)
-            return qml.apply(mp)
+            qp.X(0)
+            qp.X(1)
+            m = qp.measure(0)
+            qp.cond(m, qp.X)(0)
+            return qp.apply(mp)
 
         # Stripping to remove trailing white-space because length of white-space at the
         # end of the drawing depends on the length of each individual line
-        drawing = qml.draw(func)().strip()
+        drawing = qp.draw(func)().strip()
         expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
@@ -417,19 +417,19 @@ class TestMidCircuitMeasurements:
         with multiple wires."""
 
         def circ(weights):
-            qml.RX(weights[0], 0)
-            qml.measure(0, reset=True)
-            qml.RX(weights[1], 1)
-            qml.measure(1)
-            qml.CNOT([0, 3])
-            qml.measure(3, postselect=0, reset=True)
-            qml.RY(weights[2], 2)
-            qml.CNOT([1, 2])
-            qml.measure(2, postselect=1)
-            qml.MultiRZ(0.5, [0, 2])
-            return qml.expval(qml.PauliZ(2))
+            qp.RX(weights[0], 0)
+            qp.measure(0, reset=True)
+            qp.RX(weights[1], 1)
+            qp.measure(1)
+            qp.CNOT([0, 3])
+            qp.measure(3, postselect=0, reset=True)
+            qp.RY(weights[2], 2)
+            qp.CNOT([1, 2])
+            qp.measure(2, postselect=1)
+            qp.MultiRZ(0.5, [0, 2])
+            return qp.expval(qp.PauliZ(2))
 
-        drawing = qml.draw(circ)(pnp.array([pnp.pi, 3.124, 0.456]))
+        drawing = qp.draw(circ)(pnp.array([pnp.pi, 3.124, 0.456]))
         expected_drawing = (
             "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
             "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
@@ -444,11 +444,11 @@ class TestMidCircuitMeasurements:
         is drawn correctly."""
 
         def circ(phi):
-            qml.RX(phi, 0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.PauliX)(wires=1)
+            qp.RX(phi, 0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.PauliX)(wires=1)
 
-        drawing = qml.draw(circ)(pnp.pi)
+        drawing = qp.draw(circ)(pnp.pi)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
         )
@@ -460,12 +460,12 @@ class TestMidCircuitMeasurements:
         mid-circuit measurement is drawn correctly."""
 
         def circ(phi, theta):
-            qml.RX(phi, 0)
-            m0 = qml.measure(0)
-            qml.RY(theta, 2)
-            qml.cond(m0, qml.CNOT)(wires=[1, 0])
+            qp.RX(phi, 0)
+            m0 = qp.measure(0)
+            qp.RY(theta, 2)
+            qp.cond(m0, qp.CNOT)(wires=[1, 0])
 
-        drawing = qml.draw(circ)(pnp.pi, pnp.pi / 2)
+        drawing = qp.draw(circ)(pnp.pi, pnp.pi / 2)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
             "1: ─────────────║────────────╰●─┤  \n"
@@ -480,18 +480,18 @@ class TestMidCircuitMeasurements:
         conditions is drawn correctly"""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
-            m0 = qml.measure(1, reset=True)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
-            qml.CNOT([3, 2])
-            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
+            m0 = qp.measure(1, reset=True)
+            qp.cond(m0, qp.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
+            qp.CNOT([3, 2])
+            qp.cond(m0, qp.ctrl(qp.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
             )
-            qml.cond(m0, qml.PauliX)(0)
-            return qml.expval(qml.PauliZ(0))
+            qp.cond(m0, qp.PauliX)(0)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)───────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
             "1: ──RX(0.50)──┤↗│  │0⟩─├●────├●──────────────║─┤     \n"
@@ -507,18 +507,18 @@ class TestMidCircuitMeasurements:
         conditions is drawn correctly"""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
-            m0 = qml.measure(1, postselect=1)
-            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
-            qml.CNOT([3, 2])
-            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
+            m0 = qp.measure(1, postselect=1)
+            qp.cond(m0, qp.MultiControlledX)(wires=[1, 2, 0], control_values=[1, 0])
+            qp.CNOT([3, 2])
+            qp.cond(m0, qp.ctrl(qp.MultiRZ, control=[1, 2], control_values=[True, False]))(
                 0.5, wires=[0, 3]
             )
-            qml.cond(m0, qml.PauliX)(0)
-            return qml.expval(qml.PauliZ(0))
+            qp.cond(m0, qp.PauliX)(0)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)───────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
             "1: ──RX(0.50)──┤↗₁├─├●────├●──────────────║─┤     \n"
@@ -534,16 +534,16 @@ class TestMidCircuitMeasurements:
         multiple mid-circuit measurements."""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
-            qml.CNOT([1, 2])
-            m2 = qml.measure(2)
-            qml.cond(m0 & m1 & m2, qml.RZ)(1.23, 1)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.CNOT([1, 2])
+            m2 = qp.measure(2)
+            qp.cond(m0 & m1 & m2, qp.RZ)(1.23, 1)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗├────────────────────────┤  <Z>\n"
             "1: ──RX(0.50)───║───┤↗├─╭●───────RZ(1.23)─┤     \n"
@@ -560,30 +560,30 @@ class TestMidCircuitMeasurements:
         that rely on single or multiple mid-circuit measurements."""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
 
-            m0 = qml.measure(0, reset=True, postselect=1)
-            m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
-            qml.cond(m1, qml.PauliZ)(2)
+            m0 = qp.measure(0, reset=True, postselect=1)
+            m1 = qp.measure(1)
+            qp.cond(m0 & m1, qp.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
+            qp.cond(m1, qp.PauliZ)(2)
 
-            m2 = qml.measure(1)
-            qml.CNOT([3, 2])
-            qml.cond(m0, qml.ctrl(qml.SWAP, control=[1, 2], control_values=[True, False]))(
+            m2 = qp.measure(1)
+            qp.CNOT([3, 2])
+            qp.cond(m0, qp.ctrl(qp.SWAP, control=[1, 2], control_values=[True, False]))(
                 wires=[0, 3]
             )
-            qml.cond(m2 & m1, qml.PauliY)(0)
+            qp.cond(m2 & m1, qp.PauliY)(0)
 
-            qml.Toffoli([3, 1, 0])
+            qp.Toffoli([3, 1, 0])
 
-            m3 = qml.measure(3, postselect=0)
-            qml.cond(m3, qml.RX)(1.23, 3)
-            qml.cond(m3 & m1, qml.Hadamard)(2)
+            m3 = qp.measure(3, postselect=0)
+            qp.cond(m3, qp.RX)(1.23, 3)
+            qp.cond(m3 & m1, qp.Hadamard)(2)
 
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(2))
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X────────────────────┤ ╭<Z@Z>\n"
             "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●────────────────────┤ │     \n"
@@ -600,14 +600,14 @@ class TestMidCircuitMeasurements:
         and condition are on different lines."""
 
         def circ():
-            m0 = qml.measure(0)
-            qml.RX(0.0, 0)
-            qml.cond(m0, qml.RX)(0.123, 1)
-            qml.RX(0.0, 0)
-            qml.cond(m0, qml.RX)(0.123, 1)
-            return qml.expval(qml.PauliZ(0))
+            m0 = qp.measure(0)
+            qp.RX(0.0, 0)
+            qp.cond(m0, qp.RX)(0.123, 1)
+            qp.RX(0.0, 0)
+            qp.cond(m0, qp.RX)(0.123, 1)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ, max_length=25)()
+        drawing = qp.draw(circ, max_length=25)()
         expected_drawing = (
             "0: ──┤↗├──RX(0.00) ···\n"
             "1: ───║───RX(0.12) ···\n"
@@ -624,14 +624,14 @@ class TestMidCircuitMeasurements:
         and condition are on the same lines after the first line."""
 
         def circ():
-            qml.RX(0.0, 0)
-            qml.RX(0.0, 0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.PauliX)(1)
-            qml.cond(m0, qml.PauliX)(1)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(0.0, 0)
+            qp.RX(0.0, 0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.PauliX)(1)
+            qp.cond(m0, qp.PauliX)(1)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ, max_length=27)()
+        drawing = qp.draw(circ, max_length=27)()
         expected_drawing = (
             "0: ──RX(0.00)──RX(0.00) ···\n"
             "1: ──────────────────── ···\n"
@@ -648,14 +648,14 @@ class TestMidCircuitMeasurements:
         measurement and condition are on the same lines in the first line."""
 
         def circ():
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.RX)(0.123, 1)
-            qml.cond(m0, qml.PauliX)(1)
-            qml.RX(0.0, 0)
-            qml.RX(0.0, 1)
-            return qml.expval(qml.PauliZ(0))
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.RX)(0.123, 1)
+            qp.cond(m0, qp.PauliX)(1)
+            qp.RX(0.0, 0)
+            qp.RX(0.0, 1)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ, max_length=25)()
+        drawing = qp.draw(circ, max_length=25)()
         expected_drawing = (
             "0: ──┤↗├──RX(0.00)─── ···\n"
             "1: ───║───RX(0.12)──X ···\n"
@@ -672,16 +672,16 @@ class TestMidCircuitMeasurements:
         measurements and condition are split between the lines."""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
-            qml.CNOT([1, 2])
-            m2 = qml.measure(2)
-            qml.cond(m0 & m1 & m2, qml.RZ)(1.23, 1)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.CNOT([1, 2])
+            m2 = qp.measure(2)
+            qp.cond(m0 & m1 & m2, qp.RZ)(1.23, 1)
+            return qp.expval(qp.PauliZ(0))
 
-        drawing = qml.draw(circ, max_length=30)()
+        drawing = qp.draw(circ, max_length=30)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗├──────── ···\n"
             "1: ──RX(0.50)───║───┤↗├─╭● ···\n"
@@ -704,30 +704,30 @@ class TestMidCircuitMeasurements:
         measurements and conditions are split between the lines."""
 
         def circ():
-            qml.RX(0.5, 0)
-            qml.RX(0.5, 1)
+            qp.RX(0.5, 0)
+            qp.RX(0.5, 1)
 
-            m0 = qml.measure(0, reset=True, postselect=1)
-            m1 = qml.measure(1)
-            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
-            qml.cond(m1, qml.PauliZ)(2)
+            m0 = qp.measure(0, reset=True, postselect=1)
+            m1 = qp.measure(1)
+            qp.cond(m0 & m1, qp.MultiControlledX)(wires=[1, 2, 3, 0], control_values=[1, 1, 0])
+            qp.cond(m1, qp.PauliZ)(2)
 
-            m2 = qml.measure(1)
-            qml.CNOT([3, 2])
-            qml.cond(m0, qml.ctrl(qml.SWAP, control=[1, 2], control_values=[True, False]))(
+            m2 = qp.measure(1)
+            qp.CNOT([3, 2])
+            qp.cond(m0, qp.ctrl(qp.SWAP, control=[1, 2], control_values=[True, False]))(
                 wires=[0, 3]
             )
-            qml.cond(m2 & m1, qml.PauliY)(0)
+            qp.cond(m2 & m1, qp.PauliY)(0)
 
-            qml.Toffoli([3, 1, 0])
+            qp.Toffoli([3, 1, 0])
 
-            m3 = qml.measure(3, postselect=0)
-            qml.cond(m3, qml.RX)(1.23, 3)
-            qml.cond(m3 & m1, qml.Hadamard)(2)
+            m3 = qp.measure(3, postselect=0)
+            qp.cond(m3, qp.RX)(1.23, 3)
+            qp.cond(m3 & m1, qp.Hadamard)(2)
 
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(2))
 
-        drawing = qml.draw(circ, max_length=60)()
+        drawing = qp.draw(circ, max_length=60)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X ···\n"
             "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├● ···\n"
@@ -750,11 +750,11 @@ class TestMidCircuitMeasurements:
     @pytest.mark.parametrize(
         "mp, mp_label",
         [
-            (qml.expval, "<MCM>"),
-            (qml.var, "Var[MCM]"),
-            (qml.probs, "Probs[MCM]"),
-            (qml.sample, "Sample[MCM]"),
-            (qml.counts, "Counts[MCM]"),
+            (qp.expval, "<MCM>"),
+            (qp.var, "Var[MCM]"),
+            (qp.probs, "Probs[MCM]"),
+            (qp.sample, "Sample[MCM]"),
+            (qp.counts, "Counts[MCM]"),
         ],
     )
     def test_single_meas_stats(self, mp, mp_label):
@@ -762,12 +762,12 @@ class TestMidCircuitMeasurements:
         works as expected."""
 
         def circ():
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
-            qml.Hadamard(0)
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
+            qp.Hadamard(0)
             return mp(op=m0)
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──H──┤↗├──H─┤  " + " " * len(mp_label) + f"\n         ╚═════╡  {mp_label}"
         )
@@ -777,10 +777,10 @@ class TestMidCircuitMeasurements:
     @pytest.mark.parametrize(
         "mp, mp_label",
         [
-            (qml.expval, "<MCM>"),
-            (qml.var, "Var[MCM]"),
-            (qml.sample, "Sample[MCM]"),
-            (qml.counts, "Counts[MCM]"),
+            (qp.expval, "<MCM>"),
+            (qp.var, "Var[MCM]"),
+            (qp.sample, "Sample[MCM]"),
+            (qp.counts, "Counts[MCM]"),
         ],
     )
     def test_multi_meas_stats(self, mp, mp_label):
@@ -788,13 +788,13 @@ class TestMidCircuitMeasurements:
         works as expected"""
 
         def circ():
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
+            qp.Hadamard(0)
+            qp.Hadamard(1)
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
             return mp(op=m0 + m1)
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──H──┤↗├──────┤  "
             + " " * len(mp_label)
@@ -811,15 +811,15 @@ class TestMidCircuitMeasurements:
         multiple terminal measurement processes works as expected."""
 
         def circ():
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
-            qml.Hadamard(1)
-            m1 = qml.measure(1)
-            qml.Hadamard(2)
-            m2 = qml.measure(2)
-            return qml.expval(m0 * m2), qml.sample(m1)
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
+            qp.Hadamard(1)
+            m1 = qp.measure(1)
+            qp.Hadamard(2)
+            m2 = qp.measure(2)
+            return qp.expval(m0 * m2), qp.sample(m1)
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──H──┤↗├─────────────────┤                    \n"
             "1: ──────║───H──┤↗├─────────┤                    \n"
@@ -836,13 +836,13 @@ class TestMidCircuitMeasurements:
         with multiple terminal measurements is drawn correctly"""
 
         def circ():
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
-            return qml.expval(m0 + m1), qml.sample(m0)
+            qp.Hadamard(0)
+            qp.Hadamard(1)
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            return qp.expval(m0 + m1), qp.sample(m0)
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──H──┤↗├──────┤                    \n"
             "1: ──H───║───┤↗├─┤                    \n"
@@ -857,12 +857,12 @@ class TestMidCircuitMeasurements:
         on the same measurement works as expected."""
 
         def circ():
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.PauliZ)(0)
-            return qml.expval(m0)
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.PauliZ)(0)
+            return qp.expval(m0)
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = "0: ──H──┤↗├──Z─┤       \n         ╚═══╩═╡  <MCM>"
 
         assert drawing == expected_drawing
@@ -872,19 +872,19 @@ class TestMidCircuitMeasurements:
         measurement statistics is drawn correctly."""
 
         def circ():
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
-            qml.Hadamard(1)
-            m1 = qml.measure(1)
-            qml.Hadamard(2)
-            m2 = qml.measure(2)
-            qml.Hadamard(3)
-            qml.measure(3)
-            qml.cond(m0, qml.PauliX)(0)
-            qml.cond(m0 & m1, qml.PauliY)(1)
-            return qml.expval(m2), qml.sample([m1, m2])
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
+            qp.Hadamard(1)
+            m1 = qp.measure(1)
+            qp.Hadamard(2)
+            m2 = qp.measure(2)
+            qp.Hadamard(3)
+            qp.measure(3)
+            qp.cond(m0, qp.PauliX)(0)
+            qp.cond(m0 & m1, qp.PauliY)(1)
+            return qp.expval(m2), qp.sample([m1, m2])
 
-        drawing = qml.draw(circ)()
+        drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──H──┤↗├──────────────────────────X────┤                    \n"
             "1: ──────║───H──┤↗├──────────────────║──Y─┤                    \n"
@@ -908,20 +908,20 @@ class TestMidCircuitMeasurements:
         * mcm output that is not used by anything
         """
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            return [2] + [qml.measure(w) for w in wires]
+            return [2] + [qp.measure(w) for w in wires]
 
         def c():
-            m = qml.measure(3)
+            m = qp.measure(3)
             ms = f((0, 1, 2))
 
-            qml.cond(m, qml.S)(0)
-            qml.cond(ms[1], qml.T)(0)
-            qml.cond(ms[2], qml.SX)(0)
-            return qml.expval(ms[1])
+            qp.cond(m, qp.S)(0)
+            qp.cond(ms[1], qp.T)(0)
+            qp.cond(ms[2], qp.SX)(0)
+            return qp.expval(ms[1])
 
-        out = qml.draw(c)()
+        out = qp.draw(c)()
 
         expected_drawing = (
             "0: ──────╭f──S──T──SX─┤       \n"
@@ -937,17 +937,17 @@ class TestMidCircuitMeasurements:
     def test_subroutine_with_multi_measure_measurement_value(self):
         """Test that the subroutine can output a measurement value with multiple measurements."""
 
-        @qml.templates.Subroutine
+        @qp.templates.Subroutine
         def f(wires):
-            m0 = qml.measure(wires[0])
-            m1 = qml.measure(wires[1])
+            m0 = qp.measure(wires[0])
+            m1 = qp.measure(wires[1])
             return m0 + m1
 
         def c():
             m = f((0, 1))
-            qml.cond(m == 1, qml.S)(0)
+            qp.cond(m == 1, qp.S)(0)
 
-        out = qml.draw(c)()
+        out = qp.draw(c)()
         expected = "0: ─╭f──S─┤  \n1: ─╰f──║─┤  \n     ╠══╣    \n     ╚══╝    "
         assert out == expected
 
@@ -959,9 +959,9 @@ class TestPauliMeasure:
         """Tests drawing a pauli measurement on a single wire."""
 
         def circ():
-            qml.H(0)
-            qml.pauli_measure("X", wires=0)
-            return qml.probs()
+            qp.H(0)
+            qp.pauli_measure("X", wires=0)
+            return qp.probs()
 
         expected = "0: ──H──┤↗X├─┤  Probs"
         assert draw(circ)() == expected
@@ -970,10 +970,10 @@ class TestPauliMeasure:
         """Tests drawing a pauli measurement on multiple wires."""
 
         def circ():
-            qml.H(0)
-            qml.pauli_measure("XY", wires=[0, 1])
-            qml.CNOT([1, 2])
-            return qml.expval(qml.Z(2))
+            qp.H(0)
+            qp.pauli_measure("XY", wires=[0, 1])
+            qp.CNOT([1, 2])
+            return qp.expval(qp.Z(2))
 
         expected = "0: ──H─╭┤↗X├────┤     \n1: ────╰┤↗Y├─╭●─┤     \n2: ──────────╰X─┤  <Z>"
         assert draw(circ)() == expected
@@ -985,10 +985,10 @@ class TestPauliMeasure:
         postselect_script = "₁" if postselect == 1 else "₀"
 
         def circ():
-            qml.H(0)
-            qml.pauli_measure("XY", wires=[0, 1], postselect=postselect)
-            qml.CNOT([1, 2])
-            return qml.expval(qml.Z(2))
+            qp.H(0)
+            qp.pauli_measure("XY", wires=[0, 1], postselect=postselect)
+            qp.CNOT([1, 2])
+            return qp.expval(qp.Z(2))
 
         expected = (
             f"0: ──H─╭┤↗{postselect_script}X├────┤     \n"
@@ -1001,11 +1001,11 @@ class TestPauliMeasure:
         """Tests when the pauli measure skips wires."""
 
         def circ():
-            qml.H(0)
-            qml.H(1)
-            qml.pauli_measure("XYZ", wires=[3, 0, 2])
-            qml.X(1)
-            return qml.probs()
+            qp.H(0)
+            qp.H(1)
+            qp.pauli_measure("XYZ", wires=[3, 0, 2])
+            qp.X(1)
+            return qp.probs()
 
         expected = (
             "0: ──H─╭┤↗Y├────┤  Probs\n"
@@ -1019,14 +1019,14 @@ class TestPauliMeasure:
         """Tests drawing using PPMs as classical control."""
 
         def circ():
-            qml.H(0)
-            qml.H(1)
-            qml.H(2)
-            qml.H(3)
-            qml.H(4)
-            m0 = qml.pauli_measure("XYZ", wires=[3, 0, 2])
-            qml.cond(m0, qml.X)(1)
-            return qml.probs()
+            qp.H(0)
+            qp.H(1)
+            qp.H(2)
+            qp.H(3)
+            qp.H(4)
+            m0 = qp.pauli_measure("XYZ", wires=[3, 0, 2])
+            qp.cond(m0, qp.X)(1)
+            return qp.probs()
 
         expected = (
             "0: ──H─╭┤↗Y├────┤  Probs\n"
@@ -1042,10 +1042,10 @@ class TestPauliMeasure:
         """Tests drawing a terminal measurement of a pauli product measurement."""
 
         def circ():
-            qml.H(0)
-            qml.H(1)
-            m0 = qml.pauli_measure("XY", wires=[1, 0])
-            return qml.expval(m0)
+            qp.H(0)
+            qp.H(1)
+            m0 = qp.pauli_measure("XY", wires=[1, 0])
+            return qp.expval(m0)
 
         expected = "0: ──H─╭┤↗Y├─┤       \n1: ──H─╰┤↗X├─┤       \n         ╚═══╡  <PPM>"
         assert draw(circ)() == expected
@@ -1058,17 +1058,17 @@ class TestLevelExpansionStrategy:
     def transforms_circuit(self):
         """Fixture for a circuit with transforms applied."""
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
         def circ(weights, order):
-            qml.RandomLayers(weights, wires=(0, 1))
-            qml.Permute(order, wires=(0, 1, 2))
-            qml.PauliX(0)
-            qml.PauliX(0)
-            qml.RX(0.1, wires=0)
-            qml.RX(-0.1, wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.RandomLayers(weights, wires=(0, 1))
+            qp.Permute(order, wires=(0, 1, 2))
+            qp.PauliX(0)
+            qp.PauliX(0)
+            qp.RX(0.1, wires=0)
+            qp.RX(-0.1, wires=0)
+            return qp.expval(qp.PauliX(0))
 
         return circ
 
@@ -1110,8 +1110,8 @@ class TestLevelExpansionStrategy:
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 
-        out1 = qml.draw(transforms_circuit, level=var1, show_matrices=False)(weights, order)
-        out2 = qml.draw(transforms_circuit, level=var2, show_matrices=False)(weights, order)
+        out1 = qp.draw(transforms_circuit, level=var1, show_matrices=False)(weights, order)
+        out2 = qp.draw(transforms_circuit, level=var2, show_matrices=False)(weights, order)
 
         assert out1 == out2 == expected
 
@@ -1121,7 +1121,7 @@ class TestLevelExpansionStrategy:
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 
-        out = qml.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
+        out = qp.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
 
         expected = (
             "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
@@ -1134,38 +1134,38 @@ class TestLevelExpansionStrategy:
         """Test that draw warns the user about level being ignored."""
 
         def qfunc():
-            qml.PauliZ(0)
+            qp.PauliZ(0)
 
         with pytest.warns(UserWarning, match="the level argument is ignored"):
-            qml.draw(qfunc, level=None)
+            qp.draw(qfunc, level=None)
 
     def test_custom_level(self):
         """Test that we can draw at a custom level."""
 
-        @qml.transforms.merge_rotations
-        @qml.marker("my_level")
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.transforms.merge_rotations
+        @qp.marker("my_level")
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            qml.RX(0.2, 0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
+            qp.RX(0.2, 0)
+            qp.X(0)
+            qp.X(0)
+            qp.RX(0.2, 0)
+            return qp.state()
 
         expected = "0: ──RX(0.20)──RX(0.20)─┤  State"
-        assert qml.draw(c, level="my_level")() == expected
+        assert qp.draw(c, level="my_level")() == expected
 
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
-    @qml.gradients.param_shift(shifts=[(0.2,)])
-    @qml.qnode(qml.device("default.qubit", wires=1))
+    @qp.gradients.param_shift(shifts=[(0.2,)])
+    @qp.qnode(qp.device("default.qubit", wires=1))
     def circ(x):
-        qml.Hadamard(wires=0)
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.Hadamard(wires=0)
+        qp.RX(x, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     expected = "0: ──H──RX(0.8)─┤  <Z>\n\n0: ──H──RX(0.4)─┤  <Z>"
     assert draw(circ, decimals=1)(pnp.array(0.6, requires_grad=True)) == expected
@@ -1174,41 +1174,41 @@ def test_draw_batch_transform():
 def test_applied_transforms():
     """Test that any transforms applied to the qnode are included in the output."""
 
-    @qml.transform
+    @qp.transform
     def just_pauli_x(_):
-        new_tape = qml.tape.QuantumScript([qml.PauliX(0)])
+        new_tape = qp.tape.QuantumScript([qp.PauliX(0)])
         return (new_tape,), lambda res: res[0]
 
     @just_pauli_x
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def my_circuit(x):
-        qml.RX(x, wires=0)
-        qml.SWAP(wires=(0, 1))
-        return qml.probs(wires=(0, 1))
+        qp.RX(x, wires=0)
+        qp.SWAP(wires=(0, 1))
+        return qp.probs(wires=(0, 1))
 
     expected = "0: ──X─┤  "
-    assert qml.draw(my_circuit)(1.234) == expected
+    assert qp.draw(my_circuit)(1.234) == expected
 
 
 def test_draw_with_qfunc():
     """Test a non-qnode qfunc can be drawn."""
 
     def qfunc(x):
-        qml.RX(x, wires=[0])
-        qml.PauliZ(1)
+        qp.RX(x, wires=[0])
+        qp.PauliZ(1)
 
-    assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
+    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
 
 
 def test_draw_with_qfunc_with_measurements():
     """Test a non-qnode qfunc with measurements can be drawn."""
 
     def qfunc(x):
-        qml.RX(x, wires=[0])
-        qml.CNOT([0, 1])
-        return qml.expval(qml.PauliZ(1))
+        qp.RX(x, wires=[0])
+        qp.CNOT([0, 1])
+        return qp.expval(qp.PauliZ(1))
 
-    assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
+    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
 
 
 @pytest.mark.parametrize("use_qnode", [True, False])
@@ -1216,16 +1216,16 @@ def test_sort_wires(use_qnode):
     """Test that drawing a qnode with no wire order or device wires sorts the wires automatically."""
 
     def func():
-        qml.X(4)
-        qml.X(2)
-        qml.X(0)
-        return qml.expval(qml.Z(0))
+        qp.X(4)
+        qp.X(2)
+        qp.X(0)
+        return qp.expval(qp.Z(0))
 
     if use_qnode:
-        func = qml.QNode(func, qml.device("default.qubit"))
+        func = qp.QNode(func, qp.device("default.qubit"))
 
     expected = "0: ──X─┤  <Z>\n2: ──X─┤     \n4: ──X─┤     "
-    assert qml.draw(func)() == expected
+    assert qp.draw(func)() == expected
 
 
 @pytest.mark.parametrize("use_qnode", [True, False])
@@ -1234,13 +1234,13 @@ def test_sort_wires_fallback(use_qnode):
     sorting fails."""
 
     def func():
-        qml.X(4)
-        qml.X("a")
-        qml.X(0)
-        return qml.expval(qml.Z(0))
+        qp.X(4)
+        qp.X("a")
+        qp.X(0)
+        return qp.expval(qp.Z(0))
 
     if use_qnode:
-        func = qml.QNode(func, qml.device("default.qubit"))
+        func = qp.QNode(func, qp.device("default.qubit"))
 
     expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
-    assert qml.draw(func)() == expected
+    assert qp.draw(func)() == expected

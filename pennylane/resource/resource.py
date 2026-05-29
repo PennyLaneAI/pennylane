@@ -220,14 +220,12 @@ class Resources:
     __rmul__ = __mul__
 
     def __str__(self):
-        keys = ["num_wires", "num_gates", "depth"]
-        vals = [self.num_wires, self.num_gates, self.depth]
-        items = "\n".join([str(i) for i in zip(keys, vals)])
-        items = items.replace("('", "")
-        items = items.replace("',", ":")
-        items = items.replace(")", "")
-
-        items += f"\nshots: {str(self.shots)}"
+        items = (
+            f"num_wires: {self.num_wires}"
+            f"\nnum_gates: {self.num_gates}"
+            f"\ndepth: {self.depth}"
+            f"\nshots: {self.shots}"
+        )
 
         gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
@@ -551,7 +549,7 @@ class CircuitSpecs:
         """Helper for printing tabular format, flattens all resources across levels into a single
         dictionary with string keys."""
         flat_resources = {}
-        for level, res in zip(self.level.keys(), self.resources.values()):
+        for level, res in zip(self.level.keys(), self.resources.values(), strict=True):
             if isinstance(res, SpecsResources):
                 flat_resources[str(level)] = res
             elif isinstance(res, list):
@@ -770,7 +768,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(qml.resource.add_in_series(r1, r2))
+        >>> print(qp.resource.add_in_series(r1, r2))
         num_wires: 3
         num_gates: 4
         depth: 3
@@ -837,7 +835,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(qml.resource.add_in_parallel(r1, r2))
+        >>> print(qp.resource.add_in_parallel(r1, r2))
         num_wires: 5
         num_gates: 4
         depth: 2
@@ -896,7 +894,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_series(resources, 2))
+        >>> print(qp.resource.mul_in_series(resources, 2))
         num_wires: 2
         num_gates: 4
         depth: 4
@@ -954,7 +952,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_parallel(resources, 2))
+        >>> print(qp.resource.mul_in_parallel(resources, 2))
         num_wires: 4
         num_gates: 4
         depth: 2
@@ -1021,7 +1019,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         Now we print the result of the substitution.
 
-        >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
+        >>> res = qp.resource.substitute(initial_resources, gate_info, replacement)
         >>> print(res)
         num_wires: 2
         num_gates: 15

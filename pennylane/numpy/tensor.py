@@ -57,9 +57,8 @@ class tensor(_np.ndarray):
     .. warning::
 
         PennyLane ``tensor`` objects are only used as part of the Autograd QNode
-        interface. If using another machine learning library such as PyTorch or
-        TensorFlow, use their built-in ``tf.Variable`` and ``torch.tensor`` classes
-        instead.
+        interface. If using another machine learning library such as PyTorch,
+        use its built-in classes instead (i.e. ``torch.tensor``).
 
     .. warning::
 
@@ -162,7 +161,7 @@ class tensor(_np.ndarray):
         # construct a list of ufunc outputs to return
         ufunc_output = [
             (onp.asarray(result) if output is None else output)
-            for result, output in zip(res, outputs)
+            for result, output in zip(res, outputs, strict=True)
         ]
 
         # if any of the inputs were trainable, the output is also trainable

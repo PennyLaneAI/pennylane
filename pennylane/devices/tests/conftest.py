@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 
 # ==========================================================
@@ -41,17 +41,14 @@ LIST_CORE_DEVICES = {
 
 
 @pytest.fixture(scope="function")
-def tol():
+def tol(shots):  # pylint: disable=redefined-outer-name
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices, which allows us to define the
     standard for deterministic or stochastic test results dynamically."""
 
-    def _tol(shots):
-        if shots is None:
-            return float(os.environ.get("TOL", TOL))
-        return TOL_STOCHASTIC
-
-    return _tol
+    if shots is None:
+        return float(os.environ.get("TOL", TOL))
+    return TOL_STOCHASTIC
 
 
 @pytest.fixture(scope="session")
@@ -76,17 +73,17 @@ def enable_and_disable_graph_decomp(request):
     test runs and the teardown (always disabling) after the test completes.
     """
     use_graph_decomp = request.param
-    with qml.decomposition.toggle_graph_ctx(use_graph_decomp):
+    with qp.decomposition.toggle_graph_ctx(use_graph_decomp):
         yield
 
 
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
 
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, qp.devices.LegacyDeviceFacade):
         return dev.target_device.capabilities()
 
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qp.devices.LegacyDevice):
         return dev.capabilities()
 
     return {}
@@ -112,14 +109,21 @@ def skip_if():
 
 
 @pytest.fixture
-def validate_diff_method(device, diff_method, device_kwargs):
+def shots(request) -> None | int:
+    """The number of shots to use during an execution."""
+    shots_value = request.config.getoption("--shots")
+    return None if shots_value in (None, "None") else int(shots_value)
+
+
+@pytest.fixture
+def validate_diff_method(device, diff_method, shots):  # pylint: disable=redefined-outer-name
     """Skip tests if a device does not support a diff_method"""
     if diff_method in {"parameter-shift", "hadamard"}:
         return
-    if diff_method == "backprop" and device_kwargs.get("shots") is not None:
+    if diff_method == "backprop" and shots is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    config = qml.devices.ExecutionConfig(gradient_method=diff_method)
+    config = qp.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
         pytest.skip(reason="device does not support diff_method")
 
@@ -135,7 +139,7 @@ def fixture_device(device_kwargs):
         device_kwargs["wires"] = wires
 
         try:
-            dev = qml.device(**device_kwargs)
+            dev = qp.device(**device_kwargs)
         except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
@@ -249,7 +253,7 @@ def pytest_generate_tests(metafunc):
     """Set up device_kwargs fixture from command line options.
 
     The fixture defines a dictionary of keyword argument that can be used to instantiate
-    a device via `qml.device(**device_kwargs)` in the test. This allows us to potentially
+    a device via `qp.device(**device_kwargs)` in the test. This allows us to potentially
     change kwargs in the test before creating the device.
     """
 
@@ -264,12 +268,6 @@ def pytest_generate_tests(metafunc):
 
     for dev in devices_to_test:
         device_kwargs = {"name": dev}
-
-        # if shots specified in command line,
-        # add to the device kwargs
-        if opt.shots is not None:
-            # translate command line string to None if necessary
-            device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
 
         # store user defined device kwargs
         device_kwargs.update(opt.device_kwargs)

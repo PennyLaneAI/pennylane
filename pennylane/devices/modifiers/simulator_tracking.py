@@ -38,7 +38,7 @@ def _track_execute(untracked_execute):
         if self.tracker.active:
             self.tracker.update(batches=1)
             self.tracker.record()
-            for r, c in zip(batch_results, batch):
+            for r, c in zip(batch_results, batch, strict=True):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 if c.shots:
                     self.tracker.update(
@@ -205,19 +205,21 @@ def simulator_tracking(cls: type) -> type:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
         @simulator_tracking
         @single_tape_support
-        class MyDevice(qml.devices.Device):
+        class MyDevice(qp.devices.Device):
 
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for c in circuits)
 
     >>> dev = MyDevice()
-    >>> ops = [qml.S(0)]
-    >>> measurements = [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
-    >>> t = qml.tape.QuantumScript(ops, measurements,shots=50)
+    >>> ops = [qp.S(0)]
+    >>> measurements = [qp.expval(qp.X(0)), qp.expval(qp.Z(0))]
+    >>> t = qp.tape.QuantumScript(ops, measurements,shots=50)
     >>> with dev.tracker:
     ...     dev.execute((t, ) )
     (0.0,)

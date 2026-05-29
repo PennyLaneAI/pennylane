@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module contains the qml.vn_entropy measurement.
+This module contains the qp.vn_entropy measurement.
 """
 
 from pennylane import math
@@ -31,8 +31,6 @@ class VnEntropyMP(StateMeasurement):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         log_base (float): Base for the logarithm.
     """
 
@@ -48,17 +46,14 @@ class VnEntropyMP(StateMeasurement):
     def __init__(
         self,
         wires: Wires | None = None,
-        id: str | None = None,
         log_base: float | None = None,
     ):
         self.log_base = log_base
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (self.__class__.__name__, tuple(self.wires.tolist()), self.log_base)
-
         return hash(fingerprint)
 
     @property
@@ -95,12 +90,12 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=[0])
+            qp.IsingXX(x, wires=[0, 1])
+            return qp.vn_entropy(wires=[0])
 
     Executing this QNode:
 
@@ -110,7 +105,7 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
     It is also possible to get the gradient of the previous QNode:
 
     >>> param = pnp.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_entropy)(param)
+    >>> qp.grad(circuit_entropy)(param)
     tensor(0.623..., requires_grad=True)
 
     .. note::
@@ -121,7 +116,7 @@ def vn_entropy(wires, log_base=None) -> VnEntropyMP:
 
     .. note::
 
-        ``qml.vn_entropy`` can also be used to compute the entropy of entanglement between two
+        ``qp.vn_entropy`` can also be used to compute the entropy of entanglement between two
         subsystems by computing the Von Neumann entropy of either of the subsystems.
 
     .. seealso:: :func:`pennylane.math.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`

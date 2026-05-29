@@ -1,4 +1,6 @@
 name: "Read the Docs check"
+permissions:
+  contents: read
 on:
   merge_group:
     types:
@@ -43,6 +45,7 @@ jobs:
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+        pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
         pip install --group docs
 
     - name: Build Sphinx HTML

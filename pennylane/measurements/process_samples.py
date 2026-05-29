@@ -16,7 +16,7 @@
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import EigvalsUndefinedError
+from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
@@ -50,7 +50,7 @@ def process_raw_samples(
 
     """
 
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    wire_map = {w: i for i, w in enumerate(wire_order)}
     mapped_wires = [wire_map[w] for w in mp.wires]
     # Select the samples from samples that correspond to ``shot_range`` if provided
     if shot_range is not None:

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.iterative_qpe function.
+This module contains the qp.iterative_qpe function.
 """
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 
 
 def iterative_qpe(base, aux_wire, iters):
@@ -40,19 +40,19 @@ def iterative_qpe(base, aux_wire, iters):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42)
+        dev = qp.device("default.qubit", seed=42)
 
-        @qml.set_shots(5)
-        @qml.qnode(dev)
+        @qp.set_shots(5)
+        @qp.qnode(dev)
         def circuit():
 
             # Initial state
-            qml.X(0)
+            qp.X(0)
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(2.0, wires=[0]), aux_wire=1, iters=3)
+            measurements = qp.iterative_qpe(qp.RZ(2.0, wires=[0]), aux_wire=1, iters=3)
 
-            return qml.sample(measurements)
+            return qp.sample(measurements)
 
     >>> result = circuit()
     >>> assert result.shape == (5, 3)
@@ -65,42 +65,42 @@ def iterative_qpe(base, aux_wire, iters):
 
     The output is an array of size ``(number of shots, number of iterations)``.
 
-    >>> print(qml.draw(circuit, max_length=150)())
+    >>> print(qp.draw(circuit, max_length=150)())
     0: ──X─╭RZ(2.00)⁴─────────────────╭RZ(2.00)²────────────────────────────╭RZ(2.00)¹────────────────────────────────────┤
     1: ──H─╰●──────────H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╰●──────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤
                            ╚══════════════════════╩══════════════║══════════════════════║══════════╩══════════════║═══════╡ ╭Sample[MCM]
                                                                  ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                   ╚═══════╡ ╰Sample[MCM]
     """
-    if qml.capture.enabled():
-        measurements = qml.math.zeros(iters, dtype=int, like="jax")
+    if qp.capture.enabled():
+        measurements = qp.math.zeros(iters, dtype=int, like="jax")
     else:
         measurements = [0] * iters
 
     def measurement_loop(i, measurements, target):
         # closure: aux_wire, iters, target
 
-        qml.Hadamard(wires=aux_wire)
-        qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
+        qp.Hadamard(wires=aux_wire)
+        qp.ctrl(qp.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
         def conditional_loop(j):
             # closure: measurements, iters, i, aux_wire
             meas = measurements[iters - i + j]
 
             def cond_func():
-                qml.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+                qp.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
 
-            qml.cond(meas, cond_func)()
+            qp.cond(meas, cond_func)()
 
-        qml.for_loop(i)(conditional_loop)()
+        qp.for_loop(i)(conditional_loop)()
 
-        qml.Hadamard(wires=aux_wire)
-        m = qml.measure(wires=aux_wire, reset=True)
-        if qml.capture.enabled():
+        qp.Hadamard(wires=aux_wire)
+        m = qp.measure(wires=aux_wire, reset=True)
+        if qp.capture.enabled():
             measurements = measurements.at[iters - i - 1].set(m)
         else:
             measurements[iters - i - 1] = m
 
         return measurements, target
 
-    return qml.for_loop(iters)(measurement_loop)(measurements, base)[0]
+    return qp.for_loop(iters)(measurement_loop)(measurements, base)[0]

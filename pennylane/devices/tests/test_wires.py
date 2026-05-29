@@ -16,24 +16,24 @@
 # pylint: disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
 
-def make_simple_circuit_expval(device, wires):
+def make_simple_circuit_expval(device, wires, shots):
     """Factory for a qnode returning expvals."""
 
     n_wires = len(wires)
 
-    @qml.qnode(device)
+    @qp.qnode(device, shots=shots)
     def circuit():
-        qml.RX(0.5, wires=wires[0 % n_wires])
-        qml.RY(2.0, wires=wires[1 % n_wires])
+        qp.RX(0.5, wires=wires[0 % n_wires])
+        qp.RY(2.0, wires=wires[1 % n_wires])
         if n_wires > 1:
-            qml.CNOT(wires=[wires[0], wires[1]])
-        return [qml.expval(qml.Z(w)) for w in wires]
+            qp.CNOT(wires=[wires[0], wires[1]])
+        return [qp.expval(qp.Z(w)) for w in wires]
 
     return circuit
 
@@ -57,13 +57,13 @@ class TestWiresIntegration:
     )
     @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
     def test_wires_expval(
-        self, device, circuit_factory, wires1, wires2, tol
+        self, device, circuit_factory, wires1, wires2, shots, tol
     ):  # pylint: disable=too-many-arguments
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
         dev2 = device(wires2)
 
-        circuit1 = circuit_factory(dev1, wires1)
-        circuit2 = circuit_factory(dev2, wires2)
+        circuit1 = circuit_factory(dev1, wires1, shots)
+        circuit2 = circuit_factory(dev2, wires2, shots)
 
-        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.shots))
+        assert np.allclose(circuit1(), circuit2(), atol=tol)

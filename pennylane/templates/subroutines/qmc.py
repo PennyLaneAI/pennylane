@@ -318,17 +318,17 @@ class QuantumMonteCarlo(Operation):
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qp.device("default.qubit", wires=(n + m + 1))
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.templates.QuantumMonteCarlo(
+                qp.templates.QuantumMonteCarlo(
                     probs,
                     func,
                     target_wires=target_wires,
                     estimation_wires=estimation_wires,
                 )
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
 
@@ -344,7 +344,7 @@ class QuantumMonteCarlo(Operation):
 
     @classmethod
     def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires, id=None
+        cls, probs, func, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ
         # handle target wires and estimation wires
         return cls._primitive.bind(
@@ -353,7 +353,6 @@ class QuantumMonteCarlo(Operation):
             *estimation_wires,
             func=func,
             num_target_wires=len(target_wires),
-            id=id,
         )
 
     @classmethod
@@ -375,7 +374,7 @@ class QuantumMonteCarlo(Operation):
             ),
         }
 
-    def __init__(self, probs, func, target_wires, estimation_wires, id=None):
+    def __init__(self, probs, func, target_wires, estimation_wires):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
 
@@ -403,7 +402,7 @@ class QuantumMonteCarlo(Operation):
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
-        super().__init__(A, R, Q, wires=wires, id=id)
+        super().__init__(A, R, Q, wires=wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -456,10 +455,10 @@ class QuantumMonteCarlo(Operation):
 if QuantumMonteCarlo._primitive is not None:
 
     @QuantumMonteCarlo._primitive.def_impl
-    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires, id=None):
+    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
         target_wires = wires[:num_target_wires]
         estimation_wires = wires[num_target_wires:]
-        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires, id)
+        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
 def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):

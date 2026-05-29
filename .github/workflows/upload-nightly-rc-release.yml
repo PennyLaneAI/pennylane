@@ -8,6 +8,8 @@ env:
 
 jobs:
   setup-rc:
+    permissions:
+      contents: write
     name: Setup the release
     runs-on: ubuntu-24.04
     outputs:

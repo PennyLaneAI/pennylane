@@ -134,7 +134,7 @@ class MeasurementValue:
 
     def __bool__(self) -> bool:
         raise ValueError(
-            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qml.cond instead."
+            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qp.cond instead."
         )
 
     def __eq__(self, other):
@@ -194,6 +194,9 @@ class MeasurementValue:
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
+
+    def __hash__(self):
+        return hash((tuple(self.measurements), self.processing_fn))
 
     def concretize(self, measurements: dict):
         """Returns a concrete value from a dictionary of hashes with concrete values."""

@@ -60,7 +60,9 @@ class Hadamard(ResourceOperator):
         Raises:
             ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
+        raise ResourcesUndefinedError(
+            f"{cls.__name__} does not have a resource decomposition defined."
+        )
 
     @property
     def resource_params(self) -> dict:
@@ -201,7 +203,7 @@ class S(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.S.resource_decomp()
+    >>> qp.estimator.S.resource_decomp()
     [(2 x T)]
     """
 
@@ -399,7 +401,7 @@ class SWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.SWAP.resource_decomp()
+    >>> qp.estimator.SWAP.resource_decomp()
     [(3 x CNOT)]
 
     """
@@ -593,7 +595,9 @@ class T(ResourceOperator):
         Raises:
             ResourcesUndefinedError: This gate is fundamental, no further decomposition defined.
         """
-        raise ResourcesUndefinedError(f"{cls} does not have a resource decomposition defined.")
+        raise ResourcesUndefinedError(
+            f"{cls.__name__} does not have a resource decomposition defined."
+        )
 
     @property
     def resource_params(self) -> dict:
@@ -754,7 +758,7 @@ class X(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.X.resource_decomp()
+    >>> qp.estimator.X.resource_decomp()
     [(2 x Hadamard), (2 x S)]
     """
 
@@ -927,7 +931,7 @@ class Y(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.Y.resource_decomp()
+    >>> qp.estimator.Y.resource_decomp()
     [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
     """
 
@@ -1096,7 +1100,7 @@ class Z(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.Z.resource_decomp()
+    >>> qp.estimator.Z.resource_decomp()
     [(2 x S)]
     """
 

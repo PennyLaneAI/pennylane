@@ -19,18 +19,18 @@ It can be used to eliminate flakiness in shot vector tests.
 import copy
 from types import MethodType
 
-import pennylane as qml
+import pennylane as qp
 
 
-def shots_to_analytic(dev: qml.devices.Device) -> qml.devices.Device:
+def shots_to_analytic(dev: qp.devices.Device) -> qp.devices.Device:
     """Make all executions analytic to prevent flakiness in tests.
 
     .. code-block:: python
 
-        @qml.qnode(shots_to_analytic(qml.device('default.qubit', shots=(1,1,1))))
+        @qp.qnode(shots_to_analytic(qp.device('default.qubit', shots=(1,1,1))))
         def f(x):
-            qml.RX(2*x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(2*x, 0)
+            return qp.expval(qp.Z(0))
 
         f(0.5)
 
@@ -45,7 +45,7 @@ def shots_to_analytic(dev: qml.devices.Device) -> qml.devices.Device:
 
     # pylint: disable=unused-argument
     def new_execute(self, circuits, execution_config=None):
-        execution_config = execution_config or qml.devices.ExecutionConfig()
+        execution_config = execution_config or qp.devices.ExecutionConfig()
         results = []
         for c in circuits:
             if c.shots.has_partitioned_shots:

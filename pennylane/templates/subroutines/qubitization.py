@@ -50,19 +50,19 @@ class Qubitization(Operation):
 
     .. code-block:: python
 
-        H = qml.dot([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
+        H = qp.dot([0.1, 0.3, -0.3], [qp.Z(0), qp.Z(1), qp.Z(0) @ qp.Z(2)])
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
 
             # initiate the eigenvector
-            qml.PauliX(2)
+            qp.PauliX(2)
 
             # apply QPE
-            measurements = qml.iterative_qpe(
-                qml.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
+            measurements = qp.iterative_qpe(
+                qp.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
             )
-            return qml.probs(op = measurements)
+            return qp.probs(op = measurements)
 
         output = circuit()
 
@@ -81,7 +81,7 @@ class Qubitization(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(self, hamiltonian, control, id=None):
+    def __init__(self, hamiltonian, control):
         wires = Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
@@ -89,7 +89,7 @@ class Qubitization(Operation):
             "control": Wires(control),
         }
 
-        super().__init__(*hamiltonian.data, wires=wires, id=id)
+        super().__init__(*hamiltonian.data, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -155,10 +155,10 @@ class Qubitization(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane.wires import Wires
 
-        >>> print(qml.Qubitization.compute_decomposition(hamiltonian=0.1 * qml.Z(0), control=Wires(1)))
+        >>> print(qp.Qubitization.compute_decomposition(hamiltonian=0.1 * qp.Z(0), control=Wires(1)))
         [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=Wires([1]))]
         """
 

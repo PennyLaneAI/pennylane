@@ -15,9 +15,9 @@
 This module contains the :class:`OperationRecorder`.
 """
 
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
-from .tape import QuantumScript
+from .qscript import QuantumScript, process_queue
 
 
 class OperationRecorder(QuantumScript, AnnotatedQueue):
@@ -31,10 +31,10 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
     or quantum functions stores applied operators in the
     recorder, which can then be printed.
 
-    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
+    >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
     >>> weights = np.random.random(shape)
     >>> with OperationRecorder() as rec: # doctest: +SKIP
-    ...    qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+    ...    qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
