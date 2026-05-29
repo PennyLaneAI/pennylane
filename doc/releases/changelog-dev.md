@@ -38,7 +38,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Allowed `qp.registers` to produce empty registers.
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
