@@ -20,19 +20,10 @@ import pytest
 
 from pennylane import Incrementer, device, qnode
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import sample
+from pennylane.measurements import sample, state
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
-
-dev = device("default.qubit")
-
-
-@qnode(dev, shots=1)
-def increment(wires, init_state, work_wires=None):
-    BasisEmbedding(init_state, wires)
-    Incrementer(wires + work_wires, work_wires)
-    return sample(wires=wires)
 
 
 @pytest.mark.parametrize(
@@ -52,8 +43,8 @@ def test_assert_valid(wires, work_wires):
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
-        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
-        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2), (3,)),  # not enough work wires... uses fallback
         ((0, 1, 2), []),  # no work wires
     ],
 )
@@ -83,18 +74,36 @@ def test_decomposition_capture(wires, work_wires):
 )
 def test_correct(wires, init_state, expected, work_wires):
     """Validates that the incrementer adds one."""
+    dev = device("default.qubit", wires=wires + work_wires)
+
+    @qnode(dev)
+    def increment(wires, init_state, work_wires=None):
+        BasisEmbedding(init_state, wires)
+        Incrementer(wires, work_wires)
+        return state()
+
     result = increment(wires, init_state, work_wires)
-    assert np.all(result == expected)
+
+    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires))])
+
+    value = 0
+    for i, bit in enumerate(expected[::-1]):
+        if bit == 1:
+            value += 2**i
+
+    for j, entry in enumerate(result):
+        if j == value:
+            assert entry == 1
+        else:
+            assert entry == 0
 
 
-@qnode(dev, shots=1)
+@qnode(device("default.qubit"), shots=1)
 def controlled_increment(wires, init_state, work_wires=None, control=0):
     BasisEmbedding(init_state, wires)
     if control:
         PauliX(len(wires + work_wires))
-    Controlled(
-        Incrementer(wires + work_wires, work_wires), [len(wires + work_wires)], control_values=[1]
-    )
+    Controlled(Incrementer(wires, work_wires), [len(wires + work_wires)], control_values=[1])
     return sample(wires=wires)
 
 
