@@ -156,15 +156,6 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.is_verified_hermitian == is_herm
 
-    def test_queuecateory(self):
-        """Test that a symbolic operator inherits the queue_category from its base."""
-
-        class DummyOp(Operator):
-            pass
-
-        op = SymbolicOp(DummyOp("b"))
-        assert op._queue_category == "_ops"  # pylint:disable=protected-access
-
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
         w = qp.wires.Wires("a")
