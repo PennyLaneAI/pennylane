@@ -130,6 +130,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
+  [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
+
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
   shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
   [(#9469)](https://github.com/PennyLaneAI/pennylane/pull/9469)
@@ -224,6 +227,7 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
+  [(#9413)](https://github.com/PennyLaneAI/pennylane/pull/9413)
 
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
