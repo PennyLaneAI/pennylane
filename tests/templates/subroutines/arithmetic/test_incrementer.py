@@ -98,15 +98,6 @@ def test_correct(wires, init_state, expected, work_wires):
             assert entry == 0
 
 
-@qnode(device("default.qubit"), shots=1)
-def controlled_increment(wires, init_state, work_wires=None, control=0):
-    BasisEmbedding(init_state, wires)
-    if control:
-        PauliX(len(wires + work_wires))
-    Controlled(Incrementer(wires, work_wires), [len(wires + work_wires)], control_values=[1])
-    return sample(wires=wires)
-
-
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires, control",
     [
@@ -122,8 +113,30 @@ def controlled_increment(wires, init_state, work_wires=None, control=0):
     ],
 )
 def test_controlled(wires, init_state, expected, work_wires, control):
+    dev = device("default.qubit", wires=wires + work_wires + [len(wires + work_wires)])
+
+    @qnode(dev)
+    def controlled_increment(wires, init_state, work_wires=None, control=0):
+        BasisEmbedding(init_state, wires)
+        if control:
+            PauliX(len(wires + work_wires))
+        Controlled(Incrementer(wires, work_wires), [len(wires + work_wires)], control_values=[1])
+        return state()
+
     result = controlled_increment(wires, init_state, work_wires, control)
-    assert np.all(result == expected)
+
+    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array([control])])
+
+    value = 0
+    for i, bit in enumerate(expected[::-1]):
+        if bit == 1:
+            value += 2**i
+
+    for j, entry in enumerate(result):
+        if j == value:
+            assert entry == 1
+        else:
+            assert entry == 0
 
 
 @pytest.mark.capture
