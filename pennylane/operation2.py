@@ -73,7 +73,7 @@ class Operator2(ABC):
 
     static_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as static. Static arguments are those
-    whose concrete values are known when capturing the program. Arguments specified
+    whose concrete values are known when compiling the program. Arguments specified
     here are not lowered to a compiler intermediate representation (IR). Alternatively,
     if an argument is of a type that can be lowered, it can be moved to ``compilable_argnames``.
 
@@ -87,7 +87,7 @@ class Operator2(ABC):
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that are treated as **compilable** static arguments.
     Compilable static arguments are a subset of static arguments—arguments whose
-    concrete values are known when capturing the program. But, unlike ``static_argnames``,
+    concrete values are known when compiling the program. But, unlike ``static_argnames``,
     they are lowered to the compiler intermediate representation, making their values
     visible to the compiler, which may be useful if the compiler needs to interact with
     such values. Such values may include numbers, strings, and lists, tuples, or dictionaries
