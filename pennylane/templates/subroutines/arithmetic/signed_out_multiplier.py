@@ -433,7 +433,7 @@ def _not_zeroed_signed_out_multiplier_resources(
             SemiAdder,
             num_x_wires=num_output_wires,
             num_y_wires=num_output_wires,
-            num_work_wires=num_work_wires - num_output_wires - 3
+            num_work_wires=num_work_wires - num_output_wires - 3,
         )
     ] = 1
     resources[resource_rep(CNOT)] = 4

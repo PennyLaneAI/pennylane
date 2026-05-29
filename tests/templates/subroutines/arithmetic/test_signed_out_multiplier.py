@@ -121,15 +121,7 @@ def signed_multiply(
 ):  # pylint: disable=too-many-arguments
     BasisEmbedding(
         init_state,
-        list(range(len(x_wires)))
-        + list(range(len(x_wires), len(x_wires) + len(y_wires)))
-        + list(range(len(y_wires) + len(x_wires), len(y_wires) + len(x_wires) + len(work_wires)))
-        + list(
-            range(
-                len(y_wires) + len(x_wires) + len(work_wires),
-                len(y_wires) + len(x_wires) + len(work_wires) + len(output_wires),
-            )
-        ),
+        x_wires + y_wires + work_wires + output_wires,
     )
     SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
     return sample(wires=output_wires)
@@ -141,22 +133,22 @@ def signed_multiply(
         (
             (0, 1),
             (2, 3),
-            (4, 5, 6, 7, 8),
-            (9, 10),
+            (4, 5, 6, 7, 8, 9),
+            (10, 11),
             [1, 1]  # operand one: -1
             + [0, 1]  # operand two: 1
-            + [0, 0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0]  # work wires are zeroed
             + [0, 1],  # output register starts in non-zero state!
             False,
         ),
         (
             (0, 1),
             (2, 3),
-            (4, 5, 6, 7, 8),
-            (9, 10),
+            (4, 5, 6, 7, 8, 9),
+            (10, 11),
             [0, 1]  # operand one: 1
             + [0, 1]  # operand two: 1
-            + [0, 0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0]  # work wires are zeroed
             + [1, 1],  # output register starts in negative non-zero state!
             False,
         ),
