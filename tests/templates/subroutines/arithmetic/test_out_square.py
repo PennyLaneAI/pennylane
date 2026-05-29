@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 
 
@@ -219,6 +220,7 @@ class TestOutSquare:
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j in applicable_rules)
+            _test_decomposition_rule(op, rule)
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
