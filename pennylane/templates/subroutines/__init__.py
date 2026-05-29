@@ -68,6 +68,7 @@ from .arithmetic import (
     SemiAdder,
     Elbow,
     TemporaryAND,
+    MultiTemporaryAND,
 )
 
 __all__ = [
@@ -124,4 +125,5 @@ __all__ = [
     "SemiAdder",
     "Elbow",
     "TemporaryAND",
+    "MultiTemporaryAND",
 ]
