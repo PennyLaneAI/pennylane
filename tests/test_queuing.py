@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import QueuingError
-from pennylane.operation2 import Operator2
 from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
