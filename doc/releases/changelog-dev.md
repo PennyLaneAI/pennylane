@@ -24,10 +24,10 @@
 
   ```pycon
   >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
-  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
-  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
-  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤ ╭State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤ ├State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤ ├State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤ ╰State
 
   ```
 
@@ -273,6 +273,12 @@
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
+* Fixed a bug where :func:`~.draw` dropped the grouping brackets on measurements that span all
+  device wires (such as :func:`~.state`, :func:`~.probs`, :func:`~.sample`, or :func:`~.counts`
+  without an explicit ``wires`` argument). The brackets now render consistently with the
+  multi-wire case, matching the existing behavior of :func:`~.draw_mpl`.
+  [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -287,6 +293,7 @@ Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 Andrija Paurevic,
+Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs.
