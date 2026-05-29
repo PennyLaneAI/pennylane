@@ -243,7 +243,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where the ``DecompositionGraph`` enters infinite recursion when a decomposition path
+* Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
   [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
 
