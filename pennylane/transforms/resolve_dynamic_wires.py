@@ -177,8 +177,8 @@ def resolve_dynamic_wires(
                 qp.Y(wires)
 
     >>> print(qp.draw(circuit)())
+      |0>├──X──┤
       |0>├──Y──┤
-               |0>├──X──┤
 
     If we provide two zeroed qubits to the transform, we can see that the two operations have been
     assigned to both wires known to be in the zero state.
