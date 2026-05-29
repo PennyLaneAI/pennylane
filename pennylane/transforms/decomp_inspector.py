@@ -558,7 +558,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ───────│──├●────│─────├●───│────┤
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
-            |0>├─╰⊕───────╰●────────⊕╯──┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
