@@ -1756,52 +1756,23 @@ class TestCycles:
         """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
         example"""
         coeffs = [1, -1, -1, 1]
-        ops = [qp.Identity(0), qp.PauliZ(0), qp.PauliZ(1), qp.PauliZ(3)]
+        ops = [qp.I(0), qp.Z(0), qp.Z(1), qp.Z(3)]
 
-        expected_coeffs = [
-            1,
-            -1,
-            -1,
-            1,
-            -1,
-            1,
-            1,
-            -1,
-            -1,
-            1,
-            1,
-            -1,
-            1,
-            -1,
-            -1,
-            1,
-        ]
+        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
         expected_ops = [
-            qp.Identity(0),
-            qp.PauliZ(0),
-            qp.PauliZ(1),
-            qp.PauliZ(3),
-            qp.PauliZ(0),
-            qp.Identity(0),
-            qp.PauliZ(0) @ qp.PauliZ(1),
-            qp.PauliZ(0) @ qp.PauliZ(3),
-            qp.PauliZ(1),
-            qp.PauliZ(0) @ qp.PauliZ(1),
-            qp.Identity(0),
-            qp.PauliZ(1) @ qp.PauliZ(3),
-            qp.PauliZ(3),
-            qp.PauliZ(0) @ qp.PauliZ(3),
-            qp.PauliZ(1) @ qp.PauliZ(3),
-            qp.Identity(0),
+            qp.I(0),
+            qp.Z(0),
+            qp.Z(1),
+            qp.Z(3),
+            qp.Z(0) @ qp.Z(1),
+            qp.Z(0) @ qp.Z(3),
+            qp.Z(1) @ qp.Z(3),
         ]
 
         squared_coeffs, squared_ops = _square_hamiltonian_terms(coeffs, ops)
 
         assert squared_coeffs == expected_coeffs
-        assert all(
-            op1.name == op2.name and op1.wires == op2.wires
-            for op1, op2 in zip(expected_ops, squared_ops)
-        )
+        assert squared_ops == expected_ops
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]

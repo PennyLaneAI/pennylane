@@ -325,12 +325,6 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category_ops(self, ops_lst):
-        """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        assert change_op_basis_op._queue_category == "_ops"
-
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
     """Test wrapper function."""
