@@ -52,8 +52,8 @@ class Operator2(ABC):
     The order in which names appear in ``wire_argnames`` determines the order in which
     their wires appear in ``op.wires`` (see :attr:`Operator2.wires`). For hybrid wire
     arguments, the contained :class:`~.Wires` leaves are ordered by pytree traversal
-    order. Wires contributed by :class:`~.Operator2` leaves found inside non-wire
-    ``hybrid_argnames`` are appended *after* all ``wire_argnames`` wires. The special
+    order. Wires contributed by arguments which are themselves :class:`~.Operator2` 
+    objects are appended *after* all ``wire_argnames`` wires. The special
     names ``"work_wires"`` and ``"work_wire"`` may be included in ``wire_argnames``
     but their values are excluded from ``op.wires``."""
 
@@ -87,15 +87,15 @@ class Operator2(ABC):
     .. note::
 
         An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
-        both; if **any** static arguments are not or cannot be lowered to the IR, then all
-        static arguments are assumed to not be lowerable.
+        both; if **any** static arguments cannot be lowered to the IR, then all static arguments
+        must be treated as not lowerable.
     """
 
     hybrid_argnames: ClassVar[tuple[str, ...]] = ()
     """The names of arguments that represent dynamic data wrapped in static
     structures (known as Pytrees). Names in this category must be disjoint from
     ``dynamic_argnames``, ``static_argnames``, and ``compilable_argnames``, but may
-    overlap with ``wire_argnames`` when wire arguments contain nested structures of
+    overlap with ``wire_argnames`` when those arguments contain nested structures of
     wires. This feature is opt-in, but is required for cases where arrays,
     operators, and wires are supplied within a collection."""
 
@@ -114,7 +114,7 @@ class Operator2(ABC):
     # ------------ Class variables set automatically ---------------
 
     _sig: ClassVar[Signature]
-    """The signature of the operator."""
+    """The signature of the operator. Internal use only."""
 
     # ------------ Instance variables set automatically ------------
 
