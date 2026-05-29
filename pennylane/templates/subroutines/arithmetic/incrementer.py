@@ -199,9 +199,9 @@ def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
 
 def _decompose_mcxs(wires, work_wires, control_wires=None):
     if control_wires is None:
-        wires = wires[::-1][len(work_wires) :]
+        wires = wires[::-1]
     else:
-        wires = control_wires + wires[: -len(work_wires)]
+        wires = control_wires + wires
         wires = wires[::-1]
 
     def _increment():
@@ -286,6 +286,9 @@ def _incrementer_decomposition(wires, work_wires, **_):
     if enabled():
         wires = array(wires, like="jax")
 
+    if len(work_wires) > 0:
+        wires = wires[: -len(work_wires)]
+
     _decompose_mcxs(wires, work_wires)
     X(wires[-len(work_wires) - 1])
 
@@ -319,6 +322,9 @@ def _controlled_incrementer_decomposition(
             array(work_wires, like="jax"),
             array(control_wires, like="jax"),
         )
+
+    if len(work_wires) > 0:
+        wires = wires[: -len(work_wires)]
 
     _decompose_mcxs(wires, work_wires, control_wires)
 
