@@ -197,6 +197,7 @@
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
