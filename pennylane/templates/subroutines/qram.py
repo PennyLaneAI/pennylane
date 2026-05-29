@@ -1209,7 +1209,7 @@ class FFQRAM(Operation):
         expected success probability: 0.125
 
         >>> print("obtained success probability:", p_reg1)  # doctest: +SKIP
-        obtained success probability: 0.095
+        obtained success probability: 0.128
 
         >>> print("expected states:", [addr + "1" for addr in addrs])
         expected states: ['0001', '0011']
@@ -1221,7 +1221,7 @@ class FFQRAM(Operation):
         expected amplitudes: [0.54772256 0.83666003]
 
         >>> print("obtained amplitudes:", obtained_amplitudes)  # doctest: +SKIP
-        obtained amplitudes: [0.54289671 0.83979947]
+        obtained amplitudes: [0.56596157 0.82443162]
     """
 
     grad_method = None
@@ -1252,22 +1252,20 @@ class FFQRAM(Operation):
         if num_entries > 2**num_address_wires:
             raise ValueError("The number of entries cannot exceed 2 ** num_address_wires.")
 
-        # hyperparameters should be hashable if we don't want to override `_flatten`
-        address_tuple = tuple(tuple(int(bit) for bit in row) for row in address)
-        self._address = math.array(address_tuple)
-
+        # hyperparameters should be hashable
         self._hyperparameters = {
-            "address": address_tuple,
+            "address": tuple(tuple(int(bit) for bit in addr_bits) for addr_bits in address),
         }
 
         super().__init__(amplitudes, wires=wires)
 
     @property
     def resource_params(self):
+        address = math.array(self._hyperparameters["address"])
         return {
-            "num_zero_bits": int(len(self._address.flatten()) - self._address.sum()),
+            "num_zero_bits": int((1 - address).sum()),
             "num_address_wires": len(self.wires) - 1,
-            "num_entries": len(self._address),
+            "num_entries": address.shape[0],
         }
 
     @property
