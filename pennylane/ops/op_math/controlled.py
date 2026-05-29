@@ -274,9 +274,12 @@ def _ctrl_transform(op, control, control_values, work_wires):
             _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         _ = [
-            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+            (
+                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                if not isinstance(op, (Allocate, Deallocate))
+                else qp.apply(op)
+            )
             for op in qscript.operations
-            if not isinstance(op, (Allocate, Deallocate))
         ]
 
         if flip_control_on_zero:
