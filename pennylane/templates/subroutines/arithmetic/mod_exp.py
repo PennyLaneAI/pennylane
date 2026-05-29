@@ -14,6 +14,7 @@
 """
 Contains the ModExp template.
 """
+
 import numpy as np
 
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -69,14 +70,14 @@ class ModExp(Operation):
         output_wires = [2, 3, 4]
         work_wires = [5, 6, 7, 8, 9]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires = x_wires)
-            qml.BasisEmbedding(b, wires = output_wires)
-            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
-            return qml.sample(wires = output_wires)
+            qp.BasisEmbedding(x, wires = x_wires)
+            qp.BasisEmbedding(b, wires = output_wires)
+            qp.ModExp(x_wires, output_wires, base, mod, work_wires)
+            return qp.sample(wires = output_wires)
 
     >>> print(circuit())
     [[0 0 1]]
@@ -117,7 +118,7 @@ class ModExp(Operation):
     resource_keys = {"num_x_wires", "num_output_wires", "mod", "num_work_wires"}
 
     def __init__(
-        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
+        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = ()
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         output_wires = Wires(output_wires)
@@ -156,7 +157,7 @@ class ModExp(Operation):
         base = base % mod
         self.hyperparameters["base"] = base
         self.hyperparameters["mod"] = mod
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -230,7 +231,7 @@ class ModExp(Operation):
 
         **Example**
 
-        >>> qml.ModExp.compute_decomposition(x_wires=[0,1], output_wires=[2,3,4], base=3, mod=8, work_wires=[5,6,7,8,9])
+        >>> qp.ModExp.compute_decomposition(x_wires=[0,1], output_wires=[2,3,4], base=3, mod=8, work_wires=[5,6,7,8,9])
         [ControlledSequence(Multiplier(wires=[2, 3, 4, 5, 6, 7, 8, 9]), control=[0, 1])]
         """
 

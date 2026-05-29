@@ -24,22 +24,24 @@ jobs:
   sync:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      pull-requests: write
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out the PennyLane repository
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: main
 
       # Sets up Python environment
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.17
           enable-cache: true  

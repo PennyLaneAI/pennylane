@@ -15,6 +15,7 @@
 Unit tests for the ``one_particle`` function of FermionOperator
 in openfermion.
 """
+
 import os
 
 import numpy as np

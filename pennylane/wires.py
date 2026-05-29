@@ -114,8 +114,8 @@ class Wires(Sequence):
     .. warning::
 
         In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
-        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+        For example, running ``qp.RX(1.1, qp.numpy.array(0))`` on a device initialized with ``wires=[0]``
+        will fail because ``qp.numpy.array(0)`` does not exist in the device's wire map.
 
     Args:
          wires (Any): the wire label(s)
@@ -768,3 +768,27 @@ class DynamicWire:
 
     def __repr__(self):
         return "<DynamicWire>"
+
+
+if jax_available:
+
+    class AbstractQubit(jax.core.AbstractValue):
+        """An aval representing an abstract qubit, usually coming from an allocated qubit"""
+
+        hash_value = hash("AbstractQubit")
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractQubit)
+
+        def __hash__(self):
+            return self.hash_value
+
+        def _iter(self):  # pragma: no cover
+            return
+
+
+def is_abstract_qubit(v):
+    """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
+    if not jax_available:
+        return False
+    return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)

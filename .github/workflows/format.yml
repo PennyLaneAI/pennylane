@@ -1,4 +1,6 @@
 name: Formatting check
+permissions:
+  contents: read
 on:
   merge_group:
     types:
@@ -33,15 +35,15 @@ jobs:
 
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.17
           enable-cache: true        

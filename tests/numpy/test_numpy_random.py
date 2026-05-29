@@ -15,6 +15,7 @@
 Tests for ``pennylane.numpy.random`` wrapping.  Arrays generated should have an
 additional property, ``requires_grad``, that marks them as trainable/ non-trainable.
 """
+
 # pylint: disable=too-few-public-methods
 
 import pytest

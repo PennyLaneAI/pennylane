@@ -24,14 +24,15 @@ def registers(register_dict):
 
     This function helps to group qubits and abstract away the finer details of running quantum
     algorithms. Register names and their total number of wires are typically known in advance,
-    but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
+    but managing the specific wire range for each register can be a challenge. The ``qp.registers()``
     function creates a dictionary that maps register names to :class:`~.Wires` objects. Moreover,
     it allows one to input a nested structure where registers contain sub-registers, as illustrated
     in the examples below.
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
-            positive integers indicating the number of qubits or nested dictionaries of more registers
+            non-negative integers indicating the number of qubits or nested dictionaries of
+            more registers
 
     Returns:
         dict: Dictionary where the keys are the names (str) of the registers, and the
@@ -39,14 +40,14 @@ def registers(register_dict):
 
     **Example**
 
-    Given flat input dictionary:
+    Given a flat input dictionary:
 
-    >>> qml.registers({"alice": 2, "bob": 3})
+    >>> qp.registers({"alice": 2, "bob": 3})
     {'alice': Wires([0, 1]), 'bob': Wires([2, 3, 4])}
 
-    Given nested input dictionary:
+    Given a nested input dictionary:
 
-    >>> wire_registers = qml.registers({"people": {"alice": 2, "bob": 1}})
+    >>> wire_registers = qp.registers({"people": {"alice": 2, "bob": 1}})
     >>> wire_registers
     {'alice': Wires([0, 1]), 'bob': Wires([2]), 'people': Wires([0, 1, 2])}
     >>> wire_registers['bob']
@@ -58,20 +59,20 @@ def registers(register_dict):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
-        reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
+        dev = qp.device("default.qubit")
+        reg = qp.registers({"aux": 1, "phi": 5, "psi": 5})
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for state in ["phi", "psi"]:
-                 qml.BasisState([1, 1, 0, 0, 0], reg[state])
+                 qp.BasisState([1, 1, 0, 0, 0], reg[state])
 
-            qml.Hadamard(reg["aux"])
+            qp.Hadamard(reg["aux"])
             for i in range(len(reg["phi"])):
-                qml.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
-            qml.Hadamard(reg["aux"])
+                qp.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
+            qp.Hadamard(reg["aux"])
 
-            return qml.expval(qml.Z(wires=reg["aux"]))
+            return qp.expval(qp.Z(wires=reg["aux"]))
 
     >>> print(circuit())
     0.999...
@@ -107,10 +108,10 @@ def registers(register_dict):
                 )
                 _start_wire_index = wire_vals[-1] + 1
             elif isinstance(register_wires, int):
-                if register_wires < 1:
+                if register_wires < 0:
                     raise ValueError(
-                        f"Expected '{register_wires}' to be greater than 0. Please ensure that "
-                        "the number of wires for the register is a positive integer"
+                        f"Expected '{register_wires}' to be larger than or equal to 0. Please "
+                        "ensure that the number of wires for the register is a non-negative integer"
                     )
                 all_reg[register_name] = Wires(
                     range(_start_wire_index, register_wires + _start_wire_index)

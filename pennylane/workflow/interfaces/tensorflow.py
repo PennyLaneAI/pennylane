@@ -98,6 +98,7 @@ As you can see, we got 2 calls to ``vjp`` instead of 1, and the calls have ident
 to have to perform this extra call.
 
 """
+
 # pylint: disable=unused-argument
 import inspect
 import logging
@@ -106,7 +107,7 @@ import warnings
 import tensorflow as tf
 from tensorflow.python.eager import context
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import Shots
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ def set_parameters_on_copy(tapes, params):
 
 def _get_parameters_dtype(parameters):
     for p in parameters:
-        if qml.math.get_interface(p) == "tensorflow":
+        if qp.math.get_interface(p) == "tensorflow":
             return p.dtype
     return None
 
@@ -139,13 +140,13 @@ def _to_tensors(x, dtype=None, complex_safe=False):
     structure of TF tensors
     """
     if x is None or isinstance(x, dict):
-        # qml.counts returns a dict (list of dicts when broadcasted), can't form a valid tensor
+        # qp.counts returns a dict (list of dicts when broadcasted), can't form a valid tensor
         return x
 
     if isinstance(x, (tuple, list)):
         return tuple(_to_tensors(x_, dtype=dtype, complex_safe=complex_safe) for x_ in x)
 
-    if complex_safe and "complex" in qml.math.get_dtype_name(x):
+    if complex_safe and "complex" in qp.math.get_dtype_name(x):
         return tf.convert_to_tensor(x, dtype=_complex_dtype_map.get(dtype, dtype))
     return tf.convert_to_tensor(x, dtype=dtype)
 
@@ -214,7 +215,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qp.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
@@ -223,7 +224,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
+    numpy_tapes, _ = qp.transforms.convert_to_numpy_parameters(tapes)
 
     tapes = tuple(tapes)
 
@@ -287,8 +288,8 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             if isinstance(vjps, tuple):
                 extended_vjps = []
                 for vjp in vjps:
-                    if vjp is not None and 0 not in qml.math.shape(vjp):
-                        extended_vjps.extend(qml.math.unstack(vjp))
+                    if vjp is not None and 0 not in qp.math.shape(vjp):
+                        extended_vjps.extend(qp.math.unstack(vjp))
                 vjps = tuple(extended_vjps)
 
             variables = tfkwargs.get("variables")

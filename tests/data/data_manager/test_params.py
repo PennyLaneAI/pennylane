@@ -15,7 +15,6 @@
 Tests for the :class:`pennylane.data.data_manager.params.ParamArg` class.
 """
 
-
 import pytest
 
 from pennylane.data.data_manager.params import (

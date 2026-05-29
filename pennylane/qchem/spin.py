@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for computing the spin observables.
 """
+
 import numpy as np
 
 from pennylane.fermi import FermiSentence, FermiWord
@@ -190,7 +191,7 @@ def spin2(electrons, orbitals):
                 ): i[4]
             }
         )
-    sentence.simplify()
+    sentence.prune()
 
     return qubit_observable(sentence)
 
@@ -252,6 +253,6 @@ def spinz(orbitals):
                 ): i[2]
             }
         )
-    sentence.simplify()
+    sentence.prune()
 
     return qubit_observable(sentence)

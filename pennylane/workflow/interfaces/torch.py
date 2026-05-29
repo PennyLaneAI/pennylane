@@ -59,6 +59,7 @@ modifies the output of ``forward`` and the input to ``backward`` to unpack and r
 result object.
 
 """
+
 # pylint: disable=protected-access
 import inspect
 import logging
@@ -67,7 +68,7 @@ import numpy as np
 import torch
 import torch.utils._pytree as pytree
 
-import pennylane as qml
+import pennylane as qp
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -216,7 +217,7 @@ def execute(tapes, execute_fn, jpc, device=None):
             tapes,
             (
                 f"\n{inspect.getsource(execute_fn)}\n"
-                if logger.isEnabledFor(qml.logging.TRACE)
+                if logger.isEnabledFor(qp.logging.TRACE)
                 else execute_fn
             ),
             jpc,
@@ -226,7 +227,7 @@ def execute(tapes, execute_fn, jpc, device=None):
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qp.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
     kwargs = {

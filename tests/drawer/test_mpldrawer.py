@@ -17,6 +17,7 @@ Tests the MPLDrawer.
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
+
 # pylint: disable=protected-access,wrong-import-position
 
 import warnings

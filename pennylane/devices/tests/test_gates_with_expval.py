@@ -15,6 +15,7 @@
 Tests that application of gates and state preparations works correctly on a
 device by checking expectation values.
 """
+
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 
@@ -24,7 +25,7 @@ import numpy as np
 import pytest
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -42,17 +43,17 @@ class TestGatesQubitExpval:
         "par,wires,expected_output",
         [([1, 1], [0, 1], [-1, -1]), ([1], [0], [-1, 1]), ([1], [1], [1, -1])],
     )
-    def test_basis_state_2_qubit_subset(self, device, tol, par, wires, expected_output):
+    def test_basis_state_2_qubit_subset(self, device, tol, par, wires, expected_output, shots):
         """Tests qubit basis state preparation on subsets of qubits"""
         n_wires = 2
         dev = device(n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.BasisState(np.array(par), wires=wires)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            qp.BasisState(np.array(par), wires=wires)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.allclose(circuit(), expected_output, atol=tol)
 
     # This test checks three Z expvals
     @pytest.mark.parametrize(
@@ -71,7 +72,7 @@ class TestGatesQubitExpval:
             ([0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)], [0, 1], [0.0, -1.0, 1.0]),
         ],
     )
-    def test_state_vector_3_qubit_subset(self, device, tol, par, wires, expected_output):
+    def test_state_vector_3_qubit_subset(self, device, tol, par, wires, expected_output, shots):
         """Tests qubit state vector preparation on subsets of 3 qubits"""
 
         n_wires = 3
@@ -79,12 +80,12 @@ class TestGatesQubitExpval:
 
         par = np.array(par)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.StatePrep(par, wires=wires)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+            qp.StatePrep(par, wires=wires)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.expval(qp.Z(2))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.allclose(circuit(), expected_output, atol=tol)
 
     # This test uses initial state |0> and checks one Z expval
     @pytest.mark.parametrize(
@@ -133,20 +134,20 @@ class TestGatesQubitExpval:
         ],
     )
     def test_supported_gate_single_wire_with_parameters(
-        self, device, tol, name, par, expected_output
+        self, device, tol, name, par, expected_output, shots
     ):
         """Tests supported parametrized gates that act on a single wire"""
 
         n_wires = 1
         dev = device(n_wires)
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             op(*par, wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.isclose(circuit(), expected_output, atol=tol)
 
     # This test uses initial state 1/2|00>+sqrt(3)/2|11> and checks two Z expvals
     @pytest.mark.parametrize(
@@ -201,21 +202,21 @@ class TestGatesQubitExpval:
         ],
     )
     def test_supported_gate_two_wires_with_parameters(
-        self, device, tol, name, par, expected_output
+        self, device, tol, name, par, expected_output, shots
     ):
         """Tests supported parametrized gates that act on two wires"""
 
         n_wires = 2
         dev = device(n_wires)
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qp.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(*par, wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.allclose(circuit(), expected_output, atol=tol)
 
     # This test uses initial state |0> and checks one Z expval
     @pytest.mark.parametrize(
@@ -227,19 +228,21 @@ class TestGatesQubitExpval:
             ("Hadamard", 0),
         ],
     )
-    def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
+    def test_supported_gate_single_wire_no_parameters(
+        self, device, tol, name, expected_output, shots
+    ):
         """Tests supported non-parametrized gates that act on a single wire"""
         n_wires = 1
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             op(wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.isclose(circuit(), expected_output, atol=tol)
 
     # This test uses initial state |Phi+> and checks two Z expvals
     @pytest.mark.parametrize(
@@ -250,22 +253,24 @@ class TestGatesQubitExpval:
             ("CZ", [-1 / 2, -1 / 2]),
         ],
     )
-    def test_supported_gate_two_wires_no_parameters(self, device, tol, name, expected_output):
+    def test_supported_gate_two_wires_no_parameters(
+        self, device, tol, name, expected_output, shots
+    ):
         """Tests supported parametrized gates that act on two wires"""
         n_wires = 2
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
-        if isinstance(dev, qml.devices.LegacyDevice) and not dev.supports_operation(op):
+        op = getattr(qp.ops, name)
+        if isinstance(dev, qp.devices.LegacyDevice) and not dev.supports_operation(op):
             pytest.skip("operation not supported")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qp.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.allclose(circuit(), expected_output, atol=tol)
 
     @pytest.mark.parametrize(
         "name,expected_output",
@@ -273,17 +278,19 @@ class TestGatesQubitExpval:
             ("CSWAP", [-1, -1, 1]),
         ],
     )
-    def test_supported_gate_three_wires_no_parameters(self, device, tol, name, expected_output):
+    def test_supported_gate_three_wires_no_parameters(
+        self, device, tol, name, expected_output, shots
+    ):
         """Tests supported non-parametrized gates that act on three wires"""
         n_wires = 3
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
+            qp.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
             op(wires=[0, 1, 2])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.expval(qp.Z(2))
 
-        assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
+        assert np.allclose(circuit(), expected_output, atol=tol)

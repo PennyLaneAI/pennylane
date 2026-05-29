@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.state measurement.
+This module contains the qp.state measurement.
 """
+
 from collections.abc import Sequence
 
 from pennylane import math
@@ -31,14 +32,12 @@ class StateMP(StateMeasurement):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "state"
 
-    def __init__(self, wires: Wires | None = None, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires | None = None):
+        super().__init__(wires=wires)
 
     @classmethod
     def _abstract_eval(
@@ -116,12 +115,10 @@ class DensityMatrixMP(StateMP):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
-    def __init__(self, wires: Wires, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: Wires):
+        super().__init__(wires=wires)
 
     @classmethod
     def _abstract_eval(
@@ -141,7 +138,7 @@ class DensityMatrixMP(StateMP):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not math.is_abstract(state) and math.any(math.iscomplex(state)):
@@ -150,7 +147,7 @@ class DensityMatrixMP(StateMP):
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
@@ -173,14 +170,14 @@ def state() -> StateMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=1)
-            return qml.state()
+            qp.Hadamard(wires=1)
+            return qp.state()
 
     Executing this QNode:
 
@@ -199,20 +196,21 @@ def state() -> StateMP:
     .. details::
         :title: Usage Details
 
-        A QNode with the ``qml.state`` output can be used in a cost function which
+        A QNode with the ``qp.state`` output can be used in a cost function which
         is then differentiated:
 
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> @qml.qnode(dev, diff_method="backprop")
+        >>> dev = qp.device('default.qubit', wires=2)
+        >>> @qp.qnode(dev, diff_method="backprop")
         ... def test(x):
-        ...     qml.RY(x, wires=[0])
-        ...     return qml.state()
+        ...     qp.RY(x, wires=[0])
+        ...     return qp.state()
         >>> def cost(x):
         ...     return np.abs(test(x)[0])
+        >>> x = pnp.array(0.54, requires_grad=True)
         >>> cost(x)
-        0.9987502603949663
-        >>> qml.grad(cost)(x)
-        tensor(-0.02498958, requires_grad=True)
+        tensor(0.963..., requires_grad=True)
+        >>> qp.grad(cost)(x)
+        tensor(-0.13..., requires_grad=True)
     """
     return StateMP()
 
@@ -233,21 +231,21 @@ def density_matrix(wires) -> DensityMatrixMP:
 
     **Example:**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Y(0)
-            qml.Hadamard(wires=1)
-            return qml.density_matrix([0])
+            qp.Y(0)
+            qp.Hadamard(wires=1)
+            return qp.density_matrix([0])
 
     Executing this QNode:
 
     >>> circuit()
-    array([[0.+0.j 0.+0.j]
-        [0.+0.j 1.+0.j]])
+    array([[0.+0.j, 0.+0.j],
+           [0.+0.j, 1.+0.j]])
 
     The returned matrix is the reduced density matrix, where system 1 is traced out.
 

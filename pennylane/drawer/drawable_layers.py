@@ -15,8 +15,19 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from functools import singledispatch
+
 from pennylane.measurements import MeasurementProcess
-from pennylane.ops import Conditional, GlobalPhase, Identity, MidMeasure, PauliMeasure
+from pennylane.ops import (
+    Conditional,
+    GlobalPhase,
+    Identity,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
+from pennylane.pytrees import flatten
+from pennylane.templates import SubroutineOp
 
 from .utils import default_wire_map, unwrap_controls
 
@@ -78,30 +89,14 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
     )
 
 
+# pylint: disable=unused-argument
+@singledispatch
 def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
-    if isinstance(op, (MidMeasure, PauliMeasure)):
-        mapped_wires = [wire_map[wire] for wire in op.wires]
-
-        if op in bit_map:
-            min_wire = min(mapped_wires)
-            max_wire = max(wire_map.values())
-            return set(range(min_wire, max_wire + 1))
-
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        return set(range(min_wire, max_wire + 1))
-
-    if isinstance(op, Conditional):
-        mapped_wires = [wire_map[wire] for wire in op.base.wires]
-        min_wire = min(mapped_wires)
-        max_wire = max(wire_map.values())
-        return set(range(min_wire, max_wire + 1))
-
     *_, base = unwrap_controls(op)
 
     if len(op.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
-        # if no wires, then it acts on all wires. For example qml.state and qml.sample or
+        # if no wires, then it acts on all wires. For example qp.state and qp.sample or
         # (controlled) GlobalPhase or (controlled) Identity
         mapped_wires = set(wire_map.values())
         return mapped_wires
@@ -111,6 +106,44 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
     min_wire = min(mapped_wires)
     max_wire = max(mapped_wires)
 
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _occupied_subroutine_op_wires(op: SubroutineOp, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    mvs = (v for v in flatten(op.output)[0] if isinstance(v, MeasurementValue))
+    if any(m in bit_map for mv in mvs for m in mv.measurements):
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register(MidMeasure)
+@_get_op_occupied_wires.register(PauliMeasure)
+def _handle_mid_measure(op: MidMeasure | PauliMeasure, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.wires]
+
+    if op in bit_map:
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+    return set(range(min_wire, max_wire + 1))
+
+
+@_get_op_occupied_wires.register
+def _handle_cond(op: Conditional, wire_map, bit_map):
+    mapped_wires = [wire_map[wire] for wire in op.base.wires]
+    min_wire = min(mapped_wires)
+    max_wire = max(wire_map.values())
     return set(range(min_wire, max_wire + 1))
 
 
@@ -138,10 +171,10 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     From the start, the function cares about the locations the operation altered
     during a drawing, not just the wires the operation acts on. An "occupied" wire
     refers to a wire that will be altered in the drawing of an operation.
-    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
+    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qp.CNOT(wires=(0,2))``
     will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
-    ``qml.X(1)``, will not be pushed to the left
-    of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
+    ``qp.X(1)``, will not be pushed to the left
+    of the ``qp.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
     ordering and makes placement more intuitive.
 
     The ``wire_order`` keyword argument used by user facing functions like :func:`~.draw` maps position

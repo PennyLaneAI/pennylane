@@ -524,7 +524,7 @@ class SelectTHC(ResourceOperator):
 
 
 class SelectPauli(ResourceOperator):
-    r"""Resource class for the ``Select`` opreation used with a Hamiltonian expressed as a linear
+    r"""Resource class for the ``Select`` operation used with a Hamiltonian expressed as a linear
     combination of unitaries (LCU) where each unitary is a Pauli word.
 
     Args:

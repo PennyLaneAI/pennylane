@@ -28,7 +28,7 @@ import numpy as np
 
 from pennylane import capture, math, ops
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -41,7 +41,6 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -245,7 +244,7 @@ def _conditional_broadcast_expand(tape):
 def no_counts(tape):
     """Throws an error on counts measurements."""
     if any(isinstance(mp, CountsMP) for mp in tape.measurements):
-        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qp.counts.")
     return (tape,), null_postprocessing
 
 
@@ -385,24 +384,26 @@ class DefaultQubit(Device):
         max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
-            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+            issue, say using JAX, or Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
 
     .. code-block:: python
 
+        import pennylane as qp
+
         n_layers = 5
         n_wires = 10
         num_qscripts = 5
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
-        rng = qml.numpy.random.default_rng(seed=42)
+        shape = qp.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        rng = qp.numpy.random.default_rng(seed=42)
 
         qscripts = []
         for i in range(num_qscripts):
             params = rng.random(shape)
-            op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+            op = qp.StronglyEntanglingLayers(params, wires=range(n_wires))
+            qs = qp.tape.QuantumScript([op], [qp.expval(qp.Z(0))])
             qscripts.append(qs)
 
     >>> dev = DefaultQubit()
@@ -410,11 +411,11 @@ class DefaultQubit(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [-0.0006888975950537501,
-    0.025576307134457577,
-    -0.0038567269892757494,
-    0.1339705146860149,
-    -0.03780669772690448]
+    (tensor(-0.0006889, requires_grad=True),
+    tensor(0.02557631, requires_grad=True),
+    tensor(-0.00385673, requires_grad=True),
+    tensor(0.13397051, requires_grad=True),
+    tensor(-0.0378067, requires_grad=True))
 
     This device currently supports backpropagation derivatives:
 
@@ -430,16 +431,16 @@ class DefaultQubit(Device):
 
         @jax.jit
         def f(x):
-            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+            qs = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.Z(0))])
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
-            return post_processing_fn(results)
+            return post_processing_fn(results)[0]
 
     >>> f(jax.numpy.array(1.2))
-    DeviceArray(0.36235774, dtype=float32)
+    Array(0.362..., dtype=float64)
     >>> jax.grad(f)(jax.numpy.array(1.2))
-    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+    Array(-0.932..., dtype=float64, weak_type=True)
 
     .. details::
         :title: Tracking
@@ -474,6 +475,11 @@ class DefaultQubit(Device):
         >>> new_batch, post_processing_fn = program(qscripts)
         >>> results = dev.execute(new_batch, execution_config=execution_config)
         >>> post_processing_fn(results)
+        (np.float64(-0.0006888975950538057),
+        np.float64(0.025576307134457466),
+        np.float64(-0.0038567269892758604),
+        np.float64(0.13397051468601484),
+        np.float64(-0.03780669772690465))
 
         If you monitor your CPU usage, you should see 5 new Python processes pop up to
         crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
@@ -503,7 +509,7 @@ class DefaultQubit(Device):
             if multiprocessing fails on macOS in your Jupyter notebook environment, try
             restarting the session and adding the following at the beginning of the file:
 
-            .. code-block:: python
+            .. code-block:: py
 
                 import multiprocessing
                 multiprocessing.set_start_method("fork")
@@ -853,7 +859,7 @@ class DefaultQubit(Device):
                         "postselect_mode": execution_config.mcm_config.postselect_mode,
                     },
                 )
-                for c, _key in zip(circuits, prng_keys)
+                for c, _key in zip(circuits, prng_keys, strict=True)
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -865,7 +871,7 @@ class DefaultQubit(Device):
                 "mcm_method": execution_config.mcm_config.mcm_method,
                 "postselect_mode": execution_config.mcm_config.postselect_mode,
             }
-            for _rng, _key in zip(seeds, prng_keys)
+            for _rng, _key in zip(seeds, prng_keys, strict=True)
         ]
 
         with execution_config.executor_backend(max_workers=max_workers) as executor:
@@ -923,7 +929,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     @debug_logger
     def supports_jvp(
@@ -956,7 +962,9 @@ class DefaultQubit(Device):
             execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
+            return tuple(
+                adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents, strict=True)
+            )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with execution_config.executor_backend(max_workers=max_workers) as executor:
@@ -981,7 +989,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_jvp_wrapper(c, t, debugger=self._debugger)
-                for c, t in zip(circuits, tangents)
+                for c, t in zip(circuits, tangents, strict=True)
             )
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -995,7 +1003,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     @debug_logger
     def supports_vjp(
@@ -1075,7 +1083,7 @@ class DefaultQubit(Device):
 
             return tuple(
                 adjoint_vjp(circuit, cots, state=_state(circuit))
-                for circuit, cots in zip(circuits, cotangents)
+                for circuit, cots in zip(circuits, cotangents, strict=True)
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -1101,7 +1109,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_vjp_wrapper(c, t, debugger=self._debugger)
-                for c, t in zip(circuits, cotangents)
+                for c, t in zip(circuits, cotangents, strict=True)
             )
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -1115,7 +1123,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     # pylint: disable=import-outside-toplevel
     @debug_logger

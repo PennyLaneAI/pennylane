@@ -15,6 +15,7 @@
 Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
+
 from collections.abc import Callable
 from contextlib import contextmanager
 
@@ -87,8 +88,8 @@ def pause():
     """Temporarily stop program capture.
 
     >>> def f():
-    ...     with qml.capture.pause():
-    ...         qml.X(0)
+    ...     with qp.capture.pause():
+    ...         qp.X(0)
     ...     return 2
     >>> jax.make_jaxpr(f)()
     { lambda ; . let  in (2,) }

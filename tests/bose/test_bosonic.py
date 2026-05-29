@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Bosonic representation classes."""
+
 import pickle
 from copy import copy, deepcopy
 
@@ -20,6 +21,7 @@ import pytest
 
 from pennylane import numpy as pnp
 from pennylane.bose import BoseSentence, BoseWord
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 bw1 = BoseWord({(0, 0): "+", (1, 1): "-"})
 bw1_dag = BoseWord({(0, 1): "+", (1, 0): "-"})
@@ -819,11 +821,19 @@ class TestBoseSentence:
         expected_simplified_bs1 = BoseSentence({bw2: 0.05, bw3: 1})
         expected_simplified_bs2 = BoseSentence({bw3: 1})
 
-        un_simplified_bs.simplify()
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify()
+
         assert un_simplified_bs == expected_simplified_bs0  # default tol = 1e-8
-        un_simplified_bs.simplify(tol=1e-2)
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify(tol=1e-2)
+
         assert un_simplified_bs == expected_simplified_bs1
-        un_simplified_bs.simplify(tol=1e-1)
+
+        with pytest.warns(PennyLaneDeprecationWarning):
+            un_simplified_bs.simplify(tol=1e-1)
+
         assert un_simplified_bs == expected_simplified_bs2
 
     def test_pickling(self):
@@ -895,7 +905,7 @@ class TestBoseSentenceArithmetic:
         BoseSentences is produced."""
 
         simplified_product = f1 * f2
-        simplified_product.simplify()
+        simplified_product.prune()
 
         assert simplified_product == result
 
@@ -964,7 +974,7 @@ class TestBoseSentenceArithmetic:
         """Test that the correct result of addition is produced for two BoseSentences."""
 
         simplified_product = f1 + f2
-        simplified_product.simplify()
+        simplified_product.prune()
 
         assert simplified_product == result
 
@@ -1053,7 +1063,7 @@ class TestBoseSentenceArithmetic:
         subtracted from a BoseSentence"""
 
         simplified_diff = bs - bw
-        simplified_diff.simplify()
+        simplified_diff.prune()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = BoseSentence(
@@ -1094,7 +1104,7 @@ class TestBoseSentenceArithmetic:
         subtracted from a BoseSentence"""
 
         simplified_diff = bs - c
-        simplified_diff.simplify()
+        simplified_diff.prune()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = BoseSentence(
@@ -1130,7 +1140,7 @@ class TestBoseSentenceArithmetic:
         subtracted from a BoseSentence"""
 
         simplified_diff = c - bs
-        simplified_diff.simplify()
+        simplified_diff.prune()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = BoseSentence(
@@ -1150,7 +1160,7 @@ class TestBoseSentenceArithmetic:
         """Test that the correct result of subtraction is produced for two BoseSentences."""
 
         simplified_product = f1 - f2
-        simplified_product.simplify()
+        simplified_product.prune()
 
         assert simplified_product == result
 

@@ -15,7 +15,6 @@
 Tests for the ``DatasetMolecule`` attribute type.
 """
 
-
 import numpy as np
 import pytest
 

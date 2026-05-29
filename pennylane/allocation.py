@@ -14,6 +14,7 @@
 """
 This module contains the commands for allocating and deallocating wires dynamically.
 """
+
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Literal
@@ -25,10 +26,9 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
-
     # pylint: disable=ungrouped-imports
-    from pennylane.capture import QmlPrimitive
+    from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False
@@ -45,7 +45,7 @@ if not has_jax:
     allocate_prim = None
     deallocate_prim = None
 else:
-    allocate_prim = QmlPrimitive("allocate")
+    allocate_prim = QpPrimitive("allocate")
     allocate_prim.multiple_results = True
 
     @allocate_prim.def_impl
@@ -59,9 +59,9 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [AbstractQubit() for _ in range(num_wires)]
 
-    deallocate_prim = QmlPrimitive("deallocate")
+    deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True
 
     @deallocate_prim.def_impl
@@ -140,24 +140,24 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.H(0)
+            qp.H(0)
 
-            wire = qml.allocate(1, state="zero", restored=True)[0]
-            qml.CNOT((0, wire))
-            qml.CNOT((0, wire))
-            qml.deallocate(wire)
+            wire = qp.allocate(1, state="zero", restored=True)[0]
+            qp.CNOT((0, wire))
+            qp.CNOT((0, wire))
+            qp.deallocate(wire)
 
-            new_wires = qml.allocate(2, state="zero", restored=True)
-            qml.SWAP((new_wires[1], new_wires[0]))
-            qml.deallocate(new_wires)
+            new_wires = qp.allocate(2, state="zero", restored=True)
+            qp.SWAP((new_wires[1], new_wires[0]))
+            qp.deallocate(new_wires)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
                 0: ──H────────╭●────╭●──────────────────────┤  <Z>
     <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤
     <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤
@@ -169,7 +169,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     use it as one of the wires requested in the second allocation, resulting in a total of three wires
     being required from the device, including two dynamically allocated wires:
 
-    >>> print(qml.draw(circuit, level="device")())
+    >>> print(qp.draw(circuit, level="device")())
     0: ──H─╭●─╭●───────┤  <Z>
     1: ────╰X─╰X─╭SWAP─┤
     2: ──────────╰SWAP─┤
@@ -243,7 +243,7 @@ def allocate(
     Using ``allocate`` to dynamically request wires returns an array of wires
     (``DynamicRegister``) that can be indexed into:
 
-    >>> wires = qml.allocate(3)
+    >>> wires = qp.allocate(3)
     >>> wires
     <DynamicRegister: size=3>
     >>> wires[1]
@@ -251,7 +251,7 @@ def allocate(
 
     Note that allocating just one wire still requires indexing into:
 
-    >>> wire = qml.allocate(1)
+    >>> wire = qp.allocate(1)
     >>> wire
     <DynamicRegister: size=1>
     >>> wire[0]
@@ -262,20 +262,20 @@ def allocate(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.H(0)
-            qml.H(1)
+            qp.H(0)
+            qp.H(1)
 
-            with qml.allocate(2, state="zero", restored=False) as new_wires:
-                qml.H(new_wires[0])
-                qml.H(new_wires[1])
+            with qp.allocate(2, state="zero", restored=False) as new_wires:
+                qp.H(new_wires[0])
+                qp.H(new_wires[1])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
                 0: ──H───────────────────────┤  <Z>
                 1: ──H───────────────────────┤
     <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
@@ -286,10 +286,10 @@ def allocate(
 
     .. code-block:: python
 
-        new_wires = qml.allocate(2, state="zero", restored=False)
-        qml.H(new_wires[0])
-        qml.H(new_wires[1])
-        qml.deallocate(new_wires)
+        new_wires = qp.allocate(2, state="zero", restored=False)
+        qp.H(new_wires[0])
+        qp.H(new_wires[1])
+        qp.deallocate(new_wires)
 
 
     .. details::
@@ -304,20 +304,20 @@ def allocate(
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
+            @qp.qnode(qp.device("default.qubit"), mcm_method="tree-traversal")
             def circuit():
-                qml.H(0)
+                qp.H(0)
 
                 for i in range(2):
-                    with qml.allocate(1, state="zero", restored=True) as new_qubit1:
-                        with qml.allocate(1, state="any", restored=False) as new_qubit2:
-                            m0 = qml.measure(new_qubit1[0], reset=True)
-                            qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
-                            qml.CNOT((0, new_qubit2[0]))
+                    with qp.allocate(1, state="zero", restored=True) as new_qubit1:
+                        with qp.allocate(1, state="any", restored=False) as new_qubit2:
+                            m0 = qp.measure(new_qubit1[0], reset=True)
+                            qp.cond(m0 == 1, qp.Z)(new_qubit2[0])
+                            qp.CNOT((0, new_qubit2[0]))
 
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
                     0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
         <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
         <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
@@ -331,7 +331,7 @@ def allocate(
         is due to the fact that ``new_qubit1`` and ``new_qubit2`` can both be reused after they've been
         deallocated in the first iteration of the ``for`` loop:
 
-        >>> print(qml.draw(circuit, level="device")())
+        >>> print(qp.draw(circuit, level="device")())
         0: ──H───────────╭●──────────────╭●─┤  <Z>
         1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤
         2: ───║────────Z─╰X───║────────Z─╰X─┤
@@ -345,21 +345,21 @@ def allocate(
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"), mcm_method="device")
+            @qp.qnode(qp.device("default.qubit"), mcm_method="device")
             def circuit():
-                with qml.allocate(1, state="zero", restored=False) as [wire]:
-                    qml.H(wire)
+                with qp.allocate(1, state="zero", restored=False) as [wire]:
+                    qp.H(wire)
 
-                with qml.allocate(1, state="zero", restored=False) as [wire]:
-                    qml.X(wire)
+                with qp.allocate(1, state="zero", restored=False) as [wire]:
+                    qp.X(wire)
 
-                return qml.expval(qml.Z(0))
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit, level="user")())
+        >>> print(qp.draw(circuit, level="user")())
         <DynamicWire>: ──Allocate──H──Deallocate─┤
         <DynamicWire>: ──Allocate──X──Deallocate─┤
                     0: ──────────────────────────┤  <Z>
-        >>> print(qml.draw(circuit, level="device")())
+        >>> print(qp.draw(circuit, level="device")())
         0: ─────────────────┤  <Z>
         1: ──H──┤↗│  │0⟩──X─┤
     """

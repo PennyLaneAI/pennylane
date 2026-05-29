@@ -38,6 +38,7 @@ This module contains functions that act on operators and tapes.
     ~comm
 
 """
+
 from .bind_new_parameters import bind_new_parameters
 from .equal import equal, assert_equal
 from .assert_valid import assert_valid

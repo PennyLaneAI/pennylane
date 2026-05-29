@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module provides classes for algebraic prerequisites for Clifford+T decompositions"""
 
-
 from __future__ import annotations
 
 import math
@@ -170,7 +169,7 @@ class ZSqrtTwo:
         ys = (math.isqrt((self.a - r) // 4), math.isqrt((self.a + r) // 4))
 
         res = None
-        for x, y in zip(xs, ys):
+        for x, y in zip(xs, ys, strict=True):
             zrt = ZSqrtTwo(x, y)
             if zrt * zrt == self:
                 res = zrt
@@ -627,7 +626,7 @@ class SO3Matrix:
         return res
 
     def __eq__(self: SO3Matrix, other: SO3Matrix) -> bool:
-        return self.k == other.k and all(x == y for (x, y) in zip(self.flatten, other.flatten))
+        return self.k == other.k and self.flatten == other.flatten
 
     @property
     def flatten(self: SO3Matrix) -> list[ZOmega]:

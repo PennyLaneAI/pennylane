@@ -15,6 +15,7 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+
 import warnings
 from functools import partial
 
@@ -122,7 +123,9 @@ def _split_evol_ops(op, ob, tau):
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
             eigenvalues = eigvals(ob)
-        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigenvalues))))
+        coeffs, shifts = zip(
+            *generate_shift_rule(eigvals_to_frequencies(tuple(eigenvalues))), strict=True
+        )
         insert_ops = [exp(dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
@@ -145,7 +148,7 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
 
     Args:
         tape (QuantumTape): original tape
-        split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
+        split_evolve_ops (tuple[list[qp.Operation]]): The time-split evolution operations as
             created by ``_split_evol_ops``. For each group of operations, a new tape
             is created.
         op_idx (int): index of the operation to replace within the tape
@@ -237,7 +240,7 @@ def _parshift_and_integrate(
             # and include the rescaling factor from the Monte Carlo integral and from global
             # prefactors of Pauli word generators.
             diff_per_term = jnp.array(
-                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs, strict=True)]
             )
             return math.sum(diff_per_term, axis=0) * int_prefactor
 
@@ -270,13 +273,14 @@ def _parshift_and_integrate(
 
     nesting_layers = (not single_measure) + has_partitioned_shots
     if nesting_layers == 1:
-        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results, strict=True))
     if nesting_layers == 0:
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
     return tuple(
-        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r, strict=True))
+        for r in zip(*results, strict=True)
     )
 
 
@@ -349,7 +353,7 @@ def stoch_pulse_grad(
     Returns:
         tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -389,20 +393,20 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.Z(0) @ qml.Z(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
-        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qp.Z(0) @ qp.Z(1)
+        Y_plus_X = qp.dot([1/5, 3/5], [qp.Y(0), qp.X(1)])
+        H = 0.5 * qp.X(0) + qp.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
-            qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.Y(1))
+            qp.evolve(H)(params, (0.2, 0.4))
+            return qp.expval(qp.Y(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        qnode = qp.QNode(ansatz, dev, interface="jax", diff_method=qp.gradients.stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
@@ -426,11 +430,11 @@ def stoch_pulse_grad(
 
     .. code-block:: python
 
-        qnode = qml.QNode(
+        qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
         )
@@ -446,11 +450,11 @@ def stoch_pulse_grad(
     .. code-block:: python
 
         from time import process_time
-        faster_grad_qnode = qml.QNode(
+        faster_grad_qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
             use_broadcasting=True, # Activate broadcasting

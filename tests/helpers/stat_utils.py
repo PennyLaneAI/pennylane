@@ -14,6 +14,7 @@
 """
 Helper functions for testing stochastic processes.
 """
+
 import numpy as np
 from scipy.stats import fisher_exact
 

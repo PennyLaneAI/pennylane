@@ -34,30 +34,20 @@ def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x):
-            qml.Hadamard(0)
-            qml.RZ(x, 0)
-            qml.PhaseShift(x * 0.2, 0)
-            return qml.state()
+            qp.Hadamard(0)
+            qp.RZ(x, 0)
+            qp.PhaseShift(x * 0.2, 0)
+            return qp.state()
 
-        gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4)
-        qjitted_circuit = qml.qjit(gridsynth_circuit)
+        gridsynth_circuit = qp.transforms.gridsynth(circuit, epsilon=1e-4)
+        qjitted_circuit = qp.qjit(gridsynth_circuit)
 
     >>> circuit(1.1) # doctest: +SKIP
     [0.60282587-0.36959568j 0.5076395 +0.49224195j]
     >>> qjitted_circuit(1.1) # doctest: +SKIP
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
-
-
-    .. warning::
-
-        Using an ``epsilon`` value smaller than ``1e-7`` may lead to inaccurate results or errors,
-        due to potential integer overflow in the solver.
-
-    .. warning::
-
-        Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     """
     if not isinstance(ppr_basis, bool):

@@ -108,14 +108,14 @@ class FermionicSingleExcitation(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=3)
+            dev = qp.device('default.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weight, wires=None):
-                qml.FermionicSingleExcitation(weight, wires=wires)
-                return qml.expval(qml.Z(0))
+                qp.FermionicSingleExcitation(weight, wires=wires)
+                return qp.expval(qp.Z(0))
 
             weight = 0.56
             print(circuit(weight, wires=[0, 1, 2]))
@@ -127,7 +127,7 @@ class FermionicSingleExcitation(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weight: float, wires: WiresLike, *, id=None):
+    def __init__(self, weight: float, wires: WiresLike):
         wires = Wires(wires)
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
@@ -136,7 +136,7 @@ class FermionicSingleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
-        super().__init__(weight, wires=wires, id=id)
+        super().__init__(weight, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -224,7 +224,7 @@ def _fermionic_single_excitation_resources(num_wires):
 
 
 @register_resources(_fermionic_single_excitation_resources)
-def _fermionic_single_excitation_decomposition(weight, wires):
+def _fermionic_single_excitation_decomposition(weight, wires, **_):
     # Interpret first and last wire as r and p
     r = wires[0]
     p = wires[-1]

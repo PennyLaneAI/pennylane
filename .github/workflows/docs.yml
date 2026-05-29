@@ -69,12 +69,14 @@ jobs:
     needs: [determine_runner, get_branch]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: PennyLaneAI/sphinx-action@master
         with:
           docs-folder: "doc/"
           pre-build-command: >
             apt install -y graphviz
+            && python -m pip install --upgrade pip
+            && pip3 install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
             && pip3 install --group docs
             && pip3 install .
           build-command: "sphinx-build -b html . _build -W --keep-going"

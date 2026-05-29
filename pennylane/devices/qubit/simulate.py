@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 from numpy.random import default_rng
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
@@ -123,7 +123,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     if is_state_batched:
         raise ValueError(
             "Cannot postselect on circuits with broadcasting. Use the "
-            "qml.transforms.broadcast_expand transform to split a broadcasted "
+            "qp.transforms.broadcast_expand transform to split a broadcasted "
             "tape into multiple non-broadcasted tapes before executing if "
             "postselection is used."
         )
@@ -225,7 +225,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements
-        if isinstance(op, qml.Projector):
+        if isinstance(op, qp.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
@@ -343,10 +343,9 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
+    >>> qs = qp.tape.QuantumScript([qp.RX(1.2, wires=0)], [qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
     >>> simulate(qs)
-    (0.36235775447667357,
-    tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+    (np.float64(0.36235775447667357), array([0.68117888, 0.        , 0.31882112, 0.        ]))
 
     """
     circuit = circuit.copy()
@@ -373,7 +372,7 @@ def simulate(
                 )
 
             results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
-            results = tuple(zip(*results))
+            results = tuple(zip(*results, strict=True))
         else:
             for i in range(circuit.shots.total_shots):
                 results.append(
@@ -432,7 +431,7 @@ def simulate_tree_mcm(
         prng_key = execution_kwargs.pop("prng_key", None)
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
-        for k, s in zip(keys, circuit.shots):
+        for k, s in zip(keys, circuit.shots, strict=True):
             aux_circuit = circuit.copy(shots=s)
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
@@ -478,7 +477,7 @@ def simulate_tree_mcm(
     mcm_current = math.zeros(n_mcms + 1, dtype=int)
     # `mid_measurements` maps the elements of `mcm_current` to their respective MCMs
     # This is used by `get_final_state::apply_operation` for `Conditional` operations
-    mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist()))
+    mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist(), strict=True))
     # Split circuit into segments
     circuits = split_circuit_at_mcms(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
@@ -515,7 +514,7 @@ def simulate_tree_mcm(
                 mcm_current[depth] = 1
             # Update MCM values
             mid_measurements.update(
-                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist())
+                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist(), strict=True)
             )
             continue
 
@@ -589,7 +588,7 @@ def simulate_tree_mcm(
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
-                stack.probs[depth] = dict(zip([False, True], measurements))
+                stack.probs[depth] = dict(zip([False, True], measurements, strict=True))
                 samples = None
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
@@ -654,7 +653,7 @@ def split_circuit_at_mcms(circuit):
     for last, op in mcm_gen:
         new_operations = circuit.operations[first:last]
         new_measurements = (
-            [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
+            [qp.sample(wires=op.wires)] if circuit.shots else [qp.probs(wires=op.wires)]
         )
         circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
@@ -685,7 +684,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     interface = Interface(interface)
     state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
     new_ops = [
-        qml.StatePrep(math.ravel(state), wires=wires, validate_norm=False)
+        qp.StatePrep(math.ravel(state), wires=wires, validate_norm=False)
     ] + circuit.operations
     return circuit.copy(operations=new_ops)
 
@@ -747,11 +746,11 @@ def branch_state(state, branch, mcm):
         state /= math.norm(state)
     else:
         # SLOWER
-        state = apply_operation(qml.Projector([branch], mcm.wires), state)
+        state = apply_operation(qp.Projector([branch], mcm.wires), state)
         state = state / math.norm(state)
 
     if mcm.reset and branch == 1:
-        state = apply_operation(qml.PauliX(mcm.wires), state)
+        state = apply_operation(qp.PauliX(mcm.wires), state)
     return state
 
 
@@ -768,7 +767,7 @@ def counts_to_probs(counts):
     """Converts counts to probs."""
     probs = math.array(list(counts.values()))
     probs = probs / math.sum(probs)
-    return dict(zip(counts.keys(), probs))
+    return dict(zip(counts.keys(), probs, strict=True))
 
 
 def prune_mcm_samples(mcm_samples):
@@ -812,7 +811,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
-@qml.transform
+@qp.transform
 def variance_transform(circuit):
     """Replace variance measurements by expectation value measurements of both the observable and the observable square.
 
@@ -826,7 +825,7 @@ def variance_transform(circuit):
         """Compute the global variance from expectation value measurements of both the observable and the observable square."""
         new_results = list(results[0])
         offset = len(circuit.measurements)
-        for i, (r, m) in enumerate(zip(new_results, circuit.measurements)):
+        for i, (r, m) in enumerate(zip(new_results, circuit.measurements, strict=True)):
             if isinstance(m, VarianceMP):
                 expval = new_results.pop(offset)
                 new_results[i] = r - expval**2

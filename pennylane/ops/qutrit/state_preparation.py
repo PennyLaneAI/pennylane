@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
+
 # pylint: disable=arguments-differ
 import numpy as np
 
@@ -56,11 +57,11 @@ class QutritBasisState(StatePrepBase):
 
     **Example**
 
-    >>> dev = qml.device('default.qutrit', wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qutrit', wires=2)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.QutritBasisState(np.array([2, 2]), wires=range(2))
-    ...     return qml.state()
+    ...     qp.QutritBasisState(np.array([2, 2]), wires=range(2))
+    ...     return qp.state()
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
@@ -89,7 +90,7 @@ class QutritBasisState(StatePrepBase):
 
         **Example:**
 
-        >>> qml.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
+        >>> qp.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
         [QutritBasisStatePreparation(array([1, 0]), wires=[0, 1])]
 
         """
@@ -111,7 +112,7 @@ class QutritBasisState(StatePrepBase):
                 raise WireError("Custom wire_order must contain all QutritBasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals):
+            for base_wire_label, value in zip(self.wires, prep_vals, strict=True):
                 indices[wire_order.index(base_wire_label)] = value
 
         ket = np.zeros((3,) * num_wires)
