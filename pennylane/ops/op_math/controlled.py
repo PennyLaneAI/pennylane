@@ -30,7 +30,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math, pytrees
-from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.decomposition.resources import resolve_work_wire_type
@@ -274,11 +273,7 @@ def _ctrl_transform(op, control, control_values, work_wires):
             _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         _ = [
-            (
-                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
-                if not isinstance(op, (Allocate, Deallocate))
-                else qp.apply(op)
-            )
+            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
             for op in qscript.operations
         ]
 
