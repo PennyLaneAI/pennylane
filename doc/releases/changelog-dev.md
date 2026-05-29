@@ -10,7 +10,44 @@
   by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
 
+* A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
+  This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
+  efficient simulation of quantum materials and chemistry systems.
+  [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
+
+  The :class:`~.FFFT` template is decomposed recursively into two parallel FFFTs over
+  :math:`\tfrac{n}{2}` sites in each iteration of the recursion. These parallel Fourier transforms
+  are followed by a series of two-site linear gates.
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev)
+  def circuit():
+      qp.FFFT(wires=(0, 1, 2, 3))
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> print(qp.draw(circuit, level="device")())
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+
+  ```
+
+  Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
+  has been added to enable its implementation: the :class:`~.FFFT` operation is
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  (two-site Fermionic Fourier transforms).
+
 <h3>Improvements 🛠</h3>
+
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+  [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
   [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
@@ -23,11 +60,18 @@
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
 * Added a dispatcher for `qp.pauli_measure` to call `catalyst.pauli_measure` when qjit is enabled
-  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for 
+  while using the non-capture workflow. This also added an alias for `MidCircuitPauliMeasure` for
   decomposition.
   [(#9506)](https://github.com/PennyLaneAI/pennylane/pull/9506)
 
+* A more informative error message is raised when quantum functions without registered resource
+  estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
+  [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Updated the `make_rz_to_phase_gradient_decomp` decomposition rule factory to be compatible with program capture.
+  [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
@@ -38,7 +82,8 @@
 
   dev = qp.device("lightning.qubit")
 
-  @qp.qnode(dev, shots=1)
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
   def circuit(a, comparator, b):
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
@@ -58,10 +103,48 @@
     True
 
   ```
+  
+* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
 
-* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal 
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
+  
+  ```
+
+* Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
+  This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which
+  led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
+  [(#9493)](https://github.com/PennyLaneAI/pennylane/pull/9493)
+
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
   decomposition to estimate the cost for QROM.
   [(#9500)](https://github.com/PennyLaneAI/pennylane/pull/9500)
+  [(#9516)](https://github.com/PennyLaneAI/pennylane/pull/9516)
 
   ```pycon
     >>> import pennylane.labs.estimator_beta as qre
@@ -71,7 +154,7 @@
     ...     size_bitstring = 8,
     ...     available_dirty_aux = 300,
     ... )
-    >>> 
+    >>>
     >>> print(qre.estimate(qrom_op))
     --- Resources: ---
     Total wires: 308
@@ -88,6 +171,9 @@
   ```
 
 <h3>Breaking changes 💔</h3>
+
+* `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
+  [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
   shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
@@ -156,6 +242,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
+  when processing an `AnnotatedQueue` into a `QuantumScript`.
+  [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
+
+* Bump `autoray` package pin to `v0.8.10`.
+  [(#9535)](https://github.com/PennyLaneAI/pennylane/pull/9535)
+
 * Fixes imports of exceptions from `pennylane.operation` instead of `pennylane.exceptions`.
   [(#9512)](https://github.com/PennyLaneAI/pennylane/pull/9512)
 
@@ -176,12 +269,22 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
+  [(#9413)](https://github.com/PennyLaneAI/pennylane/pull/9413)
 
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
   [(#9494)](https://github.com/PennyLaneAI/pennylane/pull/9494)
 
+* The `allocate` PLxPR primitive now returns a list of `AbstractQubit` abstract values instead of a
+  list of abstract integer values. This is to better define the set of operations allowed on
+  allocated qubits.
+  [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
+  [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
+
 <h3>Documentation 📝</h3>
+
+* Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
+  [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
@@ -227,6 +330,7 @@ Astral Cai,
 Daniel Casota,
 Yushao Chen,
 Marcus Edwards,
+Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 Andrija Paurevic,
