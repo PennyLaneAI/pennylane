@@ -2334,7 +2334,7 @@ def test_broadcasted_parameter(max_workers):
 
 
 @pytest.mark.jax
-def test_renomalization_issue():
+def test_renomalization_issue(preserve_jax_x64):
     """Test that no normalization error occurs with the following workflow in float32 mode.
     Just tests executes without error.  Not producing a more minimal example due to difficulty
     finding an exact case that leads to renomalization issues.
@@ -2342,7 +2342,6 @@ def test_renomalization_issue():
     import jax
     from jax import numpy as jnp
 
-    initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", False)
 
     def gaussian_fn(p, t):
@@ -2376,4 +2375,3 @@ def test_renomalization_issue():
     circuit_qp = qp.QNode(circuit, qp.device("default.qubit"), interface="jax", shots=1000)
 
     circuit_qp(params)
-    jax.config.update("jax_enable_x64", initial_mode)

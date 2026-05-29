@@ -107,7 +107,7 @@ class TestCatalyst:
         assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
-    def test_jax_enable_x64(self, jax_enable_x64):
+    def test_jax_enable_x64(self, jax_enable_x64, preserve_jax_x64):
         """Test whether `qp.compiler.active` changes `jax_enable_x64`."""
         jax.config.update("jax_enable_x64", jax_enable_x64)
         assert jax.config.jax_enable_x64 is jax_enable_x64

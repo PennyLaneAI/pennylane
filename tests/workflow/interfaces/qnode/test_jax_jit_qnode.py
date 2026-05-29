@@ -3365,63 +3365,48 @@ class TestSinglePrecision:
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)
 
     @pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
-    def test_float32_return(self, diff_method):
+    def test_float32_return(self, diff_method, preserve_jax_x64):
         """Test that jax jit works when float64 mode is disabled."""
         jax.config.update("jax_enable_x64", False)
 
-        try:
+        @jax.jit
+        @qp.qnode(qp.device("default.qubit"), diff_method=diff_method)
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-            @jax.jit
-            @qp.qnode(qp.device("default.qubit"), diff_method=diff_method)
-            def circuit(x):
-                qp.RX(x, wires=0)
-                return qp.expval(qp.PauliZ(0))
-
-            grad = jax.grad(circuit)(jax.numpy.array(0.1))
-            assert qp.math.allclose(grad, -np.sin(0.1))
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
+        grad = jax.grad(circuit)(jax.numpy.array(0.1))
+        assert qp.math.allclose(grad, -np.sin(0.1))
 
     @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
-    def test_complex64_return(self, diff_method):
+    def test_complex64_return(self, diff_method, preserve_jax_x64):
         """Test that jax jit works with differentiating the state."""
         jax.config.update("jax_enable_x64", False)
 
-        try:
-            # finite diff with float32 ...
-            tol = 5e-2 if diff_method == "finite-diff" else 1e-6
+        # finite diff with float32 ...
+        tol = 5e-2 if diff_method == "finite-diff" else 1e-6
 
-            @jax.jit
-            @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
-            def circuit(x):
-                qp.RX(x, wires=0)
-                return qp.state()
+        @jax.jit
+        @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.state()
 
-            j = jax.jacobian(circuit, holomorphic=True)(jax.numpy.array(0.1 + 0j))
-            assert qp.math.allclose(j, [-np.sin(0.05) / 2, -np.cos(0.05) / 2 * 1j], atol=tol)
+        j = jax.jacobian(circuit, holomorphic=True)(jax.numpy.array(0.1 + 0j))
+        assert qp.math.allclose(j, [-np.sin(0.05) / 2, -np.cos(0.05) / 2 * 1j], atol=tol)
 
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
-
-    def test_int32_return(self):
+    def test_int32_return(self, preserve_jax_x64):
         """Test that jax jit forward execution works with samples and int32"""
 
         jax.config.update("jax_enable_x64", False)
 
-        try:
+        @jax.jit
+        @qp.qnode(qp.device("default.qubit"), diff_method=qp.gradients.param_shift, shots=10)
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.sample(wires=0)
 
-            @jax.jit
-            @qp.qnode(qp.device("default.qubit"), diff_method=qp.gradients.param_shift, shots=10)
-            def circuit(x):
-                qp.RX(x, wires=0)
-                return qp.sample(wires=0)
-
-            _ = circuit(jax.numpy.array(0.1))
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
+        _ = circuit(jax.numpy.array(0.1))
 
 
 def test_no_inputs_jitting():

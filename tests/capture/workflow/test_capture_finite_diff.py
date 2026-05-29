@@ -26,7 +26,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-def test_warning_float32():
+def test_warning_float32(preserve_jax_x64):
     """Test that a warning is raised if trainable inputs are float32."""
 
     @qp.qnode(qp.device("default.qubit", wires=1), diff_method="finite-diff")
@@ -40,11 +40,8 @@ def test_warning_float32():
         jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
 
     jax.config.update("jax_enable_x64", False)
-    try:
-        with pytest.warns(UserWarning, match="Detected 32 bits precision with finite differences."):
-            jax.grad(circuit)(0.5)
-    finally:
-        jax.config.update("jax_enable_x64", True)
+    with pytest.warns(UserWarning, match="Detected 32 bits precision with finite differences."):
+        jax.grad(circuit)(0.5)
 
 
 class TestGradients:
