@@ -1199,7 +1199,8 @@ class FFQRAM(Operation):
                 filtered_states.append(basis_state)
                 filtered_counts.append(count)
 
-        # Normalize to conditional probabilities.
+        # Following the post-selection step in Park et al. (2019), condition the
+        # observed probabilities on measuring the register qubit in state |1>.
         filtered_counts = np.array(filtered_counts)
         p_reg1 = filtered_counts.sum() / shots
         conditioned_probs = filtered_counts / shots / p_reg1
