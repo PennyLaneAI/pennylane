@@ -14,6 +14,21 @@
 r"""
 This module contains the classes for placing objects into queues.
 
+.. warning::
+
+    Unless you are a PennyLane developer, you likely do not need
+    to use these classes directly.
+
+.. currentmodule:: pennylane.queuing
+
+.. autosummary::
+    :toctree: api
+
+    ~QueuingManager
+    ~AnnotatedQueue
+    ~apply
+
+
 Description
 -----------
 
@@ -142,7 +157,7 @@ Only the operators that will end up in the circuit will remain.
 [X(0)]
 [X(0)**1.5]
 
-Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
+Once the queue is constructed, the :meth:`~pennylane.tape.QuantumScript.from_queue` method converts it into the operations
 and measurements in the final circuit. This step eliminates any object that has an owner.
 
 .. code-block:: python
@@ -153,16 +168,11 @@ and measurements in the final circuit. This step eliminates any object that has 
         pow_op = base ** 1.5
         qp.expval(qp.Z(0) @ qp.X(1))
 
->>> ops, measurements = qp.queuing.process_queue(q)
->>> ops
+>>> tape = qp.tape.QuantumScript.from_queue(q)
+>>> tape.operations
 [StatePrep(array([1., 0.]), wires=[0]), X(0)**1.5]
->>> measurements
+>>> tape.measurements
 [expval(Z(0) @ X(1))]
-
-These lists can be used to construct a :class:`~.QuantumScript`:
-
->>> qp.tape.QuantumScript(ops, measurements)
-<QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
 use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
@@ -182,7 +192,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
-from typing import Optional, Union
+from typing import Optional
 
 from pennylane.exceptions import QueuingError
 
@@ -538,51 +548,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
-ops_or_meas = Union["pennylane.operation.Operator", "pennylane.measurements.MeasurementProcess"]
-
-
-# pylint: disable=protected-access
-def process_queue(
-    queue: AnnotatedQueue,
-) -> tuple[list[ops_or_meas], list["pennylane.measurements.MeasurementProcess"]]:
-    """Process the annotated queue, creating a list of quantum
-    operations and measurement processes.
-
-    Args:
-        queue (.AnnotatedQueue): The queue to be processed into individual lists
-
-    Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)]:
-        The list of tape operations, the list of tape measurements
-
-    Raises:
-        QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
-
-    """
-    lists = {"_ops": [], "_measurements": []}
-    list_order = {"_ops": 1, "_measurements": 2}
-    current_list = "_ops"
-
-    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
-    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
-    for obj, _ in queue.items():
-        if not hasattr(obj, "_queue_category"):
-            raise QueuingError(
-                f"{obj} encountered in AnnotatedQueue and is not an object that can "
-                "be processed into a QuantumScript. Queues should contain Operator or MeasurementProcess objects only."
-            )
-        if obj._queue_category is None:
-            raise ValueError(
-                f"_queue_category can no longer be set to None. Got None on object {obj}"
-            )
-
-        if list_order[obj._queue_category] > list_order[current_list]:
-            current_list = obj._queue_category
-        elif list_order[obj._queue_category] < list_order[current_list]:
-            raise ValueError(
-                f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                f"to {current_list[1:]}. Please place earlier in the queue."
-            )
-        lists[obj._queue_category].append(obj)
-
-    return lists["_ops"], lists["_measurements"]
+def __getattr__(key):
+    if key == "process_queue":
+        raise AttributeError(
+            "pennylane.queuing.process_queue has been moved to qp.tape.qscript.from_queue"
+        )
+    raise AttributeError(f"module 'pennylane.queuing' has no attribute '{key}'")
