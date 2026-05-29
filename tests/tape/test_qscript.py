@@ -19,11 +19,26 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots, StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.tape import QuantumScript
+from pennylane.tape.qscript import QuantumScript, process_queue
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
+
+
+def test_process_queue_error_if_not_operator_or_measurement():
+    """Test that a QueuingError is raised if process queue encounters an object it can't handle."""
+    q = qp.queuing.AnnotatedQueue()
+    q.append(1)
+    with pytest.raises(ValueError, match="Encountered object 1 in queue while processing."):
+        process_queue(q)
+
+
+def test_adjoint_deprecated():
+    qs = QuantumScript([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        qs.adjoint()
 
 
 class TestInitialization:
@@ -932,8 +947,9 @@ def test_adjoint():
     m = [qp.expval(qp.PauliZ(0))]
     qs = QuantumScript(ops, m)
 
-    with qp.queuing.AnnotatedQueue() as q:
-        adj_qs = qs.adjoint()
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        with qp.queuing.AnnotatedQueue() as q:
+            adj_qs = qs.adjoint()
 
     assert len(q.queue) == 0  # not queued
 
