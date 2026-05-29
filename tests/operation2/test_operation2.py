@@ -1259,6 +1259,7 @@ class TestHasRepresentations:
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
         class WithMatrix(Operator2):
+            # pylint: disable=unused-argument
             def matrix(self, wire_order=None):
                 return np.eye(2)
 
@@ -1288,6 +1289,7 @@ class TestHasRepresentations:
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
         class WithSparse(Operator2):
+            # pylint: disable=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
 
