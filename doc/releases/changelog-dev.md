@@ -3,7 +3,11 @@
 <h3>New features since last release</h3>
 
 * Added a :class:`~.SignedOutMultiplier` that multiplies numbers encoded in the input registers 
-  using a two's complement. Nicely compatible with the algorithms on vibrational modes.
+  using a two's complement.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+* Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
+  by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
 
 <h3>Improvements 🛠</h3>
