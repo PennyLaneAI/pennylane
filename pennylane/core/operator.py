@@ -1,4 +1,4 @@
-# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -98,12 +98,12 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 Contents
 --------
 
-.. currentmodule:: pennylane.core.operator
+.. currentmodule:: pennylane.operation
 
 Operator Types
 ~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.core.operator
+.. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
@@ -116,7 +116,7 @@ Operator Types
     ~Channel
     ~StatePrepBase
 
-.. currentmodule:: pennylane.core.operator
+.. currentmodule:: pennylane.operation
 
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
@@ -124,8 +124,6 @@ Operator Types
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
-
-Note that this function is in the ``penylane.operation`` namespace, not ``pennylane.core.operator``.
 
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
@@ -139,8 +137,6 @@ The ``operation`` module provides the following:
 
 Other
 ~~~~~
-
-Note that this function is in the ``penylane.operation`` namespace, not ``pennylane.core.operator``.
 
 .. currentmodule:: pennylane.operation
 
@@ -197,7 +193,7 @@ import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qp
-from pennylane import capture, math
+from pennylane import capture
 from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -216,7 +212,7 @@ from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 has_jax = True
 try:
@@ -287,7 +283,7 @@ def _get_abstract_operator() -> type:
 
 
 def create_operator_primitive(
-    operator_type: type["Operator"],
+    operator_type: type["qp.operation.Operator"],
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
@@ -340,9 +336,9 @@ def _process_data(op):
     def _mod_and_round(x, mod_val):
         if mod_val is None:
             return x
-        return math.round(math.real(x) % mod_val, 10)
+        return qp.math.round(qp.math.real(x) % mod_val, 10)
 
-    # Use math.real to take the real part. We may get complex inputs for
+    # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
@@ -690,9 +686,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         iterable_wires_types = (
             list,
             tuple,
-            Wires,
+            qp.wires.Wires,
             range,
-            capture.autograph.ag_primitives.PRange,
+            qp.capture.autograph.ag_primitives.PRange,
             set,
             *array_types,
         )
@@ -702,7 +698,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # the implementation call defined by `primitive.def_impl`.
         if "wires" in kwargs:
             wires = kwargs.pop("wires")
-            if isinstance(wires, array_types) and wires.shape == ():
+            if is_abstract_qubit(wires):
+                wires = (wires,)
+            elif isinstance(wires, array_types) and wires.shape == ():
                 wires = (wires,)
             elif isinstance(wires, iterable_wires_types):
                 wires = tuple(wires)
@@ -711,6 +709,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             kwargs["n_wires"] = len(wires)
             args += wires
         # If not in kwargs, check if the last positional argument represents wire(s).
+        elif is_abstract_qubit(args[-1]):
+            kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
@@ -952,7 +952,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
-                return math.linalg.eigvals(self.matrix())
+                return qp.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
     def terms(self) -> tuple[list[TensorLike], list["Operation"]]:  # pylint: disable=no-self-use
@@ -1046,12 +1046,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
             from/to cache, formatting its position in the cache as parameter string."""
-            if len(math.shape(x)) == 0:
+            if len(qp.math.shape(x)) == 0:
                 # Scalar case
                 if decimals is None:
                     return ""
                 try:
-                    return format(math.toarray(x), f".{decimals}f")
+                    return format(qp.math.toarray(x), f".{decimals}f")
                 except ValueError:
                     # If the parameter can't be displayed as a float
                     return format(x)
@@ -1062,7 +1062,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
             # Retrieve matrix location in cache, or write the matrix to cache as new entry
             for i, mat in enumerate(mat_cache):
-                if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
+                if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
                     return f"M{i}"
             mat_num = len(mat_cache)
             mat_cache.append(x)
@@ -1134,7 +1134,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         params = self.data
 
         try:
-            ndims = tuple(math.ndim(p) for p in params)
+            ndims = tuple(qp.math.ndim(p) for p in params)
         except (
             ValueError
         ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -1145,14 +1145,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `math.ndim` fail.
+            # an operation with abstract parameters that make `qp.math.ndim` fail.
             if any(is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
                 return
             raise e  # pragma: no cover
 
-        if any(len(math.shape(p)) >= 1 and math.shape(p)[0] is None for p in params):
+        if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
@@ -1171,11 +1171,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                math.shape(p)[0]
+                qp.math.shape(p)[0]
                 for (_, batched), p in zip(ndims_matches, params, strict=True)
                 if batched
             ]
-            if not math.allclose(first_dims, first_dims[0]):
+            if not qp.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
@@ -1522,19 +1522,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    @property
-    def _queue_category(self) -> Literal["_ops", "_measurements"]:
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-            * `"_ops"`
-            * `"_measurements"`
-        """
-        return "_ops"
-
     # pylint: disable=no-self-argument
     @classproperty
     def has_adjoint(cls) -> bool:
@@ -1609,7 +1596,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if math.allequal(other, 0):
+            if qp.math.allequal(other, 0):
                 return self
             return qp.sum(
                 self,
@@ -1645,7 +1632,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if isinstance(other, Operator):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
-            return self + (math.multiply(-1, other))
+            return self + (qp.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other: Union["Operator", TensorLike]):
@@ -2186,7 +2173,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = [math.toarray(a) for a in self.parameters]
+        p = [qp.math.toarray(a) for a in self.parameters]
         if inverse:
             try:
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
@@ -2284,6 +2271,3 @@ class StatePrepBase(Operation):
         cache: dict | None = None,
     ) -> str:
         return "|Ψ⟩"
-
-
-__all__ = ["Operator", "Operation", "Channel", "CV", "CVOperation", "CVObservable", "StatePrepBase"]
