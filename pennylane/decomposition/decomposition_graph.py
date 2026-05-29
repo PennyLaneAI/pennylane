@@ -467,7 +467,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return d_node
 
     def _base_in_progress(self, op):
-        if not (base := _get_base_rep_if_applicable(op)):
+        base = _get_base_rep_if_applicable(op)
+        if base is None:
             return False
         if base in self._in_progress:
             return True
