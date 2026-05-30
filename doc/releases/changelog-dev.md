@@ -63,6 +63,10 @@
   `qp.devices.DefaultQutritMixed`.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* Changed function `qp.math.partial_trace()` to include `qudit_dim` keyword argument to allow for partial traces of 
+  any qudit density matrices with constant qudit dimension.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
