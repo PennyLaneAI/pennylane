@@ -273,10 +273,10 @@
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
-* Fixed a bug where :func:`~.draw` dropped the grouping brackets on measurements that span all
-  device wires (such as :func:`~.state`, :func:`~.probs`, :func:`~.sample`, or :func:`~.counts`
-  without an explicit ``wires`` argument). The brackets now render consistently with the
-  multi-wire case, matching the existing behavior of :func:`~.draw_mpl`.
+* Fixed a bug where :func:`~pennylane.draw` dropped the grouping brackets on measurements that
+  span all device wires (such as :func:`~.state`, :func:`~.probs`, :func:`~.sample`, or
+  :func:`~.counts` without an explicit ``wires`` argument). The brackets now render consistently
+  with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
   [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
 
 <h3>Contributors ✍️</h3>
