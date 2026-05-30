@@ -39,17 +39,17 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if Operation not in operation.__bases__:
+                if not issubclass(operation, Operation):
                     not_op = True
-            except AttributeError:
+            except TypeError:
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if Operation in position.__bases__:
+            if issubclass(position, Operation):
                 req_ops = [position]
             else:
                 not_op = True
-        except AttributeError:
+        except TypeError:
             not_op = True
     return not_op, req_ops
 
@@ -231,15 +231,18 @@ def insert(
         error=DecompositionUndefinedError,
     )
 
-    if not isinstance(op, FunctionType) and op.num_wires != 1:
-        raise ValueError("Only single-qubit operations can be inserted into the circuit")
-
     not_op, req_ops = _check_position(position)
 
     if position not in ("start", "end", "all") and not_op:
         raise ValueError(
             "Position must be either 'start', 'end', or 'all' (default) OR a PennyLane operation or list of operations."
         )
+
+    if not isinstance(op, FunctionType) and getattr(op, "num_wires", 1) != 1:
+        if not req_ops:
+            raise ValueError(
+                "Multi-qubit operations can only be inserted into the circuit if the position specifies target operations."
+            )
 
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
@@ -267,9 +270,19 @@ def insert(
                 # circuit_op is an instance of an operation.
                 # operation is a type; either Operator or some subclass of Operator.
                 if isinstance(circuit_op, operation):
-                    for w in circuit_op.wires:
-                        sub_tape = make_qscript(op)(*op_args, wires=w)
+                    op_wires = getattr(op, "num_wires", 1)
+                    if not isinstance(op, FunctionType) and op_wires != 1:
+                        if op_wires not in {len(circuit_op.wires), None, -1}:
+                            raise ValueError(
+                                f"Number of wires of the inserted operation ({op_wires}) does not match "
+                                f"the number of wires of the target operation ({len(circuit_op.wires)})."
+                            )
+                        sub_tape = make_qscript(op)(*op_args, wires=circuit_op.wires)
                         new_operations.extend(sub_tape.operations)
+                    else:
+                        for w in circuit_op.wires:
+                            sub_tape = make_qscript(op)(*op_args, wires=w)
+                            new_operations.extend(sub_tape.operations)
 
         if before:
             new_operations.append(circuit_op)

@@ -58,7 +58,7 @@ class TestInsert:
 
     def test_multiwire_op(self):
         """Tests if a ValueError is raised when multiqubit operations are requested"""
-        with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
+        with pytest.raises(ValueError, match="Multi-qubit operations can only be inserted into"):
             insert(self.tape, qp.CNOT, [])
 
     @pytest.mark.parametrize("pos", [1, ["all", qp.RY, int], "ABC", str])
@@ -530,3 +530,40 @@ def test_insert_transform_works_with_non_qwc_obs():
         return qp.expval(qp.PauliX(0)), qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))
 
     assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
+
+
+def test_insert_multiqubit_operation():
+    """Test that a multi-qubit operation can be inserted when targeting a gate with matching wires."""
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev)
+    @insert(op=qp.CRX, op_args=0.5, position=[qp.CNOT])
+    def noisy_circuit():
+        qp.RY(0.3, wires=0)
+        qp.RY(0.4, wires=1)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.PauliZ(0))
+
+    @qp.qnode(dev)
+    def explicit_circuit():
+        qp.RY(0.3, wires=0)
+        qp.RY(0.4, wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.CRX(0.5, wires=[0, 1])
+        return qp.expval(qp.PauliZ(0))
+
+    assert np.allclose(noisy_circuit(), explicit_circuit())
+
+
+def test_insert_multiqubit_operation_wire_mismatch():
+    """Test that inserting a multi-qubit operation raises an error if wire counts do not match."""
+    dev = qp.device("default.qubit", wires=3)
+
+    @qp.qnode(dev)
+    @insert(op=qp.CRX, op_args=0.5, position=[qp.Toffoli])
+    def noisy_circuit():
+        qp.Toffoli(wires=[0, 1, 2])
+        return qp.expval(qp.PauliZ(0))
+
+    with pytest.raises(ValueError, match="Number of wires of the inserted operation"):
+        noisy_circuit()
