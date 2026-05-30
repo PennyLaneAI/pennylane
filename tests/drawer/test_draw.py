@@ -1244,3 +1244,51 @@ def test_sort_wires_fallback(use_qnode):
 
     expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
     assert qp.draw(func)() == expected
+
+
+class TestFunctoolsPartial:
+    """Test that draw handles functools.partial properly."""
+
+    def test_partial_circuit(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
+            
+        fixed_circ = functools.partial(circ, 1.23)
+        expected = "0: ──RX(1.23)─┤  <Z>\n1: ──RY(2.34)─┤     "
+        assert qp.draw(fixed_circ)(2.34) == expected
+
+    def test_nested_partial_circuit(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.PauliZ(0))
+            
+        p1 = functools.partial(circ, 1.23)
+        p2 = functools.partial(p1, z=3.45)
+        
+        expected = "0: ──RX(1.23)──RZ(3.45)─┤  <Z>\n1: ──RY(2.34)───────────┤     "
+        assert qp.draw(p2)(2.34) == expected
+        
+    def test_partial_kwargs_override(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
+            
+        p1 = functools.partial(circ, y=2.34)
+        p2 = functools.partial(p1, y=3.45)
+        
+        expected = "0: ──RX(1.23)─┤  <Z>\n1: ──RY(3.45)─┤     "
+        assert qp.draw(p2)(1.23) == expected

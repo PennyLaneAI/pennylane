@@ -24,7 +24,7 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial
+from functools import partial, wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -39,6 +39,28 @@ if TYPE_CHECKING:
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
+
+
+def _unwrap_partial(func):
+    """Recursively unwraps a functools.partial object.
+
+    Returns:
+        tuple: (original_func, bound_args, bound_kwargs)
+    """
+    bound_args = []
+    bound_kwargs = {}
+
+    while isinstance(func, partial):
+        bound_args = list(func.args) + bound_args
+
+        new_kwargs = func.keywords.copy()
+        new_kwargs.update(bound_kwargs)
+        bound_kwargs = new_kwargs
+
+        func = func.func
+
+    return func, tuple(bound_args), bound_kwargs
+
 
 
 def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
@@ -1000,24 +1022,38 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
+    qnode, bound_args, bound_kwargs = _unwrap_partial(qnode)
+    handler = None
+
     if isinstance(qnode, qp.QNode):
-        return partial(_specs_qnode, qnode, level, compute_depth)
+        handler = _specs_qnode
+    else:
+        try:
+            from ..qnn.torch import TorchLayer
 
-    try:
-        from ..qnn.torch import TorchLayer
+            if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
+                handler = _specs_qnode
+        except ImportError:  # pragma: no cover
+            pass
 
-        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return partial(_specs_qnode, qnode, level, compute_depth)
-    except ImportError:  # pragma: no cover
-        pass
+        if handler is None:
+            try:  # pragma: no cover
+                # This is tested by integration tests within the Catalyst frontend
+                import catalyst
 
-    try:  # pragma: no cover
-        # This is tested by integration tests within the Catalyst frontend
-        import catalyst
+                if isinstance(qnode, catalyst.jit.QJIT):
+                    handler = _specs_qjit
+            except ImportError:  # pragma: no cover
+                pass
 
-        if isinstance(qnode, catalyst.jit.QJIT):
-            return partial(_specs_qjit, qnode, level, compute_depth)
-    except ImportError:  # pragma: no cover
-        pass
+    if handler is None:
+        raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
 
-    raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        merged_kwargs = bound_kwargs.copy()
+        merged_kwargs.update(kwargs)
+        merged_args = bound_args + args
+        return handler(qnode, level, compute_depth, *merged_args, **merged_kwargs)
+
+    return wrapper

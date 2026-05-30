@@ -18,6 +18,7 @@ Contains the drawing function.
 from __future__ import annotations
 
 import warnings
+import functools
 from collections.abc import Callable, Sequence
 from functools import wraps
 from typing import TYPE_CHECKING, Literal
@@ -36,6 +37,27 @@ if TYPE_CHECKING:
 def catalyst_qjit(qnode):
     """A method checking whether a qnode is compiled by catalyst.qjit"""
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+
+
+def _unwrap_partial(func):
+    """Recursively unwraps a functools.partial object.
+
+    Returns:
+        tuple: (original_func, bound_args, bound_kwargs)
+    """
+    bound_args = []
+    bound_kwargs = {}
+
+    while isinstance(func, functools.partial):
+        bound_args = list(func.args) + bound_args
+
+        new_kwargs = func.keywords.copy()
+        new_kwargs.update(bound_kwargs)
+        bound_kwargs = new_kwargs
+
+        func = func.func
+
+    return func, tuple(bound_args), bound_kwargs
 
 
 # pylint: disable=too-many-arguments
@@ -288,6 +310,8 @@ def draw(
         2: ─╰●─────────────────┤
 
     """
+    qnode, bound_args, bound_kwargs = _unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
@@ -296,6 +320,8 @@ def draw(
             qnode,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
+            bound_args=bound_args,
+            bound_kwargs=bound_kwargs,
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
@@ -311,7 +337,10 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tape = make_qscript(qnode)(*args, **kwargs)
+        merged_kwargs = bound_kwargs.copy()
+        merged_kwargs.update(kwargs)
+        merged_args = bound_args + args
+        tape = make_qscript(qnode)(*merged_args, **merged_kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -340,15 +369,23 @@ def _draw_qnode(
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
+    bound_args=None,
+    bound_kwargs=None,
     decimals: int | None = 2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
     level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
+    bound_args = bound_args or ()
+    bound_kwargs = bound_kwargs or {}
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
+        merged_kwargs = bound_kwargs.copy()
+        merged_kwargs.update(kwargs)
+        merged_args = bound_args + args
+        tapes, _ = construct_batch(qnode, level=level)(*merged_args, **merged_kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -780,6 +817,8 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
+    qnode, bound_args, bound_kwargs = _unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
@@ -789,6 +828,8 @@ def draw_mpl(
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            bound_args=bound_args,
+            bound_kwargs=bound_kwargs,
             max_length=max_length,
             level=level,
             style=style,
@@ -803,8 +844,11 @@ def draw_mpl(
         )
 
     @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        tape = make_qscript(qnode)(*args, **kwargs)
+    def wrapper(*args, **kwargs_qnode):
+        merged_kwargs = bound_kwargs.copy()
+        merged_kwargs.update(kwargs_qnode)
+        merged_args = bound_args + args
+        tape = make_qscript(qnode)(*merged_args, **merged_kwargs)
         if wire_order:
             _wire_order = wire_order
         else:
@@ -835,14 +879,22 @@ def _draw_mpl_qnode(
     show_all_wires=False,
     decimals: int | None = None,
     *,
+    bound_args=None,
+    bound_kwargs=None,
     level="gradient",
     style="black_white",
     fig=None,
     **kwargs,
 ):
+    bound_args = bound_args or ()
+    bound_kwargs = bound_kwargs or {}
+
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
+        merged_kwargs = bound_kwargs.copy()
+        merged_kwargs.update(kwargs_qnode)
+        merged_args = bound_args + args
+        tapes, _ = construct_batch(qnode, level=level)(*merged_args, **merged_kwargs)
 
         if len(tapes) > 1:
             warnings.warn(

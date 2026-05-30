@@ -681,3 +681,57 @@ class TestSpecsGraphModeExclusive:
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 2
+
+
+class TestFunctoolsPartial:
+    """Test that specs handles functools.partial properly."""
+
+    def test_partial_circuit(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
+            
+        fixed_circ = functools.partial(circ, 1.23)
+        specs = qp.specs(fixed_circ)(2.34)
+        
+        assert specs["resources"].gate_types == {"RX": 1, "RY": 1}
+        assert specs["resources"].num_allocs == 2
+        assert specs["resources"].depth == 1
+
+    def test_nested_partial_circuit(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.PauliZ(0))
+            
+        p1 = functools.partial(circ, 1.23)
+        p2 = functools.partial(p1, z=3.45)
+        
+        specs = qp.specs(p2)(2.34)
+        assert specs["resources"].gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert specs["resources"].depth == 2
+        
+    def test_partial_kwargs_override(self):
+        import functools
+        
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circ(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
+            
+        p1 = functools.partial(circ, y=2.34)
+        p2 = functools.partial(p1, y=3.45)
+        
+        specs = qp.specs(p2)(1.23)
+        assert specs["resources"].gate_types == {"RX": 1, "RY": 1}
+        assert specs["resources"].num_allocs == 2
+
