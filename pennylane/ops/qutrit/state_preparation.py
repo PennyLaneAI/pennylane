@@ -144,25 +144,19 @@ class QutritDensityMatrix(QubitDensityMatrix):
         Example:
         .. code-block:: python
             import pennylane as qp
-            nr_wires = 2
+            nr_wires = 1
             rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
             rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
-            dev = qp.device("default.qutrit.mixed", wires=2)
+            dev = qp.device("default.qutrit.mixed", wires=1)
             @qp.qnode(dev)
             def circuit():
-                qp.QutritDensityMatrix(rho, wires=[0, 1])
+                qp.QutritDensityMatrix(rho, wires=[0])
                 return qp.state()
         Running this circuit:
         >>> circuit()
-        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
-         [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
+        array([[[1.+0.j, 0.+0.j, 0.+0.j],
+                [0.+0.j, 0.+0.j, 0.+0.j],
+                [0.+0.j, 0.+0.j, 0.+0.j]]])
     """
 
     num_params = 1
