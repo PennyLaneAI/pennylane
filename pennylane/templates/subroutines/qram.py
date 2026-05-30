@@ -17,7 +17,8 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -1282,9 +1283,8 @@ def _flip_zero_bits(address_wires, addr_bits):
     """
     Apply X gates to where the addr_bits is zero.
     """
-    for wire, bit in zip(address_wires, addr_bits, strict=True):
-        if int(bit) == 0:
-            PauliX(wires=wire)
+    for wire, bit in zip(address_wires, addr_bits):
+        cond(bit == 0, PauliX)(wires=wire)
 
 
 def _normalize_amplitudes(amplitudes):
@@ -1322,6 +1322,11 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
+    if capture.enabled():
+        amplitudes = math.array(amplitudes, like="jax")
+        address_wires = math.array(address_wires, like="jax")
+        address = math.array(address, like="jax")
+
     amplitudes = _normalize_amplitudes(amplitudes)
     angles = 2 * math.arcsin(amplitudes)
 
@@ -1329,17 +1334,25 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     batched = math.ndim(angles) > 1
     angles = math.T(angles) if batched else angles
 
-    # Prepare initial state |+>^n
-    for wire in address_wires:
-        Hadamard(wires=wire)
+    @for_loop(len(address_wires))
+    def superposition_loop(i, wires):
+        Hadamard(wires=wires[i])
+        return wires
 
-    for i, addr_bits in enumerate(address):
+    superposition_loop(address_wires)  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(address))
+    def main_loop(j, addr):
+        addr_bits = addr[j]
         # flip
         _flip_zero_bits(address_wires, addr_bits)
         # register
-        ctrl(RY(angles[i], wires=reg_wire), control=address_wires)
+        ctrl(RY(angles[j], wires=reg_wire), control=address_wires)
         # flop (unflip)
         _flip_zero_bits(address_wires, addr_bits)
+        return addr
+
+    main_loop(address)  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(FFQRAM, _ffqram_decomposition)
