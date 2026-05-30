@@ -853,20 +853,20 @@ class TestCommutingFunction:
         assert do_they_commute == commute_status
 
     @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2",
+        "pauli_word_1,pauli_word_2,expected",
         [
             (
                 qp.prod(qp.PauliX(0), qp.Hadamard(1), qp.Identity(2)),
                 qp.sum(qp.PauliX(0), qp.PauliY(2)),
+                True,
             ),
-            (qp.PauliX(2), qp.sum(qp.Hadamard(1), qp.prod(qp.PauliX(1), qp.Identity(2)))),
-            (qp.prod(qp.PauliX(1), qp.PauliY(2)), qp.s_prod(0.5, qp.Hadamard(1))),
+            (qp.PauliX(2), qp.sum(qp.Hadamard(1), qp.prod(qp.PauliX(1), qp.Identity(2))), True),
+            (qp.prod(qp.PauliX(1), qp.PauliY(2)), qp.s_prod(0.5, qp.Hadamard(1)), False),
         ],
     )
-    def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2):
-        """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(QuantumFunctionError):
-            qp.is_commuting(pauli_word_1, pauli_word_2)
+    def test_non_pauli_word_ops_supported(self, pauli_word_1, pauli_word_2, expected):
+        """Ensure inputs without pauli rep are handled properly when determining commutativity."""
+        assert qp.is_commuting(pauli_word_1, pauli_word_2) == expected
 
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
