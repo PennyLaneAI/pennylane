@@ -20,9 +20,9 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode, workflow
+from pennylane import device, measure, qnode, registers, workflow
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import probs, state
+from pennylane.measurements import probs
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.tape import QuantumScript
@@ -37,12 +37,6 @@ except ImportError:
 
 
 dev = device("default.qubit")
-
-
-@qnode(device("default.qubit", wires=4), interface=None)
-def ffqram_state(amplitudes, address):
-    FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=address)
-    return state()
 
 
 @qnode(dev)
@@ -1216,34 +1210,50 @@ def test_ffqram_standard_validity():
 
 
 def test_ffqram_postselected_probabilities():
-    """Checks the postselected probabilities for a standard FF-QRAM example."""
+    """Post-selected (conditional) distribution matches the encoded amplitudes."""
     amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
     address = ["000", "001"]
 
-    result_state = ffqram_state(amplitudes, address)
-    probabilities = np.abs(result_state) ** 2
+    wires = registers({"address": 3, "register": 1})
 
-    filtered_states = []
-    filtered_probabilities = []
+    @qnode(dev)
+    def circuit():
+        FFQRAM(
+            amplitudes=amplitudes,
+            wires=wires["address"] + wires["register"],
+            address=address,
+        )
+        # Post-select the register qubit in |1>
+        measure(wires["register"], postselect=1)
+        return probs(wires=wires["address"])
 
-    for i, probability in enumerate(probabilities):
-        if probability < 1e-4:
-            continue
-        basis_state = f"{i:04b}"
-        if basis_state[-1] == "1":  # post-selection
-            filtered_states.append(basis_state)
-            filtered_probabilities.append(probability)
+    # addresses "000" -> index 0, "001" -> index 1; everything else should vanish
+    expected = np.zeros(2 ** len(wires["address"]))
+    expected[0] = 0.3
+    expected[1] = 0.7
 
-    filtered_probabilities = np.array(filtered_probabilities)
-    probability_register_one = filtered_probabilities.sum()
-    filtered_probabilities = filtered_probabilities / probability_register_one
+    assert np.allclose(circuit(), expected)
 
-    assert filtered_states == [
-        "0001",
-        "0011",
-    ]  # addresses to be encoded + post-selection (bus_wire = 1)
-    assert np.allclose(filtered_probabilities, [0.3, 0.7])  # amplitudes to be encoded
-    assert np.allclose(probability_register_one, 0.125)  # 1 / (2 ** 3) for 3 address wires
+
+def test_ffqram_success_probability():
+    """The post-selection succeeds with probability 1 / 2^m."""
+    amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
+    address = ["000", "001"]
+
+    wires = registers({"address": 3, "register": 1})
+
+    @qnode(dev)
+    def circuit():
+        FFQRAM(
+            amplitudes=amplitudes,
+            wires=wires["address"] + wires["register"],
+            address=address,
+        )
+        # No post-selection here: read P(register = 0/1) directly.
+        return probs(wires=wires["register"])
+
+    success_prob = circuit()[1]  # P(register = 1)
+    assert np.allclose(success_prob, 0.125)  # 1 / 2**3 for 3 address wires
 
 
 class TestFFQRAMDecomposition:

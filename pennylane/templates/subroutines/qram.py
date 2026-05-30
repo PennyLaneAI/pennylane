@@ -1177,53 +1177,46 @@ class FFQRAM(Operation):
         import pennylane as qp
         import numpy as np
 
-        dev = qp.device("default.qubit", wires=4)
         addrs = ["000", "001"]
         amps = np.array([np.sqrt(0.3), np.sqrt(0.7)])
+        wires = qp.registers({"address": 3, "register": 1})
 
         shots = 1000
 
         @qp.set_shots(shots)
-        @qp.qnode(dev, interface=None)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qp.FFQRAM(amplitudes=amps, wires=[0, 1, 2, 3], address=addrs)
-            return qp.counts()
+            qp.FFQRAM(
+                amplitudes=amps,
+                wires=wires["address"] + wires["register"],
+                address=addrs,
+            )
+            # Postselect on the register qubit being in the |1> state
+            qp.measure(wires["register"], postselect=1)
+            return qp.probs(wires=wires["address"])
 
         results = circuit()
 
-        # Post-select on register qubit = 1.
-        filtered_states = []
-        filtered_counts = []
+        # Theoretical post-selected probabilities: b_l^2 / sum_k b_k^2.
+        expected = amps**2 / np.sum(amps**2)
 
-        for basis_state, count in results.items():
-            if basis_state[-1] == "1":
-                filtered_states.append(basis_state)
-                filtered_counts.append(count)
+        n = len(wires["address"])
+        expected_full = np.zeros(2**n)
+        for addr, prob in zip(addrs, expected):
+            expected_full[int(addr, 2)] = prob
 
-        # Following the post-selection step in Park et al. (2019), condition the
-        # observed probabilities on measuring the register qubit in state |1>.
-        filtered_counts = np.array(filtered_counts)
-        p_reg1 = filtered_counts.sum() / shots
-        conditioned_probs = filtered_counts / shots / p_reg1
-        obtained_amplitudes = np.sqrt(conditioned_probs)
+        basis_states = [f"{i:0{n}b}" for i in range(2**n)]
 
-        >>> print("expected success probability:", 1 / (2 ** len(addrs[0])))
-        expected success probability: 0.125
+    Because the protocol is sampled with a finite number of shots, the observed
+    distribution approximates the theoretical values:
 
-        >>> print("obtained success probability:", p_reg1)  # doctest: +SKIP
-        obtained success probability: 0.128
-
-        >>> print("expected states:", [addr + "1" for addr in addrs])
-        expected states: ['0001', '0011']
-
-        >>> print("obtained states:", filtered_states)
-        obtained states: [np.str_('0001'), np.str_('0011')]
-
-        >>> print("expected amplitudes:", amps)
-        expected amplitudes: [0.54772256 0.83666003]
-
-        >>> print("obtained amplitudes:", obtained_amplitudes)  # doctest: +SKIP
-        obtained amplitudes: [0.56596157 0.82443162]
+    >>> print(f"{'address':>8}{'observed':>11}{'expected':>11}")  # doctest: +SKIP
+    ... for state, obs, exp in zip(basis_states, results, expected_full):
+    ...     if obs > 1e-9 or exp > 1e-9:
+    ...         print(f"{state:>8}{obs:>11.3f}{exp:>11.3f}")
+     address   observed   expected
+         000      0.305      0.300
+         001      0.695      0.700
     """
 
     grad_method = None
