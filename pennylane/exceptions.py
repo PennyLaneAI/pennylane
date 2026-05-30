@@ -42,6 +42,7 @@ General Execution Errors
     ~QueuingError
     ~WireError
     ~MeasurementShapeError
+    ~PostselectionImpossibleError
     ~AutoGraphError
     ~CompileError
     ~DecompositionError
@@ -119,6 +120,10 @@ class WireError(Exception):
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
     quantum tape."""
+
+
+class PostselectionImpossibleError(RuntimeError):
+    """Raised when postselecting a zero-probability mid-circuit measurement outcome."""
 
 
 # =============================================================================

@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
-from pennylane.exceptions import QuantumFunctionError, TransformError
+from pennylane.exceptions import PostselectionImpossibleError, QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -252,7 +252,7 @@ def _measurement_with_no_shots(measurement):
 
 
 def _raise_impossible_postselection_error():
-    raise RuntimeError(
+    raise PostselectionImpossibleError(
         "The probability of the postselected mid-circuit measurement outcome is 0. "
         "This leads to invalid sample results."
     )
@@ -374,8 +374,10 @@ def _handle_measurement(
 ):
     if interface != "jax" and not has_valid:
         if isinstance(m, SampleMP):
-            _raise_impossible_postselection_error()
-        return _measurement_with_no_shots(m), m_count + int(m.mv is None)
+            if postselect_mode != "hw-like":
+                _raise_impossible_postselection_error()
+        else:
+            return _measurement_with_no_shots(m), m_count + int(m.mv is None)
 
     if m.mv is not None:
         return gather_mcm(m, mcm_samples, is_valid, postselect_mode=postselect_mode), m_count

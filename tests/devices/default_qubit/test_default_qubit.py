@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.devices import DefaultQubit, ExecutionConfig
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PostselectionImpossibleError
 
 max_workers_list = [
     None,
@@ -2111,7 +2111,9 @@ class TestPostselection:
             # circ = jax.jit(circ)
 
         if isinstance(mp, qp.measurements.SampleMP):
-            with pytest.raises(RuntimeError, match="probability of the postselected"):
+            with pytest.raises(
+                PostselectionImpossibleError, match="probability of the postselected"
+            ):
                 circ()
             return
 
