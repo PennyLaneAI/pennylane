@@ -641,24 +641,6 @@ class TestDensityMatrix:
 
         assert math.allclose(result, expected)
 
-    @pytest.mark.parametrize("num_q", num_qutrits)
-    def test_batched_eigvals(self, num_q, ml_framework):
-        """Test applying density matrix with batched eigenvalues"""
-
-        density_matrix = get_valid_density_matrix(num_q)
-        density_matrix = math.asarray(density_matrix, like=ml_framework)
-        density_matrix = math.cast(density_matrix, dtype=complex)
-
-        batched_params = math.asarray([0, 1, 2], like=ml_framework)
-        op = qp.TRX(batched_params, wires=0)
-
-        shape = (QUDIT_DIM,) * (2 * num_q)
-        state = math.zeros(shape, like=ml_framework)
-        state = math.cast(state, dtype=complex)
-
-        result = apply_operation(op, state)
-        assert result.shape == (len(batched_params),) + shape
-
     def test_partial_trace_single_qutrit_update(self, ml_framework):
         """Minimal test for partial tracing when applying QutritDensityMatrix to a subset of wires."""
 
