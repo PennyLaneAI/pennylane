@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
 
-ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
+ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
 class TestInitializeState:

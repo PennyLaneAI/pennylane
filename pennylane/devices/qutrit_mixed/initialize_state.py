@@ -56,7 +56,7 @@ def create_initial_state(
             rho = _flatten_outer(pure_state)
             is_state_batched = False
         else:
-            rho = qp.math.stack([_flatten_outer(s) for s in pure_state]), batch_size
+            rho = qp.math.stack([_flatten_outer(s) for s in pure_state])
 
     return _post_process(rho, num_axes, like, is_state_batched)
 
