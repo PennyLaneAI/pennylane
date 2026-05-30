@@ -461,25 +461,15 @@ class TestWrappedObj:
         assert wo.__repr__() == "Wrapped(test_repr)"
 
 
-def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object that does not have a
-    _queue_category property
-    """
-    q = AnnotatedQueue()
-    q.append(1)
-    with pytest.raises(QueuingError, match="not an object that can be processed"):
-        qp.queuing.process_queue(q)
+def test_error_on_process_queue():
+    """Test that an informative error is raised indicating that process_queue has moved."""
+
+    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
+        _ = qp.queuing.process_queue
 
 
-def test_queue_category_none_removal():
+def test_error_on_nonexistent_item():
+    """Test an AttributeError is raised if an object does not exist."""
 
-    class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-        _queue_category = None
-        num_wires = 1
-        num_params = 0
-
-    q = AnnotatedQueue()
-    q.append(DummyOp(wires=[0]))
-
-    with pytest.raises(ValueError, match="_queue_category can no longer be set to None."):
-        qp.queuing.process_queue(q)
+    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+        _ = qp.queuing.thing
