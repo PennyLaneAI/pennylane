@@ -1177,15 +1177,6 @@ class Operator2(ABC):
 # ------------------------------------------------------------------------------
 
 
-def _add_dynamic_properties(cls: type[Operator2]) -> None:
-    """Create dynamic properties for an operator using its signature."""
-    # pylint: disable=protected-access
-    for name in cls._sig.parameters:
-        if not hasattr(cls, name):
-            dyn_property = partial(_dynamic_property, name=name)
-            setattr(cls, name, property(dyn_property))
-
-
 def _dynamic_property(self: Operator2, name: str) -> Any:
     """Dynamic property for an argument called ``name``."""
     # pylint: disable=protected-access
@@ -1195,6 +1186,15 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
     raise AttributeError(
         f"'{type(self).__name__}' object has no attribute '{name}'."
     )  # pragma: no cover
+
+
+def _add_dynamic_properties(cls: type[Operator2]) -> None:
+    """Create dynamic properties for an operator using its signature."""
+    # pylint: disable=protected-access
+    for name in cls._sig.parameters:
+        if not hasattr(cls, name):
+            dyn_property = partial(_dynamic_property, name=name)
+            setattr(cls, name, property(dyn_property))
 
 
 def _format_label_arg(x, decimals, cache):
@@ -1255,3 +1255,187 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------- Operation2 -----------------------------------
+# ------------------------------------------------------------------------------
+
+
+class Operation2(Operator2):
+    r"""Base class representing quantum gates or channels applied to quantum states.
+
+    Operations define some additional properties, that are used for external
+    transformations such as gradient transforms.
+
+    The following three class attributes are optional, but in most cases
+    at least one should be clearly defined to avoid unexpected behaviour during
+    differentiation.
+
+    * :attr:`~.Operation.grad_recipe`
+    * :attr:`~.Operation.parameter_frequencies`
+    * :attr:`~.Operation.generator`
+
+    Note that ``grad_recipe`` takes precedence when computing parameter-shift
+    derivatives. Finally, these optional class attributes are used by certain
+    transforms, quantum optimizers, and gradient methods.
+    For details on how they are used during differentiation and other transforms,
+    please see the documentation for :class:`~.gradients.param_shift`,
+    :class:`~.metric_tensor`, :func:`~.reconstruct`.
+
+    Args:
+        *params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+    """
+
+    @property
+    def grad_method(self) -> Literal["A", "F", None]:
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        if self.num_params == 0:
+            return None
+        if self.grad_recipe != [None] * self.num_params:
+            return "A"
+        try:
+            self.parameter_frequencies  # pylint:disable=pointless-statement
+            return "A"
+        except ParameterFrequenciesUndefinedError:
+            return "F"
+
+    grad_recipe = None
+    r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
+        parameter-shift method.
+
+        This is a tuple with one nested list per operation parameter. For
+        parameter :math:`\phi_k`, the nested list contains elements of the form
+        :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+        term, resulting in a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
+        If ``None``, the default gradient recipe containing the two terms
+        :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+        s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
+    """
+
+    # Attributes for compilation transforms
+    # pylint: disable=useless-return
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """str or None: The basis of an operation, or for controlled gates, of the
+        target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+        or ``"Z"``.
+
+        .. warning::
+
+            ``Operation.basis`` is deprecated in v0.46 and will be removed in v0.47.
+            To check commutivity, :func:`~.is_commuting` should be used instead.
+
+        For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+        ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+        """
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return None
+
+    @property
+    def control_wires(self) -> Wires:  # pragma: no cover
+        r"""Control wires of the operator.
+
+        For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
+
+        Returns:
+            Wires: The control wires of the operation.
+        """
+        return Wires([])
+
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
+        r"""The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
+        raise NotImplementedError
+
+    @property
+    def parameter_frequencies(self) -> list[tuple[float | int]]:
+        r"""Returns the frequencies for each operator parameter with respect
+        to an expectation value of the form
+        :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+
+        These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+        on the value of the expectation value as the parameters are modified.
+        For more details, please see the :mod:`.pennylane.fourier` module.
+
+        Returns:
+            list[tuple[int or float]]: Tuple of frequencies for each parameter.
+            Note that only non-negative frequency values are returned.
+
+        **Example**
+
+        >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+
+        For operators that define a generator, the parameter frequencies are directly
+        related to the eigenvalues of the generator:
+
+        >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(1,)]
+        >>> gen = qp.generator(op, format="observable")
+        >>> gen_eigvals = qp.eigvals(gen)
+        >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+        (np.float64(1.0),)
+
+        For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+        """
+        if self.num_params == 1:
+            # if the operator has a single parameter, we can query the
+            # generator, and if defined, use its eigenvalues.
+            try:
+                gen = qp.generator(self, format="observable")
+            except GeneratorUndefinedError as e:
+                raise ParameterFrequenciesUndefinedError(
+                    f"Operation {self.name} does not have parameter frequencies defined."
+                ) from e
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                eigvals = qp.eigvals(gen, k=2 ** len(self.wires))
+
+            eigvals = tuple(np.round(eigvals, 8))
+            return [qp.gradients.eigvals_to_frequencies(eigvals)]
+
+        raise ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed as no generator is defined."
+        )
+
+    def __init__(
+        self,
+        *params: TensorLike,
+        wires: WiresLike | None = None,
+    ):
+        super().__init__(*params, wires=wires)
+
+        # check the grad_recipe validity
+        if self.grad_recipe is None:
+            # Make sure grad_recipe is an iterable of correct length instead of None
+            self.grad_recipe = [None] * self.num_params
