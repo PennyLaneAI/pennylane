@@ -29,6 +29,7 @@ from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.queuing import AnnotatedQueue
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
@@ -379,7 +380,6 @@ class TestIntegration:
 
 
 class TestDecomposition:
-
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
@@ -470,3 +470,33 @@ class TestDecomposition:
         tape = qp.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             qp.assert_equal(op1, op2)
+
+
+def test_callable_validation_doesnt_hide_bugs():
+    """Regression test for sc-121194."""
+
+    def f():
+        # Create TypeError
+        wire = "0" + 1
+        qp.X(wire)
+
+    with pytest.raises(TypeError, match="can only concatenate"):
+        change_op_basis(f, qp.Y(0))
+
+
+@pytest.mark.parametrize(
+    "f, valid",
+    [
+        (lambda: None, True),
+        (lambda a: None, False),
+        (lambda a, b=None: None, False),
+        (lambda a=None, b=None: None, True),
+    ],
+)
+def test_validate_callable_helper(f, valid):
+    """Tests helpers ability to validate callables."""
+    if valid:
+        _validate_callable(f)
+    else:
+        with pytest.raises(TypeError):
+            _validate_callable(f)
