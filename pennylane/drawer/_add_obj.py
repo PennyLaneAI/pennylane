@@ -383,8 +383,10 @@ def _add_measurement(
     else:
         meas_label = str(m)
 
-    if len(m.wires) == 0:  # state or probability across all wires
+    if len(m.wires) == 0:
+        # add grouping symbols for measurements that span all device wires.
         n_wires = len(config.wire_map)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
         for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 
