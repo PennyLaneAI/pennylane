@@ -22,6 +22,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
+from functools import lru_cache
 from string import ascii_lowercase
 from typing import Any
 
@@ -41,22 +42,28 @@ def _count_to_str(count: int | Expression) -> str:
     return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
 
 
-def _batch_num_to_letters(num: int) -> str:
-    """Helper for printing batch numbers, converts 0 to 'a', 1 to 'b', etc.
+@lru_cache
+def num_to_letters(num: int) -> str:
+    """Helper for assigning labels to numbered data, such as batches for circuit resources.
+
+    Converts 0 to 'a', 1 to 'b', etc.
 
     Example:
-    >>> _batch_num_to_letters(0)
+    >>> num_to_letters(0)
     'a'
 
-    >>> _batch_num_to_letters(25)
+    >>> num_to_letters(25)
     'z'
 
-    >>> _batch_num_to_letters(27)
+    >>> num_to_letters(26)
+    'aa'
+
+    >>> num_to_letters(27)
     'ab'
     """
     if num < 26:
         return ascii_lowercase[num]
-    return _batch_num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
+    return num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
 @dataclass(frozen=True)
@@ -678,7 +685,7 @@ class CircuitSpecs:
         elif isinstance(res, list):
             prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"{prefix}Batched tape {_batch_num_to_letters(i)}:")
+                lines.append(f"{prefix}Batched tape {num_to_letters(i)}:")
                 lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
@@ -697,7 +704,7 @@ class CircuitSpecs:
                 flat_resources[str(level)] = res
             elif isinstance(res, list):
                 for i, r in enumerate(res):
-                    flat_resources[f"{level}-{_batch_num_to_letters(i)}"] = r
+                    flat_resources[f"{level}-{num_to_letters(i)}"] = r
             else:
                 raise ValueError(
                     "Resources must be either a SpecsResources object or a list of SpecsResources objects."

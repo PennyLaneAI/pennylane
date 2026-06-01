@@ -28,7 +28,7 @@ from typing import Any
 import pennylane as qp
 
 from .expression import Expression
-from .resource import SpecsResources, SymbolicSpecsResources
+from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
@@ -62,11 +62,8 @@ def make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
 
 
 def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
-    # TODO: Decide on the prefered strategy for naming symbolic variables in the output.
-    # At the very least this needs to be extended to support more than 26 variables
-    # If we decide to take this approach, we can reuse resources._batch_num_to_letters()
     if var not in display_names:
-        display_names[var] = chr(ord("a") + len(display_names))
+        display_names[var] = num_to_letters(len(display_names))
     return display_names[var]
 
 
@@ -101,10 +98,10 @@ def _mlir_resources_to_specs_resources(
 
     if focus in fn_resources:
         if fn_resources[focus] is None:
-            # TODO: Determine if we prefer this to be a warning or an error
-            raise ValueError(
-                f"Specs detected recursion in function {focus} during resolution of MLIR resource analysis results. "
-                "Specs does not currently support recursive functions, so this may lead to incorrect results."
+            warnings.warn(
+                f"Specs detected recursion during resolution of MLIR resource analysis results. "
+                f"Function '{focus}' calls itself. "
+                "This recursive call will not be counted, so final results may be inaccurate."
             )
         return
 
@@ -146,10 +143,12 @@ def _mlir_resources_to_specs_resources(
 
         called_fn_resources = fn_resources[called_fn]
         if called_fn_resources is None:
-            raise ValueError(
-                f"Specs detected recursion in function {called_fn} during resolution of MLIR resource analysis results. "
-                "Specs does not currently support recursive functions, so this may lead to incorrect results."
+            warnings.warn(
+                f"Specs detected recursion during resolution of MLIR resource analysis results. "
+                f"Function '{focus}' calls '{called_fn}' which is already being resolved. "
+                "This recursive call will not be counted, so final results may be inaccurate."
             )
+            continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
         for gate, gate_count in called_fn_resources.gate_types.items():
