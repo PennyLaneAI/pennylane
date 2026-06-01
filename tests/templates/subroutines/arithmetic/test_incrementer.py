@@ -70,6 +70,10 @@ def test_decomposition_capture(wires, work_wires):
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
         ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], [4, 5, 6, 7, 8]),  # more than enough work wires
         ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], [4, 5]),  # some work wires, but not enough
+        # negative numbers
+        ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),  # -3 -> -2
+        ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),  # -2 -> -1
+        ([0, 1, 2], [1, 1, 1], [0, 0, 0], [3, 4]),  # -1 -> 0
     ],
 )
 def test_correct(wires, init_state, expected, work_wires):
