@@ -36,6 +36,10 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
   (two-site Fermionic Fourier transforms).
 
+* New operation `qp.QutritDensityMatix` added used to initialize density matrix states for the device
+  `qp.devices.DefaultQutritMixed`.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
 <h3>Improvements 🛠</h3>
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -56,12 +60,6 @@
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
-  
- <h4>Community contributions 🥳</h4>
-
-* New operation `qp.QutritDensityMatix` added used to initialize density matrix states for the device
-  `qp.devices.DefaultQutritMixed`.
-  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
 * Changed function `qp.math.partial_trace()` to include `qudit_dim` keyword argument to allow for partial traces of 
   any qudit density matrices with constant qudit dimension.

@@ -60,6 +60,23 @@ class TestInitializeState:
         else:
             assert qp.math.get_interface(state) == interface
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
+    def test_create_initial_state_with_state_prep_batched(self, interface):
+        """Tests that create_initial_state works with a batched state-prep operation."""
+        vec_1 = [1 / np.sqrt(9)] * 9
+        vec_2 = [1] + [0] * 8
+        prep_op = self.DefaultPrep(qp.math.array([vec_1, vec_2], like=interface), wires=[0, 1])
+        state = create_initial_state([0, 1], prep_operation=prep_op)
+        expected_1 = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
+        expected_2 = np.zeros((3, 3, 3, 3))
+        expected_2[0, 0, 0, 0] = 1
+        assert qp.math.allequal(state, np.array([expected_1, expected_2]))
+        if interface == "autograd":
+            assert qp.math.get_interface(state) == "numpy"
+        else:
+            assert qp.math.get_interface(state) == interface
+
     def test_create_initial_state_with_BasisState(self):
         """Tests that create_initial_state works with a real state-prep operator."""
         prep_op = QutritBasisState([1, 2, 0], wires=[0, 1, 2])
