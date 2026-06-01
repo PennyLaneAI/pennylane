@@ -18,6 +18,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 import copy
 from collections import defaultdict
 
+import pennylane as qp
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
@@ -75,6 +76,7 @@ def _recursive_expression(x, order, ops):
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
+
 @QueuingManager.stop_recording()
 def _simplify_trotter_sequence(decomp):
     """Simplify a list of operations by merging consecutive evolutions with the same base.
@@ -96,7 +98,7 @@ def _simplify_trotter_sequence(decomp):
         if (
             isinstance(prev, qp_ops.Evolution)
             and isinstance(op, qp_ops.Evolution)
-            and qml.equal(prev.base, op.base)
+            and qp.equal(prev.base, op.base)
         ):
             merged[-1] = qp_ops.Evolution(op.base, prev.param + op.param)
             prev = merged[-1]
@@ -579,6 +581,7 @@ def _trotter_product_decomposition(*args, **kwargs):
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
+
 
 class TrotterizedQfunc(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation applied to a set of

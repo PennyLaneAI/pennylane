@@ -349,7 +349,7 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
     return _simplify_trotter_sequence(decomp * n)
 
 
-@qml.QueuingManager.stop_recording()
+@qp.QueuingManager.stop_recording()
 def _merge_identical_evolutions(decomp):
     """Merge only identical adjacent ``Evolution`` operators."""
     if not decomp:
@@ -360,12 +360,12 @@ def _merge_identical_evolutions(decomp):
 
     for op in decomp[1:]:
         if (
-            isinstance(prev, qml.ops.op_math.Evolution)
-            and isinstance(op, qml.ops.op_math.Evolution)
-            and qml.equal(prev.base, op.base)
-            and qml.math.allclose(prev.param, op.param)
+            isinstance(prev, qp.ops.op_math.Evolution)
+            and isinstance(op, qp.ops.op_math.Evolution)
+            and qp.equal(prev.base, op.base)
+            and qp.math.allclose(prev.param, op.param)
         ):
-            merged[-1] = qml.evolve(op.base, prev.param + op.param)
+            merged[-1] = qp.evolve(op.base, prev.param + op.param)
             prev = merged[-1]
             continue
 
@@ -375,7 +375,7 @@ def _merge_identical_evolutions(decomp):
     return merged
 
 
-@qml.QueuingManager.stop_recording()
+@qp.QueuingManager.stop_recording()
 def _expected_trotter_decomp(hamiltonian_index, order, n=1, time=4.2):
     """Generate the simplified expected decomposition for ``TrotterProduct`` tests."""
     if hamiltonian_index == 2:
@@ -386,7 +386,7 @@ def _expected_trotter_decomp(hamiltonian_index, order, n=1, time=4.2):
     return _simplify_trotter_sequence(decomp)
 
 
-@qml.QueuingManager.stop_recording()
+@qp.QueuingManager.stop_recording()
 def _resources_from_decomp(decomp, num_wires):
     """Compute the resources corresponding to a decomposition."""
     gate_types = defaultdict(int)
@@ -396,7 +396,7 @@ def _resources_from_decomp(decomp, num_wires):
         gate_types[op.name] += 1
         gate_sizes[len(op.wires)] += 1
 
-    depth = qml.tape.QuantumScript(decomp).graph.get_depth()
+    depth = qp.tape.QuantumScript(decomp).graph.get_depth()
     return Resources(num_wires, len(decomp), gate_types, gate_sizes, depth)
 
 
@@ -796,8 +796,8 @@ class TestDecomposition:
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
 
-        decomp = [qml.simplify(op) for op in decomp]
-        true_decomp = [qml.simplify(op) for op in _expected_trotter_decomp(hamiltonian_index, order)]
+        decomp = [qp.simplify(op) for op in decomp]
+        true_decomp = [qp.simplify(op) for op in _expected_trotter_decomp(hamiltonian_index, order)]
         assert len(decomp) == len(true_decomp)
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
@@ -841,39 +841,43 @@ class TestDecomposition:
         assert len(decomp) == len(true_decomp)
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
-    
+
     @pytest.mark.parametrize("order", (2, 4, 6))
     @pytest.mark.parametrize("n", (1, 2, 4))
     def test_trotter_simplification(self, order, n):
         """Ensure decomposition is structurally valid (no strict equality assumptions)."""
 
-        op = qml.TrotterProduct(qml.X(0) + qml.Y(0), 1.0, n=n, order=order)
+        op = qp.TrotterProduct(qp.X(0) + qp.Y(0), 1.0, n=n, order=order)
         decomp = op.decomposition()
+
         def same_structure(o1, o2):
             return (
                 type(o1) == type(o2)
                 and qp.equal(o1.base, o2.base)
                 and getattr(o1, "parameters", None) == getattr(o2, "parameters", None)
                 and getattr(o1, "wires", None) == getattr(o2, "wires", None)
-        )
+            )
 
         for i in range(len(decomp) - 1):
             if same_structure(decomp[i], decomp[i + 1]):
-                pytest.fail(f"Redundant adjacent ops found at index {i}: {decomp[i]} == {decomp[i+1]}")
+                pytest.fail(
+                    f"Redundant adjacent ops found at index {i}: {decomp[i]} == {decomp[i+1]}"
+                )
 
     def test_trotter_simplification_correct(self):
         """Test that adjacent repeated evolutions are merged correctly."""
         time = 1.0
-        ham = qml.X(0) + qml.X(0)
-        op = qml.TrotterProduct(ham, time, n=3, order=2)
+        ham = qp.X(0) + qp.X(0)
+        op = qp.TrotterProduct(ham, time, n=3, order=2)
 
-        expected_decomp = [qml.evolve(qml.X(0), -2 * time)]
+        expected_decomp = [qp.evolve(qp.X(0), -2 * time)]
 
         computed_decomp = op.decomposition()
         assert len(computed_decomp) == len(expected_decomp)
 
         for computed, expected in zip(computed_decomp, expected_decomp):
-            qml.assert_equal(computed, expected)
+            qp.assert_equal(computed, expected)
+
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
