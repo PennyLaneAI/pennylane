@@ -220,26 +220,25 @@ class SuperpositionTHC(Operation):
 def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
-    Computes the three comparisons that define the valid index set onto dedicated flag
+    Computes the for comparisons that define the valid index set onto dedicated flag
     wires of the ancilla register (Fig. 3 of `Lee et al. (2021)
     <https://arxiv.org/abs/2011.03494>`_):
 
     * ``work_wires[1]``: :math:`\nu \leq M` (classical comparison against the THC rank).
     * ``work_wires[2]``: :math:`\mu \leq \nu` (quantum comparison between the two registers).
+    * ``work_wires[3]``: :math:`\nu = M + 1` (classical equality against the THC rank).
     * ``work_wires[4]``: :math:`\mu > N/2` (classical comparison selecting two-body terms).
 
-    The scratch wires for each comparator are drawn from disjoint slices of ``work_wires``
-    starting at index ``7``, so the comparators never collide.
+    The auxiliary wires used on each comparator are drawn from disjoint slices of ``work_wires``
+    starting at index ``7``.
 
     Args:
         M (int): The THC rank.
         N (int): The number of spin orbitals.
         mu_wires (WiresLike): The wires storing the first THC index :math:`\mu`.
         nu_wires (WiresLike): The wires storing the second THC index :math:`\nu`.
-        work_wires (WiresLike): The auxiliary wires (see :class:`SuperpositionTHC`).
-        keep_eq (bool): If ``True``, also set the equality flag on ``work_wires[3]`` via a
-            zero-controlled :class:`~.MultiControlledX` (used when uncomputing while
-            preserving the diagonal :math:`\mu = \nu` flag).
+        work_wires (WiresLike): The auxiliary wires.
+        keep_eq (bool): only if ``True``, ``work_wires[3]`` is calculated.
     """
     n = len(mu_wires)
 
@@ -293,8 +292,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # The first seven work_wires correspond to the flag/ancilla register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires are returned to
     # the zero state except work_wires[0], work_wires[3] and work_wires[6], which carry
-    # the prepared flags. Wires from index (7 + 4 * len(mu_wires) - 1) onward are scratch
-    # space for the multi-controlled gates.
+    # the prepared flags.
+
     n = len(mu_wires)
     extra_work = work_wires[7 + 4 * n - 1 :]
 
