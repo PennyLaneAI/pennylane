@@ -138,7 +138,7 @@ class QutritDensityMatrix(QubitDensityMatrix):
 
         Exception raised if the ``QutritDensityMatrix`` operation is not supported natively on the
         target device.
-    
+
     Args:
         state (array[complex]): a density matrix of size ``(3**len(wires), 3**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
