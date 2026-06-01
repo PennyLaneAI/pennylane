@@ -31,12 +31,54 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
+from pennylane.operation2 import Operator2
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 QS = TypeVar("QS", bound="QuantumScript")
+
+
+def process_queue(
+    queue: AnnotatedQueue,
+) -> tuple[list[Operator], list[MeasurementProcess]]:
+    """Process the annotated queue, creating a list of quantum
+    operations and measurement processes.
+
+    Args:
+        queue (.AnnotatedQueue): The queue to be processed into individual lists
+
+    Returns:
+        tuple[list(.Operation), list(.MeasurementProcess)]:
+        The list of tape operations, the list of tape measurements
+
+    Raises:
+        ValueError: If the queue contains objects that cannot be processed into a QuantumScript
+
+    """
+
+    ops = []
+    measurements = []
+    encountered_measurement = False
+
+    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
+    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
+    for obj, _ in queue.items():
+        if isinstance(obj, (Operator, Operator2, QuantumScript)):
+            if encountered_measurement:
+                raise ValueError(f"{obj} must occur prior to measurements.")
+            ops.append(obj)
+        elif isinstance(obj, MeasurementProcess):
+            measurements.append(obj)
+            encountered_measurement = True
+        else:
+            raise ValueError(
+                f"Encountered object {obj} in queue while processing."
+                " AnnotatedQueue should only contain `Operator`s and `MeasurementProcess`es."
+            )
+
+    return ops, measurements
 
 
 class QuantumScript:

@@ -15,10 +15,14 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
+from functools import partial
+
 import numpy as np
 
 import pennylane as qp
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops.op_math import change_op_basis
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -26,7 +30,6 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-@QueuingManager.stop_recording()
 def _rz_phase_gradient(
     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> Operator:
@@ -35,15 +38,16 @@ def _rz_phase_gradient(
     Note that the global phases are collected and added as one big global phase in the main function
     """
     precision = len(angle_wires)
-    # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ qp.math.binary_decimals(
-        phi, precision, unit=2 * np.pi
-    )
 
-    compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+    binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
-    return qp.change_op_basis(compute_op, target_op, compute_op)
+    # NOTE: To be capture compatible, must wrap in function
+    # so operators are only constructed when called
+    compute_fn = partial(qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires)
+    target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
+
+    # NOTE: Compute function is self-inverse, pass it for the uncompute function
+    return change_op_basis(compute_fn, target_fn, compute_fn)
 
 
 @transform
@@ -185,15 +189,16 @@ def rz_phase_gradient(
             phi = op.parameters[0]
             global_phases.append(phi / 2)
 
-            operations.append(
-                _rz_phase_gradient(
-                    phi,
-                    wire,
-                    angle_wires=angle_wires,
-                    phase_grad_wires=phase_grad_wires,
-                    work_wires=work_wires,
+            with QueuingManager.stop_recording():
+                operations.append(
+                    _rz_phase_gradient(
+                        phi,
+                        wire,
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    )
                 )
-            )
         else:
             operations.append(op)
 
