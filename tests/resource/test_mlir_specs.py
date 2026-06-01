@@ -195,6 +195,35 @@ class TestAnalysisPassConversion:
         with pytest.warns(UserWarning, match="automatic qubit management"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
 
+    def test_get_resources_from_analysis_pass_misc(self, example_loop_analysis_pass_result):
+        """Extra tests for features that aren't tested in the main test"""
+
+        # Force both a PPR and PPM to exist
+        example_loop_analysis_pass_result["circuit"]["operations"]["PPR-pi/2(3)"] = 1
+        example_loop_analysis_pass_result["circuit"]["operations"]["PPM(3)"] = 1
+
+        # Force a measurement inside a subroutine
+        example_loop_analysis_pass_result["dyn_for_loop_1"]["measurements"]["expval(PauliZ)"] = 1
+
+        var = _generate_display_name_for_symbolic_var("a", {})
+        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
+        assert actual == [
+            SymbolicSpecsResources(
+                gate_types={
+                    "Hadamard": 3,
+                    "PPM-w3": 1,
+                    "PPR-pi/2-w3": 1,
+                    "PauliX": Expression({(var,): 2}),
+                    "PauliZ": 6,
+                },
+                gate_sizes={1: Expression({(var,): 2, (): 9}), 3: 2},
+                measurements={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
+                num_allocs=10,
+                depth=None,
+            ),
+        ]
+
     def test_mlir_resources_to_specs_resources(self, example_loop_analysis_pass_result):
         fn_resources = {}
         display_names = {}
