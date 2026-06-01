@@ -19,9 +19,11 @@ This module contains templates, which are pre-coded routines that can be used in
 .. autosummary::
     :toctree: api
 
+    ~LeftClassicalComparator
     ~LeftQuantumComparator
     ~SumOfSlatersPrep2
 """
 
+from .left_classical_comparator import LeftClassicalComparator
 from .left_quantum_comparator import LeftQuantumComparator
 from .sum_of_slaters2 import SumOfSlatersPrep2
