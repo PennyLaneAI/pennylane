@@ -327,6 +327,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
+  if the number of selected operators is notably smaller than the maximal capacity for the given
+  number of control wires. This bug only surfaced for `partial=False`.
+  [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
+
 * Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
   [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
