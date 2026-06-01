@@ -37,6 +37,11 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.ops import PhaseShift, CRY, RX, Hermitian, Rot
+
+from pennylane.exceptions import PennyLaneDeprecationWarning, GeneratorUndefinedError
+from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
+from pennylane.operation2 import Operator2, Operation2
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
@@ -1690,3 +1695,105 @@ class TestRepresentations:
 
         op = WithGen(wires=0)
         assert op.generator() == DynOp(0.5, wires=0)
+
+
+# Operation2 related tests
+
+
+def test_basis_deprecation():
+    """Test that Operation2.basis is deprecated."""
+
+    class MyOp(Operation2):
+        pass
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="Operation2.basis is deprecated"):
+        assert MyOp(0).basis is None
+
+
+class TestOperationDerivative:
+    """Tests for operation_derivative function"""
+
+    def test_no_generator_raise(self):
+        """Tests if the function raises an exception if the input operation has no generator"""
+
+        class CustomOp(Operation2):
+            num_wires = 1
+            num_params = 1
+
+        op = CustomOp(0.5, wires=0)
+
+        with pytest.raises(
+            GeneratorUndefinedError,
+            match="Operation CustomOp does not have a generator",
+        ):
+            operation_derivative(op)
+
+    def test_multiparam_raise(self):
+        """Test if the function raises a ValueError if the input operation is composed of multiple
+        parameters"""
+
+        class RotWithGen(Rot):
+            def generator(self):
+                return Hermitian(np.zeros((2, 2)), wires=self.wires)
+
+        op = RotWithGen(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
+            operation_derivative(op)
+
+    def test_rx(self):
+        """Test if the function correctly returns the derivative of RX"""
+        p = 0.3
+        op = RX(p, wires=0)
+
+        derivative = operation_derivative(op)
+
+        expected_derivative = 0.5 * np.array(
+            [[-np.sin(p / 2), -1j * np.cos(p / 2)], [-1j * np.cos(p / 2), -np.sin(p / 2)]]
+        )
+
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_phase(self):
+        """Test if the function correctly returns the derivative of PhaseShift"""
+        p = 0.3
+        op = PhaseShift(p, wires=0)
+
+        derivative = operation_derivative(op)
+        expected_derivative = np.array([[0, 0], [0, 1j * np.exp(1j * p)]])
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_cry(self):
+        """Test if the function correctly returns the derivative of CRY"""
+        p = 0.3
+        op = CRY(p, wires=[0, 1])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_cry_non_consecutive(self):
+        """Test if the function correctly returns the derivative of CRY
+        if the wires are not consecutive. This is expected behaviour, since
+        without any other context, the operation derivative should make no
+        assumption about the wire ordering."""
+        p = 0.3
+        op = CRY(p, wires=[1, 0])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)

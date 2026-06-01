@@ -15,13 +15,16 @@ This module contains the abstract base classes for defining PennyLane
 operations and observables.
 TODO: [sc-120453] Fill docstring
 """
-
+import warnings
 from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
+from warnings import warn
+
+import numpy as np
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -40,6 +43,9 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
+from pennylane.exceptions import ParameterFrequenciesUndefinedError, PennyLaneDeprecationWarning, \
+    GeneratorUndefinedError
+from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -1439,3 +1445,27 @@ class Operation2(Operator2):
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
+
+
+def operation_derivative(operation: Operation2) -> TensorLike:
+    r"""Calculate the derivative of an operation.
+
+    For an operation :math:`e^{i \hat{H} \phi t}`, this function returns the matrix representation
+    in the standard basis of its derivative with respect to :math:`t`, i.e.,
+
+    .. math:: \frac{d \, e^{i \hat{H} \phi t}}{dt} = i \phi \hat{H} e^{i \hat{H} \phi t},
+
+    where :math:`\phi` is a real constant.
+
+    Args:
+        operation (.Operation): The operation to be differentiated.
+
+    Returns:
+        array: the derivative of the operation as a matrix in the standard basis
+
+    Raises:
+        ValueError: if the operation does not have a generator or is not composed of a single
+            trainable parameter
+    """
+    generator = qp.matrix(qp.generator(operation, format="observable"), wire_order=operation.wires)
+    return 1j * generator @ operation.matrix()
