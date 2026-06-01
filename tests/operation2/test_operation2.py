@@ -32,14 +32,13 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
+from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operation2, Operator2
-from pennylane.ops import CRY, RX, CRot, Exp, Hermitian, PauliX, PhaseShift, Rot
+from pennylane.ops import CRot, Hermitian
 from pennylane.ops.functions import eigvals, generator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
