@@ -215,10 +215,11 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         num_controls = 0
     else:
         if enabled() and control_wires.shape[0] > 0:
-            wires = jnp.concatenate([jnp.atleast_1d(control_wires), wires])
+            wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
         else:
-            wires = control_wires + wires
+            wires = wires + control_wires
         wires = wires[::-1]
+        num_controls = len(control_wires)
 
     def _increment():
         # Construct the wires on which the ladder will act.
