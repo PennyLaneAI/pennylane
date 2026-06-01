@@ -66,7 +66,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
         registers = qp.registers({"hadamard": 1, "system": M*N})
 
-        target_gates= {
+        gate_set = {
                 "Hadamard",
                 "BasisRotation",
                 "RZ",
@@ -76,9 +76,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
                 }
 
         @qp.qjit
-        @qp.transforms.decompose(
-            gate_set=target_gates,
-        )
+        @qp.transforms.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():
             qp.H(registers["hadamard"])
