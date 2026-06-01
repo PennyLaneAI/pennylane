@@ -286,6 +286,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs werer
+  accidentally being masked by internal try/except logic.
+  [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
