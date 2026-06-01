@@ -122,23 +122,21 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         raise ValueError(
             "Could not auto-detect Hamiltonian type. "
             f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}. "
+            f"Expected (core_tensors.ndim, leaf_tensors.ndim)=(3, 3) (CDF) or (5, 4) (CGF)."
         )
 
     if num_trotter_steps > 0:
         second_order_time_step = evolution_time / num_trotter_steps
-    else:
-        second_order_time_step = 0.0
 
-    @qp.for_loop(num_trotter_steps)
-    def trotter_steps(step_idx, hamiltonian):
-        _trotter_step(
-            step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme
-        )
-        return hamiltonian
+        @qp.for_loop(num_trotter_steps)
+        def trotter_steps(step_idx, hamiltonian):
+            _trotter_step(
+                step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme
+            )
+            return hamiltonian
 
-    trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
+        trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
 
-    if num_trotter_steps > 0:
         U_tensor = hamiltonian["leaf_tensors"]
         very_last_U = _transpose_leaf(U_tensor[1], frag_scheme)
         _apply_system_basis_rotation(very_last_U, wires, frag_scheme)

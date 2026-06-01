@@ -102,7 +102,7 @@ def toy_multi_fragment():
 # Helper functions
 
 
-def _qml_basis_rotation_matrix(leaf_frag, num_modes, n_states):
+def _qp_basis_rotation_matrix(leaf_frag, num_modes, n_states):
     """Return the full unitary for per-mode BasisRotation, matching
     what trotter_fragmented applies to each fragment."""
     num_qubits = num_modes * n_states
@@ -143,7 +143,7 @@ def build_H_exact(hamiltonian, num_modes, n_states):
         for p in range(n_states):
             eps_lp = core_tensors[0, l, l, p, p]
             H_1b_diag = H_1b_diag + eps_lp * n_cache[l * n_states + p]
-    U_1b = _qml_basis_rotation_matrix(leaf_tensors[0], num_modes, n_states)
+    U_1b = _qp_basis_rotation_matrix(leaf_tensors[0], num_modes, n_states)
     H = H + U_1b @ H_1b_diag @ U_1b.conj().T
 
     # Two-body fragments
@@ -159,7 +159,7 @@ def build_H_exact(hamiltonian, num_modes, n_states):
                             Z_p = Z_cache[l * n_states + p]
                             Z_q = Z_cache[m * n_states + q]
                             H_2b_diag = H_2b_diag + (lam / 4.0) * (Z_p @ Z_q)
-        U_2b = _qml_basis_rotation_matrix(leaf_tensors[f], num_modes, n_states)
+        U_2b = _qp_basis_rotation_matrix(leaf_tensors[f], num_modes, n_states)
         H = H + U_2b @ H_2b_diag @ U_2b.conj().T
 
     H = 0.5 * (H + H.conj().T)
@@ -417,14 +417,7 @@ class TestInputValidation:
         wires = list(range(6))
 
         with pytest.raises(ValueError, match="Could not auto-detect"):
-            dev = qp.device("default.qubit", wires=wires)
-
-            @qp.qnode(dev)
-            def _circuit():
-                trotter_fragmented(0.1, 1, bad_ham, wires)
-                return qp.state()
-
-            qp.matrix(_circuit)()
+            trotter_fragmented(0.1, 1, bad_ham, wires)
 
 
 @pytest.mark.skip
