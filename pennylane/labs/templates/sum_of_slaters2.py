@@ -47,7 +47,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
-        target_wires (~.WiresLike): Wires on which to prepare the state.
+        wires (~.WiresLike): Wires on which to prepare the state.
         enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
             :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
         identification_wires (~.WiresLike): Work wires used for the identification register.
@@ -82,10 +82,10 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         coefficients = np.array([1, -1j, 1j, 1, 1, -1j, 1, 1j]) / np.sqrt(8)
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
         n = 7
-        target_wires = list(range(n))
+        wires = list(range(n))
 
     This is all the information we require to create the state: ``coefficients``, ``indices``,
-    and ``target_wires``. The ``indices`` correspond to the computational basis states interpreted
+    and ``wires``. The ``indices`` correspond to the computational basis states interpreted
     via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
     or :math:`|3\rangle = |011\rangle` for three qubits).
     However, we also need to provide multiple sets of work wires. We can conveniently
@@ -105,15 +105,14 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     .. code-block:: python
 
-        all_wires = qp.registers(sizes) # Includes the target_wires but under the name ``wires``
-        all_wires["target_wires"] = all_wires.pop("wires")
+        all_wires = qp.registers(sizes) # Includes the target wires
 
     >>> print(*all_wires.items(), sep="\n")
+    ('wires', Wires([0, 1, 2, 3, 4, 5, 6]))
     ('enumeration_wires', Wires([7, 8, 9]))
     ('identification_wires', Wires([10, 11, 12, 13, 14]))
     ('qrom_work_wires', Wires([15, 16]))
     ('mcx_cache_wires', Wires([17, 18, 19, 20]))
-    ('target_wires', Wires([0, 1, 2, 3, 4, 5, 6]))
 
     With our work wires set up, we can construct the state preparation circuit and check the
     prepared state for correctness:
@@ -211,11 +210,10 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
             coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
             indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
             n = 5
-            target_wires = list(range(n))
+            wires = list(range(n))
 
             sizes = SumOfSlatersPrep2.required_register_sizes(indices, n)
-            all_wires = qp.registers(sizes) # Includes the target_wires but under the name ``wires``
-            all_wires["target_wires"] = all_wires.pop("wires")
+            all_wires = qp.registers(sizes) # Includes the target wires
 
             num_wires = sum(sizes.values())
 
@@ -287,26 +285,15 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
     @property
     def resource_params(self):
         indices = self.hyperparameters["indices"]
-        wires = self.hyperparameters["target_wires"]
-        n = len(wires)
-        v_bits = qp.math.int_to_binary(np.array(indices), n).T
+        num_wires = len(self.wires)
+        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
         selector_ids, _ = qp.select_sos_rows(v_bits)
-        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": n}
-
-    def _flatten(self):
-        hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items()
-        )
-        return (self.data[0],), hashable_hyperparameters
-
-    @classmethod
-    def _unflatten(cls, data, metadata) -> "SumOfSlatersPrep2":
-        return cls(data[0], **dict(metadata))
+        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": num_wires}
 
     def __init__(
         self,
         coefficients,
-        target_wires,
+        wires,
         *_,
         enumeration_wires,
         identification_wires,
@@ -314,8 +301,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         mcx_cache_wires,
         indices,
     ):  # pylint: disable=too-many-arguments
-        super().__init__(coefficients, target_wires, indices)
-        self.hyperparameters["target_wires"] = Wires(target_wires)
+        super().__init__(coefficients, wires, indices)
         self.hyperparameters["enumeration_wires"] = Wires(enumeration_wires)
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
@@ -330,17 +316,16 @@ def _sos_state_prep(
     **all_wires,
 ):  # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
-    all_wires.pop("wires", None)
-    n = len(all_wires["target_wires"])
+    n = len(all_wires["wires"])
     num_entries = len(indices)
     v_bits = qp.math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
-        qp.BasisState(v_bits[:, 0], wires=all_wires["target_wires"])
+        qp.BasisState(v_bits[:, 0], wires=all_wires["wires"])
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_target_wires, *data = _preprocess(v_bits, all_wires["target_wires"])
-    all_wires["selected_target_wires"] = selected_target_wires
+    selected_wires, *data = _preprocess(v_bits, all_wires["wires"])
+    all_wires["selected_wires"] = selected_wires
     data = (coefficients, v_bits, *data)
     _sos_state_prep_with_wires(data, **all_wires)
 

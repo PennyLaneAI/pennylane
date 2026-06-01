@@ -1034,7 +1034,7 @@ def _preprocess(v_bits, wires):
     num_entries = v_bits.shape[1]
     # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
-    selected_target_wires = [wires[idx] for idx in selector_ids]
+    selected_wires = [wires[idx] for idx in selector_ids]
     # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)
 
@@ -1044,18 +1044,18 @@ def _preprocess(v_bits, wires):
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
-    return selected_target_wires, u_bits, b_bits, d, m, r
+    return selected_wires, u_bits, b_bits, d, m, r
 
 
 def _sos_state_prep_with_wires(
     data,
     *,
-    target_wires,
+    wires,
     enumeration_wires,
     identification_wires,
     qrom_work_wires,
     mcx_cache_wires,
-    selected_target_wires,
+    selected_wires,
 ):
     # pylint: disable=too-many-arguments, no-value-for-parameter
     coefficients, v_bits, u_bits, b_bits, d, m, r = data
@@ -1074,7 +1074,7 @@ def _sos_state_prep_with_wires(
     qp.QROM(
         v_bits.T,
         control_wires=enumeration_wires,
-        target_wires=target_wires,
+        target_wires=wires,
         work_wires=qrom_work_wires,
     )
 
@@ -1088,14 +1088,14 @@ def _sos_state_prep_with_wires(
 
             @for_loop(r)
             def inner_loop(j):
-                qp.cond(u[j], qp.CNOT)([selected_target_wires[j], identification_wires[i]])
+                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
 
             inner_loop()
 
         encoding()
 
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
-    mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
+    mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
     # Create wires for elbow ladder
     elbow_wires = mcx_ctrl_wires[:1] + [
@@ -1166,7 +1166,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_target_wires, *data = _preprocess(v_bits, wires)
+    selected_wires, *data = _preprocess(v_bits, wires)
     # pylint: disable-next=protected-access
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data[-1], n)
     all_allocate_wires = sum(sizes.values()) - n
@@ -1175,8 +1175,8 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         # There is no implementation of QROM with allocate yet, so we allocate its work wires here
         names = ["enumeration_wires", "identification_wires", "qrom_work_wires", "mcx_cache_wires"]
         all_wires = {name: allocated[start : (start := start + sizes[name])] for name in names}
-        all_wires["target_wires"] = wires
-        all_wires["selected_target_wires"] = selected_target_wires
+        all_wires["wires"] = wires
+        all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, *data)
         _sos_state_prep_with_wires(data, **all_wires)
 

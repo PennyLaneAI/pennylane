@@ -30,10 +30,7 @@ def make_registers(indices, num_wires):
     wires for ``SumOfSlatersPrep2``. The size of the required registers is computed with
     ``SumOfSlatersPrep.required_register_sizes`` and ``qp.registers`` is used to produce the
     registers themselves. This function assumes consecutive integer wire labels."""
-    registers = SumOfSlatersPrep2.required_register_sizes(indices, num_wires)
-    all_wires = qp.registers(registers)
-    all_wires["target_wires"] = all_wires.pop("wires")  # Rename the target wires
-    return all_wires
+    return qp.registers(SumOfSlatersPrep2.required_register_sizes(indices, num_wires))
 
 
 class TestSumOfSlatersPrep2:
@@ -98,7 +95,7 @@ class TestSumOfSlatersPrep2:
             )
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
-        target_wires = list(range(num_wires))
+        wires = list(range(num_wires))
         all_wires = make_registers(indices, num_wires)
 
         with qp.decomposition.toggle_graph_ctx(
@@ -111,7 +108,7 @@ class TestSumOfSlatersPrep2:
                 def func(coefficients):
                     # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
-                    qp.Identity(target_wires)
+                    qp.Identity(wires)
                     rule(coefficients, **all_wires, indices=indices)
                     return qp.state()
 
@@ -168,7 +165,7 @@ class TestSumOfSlatersPrep2:
         # Add indices (powers of two) that force many bits to be required,
         # avoiding the identity encoding case
         indices = self.force_powers_of_two(indices, num_wires)
-        target_wires = list(range(num_wires))
+        wires = list(range(num_wires))
         all_wires = make_registers(indices, num_wires)
 
         with qp.decomposition.toggle_graph_ctx(
@@ -181,7 +178,7 @@ class TestSumOfSlatersPrep2:
                 def func():
                     # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
-                    qp.Identity(target_wires)
+                    qp.Identity(wires)
                     rule(coefficients, **all_wires, indices=indices)
                     return qp.state()
 
