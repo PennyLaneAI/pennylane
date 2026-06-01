@@ -341,6 +341,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 expose = ["Operator", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase"]
 from = ["pennylane.core.operator"]
 
+[[modules]]
 path = "pennylane.operation2"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
