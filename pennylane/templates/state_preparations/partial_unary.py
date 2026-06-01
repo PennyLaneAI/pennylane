@@ -103,7 +103,11 @@ class IsometryFinder:
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - b
+        print(f"{nonsubspace_wires=}")
+        print(f"{batch_qubit_positions=}")
+        print(f"{b=}")
         target_wires = [nonsubspace_wires[batch_qubit_positions[idx]] for idx in range(b)]
+        print(f"{target_wires=}")
         self.circuit_ops.append(qp.BasisEmbedding(k_start, subspace_wires))
         sub_ops = [qp.X(w) for w in target_wires]
         self.circuit_ops.append(
@@ -207,6 +211,9 @@ class IsometryFinder:
 
                                 if diff_qubit is not None:
                                     ctrl_val = int(self.tableau[idx, diff_qubit])
+                                    print(
+                                        f"Trying to append MCX op with target wires {[wires[self.l+j], wires[diff_qubit], wires[actual_qubit]]} and work_wire {work_wires[0]}"
+                                    )
                                     self.circuit_ops.append(
                                         qp.MultiControlledX(
                                             [
@@ -355,37 +362,40 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
         return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
 
     resources = defaultdict(int)
+    print(f"{num_work_wires=}")
+    print(f"{ell-1=}")
     if num_work_wires < ell - 1:
         resources[resource_rep(qp.allocation.Allocate)] += 1
         resources[resource_rep(qp.allocation.Deallocate)] += 1
+    num_work_wires = max(num_work_wires, ell - 1)
     resources[resource_rep(qp.MultiplexerStatePreparation, num_wires=ell)] += 1
     R = num_wires - ell
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
     select_rep = resource_rep(
         qp.Select,
-        op_reps=[resource_rep(qp.X)] * main_pui_batch_size,
+        op_reps=(resource_rep(qp.X),) * main_pui_batch_size,
         num_control_wires=ell,
-        num_work_wires=ell - 1,
+        num_work_wires=num_work_wires,
         partial=False,
     )
     resources[select_rep] += num_entries // 8
 
     print(main_pui_batch_size)
     print(num_entries)
-    rest_pui_batch_size = num_entries % main_pui_batch_size
+    rest_pui_batch_size = num_entries % main_pui_batch_size or main_pui_batch_size
     print(rest_pui_batch_size)
     select_rep = resource_rep(
         qp.Select,
-        op_reps=[resource_rep(qp.X)] * rest_pui_batch_size,
+        op_reps=(resource_rep(qp.X),) * rest_pui_batch_size,
         num_control_wires=ell,
-        num_work_wires=ell - 1,
+        num_work_wires=num_work_wires,
         partial=False,
     )
     resources[select_rep] += 1
 
     resources[resource_rep(qp.CNOT)] += int(num_entries**1.15 * 4)
     embed_rep = resource_rep(qp.BasisState, num_wires=ell)
-    resources[embed_rep] += max(num_entries // 4, 0)
+    resources[embed_rep] += max(num_entries // 4, 1)
     swap_rep = resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
 
@@ -423,10 +433,11 @@ def _pui_state_prep(coefficients, wires, indices, work_wires, **__):
     ell = max(math.ceil_log2(s), 1)
     iso_finder = IsometryFinder(indices, len(wires))
 
-    need_to_allocate = len(work_wires) - (ell - 1)
-    if need_to_allocate:
+    need_to_allocate = (ell - 1) - len(work_wires)
+    if need_to_allocate > 0:
         with allocate(need_to_allocate, state="zero", restored=True) as additional_work_wires:
             work_wires = list(work_wires) + list(additional_work_wires)
+            print(f"combined work wires: {work_wires}")
             ops, bijection = iso_finder.find_isometry(wires, work_wires)
             subspace_wires = wires[:ell]
 
@@ -443,6 +454,7 @@ def _pui_state_prep(coefficients, wires, indices, work_wires, **__):
                     qp.apply(op)
 
     else:
+        print(f"combined work wires: {work_wires}")
         ops, bijection = iso_finder.find_isometry(wires, work_wires)
 
         subspace_wires = wires[:ell]

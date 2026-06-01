@@ -121,6 +121,7 @@ class TestPartialUnaryStatePreparation:
         else:
             work_wires = ()
 
+        print(f"{wires=}, {work_wires=}")
         op = PartialUnaryStatePreparation(
             coefficients, wires, indices=indices, work_wires=work_wires
         )
