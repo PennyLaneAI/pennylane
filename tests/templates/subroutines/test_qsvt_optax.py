@@ -72,7 +72,8 @@ def generate_polynomial_coeffs(degree, parity=None):
 pytestmark = pytest.mark.external
 
 
-def test_jax_x64_warning(preserve_jax_x64):
+@pytest.mark.usefixtures("preserve_jax_x64")
+def test_jax_x64_warning():
     """Ensures a warning is raised if running in 32-bit JAX."""
 
     jax.config.update("jax_enable_x64", False)

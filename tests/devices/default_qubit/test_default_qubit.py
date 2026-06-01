@@ -2334,7 +2334,8 @@ def test_broadcasted_parameter(max_workers):
 
 
 @pytest.mark.jax
-def test_renomalization_issue(preserve_jax_x64):
+@pytest.mark.usefixtures("preserve_jax_x64")
+def test_renomalization_issue():
     """Test that no normalization error occurs with the following workflow in float32 mode.
     Just tests executes without error.  Not producing a more minimal example due to difficulty
     finding an exact case that leads to renomalization issues.

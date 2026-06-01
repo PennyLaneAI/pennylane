@@ -26,7 +26,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
-def test_warning_float32(preserve_jax_x64):
+@pytest.mark.usefixtures("preserve_jax_x64")
+def test_warning_float32():
     """Test that a warning is raised if trainable inputs are float32."""
 
     @qp.qnode(qp.device("default.qubit", wires=1), diff_method="finite-diff")
