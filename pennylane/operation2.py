@@ -1280,30 +1280,8 @@ def _is_hash_leaf(l) -> bool:
 
 
 class Operation2(Operator2, is_base=True):
-    r"""Base class representing quantum gates or channels applied to quantum states.
-
-    Operations define some additional properties, that are used for external
-    transformations such as gradient transforms.
-
-    The following three class attributes are optional, but in most cases
-    at least one should be clearly defined to avoid unexpected behaviour during
-    differentiation.
-
-    * :attr:`~.Operation.grad_recipe`
-    * :attr:`~.Operation.parameter_frequencies`
-    * :attr:`~.Operation.generator`
-
-    Note that ``grad_recipe`` takes precedence when computing parameter-shift
-    derivatives. Finally, these optional class attributes are used by certain
-    transforms, quantum optimizers, and gradient methods.
-    For details on how they are used during differentiation and other transforms,
-    please see the documentation for :class:`~.gradients.param_shift`,
-    :class:`~.metric_tensor`, :func:`~.reconstruct`.
-
-    Args:
-        *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
+    r"""
+    TODO [sc-120453] tracks documentation.
     """
 
     @property
