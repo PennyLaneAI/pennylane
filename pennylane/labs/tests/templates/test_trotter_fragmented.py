@@ -25,7 +25,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
-from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_factorized
+from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_fragmented
 
 # pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods
 
@@ -104,7 +104,7 @@ def toy_multi_fragment():
 
 def _qml_basis_rotation_matrix(leaf_frag, num_modes, n_states):
     """Return the full unitary for per-mode BasisRotation, matching
-    what trotter_factorized applies to each fragment."""
+    what trotter_fragmented applies to each fragment."""
     num_qubits = num_modes * n_states
     wires = list(range(num_qubits))
 
@@ -200,7 +200,7 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
     wires = list(range(num_qubits))
 
     def _circuit():
-        trotter_factorized(t, num_steps, hamiltonian, wires)
+        trotter_fragmented(t, num_steps, hamiltonian, wires)
 
     return qp.matrix(_circuit, wire_order=wires)()
 
@@ -421,7 +421,7 @@ class TestInputValidation:
 
             @qp.qnode(dev)
             def _circuit():
-                trotter_factorized(0.1, 1, bad_ham, wires)
+                trotter_fragmented(0.1, 1, bad_ham, wires)
                 return qp.state()
 
             qp.matrix(_circuit)()
@@ -582,7 +582,7 @@ def test_catalyst_legacy_frontend():
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
-            trotter_factorized(
+            trotter_fragmented(
                 evolution_time=1.0,
                 num_trotter_steps=10,
                 hamiltonian=hamiltonian,

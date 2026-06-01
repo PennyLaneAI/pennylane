@@ -26,8 +26,8 @@ except ImportError:
     has_jax = False
 
 
-def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
-    r"""Second-order Trotter time evolution for a factorized Hamiltonian.
+def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
+    r"""Second-order Trotter time evolution for a fragmented Hamiltonian.
 
     This template works for both electronic Compressed Double Factorization (CDF), see `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`__,
     and vibrational Christiansen Greedy Fragmentation (CGF), see `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`__, Hamiltonians.
@@ -83,7 +83,7 @@ def trotter_factorized(evolution_time, num_trotter_steps, hamiltonian, wires, co
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
-            trotter_factorized(
+            trotter_fragmented(
                 evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
                 wires=registers["system"],
                 control_wires=registers["hadamard"])
@@ -158,7 +158,7 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_
 
     if not has_jax:
         raise ImportError(
-            "jax is required for trotter_factorized. Install it with: pip install jax jaxlib"
+            "jax is required for trotter_fragmented. Install it with: pip install jax jaxlib"
         )
 
     if qp.compiler.active():
