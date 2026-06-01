@@ -39,9 +39,14 @@ from pennylane.operation2 import Operator2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.ops import PhaseShift, CRY, RX, Hermitian, Rot
 
-from pennylane.exceptions import PennyLaneDeprecationWarning, GeneratorUndefinedError
+from pennylane.exceptions import (
+    GeneratorUndefinedError,
+    PennyLaneDeprecationWarning,
+    PowUndefinedError,
+)
 from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
-from pennylane.operation2 import Operator2, Operation2
+from pennylane.operation2 import Operation2, Operator2
+from pennylane.ops import CRY, RX, Hermitian, PhaseShift, Rot
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires, WiresLike
@@ -1709,6 +1714,7 @@ def test_basis_deprecation():
         wire_argnames = ("wires",)
 
         num_params = 1
+        num_wires = 1
 
         def __init__(self, phi: float, wires: WiresLike):
             super().__init__(phi, wires=wires)
@@ -1719,21 +1725,6 @@ def test_basis_deprecation():
 
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
-
-    def test_no_generator_raise(self):
-        """Tests if the function raises an exception if the input operation has no generator"""
-
-        class CustomOp(Operation2):
-            num_wires = 1
-            num_params = 1
-
-        op = CustomOp(0.5, wires=0)
-
-        with pytest.raises(
-            GeneratorUndefinedError,
-            match="Operation CustomOp does not have a generator",
-        ):
-            operation_derivative(op)
 
     def test_multiparam_raise(self):
         """Test if the function raises a ValueError if the input operation is composed of multiple

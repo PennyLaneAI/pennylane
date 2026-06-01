@@ -15,6 +15,7 @@ This module contains the abstract base classes for defining PennyLane
 operations and observables.
 TODO: [sc-120453] Fill docstring
 """
+
 import warnings
 from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
@@ -45,6 +46,10 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
 from pennylane.exceptions import ParameterFrequenciesUndefinedError, PennyLaneDeprecationWarning, \
     GeneratorUndefinedError
+    GeneratorUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
+)
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
@@ -212,12 +217,15 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"], is_base: bool=False) -> None:  # pylint: disable=too-many-branches
+    def __init_subclass__(
+        cls: type["Operator2"], is_base: bool = False
+    ) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
 
-        if is_base: return
+        if is_base:
+            return
 
         _add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -1437,17 +1445,15 @@ class Operation2(Operator2, is_base=True):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    def __init__(
-        self,
-        *params: TensorLike,
-        wires: WiresLike | None = None,
+    def __init_subclass__(
+        cls: type["Operation2"],
     ):
-        super().__init__(*params, wires=wires)
-
         # check the grad_recipe validity
-        if self.grad_recipe is None:
+        if cls.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
-            self.grad_recipe = [None] * self.num_params
+            cls.grad_recipe = [None] * cls.num_params
+
+        super().__init_subclass__()
 
 
 def operation_derivative(operation: Operation2) -> TensorLike:
