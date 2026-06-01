@@ -1294,9 +1294,9 @@ class Operation2(Operator2, is_base=True):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        if self.num_params == 0:
+        if len(self.dynamic_argnames) == 0:
             return None
-        if self.grad_recipe != [None] * self.num_params:
+        if self.grad_recipe != [None] * len(self.dynamic_argnames):
             return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
