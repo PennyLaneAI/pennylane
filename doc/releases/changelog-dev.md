@@ -24,10 +24,10 @@
 
   ```pycon
   >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
-  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
-  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
-  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤ ╭State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤ ├State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤ ├State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤ ╰State
 
   ```
 
@@ -38,7 +38,48 @@
 
 <h3>Improvements 🛠</h3>
 
-* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})).
+* Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
+
+  For example, a controlled multi-target-``X`` operation previously decomposed as
+
+  ```
+  c1: ─╭●─╭●─╭●─╭●─┤  State
+  c2: ─├●─├●─├●─├●─┤  State
+  c3: ─├●─├●─├●─├●─┤  State
+   3: ─╰X─│──│──│──┤  State
+   2: ────╰X─│──│──┤  State
+   1: ───────╰X─│──┤  State
+   0: ──────────╰X─┤  State
+  ```
+
+  With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
+
+  ```python
+  @qp.transforms.decompose(
+      gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
+  )
+  @qp.qnode(qp.device("default.qubit"))
+  def qnode():
+      qp.ctrl(qp.X(0) @ qp.X(1) @ qp.X(2) @ qp.X(3), control=["c1", "c2", "c3"], work_wires=["w1", "w2"], work_wire_type="zeroed")
+      return qp.state()
+
+  print(qp.draw(qnode)())
+  ```
+
+  ```
+  c1: ─╭●─────────────────────●╮─┤  State
+  c2: ─├●─────────────────────●┤─┤  State
+  w1: ─╰⊕─╭●──────────────●╮──⊕╯─┤  State
+  c3: ────├●──────────────●┤─────┤  State
+  w2: ────╰⊕─╭●─╭●─╭●─╭●──⊕╯─────┤  State
+   3: ───────╰X─│──│──│──────────┤  State
+   2: ──────────╰X─│──│──────────┤  State
+   1: ─────────────╰X─│──────────┤  State
+   0: ────────────────╰X─────────┤  State
+  ```
+  [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
+
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -290,6 +331,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
+  if the number of selected operators is notably smaller than the maximal capacity for the given
+  number of control wires. This bug only surfaced for `partial=False`.
+  [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
+
+* Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
+  exists from an operator to a controlled/adjoint version of itself.
+  [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
@@ -319,6 +369,12 @@
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
+* Fixed a bug where :func:`~pennylane.draw` dropped the grouping brackets on measurements that
+  span all device wires (such as :func:`~.state`, :func:`~.probs`, :func:`~.sample`, or
+  :func:`~.counts` without an explicit ``wires`` argument). The brackets now render consistently
+  with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
+  [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -334,6 +390,7 @@ Christina Lee,
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
+Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs.
