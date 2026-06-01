@@ -472,7 +472,7 @@ class TestDecomposition:
             qp.assert_equal(op1, op2)
 
 
-def test_callable_validation_doesnt_hide_bugs():
+def test_callable_validation_doesnt_hide_bugs_with_typeerror():
     """Regression test for sc-121194."""
 
     def f():
