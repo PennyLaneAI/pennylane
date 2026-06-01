@@ -483,7 +483,7 @@ def _out_multiplier_with_adder(
     # If the output wires are zeroed, the first controlled adder is just a controlled copy.
     if output_wires_zeroed:
         for y_wire, out_wire in zip(
-            y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=False
+            y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=True
         ):
             TemporaryAND([x_wires[-1], y_wire, out_wire])
 
@@ -680,7 +680,7 @@ def _increment(wires, work_wires):
     wires = wires[::-1]
     if len(wires) > 1:
         # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
+        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires, strict=True), start=tuple()))
         # Forward ladder
         for k in range(len(wires) - 2):
             TemporaryAND(all_wires[2 * k : 2 * k + 3])
