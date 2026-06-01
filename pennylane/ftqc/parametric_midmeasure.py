@@ -355,7 +355,7 @@ class ParametricMidMeasure(MidMeasure):
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
-        id (str): Custom label given to a measurement instance.
+        meas_uid (str | None): Custom label given to a measurement instance.
     """
 
     _shortname = "measure"
@@ -370,14 +370,9 @@ class ParametricMidMeasure(MidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
         self.batch_size = None
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
-        super().__init__(
-            wires=Wires(wires), reset=reset, postselect=postselect, id=id, meas_uid=meas_uid
-        )
+        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, meas_uid=meas_uid)
         self.hyperparameters["plane"] = plane
         self.hyperparameters["angle"] = angle
 
@@ -391,8 +386,7 @@ class ParametricMidMeasure(MidMeasure):
         """The angle in radians"""
         return self.hyperparameters["angle"]
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
         if is_abstract(self.angle):  # pragma: no cover
             # no unique value from tracer to values, hash based on object string
@@ -483,7 +477,6 @@ class XMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
-            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
@@ -494,17 +487,13 @@ class XMidMeasure(ParametricMidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=0,
             plane="XY",
             reset=reset,
             postselect=postselect,
-            id=id,
             meas_uid=meas_uid,
         )
 
@@ -552,7 +541,6 @@ class YMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
-            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
@@ -563,17 +551,13 @@ class YMidMeasure(ParametricMidMeasure):
         reset: bool | None = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
-        id: str | None = None,
     ):
-        # NOTE: The base class handles the deprecation warning of 'id'
-        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=np.pi / 2,
             plane="XY",
             reset=reset,
             postselect=postselect,
-            id=id,
             meas_uid=meas_uid,
         )
 

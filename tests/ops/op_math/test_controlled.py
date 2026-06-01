@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+import pickle
 from copy import copy
 from functools import partial
 
@@ -120,6 +121,31 @@ class TestControlledInheritance:
 
         assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.prod(qp.X(0), qp.X(1)),  # Prod -> CompositeOp
+            qp.X(0) + qp.Y(1),  # Sum  -> CompositeOp
+            2.0 * qp.X(0),  # SProd
+            qp.ctrl(qp.X(0), control=[1]),
+            qp.ctrl(qp.H(0), control=[1]),
+        ],
+    )
+    def test_pickle_roundtrip_composite_base(self, base):
+        """
+        Plain ``Controlled`` (i.e. with a non-Operation base like Prod/Sum/SProd)
+        used to fail to unpickle because ``Controlled.__new__`` required ``base``
+        positionally, but the default pickle protocol reconstructs via
+        ``cls.__new__(cls)`` with no arguments. The ``ControlledOp`` branch already
+        had a no-required-arg ``__new__``; this test guards parity on the
+        ``Controlled`` branch.
+        """
+        op = Controlled(base, control_wires=[2], work_wires=[3])
+        assert isinstance(op, Controlled)
+
+        roundtripped = pickle.loads(pickle.dumps(op))
+        qp.assert_equal(op, roundtripped)
+
 
 class TestControlledInit:
     """Test the initialization process and standard properties."""
@@ -199,6 +225,18 @@ class TestControlledInit:
         """Test checking work wires are not in contorl wires."""
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
+
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            qp.X(0) + qp.Y(1),
+        ],
+    )
+    def test_standard_validity_composite_base(self, base):
+        """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
+        op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
+        qp.ops.functions.assert_valid(op)
 
 
 class TestControlledProperties:
@@ -345,17 +383,6 @@ class TestControlledProperties:
 
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
-
-    @pytest.mark.parametrize("value", ("_ops", None))
-    def test_queue_cateogry(self, value):
-        """Test that Controlled defers `_queue_category` to base operator."""
-
-        class DummyOp(Operator):
-            num_wires = 1
-            _queue_category = value
-
-        op = Controlled(DummyOp(1), 0)
-        assert op._queue_category == value
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
@@ -531,29 +558,29 @@ class TestControlledMiscMethods:
             assert op1.wires == op2.wires
 
     def test_hash(self):
-        """Test that op.hash uniquely describes an op up to work wires."""
+        """Test that hash(op) uniquely describes an op up to work wires."""
 
         base = qp.RY(1.2, wires=0)
         # different control wires
         op1 = Controlled(base, (1, 2), [0, 1])
         op2 = Controlled(base, (2, 1), [0, 1])
-        assert op1.hash != op2.hash
+        assert hash(op1) != hash(op2)
 
         # different control values
         op3 = Controlled(base, (1, 2), [1, 0])
-        assert op1.hash != op3.hash
-        assert op2.hash != op3.hash
+        assert hash(op1) != hash(op3)
+        assert hash(op2) != hash(op3)
 
         # all variations on default control_values
         op4 = Controlled(base, (1, 2))
         op5 = Controlled(base, (1, 2), [True, True])
         op6 = Controlled(base, (1, 2), [1, 1])
-        assert op4.hash == op5.hash
-        assert op4.hash == op6.hash
+        assert hash(op4) == hash(op5)
+        assert hash(op4) == hash(op6)
 
         # work wires
         op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
-        assert op7.hash != op1.hash
+        assert hash(op7) != hash(op1)
 
 
 class TestControlledOperationProperties:
@@ -582,7 +609,8 @@ class TestControlledOperationProperties:
 
         base = DummyOp(1)
         op = Controlled(base, 2)
-        assert op.basis == "Z"
+        with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning):
+            assert op.basis == "Z"
 
     @pytest.mark.parametrize(
         "base, expected",

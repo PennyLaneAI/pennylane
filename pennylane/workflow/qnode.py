@@ -29,7 +29,7 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane import math, pytrees
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
@@ -212,10 +212,6 @@ class QNode:
             * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
-              through the QNode. The QNode accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
-
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
               JAX ``Array`` objects.
@@ -307,7 +303,7 @@ class QNode:
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
-            ``pennylane.concurrency.executors.get_supported_backends``.
+            :func:`qp.concurrency.executors.get_supported_backends <.concurrency.executors.get_supported_backends>`.
             The default value is :class:`~.concurrency.executors.native.multiproc.MPPoolExec`.
 
     **Example**
@@ -555,17 +551,6 @@ class QNode:
 
         gradient_kwargs = gradient_kwargs or {}
 
-        if "shots" in inspect.signature(func).parameters:
-            warnings.warn(
-                "Detected 'shots' as an argument to the given quantum function. "
-                "The 'shots' argument name is reserved for overriding the number of shots "
-                "taken by the device. Its use outside of this context should be avoided.",
-                UserWarning,
-            )
-            self._qfunc_uses_shots_arg = True
-        else:
-            self._qfunc_uses_shots_arg = False
-
         # input arguments
         self.func = func
         self.device: Device = device
@@ -651,23 +636,6 @@ class QNode:
     @interface.setter
     def interface(self, value: str):
         self._interface = Interface(value)
-
-    @property
-    def transform_program(self) -> CompilePipeline:
-        """The transform program used by the QNode.
-
-        .. warning::
-
-            The ``transform_program`` property of the QNode has been renamed to ``compile_pipeline``.
-            Access through ``transform_program`` will be removed in PennyLane v0.46.
-
-        """
-        warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-            "Access through 'transform_program' will be removed in PennyLane v0.46.",
-            PennyLaneDeprecationWarning,
-        )
-        return self.compile_pipeline
 
     @property
     def compile_pipeline(self) -> CompilePipeline:
@@ -791,38 +759,10 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    def _get_shots(self, kwargs: dict) -> Shots:
-        """
-        Note that this mutates kwargs to remove shots from it.
-        """
-        if self._qfunc_uses_shots_arg:
-            return self.shots
-        if "shots" in kwargs:
-            # NOTE: at removal, remember to remove the userwarning below as well
-            warnings.warn(
-                "Specifying 'shots' when executing a QNode is deprecated and will be removed in "
-                "v0.44. Please set shots on QNode initialization, or use qp.set_shots instead.",
-                PennyLaneDeprecationWarning,
-                stacklevel=2,
-            )
-            if self._shots_override_device:
-                _kwargs_shots = kwargs.pop("shots")
-                warnings.warn(
-                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                    UserWarning,
-                    stacklevel=2,
-                )
-
-        if self._shots_override_device:  # QNode.shots precedency:
-            return self.shots
-        return kwargs.pop("shots", self.shots)
-
     @debug_logger
     def construct(self, args, kwargs) -> qp.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -834,7 +774,7 @@ class QNode:
             with AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
-        tape = QuantumScript.from_queue(q, shots)
+        tape = QuantumScript.from_queue(q, self.shots)
 
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = math.get_trainable_indices(params)

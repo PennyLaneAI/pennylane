@@ -441,9 +441,9 @@ class TorchLayer(Module):
                 _res = [torch.reshape(r, (x.shape[0], -1)) for r in _res]
             return torch.hstack(_res).type(x.dtype)
 
-        if isinstance(res, tuple) and len(res) > 1:
+        if isinstance(res, (tuple, list)) and len(res) > 1:
             if all(isinstance(r, torch.Tensor) for r in res):
-                return tuple(_combine_dimensions([r]) for r in res)  # pragma: no cover
+                return _combine_dimensions(list(res))
             return tuple(_combine_dimensions(r) for r in res)
 
         return _combine_dimensions(res)
