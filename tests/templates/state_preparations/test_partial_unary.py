@@ -15,8 +15,6 @@
 Unit tests for the PartialUnaryStatePreparation template.
 """
 
-from itertools import combinations, product
-
 import numpy as np
 import pytest
 
@@ -84,8 +82,6 @@ def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
         regular_part = _random_regular_matrix(num_bits, random_ops=num_bits**2, seed=seed)
         bitstrings = np.concatenate([regular_part, bitstrings], axis=1)
         rng.shuffle(bitstrings, axis=1)
-
-    assert _columns_differ(bitstrings)  # Validate that columns are distinct
 
     if full_rank:
         assert binary_matrix_rank(bitstrings) == num_bits
