@@ -182,7 +182,7 @@ def _incrementer_resources(num_wires, **_):
     if num_wires > 1:
         # Forward ladder
         resources[resource_rep(TemporaryAND)] = num_wires - 2
-        # Backward ladder plus trailing CNOT
+        # Backward ladder and trailing CNOT
         resources[resource_rep(CNOT)] = num_wires - 2 + 1
         resources[adjoint_resource_rep(TemporaryAND, {})] = num_wires - 2
     resources[resource_rep(X)] = 1
@@ -316,6 +316,9 @@ def _incrementer_decomposition(wires, work_wires, **_):
 def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[resource_rep(X)] = 0
+    # Trailing CNOT
+    if num_control_wires != 0:
+        resources[resource_rep(CNOT)] -= 1
     return resources
 
 

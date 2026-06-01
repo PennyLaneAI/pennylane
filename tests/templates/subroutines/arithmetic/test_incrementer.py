@@ -86,20 +86,11 @@ def test_correct(wires, init_state, expected, work_wires):
 
     expected = np.concatenate([np.array(expected), np.zeros(len(work_wires))])
 
-    value = 0
-    for i, bit in enumerate(expected[::-1]):
-        if bit == 1:
-            value += 2**i
-
-    for j, entry in enumerate(result):
-        if j == value:
-            assert entry == 1
-        else:
-            assert entry == 0
-    value = 2**np.arange(len(expected)) @ expected[::-1]
+    value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert result[value] == 1
     result[value] -= 1
     assert np.allclose(result, 0)
+
 
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires, control",
@@ -129,7 +120,7 @@ def test_controlled(wires, init_state, expected, work_wires, control):
     result = controlled_increment(wires, init_state, work_wires, control)
 
     expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array([control])])
-    value = 2**np.arange(len(expected)) @ expected[::-1]
+    value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert result[value] == 1
     result[value] -= 1
     assert np.allclose(result, 0)
