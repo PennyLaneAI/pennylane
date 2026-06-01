@@ -65,6 +65,9 @@
   any qudit density matrices with constant qudit dimension.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
