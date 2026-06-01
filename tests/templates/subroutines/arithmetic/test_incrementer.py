@@ -20,7 +20,7 @@ import pytest
 
 from pennylane import Incrementer, device, qnode
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import sample, state
+from pennylane.measurements import state
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding

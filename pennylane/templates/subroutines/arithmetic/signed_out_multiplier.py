@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, Controlled, MidMeasure, PauliX
+from pennylane.ops import CNOT, Controlled, PauliX
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
