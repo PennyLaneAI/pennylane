@@ -349,11 +349,11 @@ wheels = [
 
 [[package]]
 name = "autoray"
-version = "0.8.4"
+version = "0.8.10"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/30/8f/c951dc8acf51db7554b075f184488400401472ad9aa25edffa9ed9982621/autoray-0.8.4.tar.gz", hash = "sha256:b4ce7066334279b216431a260bb5b5b84d87815e3295020a76d8701e43dc3432", size = 1321434, upload-time = "2025-12-05T01:42:25.539Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/ca/fb0890c28a7228cdb4545d2e32f4016ebb16514039ab1ec7065092db6cee/autoray-0.8.10.tar.gz", hash = "sha256:a411c87fe5c0c12120c56478ddf64172d584705e582ef86ef12f81f5769f697f", size = 1324674, upload-time = "2026-03-06T22:36:39.931Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/49/bc1c2e3ca121f6468e0cd8d78a96ab2dcb65d0f003917f5d4edcaea103a2/autoray-0.8.4-py3-none-any.whl", hash = "sha256:287c366f2ba9d9c045ffa2b2421deea07439ed5a7f18b5d25b3a406d53b5c63c", size = 937489, upload-time = "2025-12-05T01:42:23.658Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/59/3044cc591035b2d2962826a9ae323e02f1dcb07a821d217ae5ccd9b94481/autoray-0.8.10-py3-none-any.whl", hash = "sha256:033f4ba37e2278ece9c50be4a42abe0d91d5c611194d90904c4e6d980300454a", size = 939985, upload-time = "2026-03-06T22:36:38.027Z" },
 ]
 
 [[package]]
@@ -3526,7 +3526,7 @@ upload-reports = [
 requires-dist = [
     { name = "appdirs" },
     { name = "autograd" },
-    { name = "autoray", specifier = "==0.8.4" },
+    { name = "autoray", specifier = "==0.8.10" },
     { name = "cachetools" },
     { name = "cvxopt", marker = "extra == 'kernels'" },
     { name = "cvxpy", marker = "extra == 'kernels'" },

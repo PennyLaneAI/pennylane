@@ -118,6 +118,28 @@ class TestDecompositionGraph:
         )
         assert solution.resource_estimate(op) == expected_resource
 
+    def test_decomp_rule_is_missing_resources(self, _):
+        """Tests that an error is raised for functions that does not have a resource estimate."""
+
+        def custom_hadamard(wires):
+            qp.PhaseShift(np.pi / 2, wires=wires)
+            qp.RX(np.pi / 2, wires=wires)
+            qp.PhaseShift(np.pi / 2, wires=wires)
+
+        with pytest.raises(TypeError, match="custom_hadamard is missing a resource estimate"):
+            _ = DecompositionGraph(
+                operations=[qp.Hadamard(0)],
+                gate_set={"RX", "RY", "RZ"},
+                fixed_decomps={qp.H: custom_hadamard},
+            )
+
+        with pytest.raises(TypeError, match="custom_hadamard is missing a resource estimate"):
+            _ = DecompositionGraph(
+                operations=[qp.Hadamard(0)],
+                gate_set={"RX", "RY", "RZ"},
+                alt_decomps={qp.H: [custom_hadamard]},
+            )
+
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
 

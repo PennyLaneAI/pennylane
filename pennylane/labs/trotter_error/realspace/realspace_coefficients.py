@@ -481,14 +481,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if len(index) != len(self.shape):
             return False
 
-        for x, y in zip(index, self.shape):
-            if x < 0:
-                return False
-
-            if x >= y:
-                return False
-
-        return True
+        return all(0 <= x < y for x, y in zip(index, self.shape, strict=True))
 
     def nonzero(self, threshold: float = 0.0):
         """Return the nonzero coefficients in a dictionary.
@@ -611,7 +604,7 @@ def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
     d = {}
 
-    for index in zip(*nz):
+    for index in zip(*nz, strict=True):
         if abs(arr[index]) > threshold:
             index = tuple(map(int, index))
             d[index] = float(arr[index])
