@@ -614,7 +614,6 @@ class TestSumOfSlatersPrep:
         """Test that the subroutine of the SumOfSlatersPrep decomposition
         that uses already allocated wires is qjit compatible."""
 
-        print(seed)
         n = 6
         num_entries = 28
         wires = list(range(n))
@@ -625,14 +624,7 @@ class TestSumOfSlatersPrep:
         selected_wires, *data = _preprocess(v_bits, wires)
         sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         data = (coefficients, v_bits, *data)
-        empty_id_wires = False
-        if sizes["identification_wires"] == 0:
-            sizes.pop("identification_wires")
-            empty_id_wires = True
         all_wires = qp.registers(sizes)
-        if empty_id_wires:
-            all_wires["identification_wires"] = qp.wires.Wires([])
-
         all_wires["selected_wires"] = selected_wires
 
         @qp.qjit
