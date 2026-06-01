@@ -295,6 +295,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
 
                     @qp.for_loop(n_states)
                     def _q_loop(q, Z_lm=Z_lm, p=p, wire_lp=wire_lp, l=l, m=m):
+                        # Symmetrization is already taken into account here
                         wire_mq = wires[m * n_states + q]
                         lam = Z_lm[p, q]
                         angle = 0.5 * lam * first_order_time_step
