@@ -616,15 +616,14 @@ class TestSumOfSlatersPrep:
 
         n = 6
         num_entries = 28
-        target_wires = list(range(n))
+        wires = list(range(n))
         coefficients, indices = self.make_random_data(n, num_entries, seed=seed)
 
         v_bits = qp.math.int_to_binary(np.array(indices), n).T
 
-        selected_target_wires, *data = _preprocess(v_bits, target_wires)
+        selected_wires, *data = _preprocess(v_bits, wires)
         sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         data = (coefficients, v_bits, *data)
-        sizes = {"target_wires": sizes.pop("wires")} | sizes
         empty_id_wires = False
         if sizes["identification_wires"] == 0:
             sizes.pop("identification_wires")
@@ -633,13 +632,13 @@ class TestSumOfSlatersPrep:
         if empty_id_wires:
             all_wires["identification_wires"] = qp.wires.Wires([])
 
-        all_wires["selected_target_wires"] = selected_target_wires
+        all_wires["selected_wires"] = selected_wires
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit"))
         def func():
             _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
-            return qp.probs(wires=target_wires)
+            return qp.probs(wires=wires)
 
         output = func()
         expected = np.zeros(2**n)
