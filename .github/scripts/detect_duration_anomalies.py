@@ -17,7 +17,7 @@ import os
 import sys
 
 # Thresholds
-RATIO_THRESHOLD = 10  # flag if new/old exceeds this factor
+RATIO_THRESHOLD = 2  # flag if new/old exceeds this factor
 MAX_DISPLAY = 20  # cap table rows per file
 
 DURATION_FILES = ["core_tests_durations.json", "jax_tests_durations.json"]
@@ -55,7 +55,7 @@ def build_report(anomalies_by_file):
 
     if lines:
         header = (
-            "## \u26a0\ufe0f Duration Anomalies Detected\n\n"
+            "## Duration Anomalies Detected\n\n"
             "The following tests show suspicious duration increases, "
             "which may indicate CI contention rather than real slowdowns. "
             "Review before merging.\n\n"
