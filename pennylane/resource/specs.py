@@ -257,7 +257,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            trans_name = make_level_name_unique(trans_name, set(level_to_name.values()))
+            trans_name = make_level_name_unique(trans_name, frozenset(level_to_name.values()))
             resources[trans_name] = res
             level_to_name[tape_level] = trans_name
 

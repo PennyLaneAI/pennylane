@@ -92,7 +92,7 @@ class Expression:
         if vars is not None:
             self._vars = vars
         else:
-            self._vars = set(var for vars in self._data.keys() for var in vars)
+            self._vars = frozenset(var for vars in self._data.keys() for var in vars)
 
     def _normalize(self) -> None:
         """
@@ -120,16 +120,30 @@ class Expression:
         """
         return self._vars
 
-    def subs(self, substitutions: dict[str, int]) -> Union["Expression", int]:
+    def subs(
+        self, substitutions: dict[str, int] | None = None, **kwargs
+    ) -> Union["Expression", int]:
         """
         Substitutes the given values for the variables in the expression.
 
         Args:
-            substitutions (dict[str, int]): A dictionary mapping variable names to their values.
+            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
+                If None, an empty dictionary is used. Additional keyword arguments can also be provided
+                as substitutions.
 
         Returns:
             Expression | int: A new expression with the variables substituted, or an int if the result is a constant.
         """
+        if substitutions is None:
+            substitutions = {}
+        substitutions.update(kwargs)
+
+        subs_vars = set(substitutions.keys())
+        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
+            raise ValueError(
+                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {set(self.vars)}."
+            )
+
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
             new_k = []

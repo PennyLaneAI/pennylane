@@ -173,6 +173,23 @@ class TestAnalysisPassConversion:
         with pytest.warns(UserWarning, match="branches"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
 
+    def test_get_resources_from_analysis_pass_warns_for_self_recursion(
+        self, example_loop_analysis_pass_result
+    ):
+        example_loop_analysis_pass_result["circuit"]["function_calls"]["circuit"] = 1
+
+        with pytest.warns(UserWarning, match="recursion"):
+            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
+    def test_get_resources_from_analysis_pass_warns_for_paired_recursion(
+        self, example_loop_analysis_pass_result
+    ):
+        example_loop_analysis_pass_result["for_loop_1"]["function_calls"]["for_loop_2"] = 1
+        example_loop_analysis_pass_result["for_loop_2"]["function_calls"]["for_loop_1"] = 1
+
+        with pytest.warns(UserWarning, match="recursion"):
+            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
     def test_mlir_resources_to_specs_resources(self, example_loop_analysis_pass_result):
         fn_resources = {}
         display_names = {}

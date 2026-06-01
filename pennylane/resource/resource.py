@@ -418,8 +418,10 @@ class SymbolicSpecsResources(SpecsResources):
     This class is intended to be immutable. Modifying the attributes after creation may
     lead to unexpected behavior.
 
-    Note that some of the attributes from the parent class, :class:`SpecsResources`, are overridden
-    here to be of type :class:`Expression` instead of `int`.
+    .. note::
+
+        Some of the attributes from the parent class, :class:`SpecsResources`, are overridden
+        here to be of type :class:`Expression` instead of `int`.
     """
 
     # gate_types: dict[str, Expression]
@@ -481,10 +483,14 @@ class SymbolicSpecsResources(SpecsResources):
         substitutions.update(kwargs)
 
         subs_vars = set(substitutions.keys())
-        if not all(var in self.vars for var in subs_vars):
+        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
             raise ValueError(
                 f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
             )
+
+        # Need to disable this since the type checker still thinks that many of these members are
+        # `int` and therefore do not contain a `var` member
+        # pylint: disable=no-member
 
         num_allocs = self.num_allocs.subs(substitutions)
         depth = self.depth.subs(substitutions) if self.depth is not None else None

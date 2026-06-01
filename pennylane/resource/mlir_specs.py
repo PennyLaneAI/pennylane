@@ -22,6 +22,7 @@ import tempfile
 import time
 import warnings
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,7 @@ from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
-def make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
+def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> str:
     """Helper function to make a level name unique by appending a suffix if necessary.
 
     .. warning::
@@ -43,7 +44,7 @@ def make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
 
     Args:
         level_name (str): The original level name
-        existing_names (set[str]): The set of existing level names to check against
+        existing_names (Iterable[str]): The set of existing level names to check against
 
     Returns:
         str: A unique level name
@@ -329,7 +330,7 @@ def resources_from_analysis_pass(
                     if i in level_to_markers
                     else comp_pass.pass_name or f"Level {i}"
                 )
-                level_name = make_level_name_unique(level_name, set(level_to_name.values()))
+                level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
                 new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
