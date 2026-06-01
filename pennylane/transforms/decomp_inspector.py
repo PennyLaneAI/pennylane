@@ -570,7 +570,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ────│──├●────│─────├●─│──├●────│─────├●─┤
         5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
         6: ────│────────├X───────│────────├X───────┤
-               ├─╰X───────╰●───────╰X───────╰●──┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
         First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}

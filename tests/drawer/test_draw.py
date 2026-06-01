@@ -1280,6 +1280,24 @@ class TestWireAllocation:
         )
         assert out == expected
 
+    def test_allocation_only(self):
+        """Test a circuit with only a dynamic wire."""
+
+        def f():
+            with qp.allocate(1) as wires:
+                qp.X(wires[0])
+
+        assert qp.draw(f)() == "  |0>├──X──┤    "
+
+    def test_empty_allocation(self):
+        """Test an allocation with no operators in it."""
+
+        def f():
+            with qp.allocate(1) as _:
+                pass
+
+        assert qp.draw(f)() == "  |0>├──┤    "
+
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""

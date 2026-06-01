@@ -202,10 +202,11 @@ class LayersData:
         )
         # if not enough space, bump op_layer
         op_layer = max(op_layer, len(inner_layers))
-        for i, layer in enumerate(reversed(inner_layers)):
-            insert_layer = op_layer - i - 1
+        for i, layer in enumerate(inner_layers):
+            insert_layer = op_layer - len(inner_layers) + i
             for op in layer:
                 self.add_to_layer(op, insert_layer, {}, {})
+
         self.waiting_dynamic_wires = []
         self.waiting_dynamic_ops = []
         return op_layer

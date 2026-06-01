@@ -361,7 +361,7 @@ def cwire_connections(layers, bit_map):
     return bit_map, connected_layers, connected_wires
 
 
-def _try_line_reuse(order_map, connected_layers, connected_wires):
+def _try_line_reuse(order_map, connected_layers, connected_wires: None | dict):
     # Extract (start, end) tuples (incl end) where each cwire is occupied with old bit map
     occupation = {
         cwire: (min(con_layer), max(con_layer)) for cwire, con_layer in connected_layers.items()
@@ -372,17 +372,13 @@ def _try_line_reuse(order_map, connected_layers, connected_wires):
     # Write a map from old cwires to new cwires
     squash_map = {}
     for cwire, occ in occupation.items():
-        if occ[0] < 0:
-            squash_map[cwire] = cwire
-            occ_ends[cwire] = occ[-1]
-        else:
-            # Find the first cwire that is currently not occupied, i.e. that has its occupation end
-            # before the current occ starts (first entry of occ)
-            new_cwire = int(np.where(occ_ends < occ[0])[0][0])
-            # allocate a new (or the old) cwire based on the first one that was free above
-            squash_map[cwire] = new_cwire
-            # Update the occupation end of the newly allocated cwire
-            occ_ends[new_cwire] = occ[1]
+        # Find the first cwire that is currently not occupied, i.e. that has its occupation end
+        # before the current occ starts (first entry of occ)
+        new_cwire = int(np.where(occ_ends < occ[0])[0][0])
+        # allocate a new (or the old) cwire based on the first one that was free above
+        squash_map[cwire] = new_cwire
+        # Update the occupation end of the newly allocated cwire
+        occ_ends[new_cwire] = occ[1]
     # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
     inv_squash_map = {new_cwire: [] for new_cwire in squash_map.values()}
     for old_cwire in order_map.values():

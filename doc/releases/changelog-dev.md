@@ -38,6 +38,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
+  [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
+
 * Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
