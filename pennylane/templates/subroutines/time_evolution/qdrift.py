@@ -195,9 +195,7 @@ class QDrift(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(  # pylint: disable=too-many-arguments
-        self, hamiltonian, time, n=1, seed=None, id=None
-    ):
+    def __init__(self, hamiltonian, time, n=1, seed=None):  # pylint: disable=too-many-arguments
         r"""Initialize the QDrift class"""
 
         _check_hamiltonian_type(hamiltonian)
@@ -215,7 +213,7 @@ class QDrift(Operation):
             )
 
         self._hyperparameters = {"n": n, "seed": seed, "base": hamiltonian}
-        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

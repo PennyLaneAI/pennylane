@@ -53,12 +53,12 @@ def check_op_supported(op, dev):
 class TestTemplates:  # pylint:disable=too-many-public-methods
     """Test various templates."""
 
-    def test_AQFT(self, device, tol):
+    def test_AQFT(self, device, tol, shots):
         """Test the AQFT template."""
         wires = 3
         dev = device(wires=wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit_aqft():
             qp.X(0)
             qp.Hadamard(1)
@@ -66,9 +66,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         expected = [0.25, 0.125, 0.0, 0.125, 0.25, 0.125, 0.0, 0.125]
-        assert np.allclose(circuit_aqft(), expected, atol=tol(dev.shots))
+        assert np.allclose(circuit_aqft(), expected, atol=tol)
 
-    def test_AllSinglesDoubles(self, device, tol):
+    def test_AllSinglesDoubles(self, device, tol, shots):
         """Test the AllSinglesDoubles template."""
         qubits = 4
         dev = device(qubits)
@@ -83,7 +83,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         wires = range(qubits)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights, hf_state, singles, doubles):
             qp.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
             return qp.expval(qp.Z(0))
@@ -91,27 +91,27 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         # Evaluate the QNode for a given set of parameters
         params = np.array([0.12, 1.23, 2.34])
         res = circuit(params, hf_state, singles=singles, doubles=doubles)
-        assert np.isclose(res, 0.6905612772956113, atol=tol(dev.shots))
+        assert np.isclose(res, 0.6905612772956113, atol=tol)
 
-    def test_AmplitudeEmbedding(self, device, tol):
+    def test_AmplitudeEmbedding(self, device, tol, shots):
         """Test the AmplitudeEmbedding template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(f):
             qp.AmplitudeEmbedding(features=f, wires=range(2))
             return qp.probs()
 
         res = circuit([1 / 2] * 4)
         expected = [1 / 4] * 4
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_AngleEmbedding(self, device, tol):
+    def test_AngleEmbedding(self, device, tol, shots):
         """Test the AngleEmbedding template."""
         n_wires = 3
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(feature_vector):
             qp.AngleEmbedding(features=feature_vector, wires=range(n_wires), rotation="X")
             qp.Hadamard(0)
@@ -120,9 +120,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         x = [np.pi / 2] * 3
         res = circuit(x)
         expected = [0.125] * 8
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_ApproxTimeEvolution(self, device, tol):
+    def test_ApproxTimeEvolution(self, device, tol, shots):
         """Test the ApproxTimeEvolution template."""
         n_wires = 2
         dev = device(n_wires)
@@ -132,20 +132,20 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         obs = [qp.X(0), qp.X(1)]
         hamiltonian = qp.Hamiltonian(coeffs, obs)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(time):
             qp.ApproxTimeEvolution(hamiltonian, time, 1)
             return [qp.expval(qp.Z(i)) for i in wires]
 
         res = circuit(1)
         expected = [-0.41614684, -0.41614684]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_ArbitraryStatePreparation(self, device, tol):
+    def test_ArbitraryStatePreparation(self, device, tol, shots):
         """Test the ArbitraryStatePreparation template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.ArbitraryStatePreparation(weights, wires=[0, 1])
             return qp.probs()
@@ -153,13 +153,13 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         weights = np.arange(1, 7) / 10
         res = circuit(weights)
         expected = [0.784760658335564, 0.0693785880617069, 0.00158392607496555, 0.1442768275277600]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_ArbitraryUnitary(self, device, tol):
+    def test_ArbitraryUnitary(self, device, tol, shots):
         """Test the ArbitraryUnitary template."""
         dev = device(1)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.ArbitraryUnitary(weights, wires=[0])
             return qp.probs()
@@ -167,14 +167,14 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         weights = np.arange(3)
         res = circuit(weights)
         expected = [0.77015115293406, 0.22984884706593]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_BasicEntanglerLayers(self, device, tol):
+    def test_BasicEntanglerLayers(self, device, tol, shots):
         """Test the BasicEntanglerLayers template."""
         n_wires = 3
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
             return [qp.expval(qp.Z(i)) for i in range(n_wires)]
@@ -182,13 +182,13 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         params = [[np.pi, np.pi, np.pi]]
         res = circuit(params)
         expected = [1.0, 1.0, -1.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_BasisEmbedding(self, device, tol):
+    def test_BasisEmbedding(self, device, tol, shots):
         """Test the BasisEmbedding template."""
         dev = device(3)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(basis):
             qp.BasisEmbedding(basis, wires=range(3))
             return qp.probs()
@@ -199,12 +199,12 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         basis_idx = np.dot(basis, 2 ** np.arange(3))
         expected = np.zeros(8)
         expected[basis_idx] = 1.0
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_BasisRotation(self, device, tol):
+    def test_BasisRotation(self, device, tol, shots):
         """Test the BasisRotation template."""
         dev = device(2)
-        if dev.shots or "mixed" in dev.name or "Mixed" in dev.name:
+        if shots or "mixed" in dev.name or "Mixed" in dev.name:
             pytest.skip("test only works with analytic-mode pure statevector simulators")
 
         unitary_matrix = np.array(
@@ -216,7 +216,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         eigen_values = np.array([-1.45183325, 3.47550075])
         exp_state = np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.43754907 - 0.89919453j])
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.PauliX(0)
             qp.PauliX(1)
@@ -226,16 +226,14 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             qp.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix)
             return qp.state()
 
-        assert np.allclose(
-            [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
-        )
+        assert np.allclose([math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol)
 
     @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_CVNeuralNetLayers(self, device):
+    def test_CVNeuralNetLayers(self, device, shots):
         """Test the CVNeuralNetLayers template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.CVNeuralNetLayers(*weights, wires=[0, 1])
             return qp.expval(qp.QuadX(0))
@@ -245,7 +243,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         circuit(weights)
 
-    def test_CommutingEvolution(self, device, tol):
+    def test_CommutingEvolution(self, device, tol, shots):
         """Test the CommutingEvolution template."""
         n_wires = 2
         dev = device(n_wires)
@@ -254,7 +252,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         hamiltonian = qp.Hamiltonian(coeffs, obs)
         frequencies = (2, 4)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(time):
             qp.X(0)
             qp.CommutingEvolution(hamiltonian, time, frequencies)
@@ -262,13 +260,13 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(1)
         expected = 0.6536436208636115
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_ControlledSequence(self, device, tol):
+    def test_ControlledSequence(self, device, tol, shots):
         """Test the ControlledSequence template."""
         dev = device(4)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             for i in range(3):
                 qp.Hadamard(wires=i)
@@ -287,27 +285,27 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             0.00729619,
             0.02637178,
         ]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_CosineWindow(self, device, tol):
+    def test_CosineWindow(self, device, tol, shots):
         """Test the CosineWindow template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.CosineWindow(wires=range(2))
             return qp.probs()
 
         res = circuit()
         expected = [0.0, 0.25, 0.5, 0.25]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_DisplacementEmbedding(self, device, tol):
+    def test_DisplacementEmbedding(self, device, tol, shots):
         """Test the DisplacementEmbedding template."""
         dev = device(3)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(feature_vector):
             qp.DisplacementEmbedding(features=feature_vector, wires=range(3))
             qp.QuadraticPhase(0.1, wires=1)
@@ -317,46 +315,46 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(X)
         expected = 4.1215690638748494
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_FermionicDoubleExcitation(self, device, tol):
+    def test_FermionicDoubleExcitation(self, device, tol, shots):
         """Test the FermionicDoubleExcitation template."""
         dev = device(5)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weight, wires1=None, wires2=None):
             qp.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
             return qp.expval(qp.Z(0))
 
         res = circuit(1.34817, wires1=[0, 1], wires2=[2, 3, 4])
         expected = 1.0
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_FermionicSingleExcitation(self, device, tol):
+    def test_FermionicSingleExcitation(self, device, tol, shots):
         """Test the FermionicSingleExcitation template."""
         dev = device(3)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weight, wires=None):
             qp.FermionicSingleExcitation(weight, wires=wires)
             return qp.expval(qp.Z(0))
 
         res = circuit(0.56, wires=[0, 1, 2])
         expected = 1.0
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_FlipSign(self, device, tol):
+    def test_FlipSign(self, device, tol, shots):
         """Test the FlipSign template."""
         dev = device(2)
-        if dev.shots:
+        if shots:
             pytest.skip("test only works with analytic-mode simulations")
         basis_state = [1, 0]
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             for wire in list(range(2)):
                 qp.Hadamard(wires=wire)
@@ -367,9 +365,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         expected = [0.5, 0.5, -0.5, 0.5]
         if "mixed" in dev.name or "Mixed" in dev.name:
             expected = math.dm_from_state_vector(expected)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_GroverOperator(self, device, tol):
+    def test_GroverOperator(self, device, tol, shots):
         """Test the GroverOperator template."""
         n_wires = 3
         dev = device(n_wires)
@@ -380,7 +378,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             qp.Toffoli(wires=wires)
             qp.Hadamard(wires[-1])
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(num_iterations=1):
             for wire in wires:
                 qp.Hadamard(wire)
@@ -401,16 +399,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             0.0078125,
             0.9453125,
         ]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_HilbertSchmidt(self, device, tol):
+    def test_HilbertSchmidt(self, device, tol, shots):
         """Test the HilbertSchmidt template."""
         dev = device(2)
 
         V = qp.RZ(0, wires=1)
         U = qp.Hadamard(0)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def hilbert_test(V, U):
             qp.HilbertSchmidt(V, U)
             return qp.probs()
@@ -421,27 +419,27 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = cost_hst(V, U)
         expected = 1.0
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_IQPEmbedding(self, device, tol):
+    def test_IQPEmbedding(self, device, tol, shots):
         """Test the IQPEmbedding template."""
         dev = device(3)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(features):
             qp.IQPEmbedding(features, wires=range(3), n_repeats=4)
             return [qp.expval(qp.Z(w)) for w in range(3)]
 
         res = circuit([1.0, 2.0, 3.0])
         expected = [0.40712208, 0.32709118, 0.89125407]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_Interferometer(self, device):
+    def test_Interferometer(self, device, shots):
         """Test the Interferometer template."""
         dev = device(4)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(params):
             qp.Interferometer(*params, wires=range(4))
             return qp.expval(qp.Identity(0))
@@ -453,7 +451,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         _ = circuit(params)
 
-    def test_LocalHilbertSchmidt(self, device, tol):
+    def test_LocalHilbertSchmidt(self, device, tol, shots):
         """Test the LocalHilbertSchmidt template."""
         dev = device(4)
 
@@ -468,7 +466,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
                 qp.CNOT(wires=[2, 3]),
             ]
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def local_hilbert_test(V, U):
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
@@ -481,9 +479,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         V = V_function(v_params)
         res = cost_lhst(V, U)
         expected = 0.5
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_MERA(self, device, tol):
+    def test_MERA(self, device, tol, shots):
         """Test the MERA template."""
 
         def block(weights, wires):
@@ -498,16 +496,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(template_weights):
             qp.MERA(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             return qp.expval(qp.Z(1))
 
         res = circuit(template_weights)
         expected = 0.799260896638786
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_MPS(self, device, tol):
+    def test_MPS(self, device, tol, shots):
         """Test the MPS template."""
 
         def block(weights, wires):
@@ -522,20 +520,20 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(template_weights):
             qp.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             return qp.expval(qp.Z(n_wires - 1))
 
         res = circuit(template_weights)
         expected = 0.8719048589118708
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_MottonenStatePreparation_probs(self, device, tol):
+    def test_MottonenStatePreparation_probs(self, device, tol, shots):
         """Test the MottonenStatePreparation template (up to a phase)."""
         dev = device(3)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.MottonenStatePreparation(state_vector=state, wires=range(3))
             return qp.probs()
@@ -544,15 +542,15 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         state = state / np.linalg.norm(state)
         res = circuit(state)
         expected = np.abs(state**2)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_MottonenStatePreparation_state(self, device, tol):
+    def test_MottonenStatePreparation_state(self, device, tol, shots):
         """Test the MottonenStatePreparation template on analytic-mode devices."""
         dev = device(3)
-        if dev.shots:
+        if shots:
             pytest.skip("test only works with analytic-mode simulations")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.MottonenStatePreparation(state_vector=state, wires=range(3))
             return qp.state()
@@ -563,7 +561,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         expected = state
         if "mixed" in dev.name or "Mixed" in dev.name:
             expected = math.dm_from_state_vector(expected)
-        if np.allclose(res, expected, atol=tol(dev.shots)):
+        if np.allclose(res, expected, atol=tol):
             # GlobalPhase supported
             return
         # GlobalPhase not supported
@@ -571,11 +569,11 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         global_phase = np.exp(-1j * global_phase)
         assert np.allclose(expected / res, global_phase)
 
-    def test_Permute(self, device, tol):
+    def test_Permute(self, device, tol, shots):
         """Test the Permute template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.StatePrep([1 / np.sqrt(2), 0.4, 0.5, 0.3], wires=[0, 1])
             qp.Permute([1, 0], [0, 1])
@@ -583,13 +581,13 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit()
         expected = [0.5, 0.25, 0.16, 0.09]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_QAOAEmbedding(self, device, tol):
+    def test_QAOAEmbedding(self, device, tol, shots):
         """Test the QAOAEmbedding template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights, f=None):
             qp.QAOAEmbedding(features=f, weights=weights, wires=range(2))
             return qp.expval(qp.Z(0))
@@ -601,16 +599,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(weights, f=features)
         expected = 0.49628561029741747
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_QDrift(self, device, tol):
+    def test_QDrift(self, device, tol, shots):
         """Test the QDrift template."""
         dev = device(2)
         coeffs = [0.25, 0.75]
         ops = [qp.X(0), qp.Z(0)]
         H = qp.dot(coeffs, ops)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.Hadamard(0)
             qp.QDrift(H, time=1.2, n=10, seed=10)
@@ -618,14 +616,14 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit()
         expected = [0.65379493, 0.0, 0.34620507, 0.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_QFT(self, device, tol):
+    def test_QFT(self, device, tol, shots):
         """Test the QFT template."""
         wires = 3
         dev = device(wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit_qft(state):
             qp.StatePrep(state, wires=range(wires))
             qp.QFT(wires=range(wires))
@@ -633,9 +631,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit_qft([0.8, 0.6] + [0.0] * 6)
         expected = [0.245, 0.20985281, 0.125, 0.04014719, 0.005, 0.04014719, 0.125, 0.20985281]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_QSVT(self, device, tol):
+    def test_QSVT(self, device, tol, shots):
         """Test the QSVT template."""
         dev = device(2)
         A = np.array([[0.1]])
@@ -643,16 +641,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         check_op_supported(block_encode, dev)
         shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.QSVT(block_encode, shifts)
             return qp.expval(qp.Z(1))
 
         res = circuit()
         expected = 0.9370953557566887
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_QuantumMonteCarlo(self, device, tol):
+    def test_QuantumMonteCarlo(self, device, tol, shots):
         """Test the QuantumMonteCarlo template."""
         m = 2
         M = 2**m
@@ -674,7 +672,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         dev = device(wires=n + m + 1)
         check_op_supported(qp.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), dev)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.QuantumMonteCarlo(
                 probs,
@@ -688,9 +686,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         res = (1 - np.cos(np.pi * phase_estimated)) / 2
         expected = 0.3086582838174551
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_QuantumPhaseEstimation(self, device, tol):
+    def test_QuantumPhaseEstimation(self, device, tol, shots):
         """Test the QuantumPhaseEstimation template."""
         unitary = qp.RX(np.pi / 2, wires=[0]) @ qp.CNOT(wires=[0, 1])
         eigenvector = np.array([-1 / 2, -1 / 2, 1 / 2, 1 / 2])
@@ -701,7 +699,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         dev = device(wires=n_estimation_wires + 2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.StatePrep(eigenvector, wires=target_wires)
             qp.QuantumPhaseEstimation(
@@ -712,15 +710,15 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = np.argmax(circuit()) / 2**n_estimation_wires
         expected = 0.125
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_QutritBasisStatePreparation(self, device, tol):
+    def test_QutritBasisStatePreparation(self, device, tol, shots):
         """Test the QutritBasisStatePreparation template."""
         dev = device(4)
         if "qutrit" not in dev.name:
             pytest.skip("QutritBasisState template only works on qutrit devices")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(basis_state, obs):
             qp.QutritBasisStatePreparation(basis_state, wires=range(4))
             return [qp.expval(qp.THermitian(obs, wires=i)) for i in range(4)]
@@ -730,30 +728,30 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(basis_state, obs)
         expected = np.array([1, -1, -1, 1]) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_RandomLayers(self, device, tol):
+    def test_RandomLayers(self, device, tol, shots):
         """Test the RandomLayers template."""
         dev = device(2)
         weights = np.array([[0.1, -2.1, 1.4]])
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.RandomLayers(weights=weights, wires=range(2), seed=42)
             return qp.expval(qp.Z(0))
 
         res = circuit(weights)
         expected = 0.9950041652780259
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_Select(self, device, tol):
+    def test_Select(self, device, tol, shots):
         """Test the Select template."""
         dev = device(4)
         check_op_supported(qp.MultiControlledX(wires=[0, 1, 2]), dev)
 
         ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2, 3])]
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.Select(ops, control=[0, 1])
             return qp.probs()
@@ -761,14 +759,14 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit()
         expected = np.zeros(16)
         expected[2] = 1.0
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_SimplifiedTwoDesign(self, device, tol):
+    def test_SimplifiedTwoDesign(self, device, tol, shots):
         """Test the SimplifiedTwoDesign template."""
         n_wires = 3
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(init_weights, weights):
             qp.SimplifiedTwoDesign(
                 initial_layer_weights=init_weights, weights=weights, wires=range(n_wires)
@@ -782,14 +780,14 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(init_weights, weights)
         expected = [1.0, -1.0, 1.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_SqueezingEmbedding(self, device, tol):
+    def test_SqueezingEmbedding(self, device, tol, shots):
         """Test the SqueezingEmbedding template."""
         dev = device(2)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(feature_vector):
             qp.SqueezingEmbedding(features=feature_vector, wires=range(3))
             qp.QuadraticPhase(0.1, wires=1)
@@ -799,13 +797,13 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit(X)
         expected = 13.018280763205285
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_StronglyEntanglingLayers(self, device, tol):
+    def test_StronglyEntanglingLayers(self, device, tol, shots):
         """Test the StronglyEntanglingLayers template."""
         dev = device(4)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(parameters):
             qp.StronglyEntanglingLayers(weights=parameters, wires=range(4))
             return qp.expval(qp.Z(0))
@@ -814,9 +812,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         params = np.arange(1, np.prod(shape) + 1).reshape(shape) / 10
         res = circuit(params)
         expected = -0.07273693957824906
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_TTN(self, device, tol):
+    def test_TTN(self, device, tol, shots):
         """Test the TTN template."""
 
         def block(weights, wires):
@@ -831,23 +829,23 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         template_weights = [[0.1, -0.3]] * n_blocks
         dev = device(n_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(template_weights):
             qp.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             return qp.expval(qp.Z(n_wires - 1))
 
         res = circuit(template_weights)
         expected = 0.7845726663667097
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_TrotterProduct(self, device, tol):
+    def test_TrotterProduct(self, device, tol, shots):
         """Test the TrotterProduct template."""
         dev = device(2)
         coeffs = [0.25, 0.75]
         ops = [qp.X(0), qp.Z(0)]
         H = qp.dot(coeffs, ops)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit():
             qp.Hadamard(0)
             qp.TrotterProduct(H, time=2.4, order=2)
@@ -855,16 +853,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         res = circuit()
         expected = [0.37506708, 0.0, 0.62493292, 0.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
+        assert np.allclose(res, expected, atol=tol)
 
-    def test_TwoLocalSwapNetwork(self, device, tol):
+    def test_TwoLocalSwapNetwork(self, device, tol, shots):
         """Test the TwoLocalSwapNetwork template."""
         dev = device(3)
 
         def acquaintances(index, wires, param=None):  # pylint:disable=unused-argument
             return qp.CNOT(index)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(state):
             qp.StatePrep(state, range(3))
             qp.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
@@ -875,8 +873,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         probs = state**2
         res = circuit(state)
         order = np.argsort(np.argsort(res))
-        tol = tol(dev.shots)
-        assert all(np.isclose(val, probs[i], atol=tol) for i, val in zip(order, res))
+        assert np.allclose(res, probs[order], atol=tol)
 
 
 class TestMoleculeTemplates:
@@ -891,14 +888,14 @@ class TestMoleculeTemplates:
         ref_state = qp.qchem.hf_state(electrons, qubits)
         return qubits, ref_state, h
 
-    def test_GateFabric(self, device, tol, h2):
+    def test_GateFabric(self, device, tol, h2, shots):
         """Test the GateFabric template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.GateFabric(weights, wires=[0, 1, 2, 3], init_state=ref_state, include_pi=True)
             return qp.expval(H)
@@ -908,15 +905,15 @@ class TestMoleculeTemplates:
         weights = np.array([0.1, 0.2, 0.3, 0.4]).reshape(shape)
         res = circuit(weights)
         expected = -0.9453094224618628
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_ParticleConservingU1(self, device, tol, h2):
+    def test_ParticleConservingU1(self, device, tol, h2, shots):
         """Test the ParticleConservingU1 template."""
         qubits, ref_state, h = h2
         dev = device(qubits)
         ansatz = partial(qp.ParticleConservingU1, init_state=ref_state, wires=dev.wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(params):
             ansatz(params)
             return qp.expval(h)
@@ -926,15 +923,15 @@ class TestMoleculeTemplates:
         params = np.arange(1, 13).reshape(shape) / 10
         res = circuit(params)
         expected = -0.5669084184194393
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_ParticleConservingU2(self, device, tol, h2):
+    def test_ParticleConservingU2(self, device, tol, h2, shots):
         """Test the ParticleConservingU2 template."""
         qubits, ref_state, h = h2
         dev = device(qubits)
         ansatz = partial(qp.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(params):
             ansatz(params)
             return qp.expval(h)
@@ -944,9 +941,9 @@ class TestMoleculeTemplates:
         params = np.arange(1, 8).reshape(shape) / 10
         res = circuit(params)
         expected = -0.8521967086461301
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_UCCSD(self, device, tol, h2):
+    def test_UCCSD(self, device, tol, h2, shots):
         """Test the UCCSD template."""
         qubits, hf_state, H = h2
         electrons = 2
@@ -954,7 +951,7 @@ class TestMoleculeTemplates:
         s_wires, d_wires = qp.qchem.excitations_to_wires(singles, doubles)
         dev = device(qubits)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(params, wires, s_wires, d_wires, hf_state):
             qp.UCCSD(params, wires, s_wires, d_wires, hf_state)
             return qp.expval(H)
@@ -964,16 +961,16 @@ class TestMoleculeTemplates:
             params, wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state
         )
         expected = -1.0864433121798176
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)
 
-    def test_kUpCCGSD(self, device, tol, h2):
+    def test_kUpCCGSD(self, device, tol, h2, shots):
         """Test the kUpCCGSD template."""
         qubits, ref_state, H = h2
         dev = device(qubits)
-        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and dev.shots:
+        if getattr(dev, "short_name", None) == "cirq.mixedsimulator" and shots:
             pytest.xfail(reason="device is generating negative probabilities")
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, shots=shots)
         def circuit(weights):
             qp.kUpCCGSD(weights, wires=[0, 1, 2, 3], k=1, delta_sz=0, init_state=ref_state)
             return qp.expval(H)
@@ -983,4 +980,4 @@ class TestMoleculeTemplates:
         weights = np.arange(np.prod(shape)).reshape(shape) / 10
         res = circuit(weights)
         expected = -1.072648130451027
-        assert np.isclose(res, expected, atol=tol(dev.shots))
+        assert np.isclose(res, expected, atol=tol)

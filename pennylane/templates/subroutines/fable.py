@@ -87,7 +87,7 @@ class FABLE(Operation):
 
     resource_keys = {"wires", "thetas", "control_wires", "tol"}
 
-    def __init__(self, input_matrix, wires, tol=0, id=None):
+    def __init__(self, input_matrix, wires, tol=0):
         wires = Wires(wires)
 
         if not math.is_abstract(input_matrix):
@@ -131,7 +131,7 @@ class FABLE(Operation):
 
         self._hyperparameters = {"tol": tol}
 
-        super().__init__(input_matrix, wires=wires, id=id)
+        super().__init__(input_matrix, wires=wires)
 
     @property
     def resource_params(self) -> dict:

@@ -742,12 +742,6 @@ class TestSparseMatrix:
 
 
 class TestProperties:
-    @pytest.mark.parametrize("op_scalar_tup", ops)
-    def test_queue_category(self, op_scalar_tup):
-        """Test queue_category property is "_ops" by inheritance."""
-        scalar, op = op_scalar_tup
-        sprod_op = SProd(scalar, op)
-        assert sprod_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
@@ -770,6 +764,24 @@ class TestProperties:
         """Test that scalar product ops are correctly classified as hermitian or not."""
         sprod_op = s_prod(scalar, op)
         assert sprod_op.is_verified_hermitian == hermitian_status
+
+    @pytest.mark.jax
+    def test_is_verified_hermitian_abstract(self):
+        """Test that is_verified_hermitian works with abstract coefficients."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        def float_arg(x):
+            op = x * qp.X(0)
+            assert op.is_verified_hermitian
+
+        jax.jit(float_arg)(0.5)
+
+        def complex_arg(x):
+            op = x * qp.X(0)
+            assert not op.is_verified_hermitian
+
+        jax.jit(complex_arg)(jax.numpy.array(0.5 + 1.2j))
 
     @pytest.mark.tf
     def test_is_verified_hermitian_tf(self):

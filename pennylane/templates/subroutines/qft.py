@@ -129,10 +129,10 @@ class QFT(Operation):
     grad_method = None
     resource_keys = {"num_wires"}
 
-    def __init__(self, wires: WiresLike, id=None):
+    def __init__(self, wires: WiresLike):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())

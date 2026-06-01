@@ -180,7 +180,7 @@ class QuantumPhaseEstimation(ErrorOperation):
             "num_estimation_wires": len(self.estimation_wires),
         }
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
+    def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
@@ -216,7 +216,7 @@ class QuantumPhaseEstimation(ErrorOperation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(*unitary.data, wires=wires, id=id)
+        super().__init__(*unitary.data, wires=wires)
 
     @property
     def target_wires(self):

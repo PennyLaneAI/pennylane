@@ -62,7 +62,6 @@ class HilbertSchmidt(Operation):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
@@ -143,7 +142,6 @@ class HilbertSchmidt(Operation):
         self,
         V: Operator | Iterable[Operator],
         U: Operator | Iterable[Operator],
-        id: str | None = None,
     ) -> None:
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -168,7 +166,7 @@ class HilbertSchmidt(Operation):
             raise ValueError("Operators in U and V must act on distinct wires.")
 
         total_wires = Wires(u_wires + v_wires)
-        super().__init__(wires=total_wires, id=id)
+        super().__init__(wires=total_wires)
 
     def map_wires(self, wire_map: dict):
         raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
@@ -295,7 +293,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.

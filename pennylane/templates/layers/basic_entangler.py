@@ -129,7 +129,7 @@ class BasicEntanglerLayers(Operation):
 
     resource_keys = {"repeat", "num_wires", "rotation"}
 
-    def __init__(self, weights, wires=None, rotation=None, id=None):
+    def __init__(self, weights, wires=None, rotation=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = math.get_interface(weights)
         weights = math.asarray(weights, like=interface)
@@ -148,7 +148,7 @@ class BasicEntanglerLayers(Operation):
             )
 
         self._hyperparameters = {"rotation": rotation or RX}
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def num_params(self):

@@ -195,6 +195,9 @@ class MeasurementValue:
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
 
+    def __hash__(self):
+        return hash((tuple(self.measurements), self.processing_fn))
+
     def concretize(self, measurements: dict):
         """Returns a concrete value from a dictionary of hashes with concrete values."""
         values = tuple(measurements[meas] for meas in self.measurements)

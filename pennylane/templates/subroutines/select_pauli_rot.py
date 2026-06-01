@@ -103,7 +103,7 @@ class SelectPauliRot(Operation):
     resource_keys = {"num_wires", "rot_axis"}
 
     def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z", id=None
+        self, angles, control_wires, target_wire, rot_axis="Z"
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         self.hyperparameters["control_wires"] = Wires(control_wires)
@@ -120,7 +120,7 @@ class SelectPauliRot(Operation):
             raise ValueError("Only one target wire can be specified")
 
         all_wires = self.hyperparameters["control_wires"] + self.hyperparameters["target_wire"]
-        super().__init__(angles, wires=all_wires, id=id)
+        super().__init__(angles, wires=all_wires)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())

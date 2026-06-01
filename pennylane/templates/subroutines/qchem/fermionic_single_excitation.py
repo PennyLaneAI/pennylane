@@ -127,7 +127,7 @@ class FermionicSingleExcitation(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weight: float, wires: WiresLike, *, id=None):
+    def __init__(self, weight: float, wires: WiresLike):
         wires = Wires(wires)
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
@@ -136,7 +136,7 @@ class FermionicSingleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
-        super().__init__(weight, wires=wires, id=id)
+        super().__init__(weight, wires=wires)
 
     @property
     def resource_params(self) -> dict:

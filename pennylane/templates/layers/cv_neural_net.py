@@ -101,7 +101,6 @@ class CVNeuralNetLayers(Operation):
         phi_a,
         k,
         wires,
-        id=None,
     ):
         n_wires = len(wires)
         # n_if -> theta and phi shape for Interferometer
@@ -137,7 +136,6 @@ class CVNeuralNetLayers(Operation):
             phi_a,
             k,
             wires=wires,
-            id=id,
         )
 
     @property

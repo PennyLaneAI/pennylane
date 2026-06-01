@@ -238,7 +238,7 @@ class Superposition(Operation):
     resource_keys = {"num_wires", "num_coeffs", "bases"}
 
     def __init__(
-        self, coeffs, bases, wires, work_wire, id=None
+        self, coeffs, bases, wires, work_wire
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
         if not all(
@@ -266,7 +266,7 @@ class Superposition(Operation):
 
         all_wires = self.hyperparameters["target_wires"] + self.hyperparameters["work_wire"]
 
-        super().__init__(coeffs, wires=all_wires, id=id)
+        super().__init__(coeffs, wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
