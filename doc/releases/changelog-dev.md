@@ -335,6 +335,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
+  exists from an operator to a controlled/adjoint version of itself.
+  [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
