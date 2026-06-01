@@ -1355,17 +1355,6 @@ class Operation2(Operator2, is_base=True):
         """
         return Wires([])
 
-    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
-        r"""The parameters required to implement a single-qubit gate as an
-        equivalent ``Rot`` gate, up to a global phase.
-
-        Returns:
-            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
-            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
-            original operation.
-        """
-        raise NotImplementedError
-
     @property
     def parameter_frequencies(self) -> list[tuple[float | int]]:
         r"""Returns the frequencies for each operator parameter with respect
