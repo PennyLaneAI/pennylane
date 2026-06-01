@@ -164,7 +164,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.measurements"
 layer = "core"
-depends_on = ["pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.core.operator", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.operation2", "pennylane.core.operator", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## AUXILIARY module(s)
@@ -340,6 +340,9 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[interfaces]]
 expose = ["Operator", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase"]
 from = ["pennylane.core.operator"]
+
+path = "pennylane.operation2"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.ops"
