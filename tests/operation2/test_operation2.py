@@ -39,6 +39,7 @@ from pennylane.operation2 import Operator2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.ops import PhaseShift, CRY, RX, Hermitian, Rot
 
+from pennylane import gradients, math
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     PennyLaneDeprecationWarning,
@@ -46,7 +47,8 @@ from pennylane.exceptions import (
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.operation2 import Operation2, Operator2
-from pennylane.ops import CRY, RX, Hermitian, PhaseShift, Rot
+from pennylane.ops import CRY, RX, CRot, Hermitian, PhaseShift, Rot
+from pennylane.ops.functions import eigvals, generator
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires, WiresLike
@@ -1721,6 +1723,45 @@ def test_basis_deprecation():
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation2.basis is deprecated"):
         assert MyOp(0, wires=[0]).basis is None
+
+
+class TestParameterFrequencies:
+    """Tests for ``parameter_frequencies`` property.``."""
+
+    def test_param_freqs_no_generator(self):
+        op = CRot(0.4, 0.1, 0.3, wires=[0, 1])
+        assert op.parameter_frequencies == [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+
+    @pytest.mark.parametrize(
+        "matrix",
+        [
+            np.zeros((2, 2)),
+            np.array([[1, 0], [0, 1]]),
+            np.array([[0, 1], [1, 0]]),
+        ],
+    )
+    def test_param_freqs_with_generator(self, matrix):
+
+        class OpWithGen(Operation2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+            def generator(self):
+                return Hermitian(matrix, wires=self.wires)
+
+        op = OpWithGen(0.1, 0)
+
+        gen = generator(op, format="observable")
+        gen_eigvals = eigvals(gen)
+        freqs_from_eigvals = gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+
+        assert math.allclose(op.parameter_frequencies, freqs_from_eigvals)
 
 
 class TestOperationDerivative:
