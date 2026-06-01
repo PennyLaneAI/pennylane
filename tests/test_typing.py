@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, Int, TensorLike
 
 
 class TestTensorLike:
@@ -103,3 +103,178 @@ class TestTensorLike:
 
         assert issubclass(tf.Tensor, TensorLike)
         assert issubclass(tf.Variable, TensorLike)
+
+
+class TestAbstractArray:
+
+    def test_basic_instance(self):
+        """Test a normal instance of AbstractArray."""
+
+        a = AbstractArray([2, 3], dtype=float)
+        assert a.shape == (2, 3)  # converted to tuple
+        assert a.dtype == np.float64  # converted to numpy dtype
+
+        assert a.size == 6
+        assert a.ndim == 2
+        assert a.T.shape == (3, 2)
+        assert a.T.dtype == np.float64
+
+        assert len(a) == 2
+
+        with pytest.raises(IndexError, match="Cannot index into an abstract array."):
+            a[1] = 2
+
+        with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
+            _ = a[1]
+
+    def test_hash_and_equality(self):
+        """Test hash and equality for AbstractArray"""
+
+        a0 = AbstractArray((2,), int)
+        a0_1 = AbstractArray((2,), int)
+
+        assert a0 == a0_1
+        assert hash(a0) == hash(a0_1)
+
+        a1 = AbstractArray((2, 3), int)
+        assert a1 != a0
+        assert hash(a1) != hash(a0)
+
+        a2 = AbstractArray((3,), int)
+        assert a2 != a0
+        assert hash(a2) != hash(a0)
+
+        a3 = AbstractArray((2,), float)
+        assert a3 != a0
+        assert hash(a3) != hash(a0)
+
+        a4 = AbstractArray((...,), int)
+        assert a4 != a0
+        assert hash(a4) != hash(a0)
+
+        with pytest.raises(TypeError, match="Tried to check equality against an abstract array."):
+            _ = a3 == 2
+
+    def test_ellipsis_in_shape(self):
+        """Test that an Ellipsis can be used in the shape tuple."""
+
+        a = AbstractArray((..., 2), int)
+
+        assert a.shape == (..., 2)
+        assert a.T.shape == (2, ...)
+
+        with pytest.raises(TypeError, match="size is undefined for"):
+            _ = a.size
+
+        assert a.ndim == 2
+
+    def test_indexing_into_scalar(self):
+        """Test that we can index into a scalar to produce a new hint with a size."""
+
+        a = AbstractArray((), int)
+
+        b = a[2, 3]
+        assert isinstance(b, AbstractArray)
+        assert b.dtype == np.int64
+        assert b.shape == (2, 3)
+
+        c = a[2]
+        assert isinstance(c, AbstractArray)
+        assert c.shape == (2,)
+        assert c.dtype == np.int64
+
+        d = a[...]
+        assert isinstance(d, AbstractArray)
+        assert d.shape == (...,)
+        assert d.dtype == np.int64
+
+        e = a[5, ..., 2]
+        assert isinstance(e, AbstractArray)
+        assert e.shape == (5, ..., 2)
+        assert e.dtype == np.int64
+
+    def test_error_indexing_into_non_scalar(self):
+        """Test an error is raised when indexing into a non-scalar AbstractArray."""
+
+        a = AbstractArray((2,), int)
+
+        with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
+            _ = a[1]
+
+    @pytest.mark.parametrize("bad_index", (5.0, "a", None))
+    def test_error_bad_indices(self, bad_index):
+        """Test that an error is raised on invalid indices."""
+
+        a = AbstractArray((), int)
+
+        with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
+            _ = a[bad_index]
+
+    @pytest.mark.parametrize(
+        "shortcut, dtype",
+        [(Int, np.int64), (Float, np.float64), (Bool, np.bool), (Complex, np.complex128)],
+    )
+    def test_scalar_shortcuts(self, shortcut, dtype):
+        """Test for the various available shortcuts."""
+
+        assert shortcut.dtype == dtype
+        assert shortcut.shape == ()
+
+        a = shortcut[2, 3, ...]
+        assert a.shape == (2, 3, ...)
+        assert a.dtype == dtype
+
+
+class TestAbstractWires:
+
+    def test_basic(self):
+        """Basic tests for the AbstractWires class."""
+
+        a = AbstractWires(3)
+        assert a.num_wires == 3
+        assert len(a) == 3
+
+    def test_comparison(self):
+        """Test for equality and comparison."""
+        a = AbstractWires(3)
+        assert a == AbstractWires(3)
+        assert a != AbstractWires(4)
+        assert hash(a) == hash(AbstractWires(3))
+        assert hash(a) != hash(AbstractWires(4))
+
+        with pytest.raises(
+            TypeError, match="Tried to check equality against an abstract wire register."
+        ):
+            _ = a == 2
+
+    def test_ellipsis(self):
+        """Test that number of wires can be specified by an ellipsis."""
+
+        a = AbstractWires(...)
+        assert a.num_wires == ...
+
+    def test_create_by_getitem(self):
+        """Test that AbstractWires can be created by __getitem__."""
+
+        a = AbstractWires[4]
+        assert isinstance(a, AbstractWires)
+        assert a.num_wires == 4
+
+        b = AbstractWires[...]
+        assert isinstance(b, AbstractWires)
+        assert b.num_wires == ...
+
+        with pytest.raises(
+            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
+        ):
+            _ = AbstractWires[2, 3, 4]
+
+    def test_from_wires(self):
+        """Test that AbstractWires can be created from a sequence."""
+
+        a = AbstractWires.from_wires((2, 3, 4))
+        assert isinstance(a, AbstractWires)
+        assert a.num_wires == 3
+
+        with pytest.raises(TypeError, match="Cannot create AbstractWires from"):
+            AbstractWires.from_wires(4)
