@@ -128,21 +128,59 @@ def test_controlled(wires, init_state, expected, work_wires, control):
 
 @pytest.mark.capture
 @pytest.mark.parametrize(
-    "wires, work_wires",
+    "wires, work_wires, controls",
     [
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11)),  # enough work wires for work wire decomp
+        # 1 control
+        # enough work wires for work wire decomp
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
+        # not enough work wires... uses fallback
         (
             (0, 1, 2, 3, 4, 5),
             (
                 6,
                 7,
             ),
-        ),  # not enough work wires... uses fallback
-        ((0, 1, 2), tuple()),  # no work wires
+            (8,),
+        ),
+        # no work wires
+        ((0, 1, 2), tuple(), (3,)),
+        # 2 controls
+        # enough work wires for work wire decomp
+        (
+            (0, 1, 2, 3, 4, 5),
+            (6, 7, 8, 9, 10, 11),
+            (
+                12,
+                13,
+            ),
+        ),
+        # not enough work wires... uses fallback
+        (
+            (0, 1, 2, 3, 4, 5),
+            (
+                6,
+                7,
+            ),
+            (
+                8,
+                9,
+            ),
+        ),
+        # no work wires
+        (
+            (0, 1, 2),
+            tuple(),
+            (
+                3,
+                4,
+            ),
+        ),
     ],
 )
-def test_controlled_decomposition_new(wires, work_wires):
+def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""
-    op = Controlled(Incrementer(wires, work_wires), [len(wires + work_wires)], control_values=[1])
+    op = Controlled(
+        Incrementer(wires, work_wires), controls, control_values=[1 for _ in range(len(controls))]
+    )
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
