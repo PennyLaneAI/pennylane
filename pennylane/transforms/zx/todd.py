@@ -82,9 +82,9 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ──S†─╭Z─╭●─╭●─┤  State
-    1: ──S──╰●─│──╰X─┤  State
-    2: ────────╰X────┤  State
+    0: ──S†─╭Z─╭●─╭●─┤ ╭State
+    1: ──S──╰●─│──╰X─┤ ├State
+    2: ────────╰X────┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel

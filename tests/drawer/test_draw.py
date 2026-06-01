@@ -408,7 +408,9 @@ class TestMidCircuitMeasurements:
         # Stripping to remove trailing white-space because length of white-space at the
         # end of the drawing depends on the length of each individual line
         drawing = qp.draw(func)().strip()
-        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
+        # Issue #7807: multi-wire all-wires measurements now render with
+        # grouping brackets even when ``m.wires`` is implicitly empty.
+        expected_drawing = f"0: ──X──┤↗├──X─┤ ╭{label}\n1: ──X───║───║─┤ ╰{label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
 
@@ -1008,10 +1010,10 @@ class TestPauliMeasure:
             return qp.probs()
 
         expected = (
-            "0: ──H─╭┤↗Y├────┤  Probs\n"
-            "1: ──H─│──────X─┤  Probs\n"
-            "2: ────├┤↗Z├────┤  Probs\n"
-            "3: ────╰┤↗X├────┤  Probs"
+            "0: ──H─╭┤↗Y├────┤ ╭Probs\n"
+            "1: ──H─│──────X─┤ ├Probs\n"
+            "2: ────├┤↗Z├────┤ ├Probs\n"
+            "3: ────╰┤↗X├────┤ ╰Probs"
         )
         assert draw(circ)() == expected
 
@@ -1029,11 +1031,11 @@ class TestPauliMeasure:
             return qp.probs()
 
         expected = (
-            "0: ──H─╭┤↗Y├────┤  Probs\n"
-            "1: ──H─│──────X─┤  Probs\n"
-            "2: ──H─├┤↗Z├──║─┤  Probs\n"
-            "3: ──H─╰┤↗X├──║─┤  Probs\n"
-            "4: ──H───║────║─┤  Probs\n"
+            "0: ──H─╭┤↗Y├────┤ ╭Probs\n"
+            "1: ──H─│──────X─┤ ├Probs\n"
+            "2: ──H─├┤↗Z├──║─┤ ├Probs\n"
+            "3: ──H─╰┤↗X├──║─┤ ├Probs\n"
+            "4: ──H───║────║─┤ ╰Probs\n"
             "         ╚════╝         "
         )
         assert draw(circ)() == expected
