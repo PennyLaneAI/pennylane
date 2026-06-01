@@ -251,8 +251,9 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
-        # Trailing CNOT
-        CNOT(wires[:2])
+        if num_controls == 0:
+            # Trailing CNOT
+            CNOT(wires[:2])
 
     cond(len(wires) > 1, _increment)()
 
