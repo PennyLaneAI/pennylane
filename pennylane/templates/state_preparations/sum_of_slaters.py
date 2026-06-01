@@ -851,7 +851,8 @@ class SumOfSlatersPrep(Operation):
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:
 
-        >>> print(qp.SumOfSlatersPrep.required_register_sizes(indices, wires))
+        >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, wires)
+        >>> print(sizes)
         {'wires': 5,
          'enumeration_wires': 4,
          'identification_wires': 0,
@@ -860,6 +861,16 @@ class SumOfSlatersPrep(Operation):
 
         Note that work wires of subroutines like ``QROM`` or the elbow ladders that realize a
         :class:`~.MultiControlledX` gate are accounted for explicitly.
+        Even thought the decomposition of ``SumOfSlatersPrep`` allocates the needed work wires
+        automatically, you may want to allocate them explicitly. Generically, this can be done
+        with :func:`~.registers`:
+
+        >>> print(qp.registers(sizes))
+        {'wires': Wires([0, 1, 2, 3, 4]),
+         'enumeration_wires': Wires([5, 6, 7, 8]),
+         'identification_wires': Wires([]),
+         'qrom_work_wires': Wires([9, 10, 11]),
+         'mcx_cache_wires': Wires([12, 13, 14, 15])}
 
     """
 
