@@ -1388,7 +1388,7 @@ class Operation2(Operator2, is_base=True):
 
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
-        if self.num_params == 1:
+        if len(self.dynamic_argnames) == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
             try:
