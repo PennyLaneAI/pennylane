@@ -56,7 +56,7 @@ class SignedOutMultiplier(Operator):
     The first bit of the encoded bitstring gives the sign of the encoded number. :math:`1 \mapsto -`, :math:`0 \mapsto +`.
     This is however not a sign-magnitude encoding. Iff the encoded number is negative, the rest of the bits do not give the
     magnitude. Instead, the magnitude can be found by calculating :math:`\bar{x}=(-1)^{x_{n-1}}x`. This is done by flipping the bits of
-    :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(010)_2 \oplus 1 = (101)_2 \oplus 1 = (110)_2`.
+    :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(1010)_2 \oplus 1 = (0101)_2 \oplus 1 = (0110)_2`.
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
