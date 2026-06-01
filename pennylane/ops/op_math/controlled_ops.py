@@ -1139,7 +1139,7 @@ class CNOT(ControlledOp):
         0 & 0 & 1 & 0
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control wire**. The second wire is the target.
 
     **Details:**
 
@@ -1148,6 +1148,28 @@ class CNOT(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.CNOT([0,1])
+            return qp.sample()
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤  Sample
+    1: ────╰X─┤  Sample
+    >>> circuit()
+    array([[1, 1]])
+
     """
 
     num_wires = 2
