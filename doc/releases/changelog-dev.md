@@ -199,11 +199,11 @@
   - `Operator2`
   - `Operation2` 
 
-  - [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
-  - [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
-  - [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
-  - [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
-  - [(#9553)](https://github.com/PennyLaneAI/pennylane/pull/9553)
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+  [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+  [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
+  [(#9553)](https://github.com/PennyLaneAI/pennylane/pull/9553)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
