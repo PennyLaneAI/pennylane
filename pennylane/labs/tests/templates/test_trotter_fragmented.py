@@ -25,7 +25,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
-from pennylane.labs.templates.trotter_fragmented import _energy_shift, trotter_fragmented
+from pennylane.labs.templates.trotter_fragmented import trotter_fragmented
 
 # pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods
 
@@ -162,7 +162,6 @@ def build_H_exact(hamiltonian, num_modes, n_states):
         U_2b = _qp_basis_rotation_matrix(leaf_tensors[f], num_modes, n_states)
         H = H + U_2b @ H_2b_diag @ U_2b.conj().T
 
-    H = 0.5 * (H + H.conj().T)
     return H
 
 
@@ -384,9 +383,15 @@ def test_catalyst_legacy_frontend():
 # +----------------------------------------------------------------------+
 # |---- Correctness tests not meant to be run in CI (ever) --------------|
 # +----------------------------------------------------------------------+
+#
+# run locally using:
+#
+# pytest pennylane/labs/tests/templates/test_trotter_fragmented.py --run-skip-ci
+#
+# takes about 30 min on an m2 macbook air
 
 
-@pytest.mark.skip
+@pytest.mark.skip_ci
 class TestStepScaling:
     """Test that doubling Trotter steps reduces error by ~4x (1/N^2)."""
 
@@ -420,7 +425,7 @@ class TestStepScaling:
         assert log_dev <= 0.35
 
 
-@pytest.mark.skip
+@pytest.mark.skip_ci
 class TestHighNConvergence:
     """Test that many Trotter steps converge U_trotter to expm(-i H t)."""
 
@@ -455,7 +460,7 @@ class TestHighNConvergence:
         assert fidelity > 1 - 1e-4
 
 
-@pytest.mark.skip
+@pytest.mark.skip_ci
 class TestH2SConvergence:
     """Integration tests on the real H2S molecule."""
 
@@ -524,17 +529,13 @@ class TestH2SConvergence:
         overlap = np.trace(Aref.conj().T @ Atrial)
         measured_phase = np.angle(overlap)
 
-        e_shift = _energy_shift(ham, frag_scheme="cgf")
-        expected_phase = e_shift * t
-
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+        expected_phase = 0
 
-        phase_error = abs(measured_phase - expected_phase)
-        assert phase_error < 1e-5
+        assert np.isclose(measured_phase, expected_phase)
 
 
-@pytest.mark.skip
+@pytest.mark.skip_ci
 class TestMonotonicity:
     """Test that increasing num_steps decreases error."""
 
@@ -559,7 +560,7 @@ class TestMonotonicity:
             assert errors[i] > errors[i + 1]
 
 
-@pytest.mark.skip
+@pytest.mark.skip_ci
 @pytest.mark.slow
 def test_energy_shift_with_nuc_constant(toy_multi_fragment):
     """Test that energy shift accounts for nonzero nuc_constant."""
@@ -577,11 +578,7 @@ def test_energy_shift_with_nuc_constant(toy_multi_fragment):
     overlap = np.trace(Aref.conj().T @ Atrial)
     measured_phase = np.angle(overlap)
 
-    e_shift = _energy_shift(ham, frag_scheme="cgf")
-    expected_phase = e_shift * t
-
     measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-    expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+    expected_phase = 0
 
-    phase_error = abs(measured_phase - expected_phase)
-    assert phase_error < 1e-5
+    assert np.isclose(measured_phase, expected_phase)
