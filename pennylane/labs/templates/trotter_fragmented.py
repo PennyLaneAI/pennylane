@@ -42,6 +42,8 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
             * CGF shapes: ``core_tensors: (L+1, M, M, N, N)``,
               ``leaf_tensors:  (L+1, M, N, N)``, where M is the number of modes, N is the number of modals per mode, and L is the number of two-body fragments.
 
+            The Hamiltonian type is automatically detected via the input shapes.
+
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
