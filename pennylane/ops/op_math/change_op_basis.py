@@ -41,7 +41,7 @@ from .composite import CompositeOp, handle_recursion_error
 
 
 def _validate_callable(func: Callable) -> None:
-    """Validates that a callable has no required parameters."""
+    """Validates that a callable has no unbound mandatory parameters."""
     sig = inspect.signature(func)
 
     has_required_param = False
