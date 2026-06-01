@@ -95,19 +95,15 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
         from pennylane.labs.templates import SumOfSlatersPrep2
 
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
 
     Note, however, that these work wires will be hard coded to start at the qubit index ``0`` and
     consist of consecutive integers. For a more fine-grained control, the size of the registers
-    can be computed with the class method ``required_register_sizes``. This requires a few steps,
-    which is why using ``SumOfSlatersPrep2`` is a little less convenient to use than
-    ``SumOfSlatersPrep``:
+    can be computed with the class method ``required_register_sizes``.
 
     .. code-block:: python
 
-        v_bits = qp.math.int_to_binary(np.array(indices), n).T
-        selection, _ = qp.select_sos_rows(v_bits)
-        sizes = SumOfSlatersPrep2.required_register_sizes(len(indices), len(selection), n)
+        sizes = SumOfSlatersPrep2.required_register_sizes(indices, target_wires)
 
     >>> print(sizes)
     {'wires': 7, 'enumeration_wires': 3, 'identification_wires': 5, 'qrom_work_wires': 2, 'mcx_cache_wires': 4}
@@ -211,7 +207,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
             n = 5
             target_wires = list(range(n))
 
-            work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
+            work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
             num_wires = sum(len(w) for w in work_wires.values()) + n
 
             @qp.decompose(gate_set=gate_set)
@@ -317,22 +313,20 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
 
     @staticmethod
-    def make_work_wire_registers(indices, num_wires):
-        """Create work wire registers required for a given set of indices and number of target
-        wires for SumOfSlatersPrep2. The size of the required registers is computed with
+    def make_work_wire_registers(indices, target_wires):
+        """Create work wire registers required for a given set of indices and target
+        wires for ``SumOfSlatersPrep2``. The size of the required registers is computed with
         ``SumOfSlatersPrep.required_register_sizes`` and ``qp.registers`` is used to produce the
-        registers themselves. Note that this function implicitly assumes that ``SumOfSlatersPrep2``
-        has the first ``num_wires`` wires as target wires and the work wires have the subsequent
-        consecutive integers as labels."""
-        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
-        selection, _ = qp.select_sos_rows(v_bits)
-        registers = SumOfSlatersPrep2.required_register_sizes(
-            len(indices), len(selection), num_wires
-        )
+        registers themselves. This function assumes integer wire labels. It queries the largest
+        label in ``target_wires`` and allocates the other wires as the subsequent consecutive
+        integers."""
+        registers = SumOfSlatersPrep2.required_register_sizes(indices, target_wires)
+        registers.pop("wires")
         empty_registers = {k for k, val in registers.items() if val == 0}
         registers = {k: val for k, val in registers.items() if val > 0}
+        registers["target_wires"] = max(target_wires) + 1
         work_wires = qp.registers(registers)
-        work_wires.pop("wires")  # Remove the target wires
+        work_wires.pop("target_wires")  # Remove the (potentially enlarged) target wires
         work_wires |= {k: Wires([]) for k in empty_registers}
         return work_wires
 

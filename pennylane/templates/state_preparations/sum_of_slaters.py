@@ -28,6 +28,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -850,8 +851,7 @@ class SumOfSlatersPrep(Operation):
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:
 
-        >>> prep_op = qp.SumOfSlatersPrep(coefficients, wires, indices)
-        >>> prep_op.required_register_sizes(**prep_op.resource_params)
+        >>> print(qp.SumOfSlatersPrep.required_register_sizes(indices, wires)
         {'wires': 5,
          'enumeration_wires': 4,
          'identification_wires': 0,
@@ -894,21 +894,47 @@ class SumOfSlatersPrep(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def required_register_sizes(num_entries, num_bits, num_wires):
+    def required_register_sizes(indices: tuple[int], wires: WiresLike) -> dict:
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
-        numbers of bitstrings ``num_entries``, of bits per bitstring (``num_bits``, already
-        reduced via ``select_sos_rows``) and target wires (``num_wires``).
+        computational basis states, ``indices``, and number of target wires, ``num_wires``.
 
         Args:
-            num_entries (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
-            num_bits (int): Number of bits per bitstring.
-            num_wires (int): Number of target wires on which ``SumOfSlatersPrep`` will prepare
+            indices (tuple[int]): Indices of computational basis states of the sparse state to be
+                prepared with ``SumOfSlatersPrep``.
+            wires (qp.wires.WiresLike): Target wires on which ``SumOfSlatersPrep`` will prepare
                 the state.
 
         Returns:
-            dict[str, int]: Required register size per register name
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep``.
 
         """
+        num_wires = len(wires)
+        _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
+        num_bits, num_entries = vtilde_bits.shape
+        return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
+
+    @staticmethod
+    def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):
+        """Compute the register sizes required for ``SumOfSlatersPrep``, for given
+        number of bits strings, number of bits per bit string, and number of wires. It is
+        the core method for ``required_register_sizes``, separated out for convenient internal
+        reuse.
+
+        Args:
+            indices (tuple[int]): Indices of computational basis states of the sparse state to be
+                prepared with ``SumOfSlatersPrep``.
+            wires (qp.wires.WiresLike): Target wires on which ``SumOfSlatersPrep`` will prepare
+                the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep``.
+
+        """
+
         if num_entries == 1:
             # Simple computational basis state preparation, does not require auxiliary qubits
             return {
@@ -989,7 +1015,8 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
 
 def _sos_state_prep_work_wires(num_entries, num_bits, num_wires):
     """See SumOfSlatersPrep.required_register_sizes for details."""
-    sizes = SumOfSlatersPrep.required_register_sizes(num_entries, num_bits, num_wires)
+    # pylint: disable-next=protected-access
+    sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 
 
@@ -1131,7 +1158,8 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     assert v_bits.shape == (n, num_entries)
 
     selected_target_wires, *data = _preprocess(v_bits, wires)
-    sizes = SumOfSlatersPrep.required_register_sizes(num_entries, data[-1], n)
+    # pylint: disable-next=protected-access
+    sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data[-1], n)
     all_allocate_wires = sum(sizes.values()) - n
     with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
         start = 0
