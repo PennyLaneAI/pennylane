@@ -614,6 +614,7 @@ class TestSumOfSlatersPrep:
         """Test that the subroutine of the SumOfSlatersPrep decomposition
         that uses already allocated wires is qjit compatible."""
 
+        print(seed)
         n = 6
         num_entries = 28
         wires = list(range(n))
