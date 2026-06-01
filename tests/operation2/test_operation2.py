@@ -1707,22 +1707,6 @@ class TestRepresentations:
 # Operation2 related tests
 
 
-def test_basis_deprecation():
-    """Test that Operation2.basis is deprecated."""
-
-    class MyOp(Operation2):
-
-        dynamic_argnames = ("phi",)
-        wire_argnames = ("wires",)
-
-        num_params = 1
-        num_wires = 1
-
-        def __init__(self, phi: float, wires: WiresLike):
-            super().__init__(phi, wires=wires)
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="Operation2.basis is deprecated"):
-        assert MyOp(0, wires=[0]).basis is None
 
 
 class TestParameterFrequencies:
