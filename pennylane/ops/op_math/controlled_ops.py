@@ -908,6 +908,8 @@ class CCZ(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
         0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
         \end{pmatrix}
+    
+    .. note:: The first two wires provided corresponds to the **control wires**. The third wire is the target.
 
     **Details:**
 
@@ -916,6 +918,32 @@ class CCZ(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.H(2)
+            qp.CCZ([0,1,2])
+            qp.H(2)
+            return qp.sample()
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●────┤  Sample
+    1: ──X─├●────┤  Sample
+    2: ──H─╰Z──H─┤  Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     @classmethod
@@ -1267,7 +1295,7 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
     
-    .. note:: The first two wires provided corresponds to the **control qubits**.
+    .. note:: The first two wires provided corresponds to the **control wires**. The third wire is the target.
 
     **Details:**
 
@@ -1276,7 +1304,6 @@ class Toffoli(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
-    
 
     **Example**
 
