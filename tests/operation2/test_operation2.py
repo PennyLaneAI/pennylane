@@ -691,7 +691,7 @@ class TestHash:
         op1 = HybridWireOp([[0, 1], [2]])
         op2 = HybridWireOp([[0, 1], [2]])
         assert hash(op1) == hash(op2)
-        
+
         op3 = HybridWireOp([[0, 3], [2]])
         assert hash(op1) != hash(op3)
 
