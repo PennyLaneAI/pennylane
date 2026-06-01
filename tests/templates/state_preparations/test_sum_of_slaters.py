@@ -461,7 +461,7 @@ class TestSumOfSlatersPrep:
         new_num_bits = len(reduced_bits)
         indices = tuple(2 ** np.arange(new_num_bits - 1, -1, -1) @ reduced_bits)
 
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, list(range(num_wires)))
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
         d = ceil_log2(num_entries)
 
         m = min(new_num_bits, 2 * d - 1)
@@ -495,7 +495,7 @@ class TestSumOfSlatersPrep:
         num_bits = n - 1
         indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
 
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, list(range(n)))
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         d = ceil_log2(n)
         m = min(num_bits, 2 * d - 1)
         assert sizes["wires"] == n
@@ -622,7 +622,7 @@ class TestSumOfSlatersPrep:
         v_bits = qp.math.int_to_binary(np.array(indices), n).T
 
         selected_target_wires, *data = _preprocess(v_bits, target_wires)
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, target_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         data = (coefficients, v_bits, *data)
         sizes = {"target_wires": sizes.pop("wires")} | sizes
         empty_id_wires = False

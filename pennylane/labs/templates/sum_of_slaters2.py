@@ -88,26 +88,32 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
     and ``target_wires``. The ``indices`` correspond to the computational basis states interpreted
     via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
     or :math:`|3\rangle = |011\rangle` for three qubits).
-    However, we also need to provide multiple sets of work wires. There is a convenience function
-    for this:
+    However, we also need to provide multiple sets of work wires. We can conveniently
+    compute the required register sizes with ``SumOfSlatersPrep2.required_register_sizes``:
 
     .. code-block:: python
 
         from pennylane.labs.templates import SumOfSlatersPrep2
 
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
-
-    Note, however, that these work wires will be hard coded to start at the qubit index ``0`` and
-    consist of consecutive integers. For a more fine-grained control, the size of the registers
-    can be computed with the class method ``required_register_sizes``.
-
-    .. code-block:: python
-
-        sizes = SumOfSlatersPrep2.required_register_sizes(indices, target_wires)
+        sizes = SumOfSlatersPrep2.required_register_sizes(indices, n)
 
     >>> print(sizes)
     {'wires': 7, 'enumeration_wires': 3, 'identification_wires': 5, 'qrom_work_wires': 2, 'mcx_cache_wires': 4}
 
+    Then, we can create the wire registers, here we use :func:`~.registers`, which allocates
+    wires with consecutive integer labels.
+
+    .. code-block:: python
+
+        all_wires = qp.registers(sizes) # Includes the target_wires but under the name ``wires``
+        all_wires["target_wires"] = all_wires.pop("wires")
+
+    >>> print(*all_wires.items(), sep="\n")
+    ('enumeration_wires', Wires([7, 8, 9]))
+    ('identification_wires', Wires([10, 11, 12, 13, 14]))
+    ('qrom_work_wires', Wires([15, 16]))
+    ('mcx_cache_wires', Wires([17, 18, 19, 20]))
+    ('target_wires', Wires([0, 1, 2, 3, 4, 5, 6]))
 
     With our work wires set up, we can construct the state preparation circuit and check the
     prepared state for correctness:
@@ -123,7 +129,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
-            SumOfSlatersPrep2(coefficients, target_wires, **work_wires, indices=indices)
+            SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
             return qp.state()
 
     We can check that we prepared the right state:
@@ -207,13 +213,16 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
             n = 5
             target_wires = list(range(n))
 
-            work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
-            num_wires = sum(len(w) for w in work_wires.values()) + n
+            sizes = SumOfSlatersPrep2.required_register_sizes(indices, n)
+            all_wires = qp.registers(sizes) # Includes the target_wires but under the name ``wires``
+            all_wires["target_wires"] = all_wires.pop("wires")
+
+            num_wires = sum(sizes.values())
 
             @qp.decompose(gate_set=gate_set)
             @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
             def circuit():
-                SumOfSlatersPrep2(coefficients, target_wires, **work_wires, indices=indices)
+                SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
                 return qp.state()
 
         In this case, we only require eight work wires, because the encoding blocks can be skipped.
@@ -311,21 +320,6 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
-
-    @staticmethod
-    def make_work_wire_registers(indices, target_wires):
-        """Create work wire registers required for a given set of indices and target
-        wires for ``SumOfSlatersPrep2``. The size of the required registers is computed with
-        ``SumOfSlatersPrep.required_register_sizes`` and ``qp.registers`` is used to produce the
-        registers themselves. This function assumes integer wire labels. It queries the largest
-        label in ``target_wires`` and allocates the other wires as the subsequent consecutive
-        integers."""
-        registers = SumOfSlatersPrep2.required_register_sizes(indices, target_wires)
-        registers.pop("wires")
-        registers = {"target_wires": max(target_wires) + 1} | registers
-        work_wires = qp.registers(registers)
-        work_wires.pop("target_wires")  # Remove the (potentially enlarged) target wires
-        return work_wires
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)

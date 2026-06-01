@@ -28,7 +28,6 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -851,7 +850,7 @@ class SumOfSlatersPrep(Operation):
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:
 
-        >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, wires)
+        >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, len(wires))
         >>> print(sizes)
         {'wires': 5,
          'enumeration_wires': 4,
@@ -905,15 +904,15 @@ class SumOfSlatersPrep(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def required_register_sizes(indices: tuple[int], wires: WiresLike) -> dict:
+    def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
         computational basis states, ``indices``, and number of target wires, ``num_wires``.
 
         Args:
             indices (tuple[int]): Indices of computational basis states of the sparse state to be
                 prepared with ``SumOfSlatersPrep``.
-            wires (qp.wires.WiresLike): Target wires on which ``SumOfSlatersPrep`` will prepare
-                the state.
+            num_wires (int): Number of target wires on which ``SumOfSlatersPrep``
+                will prepare the state.
 
         Returns:
             dict[str, int]: Required register size per register name. Includes the target wires
@@ -921,7 +920,6 @@ class SumOfSlatersPrep(Operation):
             of ``SumOfSlatersPrep``.
 
         """
-        num_wires = len(wires)
         _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
         num_bits, num_entries = vtilde_bits.shape
         return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
