@@ -105,7 +105,7 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
         ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
-        ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
+        ((0, 1), (2, 3), (4, 5, 6, 7, 8, 9), (10, 11), False),
     ],
 )
 def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):

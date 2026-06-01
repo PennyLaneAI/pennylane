@@ -402,7 +402,7 @@ def _not_zeroed_signed_out_multiplier_resources(
             num_output_wires=num_output_wires,
             num_x_wires=num_x_wires,
             num_y_wires=num_y_wires,
-            num_work_wires=num_work_wires - 2 * num_output_wires - 3,
+            num_work_wires=num_work_wires - 2 * num_output_wires - 2,
             mod=2**num_output_wires,
             output_wires_zeroed=True,
         )
