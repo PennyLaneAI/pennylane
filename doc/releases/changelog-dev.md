@@ -33,12 +33,12 @@
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
   has been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
 
-* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})).
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -95,7 +95,7 @@
     True
 
   ```
-  
+
 * Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
   test of a quantum register and an integer.
   [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
@@ -120,12 +120,12 @@
     )
     return qp.sample(wires=3)
   ```
-  
+
   ```pycon
     >>> output = circuit(3, 2)
     >>> print(bool(output)) # 3 >= 2
     True
-  
+
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
@@ -234,10 +234,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* :func:`~.equal` supports `Operator2` instances.
-  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
-
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
+* New, experimental abstractions for creating PennyLane operators have been added, built around a new
+  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  integrated into the PennyLane ecosystem. Supported functionality so far:
+  - :func:`qp.equal` can check equality between two `Operator2` instances.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
 
