@@ -17,8 +17,6 @@ import os
 import sys
 
 # Thresholds
-MIN_OLD_DURATION = 1.0  # seconds – ignore short-running tests
-MIN_NEW_DURATION = 10.0  # seconds – only flag if the new value is "big"
 RATIO_THRESHOLD = 10  # flag if new/old exceeds this factor
 MAX_DISPLAY = 20  # cap table rows per file
 
@@ -30,10 +28,9 @@ def find_anomalies(old_data, new_data):
     inflated = []
     for test, new_dur in new_data.items():
         old_dur = old_data.get(test, 0)
-        if old_dur > MIN_OLD_DURATION and new_dur > MIN_NEW_DURATION:
-            ratio = new_dur / old_dur
-            if ratio > RATIO_THRESHOLD:
-                inflated.append((test, old_dur, new_dur, ratio))
+        ratio = new_dur / old_dur
+        if ratio > RATIO_THRESHOLD:
+            inflated.append((test, old_dur, new_dur, ratio))
     inflated.sort(key=lambda x: -x[3])
     return inflated
 
@@ -47,7 +44,6 @@ def build_report(anomalies_by_file):
         lines.append(f"### {fname}")
         lines.append(
             f"**{len(inflated)} tests with >{RATIO_THRESHOLD}x duration increase "
-            f"(old >{MIN_OLD_DURATION}s, new >{MIN_NEW_DURATION}s):**"
         )
         lines.append("| Test | Old | New | Ratio |")
         lines.append("|------|-----|-----|-------|")
