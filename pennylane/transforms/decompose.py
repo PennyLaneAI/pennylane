@@ -37,6 +37,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
+from pennylane.wires import is_abstract_qubit
 
 
 def null_postprocessing(results):
@@ -193,7 +194,9 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             num_wires = len(op.wires)
 
             def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = math.array(_args[-num_wires:], like="jax")
+                wires = _args[-num_wires:]
+                if not any(is_abstract_qubit(w) for w in wires):
+                    wires = math.array(wires, like="jax")
                 rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
@@ -381,7 +384,7 @@ def decompose(
         :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
 
     Args:
-        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
         gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
@@ -616,7 +619,6 @@ def decompose(
         1: ──H─╰RZ(0.10)──H─├●─┤
         2: ─────────────────╰X─┤
 
-
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
         *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
         efficient.
@@ -647,8 +649,8 @@ def decompose(
             def stopping_condition(op):
 
                 if isinstance(op, qp.QubitUnitary):
-                    identity = math.eye(2 ** len(op.wires))
-                    return math.allclose(op.matrix(), identity)
+                    identity = qp.math.eye(2 ** len(op.wires))
+                    return qp.math.allclose(op.matrix(), identity)
 
                 return False
 

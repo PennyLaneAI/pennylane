@@ -121,12 +121,12 @@ class TRX(Operation):
         # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qp.s_prod(-0.5, qp.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(self, phi, wires, subspace=(0, 1), id=None):
+    def __init__(self, phi, wires, subspace=(0, 1)):
         self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, id=id)
+        super().__init__(phi, wires=wires)
 
     @property
     def subspace(self):
@@ -271,12 +271,12 @@ class TRY(Operation):
         # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         return qp.s_prod(-0.5, qp.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(self, phi, wires, subspace=(0, 1), id=None):
+    def __init__(self, phi, wires, subspace=(0, 1)):
         self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, id=id)
+        super().__init__(phi, wires=wires)
 
     @property
     def subspace(self):
@@ -426,12 +426,12 @@ class TRZ(Operation):
         obs = [qp.GellMann(wires=self.wires, index=3), qp.GellMann(wires=self.wires, index=8)]
         return qp.dot(coeffs, obs)
 
-    def __init__(self, phi, wires, subspace=(0, 1), id=None):
+    def __init__(self, phi, wires, subspace=(0, 1)):
         self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
-        super().__init__(phi, wires=wires, id=id)
+        super().__init__(phi, wires=wires)
 
     @property
     def subspace(self):
