@@ -1413,7 +1413,7 @@ class Operation2(Operator2, is_base=True):
         )
 
     def __init_subclass__(
-        cls: type["Operation2"],
+        cls: type["Operation2"]
     ):
         # check the grad_recipe validity
         if cls.grad_recipe is None:
