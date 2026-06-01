@@ -98,12 +98,6 @@ def _mlir_resources_to_specs_resources(
     """
 
     if focus in fn_resources:
-        if fn_resources[focus] is None:
-            warnings.warn(
-                f"Specs detected recursion during resolution of MLIR resource analysis results. "
-                f"Function '{focus}' calls itself. "
-                "This recursive call will not be counted, so final results may be inaccurate."
-            )
         return
 
     # Set to None to mark that we are currently resolving this function, which helps with detecting recursion
