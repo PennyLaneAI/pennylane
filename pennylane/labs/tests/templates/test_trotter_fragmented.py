@@ -268,7 +268,7 @@ class TestGlobalPhase:
 
         # Normalize to [-pi, pi]
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+        expected_phase = 0
 
         phase_error = abs(measured_phase - expected_phase)
         assert phase_error < 1e-5

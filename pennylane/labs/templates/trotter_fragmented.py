@@ -47,7 +47,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
-        control_wires (Wires | None): Optional control wires.
+        control_wires (Wires | None): Optional control wires. Currently only a single control wire is supported.
 
     **Example**
 
@@ -152,7 +152,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         # phase, but we keep it exact for bookkeeping).
         qp.RZ(-phi, control_wires)
     else:
-        qp.GlobalPhase(-phi)
+        qp.GlobalPhase(-2 * phi)
 
 
 def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme):
@@ -285,8 +285,6 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
         num_modes = Z.shape[0]
         n_states = Z.shape[2]
 
-        ising_coeff = 0.5
-
         for l in range(1, num_modes):
             for m in range(l):  # strict lower triangle: l > m
                 Z_lm = Z[l, m]
@@ -299,14 +297,15 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
                     def _q_loop(q, Z_lm=Z_lm, p=p, wire_lp=wire_lp, l=l, m=m):
                         wire_mq = wires[m * n_states + q]
                         lam = Z_lm[p, q]
-                        angle = ising_coeff * lam * first_order_time_step
-                        if control_wires is not None:
-                            qp.CNOT([control_wires[0], wire_lp])
+                        angle = 0.5 * lam * first_order_time_step
                         qp.IsingZZ(angle, [wire_lp, wire_mq])
-                        if control_wires is not None:
-                            qp.CNOT([control_wires[0], wire_lp])
 
+                    # TODO: support multiple control wires (not needed for Hadamard tests)
+                    if control_wires is not None:
+                        qp.CNOT([control_wires[0], wire_lp])
                     _q_loop()
+                    if control_wires is not None:
+                        qp.CNOT([control_wires[0], wire_lp])
 
                 _p_loop()
 
@@ -365,11 +364,11 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
         mode_loop()
 
 
-# Zero-energy shift (global phase on controlled evolution)
+# Zero-energy shift
 
 
 def _energy_shift(hamiltonian, frag_scheme):
-    """Compute the zero-of-energy shift that must be applied as a controlled
+    """Compute the zero-of-energy shift that must be applied as a
     ``RZ`` during a Hadamard test."""
     nuc_constant = hamiltonian.get("nuc_constant", 0.0)
     Z_tensor = hamiltonian["core_tensors"]
