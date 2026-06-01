@@ -43,11 +43,11 @@ from pennylane import gradients, math
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     PennyLaneDeprecationWarning,
-    PowUndefinedError,
+    PowUndefinedError, ParameterFrequenciesUndefinedError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.operation2 import Operation2, Operator2
-from pennylane.ops import CRY, RX, CRot, Hermitian, PhaseShift, Rot
+from pennylane.ops import CRY, RX, CRot, Hermitian, PhaseShift, Rot, Exp, PauliX
 from pennylane.ops.functions import eigvals, generator
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
@@ -1707,8 +1707,46 @@ class TestRepresentations:
 # Operation2 related tests
 
 
+class TestGradMethod:
+    """Tests that the gradient method is chosen appropriately."""
+
+    def test_finite_with_no_param_freqs(self):
+        op = Exp(PauliX(0), 1)
+
+
 class TestParameterFrequencies:
     """Tests for ``parameter_frequencies`` property.``."""
+
+    def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
+        """Test that parameter_frequencies raises an error if there are too many dynamic arguments"""
+        class MultiArgOpWithGen(Operation2):
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+            def generator(self):
+                return Hermitian(np.zeros((2, 2)), wires=self.wires)
+
+        op = MultiArgOpWithGen(0.1, 0.2, 0)
+
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            _ = op.parameter_frequencies
+
+    def test_parameter_frequencies_raises_error_no_generator(self):
+        """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
+
+        class SingleArgOpNoGen(Operation2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+        op = SingleArgOpNoGen(0.1, 0)
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            _ = op.parameter_frequencies
 
     def test_param_freqs_no_generator(self):
         op = CRot(0.4, 0.1, 0.3, wires=[0, 1])
