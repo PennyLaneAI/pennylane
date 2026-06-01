@@ -195,11 +195,15 @@
 * :func:`~.equal` supports `Operator2` instances.
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
 
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
-  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
-  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
-  [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
-  [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
+* New, experimental base classes have been added containing new abstractions for creating PennyLane operators.
+  - `Operator2`
+  - `Operation2` 
+
+  - [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  - [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+  - [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+  - [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
+  - [(#9553)](https://github.com/PennyLaneAI/pennylane/pull/9553)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
