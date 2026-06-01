@@ -15,6 +15,7 @@
 Tests for the trotter_fragmented module (CGF scheme only).
 """
 
+# pylint: disable=no-value-for-parameter
 import itertools
 import math
 import os
@@ -546,3 +547,49 @@ class TestH2SConvergence:
 
         phase_error = abs(measured_phase - expected_phase)
         assert phase_error < 1e-5
+
+
+@pytest.mark.catalyst
+def test_catalyst_legacy_frontend():
+    """Test that the template runs while using the legacy catalyst frontend"""
+
+    with qp.decomposition.toggle_graph_ctx(
+        True
+    ):  # safe alternative to avoid enabling graph globally on the labs test runner
+        L = 2
+        M = 2
+        N = 2
+        hamiltonian = {
+            "core_tensors": np.random.rand(L, M, M, N, N),
+            "leaf_tensors": np.random.rand(L, M, N, N),
+            "nuc_constant": 0.5,
+        }
+
+        registers = qp.registers({"hadamard": 1, "system": M * N})
+
+        target_gates = {
+            "Hadamard",
+            "BasisRotation",
+            "RZ",
+            "IsingZZ",
+            "CNOT",
+            "ForLoop",
+        }
+
+        @qp.qjit
+        @qp.transforms.decompose(gate_set=target_gates)
+        @qp.qnode(qp.device("lightning.qubit"))
+        def trotter_circuit():
+            qp.H(registers["hadamard"])
+
+            trotter_factorized(
+                evolution_time=1.0,
+                num_trotter_steps=10,
+                hamiltonian=hamiltonian,
+                wires=registers["system"],
+                control_wires=registers["hadamard"],
+            )
+
+            return qp.expval(qp.X(registers["hadamard"]))
+
+        assert not np.isclose(trotter_circuit(), 0)
