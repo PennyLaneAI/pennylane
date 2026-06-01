@@ -922,6 +922,13 @@ class TestSymbolicSpecsResources:
     def test_subs_kwargs(self, example_resource):
         assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
 
+    def test_invalid_subs(self, example_resource):
+        """Test that the subs method raises a TypeError for invalid substitutions."""
+        with pytest.raises(TypeError):
+            example_resource.subs({"x": "not an int"})
+        with pytest.raises(ValueError):
+            example_resource.subs({"not a var": 3})
+
     def test_call(self, example_resource):
         assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
 

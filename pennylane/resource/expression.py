@@ -138,12 +138,6 @@ class Expression:
             substitutions = {}
         substitutions.update(kwargs)
 
-        subs_vars = set(substitutions.keys())
-        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
-            raise ValueError(
-                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {set(self.vars)}."
-            )
-
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
             new_k = []

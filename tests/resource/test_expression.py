@@ -138,12 +138,8 @@ class TestExpression:
         assert isinstance(new_expr3, int)
         assert new_expr3 == 32
 
-    def test_invalid_subs(self, sample_expr):
-        """Test that the subs method raises a TypeError for invalid substitutions."""
-        with pytest.raises(TypeError):
-            sample_expr.subs({"x": "not an int"})
-        with pytest.raises(ValueError):
-            sample_expr.subs({"not a var": 3})
+    def test_subs_kwargs(self, sample_expr):
+        assert sample_expr.subs(x=2, z=3) == sample_expr.subs({"x": 2, "z": 3})
 
     @pytest.mark.parametrize(
         "expr, expected",
