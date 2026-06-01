@@ -328,7 +328,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(bases, coeffs, strict=False))
+        dic_state = dict(zip(bases, coeffs, strict=True))
         perms = order_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
