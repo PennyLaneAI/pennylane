@@ -79,6 +79,9 @@
   ```
   [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+  [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
+
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
   [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
 
@@ -100,6 +103,9 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_rz_to_phase_gradient_decomp` decomposition rule factory to be compatible with program capture.
+  [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
+
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
@@ -109,7 +115,8 @@
 
   dev = qp.device("lightning.qubit")
 
-  @qp.qnode(dev, shots=1)
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
   def circuit(a, comparator, b):
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
@@ -128,6 +135,38 @@
     >>> print(bool(output))
     True
 
+  ```
+  
+* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+  
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
+  
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
@@ -236,6 +275,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
   [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
@@ -285,6 +327,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
+  exists from an operator to a controlled/adjoint version of itself.
+  [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 
@@ -327,6 +373,7 @@ Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Paul Haochen Wang,
