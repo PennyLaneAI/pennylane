@@ -20,8 +20,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import Controlled
-from pennylane.templates.subroutines.arithmetic.out_square import OutSquare, _out_square_with_adder
+from pennylane.ops.op_math import Adjoint, Controlled
+from pennylane.templates.subroutines.arithmetic.out_square import (
+    OutSquare,
+    _out_square_with_adder,
+    _out_square_with_caddsub,
+)
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -310,4 +314,205 @@ class TestOutSquare:
             qp.CNOT([0, 7]),
         ]
 
+        assert q.queue == expected
+
+    def test_caddsub_decomposition_output_wires_zeroed(self):
+        """Test that the controlled-add/subtract decomposition has the expected structure with
+        ``output_wires_zeroed=True``."""
+        x_wires, output_wires, work_wires = [0, 1], [2, 3, 4], [5, 6, 7, 8]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=True)
+
+        expected = [
+            # Cache first bit
+            qp.CNOT(wires=[1, 5]),
+            # Controlled add-subtract block (contains decomposed adder)
+            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
+            qp.TemporaryAND(wires=[1, 6, 8]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[8, 4]),
+            qp.TemporaryAND(wires=[0, 4, 7]),
+            qp.CNOT(wires=[8, 7]),
+            qp.CNOT(wires=[7, 3]),
+            qp.CNOT(wires=[8, 7]),
+            Adjoint(qp.TemporaryAND(wires=[0, 4, 7])),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[0, 4]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[1, 6, 8])),
+            qp.CNOT(wires=[1, 6]),
+            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
+            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            # Un-cache first bit
+            qp.CNOT(wires=[1, 5]),
+            # Cache second bit
+            qp.CNOT(wires=[0, 5]),
+            # Controlled add-subtract block (contains decomposed adder)
+            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
+            qp.TemporaryAND(wires=[1, 4, 8]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[8, 3]),
+            qp.TemporaryAND(wires=[0, 3, 7]),
+            qp.CNOT(wires=[8, 7]),
+            qp.CNOT(wires=[7, 2]),
+            qp.CNOT(wires=[8, 7]),
+            Adjoint(qp.TemporaryAND(wires=[0, 3, 7])),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[0, 3]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 8])),
+            qp.CNOT(wires=[1, 4]),
+            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
+            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            # Un-cache second bit
+            qp.CNOT(wires=[0, 5]),
+            # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
+            # Add (2^n-x):
+            #   - flip x_wires
+            qp.X(0),
+            qp.X(1),
+            #   - Addition plus one
+            qp.X(1),
+            qp.X(6),
+            qp.TemporaryAND(wires=[1, 6, 8]),
+            qp.X(8),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[8, 4]),
+            qp.TemporaryAND(wires=[0, 4, 7]),
+            qp.CNOT(wires=[8, 7]),
+            qp.CNOT(wires=[7, 3]),
+            qp.TemporaryAND(wires=[7, 3, 5]),
+            qp.CNOT(wires=[7, 5]),
+            qp.CNOT(wires=[5, 2]),
+            qp.CNOT(wires=[7, 5]),
+            Adjoint(qp.TemporaryAND(wires=[7, 3, 5])),
+            qp.CNOT(wires=[8, 7]),
+            Adjoint(qp.TemporaryAND(wires=[0, 4, 7])),
+            qp.CNOT(wires=[8, 0]),
+            qp.CNOT(wires=[0, 4]),
+            qp.X(8),
+            Adjoint(qp.TemporaryAND(wires=[1, 6, 8])),
+            qp.CNOT(wires=[1, 6]),
+            qp.X(6),
+            qp.X(1),
+            #   - flip x_wires back
+            qp.X(0),
+            qp.X(1),
+            # add 2^(n+1) x
+            qp.SemiAdder(x_wires=[0, 1], y_wires=[2], work_wires=[]),
+        ]
+        assert q.queue == expected
+
+    def test_caddsub_decomposition_output_wires_not_zeroed(self):
+        """Test that the controlled-add/subtract decomposition has the expected structure with
+        ``output_wires_zeroed=False``."""
+        x_wires, output_wires, work_wires = [0, 1, 2], [3, 4], [5, 6, 7, 8]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=False)
+
+        def to_str(obj):
+            a = str(obj)
+            a = a.replace("CNOT", "qp.CNOT").replace("MultiControlledX", "qp.MultiControlledX")
+            a = a.replace("TemporaryAND", "qp.TemporaryAND").replace("X(", "qp.X(")
+            return a
+
+        print(*list(map(to_str, q.queue)), sep=",\n")
+        expected = [
+            # Cache first bit
+            qp.CNOT(wires=[2, 5]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
+            qp.TemporaryAND(wires=[2, 6, 8]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            qp.CNOT(wires=[8, 1]),
+            qp.CNOT(wires=[8, 4]),
+            qp.TemporaryAND(wires=[1, 4, 7]),
+            qp.CNOT(wires=[8, 7]),
+            qp.CNOT(wires=[7, 3]),
+            qp.CNOT(wires=[0, 3]),
+            qp.CNOT(wires=[8, 7]),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 7])),
+            qp.CNOT(wires=[8, 1]),
+            qp.CNOT(wires=[1, 4]),
+            qp.MultiControlledX(wires=[5, 8], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[2, 6, 8])),
+            qp.CNOT(wires=[2, 6]),
+            qp.MultiControlledX(wires=[5, 6], control_values=[False]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            # Un-cache first bit
+            qp.CNOT(wires=[2, 5]),
+            # Cache second bit
+            qp.CNOT(wires=[1, 5]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
+            qp.TemporaryAND(wires=[2, 4, 7]),
+            qp.MultiControlledX(wires=[5, 7], control_values=[False]),
+            qp.CNOT(wires=[7, 3]),
+            qp.CNOT(wires=[1, 3]),
+            qp.MultiControlledX(wires=[5, 7], control_values=[False]),
+            Adjoint(qp.TemporaryAND(wires=[2, 4, 7])),
+            qp.CNOT(wires=[2, 4]),
+            qp.MultiControlledX(wires=[5, 4], control_values=[False]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            # Un-cache second bit
+            qp.CNOT(wires=[1, 5]),
+            # Cache third bit
+            qp.CNOT(wires=[0, 5]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            qp.MultiControlledX(wires=[5, 3], control_values=[False]),
+            qp.CNOT(wires=[2, 3]),
+            qp.MultiControlledX(wires=[5, 3], control_values=[False]),
+            Controlled(
+                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
+            ),
+            # Un-cache third bit
+            qp.CNOT(wires=[0, 5]),
+            # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
+            # Add (2^n-x):
+            #   - flip x_wires
+            qp.X(0),
+            qp.X(1),
+            qp.X(2),
+            #   - add x_wires plus one
+            qp.X(2),
+            qp.X(6),
+            qp.TemporaryAND(wires=[2, 6, 7]),
+            qp.X(7),
+            qp.CNOT(wires=[7, 1]),
+            qp.CNOT(wires=[7, 4]),
+            qp.TemporaryAND(wires=[1, 4, 5]),
+            qp.CNOT(wires=[7, 5]),
+            qp.CNOT(wires=[5, 3]),
+            qp.CNOT(wires=[0, 3]),
+            qp.CNOT(wires=[7, 5]),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 5])),
+            qp.CNOT(wires=[7, 1]),
+            qp.CNOT(wires=[1, 4]),
+            qp.X(7),
+            Adjoint(qp.TemporaryAND(wires=[2, 6, 7])),
+            qp.CNOT(wires=[2, 6]),
+            qp.X(6),
+            qp.X(2),
+            #   - flip x_wires back
+            qp.X(0),
+            qp.X(1),
+            qp.X(2),
+            # No trailing addition because 3=m<=n+1=4 (m is the augmented output size)
+        ]
         assert q.queue == expected
