@@ -324,7 +324,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         registers.pop("wires")
         empty_registers = {k for k, val in registers.items() if val == 0}
         registers = {k: val for k, val in registers.items() if val > 0}
-        registers["target_wires"] = max(target_wires) + 1
+        registers = {"target_wires": max(target_wires) + 1} | registers
         work_wires = qp.registers(registers)
         work_wires.pop("target_wires")  # Remove the (potentially enlarged) target wires
         work_wires |= {k: Wires([]) for k in empty_registers}

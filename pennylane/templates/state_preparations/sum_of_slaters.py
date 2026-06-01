@@ -851,7 +851,7 @@ class SumOfSlatersPrep(Operation):
         the required wire register sizes ahead of time, they can be computed with
         ``SumOfSlatersPrep.required_register_sizes``:
 
-        >>> print(qp.SumOfSlatersPrep.required_register_sizes(indices, wires)
+        >>> print(qp.SumOfSlatersPrep.required_register_sizes(indices, wires))
         {'wires': 5,
          'enumeration_wires': 4,
          'identification_wires': 0,
