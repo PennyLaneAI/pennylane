@@ -44,7 +44,7 @@ from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.operation2 import Operator2, Operation2
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 class TestInitSubclass:
@@ -1704,10 +1704,17 @@ def test_basis_deprecation():
     """Test that Operation2.basis is deprecated."""
 
     class MyOp(Operation2):
-        pass
+
+        dynamic_argnames = ("phi",)
+        wire_argnames = ("wires",)
+
+        num_params = 1
+
+        def __init__(self, phi: float, wires: WiresLike):
+            super().__init__(phi, wires=wires)
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation2.basis is deprecated"):
-        assert MyOp(0).basis is None
+        assert MyOp(0, wires=[0]).basis is None
 
 
 class TestOperationDerivative:

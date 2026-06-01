@@ -212,10 +212,13 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
+    def __init_subclass__(cls: type["Operator2"], is_base: bool=False) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
+
+        if is_base: return
+
         _add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -1268,7 +1271,7 @@ def _is_hash_leaf(l) -> bool:
 # ------------------------------------------------------------------------------
 
 
-class Operation2(Operator2):
+class Operation2(Operator2, is_base=True):
     r"""Base class representing quantum gates or channels applied to quantum states.
 
     Operations define some additional properties, that are used for external
@@ -1348,7 +1351,7 @@ class Operation2(Operator2):
         ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
         """
         warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "Operation2.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
             PennyLaneDeprecationWarning,
         )
