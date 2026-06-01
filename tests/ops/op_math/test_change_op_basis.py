@@ -484,13 +484,29 @@ def test_callable_validation_doesnt_hide_bugs():
         change_op_basis(f, qp.Y(0))
 
 
+def test_func(a, b):
+    pass
+
+
+partially_bound_test_func = partial(test_func, a=1)
+fully_bound_test_func = partial(test_func, a=1, b=2)
+
+
 @pytest.mark.parametrize(
     "f, valid",
     [
-        (lambda: None, True),
-        (lambda a: None, False),
-        (lambda a, b=None: None, False),
-        (lambda a=None, b=None: None, True),
+        # Standard
+        pytest.param(lambda: None, True, id="no_params"),
+        pytest.param(lambda a: None, False, id="single_arg"),
+        pytest.param(lambda a, b=None: None, False, id="mixed_arg_kwarg"),
+        pytest.param(lambda a=None, b=None: None, True, id="only_kwargs"),
+        # *args, **kwargs special cases
+        pytest.param(lambda *args: None, True, id="star_args"),
+        pytest.param(lambda **kwargs: None, True, id="star_kwargs"),
+        pytest.param(lambda *args, **kwargs: None, True, id="mixed_star_args_star_kwargs"),
+        # Partial integration
+        pytest.param(partially_bound_test_func, False, id="partially_bound_function"),
+        pytest.param(fully_bound_test_func, True, id="fully_bound_function"),
     ],
 )
 def test_validate_callable_helper(f, valid):

@@ -46,14 +46,19 @@ def _validate_callable(func: Callable) -> None:
 
     has_required_param = False
     for param in sig.parameters.values():
+        # The function,
+        #
+        # def f(*args, **kwargs):
+        #     pass
+        #
+        # technically doesn't have any required parameters.
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+
         # If param has no default we can early exit
         if param.default is inspect.Parameter.empty:
             has_required_param = True
             break
-
-        # Guard against *args and **kwargs
-        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
-            continue
 
     if has_required_param:
         raise TypeError(
