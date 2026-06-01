@@ -84,7 +84,8 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
             trotter_fragmented(
                 evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
                 wires=registers["system"],
-                control_wires=registers["hadamard"])
+                control_wires=registers["hadamard"],
+            )
 
             return qp.expval(qp.X(registers["hadamard"]))
 
