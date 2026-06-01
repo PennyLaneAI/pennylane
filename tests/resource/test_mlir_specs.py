@@ -45,20 +45,25 @@ def test_generate_display_name_for_symbolic_var():
 class TestAnalysisPassConversion:
     @pytest.fixture
     def example_loop_analysis_pass_result(self) -> dict[str, dict]:
-        # This test uses a snapshot from a real result of the resource analysis pass from the following snippet:
-        # @qp.qjit(autograph=True)
-        # @qp.qnode(qp.device("lightning.qubit"))
-        # def circuit(x):
-        #     qp.Hadamard(wires=0)
-        #     for _ in range(2):
-        #         qp.Hadamard(wires=0)
-        #         for _ in range(3):
-        #             qp.PauliZ(wires=0)
-        #         for _ in range(x):
-        #             qp.PauliX(wires=0)
-        #     return qp.expval(qp.PauliZ(0))
+        """
+        This test uses a snapshot from a real result of the resource analysis pass from the following snippet:
 
-        # res = qp.specs(circuit, level=0)(x=5)
+        :: code-block:: python
+
+            @qp.qjit(autograph=True)
+            @qp.qnode(qp.device("lightning.qubit"))
+            def circuit(x):
+                qp.Hadamard(wires=0)
+                for _ in range(2):
+                    qp.Hadamard(wires=0)
+                    for _ in range(3):
+                        qp.PauliZ(wires=0)
+                    for _ in range(x):
+                        qp.PauliX(wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            res = qp.specs(circuit, level=0)(x=5)
+        """
 
         return {
             "circuit": {
