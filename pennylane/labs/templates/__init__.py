@@ -21,6 +21,7 @@ This module contains templates, which are pre-coded routines that can be used in
 
     ~LeftClassicalComparator
     ~LeftQuantumComparator
+    ~SuperpositionTHC
 """
 
 from .left_classical_comparator import LeftClassicalComparator
