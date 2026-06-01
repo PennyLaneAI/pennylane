@@ -41,8 +41,8 @@ class TestSumOfSlatersPrep2:
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep2 is a valid PennyLane operator."""
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, num_wires)
         target_wires = list(range(num_wires))
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
         op = SumOfSlatersPrep2(coefficients, target_wires, **work_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
@@ -57,8 +57,8 @@ class TestSumOfSlatersPrep2:
         np.random.shuffle(bits)
         num_bits = n - 1
         indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, n)
         target_wires = list(range(n))
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
         op = SumOfSlatersPrep2(coefficients, target_wires, **work_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
@@ -68,8 +68,8 @@ class TestSumOfSlatersPrep2:
         of compute_decomposition to the new decomp system."""
         num_wires = 5
         coefficients, indices = self.make_random_data(num_wires, 13, seed=141)
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, num_wires)
         target_wires = list(range(num_wires))
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
         op = SumOfSlatersPrep2(coefficients, target_wires, **work_wires, indices=indices)
         # In this case, assert_valid actually asserts that compute_decomposition raises an error.
         assert op.has_decomposition is False
@@ -88,8 +88,8 @@ class TestSumOfSlatersPrep2:
             )
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, num_wires)
         target_wires = list(range(num_wires))
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
 
         with qp.decomposition.toggle_graph_ctx(
             True
@@ -158,8 +158,8 @@ class TestSumOfSlatersPrep2:
         # Add indices (powers of two) that force many bits to be required,
         # avoiding the identity encoding case
         indices = self.force_powers_of_two(indices, num_wires)
-        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, num_wires)
         target_wires = list(range(num_wires))
+        work_wires = SumOfSlatersPrep2.make_work_wire_registers(indices, target_wires)
 
         with qp.decomposition.toggle_graph_ctx(
             True
