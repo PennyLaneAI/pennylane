@@ -205,43 +205,6 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
     return qp.matrix(_circuit, wire_order=wires)()
 
 
-@pytest.mark.slow
-class TestHighNConvergence:
-    """Test that many Trotter steps converge U_trotter to expm(-i H t)."""
-
-    @pytest.mark.skip
-    @pytest.mark.parametrize("num_steps", [128, 256])
-    def test_toy_convergence(self, toy_hamiltonian, num_steps):
-        """At high N, subspace fidelity should be > 1 - 1e-4."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.5 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
-        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
-
-        assert fidelity > 1 - 1e-4
-
-    @pytest.mark.skip
-    @pytest.mark.parametrize("num_steps", [128, 256])
-    def test_multi_fragment_convergence(self, toy_multi_fragment, num_steps):
-        """Multi-fragment Hamiltonian should also converge."""
-        ham, num_modes, n_states = toy_multi_fragment
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.5 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
-        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
-
-        assert fidelity > 1 - 1e-4
-
-
 class TestDtScaling:
     """Test that single-step Trotter error scales as dt^3 (2nd-order)."""
 
@@ -281,41 +244,6 @@ class TestDtScaling:
         assert log_dev <= 0.35
 
 
-@pytest.mark.slow
-class TestStepScaling:
-    """Test that doubling Trotter steps reduces error by ~4x (1/N^2)."""
-
-    @pytest.mark.skip
-    @pytest.mark.parametrize(
-        "num_steps",
-        [(2), (4), (8), (16)],
-    )
-    def test_step_quartic_scaling(self, toy_hamiltonian, num_steps):
-        """Doubling number of steps should reduce subspace error by ~4x."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.5 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-
-        N_a = num_steps
-        N_b = num_steps * 2
-        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, t, N_a)
-        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, t, N_b)
-
-        err_a = subspace_operator_error(U_ref, U_tr_a, sub_idx)
-        err_b = subspace_operator_error(U_ref, U_tr_b, sub_idx)
-
-        if err_b <= 0:
-            pytest.skip("Denominator error is zero; scaling check not meaningful.")
-
-        ratio = err_a / err_b
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(4.0)) / math.log2(4.0)
-        assert log_dev <= 0.35
-
-
 class TestGlobalPhase:
     """Test that _energy_shift correctly tracks the Hamiltonian identity terms."""
 
@@ -339,33 +267,6 @@ class TestGlobalPhase:
         expected_phase = e_shift * t
 
         # Normalize to [-pi, pi]
-        measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
-
-        phase_error = abs(measured_phase - expected_phase)
-        assert phase_error < 1e-5
-
-    @pytest.mark.skip
-    @pytest.mark.slow
-    def test_energy_shift_with_nuc_constant(self, toy_multi_fragment):
-        """Test that energy shift accounts for nonzero nuc_constant."""
-        ham, num_modes, n_states = toy_multi_fragment
-        H = build_H_exact(ham, num_modes, n_states)
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-        t = 0.05
-
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
-
-        Aref = U_ref[np.ix_(sub_idx, sub_idx)]
-        Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
-
-        overlap = np.trace(Aref.conj().T @ Atrial)
-        measured_phase = np.angle(overlap)
-
-        e_shift = _energy_shift(ham, frag_scheme="cgf")
-        expected_phase = e_shift * t
-
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
         expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
 
@@ -420,31 +321,6 @@ class TestInputValidation:
             trotter_fragmented(0.1, 1, bad_ham, wires)
 
 
-@pytest.mark.skip
-class TestMonotonicity:
-    """Test that increasing num_steps decreases error."""
-
-    def test_error_decreases_with_steps(self, toy_hamiltonian):
-        """Error should strictly decrease as num_steps increases."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.5 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-
-        num_steps_list = [2, 4, 8, 16, 32]
-        errors = []
-        for num_steps in num_steps_list:
-            U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
-            err = subspace_operator_error(U_ref, U_tr, sub_idx)
-            errors.append(err)
-
-        for i in range(len(errors) - 1):
-            assert errors[i] > errors[i + 1]
-
-
 @pytest.fixture(scope="class")
 def h2s_hamiltonian():
     """Fixture to load the data once per test class."""
@@ -461,85 +337,6 @@ def h2s_hamiltonian():
             "leaf_tensors": data["leaf_tensors"],
             "nuc_constant": data["nuc_constant"],
         }
-
-
-@pytest.mark.slow
-class TestH2SConvergence:
-    """Integration tests on the real H2S molecule."""
-
-    @pytest.mark.skip  # takes 8 mins
-    def test_high_n_convergence(self, h2s_hamiltonian):
-        """H2S should converge at N=64."""
-        ham = h2s_hamiltonian
-        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
-
-        H = build_H_exact(ham, num_modes, n_states)
-
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.3 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
-        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
-
-        assert fidelity > 1 - 1e-4
-
-    @pytest.mark.skip  # takes 40s to 3min
-    @pytest.mark.parametrize("num_steps", [(2), (4), (8)])
-    def test_step_scaling(self, h2s_hamiltonian, num_steps):
-        """H2S step-doubling should reduce error by ~4x."""
-        ham = h2s_hamiltonian
-        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        t = 0.3 / max(H_norm, 1e-12)
-        U_ref = expm(-1j * H * t)
-
-        N_a = num_steps
-        N_b = 2 * num_steps
-        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, t, N_a)
-        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, t, N_b)
-
-        err_a = subspace_operator_error(U_ref, U_tr_a, sub_idx)
-        err_b = subspace_operator_error(U_ref, U_tr_b, sub_idx)
-
-        if err_b <= 0:
-            pytest.skip("Denominator error is zero.")
-
-        ratio = err_a / err_b
-        expected = (N_b / N_a) ** 2
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(expected)
-        assert log_dev <= 0.35
-
-    @pytest.mark.skip  # takes 10min
-    def test_global_phase(self, h2s_hamiltonian):
-        """H2S energy shift should match the measured global phase."""
-        ham = h2s_hamiltonian
-        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
-        H = build_H_exact(ham, num_modes, n_states)
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-        t = 0.05
-
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
-
-        Aref = U_ref[np.ix_(sub_idx, sub_idx)]
-        Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
-
-        overlap = np.trace(Aref.conj().T @ Atrial)
-        measured_phase = np.angle(overlap)
-
-        e_shift = _energy_shift(ham, frag_scheme="cgf")
-        expected_phase = e_shift * t
-
-        measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
-
-        phase_error = abs(measured_phase - expected_phase)
-        assert phase_error < 1e-5
 
 
 @pytest.mark.catalyst
@@ -586,3 +383,209 @@ def test_catalyst_legacy_frontend():
             return qp.expval(qp.X(registers["hadamard"]))
 
         assert not np.isclose(trotter_circuit(), 0)
+
+
+# +----------------------------------------------------------------------+
+# |---- Correctness tests not meant to be run in CI (ever) --------------|
+# +----------------------------------------------------------------------+
+
+
+@pytest.mark.skip
+class TestStepScaling:
+    """Test that doubling Trotter steps reduces error by ~4x (1/N^2)."""
+
+    @pytest.mark.parametrize(
+        "num_steps",
+        [(2), (4), (8), (16)],
+    )
+    def test_step_quartic_scaling(self, toy_hamiltonian, num_steps):
+        """Doubling number of steps should reduce subspace error by ~4x."""
+        ham, num_modes, n_states = toy_hamiltonian
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.5 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+
+        N_a = num_steps
+        N_b = num_steps * 2
+        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, t, N_a)
+        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, t, N_b)
+
+        err_a = subspace_operator_error(U_ref, U_tr_a, sub_idx)
+        err_b = subspace_operator_error(U_ref, U_tr_b, sub_idx)
+
+        if err_b <= 0:
+            pytest.skip("Denominator error is zero; scaling check not meaningful.")
+
+        ratio = err_a / err_b
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(4.0)) / math.log2(4.0)
+        assert log_dev <= 0.35
+
+
+@pytest.mark.skip
+class TestHighNConvergence:
+    """Test that many Trotter steps converge U_trotter to expm(-i H t)."""
+
+    @pytest.mark.parametrize("num_steps", [128, 256])
+    def test_toy_convergence(self, toy_hamiltonian, num_steps):
+        """At high N, subspace fidelity should be > 1 - 1e-4."""
+        ham, num_modes, n_states = toy_hamiltonian
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.5 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
+        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
+
+        assert fidelity > 1 - 1e-4
+
+    @pytest.mark.parametrize("num_steps", [128, 256])
+    def test_multi_fragment_convergence(self, toy_multi_fragment, num_steps):
+        """Multi-fragment Hamiltonian should also converge."""
+        ham, num_modes, n_states = toy_multi_fragment
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.5 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
+        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
+
+        assert fidelity > 1 - 1e-4
+
+
+@pytest.mark.skip
+class TestH2SConvergence:
+    """Integration tests on the real H2S molecule."""
+
+    @pytest.mark.slow  # takes 8 mins
+    def test_high_n_convergence(self, h2s_hamiltonian):
+        """H2S should converge at N=64."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+
+        H = build_H_exact(ham, num_modes, n_states)
+
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.3 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
+        fidelity = subspace_unitary_fidelity(U_ref, U_tr, sub_idx)
+
+        assert fidelity > 1 - 1e-4
+
+    @pytest.mark.slow  # takes 40s to 3min
+    @pytest.mark.parametrize("num_steps", [(2), (4), (8)])
+    def test_step_scaling(self, h2s_hamiltonian, num_steps):
+        """H2S step-doubling should reduce error by ~4x."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.3 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+
+        N_a = num_steps
+        N_b = 2 * num_steps
+        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, t, N_a)
+        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, t, N_b)
+
+        err_a = subspace_operator_error(U_ref, U_tr_a, sub_idx)
+        err_b = subspace_operator_error(U_ref, U_tr_b, sub_idx)
+
+        if err_b <= 0:
+            pytest.skip("Denominator error is zero.")
+
+        ratio = err_a / err_b
+        expected = (N_b / N_a) ** 2
+        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(expected)) / math.log2(expected)
+        assert log_dev <= 0.35
+
+    @pytest.mark.slow  # takes 10min
+    def test_global_phase(self, h2s_hamiltonian):
+        """H2S energy shift should match the measured global phase."""
+        ham = h2s_hamiltonian
+        num_modes, n_states = h2s_hamiltonian["core_tensors"].shape[2:4]
+        H = build_H_exact(ham, num_modes, n_states)
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+        t = 0.05
+
+        U_ref = expm(-1j * H * t)
+        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
+
+        Aref = U_ref[np.ix_(sub_idx, sub_idx)]
+        Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
+
+        overlap = np.trace(Aref.conj().T @ Atrial)
+        measured_phase = np.angle(overlap)
+
+        e_shift = _energy_shift(ham, frag_scheme="cgf")
+        expected_phase = e_shift * t
+
+        measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
+        expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+
+        phase_error = abs(measured_phase - expected_phase)
+        assert phase_error < 1e-5
+
+
+@pytest.mark.skip
+class TestMonotonicity:
+    """Test that increasing num_steps decreases error."""
+
+    def test_error_decreases_with_steps(self, toy_hamiltonian):
+        """Error should strictly decrease as num_steps increases."""
+        ham, num_modes, n_states = toy_hamiltonian
+        H = build_H_exact(ham, num_modes, n_states)
+        H_norm = float(np.linalg.norm(H, ord=2))
+        sub_idx = sbe_subspace_indices(num_modes, n_states)
+
+        t = 0.5 / max(H_norm, 1e-12)
+        U_ref = expm(-1j * H * t)
+
+        num_steps_list = [2, 4, 8, 16, 32]
+        errors = []
+        for num_steps in num_steps_list:
+            U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps)
+            err = subspace_operator_error(U_ref, U_tr, sub_idx)
+            errors.append(err)
+
+        for i in range(len(errors) - 1):
+            assert errors[i] > errors[i + 1]
+
+
+@pytest.mark.skip
+@pytest.mark.slow
+def test_energy_shift_with_nuc_constant(toy_multi_fragment):
+    """Test that energy shift accounts for nonzero nuc_constant."""
+    ham, num_modes, n_states = toy_multi_fragment
+    H = build_H_exact(ham, num_modes, n_states)
+    sub_idx = sbe_subspace_indices(num_modes, n_states)
+    t = 0.05
+
+    U_ref = expm(-1j * H * t)
+    U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
+
+    Aref = U_ref[np.ix_(sub_idx, sub_idx)]
+    Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
+
+    overlap = np.trace(Aref.conj().T @ Atrial)
+    measured_phase = np.angle(overlap)
+
+    e_shift = _energy_shift(ham, frag_scheme="cgf")
+    expected_phase = e_shift * t
+
+    measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
+    expected_phase = (expected_phase + np.pi) % (2 * np.pi) - np.pi
+
+    phase_error = abs(measured_phase - expected_phase)
+    assert phase_error < 1e-5
