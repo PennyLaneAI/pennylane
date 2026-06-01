@@ -1170,6 +1170,15 @@ class TestGeneralMethods:
 
         assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
 
+    def test_map_wires_op_argument(self):
+        """Test that ``map_wires`` correctly maps hybrid arguments with operator leaves."""
+        op = FullOp(0.5, static="static", hybrid=[DynOp(1.5, wires=[2, 3, 4])], wires=[0, 1])
+        new_op = op.map_wires({0: "a", 2: "b", 3: "c"})
+
+        assert new_op == FullOp(
+            0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
+        )
+
     def test_map_wires_pauli_rep(self):
         """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly."""
         op = DynOp(1.5, wires=[0, 1])

@@ -720,6 +720,7 @@ class Operator2(ABC):
         new_op = copy(self)
 
         for n, wires in self.wire_args.items():
+            # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
             mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
             new_wires = unflatten(mapped_leaves, tree)
@@ -727,6 +728,13 @@ class Operator2(ABC):
 
         if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
+
+        for n, arg in self.hybrid_args.items():
+            if n in self.wire_argnames:
+                continue
+            leaves, tree = flatten(arg, is_leaf=_is_op)
+            leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
+            new_op._bound_args.arguments[n] = unflatten(leaves, tree)
 
         return new_op
 
