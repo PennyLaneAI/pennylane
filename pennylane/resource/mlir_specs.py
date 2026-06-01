@@ -119,6 +119,13 @@ def _mlir_resources_to_specs_resources(
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
 
+    if resources.get("auto_qubit_management", False):
+        warnings.warn(
+            f"Specs detected that function '{focus}' uses automatic qubit management. "
+            "The number of qubits allocated by this function will not be known at this time, so "
+            "the final allocation counts may be inaccurate.",
+        )
+
     for res_name, count in operations.items():
         match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
         gate_name, gate_size = match.groups() if match else (res_name, 0)

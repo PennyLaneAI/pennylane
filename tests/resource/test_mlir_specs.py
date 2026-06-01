@@ -51,7 +51,7 @@ class TestAnalysisPassConversion:
         :: code-block:: python
 
             @qp.qjit(autograph=True)
-            @qp.qnode(qp.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit", wires=10))
             def circuit(x):
                 qp.Hadamard(wires=0)
                 for _ in range(2):
@@ -67,22 +67,22 @@ class TestAnalysisPassConversion:
 
         return {
             "circuit": {
+                "auto_qubit_management": False,
                 "classical_instructions": {
                     "arith.index_cast": 3,
                     "func.return": 1,
                     "scf.for": 1,
-                    "stablehlo.constant": 3,
+                    "stablehlo.constant": 4,
                     "tensor.extract": 8,
-                    "tensor.from_elements": 2,
+                    "tensor.from_elements": 1,
                 },
                 "device_name": "LightningSimulator",
                 "function_calls": {"for_loop_2": 2},
                 "has_branches": False,
-                "has_dyn_loop": False,
                 "measurements": {"expval(PauliZ)": 1},
-                "num_alloc_qubits": 0,
+                "num_alloc_qubits": 10,
                 "num_arg_qubits": 0,
-                "num_qubits": 0,
+                "num_qubits": 10,
                 "operations": {"Hadamard(1)": 1},
                 "qnode": True,
                 "var_function_calls": {},
@@ -98,7 +98,6 @@ class TestAnalysisPassConversion:
                 "device_name": "",
                 "function_calls": {},
                 "has_branches": False,
-                "has_dyn_loop": False,
                 "measurements": {},
                 "num_alloc_qubits": 0,
                 "num_arg_qubits": 0,
@@ -118,7 +117,6 @@ class TestAnalysisPassConversion:
                 "device_name": "",
                 "function_calls": {},
                 "has_branches": False,
-                "has_dyn_loop": False,
                 "measurements": {},
                 "num_alloc_qubits": 0,
                 "num_arg_qubits": 0,
@@ -139,7 +137,6 @@ class TestAnalysisPassConversion:
                 "device_name": "",
                 "function_calls": {"for_loop_1": 3},
                 "has_branches": False,
-                "has_dyn_loop": True,
                 "measurements": {},
                 "num_alloc_qubits": 0,
                 "num_arg_qubits": 0,
@@ -160,7 +157,7 @@ class TestAnalysisPassConversion:
                 gate_types={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 gate_sizes={1: Expression({(var,): 2, (): 9})},
                 measurements={"expval(PauliZ)": 1},
-                num_allocs=0,
+                num_allocs=10,
                 depth=None,
             ),
         ]
@@ -188,6 +185,14 @@ class TestAnalysisPassConversion:
         example_loop_analysis_pass_result["for_loop_2"]["function_calls"]["for_loop_1"] = 1
 
         with pytest.warns(UserWarning, match="recursion"):
+            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
+    def test_get_resources_from_analysis_pass_warns_for_auto_management(
+        self, example_loop_analysis_pass_result
+    ):
+        example_loop_analysis_pass_result["circuit"]["auto_qubit_management"] = True
+
+        with pytest.warns(UserWarning, match="automatic qubit management"):
             _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
 
     def test_mlir_resources_to_specs_resources(self, example_loop_analysis_pass_result):
