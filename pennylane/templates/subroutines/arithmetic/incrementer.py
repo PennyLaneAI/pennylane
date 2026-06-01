@@ -95,7 +95,7 @@ class Incrementer(Operator):
     `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
     see "Incrementer from n-2 Zeroed bits".
 
-    The Controlled(Incrementer) decomposition provided is a similar decomposition to the default,
+    The ``Controlled(Incrementer)`` decomposition provided is a similar decomposition to the default,
     except that there is no ``X`` gate at the end of the circuit, and the ``MultiControlledX`` gates have one
     additional control. It is therefore 'cut-off', and we can follow the same logic as the default
     decomposition, excluding only the trivial X which is not decomposed into elbows and CNOTs
