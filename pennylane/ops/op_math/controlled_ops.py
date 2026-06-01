@@ -1266,6 +1266,8 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
+    
+    .. note:: The first two wires provided corresponds to the **control qubits**.
 
     **Details:**
 
@@ -1274,6 +1276,31 @@ class Toffoli(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+    
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.Toffoli([0,1,2])
+            return qp.sample()
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤  Sample
+    1: ──X─├●─┤  Sample
+    2: ────╰X─┤  Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     num_wires = 3
