@@ -285,7 +285,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
-Gabriel Bottrill
+Gabriel Bottrill,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
