@@ -1184,7 +1184,7 @@ class FFQRAM(Operation):
         shots = 1000
 
         @qp.set_shots(shots)
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit", seed=42))
         def circuit():
             qp.FFQRAM(
                 amplitudes=amps,
@@ -1202,7 +1202,7 @@ class FFQRAM(Operation):
 
         n = len(wires["address"])
         expected_full = np.zeros(2**n)
-        for addr, prob in zip(addrs, expected):
+        for addr, prob in zip(addrs, expected, strict=True):
             expected_full[int(addr, 2)] = prob
 
         basis_states = [f"{i:0{n}b}" for i in range(2**n)]
@@ -1210,13 +1210,13 @@ class FFQRAM(Operation):
     Because the protocol is sampled with a finite number of shots, the observed
     distribution approximates the theoretical values:
 
-    >>> print(f"{'address':>8}{'observed':>11}{'expected':>11}")  # doctest: +SKIP
-    ... for state, obs, exp in zip(basis_states, results, expected_full):
+    >>> print(f"{'address':>8}{'observed':>11}{'expected':>11}")
+    ... for state, obs, exp in zip(basis_states, results, expected_full, strict=True):
     ...     if obs > 1e-9 or exp > 1e-9:
     ...         print(f"{state:>8}{obs:>11.3f}{exp:>11.3f}")
      address   observed   expected
-         000      0.305      0.300
-         001      0.695      0.700
+         000      0.238      0.300
+         001      0.762      0.700
     """
 
     grad_method = None
@@ -1276,7 +1276,7 @@ def _flip_zero_bits(address_wires, addr_bits):
     """
     Apply X gates to where the addr_bits is zero.
     """
-    for wire, bit in zip(address_wires, addr_bits):
+    for wire, bit in zip(address_wires, addr_bits, strict=True):
         cond(bit == 0, PauliX)(wires=wire)
 
 

@@ -1206,7 +1206,7 @@ def test_select_decomposition_new(
 def test_ffqram_standard_validity():
     """Check the operation using the assert_valid function."""
     op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])
-    assert_valid(op, skip_capture=True)
+    assert_valid(op)
 
 
 def test_ffqram_postselected_probabilities():
