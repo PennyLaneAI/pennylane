@@ -138,7 +138,8 @@ def test_change_op_basis_raises():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -157,7 +158,8 @@ def test_change_op_basis_raises_capture():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -484,12 +486,12 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def test_func(a, b):
+def blah(a, b):
     pass
 
 
-partially_bound_test_func = partial(test_func, a=1)
-fully_bound_test_func = partial(test_func, a=1, b=2)
+partially_bound_func = partial(blah, a=1)
+fully_bound_func = partial(blah, a=1, b=2)
 
 
 @pytest.mark.parametrize(
@@ -505,8 +507,8 @@ fully_bound_test_func = partial(test_func, a=1, b=2)
         pytest.param(lambda **kwargs: None, True, id="star_kwargs"),
         pytest.param(lambda *args, **kwargs: None, True, id="mixed_star_args_star_kwargs"),
         # Partial integration
-        pytest.param(partially_bound_test_func, False, id="partially_bound_function"),
-        pytest.param(fully_bound_test_func, True, id="fully_bound_function"),
+        pytest.param(partially_bound_func, False, id="partially_bound_function"),
+        pytest.param(fully_bound_func, True, id="fully_bound_function"),
     ],
 )
 def test_validate_callable_helper(f, valid):

@@ -62,7 +62,7 @@ def _validate_callable(func: Callable) -> None:
 
     if has_required_param:
         raise TypeError(
-            "change_op_basis requires that Callable inputs have no parameters. functools.partial can be used to achieve this."
+            "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
         )
 
 
