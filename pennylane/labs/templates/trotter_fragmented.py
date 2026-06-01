@@ -141,18 +141,18 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         very_last_U = _transpose_leaf(U_tensor[1], frag_scheme)
         _apply_system_basis_rotation(very_last_U, wires, frag_scheme)
 
-    # Global phase
-    energy_shift = _energy_shift(hamiltonian, frag_scheme)
-    phi = (energy_shift * evolution_time) % (4 * np.pi)
+        # Global phase
+        energy_shift = _energy_shift(hamiltonian, frag_scheme)
+        phi = (energy_shift * evolution_time) % (4 * np.pi)
 
-    if control_wires is not None:
-        # Controlled global phases lead to PhaseShift(-phi)
-        # However, the double-phase trick turns it into RZ(-phi)
-        # (differ only by an unobservable global
-        # phase, but we keep it exact for bookkeeping).
-        qp.RZ(-phi, control_wires)
-    else:
-        qp.GlobalPhase(-2 * phi)
+        if control_wires is not None:
+            # Controlled global phases lead to PhaseShift(-phi)
+            # However, the double-phase trick turns it into RZ(-phi)
+            # (differ only by an unobservable global
+            # phase, but we keep it exact for bookkeeping).
+            qp.RZ(-phi, control_wires)
+        else:
+            qp.GlobalPhase(phi)
 
 
 def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme):

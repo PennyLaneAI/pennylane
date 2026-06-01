@@ -263,15 +263,11 @@ class TestGlobalPhase:
         overlap = np.trace(Aref.conj().T @ Atrial)
         measured_phase = np.angle(overlap)
 
-        e_shift = _energy_shift(ham, frag_scheme="cgf")
-        expected_phase = e_shift * t
-
         # Normalize to [-pi, pi]
         measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
         expected_phase = 0
 
-        phase_error = abs(measured_phase - expected_phase)
-        assert phase_error < 1e-5
+        assert np.isclose(measured_phase, expected_phase)
 
 
 class TestEdgeCases:
