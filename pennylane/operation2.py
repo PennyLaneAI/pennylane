@@ -25,8 +25,6 @@ from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal
 
 import numpy as np
-
-import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qp
@@ -38,20 +36,16 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
-from pennylane.exceptions import ParameterFrequenciesUndefinedError, PennyLaneDeprecationWarning, \
-    GeneratorUndefinedError
-    GeneratorUndefinedError,
-    ParameterFrequenciesUndefinedError,
-)
-from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 
 class Operator2(ABC):

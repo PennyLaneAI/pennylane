@@ -23,6 +23,7 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane import gradients, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -30,25 +31,17 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.operation2 import Operator2
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.ops import PhaseShift, CRY, RX, Hermitian, Rot
-
-from pennylane import gradients, math
-from pennylane.exceptions import (
-    GeneratorUndefinedError,
-    PennyLaneDeprecationWarning,
-    PowUndefinedError, ParameterFrequenciesUndefinedError,
-)
 from pennylane.operation import _UNSET_BATCH_SIZE, operation_derivative
 from pennylane.operation2 import Operation2, Operator2
-from pennylane.ops import CRY, RX, CRot, Hermitian, PhaseShift, Rot, Exp, PauliX
+from pennylane.ops import CRY, RX, CRot, Exp, Hermitian, PauliX, PhaseShift, Rot
 from pennylane.ops.functions import eigvals, generator
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires, WiresLike
@@ -1710,8 +1703,61 @@ class TestRepresentations:
 class TestGradMethod:
     """Tests that the gradient method is chosen appropriately."""
 
+    def test_analytic_with_provided_grad_recipe(self):
+        class SingleArgOpWithRecipe(Operation2):
+            num_params = 1
+            num_wires = 1
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            grad_recipe = [[[0, 1], [1, 0]]]
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+        op = SingleArgOpWithRecipe(0.5, wires=0)
+        assert op.grad_method == "A"
+
+    def test_analytic_with_param_freqs(self):
+        class SignleArgOpWithGen(Operation2):
+            num_params = 1
+            num_wires = 1
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+            def generator(self):
+                return Hermitian(np.zeros((2, 2)), wires=self.wires)
+
+        op = SignleArgOpWithGen(0.5, wires=0)
+        assert op.grad_method == "A"
+
     def test_finite_with_no_param_freqs(self):
-        op = Exp(PauliX(0), 1)
+        class SingleArgOpNoGen(Operation2):
+            num_params = 1
+            num_wires = 1
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+        op = SingleArgOpNoGen(0.1, 0)
+        assert op.grad_method == "F"
+
+    def test_none_with_no_dyn_args(self):
+        class NoArgOpNoGen(Operation2):
+            num_params = 0
+            num_wires = 1
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires: WiresLike):
+                super().__init__(wires=wires)
+
+        op = NoArgOpNoGen(wires=0)
+        assert op.grad_method == None
 
 
 class TestParameterFrequencies:
@@ -1719,7 +1765,10 @@ class TestParameterFrequencies:
 
     def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
         """Test that parameter_frequencies raises an error if there are too many dynamic arguments"""
+
         class MultiArgOpWithGen(Operation2):
+            num_params = 2
+            num_wires = 1
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -1738,6 +1787,8 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
 
         class SingleArgOpNoGen(Operation2):
+            num_params = 1
+            num_wires = 1
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -1763,6 +1814,8 @@ class TestParameterFrequencies:
     def test_param_freqs_with_generator(self, matrix):
 
         class OpWithGen(Operation2):
+            num_params = 1
+            num_wires = 1
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
