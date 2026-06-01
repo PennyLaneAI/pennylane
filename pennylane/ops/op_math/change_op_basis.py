@@ -27,13 +27,13 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import adjoint_resource_rep
-from pennylane.operation import (
+from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
     MatrixUndefinedError,
-    Operator,
     SparseMatrixUndefinedError,
 )
+from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint, ctrl, prod
 
 from .composite import CompositeOp, handle_recursion_error
@@ -91,12 +91,13 @@ def change_op_basis(
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     Raises:
-        TypeError: if any arguments are not ``Callables`` or :class:`~.Operator` s, or a ``Callable`` argument has input parameters.
+        TypeError: if any arguments are not ``Callable`` s or :class:`~.Operator` s, or a ``Callable`` argument has input parameters.
 
     **Example**
 
-    Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
-    a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
+    Consider the following example involving a ``change_op_basis``. The compute, uncompute pattern
+    is composed of a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally
+    an inverse ``QFT``.
 
     .. code-block:: python
 
@@ -122,13 +123,14 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤  State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
+    0: ──H──────╭●────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
 
-    A ``Callable`` can also be provided as an argument to ``ChangeOpBasis``. This can be a function that applies a series
-    of ``Operation`` s. Since ``ChangeOpBasis`` requires this ``Callable`` to have no input arguments, ``functools.partial``
-    can be used to absorb any necessary parameters.
+    A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
+    function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
+    ``Callable`` to have no input arguments, ``functools.partial`` can be used to absorb any
+    necessary parameters.
 
     .. code-block:: python
 
@@ -141,6 +143,7 @@ def change_op_basis(
             qp.PauliX(wires[0])
 
         dev = qp.device("default.qubit")
+
         @qp.qnode(dev)
         def circuit():
             # Use partial to absorb any input parameters
@@ -152,10 +155,17 @@ def change_op_basis(
         circuit3 = qp.decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
-    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤  State
-    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤  State
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
+
+    .. warning::
+
+        There is limited support for passing callables to ``change_op_basis`` when program capture
+        is enabled. Specifically, passing callables to ``qp.adjoint(qp.change_op_basis)(...)`` and
+        ``qp.ctrl(qp.change_op_basis, control=...)(...)`` are not supported with ``@qp.qjit(capture=True)``
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
+
     """
 
     if capture.enabled():

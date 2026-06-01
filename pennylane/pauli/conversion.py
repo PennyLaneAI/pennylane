@@ -32,6 +32,9 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
+#: Tolerance for checking if a sparse matrix is Hermitian.
+_HERMITIAN_TOLERANCE = 1e-8
+
 
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
     """Validate matrix shape and wire order for Pauli decomposition.
@@ -227,9 +230,9 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             continue
 
         observables = (
-            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != I]
             if hide_identity and not all(t == I for t in pauli_rep)
-            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+            else [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True)]
         )
         if observables:
             coeffs.append(coefficient)
@@ -325,7 +328,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     rows, cols, data = sparse_matrix.row, sparse_matrix.col, sparse_matrix.data
 
     # Decompose each nonzero matrix entry into Pauli word contributions
-    for row, col, value in zip(rows, cols, data):
+    for row, col, value in zip(rows, cols, data, strict=True):
         contributions = [("", complex(value))]
 
         # Process each qubit position (MSB first)
@@ -361,9 +364,11 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         if math.allclose(coeff, 0):
             continue
         if hide_identity and not all(char == I for char in word):
-            observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
+            observables = [
+                (char, wire) for wire, char in zip(wire_order, word, strict=True) if char != I
+            ]
         else:
-            observables = [(char, wire) for wire, char in zip(wire_order, word)]
+            observables = [(char, wire) for wire, char in zip(wire_order, word, strict=True)]
         coeffs.append(coeff)
         obs_terms.append(observables)
 
@@ -419,7 +424,7 @@ def _check_hermitian_sparse(H):
         nnz = diff.count_nonzero()
     if nnz:
         max_diff = np.abs(diff.data).max()
-        if max_diff > 1e-8:
+        if max_diff > _HERMITIAN_TOLERANCE:
             raise ValueError(f"The matrix is not Hermitian. (max diff: {max_diff})")
 
 
@@ -556,7 +561,7 @@ def pauli_decompose(
         return PauliSentence(
             {
                 PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(coeffs, obs)
+                for coeff, obs_n_wires in zip(coeffs, obs, strict=True)
             }
         )
 

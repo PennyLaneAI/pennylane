@@ -401,7 +401,7 @@ def _controlled_two_qubit_unitary_resource(
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
+    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
     for w in zero_control_wires:
         ops.PauliX(w)
     ops.ctrl(

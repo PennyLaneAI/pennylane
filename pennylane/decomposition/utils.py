@@ -32,11 +32,13 @@ OP_NAME_ALIASES = {
     "measure": "MidMeasureMP",
     "MidMeasure": "MidMeasureMP",
     "MidCircuitMeasure": "MidMeasureMP",
+    "MidCircuitPauliMeasure": "PauliMeasure",
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
     "Elbow": "TemporaryAND",
     "BasisStateProjector": "Projector",
     "StateVectorProjector": "Projector",
+    "BasisEmbedding": "BasisState",
 }
 
 

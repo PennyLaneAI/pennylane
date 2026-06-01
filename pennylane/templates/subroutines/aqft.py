@@ -114,10 +114,10 @@ class AQFT(Operation):
             The resulting circuit is:
 
             >>> print(qp.draw(circ, level='device')())
-            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤  Probs
-            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤  Probs
-            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤  Probs
-            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤  Probs
+            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
+            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
+            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
+            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
 
         * ``order`` :math:`\geq n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
@@ -127,7 +127,7 @@ class AQFT(Operation):
 
     resource_keys = {"num_wires", "order"}
 
-    def __init__(self, order: int, wires: WiresLike, *, id=None) -> None:
+    def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)
         n_wires = len(wires)
 
@@ -148,7 +148,7 @@ class AQFT(Operation):
             warnings.warn("order=0, applying Hadamard transform")
 
         self.hyperparameters["order"] = order
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
