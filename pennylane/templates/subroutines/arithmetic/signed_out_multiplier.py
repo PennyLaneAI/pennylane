@@ -484,7 +484,7 @@ def _not_zeroed_condition(output_wires_zeroed, **_):
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_resources(_zeroed_signed_out_multiplier_resources, exact=False)
+@register_resources(_zeroed_signed_out_multiplier_resources)
 def _signed_out_multiplier_decomposition_zeroed(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -543,7 +543,7 @@ def _signed_out_multiplier_decomposition_zeroed(
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_resources(_not_zeroed_signed_out_multiplier_resources, exact=False)
+@register_resources(_not_zeroed_signed_out_multiplier_resources)
 def _signed_out_multiplier_decomposition_not_zeroed(
     x_wires: WiresLike,
     y_wires: WiresLike,
