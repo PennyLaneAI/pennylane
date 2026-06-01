@@ -96,7 +96,10 @@ def test_correct(wires, init_state, expected, work_wires):
             assert entry == 1
         else:
             assert entry == 0
-
+    value = 2**np.arange(len(expected)) @ expected[::-1]
+    assert result[value] == 1
+    result[value] -= 1
+    assert np.allclose(result, 0)
 
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires, control",
