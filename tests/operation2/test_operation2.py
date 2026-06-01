@@ -1707,8 +1707,6 @@ class TestRepresentations:
 # Operation2 related tests
 
 
-
-
 class TestParameterFrequencies:
     """Tests for ``parameter_frequencies`` property.``."""
 
@@ -1746,5 +1744,3 @@ class TestParameterFrequencies:
         freqs_from_eigvals = gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
         assert math.allclose(op.parameter_frequencies, freqs_from_eigvals)
-
-

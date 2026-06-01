@@ -23,7 +23,6 @@ from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar, Literal
-from warnings import warn
 
 import numpy as np
 
@@ -48,13 +47,11 @@ from pennylane.exceptions import ParameterFrequenciesUndefinedError, PennyLaneDe
     GeneratorUndefinedError
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires
 
 
 class Operator2(ABC):
@@ -1391,14 +1388,10 @@ class Operation2(Operator2, is_base=True):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    def __init_subclass__(
-        cls: type["Operation2"]
-    ):
+    def __init_subclass__(cls: type["Operation2"]):
         # check the grad_recipe validity
         if cls.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             cls.grad_recipe = [None] * len(cls.dynamic_argnames)
 
         super().__init_subclass__()
-
-
