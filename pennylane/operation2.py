@@ -20,6 +20,7 @@ from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
+from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar
 
@@ -28,6 +29,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty  # tach-ignore
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -39,11 +41,12 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
+
+has_jax = find_spec("jax") is not None
 
 
 class Operator2(ABC):
@@ -174,6 +177,9 @@ class Operator2(ABC):
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
+        self.tracer = None
+        if qp.capture.enabled():
+            self._bind_primitive()
         self.queue()
 
     # ------------------------------------------------------------------------
@@ -1192,10 +1198,110 @@ class Operator2(ABC):
 
             self._batch_size = first_dims[0]
 
+    def _bind_primitive(self):
+        """Bind the operator plxpr primitive."""
+        if not qp.capture.enabled():
+            return
+
+        pos_args = [self.arguments[d] for d in self.dynamic_argnames]
+
+        hybrid_wire_argnames = []
+        wire_lens = []
+        # FIXME: Think about how casting wires to jax arrays might work
+        for name, value in self.wire_args.items():
+            if name in self.hybrid_argnames:
+                hybrid_wire_argnames.append(name)
+                continue
+
+            pos_args.extend(value)
+            wire_lens.append(len(value))
+
+        # Reorder hybrid args such that hybrid wire args are first
+        hybrid_argnames = hybrid_wire_argnames + [
+            h for h in self.hybrid_argnames if h not in self.wire_argnames
+        ]
+        hybrid_lens, hybrid_trees = [], []
+        for name in hybrid_argnames:
+            leaves, tree = flatten(self.arguments[name])
+            # FIXME: Handle removing jaxpr equations for any input ops
+            # op_leaves = filter(_is_op, leaves)
+            pos_args.extend(leaves)
+            hybrid_lens.append(len(leaves))
+            hybrid_trees.append(tree)
+
+        static_args = {}
+        for name in self.static_argnames + self.compilable_argnames:
+            # Pytree flattening is a simple way to make static arguments hashable
+            value = self.arguments[name]
+            leaves, tree = flatten(value)
+            static_args[name] = (tuple(leaves), tree)
+
+        self.tracer = operator_p.bind(
+            *pos_args,
+            op_cls=type(self),
+            dynamic_argnames=self.dynamic_argnames,
+            wire_argnames=self.wire_argnames,
+            wire_lens=wire_lens,
+            hybrid_argnames=hybrid_argnames,
+            hybrid_lens=hybrid_lens,
+            hybrid_trees=hybrid_trees,
+            **static_args,
+        )
+
+    # ------------------ Public properties ------------------
+
 
 # ------------------------------------------------------------------------------
 # ------------------------------ Helper functions ------------------------------
 # ------------------------------------------------------------------------------
+
+
+if has_jax:
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import QpPrimitive
+    from pennylane.operation import _get_abstract_operator
+
+    operator_p = QpPrimitive("operator")
+    operator_p.prim_type = "operator"
+    AbstractOperator = _get_abstract_operator()
+
+    # pylint: disable=too-many-arguments
+    @operator_p.def_impl
+    def _op_impl(
+        *all_args,
+        op_cls,
+        dynamic_argnames,
+        wire_argnames,
+        wire_lens,
+        hybrid_argnames,
+        hybrid_lens,
+        hybrid_trees,
+        **static_args,
+    ):
+        args = {name: unflatten(*value) for name, value in static_args.items()}
+        i = 0
+
+        for name in dynamic_argnames:
+            args[name] = all_args[i]
+            i += 1
+        for name, len_ in zip(wire_argnames, wire_lens, strict=True):
+            if name not in hybrid_argnames:
+                args[name] = all_args[i : i + len_] if len_ > 1 else all_args[i]
+                i += len_
+        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+            leaves = all_args[i : i + len_]
+            args[name] = unflatten(leaves, tree)
+            i += len_
+
+        return op_cls(**args)
+
+    @operator_p.def_abstract_eval
+    def _op_aval(*_, **__):
+        return AbstractOperator()
+
+else:
+    operator_p = None
+    AbstractOperator = None
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
