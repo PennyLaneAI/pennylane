@@ -62,7 +62,7 @@ class SignedOutMultiplier(Operator):
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
         y_wires (Sequence[int]): wires that store the signed integer :math:`y`
         output_wires (Sequence[int]): wires that store the multiplication result. If the
-            register is in a non-zero state :math:`z`, the solution will be added to this value
+            register is in a non-zero state :math:`z`, the product :math:`xy` will be added to this value
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
