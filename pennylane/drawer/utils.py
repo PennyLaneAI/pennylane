@@ -364,39 +364,39 @@ def cwire_connections(layers, bit_map):
 def _try_line_reuse(order_map, connected_layers, connected_wires: None | dict):
     # Extract (start, end) tuples (incl end) where each cwire is occupied with old bit map
     occupation = {
-        cwire: (min(con_layer), max(con_layer)) for cwire, con_layer in connected_layers.items()
+        line: (min(con_layer), max(con_layer)) for line, con_layer in connected_layers.items()
     }
-    # Mark until where each cwire is currently occupied during the following loop.
-    # Start with -1 for each cwire
+    # Mark until where each line is currently occupied during the following loop.
+    # Start with -1 for each line
     occ_ends = -np.ones(len(order_map))
-    # Write a map from old cwires to new cwires
+    # Write a map from old lines to new lines
     squash_map = {}
-    for cwire, occ in occupation.items():
-        # Find the first cwire that is currently not occupied, i.e. that has its occupation end
+    for line, occ in occupation.items():
+        # Find the first line that is currently not occupied, i.e. that has its occupation end
         # before the current occ starts (first entry of occ)
-        new_cwire = int(np.where(occ_ends < occ[0])[0][0])
-        # allocate a new (or the old) cwire based on the first one that was free above
-        squash_map[cwire] = new_cwire
+        new_line = int(np.where(occ_ends < occ[0])[0][0])
+        # allocate a new (or the old) line based on the first one that was free above
+        squash_map[line] = new_line
         # Update the occupation end of the newly allocated cwire
-        occ_ends[new_cwire] = occ[1]
-    # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
-    inv_squash_map = {new_cwire: [] for new_cwire in squash_map.values()}
-    for old_cwire in order_map.values():
-        inv_squash_map[squash_map[old_cwire]].append(old_cwire)
+        occ_ends[new_line] = occ[1]
+    # Create an inverted map that maps new lines to all old lines that are mapped to it
+    inv_squash_map = {new_line: [] for new_line in squash_map.values()}
+    for old_line in order_map.values():
+        inv_squash_map[squash_map[old_line]].append(old_line)
 
-    # Collect the connected layers from all old cwires that are being mapped to the same new cwire
+    # Collect the connected layers from all old lines that are being mapped to the same new line
     connected_layers = {
-        new_cwire: [connected_layers[w] for w in old_cwires]
-        for new_cwire, old_cwires in inv_squash_map.items()
+        new_line: [connected_layers[w] for w in old_line]
+        for new_line, old_line in inv_squash_map.items()
     }
-    # Collect the connected wires from all old cwires that are being mapped to the same new cwire
+    # Collect the connected wires from all old lines that are being mapped to the same new cwire
     if connected_wires:
         connected_wires = {
-            new_cwire: [connected_wires[w] for w in old_cwires]
-            for new_cwire, old_cwires in inv_squash_map.items()
+            new_line: [connected_wires[w] for w in old_lines]
+            for new_line, old_lines in inv_squash_map.items()
         }
-    # Update bit map according to the condensed/reused cwires
-    new_order_map = {op: squash_map[cwire] for op, cwire in order_map.items()}
+    # Update order map according to the condensed/reused cwires
+    new_order_map = {op: squash_map[line] for op, line in order_map.items()}
     return new_order_map, connected_layers, connected_wires
 
 
