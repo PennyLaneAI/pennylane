@@ -217,6 +217,11 @@
 
   ```
 
+* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
+  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
+  application algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+
 <h3>Breaking changes 💔</h3>
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
@@ -400,6 +405,7 @@ Guillermo Alonso,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
