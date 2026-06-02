@@ -47,12 +47,12 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
             CGF expects ``M*N`` wires arranged mode-major: wire ``l*N + p``
             corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
-        control_wires (Wires | None): A single control wire to perform the double phase version of the time evolution (see `Fig. 6 <https://arxiv.org/pdf/2506.15784>`__).
+        control_wires (Wires | None): A single control wire to perform the double phase version of the time evolution (see `Fig. 6 <https://arxiv.org/pdf/2506.15784>`__):
 
             .. code-block::
 
-                0: ─╭●─────┤  => ─╭●───────╭●─┤
-                1: ─╰U(2ϕ)─┤  => ─╰X──U(ϕ)─╰X─┤
+                    c: ─╭●───────╭●─┤
+                wires: ─╰X──U(ϕ)─╰X─┤
 
     **Example**
 
