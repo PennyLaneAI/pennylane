@@ -17,12 +17,13 @@ hypercontraction (THC) qubitization."""
 from pennylane import adjoint, cond, math
 from pennylane.decomposition import (
     add_decomps,
+    adjoint_resource_rep,
     register_resources,
+    resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, BasisState, Controlled, Hadamard, MultiControlledX, RY, X, Z
+from pennylane.ops import BasisState, Controlled, Hadamard, MultiControlledX, RY, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 
@@ -50,14 +51,11 @@ class SuperpositionTHC(Operation):
     uncomputed.
 
     The construction follows the tensor hypercontraction state preparation of
-    `Lee et al. (2021), Fig. 3 <https://arxiv.org/abs/2011.03494>`_, and the inequality
-    tests reuse the comparator subroutines from
-    `Su et al. (2021), Appendix E <https://arxiv.org/abs/2105.12767>`_
-    (:class:`~.LeftClassicalComparator` and :class:`~.LeftQuantumComparator`).
+    `Lee et al. (2021), Fig. 3 <https://arxiv.org/abs/2011.03494>`_.
 
     .. note::
 
-        The decomposition is self-contained: every work wire is returned to the zero state
+        Every work wire is returned to the zero state
         except the wires that carry the prepared flags, so no external uncomputation is
         required by the caller.
 
@@ -107,7 +105,7 @@ class SuperpositionTHC(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_mu_wires"}
+    resource_keys = {"num_mu_wires", "M", "N"}
 
     def __init__(
         self,
@@ -143,9 +141,7 @@ class SuperpositionTHC(Operation):
                 )
         overlap = mu_wires.intersection(nu_wires)
         if overlap:
-            raise ValueError(
-                f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}."
-            )
+            raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
 
         self.hyperparameters["M"] = M
         self.hyperparameters["N"] = N
@@ -160,6 +156,8 @@ class SuperpositionTHC(Operation):
     def resource_params(self) -> dict:
         return {
             "num_mu_wires": len(self.hyperparameters["mu_wires"]),
+            "M": self.hyperparameters["M"],
+            "N": self.hyperparameters["N"],
         }
 
     def _flatten(self):
@@ -274,12 +272,73 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     )
 
 
-def _superposition_thc_resources(num_mu_wires):
+def _controlled_rep(base_class, num_control_wires):
+    """resource_rep of ``Controlled(base, num_control_wires)`` as built in the
+    decomposition: no zero controls, no work wires (work wires are only borrowed
+    scratch and do not change the gate type)."""
+    return resource_rep(
+        Controlled,
+        base_class=base_class,
+        base_params={},
+        num_control_wires=num_control_wires,
+        num_zero_control_values=0,
+        num_work_wires=0,
+        work_wire_type="borrowed",
+    )
 
-    # TODO: update this resource estimate to match the full decomposition.
+
+def _superposition_thc_resources(num_mu_wires, M, N):
+    r"""Exact gate counts of the SuperpositionTHC decomposition.
+
+    * Single-qubit gates applied directly: ``6 * n`` Hadamards (three rounds over
+      both ``n``-wire registers), ``4 * n + 4`` PauliX gates, and ``2`` RY rotations.
+    * Multi-controlled gates built with ``Controlled(...)``: four ``C(X)`` with two
+      controls, one ``C(X)`` with three controls, one ``C(Z)`` with three controls,
+      and one ``C(Z)`` with ``2 * n`` controls (the reflection).
+    * The ``left_equalities`` block, applied twice forward and twice as an adjoint.
+      Each call contains two ``LeftClassicalComparator`` (``L = M`` with ``<=`` and
+      ``L = N // 2`` with ``>``), one ``LeftQuantumComparator`` and one ``BasisState``.
+    * One adjoint zero-controlled ``MultiControlledX`` (the ``keep_eq=True`` branch is
+      only reached inside the final ``adjoint(left_equalities)`` call).
+
+    ``M`` and ``N`` enter the resource estimate through the classical comparison
+    constants ``L = M`` and ``L = N // 2``, which is why they are part of
+    ``resource_keys``.
+    """
+    n = num_mu_wires
+
+    lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
+    lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">")
+    lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
+    basis = resource_rep(BasisState, num_wires=n)
+    mcx = resource_rep(
+        MultiControlledX,
+        num_control_wires=n,
+        num_zero_control_values=n,
+        num_work_wires=0,
+        work_wire_type="borrowed",
+    )
+
     resources = {
-        Elbow: num_mu_wires,
-        CNOT: 2 + 5 * (num_mu_wires - 1),
+        resource_rep(Hadamard): 6 * n,
+        resource_rep(X): 4 * n + 4,
+        resource_rep(RY): 2,
+        _controlled_rep(X, 2): 4,
+        _controlled_rep(X, 3): 1,
+        _controlled_rep(Z, 3): 1,
+        _controlled_rep(Z, 2 * n): 1,
+        # left_equalities applied twice in the forward direction
+        lcc_le: 2,
+        lcc_gt: 2,
+        lqc: 2,
+        basis: 2,
+        # left_equalities applied twice as an adjoint.
+        adjoint_resource_rep(LeftClassicalComparator, lcc_le.params): 2,
+        adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
+        adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
+        adjoint_resource_rep(BasisState, basis.params): 2,
+        # the keep_eq MultiControlledX only fires inside the final adjoint(left_equalities).
+        adjoint_resource_rep(MultiControlledX, mcx.params): 1,
     }
 
     return resources
@@ -333,6 +392,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in nu_wires:
         Hadamard(wire)
 
+    # The diagram in Fig 3. has a typo and these X gates have to be added
     for wire in mu_wires + nu_wires + [work_wires[0]]:
         X(wires=wire)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
