@@ -121,7 +121,7 @@ class QutritBasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-class QutritDensityMatrix(QubitDensityMatrix):
+class QutritDensityMatrix(Operation):
     r"""QutritDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.
     If not all the wires are specified, remaining dimension is filled by :math:`\mathrm{tr}_{in}(\rho)`,
