@@ -91,48 +91,6 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
 class TestSignedOutSquare:
     """Test the SignedOutSquare template."""
 
-    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-    @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "work_wires"),
-        [
-            (
-                [0, 1],
-                [3, 4, 5],
-                [6, 7, 8],
-            ),
-            (
-                [0, 1, 2],
-                [3, 4, 5, 6, 7],
-                [8, 9, 10, 11, 12],
-            ),
-            (
-                [0, 1],
-                [3, 4, 5, 6, 7],
-                [10, 11, 12, 13, 16],
-            ),
-            (
-                [0, 1, 2, 3],
-                [4, 5, 6, 7],
-                [9, 10, 11, 12, 13],
-            ),
-        ],
-    )
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
-    def test_operation_result(
-        self,
-        x_wires,
-        output_wires,
-        work_wires,
-        output_wires_zeroed,
-        use_jit,
-        seed,
-    ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the SignedOutSquare template output."""
-        all_wires = (x_wires, output_wires, work_wires)
-        _test_square_correctness(
-            all_wires, SignedOutSquare.compute_decomposition, seed, output_wires_zeroed, use_jit
-        )
-
     @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -141,7 +99,7 @@ class TestSignedOutSquare:
         """Test the SignedOutSquare template with dynamic wires."""
         x_wires = np.array([0, 1, 2, 3])
         output_wires = np.array([4, 5, 6, 7, 8, 9])
-        work_wires = np.array([10, 11, 12, 13, 14, 15])
+        work_wires = np.array([10, 11, 12, 13, 14, 15, 16])
 
         dev = qp.device("lightning.qubit")
 
@@ -152,13 +110,21 @@ class TestSignedOutSquare:
         else:
             z = mod - 2  # Some number close to causing overflows
 
-        # gate_set = {"HybridAdjoint", "TemporaryAND", "CNOT", "X", "Adjoint(TemporaryAND)", "BasisEmbedding", "MidMeasureMP", "Cond"}
+        gate_set = {
+            "HybridAdjoint",
+            "TemporaryAND",
+            "CNOT",
+            "X",
+            "Adjoint(TemporaryAND)",
+            "BasisEmbedding",
+            "MidMeasureMP",
+            "Cond",
+            "CZ",
+            "H",
+        }
 
-        @qp.qjit
         @qp.set_shots(1)
-        @qp.decompose(
-            max_expansion=3, fixed_decomps={"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
-        )
+        @qp.decompose(gate_set=gate_set, max_expansion=3)
         @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
             qp.BasisEmbedding(x, wires=x_wires)
@@ -171,7 +137,7 @@ class TestSignedOutSquare:
             )
 
         output = circuit(x, z, x_wires, work_wires)
-        out_ints = [int("".join(map(str, out[:, 0])), 2) for out in output]
+        out_ints = [int("".join(map(str, out[0])), 2) for out in output]
         assert np.allclose(out_ints, [x, (z + (x - 16) ** 2) % mod, 0])
 
     @pytest.mark.parametrize(
@@ -235,35 +201,36 @@ class TestSignedOutSquare:
 
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_decomposition(self, output_wires_zeroed):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that the decomposition(s) create the expected operators."""
         x_wires, output_wires, work_wires = (
             [0, 1, 2],
             [3, 4, 5, 6, 7],
             [8, 9, 10, 11, 12],
         )
-        decomp = SignedOutSquare(
-            x_wires, output_wires, work_wires, output_wires_zeroed
-        ).decomposition()
+        rules = qp.list_decomps(SignedOutSquare)
+        assert len(rules) == 1
+        rule = rules[0]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(x_wires, output_wires, work_wires, output_wires_zeroed)
+        decomp = q.queue
+
         square_output = [4, 5, 6, 7] if output_wires_zeroed else output_wires
         expected = [
             qp.OutSquare([1, 2], square_output, [8, 9, 10, 11, 12], output_wires_zeroed),
             qp.BasisState([1], [1]),
             qp.X(4),
+            qp.TemporaryAND([2, 4, 8]),
             qp.X(8),
-            qp.ctrl(
-                qp.SemiAdder([1, 2], [3, 4], [8]),
-                control=[0],
-                work_wires=[9, 10, 11, 12],
-                work_wire_type="zeroed",
-            ),
+            qp.ctrl(qp.CNOT([8, 3]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
+            qp.ctrl(qp.CNOT([1, 3]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
+            qp.X(8),
+            qp.adjoint(qp.TemporaryAND([2, 4, 8])),
+            qp.ctrl(qp.CNOT([2, 4]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
             qp.X(4),
-            qp.ops.MidMeasure(8, reset=True),
             qp.BasisState([1], [1]),
             qp.X(3),
-            # qp.X(4),
             qp.SemiAdder([0], [3], [8, 9, 10, 11, 12]),
             qp.X(3),
-            # qp.X(4),
         ]
         for op1, op2 in zip(decomp, expected):
             if isinstance(op1, qp.ops.MidMeasure):
@@ -285,6 +252,11 @@ class TestSignedOutSquare:
             ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13], True),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13], False),
+            #
+            ([0, 1], [3, 4, 5], [6, 7, 8], True),
+            ([0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12], True),
+            ([0, 1], [3, 4, 5, 6, 7], [10, 11, 12, 13, 16], False),
+            ([0, 1, 2, 3], [4, 5, 6, 7], [9, 10, 11, 12, 13], False),
         ],
     )
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
