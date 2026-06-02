@@ -123,10 +123,10 @@ class FFFT(Operator):
 
 
     >>> print(qp.draw(circuit, level="device")())
-    0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
-    1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
-    2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
-    3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+    0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤ ╭State
+    1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤ ├State
+    2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤ ├State
+    3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤ ╰State
 
 
     The ``FFFT`` operation is decomposed recursively into :class:`~.TwoWireFFT` operations
