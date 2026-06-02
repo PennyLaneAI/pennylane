@@ -13,5 +13,5 @@
 # limitations under the License.
 r"""This module contains base_classes.py and wire_counting.py"""
 
-from base_classes import Allocate, Deallocate, MarkQubits, MarkClean
-from wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
+from .base_classes import Allocate, Deallocate, MarkQubits, MarkClean
+from .wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources

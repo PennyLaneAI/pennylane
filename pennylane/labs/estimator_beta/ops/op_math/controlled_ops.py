@@ -15,7 +15,7 @@
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
-from pennylane.labs.estimator_beta.wires_manager import Allocate, Deallocate
+from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 
 # pylint: disable = unused-argument
 

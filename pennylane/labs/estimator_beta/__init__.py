@@ -107,7 +107,7 @@ from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
-from .wires_manager import (
+from .wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
