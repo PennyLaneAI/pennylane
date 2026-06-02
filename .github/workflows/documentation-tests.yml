@@ -61,7 +61,7 @@ jobs:
 
       - name: Install PennyLane (editable) with doctest deps
         run: |
-          uv pip install --group doctest -e . --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple/
+          uv pip install --system --group doctest -e . --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple/
 
       - name: Print Dependencies
         run: |
