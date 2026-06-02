@@ -51,8 +51,8 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
-from pennylane.typing import AbstractArray, AbstractWires
-from pennylane.wires import Wires, is_abstract_qubit
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires, Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 
