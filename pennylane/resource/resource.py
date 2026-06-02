@@ -418,7 +418,7 @@ class SymbolicSpecsResources(SpecsResources):
     .. warning::
 
         This class is intended to be immutable. Modifying the attributes after creation may
-    lead to unexpected behavior.
+        lead to unexpected behavior.
 
     .. note::
 
