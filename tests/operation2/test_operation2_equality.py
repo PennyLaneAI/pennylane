@@ -380,6 +380,36 @@ class TestHybridArgs:
         assert qp.equal(op1, op2, atol=1e-9, rtol=0) is True
         qp.assert_equal(op1, op2, atol=1e-9, rtol=0)
 
+    def test_numeric_leaves_different_interfaces_not_equal(self):
+        """Test that operators with the same value but different interfaces are unequal."""
+        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different interfaces for 'hybrid'"):
+            qp.assert_equal(op1, op2)
+
+    def test_numeric_leaves_different_interfaces_equal_when_disabled(self):
+        """Test that ``check_interface=False`` ignores interface differences."""
+        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2, check_interface=False) is True
+        qp.assert_equal(op1, op2, check_interface=False)
+
+    def test_numeric_leaves_different_trainability_not_equal(self):
+        """Test that operators differing only in trainability are unequal."""
+        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="differ in trainability for 'hybrid'"):
+            qp.assert_equal(op1, op2)
+
+    def test_numeric_leaves_different_trainability_equal_when_disabled(self):
+        """Test that ``check_trainability=False`` ignores trainability differences."""
+        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2, check_trainability=False) is True
+        qp.assert_equal(op1, op2, check_trainability=False)
+
     def test_op_leaves_within_tolerance(self):
         """Test that operators with operator leaves in hybrid arguments with dynamic
         data within tolerance are equal."""
