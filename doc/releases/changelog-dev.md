@@ -6,7 +6,7 @@
   of a ZYZ decomposition of a single-qubit operator.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
-  ```python
+  ```pycon
   >>> qp.single_qubit_zyz_angles(qp.H(0))
   (3.14159..., 1.57079..., 0.0, 1.57079...)
 
