@@ -283,7 +283,7 @@ def allocate(
          |0>├──H──┤
 
 
-    Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
+    Equivalently, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
     handling:
 
     .. code-block:: python

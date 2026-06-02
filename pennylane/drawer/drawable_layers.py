@@ -150,7 +150,7 @@ def _handle_cond(op: Conditional, wire_map, bit_map):
 
 
 @dataclass
-class LayersData:
+class _LayersData:
     """Data for putting operations into layers."""
 
     ops_in_layer: list[list] = field(default_factory=lambda: [[]])
@@ -160,7 +160,7 @@ class LayersData:
     """The mapped wires that will be occupied in the drawing at each layer."""
 
     used_cwires_per_layer: list[set[int]] = field(default_factory=lambda: [set()])
-    """The clasical wires that will be occupied in each layer."""
+    """The classical wires that will be occupied in each layer."""
 
     waiting_dynamic_wires: list[DynamicWire] = field(default_factory=list)
     """DynamicWires that are waiting for the first interaction between
@@ -222,7 +222,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
         wire_map (dict): A map from wire label to non-negative integers. Defaults to None.
         bit_map (dict): A map containing mid-circuit measurements used for classical conditions
             or collecting statistics as keys. Defaults to None.
-        _dynamic_wires (bool): **Internal**.  Whether or not try pushing allocations and ops
+        _dynamic_wires (bool): **Internal**.  Whether or not to push allocations and ops
             on only dynamic wires to the right next to the first time the dynamic wires are used.
 
     Returns:
@@ -255,7 +255,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
     bit_map = bit_map or {}
 
     # initialize for operation layers
-    data = LayersData()
+    data = _LayersData()
 
     # loop over operations
     for op in operations:

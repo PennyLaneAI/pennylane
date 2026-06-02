@@ -27,7 +27,7 @@ from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 
 
-def dynamic_wire_connections(layers: list[list], wire_map: dict) -> dict:
+def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, dict]:
     """Determine the start and end points of quantum wires and reuse lines
     for dynamic wires when possible.
 
