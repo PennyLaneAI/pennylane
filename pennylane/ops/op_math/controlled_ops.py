@@ -935,12 +935,12 @@ class CCZ(ControlledOp):
             qp.H(2)
             qp.CCZ([0,1,2])
             qp.H(2)
-            return qp.sample()
+            return qp.sample(wires=[0,1,2])
 
     >>> print(qp.draw(circuit)())
-    0: ──X─╭●────┤  Sample
-    1: ──X─├●────┤  Sample
-    2: ──H─╰Z──H─┤  Sample
+    0: ──X─╭●────┤ ╭Sample
+    1: ──X─├●────┤ ├Sample
+    2: ──H─╰Z──H─┤ ╰Sample
     >>> circuit()
     array([[1, 1, 1]])
 
@@ -1162,11 +1162,11 @@ class CNOT(ControlledOp):
         def circuit():
             qp.X(0)
             qp.CNOT([0,1])
-            return qp.sample()
+            return qp.sample(wires=[0,1])
 
     >>> print(qp.draw(circuit)())
-    0: ──X─╭●─┤  Sample
-    1: ────╰X─┤  Sample
+    0: ──X─╭●─┤ ╭Sample
+    1: ────╰X─┤ ╰Sample
     >>> circuit()
     array([[1, 1]])
 
@@ -1341,12 +1341,12 @@ class Toffoli(ControlledOp):
             qp.X(0)
             qp.X(1)
             qp.Toffoli([0,1,2])
-            return qp.sample()
+            return qp.sample(wires=[0,1,2])
 
     >>> print(qp.draw(circuit)())
-    0: ──X─╭●─┤  Sample
-    1: ──X─├●─┤  Sample
-    2: ────╰X─┤  Sample
+    0: ──X─╭●─┤ ╭Sample
+    1: ──X─├●─┤ ├Sample
+    2: ────╰X─┤ ╰Sample
     >>> circuit()
     array([[1, 1, 1]])
 
