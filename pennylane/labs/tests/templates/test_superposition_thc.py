@@ -90,6 +90,10 @@ class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
 
     @pytest.mark.parametrize(
+        ("qjit"),
+        [True, False],
+    )
+    @pytest.mark.parametrize(
         ("M", "N", "n"),
         [
             (0, 2, 2),
@@ -99,7 +103,7 @@ class TestSuperpositionTHC:
             (2, 8, 3),
         ],
     )
-    def test_operation_result(self, M, N, n):
+    def test_operation_result(self, qjit, M, N, n):
         """The template prepares a uniform superposition over {(mu, nu): mu <= nu <= M}
         conditioned on the output success flag (work_wires[6] == 1).
 
@@ -110,14 +114,17 @@ class TestSuperpositionTHC:
         """
         mu_wires, nu_wires, work_wires = _wire_layout(n)
         success_flag = work_wires[6]
-        dev = qp.device("default.qubit", wires=2 * n + len(work_wires))
+        dev = qp.device("lightning.qubit", wires=2 * n + len(work_wires))
 
         @qp.qnode(dev)
-        def circuit():
+        def circuit(M, N, mu_wires, nu_wires, work_wires):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
             return qp.probs(wires=mu_wires + nu_wires + [success_flag])
 
-        probs = circuit()
+        if qjit:
+            probs = qp.qjit(circuit)(M, N, mu_wires, nu_wires, work_wires)
+        else:
+            probs = circuit(M, N, mu_wires, nu_wires, work_wires )
 
         # Keep only the "success" half (flag == 1, the odd-indexed entries) and
         # decode the remaining index into (mu, nu).
