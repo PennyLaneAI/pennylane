@@ -1211,10 +1211,11 @@ class FFQRAM(Operation):
     Because the protocol is sampled with a finite number of shots, the observed
     distribution approximates the theoretical values:
 
-    >>> print(f"{'address':>8}{'observed':>11}{'expected':>11}")
-    ... for state, obs, exp in zip(basis_states, results, expected_full, strict=True):
+    >>> rows = [f"{'address':>8}{'observed':>11}{'expected':>11}"]
+    >>> for state, obs, exp in zip(basis_states, results, expected_full, strict=True):
     ...     if obs > 1e-9 or exp > 1e-9:
-    ...         print(f"{state:>8}{obs:>11.3f}{exp:>11.3f}")
+    ...         rows.append(f"{state:>8}{obs:>11.3f}{exp:>11.3f}")
+    >>> print("\n".join(rows))
      address   observed   expected
          000      0.238      0.300
          001      0.762      0.700
