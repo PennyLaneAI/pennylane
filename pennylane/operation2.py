@@ -1388,4 +1388,4 @@ class Operation2(Operator2, is_base=True):
             # Make sure grad_recipe is an iterable of correct length instead of None
             cls.grad_recipe = [None] * len(cls.dynamic_argnames)
 
-        super().__init_subclass__()
+        super().__init_subclass__(is_base=is_base)
