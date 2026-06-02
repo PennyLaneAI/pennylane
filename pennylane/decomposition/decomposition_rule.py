@@ -213,8 +213,8 @@ def register_resources(
 
 
     >>> print(qp.draw(circuit, level="device")())
-    0: ────╭●────┤  State
-    1: ──H─╰Z──H─┤  State
+    0: ────╭●────┤ ╭State
+    1: ──H─╰Z──H─┤ ╰State
 
     Alternatively, the decomposition rule can be created in-line:
 

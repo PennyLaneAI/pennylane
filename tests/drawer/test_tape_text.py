@@ -273,8 +273,12 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qp.expval(qp.PauliX(0)), ["<X>", "", "", ""]),
             (qp.probs(wires=(0, 2)), ["╭Probs", "│", "╰Probs", ""]),
             (qp.var(qp.PauliX(1)), ["", "Var[X]", "", ""]),
-            (qp.state(), ["State", "State", "State", "State"]),
-            (qp.sample(), ["Sample", "Sample", "Sample", "Sample"]),
+            # Following the fix for issue #7807, measurements that span all
+            # wires implicitly (StateMP / SampleMP / etc. with empty
+            # ``m.wires``) now render with the same grouping brackets as
+            # multi-wire measurements that list their wires explicitly.
+            (qp.state(), ["╭State", "├State", "├State", "╰State"]),
+            (qp.sample(), ["╭Sample", "├Sample", "├Sample", "╰Sample"]),
             (qp.purity(0), ["purity", "", "", ""]),
             (qp.vn_entropy([2, 1]), ["", "╭vnentropy", "╰vnentropy", ""]),
             (qp.mutual_info(3, 1), ["", "╭mutualinfo", "│", "╰mutualinfo"]),
