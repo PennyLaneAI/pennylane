@@ -58,7 +58,7 @@ def twos_complement_value(bits):
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
         ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
-        ((0, 1), (2, 3), (4, 5, 6, 7, 8, 9), (10, 11), False),
+        ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
     ],
 )
 def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
@@ -117,7 +117,7 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
         ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
-        ((0, 1), (2, 3), (4, 5, 6, 7, 8, 9), (10, 11), False),
+        ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
     ],
 )
 def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
@@ -145,22 +145,22 @@ def signed_multiply(
         (
             (0, 1),
             (2, 3),
-            (4, 5, 6, 7, 8, 9),
-            (10, 11),
+            (4, 5, 6, 7, 8),
+            (9, 10),
             [1, 1]  # operand one: -1
             + [0, 1]  # operand two: 1
-            + [0, 0, 0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0]  # work wires are zeroed
             + [0, 1],  # output register starts in non-zero state!
             False,
         ),
         (
             (0, 1),
             (2, 3),
-            (4, 5, 6, 7, 8, 9),
-            (10, 11),
+            (4, 5, 6, 7, 8),
+            (9, 10),
             [0, 1]  # operand one: 1
             + [0, 1]  # operand two: 1
-            + [0, 0, 0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0]  # work wires are zeroed
             + [1, 1],  # output register starts in negative non-zero state!
             False,
         ),
