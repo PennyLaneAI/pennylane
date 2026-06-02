@@ -35,6 +35,7 @@
   Measurements:
   - expval(PauliX): 1
   Depth: Not computed
+
   ```
 
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
@@ -50,6 +51,7 @@
   Measurements:
   - expval(PauliX): 1
   Depth: Not computed
+
   ```
 
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
@@ -83,7 +85,7 @@
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
   has been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
@@ -129,7 +131,7 @@
   ```
   [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
-* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})).
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -187,7 +189,7 @@
     True
 
   ```
-  
+
 * Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
   test of a quantum register and an integer.
   [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
@@ -212,12 +214,12 @@
     )
     return qp.sample(wires=3)
   ```
-  
+
   ```pycon
     >>> output = circuit(3, 2)
     >>> print(bool(output)) # 3 >= 2
     True
-  
+
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.

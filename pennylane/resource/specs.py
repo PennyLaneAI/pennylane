@@ -762,7 +762,7 @@ def specs(
 
             dev = qp.device("lightning.qubit", wires=1)
 
-            @qp.qjit
+            @qp.qjit(autograph=True)
             @qp.qnode(dev)
             def circuit(x, z):
                 qp.Hadamard(0)
@@ -786,7 +786,7 @@ def specs(
         <BLANKLINE>
         Symbolic Variables: a, b
         Wire allocations: 1
-        Total gates: a + b + 2
+        Total gates: b + a + 2
         Gate counts:
         - Hadamard: 1
         - PauliX: a + 1
@@ -824,7 +824,6 @@ def specs(
         Measurements:
         - expval(PauliZ): 1
         Depth: Not computed
-
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
