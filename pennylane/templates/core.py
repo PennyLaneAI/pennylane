@@ -179,8 +179,9 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray, AbstractWires
+        from pennylane.typing import AbstractArray
         from pennylane.templates import subroutine_resource_rep
+        from pennylane.wires import AbstractWires
 
         class MyOp(qp.operation.Operation):
             pass
