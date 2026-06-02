@@ -1386,6 +1386,6 @@ class Operation2(Operator2, is_base=True):
         # check the grad_recipe validity
         if cls.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
-            cls.grad_recipe = [None] * len(cls.dynamic_argnames)
+            cls.grad_recipe = (None,) * len(cls.dynamic_argnames)
 
         super().__init_subclass__(is_base=is_base)
