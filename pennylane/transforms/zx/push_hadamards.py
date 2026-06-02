@@ -84,9 +84,9 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ──T────┤  State
-    1: ──T─╭X─┤  State
-    2: ──H─╰●─┤  State
+    0: ──T────┤ ╭State
+    1: ──T─╭X─┤ ├State
+    2: ──H─╰●─┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel

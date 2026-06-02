@@ -73,6 +73,8 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
     side_effect=lambda x: decompositions[to_name(x)],
 )
 class TestDecompositionGraph:
+    """Unit tests for the decomposition graph."""
+
     def test_weighted_graph_solve(self, _):
         """Tests solving a simple graph for the optimal decompositions with weighted gates."""
 
@@ -624,6 +626,29 @@ class TestDecompositionGraph:
             },
         )
         assert graph._min_work_wires == 4
+
+    def test_circular_decomposition_paths(self, _):
+        """Tests that the graph can handle circular decomposition pathways."""
+
+        @qp.register_resources({AnotherOp: 1})
+        def _custom_rule(_):
+            raise NotImplementedError
+
+        @qp.register_resources({controlled_resource_rep(CustomOp, {}, num_control_wires=1): 1})
+        def _another_rule(_):
+            raise NotImplementedError
+
+        _ = DecompositionGraph(
+            [CustomOp(0)],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+        )
+
+        _ = DecompositionGraph(
+            [qp.ctrl(CustomOp(0), control=[1])],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={CustomOp: [_custom_rule], AnotherOp: [_another_rule]},
+        )
 
 
 @pytest.mark.unit
