@@ -45,7 +45,8 @@ class SignedOutMultiplier(Operator):
     r"""
     Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|z|}\rangle`.
 
-    The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. The value :math:`x` of a number encoded using 2s complement into :math:`n` bits
+    The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. 
+    The value :math:`x` encoded by a bitstring :math:`x_{n-1} x_{n-2}\dots x_0` using 2s complement
     is given by the following.
 
     .. math::
@@ -56,13 +57,13 @@ class SignedOutMultiplier(Operator):
     The first bit of the encoded bitstring gives the sign of the encoded number. :math:`1 \mapsto -`, :math:`0 \mapsto +`.
     This is however not a sign-magnitude encoding. Iff the encoded number is negative, the rest of the bits do not give the
     magnitude. Instead, the magnitude can be found by calculating :math:`\bar{x}=(-1)^{x_{n-1}}x`. This is done by flipping the bits of
-    :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(010)_2 \oplus 1 = (101)_2 \oplus 1 = (110)_2`.
+    :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(1010)_2 \oplus 1 = (0101)_2 \oplus 1 = (0110)_2`.
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
         y_wires (Sequence[int]): wires that store the signed integer :math:`y`
         output_wires (Sequence[int]): wires that store the multiplication result. If the
-            register is in a non-zero state :math:`z`, the solution will be added to this value
+            register is in a non-zero state :math:`z`, the product :math:`xy` will be added to this value
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
