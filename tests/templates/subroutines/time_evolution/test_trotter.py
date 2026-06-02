@@ -1200,8 +1200,8 @@ class TestIntegration:
         reference_time_grad = time_reference.grad
         reference_coeff_grad = coeffs_reference.grad
 
-        assert allclose(measured_time_grad, reference_time_grad, atol=2e-4, rtol=1e-4)
-        assert allclose(measured_coeff_grad, reference_coeff_grad, atol=2e-4, rtol=1e-4)
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
