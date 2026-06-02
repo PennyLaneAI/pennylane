@@ -1382,7 +1382,7 @@ class Operation2(Operator2, is_base=True):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    def __init_subclass__(cls: type["Operation2"]):
+    def __init_subclass__(cls: type["Operation2"], is_base: bool = False):
         # check the grad_recipe validity
         if cls.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
