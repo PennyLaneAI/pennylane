@@ -419,7 +419,7 @@ def _not_zeroed_signed_out_multiplier_resources(
     """
     Computes the resources for the SignedOutMultiplier.
     """
-    resources = dict()
+    resources = {}
 
     resources[
         resource_rep(

@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 import pytest
 
-from pennylane import SignedOutMultiplier, device, math, qnode
+from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
