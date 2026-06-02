@@ -36,7 +36,7 @@ class SignedOutSquare(Operation):
     r"""Performs out-of-place squaring of a signed integer.
 
     This operator performs the squaring of a signed integer :math:`x` in two's complement
-    convention into an unsigned register. The computation is  modulo :math:`2^n`,
+    convention into an unsigned register. The computation is modulo :math:`2^n`,
     where ``n=len(output_wires)``:
 
     .. math::
