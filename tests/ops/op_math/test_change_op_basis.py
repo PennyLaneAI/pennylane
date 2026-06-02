@@ -486,12 +486,13 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b):
+def blah(a, b, c=3):
     pass
 
 
 partially_bound_func = partial(blah, a=1)
-fully_bound_func = partial(blah, a=1, b=2)
+partially_bound_with_opt_kwarg_func = partial(blah, a=1, b=2)
+fully_bound_func = partial(blah, a=1, b=2, c=3)
 
 
 @pytest.mark.parametrize(
@@ -508,6 +509,9 @@ fully_bound_func = partial(blah, a=1, b=2)
         pytest.param(lambda *args, **kwargs: None, True, id="mixed_star_args_star_kwargs"),
         # Partial integration
         pytest.param(partially_bound_func, False, id="partially_bound_function"),
+        pytest.param(
+            partially_bound_with_opt_kwarg_func, True, id="partially_bound_function_with_opt_kwarg"
+        ),
         pytest.param(fully_bound_func, True, id="fully_bound_function"),
     ],
 )
