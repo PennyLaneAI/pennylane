@@ -21,6 +21,7 @@ import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
+from importlib.util import find_spec
 from typing import Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
@@ -49,13 +50,7 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
-has_jax = True
-try:
-    import jax
-
-except ImportError:
-    has_jax = False
-
+has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
@@ -69,6 +64,8 @@ def _get_abstract_operator() -> type:
     """Create an AbstractOperator once in a way protected from lack of a jax install."""
     if not has_jax:  # pragma: no cover
         raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
@@ -135,6 +132,8 @@ def create_operator_primitive(
     """
     if not has_jax:
         return None
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     primitive = capture.QpPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
@@ -516,6 +515,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
+
+        import jax  # pylint: disable=import-outside-toplevel
 
         array_types = (jax.numpy.ndarray, np.ndarray)
         iterable_wires_types = (
@@ -1732,3 +1733,6 @@ class Operation(Operator):
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
+
+
+__all__ = ["Operator", "Operation"]

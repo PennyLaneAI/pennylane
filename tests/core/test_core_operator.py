@@ -1623,6 +1623,19 @@ class TestCVOperation:
             U_high_order = np.array([np.eye(3)] * 3)
             op.heisenberg_expand(U_high_order, op.wires)
 
+    def test_supports_parameter_shift(self):
+        """Test the supports_parameter_shift property."""
+
+        class DummyOp(qp.oepration.CVOperation):
+            num_wires = 1
+            grad_method = "A"
+
+            @staticmethod
+            def _heisenberg_rep(p):
+                return p  # just overwrite it?
+
+        assert DummyOp.supports_parameter_shift
+
 
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""

@@ -15,8 +15,7 @@
 Operator Types
 ~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.operation
-
+.. currentmodule:: pennylane.core.operator
 .. autosummary::
     :toctree: api
 
@@ -37,3 +36,13 @@ Operator Types
 """
 
 from .operator import Operator, Operation, Channel, CV, CVOperation, CVObservable, StatePrepBase
+
+__all__ = [
+    "Operator",
+    "Operation",
+    "Channel",
+    "CV",
+    "CVOperation",
+    "CVObservable",
+    "StatePrepBase",
+]

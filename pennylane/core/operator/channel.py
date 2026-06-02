@@ -85,3 +85,6 @@ class Channel(Operation, abc.ABC):
                 [0.        , 0.        ]])]
         """
         return self.compute_kraus_matrices(*self.parameters, **self.hyperparameters)
+
+
+__all__ = ["Channel"]

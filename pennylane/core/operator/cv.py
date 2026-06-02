@@ -297,3 +297,6 @@ class CVObservable(CV, Operator):
         p = self.parameters
         U = self._heisenberg_rep(p)
         return self.heisenberg_expand(U, wire_order)
+
+
+__all__ = ["CV", "CVObservable", "CVOperation"]
