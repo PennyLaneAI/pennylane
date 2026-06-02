@@ -8,7 +8,8 @@
 
   ```python
   >>> qp.single_qubit_zyz_angles(qp.H(0))
-  (3.141592653589793, 1.5707963267948966, 0.0, 1.5707963267948966)
+  (3.14159..., 1.57079..., 0.0, 1.57079...)
+
   ```
 
   The new function returns a tuple of four values, where the first three corresponds to the rotation
