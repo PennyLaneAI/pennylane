@@ -1223,8 +1223,9 @@ class Operator2(ABC):
         hybrid_lens, hybrid_trees = [], []
         for name in hybrid_argnames:
             leaves, tree = flatten(self.arguments[name])
-            # FIXME: Handle removing jaxpr equations for any input ops
-            # op_leaves = filter(_is_op, leaves)
+            op_leaves = filter(_is_op, leaves)
+            _delete_op_eqns(op_leaves)
+
             pos_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
@@ -1302,6 +1303,22 @@ if has_jax:
 else:
     operator_p = None
     AbstractOperator = None
+
+
+def _delete_op_eqns(ops: Iterable) -> None:
+    """Delete the jaxpr equations for operators that have been used as data."""
+    for op in ops:
+        if op.tracer is not None:
+            # pylint: disable=protected-access
+            frame = op.tracer._trace.frame
+            assert frame.auto_dce is False  # eqns are stored differently if this is enabled
+
+            # for some reason the frame now wraps equations in lambdas
+            eqn = op.tracer.parent
+            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
+
+            # delete reference to tracer after its equation has been deleted
+            op.tracer = None
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
