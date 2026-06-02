@@ -1798,9 +1798,23 @@ class TestParameterFrequencies:
         with pytest.raises(ParameterFrequenciesUndefinedError):
             _ = op.parameter_frequencies
 
-    def test_param_freqs_no_generator(self):
-        op = CRot(0.4, 0.1, 0.3, wires=[0, 1])
-        assert op.parameter_frequencies == [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+    @pytest.mark.parametrize(
+        "freqs", [[(0.5, 1.0), (0.5, 1.0)], [(0.3, 4.0), (0.1, 2.0)], [(0.5, 1.0), (0.8, 0.2)]]
+    )
+    def test_param_freqs_no_generator(self, freqs):
+        class MultiArgOpNoGenParamFreqs(Operation2):
+            num_params = 2
+            num_wires = 1
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            parameter_frequencies = freqs
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+        op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])
+        assert op.parameter_frequencies == freqs
 
     @pytest.mark.parametrize(
         "matrix",
