@@ -168,6 +168,11 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
+    :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
+    :figure: _static/templates/arithmetic/signedoutmultiplier.png
+
+
+.. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
