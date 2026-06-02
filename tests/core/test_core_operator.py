@@ -1626,7 +1626,7 @@ class TestCVOperation:
     def test_supports_parameter_shift(self):
         """Test the supports_parameter_shift property."""
 
-        class DummyOp(qp.oepration.CVOperation):
+        class DummyOp(qp.operation.CVOperation):
             num_wires = 1
             grad_method = "A"
 
