@@ -139,7 +139,7 @@ class SignedOutMultiplier(Operator):
 
         .. code-block::
 
-            |--- Cache Sign ---| |-------- Compute Absolute Magnitude (In-Place) --|
+                    |--- Cache Sign ---| |-------- Compute Absolute Magnitude (In-Place) --|
                                                                          ┌───────┐
             |x_bits⟩ [n-1] ──────────────────────X───────────────────────┤       ├─────────  --> |x_abs⟩
                                                  │                       │  +1   │
