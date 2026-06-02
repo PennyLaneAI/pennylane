@@ -20,7 +20,6 @@ from collections import defaultdict
 
 from pennylane import math
 from pennylane import ops as qp_ops
-from pennylane.ops.functions import equal
 from pennylane.capture.autograph import wraps
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation, Operator
@@ -98,7 +97,7 @@ def _simplify_trotter_sequence(decomp):
         if (
             isinstance(prev, qp_ops.Evolution)
             and isinstance(op, qp_ops.Evolution)
-            and equal(prev.base, op.base)
+            and qp_ops.functions.equal(prev.base, op.base)
         ):
             merged[-1] = qp_ops.Evolution(op.base, prev.param + op.param)
             prev = merged[-1]
