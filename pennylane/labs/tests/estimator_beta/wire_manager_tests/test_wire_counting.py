@@ -19,10 +19,12 @@ import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
 from pennylane.estimator import GateCount, Resources
-from pennylane.labs.estimator_beta.wires_manager import (
+from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
+)
+from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     _estimate_auxiliary_wires,
     _process_circuit_lst,
     estimate_wires_from_circuit,
@@ -380,7 +382,7 @@ class TestProcessCircuitLst:
         actual_processed_circ, actual_circ_wires = _process_circuit_lst(circ)
 
         assert actual_circ_wires == expected_circ_wires
-        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ):
+        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ, strict=True):
             assert (
                 elem1[0].equal(elem2[0])
                 if isinstance(elem1[0], MarkClean)

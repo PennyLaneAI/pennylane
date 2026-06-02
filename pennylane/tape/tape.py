@@ -17,16 +17,17 @@ This module contains the base quantum tape.
 
 # pylint: disable=protected-access
 import copy
+import warnings
 from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
-from .qscript import QuantumScript
+from .qscript import QuantumScript, process_queue
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):
@@ -59,7 +60,7 @@ def _validate_computational_basis_sampling(tape):
         all_wires = []
         empty_wires = qp.wires.Wires([])
         for idx, (cb_obs, global_idx) in enumerate(
-            zip(comp_basis_sampling_obs, comp_basis_indices)
+            zip(comp_basis_sampling_obs, comp_basis_indices, strict=True)
         ):
             if global_idx < n_meas - n_mcms:
                 if cb_obs.wires == empty_wires:
@@ -114,7 +115,7 @@ def rotations_and_diagonal_measurements(tape):
 
         measurements = copy.copy(tape.measurements)
 
-        for o, i in zip(diag_obs, tape.obs_sharing_wires_id):
+        for o, i in zip(diag_obs, tape.obs_sharing_wires_id, strict=True):
             new_m = tape.measurements[i].__class__(obs=o)
             measurements[i] = new_m
 
@@ -273,6 +274,24 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self._trainable_params = None
 
     def adjoint(self):
+        """
+        Create a quantum tape that is the adjoint of this one.
+
+        .. warning::
+            This method is deprecated and will be removed in v0.47.
+            Please use `QuantumTape([qp.adjoint(op) for op in reversed(tape.operations)])`.
+
+        Returns:
+            ~.QuantumScript: the adjoint tape
+
+        """
+        warnings.warn(
+            "Using QuantumTape.adjoint is deprecated "
+            "and will be removed in v0.47. Instead, please use "
+            "'QuantumTape([adjoint(op) for op in reversed(tape.operations)])'. ",
+            PennyLaneDeprecationWarning,
+        )
+
         adjoint_tape = super().adjoint()
         QueuingManager.append(adjoint_tape)
         return adjoint_tape
@@ -280,10 +299,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     # ========================================================
     # construction methods
     # ========================================================
-
-    # This is a temporary attribute to fix the operator queuing behaviour.
-    # Tapes may be nested and therefore processed into the `_ops` list.
-    _queue_category = "_ops"
 
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum

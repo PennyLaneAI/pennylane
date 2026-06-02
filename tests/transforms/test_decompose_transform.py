@@ -23,6 +23,7 @@ import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure
+from pennylane.queuing import AnnotatedQueue
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
@@ -308,6 +309,31 @@ def test_null_postprocessing():
 
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
+
+    def test_operator_decomposition_gen_doesnt_pollute_queue(self):
+        """Tests that this private helper doesn't affect the queue. Regression test for #9343."""
+
+        class _DecomposingOp(qp.operation.Operation):
+            """Define a minimal operator whose decomposition creates multiple gates.
+
+            Specifically used to trigger the queue leaking bug when wrapped in qp.ctrl()."""
+
+            num_wires = 1
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
+
+        def stopping_condition(op):
+            return op.name in {"RX", "RY", "RZ", "CNOT"}
+
+        op = qp.ctrl(_DecomposingOp(wires=[1]), control=0)
+        with AnnotatedQueue() as q:
+            qp.H(0)
+            _ = list(_operator_decomposition_gen(op, stopping_condition))
+
+        assert len(q.queue) == 1
+        assert q.queue[0].name == "Hadamard"
 
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, wires=0), qp.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):

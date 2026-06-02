@@ -18,11 +18,69 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
+from pennylane.operation import Operator
+
 from .utils import to_name
 
 
 class GateSet(Mapping):
-    """Stores the target gate set of a decomposition pass."""
+    """Stores the target gate set of a decomposition pass.
+
+    Args:
+        gate_set (Iterable | Mapping): the contents
+        name (str): a shorthand to use in the str and repr
+
+    While the ``decompose`` transform can accept any iterable for it's ``gate_set``
+    argument, the ``GateSet`` class provides some helpful tools.
+    This includes a ``name`` argument for improved inspection and condensed reprs,
+    immutability for improved protection when used as a global variable, and conversion
+    between class and string based representations of operators.
+
+    We can create a gateset using both :class:`~.Operator` subclasses or strings, and use
+    both classes and strings to check inclusion in the gateset
+
+    >>> from pennylane.decomposition import GateSet
+    >>> gateset = GateSet({"X", qp.RX, "Adjoint(RX)"})
+    >>> gateset
+    GateSet({Adjoint(RX), PauliX, RX})
+    >>> qp.X in gateset
+    True
+    >>> "RX" in gateset
+    True
+
+    We can also provide a ``name`` for improved inspection.
+
+    >>> gateset_name = GateSet({qp.RX, qp.RY, qp.RZ}, name="Rotations")
+    >>> print(gateset_name)
+    Rotations
+    >>> qp.decompose(gate_set=gateset_name)
+    <decompose(gate_set=Rotations)>
+
+    Gate sets can be combined with ``|``:
+
+    >>> gateset | {qp.RX, qp.RY, qp.RZ}
+    GateSet({Adjoint(RX), PauliX, RX, RY, RZ})
+
+    Items can be removed with ``-``:
+
+    >>> gateset - {qp.RX, qp.RY}
+    GateSet({Adjoint(RX), PauliX})
+    >>> gateset - qp.RX
+    GateSet({Adjoint(RX), PauliX})
+    >>> gateset - "RX"
+    GateSet({Adjoint(RX), PauliX})
+
+    Weights can also be provided for use in calculating costs and choosing optimal decompositions:
+
+    >>> GateSet({qp.I: 0, qp.RX: 1, qp.CNOT: 3})
+    GateSet({Identity=0, RX, CNOT=3})
+
+    If not provided, weights default to ``1``:
+
+    >>> dict(gateset)
+    {'Adjoint(RX)': 1.0, 'PauliX': 1.0, 'RX': 1.0}
+
+    """
 
     def __init__(self, gate_set: Iterable | Mapping, name=""):
         if not isinstance(gate_set, Mapping):
@@ -30,7 +88,9 @@ class GateSet(Mapping):
         if any(v < 0 for v in gate_set.values()):
             raise ValueError("Negative weights are not supported in the gate_set.")
         self.name = name
-        self._gate_set = {to_name(op): weight for op, weight in gate_set.items()}
+        to_name_generator = ((to_name(op), weight) for op, weight in gate_set.items())
+        sorted_gs = sorted(to_name_generator, key=lambda item: (item[1], item[0]))
+        self._gate_set = dict(sorted_gs)
 
     def __eq__(self, value: object, /) -> bool:
         if not isinstance(value, GateSet):
@@ -63,6 +123,8 @@ class GateSet(Mapping):
         return GateSet(self._gate_set | other._gate_set)
 
     def __sub__(self, other: Set | Mapping) -> GateSet:
+        if (isinstance(other, type) and issubclass(other, Operator)) or isinstance(other, str):
+            other = GateSet({other})
         if not isinstance(other, (Mapping, Set)):
             return NotImplemented
         if not isinstance(other, GateSet):
@@ -84,10 +146,10 @@ class GateSet(Mapping):
     def __str__(self) -> str:
         if self.name:
             return self.name
-        inner_str = ", ".join(list(self))
+        inner_str = ", ".join(str(k) if v == 1 else f"{k}={v}" for k, v in self.items())
         return f"{{{inner_str}}}"
 
     def __repr__(self) -> str:
-        gate_set_str = ", ".join(list(self._gate_set))
+        gate_set_str = ", ".join(str(k) if v == 1 else f"{k}={v}" for k, v in self.items())
         name_str = f", name='{self.name}'" if self.name else ""
         return f"GateSet({{{gate_set_str}}}{name_str})"

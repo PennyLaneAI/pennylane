@@ -19,7 +19,7 @@ from dataclasses import replace
 
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig
 from pennylane.measurements import Shots
 
@@ -32,7 +32,7 @@ def atol_for_shots(shots):
 def get_device(device_name, seed):
     if device_name == "param_shift.qubit":
         return ParamShiftDerivativesDevice(seed=seed)
-    return qml.device(device_name, seed=seed)
+    return qp.device(device_name, seed=seed)
 
 
 test_matrix = [
@@ -41,7 +41,7 @@ test_matrix = [
         "default.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots((100000, 100000)),
     ],
@@ -50,7 +50,7 @@ test_matrix = [
         "default.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots(100000),
     ],
@@ -59,7 +59,7 @@ test_matrix = [
         "default.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots(None),
     ],
@@ -96,7 +96,7 @@ test_matrix = [
         "reference.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots((100000, 100000)),
     ],
@@ -105,7 +105,7 @@ test_matrix = [
         "reference.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots(100000),
     ],
@@ -114,7 +114,7 @@ test_matrix = [
         "reference.qubit",
         replace(
             ExecutionConfig(),
-            gradient_method=qml.gradients.param_shift,
+            gradient_method=qp.gradients.param_shift,
         ),
         Shots(None),
     ],

@@ -54,6 +54,7 @@ def test_units_select_pauli_rot_phase_gradient(p):
 
     op = _select_pauli_rot_phase_gradient(
         phis,
+        "Z",
         control_wires=control_wires,
         target_wire=wire,
         angle_wires=angle_wires,

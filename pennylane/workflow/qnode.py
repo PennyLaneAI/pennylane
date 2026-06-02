@@ -27,9 +27,9 @@ from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, pytrees
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
@@ -75,8 +75,8 @@ def _convert_to_interface(result: Result, interface: Interface) -> Result:
 def _make_execution_config(
     circuit: QNode | None,
     diff_method: str | None = None,
-    mcm_config: qml.devices.MCMConfig | None = None,
-) -> qml.devices.ExecutionConfig:
+    mcm_config: qp.devices.MCMConfig | None = None,
+) -> qp.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
@@ -86,13 +86,13 @@ def _make_execution_config(
     elif grad_on_execution == "best":
         grad_on_execution = None
 
-    return qml.devices.ExecutionConfig(
+    return qp.devices.ExecutionConfig(
         interface=circuit_interface,
         gradient_keyword_arguments=gradient_kwargs,
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
-        mcm_config=mcm_config or qml.devices.MCMConfig(),
+        mcm_config=mcm_config or qp.devices.MCMConfig(),
     )
 
 
@@ -101,7 +101,7 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     qfunc_output_leaves, qfunc_output_structure = pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qp.measurements.MeasurementProcess))
     )
 
     # counts results are treated as a leaf
@@ -109,7 +109,7 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots: 
 
     # patch for transforms that change the number of results like metric_tensor
     if len(results_leaves) != len(qfunc_output_leaves):
-        if isinstance(qfunc_output, (Sequence, qml.measurements.MeasurementProcess)):
+        if isinstance(qfunc_output, (Sequence, qp.measurements.MeasurementProcess)):
             return results
         return type(qfunc_output)(results)
 
@@ -125,31 +125,31 @@ def _validate_mcm_config(
     postselect_mode: str | None,
     mcm_method: str | None,
 ) -> None:
-    qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
+    qp.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
     measurement_processes = pytrees.flatten(
         qfunc_output,
-        is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
+        is_leaf=lambda obj: isinstance(obj, qp.measurements.MeasurementProcess),
     )[0]
 
     # user provides no measurements or non-measurements
     if len(measurement_processes) == 0:
         measurement_processes = None
     else:
-        # patch for tensor measurement objects, e.g., qml.math.hstack <-> [tensor([tensor(...), tensor(...)])]
+        # patch for tensor measurement objects, e.g., qp.math.hstack <-> [tensor([tensor(...), tensor(...)])]
         if isinstance(measurement_processes[0], Iterable) and any(
             isinstance(m, TensorLike) for m in measurement_processes[0]
         ):
             measurement_processes = [
                 m.base.item()
                 for m in measurement_processes[0]
-                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+                if isinstance(m.base.item(), qp.measurements.MeasurementProcess)
             ]
 
     if not measurement_processes or not all(
-        isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+        isinstance(m, qp.measurements.MeasurementProcess) for m in measurement_processes
     ):
         raise QuantumFunctionError(
             "A quantum function must return either a single measurement, "
@@ -202,7 +202,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
+            ``qp.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
@@ -211,10 +211,6 @@ class QNode:
 
             * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
-
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
-              through the QNode. The QNode accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
@@ -230,7 +226,7 @@ class QNode:
 
         diff_method (str or .Transform): The method of differentiation to use in
             the created QNode. Can either be a :class:`~.Transform`, which includes all
-            quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
+            quantum gradient transforms in the :mod:`qp.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
@@ -257,7 +253,7 @@ class QNode:
 
             * ``"hadamard"``: Use the standard analytic hadamard gradient test rule for
               all supported quantum operation arguments. More info is in the documentation
-              for :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
+              for :func:`qp.gradients.hadamard_grad <.gradients.hadamard_grad>`. Reversed,
               direct, and reversed-direct modes can be selected via a ``"mode"`` in ``gradient_kwargs``.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
@@ -270,7 +266,7 @@ class QNode:
 
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
             Only applies if the device is queried for the gradient; gradient transform
-            functions available in ``qml.gradients`` are only supported on the backward
+            functions available in ``qp.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
         cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
             ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
@@ -300,33 +296,33 @@ class QNode:
             If not provided, the device will select the method automatically.
             For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
-            method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
+            method. Please refer to the :mod:`qp.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
         static_argnums (int | Sequence[int]): *Only applicable when the experimental capture mode is enabled.*
             An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
-            ``pennylane.concurrency.executors.get_supported_backends``.
+            :func:`qp.concurrency.executors.get_supported_backends <.concurrency.executors.get_supported_backends>`.
             The default value is :class:`~.concurrency.executors.native.multiproc.MPPoolExec`.
 
     **Example**
 
     QNodes can be created by decorating a quantum function:
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=1)
+    >>> @qp.qnode(dev)
     ... def circuit(x):
-    ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.Z(0))
+    ...     qp.RX(x, wires=0)
+    ...     return qp.expval(qp.Z(0))
 
     or by instantiating the class directly:
 
     >>> def circuit(x):
-    ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.Z(0))
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> qnode = qml.QNode(circuit, dev)
+    ...     qp.RX(x, wires=0)
+    ...     return qp.expval(qp.Z(0))
+    >>> dev = qp.device("default.qubit", wires=1)
+    >>> qnode = qp.QNode(circuit, dev)
 
     .. details::
         :title: Parameter broadcasting
@@ -344,11 +340,11 @@ class QNode:
 
         Again consider the following ``circuit``:
 
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit", wires=1)
+        >>> @qp.qnode(dev)
         ... def circuit(x):
-        ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.Z(0))
+        ...     qp.RX(x, wires=0)
+        ...     return qp.expval(qp.Z(0))
 
         If we want to execute it at multiple values ``x``,
         we may pass those as a one-dimensional array to the QNode:
@@ -400,7 +396,7 @@ class QNode:
         *broadcasted* input correspondingly is a 1D array:
 
         >>> x = np.array([1., 2., 3.])
-        >>> op = qml.RX(x, wires=0) # Additional axis of size 3.
+        >>> op = qp.RX(x, wires=0) # Additional axis of size 3.
 
         An operator ``op`` that supports broadcasting indicates the expected number of
         axes--or dimensions--in its attribute ``op.ndim_params``. This attribute is a tuple with
@@ -418,7 +414,7 @@ class QNode:
         >>> U = np.stack([unitary_group.rvs(4) for _ in range(3)])
         >>> U.shape # U stores three two-qubit unitaries, each of shape 4x4
         (3, 4, 4)
-        >>> op = qml.QubitUnitary(U, wires=[0, 1])
+        >>> op = qp.QubitUnitary(U, wires=[0, 1])
         >>> op.batch_size
         3
 
@@ -434,18 +430,18 @@ class QNode:
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit", wires=4))
+            @qp.qnode(qp.device("default.qubit", wires=4))
             def circuit(x, y, U):
-                qml.QubitUnitary(U, wires=[0, 1, 2, 3])
-                qml.RX(x, wires=0)
-                qml.RY(y, wires=1)
-                qml.RX(x, wires=2)
-                qml.RY(y, wires=3)
-                return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
+                qp.QubitUnitary(U, wires=[0, 1, 2, 3])
+                qp.RX(x, wires=0)
+                qp.RY(y, wires=1)
+                qp.RX(x, wires=2)
+                qp.RY(y, wires=3)
+                return qp.expval(qp.Z(0) @ qp.X(1) @ qp.Z(2) @ qp.Z(3))
 
             x = np.array([0.4, 2.1, -1.3])
             y = 2.71
-            gates = [qml.X(0), qml.Y(1), qml.Z(3)]
+            gates = [qp.X(0), qp.Y(1), qp.Z(3)]
             U = np.stack([g.matrix(wire_order=range(4)) for g in gates])
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
@@ -465,12 +461,12 @@ class QNode:
         In the same way it is possible to broadcast multiple arguments of a single operator,
         for example:
 
-        >>> qml.Rot.ndim_params # Rot takes three scalar arguments
+        >>> qp.Rot.ndim_params # Rot takes three scalar arguments
         (0, 0, 0)
         >>> x = np.array([0.4, 2.3, -0.1]) # Broadcast the first argument with size 3
         >>> y = 1.6 # Do not broadcast the second argument
         >>> z = np.array([1.2, -0.5, 2.5]) # Broadcast the third argument with size 3
-        >>> op = qml.Rot(x, y, z, wires=0)
+        >>> op = qp.Rot(x, y, z, wires=0)
         >>> op.batch_size
         3
 
@@ -482,12 +478,12 @@ class QNode:
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit_unpacking(x):
-                qml.RX(x[0], wires=0)
-                qml.RY(x[1], wires=1)
-                qml.RZ(x[2], wires=1)
-                return qml.expval(qml.Z(0) @ qml.X(1))
+                qp.RX(x[0], wires=0)
+                qp.RY(x[1], wires=1)
+                qp.RZ(x[2], wires=1)
+                return qp.expval(qp.Z(0) @ qp.X(1))
 
             x = np.array([[1, 2], [3, 4], [5, 6]])
 
@@ -534,7 +530,7 @@ class QNode:
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 (
                     func
-                    if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
+                    if not (logger.isEnabledFor(qp.logging.TRACE) and inspect.isfunction(func))
                     else "\n" + inspect.getsource(func)
                 ),
                 repr(device),
@@ -547,24 +543,13 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
+        if not isinstance(device, (qp.devices.LegacyDevice, qp.devices.Device)):
             raise QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
 
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
+        if not isinstance(device, qp.devices.Device):
+            device = qp.devices.LegacyDeviceFacade(device)
 
         gradient_kwargs = gradient_kwargs or {}
-
-        if "shots" in inspect.signature(func).parameters:
-            warnings.warn(
-                "Detected 'shots' as an argument to the given quantum function. "
-                "The 'shots' argument name is reserved for overriding the number of shots "
-                "taken by the device. Its use outside of this context should be avoided.",
-                UserWarning,
-            )
-            self._qfunc_uses_shots_arg = True
-        else:
-            self._qfunc_uses_shots_arg = False
 
         # input arguments
         self.func = func
@@ -616,7 +601,7 @@ class QNode:
 
     def __repr__(self) -> str:
         """String representation."""
-        if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
+        if not isinstance(self.device, qp.devices.LegacyDeviceFacade):
             return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}', shots='{self.shots}'>"
 
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}', shots='{}'>"
@@ -640,34 +625,17 @@ class QNode:
     @shots.setter
     def shots(self, _):
         raise AttributeError(
-            "Shots cannot be set on a qnode instance. You can set shots with `qml.set_shots`."
+            "Shots cannot be set on a qnode instance. You can set shots with `qp.set_shots`."
         )
 
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return "jax" if qml.capture.enabled() else self._interface.value
+        return "jax" if qp.capture.enabled() else self._interface.value
 
     @interface.setter
     def interface(self, value: str):
         self._interface = Interface(value)
-
-    @property
-    def transform_program(self) -> CompilePipeline:
-        """The transform program used by the QNode.
-
-        .. warning::
-
-            The ``transform_program`` property of the QNode has been renamed to ``compile_pipeline``.
-            Access through ``transform_program`` will be removed in PennyLane v0.46.
-
-        """
-        warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-            "Access through 'transform_program' will be removed in PennyLane v0.46.",
-            PennyLaneDeprecationWarning,
-        )
-        return self.compile_pipeline
 
     @property
     def compile_pipeline(self) -> CompilePipeline:
@@ -682,7 +650,7 @@ class QNode:
 
         Keyword Args:
             **kwargs: The provided keyword arguments must match that of :meth:`QNode.__init__`.
-                The list of supported gradient keyword arguments can be found at ``qml.gradients.SUPPORTED_GRADIENT_KWARGS``.
+                The list of supported gradient keyword arguments can be found at ``qp.gradients.SUPPORTED_GRADIENT_KWARGS``.
 
         Returns:
             qnode (QNode): new QNode with updated settings
@@ -697,14 +665,14 @@ class QNode:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev, diff_method="parameter-shift")
+            @qp.qnode(dev, diff_method="parameter-shift")
             def circuit(x):
-                qml.RZ(x, wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(x, wires=1)
-                return qml.expval(qml.PauliZ(1))
+                qp.RZ(x, wires=0)
+                qp.CNOT(wires=[0, 1])
+                qp.RY(x, wires=1)
+                return qp.expval(qp.PauliZ(1))
 
         If we wish to try out a new configuration without having to repeat the
         boilerplate above, we can use the ``QNode.update`` method. For example,
@@ -723,7 +691,7 @@ class QNode:
         tensor(0.5403, dtype=torch.float64)
         """
         if not kwargs:
-            valid_params = set(self._init_args.copy()) | qml.gradients.SUPPORTED_GRADIENT_KWARGS
+            valid_params = set(self._init_args.copy()) | qp.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
@@ -791,38 +759,10 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    def _get_shots(self, kwargs: dict) -> Shots:
-        """
-        Note that this mutates kwargs to remove shots from it.
-        """
-        if self._qfunc_uses_shots_arg:
-            return self.shots
-        if "shots" in kwargs:
-            # NOTE: at removal, remember to remove the userwarning below as well
-            warnings.warn(
-                "Specifying 'shots' when executing a QNode is deprecated and will be removed in "
-                "v0.44. Please set shots on QNode initialization, or use qml.set_shots instead.",
-                PennyLaneDeprecationWarning,
-                stacklevel=2,
-            )
-            if self._shots_override_device:
-                _kwargs_shots = kwargs.pop("shots")
-                warnings.warn(
-                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                    UserWarning,
-                    stacklevel=2,
-                )
-
-        if self._shots_override_device:  # QNode.shots precedency:
-            return self.shots
-        return kwargs.pop("shots", self.shots)
-
     @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+    def construct(self, args, kwargs) -> qp.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -834,7 +774,7 @@ class QNode:
             with AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
-        tape = QuantumScript.from_queue(q, shots)
+        tape = QuantumScript.from_queue(q, self.shots)
 
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = math.get_trainable_indices(params)
@@ -873,7 +813,7 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> Result:
-        if qml.capture.enabled():
+        if qp.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 
             return capture_qnode(self, *args, **kwargs)

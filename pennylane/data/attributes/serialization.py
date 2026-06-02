@@ -20,7 +20,13 @@ from collections.abc import Callable
 from typing import Any, Literal, overload
 
 from pennylane.measurements.shots import Shots
-from pennylane.pytrees.pytrees import PyTreeStructure, get_typename, get_typename_type, leaf
+from pennylane.pytrees.pytrees import (
+    PyTreeStructure,
+    get_typename,
+    get_typename_type,
+    leaf,
+    typename_to_type,
+)
 from pennylane.typing import JSON
 from pennylane.wires import Wires
 
@@ -91,7 +97,7 @@ def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
     PyTreeStructure(list, None, [PyTreeStructure(dict, ["a"], [PyTreeStructure()]), PyTreeStructure()])'
     """
     jsoned = json.loads(data)
-    root = PyTreeStructure(get_typename_type(jsoned[0]), jsoned[1], jsoned[2])
+    root = PyTreeStructure(_get_typename_type(jsoned[0]), jsoned[1], jsoned[2])
 
     # List of serialized child structures that will be de-serialized in place
     todo: list[list[Any]] = [root.children]
@@ -103,7 +109,7 @@ def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
                 curr[i] = leaf
                 continue
 
-            curr[i] = PyTreeStructure(get_typename_type(child[0]), child[1], child[2])
+            curr[i] = PyTreeStructure(_get_typename_type(child[0]), child[1], child[2])
 
             todo.append(child[2])
 
@@ -146,3 +152,15 @@ def _json_default(obj: Any) -> JSON:
         return _json_handlers[type(obj)](obj)
     except KeyError as exc:
         raise TypeError(f"Could not serialize metadata object: {repr(obj)}") from exc
+
+
+def _get_typename_type(typename: str) -> type:
+    try:
+        return get_typename_type(typename)
+    except ValueError:
+        _, dot, suffix = typename.partition(".")
+        if dot:
+            matches = [name for name in typename_to_type if name.endswith(f".{suffix}")]
+            if len(matches) == 1:
+                return get_typename_type(matches[0])
+        raise

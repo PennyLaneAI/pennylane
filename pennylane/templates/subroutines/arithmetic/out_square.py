@@ -28,124 +28,113 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
-from pennylane.ops.mid_measure import MidMeasure, measure
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.wires import Wires, WiresLike
+
+from .out_multiplier import _add_plus_one, _c_add_sub, _increment
+from .semi_adder import SemiAdder, _semiadder_resources
+from .temporary_and import TemporaryAND
 
 
 class OutSquare(Operation):
     r"""Performs out-of-place squaring.
 
-    This operator performs the squaring of an integer :math:`x` modulo
-    :math:`2^n` in the computational basis, where ``n=len(output_wires)``:
+    This operator performs the squaring of an :math:`n`-qubit integer :math:`x` modulo
+    :math:`2^m` into an :math:`m`-qubit output register:
 
     .. math::
-        \text{OutSquare} |x \rangle |b \rangle = |x \rangle |(b + x^2) \; \text{mod} \; 2^n \rangle,
+        \text{OutSquare} |x \rangle |y \rangle = |x \rangle |(y + x^2) \; \text{mod} \; 2^m \rangle.
 
-    .. seealso:: :class:`~.SemiAdder`, :class:`~.Multiplier` , and :class:`~.OutMultiplier`.
+    There are two implementations available, differing in their :class:`~.Toffoli` and auxiliary
+    qubit counts. The first is based on Schoolbook multiplication, using a cache qubit and
+    controlled addition. The second uses controlled add-subtract blocks that also are used by
+    Litinski in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__ to reduce the
+    cost of multiplication.
+
+    .. seealso:: :class:`~.OutMultiplier`, :class:`~.SemiAdder` , and :class:`~.Multiplier`.
 
     Args:
         x_wires (WiresLike): wires that store the integer :math:`x`.
-        output_wires (WiresLike): wires that store the squaring result. If the
-            register is in a non-zero state :math:`b`, the solution will be added to this value.
+        output_wires (WiresLike): wires that store the squaring result. If the register initially
+            encodes a non-zero value :math:`y`, the solution will be added to this value.
             If the register is guaranteed to be in the zero state, it is recommended to set
             ``output_wires_zeroed=True``.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
-            ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
-            otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
+            :math:`m` work wires are required if ``output_wires_zeroed=False``,
+            otherwise :math:`\min(m, n+1)` work wires are required.
         output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
     **Example**
 
-    Let's compute the square of :math:`x=3` and :math:`x=7` in superposition, added to :math`b=5`
-    modulo :math:`2^n=2^6=64`.
+    Let's compute the square of :math:`x=3` and :math:`x=7` in superposition, added to a
+    :math:`m=6`-qubit register that holds the value :math:`y=5` initially.
+    The computation will be modulo :math:`2^m=2^6=64`.
 
     .. code-block:: python
 
         import pennylane as qp
 
-        x_wires = list(range(3))
-        output_wires = list(range(3, 9))
-        work_wires = list(range(9, 15))
+        n = 3
+        m = 6
+        wires = qp.registers({"x": n, "out": m, "work": m})
 
-        dev = qp.device("lightning.qubit", wires=15, seed=295)
+        dev = qp.device("lightning.qubit", wires=n + 2 * m, seed=295)
 
         @qp.qnode(dev, shots=1_000)
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
-            qp.H(x_wires[0]) # Superposition between 0 and 4
-            qp.BasisEmbedding(3, wires=x_wires[1:]) # Add 3, by preparing lower-precision wires
+            qp.H(wires["x"][0]) # Superposition between 0 and 4
+            qp.BasisEmbedding(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
             # Prepare initial state on output wires
             qp.BasisEmbedding(5, wires=output_wires)
             # Square
-            qp.OutSquare(x_wires, output_wires, work_wires)
+            qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
 
-    >>> counts = circuit(output_wires)
+    >>> counts = circuit(wires["out"])
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
     {14: np.int64(498), 54: np.int64(502)}
 
-    We correctly obtain the squared numbers added to :math:`b=5`, namely
+    We correctly obtain the squared numbers added to :math:`y=5`, namely
     :math:`5+3^2=14` and :math:`5+7^2=54`.
 
-    Note that reducing the size of the output register changes the computed numbers via the reduced
-    modulus:
+    Note that reducing the size of the output register (here from ``m=6`` to ``m=4``)
+    changes the computed numbers via the reduced modulus:
 
-    >>> output_wires = list(range(3, 6))
-    >>> counts = circuit(output_wires)
+    >>> counts = circuit(wires["out"][:4])
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
-    {6: np.int64(1000)}
+    {6: np.int64(501), 14: np.int64(499)}
 
-    Why do we obtain a single result? This is simply because :math:`(5+3^2)\!\mod\!8=6` and
-    :math:`(5+7^2)\!\mod\!8=6` happen to be equal.
-
+    The new results are consistent with the previous ones: the smaller output :math:`14` remains
+    unchanged because :math:`14 < 16=2^4`, and :math:`54` is changed to :math:`54\!\mod\!2^4=6`.
 
     .. details::
         :title: Usage Details
 
-        This template takes as input three wire registers.
-
-        The first one is ``x_wires`` which is used to encode the integer :math:`x` in the
-        computational basis. Therefore, ``x_wires`` must contain
-        at least :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
-
-        The second one is ``output_wires``, which is used to encode the integer
-        :math:`b+ x^2 \; \text{mod} \; 2^n` in the computational basis, where :math:`n`
-        denotes the length of ``output_wires``.
-
-        The third register is ``work_wires``, which consists of the auxiliary qubits used to
-        perform the modular squaring operation. The required number of work wires depends
-        on whether we are guaranteed that :math:`b=0` in the ``output_wires`` before the
-        computation, which needs to be passed via ``output_wires_zeroed`` (see below for an
-        example). If ``output_wires_zeroed=False`` (the default), :math:`n` work wires are
-        required. If ``output_wires_zeroed=True``, :math:`min(n, k+1)` work wires are required,
-        where :math:`k` denotes the length of the first register ``x_wires``.
-
         **Cheaper decomposition for zeroed output state**
 
         If we know that the qubits in ``output_wires`` are in the state
-        :math:`|0\rangle^{\otimes n}` before ``OutSquare`` is applied, we can pass this information
+        :math:`|0\rangle^{\otimes m}` before ``OutSquare`` is applied, we can pass this information
         to the template via ``output_wires_zeroed``, leading to a cheaper decomposition.
         Consider the following example, where we control this information with the ``QNode``
         argument ``zeroed``:
 
         .. code-block:: python
 
-            x_wires = list(range(4))
-            x = 13
-            output_wires = list(range(4, 12))
-            work_wires = list(range(12, 20))
+            n = 4
+            m = 8
+            x_wires = list(range(n))
+            output_wires = list(range(n, n + m))
+            work_wires = list(range(n + m, n + 2 * m))
 
             dev = qp.device("lightning.qubit", wires=20, seed=295)
 
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisEmbedding(x, wires=x_wires)
+                qp.BasisEmbedding(13, wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 
@@ -154,14 +143,15 @@ class OutSquare(Operation):
 
         >>> specs_false = qp.specs(circuit)(False)["resources"].gate_types
         >>> print(specs_false)
-        {'PauliX': 3, 'CNOT': 8, 'C(SemiAdder)': 4}
+        {'BasisEmbedding': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
 
-        When we do pass the information, we save a controlled :class:`~.SemiAdder` and some of
+        When we do pass the information, we replace one controlled :class:`~.SemiAdder` by
+        some :class:`~.TemporaryAND` gates and some of
         the other adders become smaller (depending on the register sizes):
 
         >>> specs_true = qp.specs(circuit)(True)["resources"].gate_types
         >>> print(specs_true)
-        {'PauliX': 3, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
+        {'BasisEmbedding': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 
@@ -170,53 +160,49 @@ class OutSquare(Operation):
         >>> print(circuit(True))
         {np.str_('10101001'): np.int64(1000)}
 
-        Here, :math:`(10101001)_2=128 + 32 + 8 + 1=169` is the expected result of
-        :math:`13^2`.
+        Here, :math:`(10101001)_2=128 + 32 + 8 + 1=169` is the expected result of :math:`13^2`.
         To conclude, we draw the two circuit variants:
 
         >>> print(qp.draw(circuit)(False))
-         0: ──X────╭SemiAdder───────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
-         1: ──X────├SemiAdder───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
-         2: ───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
-         3: ──X─╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
-         4: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ╭Counts
-         5: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         6: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         7: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         8: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         9: ────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
-        10: ────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
-        11: ────│──├SemiAdder─│──│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
-        12: ────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
-        13: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        14: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        15: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        17: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        18: ───────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        19: ───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
+         0: ─╭|Ψ⟩────╭SemiAdder───────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
+         1: ─├|Ψ⟩────├SemiAdder───────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
+         2: ─├|Ψ⟩────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
+         3: ─╰|Ψ⟩─╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
+         4: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ╭Counts
+         5: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         6: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         7: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         8: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         9: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
+        10: ──────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
+        11: ──────│──├SemiAdder─│──│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
+        12: ──────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
+        13: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        14: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        15: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        16: ─────────├SemiAdder───────├SemiAdder───────├SemiAdder───────╰SemiAdder────┤
+        17: ─────────├SemiAdder───────├SemiAdder───────╰SemiAdder─────────────────────┤
+        18: ─────────├SemiAdder───────╰SemiAdder──────────────────────────────────────┤
+        19: ─────────╰SemiAdder───────────────────────────────────────────────────────┤
 
         >>> print(qp.draw(circuit)(True))
-         0: ──X──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
-         1: ──X───────╭●─│─────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
-         2: ───────╭●─│──│──╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
-         3: ──X─╭●─├●─├●─├●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
-         4: ────│──│──│──│──│──│──────────│──│──│──────────│──│──├SemiAdder─│──┤ ╭Counts
-         5: ────│──│──│──│──│──│──────────│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         6: ────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         7: ────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         8: ────│──│──│──╰⊕─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
-         9: ────│──│──╰⊕────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
-        10: ────│──╰⊕───────│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
-        11: ────╰X──────────│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
-        12: ────────────────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
-        13: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        14: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        15: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        16: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        17: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        18: ───────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
-        19: ───────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
+         0: ─╭|Ψ⟩──────────╭●────╭SemiAdder───────╭SemiAdder────╭●─╭SemiAdder─╭●─┤
+         1: ─├|Ψ⟩───────╭●─│─────├SemiAdder────╭●─├SemiAdder─╭●─│──├SemiAdder─│──┤
+         2: ─├|Ψ⟩────╭●─│──│──╭●─├SemiAdder─╭●─│──├SemiAdder─│──│──├SemiAdder─│──┤
+         3: ─╰|Ψ⟩─╭●─├●─├●─├●─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤
+         4: ──────│──│──│──│──│──│──────────│──│──│──────────│──│──├SemiAdder─│──┤ ╭Counts
+         5: ──────│──│──│──│──│──│──────────│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         6: ──────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         7: ──────│──│──│──│──│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         8: ──────│──│──│──╰⊕─│──├SemiAdder─│──│──├SemiAdder─│──│──├SemiAdder─│──┤ ├Counts
+         9: ──────│──│──╰⊕────│──├SemiAdder─│──│──├SemiAdder─│──│──│──────────│──┤ ├Counts
+        10: ──────│──╰⊕───────│──├SemiAdder─│──│──│──────────│──│──│──────────│──┤ ├Counts
+        11: ──────╰X──────────│──│──────────│──│──│──────────│──│──│──────────│──┤ ╰Counts
+        12: ──────────────────╰X─├●─────────╰X─╰X─├●─────────╰X─╰X─├●─────────╰X─┤
+        13: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        14: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        15: ─────────────────────├SemiAdder───────├SemiAdder───────├SemiAdder────┤
+        16: ─────────────────────╰SemiAdder───────╰SemiAdder───────╰SemiAdder────┤
 
     """
 
@@ -237,17 +223,13 @@ class OutSquare(Operation):
         work_wires = Wires(work_wires)
 
         n = len(x_wires)
-        k = len(output_wires)
+        m = len(output_wires)
 
-        if output_wires_zeroed:
-            num_required_work_wires = min(n + 1, k)
-        else:
-            num_required_work_wires = k
+        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {k} output wires "
-                f"and {output_wires_zeroed=}."
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
             )
 
         registers = [
@@ -286,7 +268,7 @@ class OutSquare(Operation):
         return tuple(), metadata
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, _, metadata):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
@@ -303,62 +285,17 @@ class OutSquare(Operation):
             self.hyperparameters["output_wires_zeroed"],
         )
 
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        x_wires: WiresLike,
-        output_wires: WiresLike,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool,
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            x_wires (WiresLike): wires that store the integer :math:`x`.
-            output_wires (WiresLike): the wires that store the squaring result. If the register
-                is in a non-zero state :math:`b`, the solution will be added to this value.
-                If the register is guaranteed to be in the zero state, it is recommended to set
-                ``output_wires_zeroed=True``.
-            work_wires (WiresLike): the auxiliary wires to use for the squaring.
-                ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
-                otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
-            output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
-                :math:`|0\rangle` initially. Defaults to ``False``.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> all_wires = ([0, 1], [2, 3], [4, 5])
-        >>> qp.OutSquare.compute_decomposition(*all_wires, output_wires_zeroed=True)
-        [CNOT(wires=[1, 3]), TemporaryAND(wires=Wires([1, 0, 2])), CNOT(wires=[0, 4]), Controlled(SemiAdder(wires=[0, 1, 2, 5]), control_wires=[4]), CNOT(wires=[0, 4])]
-        """
-        with AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed)
-
-        if QueuingManager.recording():
-            for op in q.queue:
-                apply(op)
-
-        return q.queue
 
 
 def _out_square_with_adder_condition(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> bool:
     n = num_x_wires
-    k = num_output_wires
-    if output_wires_zeroed:
-        largest_adder = min(k, n + 1)
-    else:
-        largest_adder = k
+    m = num_output_wires
+    largest_adder = min(m, n + 1) if output_wires_zeroed else m
     # work wires: one for control cache, largest_adder-1 for adder
     min_num_work_wires = 1 + (largest_adder - 1)
     return num_work_wires >= min_num_work_wires
@@ -374,25 +311,20 @@ def _out_square_with_adder_resources(
     if output_wires_zeroed:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
         resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (min(n, m) - 1)
+        resources[resource_rep(TemporaryAND)] = min(n, m) - 1
 
     # Controlled adders, includes the one for copying if output_wires_zeroed=False
     for i in range(output_wires_zeroed, min(n, m)):
         num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
         resources[resource_rep(CNOT)] += 2
-        resources[
-            controlled_resource_rep(
-                base_class=SemiAdder,
-                base_params={
-                    "num_x_wires": n,
-                    "num_y_wires": num_out,
-                    "num_work_wires": num_out - 1,
-                },
-                num_control_wires=1,
-                num_work_wires=num_work_wires - num_out,
-                work_wire_type="zeroed",
-            )
-        ] += 1
+        add_params = {"num_x_wires": n, "num_y_wires": num_out, "num_work_wires": num_out - 1}
+        ctrl_params = {
+            "num_control_wires": 1,
+            "num_work_wires": num_work_wires - num_out,
+            "work_wire_type": "zeroed",
+        }
+        c_add_rep = controlled_resource_rep(SemiAdder, base_params=add_params, **ctrl_params)
+        resources[c_add_rep] += 1
     return dict(resources)
 
 
@@ -407,33 +339,37 @@ def _out_square_with_adder(
 ):
     n = len(x_wires)
     m = len(output_wires)
+    x_wires = x_wires[::-1]
+    output_wires = output_wires[::-1]
 
     if output_wires_zeroed:
         # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
         # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
         # the other bits.
-        CNOT([x_wires[-1], output_wires[-1]])  # First control-copy is a CNOT
-        for x_wire, out_wire in zip(x_wires[-2::-1], output_wires[-2::-1]):
-            TemporaryAND([x_wires[-1], x_wire, out_wire])  # Subsequent control-copies
-        # Mark that the copying has happened and does not have to happen via an adder below
-        x_wires_to_multiply = x_wires[-m:-1]
-        start = 1
-    else:
-        x_wires_to_multiply = x_wires[-m:]
-        start = 0
+        CNOT([x_wires[0], output_wires[0]])  # First control-copy is a CNOT
+        num_elbows = min(n, m) - 1
+        copy_input = x_wires[1 : num_elbows + 1]
+        copy_output = output_wires[1 : num_elbows + 1]
+        for x_wire, out_wire in zip(copy_input, copy_output, strict=True):
+            TemporaryAND([x_wires[0], x_wire, out_wire])  # Subsequent control-copies
 
-    for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
+    # Mark that the copying has happened and does not have to happen via an adder in the loop
+    start = int(output_wires_zeroed)
+
+    for i, x_wire in enumerate(x_wires[start:m], start=start):
         # Add x to the output register, controlled on x_wire via the work_wires[0] and
         # shifted by i bit positions. For output_wires_zeroed=False, includes the initial copy
         # The output wires of the adder need to take all of the output register of square
         # into account due to carry values. For output_wires_zeroed=True, we can reduce to
         # a fixed size (`n`) instead, because we know at each step how large the value stored
         # in the output register can have grown by then.
-        output_msb = max(0, m - n - i - 1) if output_wires_zeroed else 0
-        output = output_wires[output_msb : m - i]
+        output_msb = min(m, n + i + 1) if output_wires_zeroed else m
+        output = output_wires[i:output_msb]
         CNOT([x_wire, work_wires[0]])
         ctrl(
-            SemiAdder(x_wires=x_wires, y_wires=output, work_wires=work_wires[1 : len(output)]),
+            SemiAdder(
+                x_wires=x_wires[::-1], y_wires=output[::-1], work_wires=work_wires[1 : len(output)]
+            ),
             control=work_wires[:1],
             work_wires=work_wires[len(output) :],
             work_wire_type="zeroed",
@@ -445,16 +381,16 @@ def _out_square_with_caddsub_condition(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> bool:
     n = num_x_wires
-    k = num_output_wires + 1
-    if output_wires_zeroed:
-        largest_adder = min(k, n + 1)
-    else:
-        largest_adder = k
-    # work wires: one for control cache, one for augmented output, largest_adder-1 for adder
-    min_num_work_wires = 1 + 1 + (largest_adder - 1)
-    largest_correction_adder = k
-    # work wires: one for augmented output, largest_correction_adder-1 for adder
-    min_num_work_wires = max(min_num_work_wires, 1 + (largest_correction_adder - 1))
+    m = num_output_wires + 1
+    # We have a series of controlled adders, each of which has a control cache qubit, an
+    # output augmentation qubit, and (output size - 1) work wires. Note that while the controlled
+    # adder needs one more work wire to decompose Toffolis to elbows, this is not strictly needed
+    # to make the decomposition admissible. The largest output size of the series is
+    # ╭min(m, n+1) if output_wires_zeroed
+    # ╰m           else.
+    # There are multiple correction steps, the largest work wire demand is by the addition of
+    # 2^n-x, which uses an adder of size m+1 and thus needs m work wires.
+    min_num_work_wires = max(min(m, n + 1) + 1, m) if output_wires_zeroed else m + 1
     return num_work_wires >= min_num_work_wires
 
 
@@ -463,17 +399,16 @@ def _out_square_with_caddsub_resources(
 ) -> dict:
     # pylint: disable=unused-argument
     n = num_x_wires
-    k = num_output_wires + 1
+    m = num_output_wires + 1
     resources = defaultdict(int)
 
     cnot_rep = resource_rep(CNOT)
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
     x_rep = resource_rep(X)
-    meas_rep = resource_rep(MidMeasure)
 
     # Controlled add-subtract loop
-    loop_size = min(k, n)
+    loop_size = min(m, n)
     # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if n > 1:
         c_flips = controlled_resource_rep(
@@ -489,153 +424,38 @@ def _out_square_with_caddsub_resources(
     # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
     resources[cnot_on_0_rep] += 2 * loop_size
     # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
-    c_add_subs_with_work_wires = min(n, k - 1)
-    resources[cnot_on_0_rep] += c_add_subs_with_work_wires
-    # Bit reset on LSB work wire: one per ctrl-add-subtract that has work wires
-    resources[meas_rep] += c_add_subs_with_work_wires
+    c_add_subs_with_work_wires = min(n, m - 1)
+    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
 
     # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
     for i in range(loop_size):
-        size = min(k - i, n + 1) if output_wires_zeroed else k - i
-        resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=size, num_work_wires=size - 1)
-        ] += 1
+        size = min(m - i, n + 1) if output_wires_zeroed else m - i
+        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=size)
+        for key, value in adder_resources.items():
+            resources[key] += value
 
     # Subtract 2^(2n)
-    size = k - 2 * n
+    size = m - 2 * n
     if size > 0:
         if size > 1:
             resources[resource_rep(TemporaryAND)] += size - 2
             resources[adjoint_resource_rep(TemporaryAND)] += size - 2
         resources[resource_rep(CNOT)] += size - 1
-        resources[x_rep] += 1 + 2 * size
+        resources[x_rep] += 1
 
     # Add (2^n-1-x) + 1
-    if n > 1:
-        resources[resource_rep(BasisState, num_wires=n - 1)] += 2
+    resources[x_rep] += 6 + 2 * n
+    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
+    for key, value in adder_resources.items():
+        resources[key] += value
 
-    resources[x_rep] += 3
-    resources[meas_rep] += 1
-    resources[resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k, num_work_wires=k - 1)] += 1
-
-    # Add 2^(n+1) x if 2^k > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if k > n + 1:
+    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
+    if m > n + 1:
         resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=k - n - 1, num_work_wires=k - n - 2)
+            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=m - n - 1, num_work_wires=m - n - 2)
         ] += 1
 
     return dict(resources)
-
-
-def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
-    if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
-
-    work_wires = work_wires[: len(y_wires) - 1]
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
-    if work_wires:
-        ctrl(X(work_wires[-1]), control=c_wire, control_values=[0])
-    SemiAdder(x_wires, y_wires, work_wires)
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire, controlled
-        # on the `c_wire` being in state |0>.
-        # However, we want to use a measurement+reset instead for addition + 1.
-        # In case `c_wire` is in state |1>, we just add a reset of a work
-        # wire that anyways is returned in state |0> by `SemiAdder`, so there is no harm done.
-        measure(work_wires[-1], reset=True)
-
-    if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
-
-
-def _subtract_then_add_one(x_wires, y_wires, work_wires):
-    if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
-
-    work_wires = work_wires[: len(y_wires) - 1]
-    X(y_wires[-1])
-    if work_wires:
-        X(work_wires[-1])
-    SemiAdder(x_wires, y_wires, work_wires)
-    X(y_wires[-1])
-    if work_wires:
-        # In principle, we could just apply a bit flip here to reset the work wire.
-        # However, the SemiAdder uses a decomposition with a right elbow, which has an assumption
-        # about its output state attached to it, and we violate this assumption here.
-        # In order to obtain a correct behaviour both for unitary decompositions of the right elbow
-        # and for its implementation relying on the assumption, we replace the bit flip with
-        # a measurement + reset.
-        measure(work_wires[-1], reset=True)
-
-    if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
-
-
-def _increment(wires, work_wires):
-    """Increment the input `wires` by one, using zeroed `work_wires`.
-    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via MCX gates if
-    work wires are available:
-
-    Generic decomposition:
-    0: ─╭X────────────────┤
-    1: ─├●─╭X─────────────┤
-    2: ─├●─├●─╭X──────────┤
-    3: ─├●─├●─├●─╭X───────┤
-    4: ─├●─├●─├●─├●─╭X────┤
-    5: ─╰●─╰●─╰●─╰●─╰●──X─┤
-
-    Decompose all MCX gates into elbows and CNOTs:
-       0: ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
-       1: ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
-       2: ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
-       3: ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
-       4: ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
-
-    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
-       0: ─────────────╭X───────────────────────────────┤
-       1: ──────────╭●─│───●╮─╭X────────────────────────┤
-       2: ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
-       3: ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
-       4: ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
-
-    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
-    This is derived, e.g., by Gidney in
-    `his blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__
-    """
-    wires = wires[::-1]
-    if len(wires) > 1:
-        # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
-        # Forward ladder
-        for k in range(len(wires) - 2):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
-        # Backward ladder
-        for k in range(len(wires) - 3, -1, -1):
-            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
-        # Trailing CNOT
-        CNOT(wires[:2])
-    X(wires[0])
-
-
-def _subtract_two_to_the_two_n(n, output_wires, work_wires):
-    if len(output_wires) > 2 * n:
-        _output = output_wires[: -2 * n]
-        _ = [X(w) for w in _output]
-        _increment(_output, work_wires)
-        _ = [X(w) for w in _output]
 
 
 @register_condition(_out_square_with_caddsub_condition)
@@ -647,6 +467,26 @@ def _out_square_with_caddsub(
     output_wires_zeroed: bool,
     **_,
 ):
+    r"""This decomposition uses controlled add-subtract blocks.
+    We start with augmenting the output register by one auxiliary qubit that we add as the new
+    least significant bit (This basically multiplies with two) and applying n controlled
+    add-subtract operations. The j-th operation (starting at j=0) caches x_{n-1-j} in a cache qubit
+    ``c_wire`` (which we take from the work wires) and then adds or subtracts x into a subregister
+    of y, starting at the j-th least significant bit, controlled on the cache. This computes
+
+    ..math :: A = \sum_{j=0}^{n-1} \left(2^j (2x_j-1)x + 2^{n+j}(1-x_j)\right)
+
+    ..math :: =2x^2-x\left(\sum_{j=0}^{n-1}2^j\right) + 2^n \left(\sum_{j=0}^{n-1} 2^j\right) - 2^n x
+
+    ..math :: =2x^2-2^{n}x+x+2^n(2^n-1-x)
+
+    ..math :: =2x^2-2^{n+1}x-(2^n-x)+2^{2n}.
+
+    Then, we subtract 2^{2n}, add (2^n-x), and add 2^{n+1}x to arrive at 2x^2 overall.
+    In a last step we divide by two simply by splitting off the auxiliary qubit we had added as
+    LSB in the beginning (we do not have to do anything for this in code).
+    This qubit is guaranteed to be zeroed because we computed an even number before.
+    """
     # First work wire is used for caching control bits
     c_wire = work_wires[0]
     # Second work wire is used to augment the output wires because we compute
@@ -654,25 +494,33 @@ def _out_square_with_caddsub(
     output_wires = output_wires + [work_wires[1]]
     work_wires = work_wires[2:]
     n = len(x_wires)
-    k = len(output_wires)
+    m = len(output_wires)
 
-    for i, x_wire in enumerate(x_wires[::-1][:k]):
-        output_msb = max(0, k - (n + 1 + i)) if output_wires_zeroed else 0
-        output = output_wires[output_msb : k - i]
+    for i, x_wire in enumerate(x_wires[::-1][:m]):
+        output_msb = max(0, m - (n + 1 + i)) if output_wires_zeroed else 0
+        output = output_wires[output_msb : m - i]
         CNOT([x_wire, c_wire])
         _c_add_sub(c_wire, x_wires, output, work_wires)
         CNOT([x_wire, c_wire])
 
     # Corrections - no need for control wire any more
     work_wires = [c_wire] + work_wires
-    # Subtract 2^(2n)
-    _subtract_two_to_the_two_n(n, output_wires, work_wires)
-    # Add (2^n-1-x) + 1
-    _subtract_then_add_one(x_wires, output_wires, work_wires)
 
-    # Add 2^(n+1) x if 2^k > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if k > n + 1:
-        SemiAdder(x_wires, output_wires[: k - n - 1], work_wires[: k - n - 2])
+    # Subtract 2^(2n)
+    if len(output_wires) > 2 * n:
+        _output = output_wires[: m - 2 * n]
+        adjoint(_increment, lazy=False)(_output, work_wires)
+
+    # Add (2^n-1-x) + 1. This is done by flipping the x_wires (transforming x-> 2^n-1-x), performing
+    # addition plus one (so we transform the output with +(2^n-1-x)+1), and flipping the x_wires
+    # back to the original value (2^n-1-x -> 2^n-1-(2^n-1-x)=x).
+    _ = [X(w) for w in x_wires]
+    _add_plus_one(x_wires, output_wires, work_wires)
+    _ = [X(w) for w in x_wires]
+
+    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
+    if m > n + 1:
+        SemiAdder(x_wires, output_wires[: m - n - 1], work_wires[: m - n - 2])
 
 
 add_decomps(OutSquare, _out_square_with_adder, _out_square_with_caddsub)

@@ -31,6 +31,7 @@ from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
+from pennylane import operation2
 from pennylane import allocation
 from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition
@@ -39,6 +40,7 @@ from pennylane.decomposition import (
     register_condition,
     add_decomps,
     list_decomps,
+    inspect_decomps,
     resource_rep,
 )
 from pennylane import templates
@@ -114,6 +116,7 @@ from pennylane.transforms import (
     batch_partial,
     compile,
     decompose,
+    decomp_inspector,
     defer_measurements,
     dynamic_one_shot,
     quantum_monte_carlo,

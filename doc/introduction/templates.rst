@@ -168,6 +168,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
+    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :figure: _static/templates/arithmetic/outsquare.png
+
+.. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
@@ -268,7 +272,7 @@ Other subroutines
 Other useful templates which do not belong to the previous categories can be found here.
 
 .. gallery-item::
-    :description: :doc:`Instantaneous Quantum Polynomial Circuit <../code/api/pennylane.IQP>`
+    :description: :doc:`Instantaneous Quantum Polynomial Circuit (IQP) <../code/api/pennylane.IQP>`
     :figure: _static/templates/subroutines/iqp.png
 
 .. gallery-item::

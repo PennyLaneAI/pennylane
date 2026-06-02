@@ -151,6 +151,17 @@ class CompressedResourceOp:
         )
 
     def __repr__(self):
+        if issubclass(self.op_type, qp.ops.Adjoint):
+            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            return f"Adjoint({repr(base_rep)})"
+        if issubclass(self.op_type, qp.ops.Pow):
+            base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
+            return f"Pow({repr(base_rep)}, z={self.params['z']})"
+        if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
+            params = self.params.copy()
+            base_rep = resource_rep(params.pop("base_class"), **params.pop("base_params"))
+            param_str = ", " + ", ".join(f"{k}={v}" for k, v in sorted(params.items()))
+            return f"Controlled({repr(base_rep)}{param_str})"
         params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
@@ -272,7 +283,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_work_wires=1,
         ...     work_wire_type='borrowed'
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
+        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
@@ -283,7 +294,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
+        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
 
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
@@ -301,6 +312,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
+    if op_type is qp.BasisEmbedding:
+        op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
 
 
@@ -330,6 +343,10 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     """
 
     _validate_resource_rep(base_class, base_params)
+
+    # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
+    if base_class is qp.BasisEmbedding:
+        base_class = qp.BasisState
 
     # Flattens nested controlled structures.
     if base_class in (qp.ops.Controlled, qp.ops.ControlledOp):

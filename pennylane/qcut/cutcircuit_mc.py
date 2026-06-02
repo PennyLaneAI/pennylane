@@ -154,9 +154,9 @@ def cut_circuit_mc(
            [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
-    the qnode:
+    the qnode with :func:`~pennylane.set_shots`:
 
-    >>> results = circuit(x, shots=123)
+    >>> results = qp.set_shots(circuit, shots=123)(x)
     >>> results.shape
     (123, 2)
 
@@ -292,7 +292,7 @@ def cut_circuit_mc(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qp.device("default.qubit", wires=2, shots=1)
+        >>> dev = qp.device("default.qubit", wires=2)
         >>> fragment_tapes = [qp.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Note that the number of shots on the device is set to :math:`1` here since we
@@ -460,8 +460,11 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+    # In the following we have strict=False because there may be more device wires than wires
+    # in a given fragment tape
     fragment_tapes = [
-        ops.functions.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+        ops.functions.map_wires(t, dict(zip(t.wires, device_wires, strict=False)))[0][0]
+        for t in fragment_tapes
     ]
 
     seed = kwargs.get("seed", None)
@@ -638,8 +641,12 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].obj.node_uid: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].obj.node_uid: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {
+        pair[0].obj.node_uid: setting for pair, setting in zip(pairs, settings, strict=True)
+    }
+    prep_settings = {
+        pair[1].obj.node_uid: setting for pair, setting in zip(pairs, settings, strict=True)
+    }
 
     all_configs = []
     for tape in tapes:
