@@ -109,6 +109,37 @@ class SignedOutSquare(Operation):
     Note that the keyword argument ``output_wires_zeroed`` is passed on to the :class:`~.OutSquare`
     used in the decomposition, leading to smaller cost of this main component. See the usage
     details of ``OutSquare`` for details.
+
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        We compute the square of the signed input register in three steps. First, note that
+        :math:`x=x_u-2^{n-1}x_s`, where :math:`x_u` is the unsigned part of :math:`x`
+        and :math:`x_s` is the sign bit. As example, consider the bit string
+        :math:`(1101)_{\text{2's compl}}=(101)_2 - 2^3 = 5-8=-3`. We have :math:`x_u=5`
+        and :math:`x_s=1`.
+
+        Consider the binomial expansion of :math:`x^2`:
+
+        .. math::
+
+            x^2 = (x_u-2^{n-1}x_s)^2=x_u^2 - x_s (2^{n}x_u) + 2^{2n-2}x_s^2.
+            =x_u^2 + x_s 2^{n} (2^{n-2}-x_u)
+
+        In order to arrive at steps that we can easily compute, we rewrite this as
+
+        .. math::
+
+            x^2 = x_u^2 + x_s 2^n (2^{n-1}-x_u) - x_s 2^{2n-2}
+
+        The three steps in our calculation directly correspond to these three terms. That is,
+        we first compute the square of :math:`x_u` into the output register, then we add
+        :math:`2^n(2^{n-1}-x_u)`, controlled on the sign bit :math:`x_s`. For this, we simply
+        combine some simple bit flips with a controlled :class:`~.SemiAdder`. Finally, we subtract
+        :math:`x_s 2^{2n-2}` from the output, by wrapping an
+        adder onto the most significant bits in bit flips of the same output subregister.
+
     """
 
     resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "output_wires_zeroed"}
@@ -222,7 +253,7 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
 
 
 def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
-    """Subtract x-1 from y, controlled on c_wire."""
+    """Subtract x from y, controlled on c_wire."""
     # Flip input bits (except for the LSB, which would be flipped back by the input carry set)
     if len(x_wires) > 1:
         BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
@@ -277,12 +308,13 @@ def _signed_out_square_resources(
     resources[square_rep] += 1
 
     if n < m:
-        # Add (2^n-1-x) + 1
+        # Add x_s 2^n (2^{n-1}-x)
         _res = _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed)
         for key, value in _res.items():
             resources[key] += value
 
         if m >= 2 * n - 1:
+            # Subtract x_s 2^{2n-2}
             size = min(m - (2 * n - 2), 2) if output_wires_zeroed else m - (2 * n - 2)
             x_rep = resource_rep(X)
             resources[x_rep] += 2 * size
@@ -302,6 +334,9 @@ def _signed_out_square(
     output_wires_zeroed: bool,
     **_,
 ):
+    """Implement signed squaring in three steps: Unsigned squaring, controlled subtraction
+    (with input carry), and a single-bit subtraction.
+    See the documentation of SignedOutSquare for details."""
     n = len(x_wires)
     m = len(output_wires)
     # Compute (x_u)^2 into output register
@@ -309,14 +344,15 @@ def _signed_out_square(
     OutSquare(
         x_wires[1:], output_wires[output_msb:], work_wires, output_wires_zeroed=output_wires_zeroed
     )
-    # Add 2^(n+1)(2^(n-1) - x_u)
     if m > n:
+        # Add x_s * 2^n (2^(n-1) - x_u)
         output_msb = max(0, m - 2 * n) if output_wires_zeroed else 0
         _c_subtract_then_add_one(
             x_wires[0], x_wires[1:], output_wires[output_msb : m - n], work_wires
         )
 
         if m >= 2 * n - 1:
+            # Subtract x_s * 2^(2n-2)
             output = output_wires[output_msb : m - (2 * n - 2)]
             _ = [X(w) for w in output]
             SemiAdder(x_wires[:1], output, work_wires)
