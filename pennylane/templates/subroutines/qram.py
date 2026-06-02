@@ -1148,11 +1148,12 @@ class FFQRAM(Operation):
             the last wire is the register qubit used for post-selection.
         address (TensorLike | Sequence[str]):
             The classical address bitstrings as a 2-D array with shape ``(L, m)`` or as
-            a sequence of bitstrings.
+            a sequence of unique bitstrings.
 
     Raises:
         ValueError: if the number of entries indicated by ``amplitudes`` and ``address``
-            do not agree, or if the number of entries exceeds ``2**m``.
+            do not agree, if the number of entries exceeds ``2**m``, or if the addresses
+            are not unique.
 
     .. seealso::
         :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`,
@@ -1242,10 +1243,14 @@ class FFQRAM(Operation):
         num_address_wires = len(wires) - 1
 
         num_entries = math.shape(amplitudes)[-1]
-        if num_entries != len(address):
+        if num_entries != math.shape(address)[0]:
             raise ValueError("The number of amplitudes must equal the number of addresses.")
+        if num_address_wires != math.shape(address)[1]:
+            raise ValueError("Address bitstring length must equal the number of address wires.")
         if num_entries > 2**num_address_wires:
             raise ValueError("The number of entries cannot exceed 2 ** num_address_wires.")
+        if len(math.unique(address, axis=0)) != len(address):
+            raise ValueError("Addresses must be unique.")
 
         # hyperparameters should be hashable
         self._hyperparameters = {
@@ -1282,14 +1287,13 @@ def _flip_zero_bits(address_wires, addr_bits):
 
 def _normalize_amplitudes(amplitudes):
     """Normalize along the last axis, supporting optional batching."""
-    batched = math.ndim(amplitudes) > 1
+    norm = math.linalg.norm(amplitudes, axis=-1)
 
-    if batched:
-        norm = math.sqrt(math.sum(amplitudes**2, axis=-1))
-        return amplitudes / math.expand_dims(norm, axis=-1)
+    if not math.is_abstract(norm) and math.any(math.isclose(norm, 0.0)):
+        raise ValueError("The amplitudes must have a non-zero norm.")
 
-    norm = math.sqrt(math.sum(amplitudes**2))
-    return amplitudes / norm
+    # Follow StatePrep's pattern to deal with optional batch dimension.
+    return amplitudes / math.reshape(norm, (*math.shape(amplitudes)[:-1], 1))
 
 
 def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):

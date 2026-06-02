@@ -1256,6 +1256,52 @@ def test_ffqram_success_probability():
     assert np.allclose(success_prob, 0.125)  # 1 / 2**3 for 3 address wires
 
 
+@pytest.mark.parametrize(
+    ("amplitudes", "address", "error_msg"),
+    [
+        (
+            [np.sqrt(0.3), np.sqrt(0.7)],
+            ["000"],
+            "The number of amplitudes must equal the number of addresses.",
+        ),
+        (
+            [np.sqrt(0.3)] * 9,
+            ["000"] * 9,
+            "The number of entries cannot exceed 2 ** num_address_wires.",
+        ),
+        (
+            [np.sqrt(0.3), np.sqrt(0.7)],
+            ["00", "01"],
+            "Address bitstring length must equal the number of address wires.",
+        ),
+        (
+            [np.sqrt(0.3), np.sqrt(0.7)],
+            ["000", "000"],
+            "Addresses must be unique.",
+        ),
+    ],
+)
+def test_ffqram_init_validation_errors(amplitudes, address, error_msg):
+    """Check that FFQRAM validates the amplitude and address inputs."""
+    with pytest.raises(ValueError, match=re.escape(error_msg)):
+        FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=address)
+
+
+@pytest.mark.parametrize(
+    "amplitudes",
+    [
+        [0.0, 0.0],
+        [[0.0, 0.0], [np.sqrt(0.3), np.sqrt(0.7)]],
+    ],
+)
+def test_ffqram_decomposition_zero_norm_error(amplitudes):
+    """Check that FFQRAM cannot normalize zero-norm amplitudes."""
+    op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])
+
+    with pytest.raises(ValueError, match="The amplitudes must have a non-zero norm."):
+        op.decomposition()
+
+
 class TestFFQRAMDecomposition:
     """Tests that FFQRAM defines the correct decomposition."""
 
