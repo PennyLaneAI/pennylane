@@ -35,7 +35,7 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.operation2 import Operator2
+from pennylane.operation2 import Operator2, StatePrepBase2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
@@ -1690,3 +1690,9 @@ class TestRepresentations:
 
         op = WithGen(wires=0)
         assert op.generator() == DynOp(0.5, wires=0)
+
+
+def test_state_prep_base_label():
+    """Tests that the default label is as expected."""
+    op = StatePrepBase2()
+    assert op.label() == "|Ψ⟩"
