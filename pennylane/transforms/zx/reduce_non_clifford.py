@@ -86,8 +86,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
             return qp.state()
 
     >>> print(qp.draw(circuit)(3.2, -2.2))
-    0: ──S─╭●─────────────────┤  State
-    1: ────╰X──H──RZ(1.00)──H─┤  State
+    0: ──S─╭●─────────────────┤ ╭State
+    1: ────╰X──H──RZ(1.00)──H─┤ ╰State
 
 
     .. note::
