@@ -320,6 +320,7 @@ tested_modified_templates = [
     qp.Multiplier,
     qp.OutMultiplier,
     qp.OutSquare,
+    qp.SignedOutSquare,
     qp.OutAdder,
     qp.ModExp,
     qp.OutPoly,
@@ -1416,9 +1417,10 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.OutAdder(**kwargs))
 
+    @pytest.mark.parametrize("cls", [qp.OutSquare, qp.SignedOutSquare])
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-    def test_out_square(self, output_wires_zeroed):
-        """Test the primitive bind call of OutSquare."""
+    def test_out_square(self, cls, output_wires_zeroed):
+        """Test the primitive bind call of OutSquare and SignedOutSquare."""
 
         kwargs = {
             "x_wires": [0, 1, 2],
@@ -1428,7 +1430,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.OutSquare(**kwargs)
+            cls(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -1439,7 +1441,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.OutSquare._primitive
+        assert eqn.primitive == cls._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -1449,7 +1451,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.OutSquare(**kwargs))
+        qp.assert_equal(q.queue[0], cls(**kwargs))
 
     def test_mod_exp(self):
         """Test the primitive bind call of ModExp."""
