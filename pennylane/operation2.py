@@ -1314,7 +1314,7 @@ class Operation2(Operator2, is_base=True):
     # Attributes for compilation transforms
 
     @property
-    def control_wires(self) -> Wires:  # pragma: no cover
+    def control_wires(self) -> Wires:
         r"""Control wires of the operator.
 
         For operations that are not controlled,
