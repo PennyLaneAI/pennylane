@@ -1703,6 +1703,8 @@ class TestGradMethod:
     """Tests that the gradient method is chosen appropriately."""
 
     def test_analytic_with_provided_grad_recipe(self):
+        """Tests that the grad method is analytic when a grad recipe is provided."""
+
         class SingleArgOpWithRecipe(Operation2):
             num_params = 1
             num_wires = 1
@@ -1718,6 +1720,8 @@ class TestGradMethod:
         assert op.grad_method == "A"
 
     def test_analytic_with_param_freqs(self):
+        """Tests that the grad method is analytic when there are parameter frequencies."""
+
         class SignleArgOpWithGen(Operation2):
             num_params = 1
             num_wires = 1
@@ -1734,6 +1738,8 @@ class TestGradMethod:
         assert op.grad_method == "A"
 
     def test_finite_with_no_param_freqs(self):
+        """Tests that the grad method is finite when there are no parameter frequencies."""
+
         class SingleArgOpNoGen(Operation2):
             num_params = 1
             num_wires = 1
@@ -1747,6 +1753,8 @@ class TestGradMethod:
         assert op.grad_method == "F"
 
     def test_none_with_no_dyn_args(self):
+        """Tests that the grad method is None when there are no dynamic arguments."""
+
         class NoArgOpNoGen(Operation2):
             num_params = 0
             num_wires = 1
@@ -1763,7 +1771,7 @@ class TestParameterFrequencies:
     """Tests for ``parameter_frequencies`` property.``."""
 
     def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
-        """Test that parameter_frequencies raises an error if there are too many dynamic arguments"""
+        """Test that parameter_frequencies raises an error if there are too many dynamic arguments."""
 
         class MultiArgOpWithGen(Operation2):
             num_params = 2
@@ -1783,7 +1791,7 @@ class TestParameterFrequencies:
             _ = op.parameter_frequencies
 
     def test_parameter_frequencies_raises_error_no_generator(self):
-        """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
+        """Test that parameter_frequencies raises an error if the op.generator() is undefined."""
 
         class SingleArgOpNoGen(Operation2):
             num_params = 1
@@ -1802,6 +1810,8 @@ class TestParameterFrequencies:
         "freqs", [[(0.5, 1.0), (0.5, 1.0)], [(0.3, 4.0), (0.1, 2.0)], [(0.5, 1.0), (0.8, 0.2)]]
     )
     def test_param_freqs_no_generator(self, freqs):
+        """Test that parameter_frequencies are accessible when provided explicitly, even if the op.generator() is undefined."""
+
         class MultiArgOpNoGenParamFreqs(Operation2):
             num_params = 2
             num_wires = 1
@@ -1825,6 +1835,7 @@ class TestParameterFrequencies:
         ],
     )
     def test_param_freqs_with_generator(self, matrix):
+        """Test that parameter_frequencies relate to the eigenvalues of the generator if the op.generator() is defined."""
 
         class OpWithGen(Operation2):
             num_params = 1
