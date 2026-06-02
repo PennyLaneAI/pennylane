@@ -189,16 +189,16 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     >>> mat = H.matrix()
     >>> op = batched_pauli_decompose(mat)
     >>> op
-    0.25 * X(1) + 0.4 * Z(1)
+    0.25 * X(0) + 0.4 * (X(1) @ Z(0))
     >>> type(op)
-    pennylane.ops.op_math.sum.Sum
+    <class 'pennylane.ops.op_math.sum.Sum'>
 
     We can choose to receive a :class:`~.PauliSentence` instead as output instead, by setting
     ``pauli=True``:
 
     >>> op = batched_pauli_decompose(mat, pauli=True)
     >>> type(op)
-    pennylane.pauli.pauli_arithmetic.PauliSentence
+    <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
 
     This function supports batching and will return a list of operations for a batched input:
 

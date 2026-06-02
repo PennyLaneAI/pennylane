@@ -70,7 +70,6 @@ jobs:
       - name: Test 'pennylane' folder
         run: |
           WONT_FIX="
-          --ignore=pennylane/labs
           --ignore=pennylane/logging
           --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/devices/_legacy_device.py
