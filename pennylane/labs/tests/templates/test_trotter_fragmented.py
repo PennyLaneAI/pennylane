@@ -61,7 +61,7 @@ def toy_hamiltonian():
     hamiltonian = {
         "core_tensors": core_tensors,
         "leaf_tensors": leaf_tensors,
-        "nuc_constant": 0.0,
+        "nuc_constant": 0.7,
     }
     return hamiltonian, num_modes, n_states
 
