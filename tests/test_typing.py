@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, Int, TensorLike
+from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, TensorLike
 
 
 class TestTensorLike:
@@ -106,6 +106,7 @@ class TestTensorLike:
 
 
 class TestAbstractArray:
+    """Tests for the AbstractArray class."""
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""
@@ -224,57 +225,18 @@ class TestAbstractArray:
         assert a.shape == (2, 3, ...)
         assert a.dtype == dtype
 
+    # pylint: disable=isinstance-second-argument-not-valid-type
+    def test_instance_check(self):
+        """Test that things can be checked to be instances of a AbstractArray instance."""
 
-class TestAbstractWires:
+        a = AbstractArray((4, 2), bool)
+        b = AbstractArray((..., 2), bool)
 
-    def test_basic(self):
-        """Basic tests for the AbstractWires class."""
+        for variant in (a, b):
+            assert isinstance(np.zeros((4, 2), bool), variant)
 
-        a = AbstractWires(3)
-        assert a.num_wires == 3
-        assert len(a) == 3
+            assert not isinstance(np.array([0, 0], dtype=bool), variant)
 
-    def test_comparison(self):
-        """Test for equality and comparison."""
-        a = AbstractWires(3)
-        assert a == AbstractWires(3)
-        assert a != AbstractWires(4)
-        assert hash(a) == hash(AbstractWires(3))
-        assert hash(a) != hash(AbstractWires(4))
+            assert not isinstance(np.ones((4, 2), float), variant)
 
-        with pytest.raises(
-            TypeError, match="Tried to check equality against an abstract wire register."
-        ):
-            _ = a == 2
-
-    def test_ellipsis(self):
-        """Test that number of wires can be specified by an ellipsis."""
-
-        a = AbstractWires(...)
-        assert a.num_wires == ...
-
-    def test_create_by_getitem(self):
-        """Test that AbstractWires can be created by __getitem__."""
-
-        a = AbstractWires[4]
-        assert isinstance(a, AbstractWires)
-        assert a.num_wires == 4
-
-        b = AbstractWires[...]
-        assert isinstance(b, AbstractWires)
-        assert b.num_wires == ...
-
-        with pytest.raises(
-            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
-        ):
-            _ = AbstractWires[2, 3, 4]
-
-    def test_from_wires(self):
-        """Test that AbstractWires can be created from a sequence."""
-
-        a = AbstractWires.from_wires((2, 3, 4))
-        assert isinstance(a, AbstractWires)
-        assert a.num_wires == 3
-
-        with pytest.raises(TypeError, match="Cannot create AbstractWires from"):
-            AbstractWires.from_wires(4)
+            assert not isinstance("a", variant)

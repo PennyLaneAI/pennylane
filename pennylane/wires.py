@@ -17,8 +17,10 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 
 import functools
 import itertools
+import types
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
+from dataclasses import dataclass
 from importlib import import_module, util
 
 import numpy as np
@@ -736,6 +738,40 @@ class Wires(Sequence):
     def __rxor__(self, other):
         """Right-hand version of __xor__."""
         return Wires(set(_process(other)) ^ set(self.labels))
+
+    def __class_getitem__(cls, item) -> "AbstractWires":
+        return AbstractWires[item]
+
+
+@dataclass(frozen=True)
+class AbstractWires:
+    """An abstract representation of a sequence of wires that contains the number
+    of wires, useful for resource calculations.
+
+    Args:
+        num_wires (int): The number of wires
+    """
+
+    num_wires: int | types.EllipsisType
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, AbstractWires):
+            return self.num_wires == other.num_wires
+
+        raise TypeError("Tried to check equality against an abstract wire register.")
+
+    def __hash__(self):
+        return hash(("AbstractWires", self.num_wires))
+
+    def __len__(self) -> int:
+        return self.num_wires
+
+    def __class_getitem__(cls, item) -> "AbstractWires":
+        if not isinstance(item, int) and item != ...:
+            raise TypeError(
+                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
+            )
+        return AbstractWires(item)
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable

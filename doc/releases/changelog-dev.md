@@ -38,6 +38,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `AbstractArray`, `Bool`, `Int`, `Float`, and `Complex` have been added to
+  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
+  These will support a new method of having compressed operators for resource estimation
+  and decomposition.
+  [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as

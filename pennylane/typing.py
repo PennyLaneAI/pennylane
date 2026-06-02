@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from math import prod
 from numbers import Number
-from typing import Any, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -135,8 +135,27 @@ class AbstractArray:
     attributes necessary for resource calculations.
 
     Args:
-        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar
+        shape (tuple(int | types.EllipsisType)): the dimensions of the array.
+            ``()`` corresponds to a scalar, and ``...`` corresponds to an unknown dimension.
         dtype (type): the data type of the array
+
+
+    Scalar ``AbstractArray`'s can indexed into to create an array with a different shape:
+
+    >>> Int32 = qp.typing.AbstractArray((), np.int32)
+    >>> Int32[3, 2]
+    AbstractArray(shape=(3, 2), dtype=dtype('int32'))
+
+    Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
+
+    >>> Int32[..., 2]
+    AbstractArray(shape=(Ellipsis, 1), dtype=dtype('int32'))
+
+    ``AbstractArray``'s can be used together with ``isinstance`` checks:
+
+    >>> isinstance(np.ones((4,2), np.int32), Int32[..., 2])
+    True
+
     """
 
     shape: tuple[int | types.EllipsisType, ...]
@@ -145,6 +164,14 @@ class AbstractArray:
     def __post_init__(self):
         object.__setattr__(self, "shape", tuple(self.shape))
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
+
+    def __instancecheck__(self, instance):
+        if not getattr(instance, "dtype", None) == self.dtype:
+            return False
+        shape = getattr(instance, "shape", None)
+        if shape is None or len(shape) != len(self.shape):
+            return False
+        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
 
     @property
     def size(self) -> int:
@@ -201,55 +228,48 @@ class AbstractArray:
         return hash(("AbstractArray", self.shape, self.dtype))
 
 
-@dataclass(frozen=True)
-class AbstractWires:
-    """An abstract representation of a sequence of wires that contains the number
-    of wires, useful for resource calculations.
-
-    Args:
-        num_wires (int): The number of wires
-    """
-
-    num_wires: int | types.EllipsisType
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, AbstractWires):
-            return self.num_wires == other.num_wires
-
-        raise TypeError("Tried to check equality against an abstract wire register.")
-
-    def __hash__(self):
-        return hash(("AbstractWires", self.num_wires))
-
-    def __len__(self) -> int:
-        return self.num_wires
-
-    @classmethod
-    def from_wires(cls, wires: Sequence[Any]) -> "AbstractWires":
-        """Create an AbstractWires instance from a concrete sequence of wires."""
-        if not isinstance(wires, Sequence):
-            raise TypeError(f"Cannot create AbstractWires from {wires}.")
-
-        return cls(len(wires))
-
-    def __class_getitem__(cls, item) -> "AbstractWires":
-        if not isinstance(item, int) and item != ...:
-            raise TypeError(
-                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
-            )
-        return AbstractWires(item)
-
-
 Int = AbstractArray((), int)
-"""TODO"""
+"""An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(2), qp.typing.Int)
+True
+>>> qp.typing.Int[4,2]
+AbstractArray(shape=(4, 2), dtype=dtype('int64'))
+
+"""
 
 
 Float = AbstractArray((), float)
-"""TODO"""
+"""An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(2.0), qp.typing.Float)
+True
+>>> qp.typing.Int[4,2]
+AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+
+"""
 
 Bool = AbstractArray((), bool)
-"""TODO"""
+"""An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(False), qp.typing.Bool)
+True
+>>> qp.typing.Bool[4]
+AbstractArray(shape=(4,), dtype=dtype('bool'))
+
+"""
 
 
 Complex = AbstractArray((), complex)
-"""TODO"""
+"""An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+True
+>>> qp.typing.Complex[..., 2]
+AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+
+"""
