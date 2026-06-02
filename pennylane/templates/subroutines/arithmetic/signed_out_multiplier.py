@@ -16,7 +16,7 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Iterable, Hashable
+from typing import Any, Hashable, Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -334,7 +334,7 @@ class SignedOutMultiplier(Operator):
     def map_wires(self, wire_map: dict):
         x_wires = [wire_map.get(w, w) for w in self.hyperparameters["x_wires"]]
         y_wires = [wire_map.get(w, w) for w in self.hyperparameters["y_wires"]]
-        output_wires =  [wire_map.get(w, w) for w in self.hyperparameters["output_wires"]]
+        output_wires = [wire_map.get(w, w) for w in self.hyperparameters["output_wires"]]
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
         output_wires_zeroed = self.hyperparameters["output_wires_zeroed"]
 
@@ -568,7 +568,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     y_aux = work_wires[1]
 
     # Temp output register for multiplication output
-    mult_temp = work_wires[2: len(output_wires) + 2]
+    mult_temp = work_wires[2 : len(output_wires) + 2]
 
     if capture.enabled():
         signed_work_wires = work_wires[2 * len(output_wires) + 1 :]
@@ -577,13 +577,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     else:
         signed_work_wires = [x_aux] + [y_aux] + work_wires[2 * len(output_wires) + 1 :]
 
-    SignedOutMultiplier(
-        x_wires,
-        y_wires,
-        mult_temp,
-        signed_work_wires,
-        True
-    )
+    SignedOutMultiplier(x_wires, y_wires, mult_temp, signed_work_wires, True)
 
     # Add any initial value in the output register
     SemiAdder(

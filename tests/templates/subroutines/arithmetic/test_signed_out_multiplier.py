@@ -166,6 +166,17 @@ def signed_multiply(
         ),
         (
             (0, 1, 2),
+            (3, 4),
+            (6, 7, 8, 9),
+            (10, 11, 12, 13, 14, 15),
+            [1, 0, 1]  # operand one: -3
+            + [1, 1]  # operand two: -1
+            + [0, 0, 0, 0]  # work wires are zeroed
+            + [0, 0, 0, 0, 0, 0],  # output register starts in |0>
+            True,
+        ),
+        (
+            (0, 1, 2),
             (3, 4, 5),
             (6, 7, 8, 9),
             (10, 11, 12, 13, 14, 15),
