@@ -172,6 +172,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/outsquare.png
 
 .. gallery-item::
+    :description: :doc:`SignedOutSquare <../code/api/pennylane.SignedOutSquare>`
+    :figure: _static/templates/arithmetic/signedoutsquare.png
+
+.. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
