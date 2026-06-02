@@ -281,6 +281,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `labs` module to our documentation testing workflow.
+  [(#9560)](https://github.com/PennyLaneAI/pennylane/pull/9560)
+
 * CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
   instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
