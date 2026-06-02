@@ -37,6 +37,7 @@ Circuit Specification Classes and Utilities
     :toctree: api
 
     ~CircuitSpecs
+    ~Expression
     ~SpecsResources
     ~SymbolicSpecsResources
 
@@ -79,16 +80,6 @@ Resource Functions
     ~mul_in_series
     ~mul_in_parallel
     ~substitute
-
-Utility Classes and Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.resource
-
-.. autosummary::
-    :toctree: api
-
-    ~Expression
 
 Tracking Resources for Custom Operations
 ----------------------------------------

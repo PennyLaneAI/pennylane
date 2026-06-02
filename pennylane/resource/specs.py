@@ -764,17 +764,19 @@ def specs(
 
             @qp.qjit
             @qp.qnode(dev)
-            def circuit(x):
+            def circuit(x, z):
                 qp.Hadamard(0)
                 qp.PauliX(0)
                 for _ in range(x):
                     qp.PauliX(0)
+                for _ in range(z):
+                    qp.PauliZ(0)
                 return qp.expval(qp.PauliZ(0))
 
-            specs_result = qp.specs(circuit, level=0)(5)
+            specs_result = qp.specs(circuit, level=0)(5, 3)
 
         If we attempt to get pass-by-pass specs for this circuit, the resource information will be
-        symbolic due to the dependence on the input parameter ``x``:
+        symbolic due to the dependence on the input parameters ``x`` and ``z``:
 
         >>> print(specs_result)
         Device: lightning.qubit
@@ -782,30 +784,47 @@ def specs(
         Shots: Shots(total=None)
         Level: Before MLIR Passes
         <BLANKLINE>
-        Symbolic Variables: a
+        Symbolic Variables: a, b
         Wire allocations: 1
-        Total gates: a + 2
+        Total gates: a + b + 2
         Gate counts:
         - Hadamard: 1
         - PauliX: a + 1
+        - PauliZ: b
         Measurements:
         - expval(PauliZ): 1
         Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
-        returned :class:`~.resource.SymbolicSpecsResources` object, and providing a dictionary
-        which describes the mapping from each symbolic variable to an integer value:
+        returned :class:`~.resource.SymbolicSpecsResources` object, and providing keyword arguments
+        which describe the mapping from each symbolic variable to an integer value:
 
         >>> res = specs_result.resources
-        >>> print(res.subs({'a': 5}))
+        >>> print(res.subs(a=5, b=3))
         Wire allocations: 1
-        Total gates: 7
+        Total gates: 10
         Gate counts:
         - Hadamard: 1
         - PauliX: 6
+        - PauliZ: 3
         Measurements:
         - expval(PauliZ): 1
         Depth: Not computed
+
+        These substitutions may also be provided as a dictionary, which can be helpful in
+        programmatic contexts:
+
+        >>> print(res.subs({"a": 5, "b": 3}))
+        Wire allocations: 1
+        Total gates: 10
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: 6
+        - PauliZ: 3
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
