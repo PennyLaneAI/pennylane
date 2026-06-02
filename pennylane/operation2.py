@@ -552,7 +552,7 @@ class Operator2(ABC):
             _canonicalize_dynamic(self.arguments[d], self.name) for d in self.dynamic_argnames
         )
         serialized_wires = tuple(
-            tuple(self.arguments[w]) for w in self.wire_argnames if w not in self.hybrid_argnames
+            self.arguments[w] for w in self.wire_argnames if w not in self.hybrid_argnames
         )
         serialized_static = tuple(str(self.arguments[s]) for s in self.static_argnames)
         serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
@@ -560,17 +560,10 @@ class Operator2(ABC):
         serialized_hybrid = []
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
-            serialized_leaves = []
-            for l in leaves:
-                if isinstance(l, Wires):
-                    serialized_leaves.append(tuple(l))
-                elif isinstance(l, Operator2):
-                    serialized_leaves.append(l)
-                else:
-                    serialized_leaves.append(_canonicalize_dynamic(l))
-
-            entry = (tuple(serialized_leaves), tree)
-            serialized_hybrid.append(entry)
+            ser_leaves = tuple(
+                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+            )
+            serialized_hybrid.append((ser_leaves, tree))
 
         return hash(
             (
