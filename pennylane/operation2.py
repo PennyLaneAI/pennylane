@@ -1348,6 +1348,7 @@ class Operation2(Operator2, is_base=True):
         For operators that define a generator, the parameter frequencies are directly
         related to the eigenvalues of the generator:
 
+        # TODO: [sc-120453] Update code examples after migration is complete
         >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
         >>> op.parameter_frequencies
         [(1,)]
