@@ -204,6 +204,11 @@
 
   ```
 
+* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
+  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
+  application algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+
 <h3>Breaking changes 💔</h3>
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
@@ -283,6 +288,11 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
 
+* CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
+  instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
+  and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
+  [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
+
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
   [(#9530)](https://github.com/PennyLaneAI/pennylane/pull/9530)
@@ -329,6 +339,9 @@
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
+
+* Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
+  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -385,6 +398,7 @@ Guillermo Alonso,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
