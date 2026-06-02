@@ -371,7 +371,7 @@ def _equal_operators(
 
 
 @_equal_dispatch.register
-def _equal_operators2(
+def _equal_operator2(
     op1: Operator2,
     op2: Operator2,
     check_interface=True,
@@ -443,7 +443,25 @@ def _equal_operators2(
                 f"Got {wval1} and {wval2}."
             )
 
-    # Check hybrid arguments
+    return _check_operator2_hybrid_args(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        rtol=rtol,
+        atol=atol,
+    )
+
+
+def _check_operator2_hybrid_args(
+    op1: Operator2,
+    op2: Operator2,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check for equality of the hybrid arguments of an Operator2 instance."""
     for (hname, hval1), (_, hval2) in zip(
         op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
     ):

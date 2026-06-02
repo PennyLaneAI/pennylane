@@ -24,10 +24,10 @@
 
   ```pycon
   >>> print(qp.draw(circuit, level="device")())
-  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤  State
-  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤  State
-  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤  State
-  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤  State
+  0: ─╭TwoWireFFT────────────────────╭TwoWireFFT──────────────┤ ╭State
+  1: ─╰TwoWireFFT───────╭FSWAP(3.14)─╰TwoWireFFT─╭FSWAP(3.14)─┤ ├State
+  2: ─╭TwoWireFFT──Z⁰⋅⁰─╰FSWAP(3.14)─╭TwoWireFFT─╰FSWAP(3.14)─┤ ├State
+  3: ─╰TwoWireFFT──Z⁰⋅⁵──────────────╰TwoWireFFT──────────────┤ ╰State
 
   ```
 
@@ -37,6 +37,50 @@
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
+
+* Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
+
+  For example, a controlled multi-target-``X`` operation previously decomposed as
+
+  ```
+  c1: ─╭●─╭●─╭●─╭●─┤  State
+  c2: ─├●─├●─├●─├●─┤  State
+  c3: ─├●─├●─├●─├●─┤  State
+   3: ─╰X─│──│──│──┤  State
+   2: ────╰X─│──│──┤  State
+   1: ───────╰X─│──┤  State
+   0: ──────────╰X─┤  State
+  ```
+
+  With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
+
+  ```python
+  @qp.transforms.decompose(
+      gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
+  )
+  @qp.qnode(qp.device("default.qubit"))
+  def qnode():
+      qp.ctrl(qp.X(0) @ qp.X(1) @ qp.X(2) @ qp.X(3), control=["c1", "c2", "c3"], work_wires=["w1", "w2"], work_wire_type="zeroed")
+      return qp.state()
+
+  print(qp.draw(qnode)())
+  ```
+
+  ```
+  c1: ─╭●─────────────────────●╮─┤  State
+  c2: ─├●─────────────────────●┤─┤  State
+  w1: ─╰⊕─╭●──────────────●╮──⊕╯─┤  State
+  c3: ────├●──────────────●┤─────┤  State
+  w2: ────╰⊕─╭●─╭●─╭●─╭●──⊕╯─────┤  State
+   3: ───────╰X─│──│──│──────────┤  State
+   2: ──────────╰X─│──│──────────┤  State
+   1: ─────────────╰X─│──────────┤  State
+   0: ────────────────╰X─────────┤  State
+  ```
+  [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
+
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+  [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
   [(#9495)](https://github.com/PennyLaneAI/pennylane/pull/9495)
@@ -59,6 +103,10 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+  [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
+  [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
+
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
 
@@ -68,7 +116,8 @@
 
   dev = qp.device("lightning.qubit")
 
-  @qp.qnode(dev, shots=1)
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
   def circuit(a, comparator, b):
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
@@ -85,6 +134,38 @@
   ```pycon
     >>> output = circuit(3, ">=", 2)
     >>> print(bool(output))
+    True
+
+  ```
+
+* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
+  test of a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+
+  ```python
+  import pennylane as qp
+  from pennylane.labs.templates import LeftClassicalComparator
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+    qp.BasisState(x_val, wires=[0, 1, 2])
+
+    LeftClassicalComparator(
+        x_wires=[0, 1, 2],
+        L=L_val,
+        target_wire=3,
+        work_wires=[4, 5],
+        comparator='>='
+    )
+    return qp.sample(wires=3)
+  ```
+
+  ```pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
     True
 
   ```
@@ -124,6 +205,9 @@
   ```
 
 <h3>Breaking changes 💔</h3>
+
+* `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
+  [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
 * The ability to specify shots as a keyword argument on call to a `QNode` is removed. Specifying the
   shots on creation of the `QNode` or using :func:`pennylane.set_shots` should be used instead.
@@ -192,10 +276,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* :func:`~.equal` supports `Operator2` instances.
-  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
-
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
+* New, experimental abstractions for creating PennyLane operators have been added, built around a new
+  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  integrated into the PennyLane ecosystem. Supported functionality so far:
+  - :func:`qp.equal` can check equality between two `Operator2` instances.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -227,6 +311,7 @@
 * Added usage of the `strict` keyword argument for `zip` throughout the codebase.
   [(#9393)](https://github.com/PennyLaneAI/pennylane/pull/9393)
   [(#9406)](https://github.com/PennyLaneAI/pennylane/pull/9406)
+  [(#9413)](https://github.com/PennyLaneAI/pennylane/pull/9413)
 
 * The `cond` PLxPR primitive no longer returns an `AbstractOperator` when the branch functions
   are gate-like operators.
@@ -247,6 +332,15 @@
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
+  if the number of selected operators is notably smaller than the maximal capacity for the given
+  number of control wires. This bug only surfaced for `partial=False`.
+  [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
+
+* Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
+  exists from an operator to a controlled/adjoint version of itself.
+  [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
 
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
@@ -277,6 +371,12 @@
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
+* Fixed a bug where :func:`~pennylane.draw` dropped the grouping brackets on measurements that
+  span all device wires (such as :func:`~.state`, :func:`~.probs`, :func:`~.sample`, or
+  :func:`~.counts` without an explicit ``wires`` argument). The brackets now render consistently
+  with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
+  [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -292,6 +392,7 @@ Christina Lee,
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
+Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs.

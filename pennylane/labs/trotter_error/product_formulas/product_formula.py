@@ -152,7 +152,9 @@ class ProductFormula:
         if self.recursive:
             return "@".join(term.__repr__() for term in self.terms)
 
-        return "@".join([f"Exp({coeff}*H_{term})" for coeff, term in zip(self.coeffs, self.terms)])
+        return "@".join(
+            [f"Exp({coeff}*H_{term})" for coeff, term in zip(self.coeffs, self.terms, strict=True)]
+        )
 
     def to_matrix(self, fragments: dict[Hashable, np.ndarray]) -> np.ndarray:
         """Returns a numpy representation of the product formula.
@@ -184,7 +186,7 @@ class ProductFormula:
 
         """
         accumulator = _MultiplicativeIdentity()
-        for term, coeff in zip(self.terms, self.coeffs):
+        for term, coeff in zip(self.terms, self.coeffs, strict=True):
             if isinstance(term, ProductFormula):
                 accumulator @= term.to_matrix(fragments)
             else:
