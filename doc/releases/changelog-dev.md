@@ -6,6 +6,14 @@
   of a ZYZ decomposition of a single-qubit operator.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
+  ```python
+  >>> qp.single_qubit_zyz_angles(qp.H(0))
+  (3.141592653589793, 1.5707963267948966, 0.0, 1.5707963267948966)
+  ```
+
+  The new function returns a tuple of four values, where the first three corresponds to the rotation
+  angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
+
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
   This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
   efficient simulation of quantum materials and chemistry systems.
