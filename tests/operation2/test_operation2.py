@@ -1722,7 +1722,7 @@ class TestGradMethod:
     def test_analytic_with_param_freqs(self):
         """Tests that the grad method is analytic when there are parameter frequencies."""
 
-        class SignleArgOpWithGen(Operation2):
+        class SingleArgOpWithGen(Operation2):
             num_params = 1
             num_wires = 1
             dynamic_argnames = ("phi",)
