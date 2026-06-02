@@ -103,11 +103,7 @@ class IsometryFinder:
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - b
-        print(f"{nonsubspace_wires=}")
-        print(f"{batch_qubit_positions=}")
-        print(f"{b=}")
         target_wires = [nonsubspace_wires[batch_qubit_positions[idx]] for idx in range(b)]
-        print(f"{target_wires=}")
         self.circuit_ops.append(qp.BasisEmbedding(k_start, subspace_wires))
         sub_ops = [qp.X(w) for w in target_wires]
         self.circuit_ops.append(
