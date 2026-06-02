@@ -56,10 +56,6 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
-      - name: Install PyTorch (CPU-only)
-        run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-
       - name: Install PennyLane (editable)
         run: |
           pip install --group doctest -e . 
