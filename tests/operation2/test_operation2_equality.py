@@ -185,7 +185,7 @@ class TestDynamicArgs:
         op1 = DynOp(np.array(0.5), wires=0)
         op2 = DynOp(pnp.array(0.5, requires_grad=False), wires=0)
         assert qp.equal(op1, op2) is False
-        with pytest.raises(AssertionError, match="different interfaces for 'theta'"):
+        with pytest.raises(AssertionError, match="different interfaces for 'phi'"):
             qp.assert_equal(op1, op2)
 
     def test_different_interfaces_equal_when_disabled(self):
