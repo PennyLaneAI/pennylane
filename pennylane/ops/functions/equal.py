@@ -19,6 +19,7 @@ This module contains the qp.equal function.
 
 from collections.abc import Iterable
 from functools import singledispatch
+from typing import Any
 
 import pennylane as qp
 from pennylane import math
@@ -47,6 +48,7 @@ from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
+from pennylane.typing import TensorLike
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -384,37 +386,17 @@ def _equal_operator2(
     for (dname, dval1), (_, dval2) in zip(
         op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
     ):
-        if math.is_abstract(dval1) or math.is_abstract(dval2):
-            return (
-                f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
-                "tracers are assumed to be unique."
-            )
-
-        # Need to check shape along with math.allclose to handle the case where one
-        # value is broadcasted. math.allclose might pass in that case.
-        if math.shape(dval1) != math.shape(dval2) or not math.allclose(
-            dval1, dval2, atol=atol, rtol=rtol
-        ):
-            return f"op1 and op2 have different values for '{dname}'.\n" f"Got {dval1} and {dval2}."
-
-        if check_interface:
-            interface1 = math.get_interface(dval1)
-            interface2 = math.get_interface(dval2)
-            if interface1 != interface2:
-                return (
-                    f"op1 and op2 have different interfaces for '{dname}'.\n"
-                    f"op1.{dname}'s interface is {interface1} and op2.{dname}'s "
-                    f"interface is {interface2}."
-                )
-
-        if check_trainability:
-            grad1 = "trainable" if math.requires_grad(dval1) else "not trainable"
-            grad2 = "trainable" if math.requires_grad(dval2) else "not trainable"
-            if grad1 != grad2:
-                return (
-                    f"op1 and op2 differ in trainability for '{dname}'.\n"
-                    f"op1.{dname} is {grad1} and op2.{dname} is {grad2}."
-                )
+        res = _check_dynamic_value(
+            dname,
+            dval1,
+            dval2,
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        )
+        if isinstance(res, str):
+            return res
 
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(
@@ -423,7 +405,7 @@ def _equal_operator2(
         if sval1 != sval2:
             return f"op1 and op2 have different values for '{sname}'.\n" f"Got {sval1} and {sval2}."
 
-    # Check static, compilable arguments
+    # Check static compilable arguments
     for (cname, cval1), (_, cval2) in zip(
         op1.compilable_args.items(), op2.compilable_args.items(), strict=True
     ):
@@ -443,73 +425,120 @@ def _equal_operator2(
                 f"Got {wval1} and {wval2}."
             )
 
-    return _check_operator2_hybrid_args(
-        op1,
-        op2,
-        check_interface=check_interface,
-        check_trainability=check_trainability,
-        rtol=rtol,
-        atol=atol,
-    )
-
-
-def _check_operator2_hybrid_args(
-    op1: Operator2,
-    op2: Operator2,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    """Check for equality of the hybrid arguments of an Operator2 instance."""
+    # Check hybrid arguments
     for (hname, hval1), (_, hval2) in zip(
         op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
     ):
         if hname in op1.wire_argnames:
             continue
 
-        unequal_str = (
-            f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
+        res = _check_pytree_value(
+            hname,
+            hval1,
+            hval2,
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
         )
-        leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
-        leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
-        if len(leaves1) != len(leaves2) or tree1 != tree2:
+        if isinstance(res, str):
+            return res
+
+    return True
+
+
+def _check_dynamic_value(
+    dname: str,
+    dval1: TensorLike,
+    dval2: TensorLike,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check for equality of a dynamic argument of an Operator2 instance."""
+    if math.is_abstract(dval1) or math.is_abstract(dval2):
+        return (
+            f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
+            "tracers are assumed to be unique."
+        )
+
+    # Need to check shape along with math.allclose to handle the case where one
+    # value is broadcasted. math.allclose might pass in that case.
+    if math.shape(dval1) != math.shape(dval2) or not math.allclose(
+        dval1, dval2, atol=atol, rtol=rtol
+    ):
+        return f"op1 and op2 have different values for '{dname}'.\n" f"Got {dval1} and {dval2}."
+
+    if check_interface:
+        interface1 = math.get_interface(dval1)
+        interface2 = math.get_interface(dval2)
+        if interface1 != interface2:
+            return (
+                f"op1 and op2 have different interfaces for '{dname}'.\n"
+                f"op1.{dname}'s interface is {interface1} and op2.{dname}'s "
+                f"interface is {interface2}."
+            )
+
+    if check_trainability:
+        grad1 = "trainable" if math.requires_grad(dval1) else "not trainable"
+        grad2 = "trainable" if math.requires_grad(dval2) else "not trainable"
+        if grad1 != grad2:
+            return (
+                f"op1 and op2 differ in trainability for '{dname}'.\n"
+                f"op1.{dname} is {grad1} and op2.{dname} is {grad2}."
+            )
+
+    return True
+
+
+def _check_pytree_value(
+    hname: str,
+    hval1: Any,
+    hval2: Any,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check for equality of a hybrid argument of an Operator2 instance."""
+    unequal_str = f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
+    leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
+    leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
+    if len(leaves1) != len(leaves2) or tree1 != tree2:
+        return unequal_str
+
+    for l1, l2 in zip(leaves1, leaves2, strict=True):
+        if not isinstance(l2, type(l1)):
             return unequal_str
 
-        for l1, l2 in zip(leaves1, leaves2, strict=True):
-            if isinstance(l1, Operator2):
-                if not isinstance(l2, Operator2):
-                    return unequal_str
-
-                ops_equal = _equal(
-                    l1,
-                    l2,
-                    check_interface=check_interface,
-                    check_trainability=check_trainability,
-                    atol=atol,
-                    rtol=rtol,
-                )
-                if isinstance(ops_equal, str):
-                    return (
-                        f"op1 and op2 have different values for '{hname}'. "
-                        f"The operator arguments do not match:\n{ops_equal}"
-                    )
-
-            elif isinstance(l2, Operator2):
-                return unequal_str
-
-            elif math.is_abstract(l1) or math.is_abstract(l2):
+        if isinstance(l1, Operator2):
+            ops_equal = _equal(
+                l1,
+                l2,
+                check_interface=check_interface,
+                check_trainability=check_trainability,
+                atol=atol,
+                rtol=rtol,
+            )
+            if isinstance(ops_equal, str):
                 return (
-                    f"At least one of op1 or op2 has a tracer value for '{hname}'. Abstract "
-                    "tracers are assumed to be unique."
+                    f"op1 and op2 have different values for '{hname}'. "
+                    f"The operator arguments do not match:\n{ops_equal}"
                 )
 
-            # Need to check shape along with math.allclose to handle the case where one
-            # value is broadcasted. math.allclose might pass in that case.
-            elif math.shape(l1) != math.shape(l2) or not math.allclose(
-                l1, l2, atol=atol, rtol=rtol
-            ):
-                return unequal_str
+        else:
+            res = _check_dynamic_value(
+                hname,
+                l1,
+                l2,
+                check_interface=check_interface,
+                check_trainability=check_trainability,
+                atol=atol,
+                rtol=rtol,
+            )
+            if isinstance(res, str):
+                return res
 
     return True
 
