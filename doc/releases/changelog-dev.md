@@ -109,7 +109,8 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Updated the `make_rz_to_phase_gradient_decomp` decomposition rule factory to be compatible with program capture.
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+  [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
@@ -209,6 +210,11 @@
 
   ```
 
+* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
+  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
+  application algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+
 <h3>Breaking changes 💔</h3>
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
@@ -281,6 +287,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
+  instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
+  and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
+  [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
+
 * A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
 
@@ -331,7 +342,15 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
+  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
+  if the number of selected operators is notably smaller than the maximal capacity for the given
+  number of control wires. This bug only surfaced for `partial=False`.
+  [(#9461)](https://github.com/PennyLaneAI/pennylane/pull/9461)
 
 * Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
@@ -381,6 +400,7 @@ Guillermo Alonso,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
