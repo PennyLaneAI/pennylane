@@ -16,6 +16,7 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
+from typing import Any, Iterable, Hashable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -324,6 +325,26 @@ class SignedOutMultiplier(Operator):
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires)
+
+    @classmethod
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
+        hyperparameters_dict = dict(metadata[1])
+        return cls(*data, **hyperparameters_dict)
+
+    def map_wires(self, wire_map: dict):
+        x_wires = [wire_map.get(w, w) for w in self.hyperparameters["x_wires"]]
+        y_wires = [wire_map.get(w, w) for w in self.hyperparameters["y_wires"]]
+        output_wires =  [wire_map.get(w, w) for w in self.hyperparameters["output_wires"]]
+        work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
+        output_wires_zeroed = self.hyperparameters["output_wires_zeroed"]
+
+        return SignedOutMultiplier(
+            x_wires,
+            y_wires,
+            output_wires,
+            work_wires,
+            output_wires_zeroed,
+        )
 
     @property
     def resource_params(self) -> dict:

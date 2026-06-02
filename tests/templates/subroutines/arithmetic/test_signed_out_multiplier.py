@@ -24,7 +24,7 @@ from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample
 from pennylane.ops import CNOT
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
 
@@ -52,6 +52,18 @@ def twos_complement_value(bits):
         sum += (2**i) * bit
     sum -= (2 ** (len(bits) - 1)) * bits[0]
     return sum
+
+
+@pytest.mark.parametrize(
+    "x_wires, y_wires, work_wires, output_wires, zeroed",
+    [
+        ((0, 1, 2), (3, 4, 5), (6, 7, 8, 9), (10, 11, 12, 13, 14, 15), True),
+        ((0, 1), (2, 3), (4, 5, 6, 7, 8, 9), (10, 11), False),
+    ],
+)
+def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
+    op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, zeroed)
+    assert_valid(op)
 
 
 @pytest.mark.parametrize(

@@ -168,8 +168,9 @@ class Incrementer(Operator):
 
     def map_wires(self, wire_map: dict):
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
+        keep = set(self.wires) - set(self.hyperparameters["work_wires"])
         wires = [
-            wire_map.get(w, w) for w in (set(self.wires) - set(self.hyperparameters["work_wires"]))
+            wire_map.get(w, w) for w in self.wires if w in keep
         ]
 
         return Incrementer(
