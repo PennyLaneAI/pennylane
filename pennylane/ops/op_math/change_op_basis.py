@@ -44,7 +44,6 @@ def _validate_callable(func: Callable) -> None:
     """Validates that a callable has no unbound mandatory parameters."""
     sig = inspect.signature(func)
 
-    has_required_param = False
     for param in sig.parameters.values():
         # The function,
         #
@@ -57,13 +56,9 @@ def _validate_callable(func: Callable) -> None:
 
         # If param has no default we can early exit
         if param.default is inspect.Parameter.empty:
-            has_required_param = True
-            break
-
-    if has_required_param:
-        raise TypeError(
-            "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
-        )
+            raise TypeError(
+                "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
+            )
 
 
 def _apply_op_or_func(op_or_func):
