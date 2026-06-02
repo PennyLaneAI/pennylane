@@ -336,6 +336,9 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
+  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
