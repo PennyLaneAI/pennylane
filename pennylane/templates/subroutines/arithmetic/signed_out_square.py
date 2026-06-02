@@ -101,7 +101,7 @@ class SignedOutSquare(Operation):
     >>> counts = circuit(output_wires)
     >>> counts = {int(k, 2): val for k, val in counts.items()}
     >>> print(counts)
-    {6: np.int64(510), 14: np.int64(490)}
+    {6: np.int64(501), 14: np.int64(499)}
 
     The new results are consistent with the previous ones: the smaller output :math:`30` is
     changed to :math:`30\!\mod\!2^4=14` and :math:`54` is changed to :math:`54\!\mod\!2^4=6`.
