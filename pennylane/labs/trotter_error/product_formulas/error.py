@@ -63,26 +63,29 @@ def effective_hamiltonian(
 
     **Example**
 
-    >>> import numpy as np
-    >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
-    >>> from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
-    >>>
-    >>> n_modes = 4
-    >>> r_state = np.random.RandomState(42)
-    >>> freqs = r_state.random(4)
-    >>> taylor_coeffs = [
-    >>>     np.array(0),
-    >>>     r_state.random(size=(n_modes, )),
-    >>>     r_state.random(size=(n_modes, n_modes)),
-    >>>     r_state.random(size=(n_modes, n_modes, n_modes))
-    >>> ]
-    >>>
-    >>> delta = 0.001
-    >>> frag_labels = [0, 1, 1, 0]
-    >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
-    >>>
-    >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
-    >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    .. code-block:: python
+
+        import numpy as np
+        from pennylane.labs.trotter_error.fragments import vibrational_fragments
+        from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
+
+        n_modes = 4
+        r_state = np.random.RandomState(42)
+        freqs = r_state.random(4)
+        taylor_coeffs = [
+            np.array(0),
+            r_state.random(size=(n_modes, )),
+            r_state.random(size=(n_modes, n_modes)),
+            r_state.random(size=(n_modes, n_modes, n_modes))
+        ]
+
+        delta = 0.001
+        frag_labels = [0, 1, 1, 0]
+        frag_coeffs = [1/2, 1/2, 1/2, 1/2]
+
+        pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+        frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
     >>> type(effective_hamiltonian(pf, frags, order=5, timestep=delta))
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
