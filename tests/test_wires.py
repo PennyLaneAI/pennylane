@@ -653,3 +653,10 @@ class TestAbstractWires:
             TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
         ):
             _ = qp.wires.Wires[2, 3, 4]
+
+    def test_shape_and_dtype(self):
+        """Test that AbstractWires have a shape and dtype."""
+
+        a = qp.wires.AbstractWires(3)
+        assert a.shape == (3,)
+        assert a.dtype == np.int64

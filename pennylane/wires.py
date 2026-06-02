@@ -760,6 +760,16 @@ class AbstractWires:
 
         raise TypeError("Tried to check equality against an abstract wire register.")
 
+    @property
+    def shape(self) -> tuple[int]:
+        """The number of wires expressed as shape ``(num_wires, )``."""
+        return (self.num_wires,)
+
+    @property
+    def dtype(self):
+        """np.int64.  The dtype of wires when used with Catalyst."""
+        return np.int64
+
     def __hash__(self):
         return hash(("AbstractWires", self.num_wires))
 

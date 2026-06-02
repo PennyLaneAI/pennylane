@@ -24,13 +24,15 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
-from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
+from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires
 
 
 class TestInitialization:
@@ -212,7 +214,7 @@ def test_fallback_creating_resources_AbstractArray():
         qp.MultiControlledX(wires)
 
     p = AbstractArray((3,), float)
-    w = AbstractArray((3,), dtype=int)
+    w = AbstractWires(3)
 
     resources = f.compute_resources({"a": p}, w, "Z")
     expected = defaultdict(int)
@@ -239,7 +241,7 @@ def test_fallback_resources_error():
     with pytest.raises(
         ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
     ):
-        f.compute_resources(qp.templates.AbstractArray((2,), dtype=int))
+        f.compute_resources(AbstractArray((2,), dtype=int))
 
 
 class TestSubroutineOp:
@@ -653,43 +655,6 @@ class TestTapePLIntegration:
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
 
-    def test_creating_abstract_array(self):
-        """Test basic checks for creating an AbstractArray."""
-
-        a = qp.templates.AbstractArray((2, 2, 3), np.float64)
-        assert a.shape == (2, 2, 3)
-        assert a.dtype is np.dtype(np.float64)
-
-        b = qp.templates.AbstractArray((), dtype=int)
-        assert b.shape == ()
-        assert b.dtype is np.dtype(np.int64)
-
-        assert a != b
-        assert hash(a)
-        assert b == qp.templates.AbstractArray((), dtype=int)
-
-    @pytest.mark.torch
-    def test_torch_dtype_converted_to_numpy(self):
-        """Test that torch data types are converted to numpy data types."""
-
-        import torch
-
-        x = torch.tensor(0.5, dtype=torch.float64)
-        a = qp.templates.AbstractArray((), x.dtype)
-        assert a.dtype is np.dtype(np.float64)
-
-    def test_inbuilt_type_promotion_to_numpy(self):
-        """Test that python types are converted to numpy types."""
-        assert AbstractArray((), int).dtype is np.dtype(np.int64)
-        assert AbstractArray((), float).dtype is np.dtype(np.float64)
-        assert AbstractArray((), complex).dtype is np.dtype(np.complex128)
-
-    def test_abstract_array_len(self):
-        """Test that AbstractArray's have a length."""
-
-        a = qp.templates.AbstractArray((2, 3, 3), dtype=int)
-        assert len(a) == 18
-
     def test_resource_keys(self):
         """Test that the SubroutineOp resource keys are subroutine and signature key."""
 
@@ -709,8 +674,8 @@ class TestGraphDecomposition:
         key = (
             (struct, (AbstractArray((), float),)),
             (struct, (AbstractArray((), float),)),
-            AbstractArray((2,), dtype=int),
-            AbstractArray((2,), dtype=int),
+            AbstractWires(2),
+            AbstractWires(2),
             ("XY", "YZ"),
         )
         assert rp["signature_key"] == key
@@ -798,8 +763,7 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qp.PauliX),
-            partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
+            resource_rep(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -816,9 +780,9 @@ class TestGraphDecomposition:
             "signature_key": _make_signature_key(
                 f,
                 "X",
-                AbstractArray((), dtype=int),
+                AbstractWires(0),
                 x=x,
-                reg2=AbstractArray((2,), dtype=int),
+                reg2=AbstractWires(2),
             ),
         }
 
@@ -1027,7 +991,7 @@ class TestGraphDecomposition:
                 struct,
                 (AbstractArray((3, 4), dtype=np.float32), AbstractArray((5, 4), dtype=np.int32)),
             ),
-            AbstractArray((1,), dtype=int),
+            AbstractWires(1),
         )
         assert op.resource_params["signature_key"] == expected_signature_key
 

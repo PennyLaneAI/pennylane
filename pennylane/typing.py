@@ -163,6 +163,11 @@ class AbstractArray:
 
     def __post_init__(self):
         object.__setattr__(self, "shape", tuple(self.shape))
+        if self.dtype.__class__.__module__.split(".")[0] == "torch":
+            import torch  # pylint: disable=import-outside-toplevel
+
+            dummy = torch.tensor((), dtype=self.dtype)
+            object.__setattr__(self, "dtype", dummy.numpy().dtype)
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
     def __instancecheck__(self, instance):

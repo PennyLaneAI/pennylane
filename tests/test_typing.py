@@ -128,6 +128,16 @@ class TestAbstractArray:
         with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
             _ = a[1]
 
+    @pytest.mark.torch
+    def test_provide_torch_dtype(self):
+        """Test that a torch dtype is converted to a numpy dtype."""
+
+        import torch
+
+        a = AbstractArray((2,), torch.int32)
+
+        assert a.dtype == np.int32
+
     def test_hash_and_equality(self):
         """Test hash and equality for AbstractArray"""
 

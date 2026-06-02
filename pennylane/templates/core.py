@@ -606,7 +606,8 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     and :class:`~.AbstractWires` classes.
 
-    >>> from pennylane.typing import AbstractArray, AbstractWires
+    >>> from pennylane.typing import AbstractArray
+    >>> from pennylane.wires import AbstractWires
     >>> abstract_params = AbstractArray((10,), float)
     >>> abstract_wires = AbstractWires(10)
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
@@ -617,8 +618,9 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray, AbstractWires
+        from pennylane.typing import AbstractArray
         from pennylane.templates import subroutine_resource_rep
+        from pennylane.wires import AbstractWires
 
         class MyOp(qp.operation.Operation):
             pass
