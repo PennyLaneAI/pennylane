@@ -2,8 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring 
+  a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+  [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
 
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
   This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
