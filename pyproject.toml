@@ -97,6 +97,7 @@ docs = [
     "sphinxcontrib-qthelp==2.0.0",
     "sphinxcontrib-htmlhelp==2.1.0",
     "sphinxcontrib-serializinghtml==2.0.0",
+    "torch~=2.9.0",
     "tensornetwork==0.3",
     "jinja2>=3.1",
     "networkx==3.1",
@@ -141,6 +142,7 @@ doctest = [
 
     # Used in docstrings of tested modules
     "matplotlib",
+    "torch",
     "pyzx",
     "jax==0.7.1",
     "jaxlib==0.7.1",

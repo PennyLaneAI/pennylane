@@ -56,13 +56,12 @@ jobs:
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
-      - name: Install PyTorch (CPU-only)
-        run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
-      - name: Install PennyLane (editable)
+      - name: Install PennyLane (editable) with doctest deps
         run: |
-          pip install --group doctest -e . 
+          uv pip install --group doctest -e . --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple/
 
       - name: Print Dependencies
         run: |
