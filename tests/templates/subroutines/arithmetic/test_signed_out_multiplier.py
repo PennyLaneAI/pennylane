@@ -20,15 +20,13 @@ from functools import reduce
 import numpy as np
 import pytest
 
-from pennylane import SignedOutMultiplier, device, qnode
+from pennylane import SignedOutMultiplier, device, math, qnode
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import sample
+from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
-
-dev = device("default.qubit")
 
 
 def bin_to_int(bits):
@@ -36,12 +34,12 @@ def bin_to_int(bits):
     return int("".join(map(str, bits)), 2)
 
 
-def int_to_bin(integer):
+def int_to_bin(integer, pd=""):
     """Converts an integer to a binary array."""
     if integer < 0:
-        bin_str = bin(integer)[3:]
+        bin_str = format(integer, f"#0{pd}b")[3:]
     else:
-        bin_str = bin(integer)[2:]
+        bin_str = format(integer, f"#0{pd}b")[2:]
     return list(reduce(lambda acc, nxt: acc + [int(nxt)], bin_str, []))
 
 
@@ -127,18 +125,6 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
         _test_decomposition_rule(op, rule)
 
 
-@qnode(dev, shots=1)
-def signed_multiply(
-    x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):  # pylint: disable=too-many-arguments
-    BasisEmbedding(
-        init_state,
-        x_wires + y_wires + work_wires + output_wires,
-    )
-    SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
-    return sample(wires=output_wires)
-
-
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, init_state, zeroed",
     [
@@ -215,6 +201,19 @@ def test_signed_out_multiplier_correct(
 ):  # pylint: disable=too-many-arguments
     """Tests with a few examples that the Template yields correct results."""
 
+    dev = device("default.qubit", wires=x_wires + y_wires + work_wires + output_wires)
+
+    @qnode(dev)
+    def signed_multiply(
+        x_wires, y_wires, work_wires, output_wires, init_state, zeroed
+    ):  # pylint: disable=too-many-arguments
+        BasisEmbedding(
+            init_state,
+            x_wires + y_wires + work_wires + output_wires,
+        )
+        SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+        return state()
+
     # get the initial state of our inputs
     x_state = [init_state[x] for x in x_wires]
     y_state = [init_state[y] for y in y_wires]
@@ -245,13 +244,19 @@ def test_signed_out_multiplier_correct(
     expected = x * y + z
 
     # execute the quantum signed out multiplier circuit
-    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed)[0]
+    result = signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed)
+
+    # convert to bitstring
+    # isclose will not match entries with wrong phase
+    bin_result = int_to_bin(
+        np.where(np.isclose(result, 1.0))[0][0] % (2 ** len(output_wires)), pd=len(output_wires)
+    )
 
     # get the value encoded as a twos complement if the result is negative
-    if result[0] == 1:
-        result = twos_complement_value(result)
+    if bin_result[0] == 1:
+        result = twos_complement_value(bin_result)
     else:
-        result = bin_to_int(result)
+        result = bin_to_int(bin_result)
 
     assert result == expected
 
@@ -267,6 +272,8 @@ def test_signed_out_multiplier_correct(
 )
 def test_twos_complement_helper(aux, wires, init_state, work_wires, expected):
     """Tests that the twos complement helper works correctly."""
+
+    dev = device("default.qubit")
 
     @qnode(dev, shots=1)
     def twos_complement(aux, wires, init_state, work_wires):
