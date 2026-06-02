@@ -341,7 +341,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs werer
+* Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
   [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
   
