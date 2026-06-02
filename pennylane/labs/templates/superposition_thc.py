@@ -44,7 +44,12 @@ class SuperpositionTHC(Operation):
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
         \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
 
-    where :math:`\mathcal{S}` is the valid index set and :math:`d = N/2 + M(M+1)` is its size.
+    where :math:`\mathcal{S}` is the valid index set and :math:`d = N/2 + M(M+1)` is its size:
+
+    .. math::
+
+       S = \{ p \mid \mu \le \nu \le M + 1, \text{ with } \mu \le \frac{N}{2} \}
+
     Because :math:`d` is generally not a power of two, the uniform superposition is obtained
     by combining Hadamards with a single round of amplitude amplification: an :class:`~.RY`
     rotation marks the success amplitude, a reflection amplifies it, and the rotation is
@@ -71,7 +76,7 @@ class SuperpositionTHC(Operation):
             register of Fig. 3 of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_;
             the remaining wires are scratch space for the comparators and multi-controlled
             gates. At least :math:`3\,n + 5` zeroed work wires must be provided, where
-            :math:`n = \text{len(mu\_wires)}`.
+            :math:`n` is the size of `nu_wires`.
 
     **Example**
 
@@ -80,27 +85,36 @@ class SuperpositionTHC(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.labs.templates import SuperpositionTHC
 
         n = 3
-        M, N = 2, 4
+        M, N = 5, 2
         mu_wires = list(range(0, n))
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n, 2 * n + 3 * n + 5))
 
-        dev = qml.device("lightning.qubit", wires=2 * n + 3 * n + 5)
+        dev = qp.device("lightning.qubit", wires=2 * n + 3 * n + 5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-            return qml.state()
+            return qp.probs(mu_wires + nu_wires)
 
     .. code-block:: pycon
 
-        >>> op = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-        >>> len(op.decomposition())
-        60
+        >>> print(circuit())
+        [0.04335852 0.04335852 0.04335852 0.04335852 0.04335852 0.04335852
+         0.00208072 0.00208072 0.00208072 0.04335852 0.04335852 0.04335852
+         0.04335852 0.04335852 0.00208072 0.00208072 0.00208072 0.00208072
+         0.04335852 0.04335852 0.04335852 0.04335852 0.00208072 0.00208072
+         0.00208072 0.00208072 0.00208072 0.04335852 0.04335852 0.04335852
+         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
+         0.04335852 0.04335852 0.00208072 0.00208072 0.00208072 0.00208072
+         0.00208072 0.00208072 0.00208072 0.04335852 0.00208072 0.00208072
+         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
+         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
+         0.00208072 0.00208072 0.00208072 0.00208072]
     """
 
     grad_method = None
