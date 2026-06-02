@@ -261,7 +261,7 @@ def merge_rotations(
     neither gate will be applied.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         atol (float):
             After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -279,15 +279,11 @@ def merge_rotations(
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=3)
-
-    You can apply the transform directly on :class:`QNode`
+    You can apply ``merge_rotations`` to a quantum function.
 
     .. code-block:: python
 
-        @merge_rotations
-        @qp.qnode(device=dev)
-        def circuit(x, y, z):
+        def qfunc(x, y, z):
             qp.RX(x, wires=0)
             qp.RX(y, wires=0)
             qp.CNOT(wires=[1, 2])
@@ -297,13 +293,38 @@ def merge_rotations(
             qp.RY(-y, wires=1)
             return qp.expval(qp.Z(0))
 
-    >>> circuit(0.1, 0.2, 0.3)
-    np.float64(0.955...)
+    The circuit before optimization:
+
+    >>> dev = qp.device("default.qubit")
+    >>> qnode = qp.QNode(qfunc, dev)
+    >>> print(qp.draw(qnode)(1, 2, 3))
+    0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
+
+    By inspection, we can combine the two ``RX`` rotations on the first qubit.
+    On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
+
+    >>> optimized_qnode = merge_rotations(qnode)
+    >>> print(qp.draw(optimized_qnode)(1, 2, 3))
+    0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
+    1: ─╭●───────────│─────────┤
+    2: ─╰X─────────H─╰●────────┤
+
+    It is also possible to explicitly specify which rotations ``merge_rotations`` should
+    merge using the ``include_gates`` argument. For example, if in the above
+    circuit we wanted only to merge the "RX" gates, we could do so as follows:
+
+    >>> optimized_qfunc = merge_rotations(qfunc, include_gates=["RX"])
+    >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+    >>> print(qp.draw(optimized_qnode)(1, 2, 3))
+    0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
+
 
     .. details::
         :title: Usage Details
-
-        **Merging ``Rot`` gates**
 
         When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
 
@@ -320,55 +341,12 @@ def merge_rotations(
         For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation
         of :func:`~.pennylane.transforms.single_qubit_fusion`.
 
-        **Usage on quantum functions**
-
-        You can also apply ``merge_rotations`` to a quantum function.
-
-        .. code-block:: python
-
-            def qfunc(x, y, z):
-                qp.RX(x, wires=0)
-                qp.RX(y, wires=0)
-                qp.CNOT(wires=[1, 2])
-                qp.RY(y, wires=1)
-                qp.Hadamard(wires=2)
-                qp.CRZ(z, wires=[2, 0])
-                qp.RY(-y, wires=1)
-                return qp.expval(qp.Z(0))
-
-        The circuit before optimization:
-
-        >>> qnode = qp.QNode(qfunc, dev)
-        >>> print(qp.draw(qnode)(1, 2, 3))
-        0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
-        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-        2: ─╰X─────────H────────╰●───────────────────┤
-
-        By inspection, we can combine the two ``RX`` rotations on the first qubit.
-        On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
-
-        >>> optimized_qfunc = merge_rotations(qfunc)
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)(1, 2, 3))
-        0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
-        1: ─╭●───────────│─────────┤
-        2: ─╰X─────────H─╰●────────┤
-
-        It is also possible to explicitly specify which rotations ``merge_rotations`` should
-        merge using the ``include_gates`` argument. For example, if in the above
-        circuit we wanted only to merge the "RX" gates, we could do so as follows:
-
-        >>> optimized_qfunc = merge_rotations(qfunc, include_gates=["RX"])
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)(1, 2, 3))
-        0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
-        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-        2: ─╰X─────────H────────╰●───────────────────┤
-
     .. details::
         :title: Usage with qjit
 
-        There are two key differences to note when using ``merge_rotations`` with ``qjit``:
+        There are three key differences to note when using ``merge_rotations`` with ``qjit``:
+
+        * ``merge_rotations`` must be applied to a QNode. Quantum functions are not supported as input.
 
         * The ``atol`` and ``include_gates`` arguments are not available with ``merge_rotations``
           when used with ``qjit``, and an error will be raised if either arguments are specified.

@@ -178,7 +178,7 @@ def _add_controlled(
         return _add_controlled_global_op(obj, layer_str, config)
 
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
     return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
 
@@ -188,7 +188,7 @@ def _add_controlled_global_op(obj, layer_str, config):
     but a manually managed dispatch."""
     layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
 
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
 
     label = obj.base.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
@@ -383,8 +383,10 @@ def _add_measurement(
     else:
         meas_label = str(m)
 
-    if len(m.wires) == 0:  # state or probability across all wires
+    if len(m.wires) == 0:
+        # add grouping symbols for measurements that span all device wires.
         n_wires = len(config.wire_map)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
         for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 

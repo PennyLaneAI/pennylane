@@ -151,15 +151,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
             circuit()
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        shapes = expected_shapes(1, 2)
-        weights = [np.random.random(shape) for shape in shapes]
-
-        template = qp.CVNeuralNetLayers(*weights, wires=range(2), id="a")
-        assert template.id == "a"
-
 
 class TestAttributes:
     """Test methods and attributes."""

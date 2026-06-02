@@ -247,6 +247,18 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(bar=1, foo=2)"
 
+        op = adjoint_resource_rep(qp.MultiRZ, {"num_wires": 4})
+        assert repr(op) == "Adjoint(MultiRZ(num_wires=4))"
+
+        op = pow_resource_rep(qp.MultiRZ, {"num_wires": 4}, z=2)
+        assert repr(op) == "Pow(MultiRZ(num_wires=4), z=2)"
+
+        op = controlled_resource_rep(qp.MultiRZ, {"num_wires": 5}, num_control_wires=2)
+        assert (
+            repr(op)
+            == "Controlled(MultiRZ(num_wires=5), num_control_wires=2, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed)"
+        )
+
     @pytest.mark.parametrize(
         "op, expected_name",
         [
@@ -297,6 +309,13 @@ class TestResourceRep:
             DummyOp, {"foo": 2, "bar": 1}
         )
 
+    def test_resource_rep_basis_embedding_normalization(self):
+        """Tests that BasisEmbedding is normalized to BasisState in resource_rep."""
+
+        rep = resource_rep(qp.BasisEmbedding, num_wires=3)
+        assert rep == resource_rep(qp.BasisState, num_wires=3)
+        assert rep.op_type is qp.BasisState
+
 
 @pytest.mark.unit
 class TestControlledResourceRep:
@@ -317,6 +336,22 @@ class TestControlledResourceRep:
                 "work_wire_type": "borrowed",
             },
         )
+
+    def test_controlled_resource_rep_basis_embedding_normalization(self):
+        """Tests that BasisEmbedding is normalized to BasisState in controlled_resource_rep."""
+
+        rep = controlled_resource_rep(
+            qp.BasisEmbedding, {"num_wires": 3}, num_control_wires=1, num_zero_control_values=0
+        )
+        expected = controlled_resource_rep(
+            qp.BasisState, {"num_wires": 3}, num_control_wires=1, num_zero_control_values=0
+        )
+        assert rep == expected
+
+        # Also verify consistency with the resource_rep path (from actual ops)
+        actual_op = qp.ctrl(qp.BasisEmbedding(features=1, wires=[0, 1, 2]), control=3)
+        from_actual = resource_rep(type(actual_op), **actual_op.resource_params)
+        assert rep == from_actual
 
     def test_controlled_resource_rep_flatten(self):
         """Tests that nested controlled ops are flattened."""

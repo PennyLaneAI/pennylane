@@ -6,6 +6,8 @@
 # The workflow utilizes matrix strategies to parallelize the test runs and supports skipping specific jobs on a lightened CI run.
 
 name: Unit Test - All Interfaces
+permissions:
+  contents: read
 on:
   workflow_call:
     secrets:
@@ -219,7 +221,7 @@ jobs:
       python-version: ${{ steps.python_versions.outputs.python_versions }}
       jobs-to-skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
 
-  # This job is the source of truth for the default versions of PyTorch, TensorFlow, and JAX.
+  # This job is the source of truth for the default versions of PyTorch, and JAX.
   # Individual jobs can use these values or override at a per job level.
   default-dependency-versions:
     needs:
