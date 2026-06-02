@@ -49,7 +49,7 @@ jobs:
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
         pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
-        uv pip install --system --group docs --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple/
+        uv pip install --system --group docs --extra-index-url https://download.pytorch.org/whl/cpu
 
     - name: Build Sphinx HTML
       run: |
