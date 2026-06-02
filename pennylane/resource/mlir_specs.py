@@ -75,7 +75,7 @@ def _mlir_resources_to_specs_resources(
     display_names: dict[str, str],
 ) -> None:
     """
-    Helper function to convert the output of resource analysis pass into SpecsResources objects.
+    Helper function to convert the output of the resource analysis pass into ``SpecsResources`` objects.
 
     Recursively resolves the resources for a given function call, combining subroutine resources
     with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from

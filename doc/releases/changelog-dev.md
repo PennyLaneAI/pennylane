@@ -4,6 +4,7 @@
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
 
   ```python
   @qp.qjit(autograph=True)
@@ -36,7 +37,7 @@
   Depth: Not computed
   ```
 
-  These symbolic resources have variables which can substituted for concrete values to compute the expected resources for a circuit.
+  These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
   >>> res = specs_result.resources

@@ -746,12 +746,14 @@ def specs(
     .. details::
         :title: Symbolic Results for Pass-by-pass Specs with Catalyst
 
-        In some cases, the resources obtained from pass-by-pass specs may be symbolic rather than
-        exact values. This can occur when the resources depend on values that are not known at
-        compile time, such as the number of iterations in a loop. In these cases, the resource
-        information will be returned as a symbolic expression via a
-        :class:`~.resource.SymbolicSpecsResources` rather than a concrete valued
-        :class:`~.resource.SpecsResources`.
+        In cases where the exact resources of a circuit are not easily obtained at compile time,
+        ``specs`` may return resources which include expressions rather than exact values.
+        This can occur when the resources depend on values that are not known at
+        compile time, such as the number of iterations in a loop.
+        In these cases, the resource information will be returned as a
+        :class:`~.resource.SymbolicSpecsResources` including symbolic expressions,
+        rather than a
+        :class:`~.resource.SpecsResources` with concrete values.
 
         For example, consider the following circuit which contains a ``for`` loop with a
         non-static range:
@@ -790,9 +792,9 @@ def specs(
         - expval(PauliZ): 1
         Depth: Not computed
 
-        The resource object can be made into a concrete value by using the ``.subs`` method of the
-        returned :class:`~.resource.SymbolicSpecsResources` object, and providing a mapping from
-        each symbolic variable to an integer value:
+        You can estimate the concrete resource values using the ``.subs`` method of the
+        returned :class:`~.resource.SymbolicSpecsResources` object, and providing a dictionary
+        which describes the mapping from each symbolic variable to an integer value:
 
         >>> res = specs_result.resources
         >>> print(res.subs({'a': 5}))

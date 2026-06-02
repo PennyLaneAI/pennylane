@@ -35,7 +35,9 @@ class Expression:
     represent symbolic parameters of the resources. The expressions are represented as a dictionary
     mapping tuples of variable names to their coefficients.
 
-    NOTE: This class is intended to be immutable. Do not modify the internal state of an expression
+    .. warning::
+
+        This class is intended to be immutable. Do not modify the internal state of an expression
     after it is created, as this may lead to incorrect behavior.
     """
 

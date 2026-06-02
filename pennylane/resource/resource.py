@@ -415,7 +415,9 @@ class SymbolicSpecsResources(SpecsResources):
     which store expressions representing the resources, allowing for symbolic manipulation and
     substitution of variables.
 
-    This class is intended to be immutable. Modifying the attributes after creation may
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may
     lead to unexpected behavior.
 
     .. note::
