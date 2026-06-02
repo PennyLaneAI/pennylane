@@ -89,6 +89,7 @@ def test_standard_validity(M, N, n):
 class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         ("qjit"),
         [True, False],
@@ -124,7 +125,7 @@ class TestSuperpositionTHC:
         if qjit:
             probs = qp.qjit(circuit)(M, N, mu_wires, nu_wires, work_wires)
         else:
-            probs = circuit(M, N, mu_wires, nu_wires, work_wires )
+            probs = circuit(M, N, mu_wires, nu_wires, work_wires)
 
         # Keep only the "success" half (flag == 1, the odd-indexed entries) and
         # decode the remaining index into (mu, nu).
