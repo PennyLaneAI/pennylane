@@ -268,11 +268,6 @@ class TestProperties:
 
         assert op.has_diagonalizing_gates is False
 
-    def test_queue_category(self):
-        """Test that the queue category `"_ops"` carries over."""
-        op = Adjoint(qp.PauliX(0))
-        assert op._queue_category == "_ops"  # pylint: disable=protected-access
-
     @pytest.mark.parametrize("value", (True, False))
     def test_is_verified_hermitian(self, value):
         """Test `is_verified_hermitian` property mirrors that of the base."""

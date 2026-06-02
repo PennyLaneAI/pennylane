@@ -16,7 +16,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 """
 
 import pennylane as qml
-from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
+from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.wires import WireError
 
@@ -65,7 +65,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         )
 
         @qp.transforms.decompose(
-                gate_set={"C(BasisEmbedding)", "SemiAdder", "CNOT", "GlobalPhase"},
+                gate_set={"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"},
                 fixed_decomps={qp.RZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
@@ -79,33 +79,27 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'GlobalPhase': 1, 'C(BasisEmbedding)': 2, 'SemiAdder': 1}
+    {'GlobalPhase': 1, 'C(BasisState)': 2, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
-         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤  State
-     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤  State
-     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤  State
-     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤  State
-     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤  State
-    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤  State
+         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤ ╭State
+     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤ ├State
+     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤ ├State
+     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤ ├State
+     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
+    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤ ╰State
 
     """
     if len(angle_wires) != len(phase_grad_wires):
         raise WireError(
-            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires-1)}"
+            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires - 1)}"
         )
     if len(phase_grad_wires) - 1 > len(work_wires):
         raise WireError(
-            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
+            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires - 1)}"
         )
-
-    kwargs = {
-        "angle_wires": angle_wires,
-        "phase_grad_wires": phase_grad_wires,
-        "work_wires": work_wires,
-    }
 
     def _resource_fn():
         # rz decomposition costs, using information about angle_wires etc from the outer scope
@@ -115,11 +109,14 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             num_y_wires=len(phase_grad_wires),
             num_work_wires=len(work_wires),
         )
-        compute_op = uncompute_op = controlled_resource_rep(
-            qml.BasisEmbedding,
+        compute_op = uncompute_op = qml.resource_rep(
+            qml.ops.Controlled,
+            base_class=qml.BasisState,
             base_params={"num_wires": len(angle_wires)},
             num_control_wires=1,
             num_zero_control_values=0,
+            num_work_wires=0,
+            work_wire_type="borrowed",
         )
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
@@ -127,10 +124,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     @qml.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):
-        target_wire = wires
         qml.GlobalPhase(phi / 2)
-
-        pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
-        qml.apply(pg_op)  # because _rz_phase_gradient is in non-queing context
+        _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
 
     return _decomp_fn
