@@ -107,8 +107,8 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
     Or check the quantum resources required for this task:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].gate_types
-    >>> specs
-    {'PhaseShift': 1, 'IsingZZ': 180, 'CNOT': 240, 'RZ': 61, 'SingleExcitation': 186, 'Hadamard': 1}
+    >>> print(dict(sorted(specs.items())))
+    {'CNOT': 240, 'Hadamard': 1, 'IsingZZ': 180, 'PhaseShift': 1, 'RZ': 61, 'SingleExcitation': 186}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into :class:`~.PhaseShift` and :class:`~.SingleExcitation`
     on ``lightning.qubit``.
