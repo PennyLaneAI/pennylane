@@ -23,11 +23,12 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial
+from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pennylane as qp
+from pennylane._partial import merge_partial_args, unwrap_partial
 
 from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
@@ -828,24 +829,36 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
+    qnode, bound_args, bound_kwargs = unwrap_partial(qnode)
+    specs_fn = None
+
     if isinstance(qnode, qp.QNode):
-        return partial(_specs_qnode, qnode, level, compute_depth)
+        specs_fn = _specs_qnode
 
     try:
         from ..qnn.torch import TorchLayer
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return partial(_specs_qnode, qnode, level, compute_depth)
+            specs_fn = _specs_qnode
     except ImportError:  # pragma: no cover
         pass
 
-    try:  # pragma: no cover
-        # This is tested by integration tests within the Catalyst frontend
-        import catalyst
+    if specs_fn is None:
+        try:  # pragma: no cover
+            # This is tested by integration tests within the Catalyst frontend
+            import catalyst
 
-        if isinstance(qnode, catalyst.jit.QJIT):
-            return partial(_specs_qjit, qnode, level, compute_depth)
-    except ImportError:  # pragma: no cover
-        pass
+            if isinstance(qnode, catalyst.jit.QJIT):
+                specs_fn = _specs_qjit
+        except ImportError:  # pragma: no cover
+            pass
 
-    raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
+    if specs_fn is None:
+        raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
+
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        args, kwargs = merge_partial_args(bound_args, bound_kwargs, args, kwargs)
+        return specs_fn(qnode, level, compute_depth, *args, **kwargs)
+
+    return wrapper

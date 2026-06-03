@@ -16,6 +16,8 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -1190,6 +1192,57 @@ def test_applied_transforms():
 
     expected = "0: ──X─┤  "
     assert qp.draw(my_circuit)(1.234) == expected
+
+
+def test_draw_qnode_with_nested_partial():
+    """Test that partial-wrapped QNodes can still be drawn."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def partial_circuit(x, y, repeat=1):
+        for _ in range(repeat):
+            qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        return qp.expval(qp.Z(0))
+
+    fixed = partial(partial(partial_circuit, y=0.1, repeat=1), y=0.3, repeat=2)
+    drawing = qp.draw(fixed)(0.2)
+
+    assert drawing.count("RX(0.20)") == 2
+    assert "RY(0.30)" in drawing
+
+
+def test_draw_qnode_with_positional_partial():
+    """Test that partial-wrapped QNodes can bind positional arguments."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def partial_circuit(x, y, repeat=1):
+        for _ in range(repeat):
+            qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        return qp.expval(qp.Z(0))
+
+    fixed = partial(partial_circuit, 0.2, repeat=2)
+    drawing = qp.draw(fixed)(0.3)
+
+    assert drawing.count("RX(0.20)") == 2
+    assert "RY(0.30)" in drawing
+
+
+def test_draw_qnode_with_partial_keyword_override():
+    """Test that call-time keywords override partial-bound QNode keywords."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def partial_circuit(x, y=0.1, repeat=1):
+        for _ in range(repeat):
+            qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        return qp.expval(qp.Z(0))
+
+    fixed = partial(partial_circuit, y=0.2, repeat=1)
+    drawing = qp.draw(fixed)(0.4, y=0.5, repeat=3)
+
+    assert drawing.count("RX(0.40)") == 3
+    assert "RY(0.50)" in drawing
 
 
 def test_draw_with_qfunc():

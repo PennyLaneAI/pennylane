@@ -14,6 +14,8 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -245,6 +247,78 @@ class TestSpecsTransform:
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
         assert info["shots"] == Shots(None)
+
+    def test_specs_qnode_with_nested_partial(self):
+        """Test that specs works with partial-wrapped QNodes."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def partial_circuit(x, y=0.1, repeat=1):
+            for _ in range(repeat):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.Z(0))
+
+        fixed = partial(partial(partial_circuit, y=0.2, repeat=1), y=0.3, repeat=3)
+        info = qp.specs(fixed)(0.4)
+
+        assert info["resources"].gate_types == {"RX": 3, "RY": 1}
+        assert info["resources"].num_gates == 4
+        assert info["level"] == "gradient"
+
+    def test_specs_qnode_with_positional_partial(self):
+        """Test that specs works when partial binds QNode positional arguments."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def partial_circuit(x, y=0.1, repeat=1):
+            for _ in range(repeat):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.Z(0))
+
+        fixed = partial(partial_circuit, 0.4, repeat=2)
+        info = qp.specs(fixed)(0.3)
+
+        assert info["resources"].gate_types == {"RX": 2, "RY": 1}
+        assert info["resources"].num_gates == 3
+        assert info["level"] == "gradient"
+
+    def test_specs_qnode_with_partial_keyword_override(self):
+        """Test that call-time keywords override partial-bound QNode keywords."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def partial_circuit(x, y=0.1, repeat=1):
+            for _ in range(repeat):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.Z(0))
+
+        fixed = partial(partial_circuit, y=0.2, repeat=1)
+        info = qp.specs(fixed)(0.4, y=0.5, repeat=3)
+
+        assert info["resources"].gate_types == {"RX": 3, "RY": 1}
+        assert info["resources"].num_gates == 4
+        assert info["level"] == "gradient"
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_specs_qjit_with_partial(self):
+        """Test that specs works with partial-wrapped QJIT objects."""
+
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def partial_circuit(x, y=0.1, repeat=1):
+            for _ in range(repeat):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.Z(0))
+
+        fixed = partial(partial_circuit, 0.4, repeat=2)
+        info = qp.specs(fixed, level=0)(0.3)
+
+        assert info["resources"].gate_types == {"RX": 2, "RY": 1}
+        assert info["resources"].num_gates == 3
 
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):

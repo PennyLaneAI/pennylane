@@ -23,6 +23,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
+from pennylane._partial import merge_partial_args, unwrap_partial
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 
@@ -288,6 +289,8 @@ def draw(
         2: ─╰●─────────────────┤
 
     """
+    qnode, bound_args, bound_kwargs = unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
@@ -301,6 +304,8 @@ def draw(
             show_matrices=show_matrices,
             show_wire_labels=show_wire_labels,
             level=level,
+            bound_args=bound_args,
+            bound_kwargs=bound_kwargs,
         )
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
@@ -311,6 +316,7 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        args, kwargs = merge_partial_args(bound_args, bound_kwargs, args, kwargs)
         tape = make_qscript(qnode)(*args, **kwargs)
 
         if wire_order:
@@ -345,9 +351,14 @@ def _draw_qnode(
     show_matrices=True,
     show_wire_labels=True,
     level: Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    bound_args=(),
+    bound_kwargs=None,
 ):
+    bound_kwargs = bound_kwargs or {}
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        args, kwargs = merge_partial_args(bound_args, bound_kwargs, args, kwargs)
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
@@ -780,6 +791,8 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
+    qnode, bound_args, bound_kwargs = unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
@@ -793,6 +806,8 @@ def draw_mpl(
             level=level,
             style=style,
             fig=fig,
+            bound_args=bound_args,
+            bound_kwargs=bound_kwargs,
             **kwargs,
         )
 
@@ -802,9 +817,12 @@ def draw_mpl(
             UserWarning,
         )
 
+    draw_mpl_kwargs = kwargs
+
     @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        tape = make_qscript(qnode)(*args, **kwargs)
+    def wrapper(*args, **kwargs_qnode):
+        args, kwargs_qnode = merge_partial_args(bound_args, bound_kwargs, args, kwargs_qnode)
+        tape = make_qscript(qnode)(*args, **kwargs_qnode)
         if wire_order:
             _wire_order = wire_order
         else:
@@ -822,7 +840,7 @@ def draw_mpl(
             style=style,
             fig=fig,
             level=level,
-            **kwargs,
+            **draw_mpl_kwargs,
         )
 
     return wrapper
@@ -838,10 +856,15 @@ def _draw_mpl_qnode(
     level="gradient",
     style="black_white",
     fig=None,
+    bound_args=(),
+    bound_kwargs=None,
     **kwargs,
 ):
+    bound_kwargs = bound_kwargs or {}
+
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
+        args, kwargs_qnode = merge_partial_args(bound_args, bound_kwargs, args, kwargs_qnode)
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
         if len(tapes) > 1:

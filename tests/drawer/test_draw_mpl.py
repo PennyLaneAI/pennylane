@@ -18,6 +18,8 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -78,6 +80,42 @@ def test_fig_argument():
     output_fig, ax = qp.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
     assert ax.get_figure() == fig
     assert output_fig == fig
+    plt.close("all")
+
+
+def test_draw_mpl_qnode_with_partial():
+    """Test that partial-wrapped QNodes can still be drawn with matplotlib."""
+
+    fixed = partial(circuit1, y=2.34)
+    fig, ax = qp.draw_mpl(fixed)(1.23)
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert len(ax.patches) == 7
+    assert len(ax.lines) == 6
+
+    texts = [t.get_text() for t in ax.texts]
+    assert "RX" in texts
+    assert "RY" in texts
+
+    plt.close("all")
+
+
+def test_draw_mpl_qnode_with_positional_partial():
+    """Test that draw_mpl works when partial binds QNode positional arguments."""
+
+    fixed = partial(circuit1, 1.23)
+    fig, ax = qp.draw_mpl(fixed)(2.34)
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert len(ax.patches) == 7
+    assert len(ax.lines) == 6
+
+    texts = [t.get_text() for t in ax.texts]
+    assert "RX" in texts
+    assert "RY" in texts
+
     plt.close("all")
 
 
@@ -573,6 +611,22 @@ def test_draw_mpl_supports_qfuncs():
     assert len(ax.lines) == 1
     assert len(ax.texts) == 2
     assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "RX"
+    plt.close("all")
+
+
+def test_draw_mpl_supports_partial_qfuncs():
+    """Test that draw_mpl works with partial-wrapped quantum functions."""
+
+    def qfunc(x):
+        qp.RX(x, 0)
+
+    fig, ax = qp.draw_mpl(partial(qfunc, x=1.1))()
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert len(ax.patches) == 1
+    assert len(ax.lines) == 1
     assert ax.texts[1].get_text() == "RX"
     plt.close("all")
 
