@@ -470,10 +470,6 @@ class AdjointOperation(Adjoint, Operation):
     def control_wires(self):
         return self.base.control_wires
 
-    def single_qubit_rot_angles(self):
-        omega, theta, phi = self.base.single_qubit_rot_angles()
-        return [-phi, -theta, -omega]
-
     @property
     def grad_method(self):
         return self.base.grad_method
