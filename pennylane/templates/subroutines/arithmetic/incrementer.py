@@ -201,7 +201,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         wires = wires[::-1]
     else:
         if enabled() and control_wires.shape[0] > 0:
-            wires = jnp.concatenate([jnp.atleast_1d(control_wires), wires])
+            wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
         else:
             wires = wires + control_wires
         wires = wires[::-1]
