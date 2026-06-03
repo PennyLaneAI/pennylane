@@ -174,15 +174,14 @@ class ProductFormula:
         >>>
         >>> np.random.seed(42)
         >>> fragments = {
-        >>>     "A": np.random.random(size=(3, 3)),
-        >>>     "B": np.random.random(size=(3, 3)),
-        >>>     "C": np.random.random(size=(3, 3)),
-        >>> }
-        >>>
+        ...     "A": np.random.random(size=(3, 3)),
+        ...     "B": np.random.random(size=(3, 3)),
+        ...     "C": np.random.random(size=(3, 3)),
+        ... }
         >>> second_order.to_matrix(fragments)
-        [[20.53683969 24.33566914 25.4931284 ]
-         [12.50207018 15.44505726 15.01069493]
-         [13.52951601 17.64888648 18.04980336]]
+        array([[20.53683969, 24.33566914, 25.4931284 ],
+               [12.50207018, 15.44505726, 15.01069493],
+               [13.52951601, 17.64888648, 18.04980336]])
 
         """
         accumulator = _MultiplicativeIdentity()

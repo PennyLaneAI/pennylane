@@ -196,7 +196,7 @@ def perturbation_error(
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
     >>> errors = perturbation_error(pf, frags, [state1, state2], max_order=3)
     >>> print(errors)
-    [{3: np.complex128(0.9189251160920877j)}, {3: np.complex128(4.797716682426849j)}]
+    [{3: np.complex128(0.91892...j)}, {3: np.complex128(4.797716...j)}]
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
