@@ -160,7 +160,7 @@ def check_commutation_relation(
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
-            com.simplify()
+            com.prune()
             if len(com) != 0:
                 if vspace.is_independent(com):
                     return False
