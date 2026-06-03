@@ -149,10 +149,9 @@ def _multiplexer_state_prep_decomposition(
         alpha_y_k = _get_alpha_y(a, n, n - k)
         qp.SelectPauliRot(alpha_y_k, target_wire=wires[k], control_wires=wires[:k], rot_axis="Y")
 
-    omega = math.angle(state_vector)
-    if not is_real and (
-        qp.math.is_abstract(omega) or qp.math.requires_grad(omega) or not qp.math.allclose(omega, 0)
-    ):
+    if not is_real:
+        omega = math.angle(state_vector)
+        if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
         qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
 
 
