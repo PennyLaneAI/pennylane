@@ -44,7 +44,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 
 class SignedOutMultiplier(Operator):
     r"""
-    Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|z|}\rangle`.
+    Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + xy) \mod 2^{|z|}\rangle`.
 
     The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. 
     The value :math:`x` encoded by a bitstring :math:`x_{n-1} x_{n-2}\dots x_0` using 2s complement
