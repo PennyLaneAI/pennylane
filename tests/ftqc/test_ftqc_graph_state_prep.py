@@ -118,6 +118,7 @@ class TestGraphStatePrep:
         assert repr(GraphStatePrep(graph=q, wires=wires)) == "GraphStatePrep(Hadamard, CZ)"
         assert GraphStatePrep(graph=q, wires=wires).label() == "GraphStatePrep(Hadamard, CZ)"
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
