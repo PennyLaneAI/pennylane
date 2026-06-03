@@ -1261,7 +1261,6 @@ def _is_hash_leaf(l) -> bool:
 class StatePrepBase2:
     """An interface for state-prep operations."""
 
-    grad_method = None
 
     @abc.abstractmethod
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
