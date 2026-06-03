@@ -99,6 +99,7 @@ def test_correct(wires, init_state, expected, work_wires):
     assert np.allclose(result, 0)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires, control_wires, control_values",
     [
@@ -145,8 +146,6 @@ def test_correct(wires, init_state, expected, work_wires):
 )
 def test_controlled(wires, init_state, expected, work_wires, control_wires, control_values):
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
-
-    enable_graph()
 
     @decompose(gate_set={TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1})
     @qnode(dev)
