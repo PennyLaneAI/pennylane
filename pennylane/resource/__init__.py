@@ -37,7 +37,9 @@ Circuit Specification Classes and Utilities
     :toctree: api
 
     ~CircuitSpecs
+    ~Expression
     ~SpecsResources
+    ~SymbolicSpecsResources
 
     ~resources_from_tape
 
@@ -138,6 +140,7 @@ from .resource import (
     Resources,
     ResourcesOperation,
     SpecsResources,
+    SymbolicSpecsResources,
     CircuitSpecs,
     add_in_series,
     add_in_parallel,
@@ -146,4 +149,5 @@ from .resource import (
     resources_from_tape,
     substitute,
 )
+from .expression import Expression
 from .specs import specs

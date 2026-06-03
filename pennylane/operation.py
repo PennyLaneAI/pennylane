@@ -1869,7 +1869,12 @@ class Operation(Operator):
             such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
             original operation.
         """
-        raise NotImplementedError
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     @property
     def parameter_frequencies(self) -> list[tuple[float | int]]:
