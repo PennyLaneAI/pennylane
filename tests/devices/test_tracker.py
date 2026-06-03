@@ -41,6 +41,20 @@ class TestTrackerCoreBehavior:
 
         assert tracker.active is False
 
+    def test_repr(self):
+        """Tests the string representation."""
+        tracker = Tracker()
+        expected = "Tracker(active=False, totals={}, history={}, latest={}, persistent=False)"
+        assert repr(tracker) == expected
+
+        tracker.update(a=2, b="b2", c=1)
+        expected2 = (
+            "Tracker(active=False, totals={'a': 2, 'c': 1}, "
+            "history={'a': [2], 'b': ['b2'], 'c': [1]}, "
+            "latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False)"
+        )
+        assert repr(tracker) == expected2
+
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 
