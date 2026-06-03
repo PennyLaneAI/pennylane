@@ -44,7 +44,7 @@ def sparse_fragments(fragments: Sequence[csr_array]) -> list[SparseFragment]:
     >>> fragments = sparse_fragments(matrices)
     >>> fragments
     [SparseFragment(shape=(2, 2), dtype=int64), SparseFragment(shape=(2, 2), dtype=int64)]
-    >>> fragments[0].norm()
+    >>> print(fragments[0].norm())
     1.4142135623730951
     """
 
