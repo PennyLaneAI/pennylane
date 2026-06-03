@@ -353,6 +353,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
+  [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
+
 * CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
   instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.

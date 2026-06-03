@@ -36,6 +36,7 @@ class TestRotXZX:
         assert op.wires == Wires(wires)
         assert op.data == (phi, theta, omega)
 
+    @pytest.mark.jax
     def test_is_valid_op(self):
         """Assert RotXZX is a valid operator"""
         op = RotXZX(1.2, 2.3, -0.5, wires=0)
