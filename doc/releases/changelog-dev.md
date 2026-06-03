@@ -2,6 +2,58 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
+  that can't be resolved at compile time.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+
+  ```python
+  @qp.qjit(autograph=True)
+  @qp.qnode(qp.device("lightning.qubit", wires=1))
+  def circuit(x):
+      qp.Hadamard(0)
+      qp.PauliX(0)
+      for _ in range(x):
+          qp.PauliX(0)
+      return qp.expval(qp.PauliX(0))
+
+  specs_result = qp.specs(circuit, level=0)(5)
+  ```
+
+  ```pycon
+  >>> print(specs_result)
+  Device: lightning.qubit
+  Device wires: 1
+  Shots: Shots(total=None)
+  Level: Before MLIR Passes
+  <BLANKLINE>
+  Symbolic Variables: a
+  Wire allocations: 1
+  Total gates: a + 2
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: a + 1
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+
+  ```
+
+  These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
+
+  ```pycon
+  >>> res = specs_result.resources
+  >>> print(res.subs(a=5))
+  Wire allocations: 1
+  Total gates: 7
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: 6
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+
+  ```
+
 * Added :class:`~.FFQRAM`, a template for probabilistic state preparation based on the flip-flop QRAM construction. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
 
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
@@ -35,7 +87,7 @@
 
   Alongside the addition of :class:`~.FFFT`, a new operation called :class:`~.TwoWireFFT`
   has been added to enable its implementation: the :class:`~.FFFT` operation is
-  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations 
+  decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
@@ -81,7 +133,7 @@
   ```
   [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
-* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})).
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -139,7 +191,7 @@
     True
 
   ```
-  
+
 * Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
   test of a quantum register and an integer.
   [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
@@ -164,12 +216,12 @@
     )
     return qp.sample(wires=3)
   ```
-  
+
   ```pycon
     >>> output = circuit(3, 2)
     >>> print(bool(output)) # 3 >= 2
     True
-  
+
   ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
@@ -205,6 +257,11 @@
       'Hadamard': 1.055E+7
 
   ```
+
+* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
+  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
+  application algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
 <h3>Breaking changes 💔</h3>
 
@@ -278,6 +335,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
+  instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
+  and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
+  [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
+
 * A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
 
@@ -328,7 +390,14 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
+  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
+  accidentally being masked by internal try/except logic.
+  [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
 
 * Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
   if the number of selected operators is notably smaller than the maximal capacity for the given
@@ -383,6 +452,7 @@ Guillermo Alonso,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
@@ -393,4 +463,5 @@ Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs,
+Jake Zaia,
 Zinan Zhou.
