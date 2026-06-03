@@ -153,6 +153,10 @@
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
 
+* The output of :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` is
+  now formatted for clearer visual inspection when used in a Jupyter notebook environment.
+  [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
