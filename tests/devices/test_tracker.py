@@ -41,6 +41,34 @@ class TestTrackerCoreBehavior:
 
         assert tracker.active is False
 
+    def test_repr(self):
+        """Test repr functionality"""
+        tracker = Tracker()
+        default_repr = (
+            "<Tracker(active=False, persistent=False, "
+            "totals={}, history={}, latest={})>"
+        )
+        assert default_repr == repr(tracker)
+        tracker.active = True
+        tracker.update(a=1, b=2, c="c")
+        updated_repr = (
+            "<Tracker(active=True, persistent=False, "
+            "totals={'a': 1, 'b': 2}, "
+            "history={'a': [1], 'b': [2], 'c': ['c']}, " 
+            "latest={'a': 1, 'b': 2, 'c': 'c'})>"
+        )
+        assert updated_repr == repr(tracker)
+        tracker.update(a=2, b=3, c=0)
+        tracker.persistent=True
+        updated_repr = (
+            "<Tracker(active=True, persistent=True, "
+            "totals={'a': 3, 'b': 5, 'c': 0}, "
+            "history={'a': [1, 2], 'b': [2, 3], 'c': ['c', 0]}, " 
+            "latest={'a': 2, 'b': 3, 'c': 0})>"
+        )
+        assert updated_repr == repr(tracker)
+
+
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 
