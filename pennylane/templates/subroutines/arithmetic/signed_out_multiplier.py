@@ -44,7 +44,7 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 
 class SignedOutMultiplier(Operator):
     r"""
-    Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + x*y) \text{mod} 2^{|z|}\rangle`.
+    Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + xy) \mod 2^{|z|}\rangle`.
 
     The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. 
     The value :math:`x` encoded by a bitstring :math:`x_{n-1} x_{n-2}\dots x_0` using 2s complement
@@ -68,7 +68,7 @@ class SignedOutMultiplier(Operator):
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
-            Otherwise, we need :math:`2 \times |\texttt{output\_wires}| + 1` work wires. Defaults to an empty
+            Otherwise, we need ``2*len(output_wires) + 1`` work wires. Defaults to an empty
             tuple, i.e., no work wires.
         output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
@@ -95,7 +95,13 @@ class SignedOutMultiplier(Operator):
         def circuit():
             qp.BasisEmbedding(x, wires=x_wires)
             qp.BasisEmbedding(y, wires=y_wires)
-            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True)
+            qp.SignedOutMultiplier(
+                x_wires,
+                y_wires,
+                output_wires,
+                work_wires, 
+                output_wires_zeroed=True,
+            )
             return qp.sample(wires=output_wires)
 
     >>> print(circuit())
