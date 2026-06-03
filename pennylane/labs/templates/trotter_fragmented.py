@@ -84,7 +84,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
         @qp.qjit
         @qp.transforms.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("lightning.qubit"))
+        @qp.qnode(qp.device("lightning.qubit", seed=42))
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
