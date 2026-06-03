@@ -14,7 +14,7 @@
 """Contains the SuperpositionTHC template, used as a subroutine in tensor
 hypercontraction (THC) qubitization."""
 
-from pennylane import adjoint, cond, math
+from pennylane import adjoint, math
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -289,11 +289,12 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     BasisState(M, wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
-    cond(not keep_eq, MultiControlledX)(
-        wires=nu_wires + [work_wires[3]],
-        control_values=[0] * len(nu_wires),
-        work_wires=work_wires[7 + 3 * n - 1 : 7 + 4 * n - 1],
-    )
+    if not keep_eq:
+        MultiControlledX(
+            wires=nu_wires + [work_wires[3]],
+            control_values=[0] * len(nu_wires),
+            work_wires=work_wires[7 + 3 * n - 1 : 7 + 4 * n - 1],
+        )
 
 
 def _controlled_rep(base_class, num_control_wires):
@@ -446,7 +447,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(left_equalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
+    adjoint(lambda: left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)

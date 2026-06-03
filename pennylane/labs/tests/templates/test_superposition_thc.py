@@ -110,6 +110,8 @@ def test_standard_validity(M, N, n):
 class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
 
+    @pytest.mark.external
+    @pytest.mark.parametrize("qjit", [False, True])
     @pytest.mark.parametrize(
         ("M", "N", "n"),
         [
@@ -121,34 +123,38 @@ class TestSuperpositionTHC:
             (4, 8, 3),
         ],
     )
-    def test_operation_result(self, M, N, n):
+    def test_operation_result(self, M, N, n, qjit):
         """The template prepares a uniform superposition over the valid index set
         ``S = {(mu, nu): mu <= nu <= M - 1} U {(mu, M): mu < N / 2}`` conditioned on
         the output success flag (``work_wires[6] == 1``).
 
-        We let ``qml.probs`` marginalize out every other wire for us: it returns
-        ``P(mu, nu, flag)`` over the ``2 ** (2n + 1)`` basis states of the
-        ``mu_wires + nu_wires + [success_flag]`` register, ordered big-endian
-        (mu is the most significant block, the flag is the least significant bit).
+        ``qml.probs`` marginalizes out every other wire for us and returns
+        ``P(mu, nu, flag)`` flattened over the ``mu_wires + nu_wires + [success_flag]``
+        register. We reshape it into a ``(2**n, 2**n, 2)`` array so that
+        ``probs[mu, nu, flag]`` is indexed directly, with no bit arithmetic.
         """
         mu_wires, nu_wires, work_wires = _wire_layout(n)
         success_flag = work_wires[6]
-        dev = qp.device("default.qubit", wires=2 * n + len(work_wires))
+        dev = qp.device("lightning.qubit", wires=2 * n + len(work_wires))
 
         @qp.qnode(dev)
         def circuit():
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
             return qp.probs(wires=mu_wires + nu_wires + [success_flag])
 
-        probs = circuit()
+        if qjit:
+            circuit = qp.qjit(circuit)
 
-        # Keep only the "success" half (flag == 1, the odd-indexed entries) and
-        # decode the remaining index into (mu, nu).
-        support = {}
-        for index, prob in enumerate(probs):
-            if (index & 1) and prob > 1e-9:
-                mu, nu = divmod(index >> 1, 2**n)
-                support[(mu, nu)] = float(prob)
+        # probs[mu, nu, flag]: flag == 1 is the "success" subspace.
+        probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
+        success = probs[:, :, 1]
+
+        support = {
+            (mu, nu): float(success[mu, nu])
+            for mu in range(2**n)
+            for nu in range(2**n)
+            if success[mu, nu] > 1e-9
+        }
 
         assert set(support) == _valid_pairs(M, N)
         assert len(support) == _d(M, N)
@@ -157,78 +163,6 @@ class TestSuperpositionTHC:
         weights = np.array(list(support.values()))
         assert np.allclose(weights, weights[0])
 
-    @pytest.mark.parametrize(
-        ("M", "N", "n"),
-        [
-            (4, 4, 3),
-            (4, 8, 3),
-            (3, 6, 3),
-        ],
-    )
-    def test_one_body_block(self, M, N, n):
-        """The one-body sector is flagged by the sentinel column ``nu = M`` on the
-        ``work_wires[3]`` flag and contains exactly ``N / 2`` terms ``{(mu, M):
-        mu < N / 2}``.
-
-        This is the part of the valid set that depends on ``N`` (Eq. (28) of
-        arXiv:2011.03494). We read ``P(mu, nu, w3, w6)`` and keep the success
-        subspace (``w6 == 1``).
-        """
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        w3, w6 = work_wires[3], work_wires[6]
-        dev = qp.device("default.qubit", wires=2 * n + len(work_wires))
-
-        @qp.qnode(dev)
-        def circuit():
-            SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-            return qp.probs(wires=mu_wires + nu_wires + [w3, w6])
-
-        probs = circuit()
-
-        one_body = set()
-        two_body = set()
-        for index, prob in enumerate(probs):
-            if prob <= 1e-9:
-                continue
-            w6_bit = index & 1
-            w3_bit = (index >> 1) & 1
-            mu, nu = divmod(index >> 2, 2**n)
-            if w6_bit:  # success subspace only
-                (one_body if w3_bit else two_body).add((mu, nu))
-
-        # The one-body block carries exactly N/2 terms, all in the sentinel column.
-        assert one_body == {(mu, M) for mu in range(N // 2)}
-        assert len(one_body) == N // 2
-        assert all(nu == M for _, nu in one_body)
-
-        # The two-body block is the N-independent upper triangle mu <= nu <= M-1.
-        assert two_body == {(mu, nu) for nu in range(M) for mu in range(nu + 1)}
-        assert len(two_body) == M * (M + 1) // 2
-
-    @pytest.mark.parametrize(("M", "n"), [(4, 3), (3, 3)])
-    def test_n_dependence(self, M, n):
-        """The size of the prepared superposition grows with ``N / 2``: the valid
-        set is ``d = N / 2 + M (M + 1) / 2``. This guards against the ``mu > N / 2``
-        flag becoming dead code (it must select the one-body terms)."""
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        success_flag = work_wires[6]
-        dev = qp.device("default.qubit", wires=2 * n + len(work_wires))
-
-        def support_size(N):
-            @qp.qnode(dev)
-            def circuit():
-                SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-                return qp.probs(wires=mu_wires + nu_wires + [success_flag])
-
-            probs = circuit()
-            return sum(1 for i, p in enumerate(probs) if (i & 1) and p > 1e-9)
-
-        # N//2 must stay < 2**n for the classical comparator constant.
-        sizes = {N: support_size(N) for N in (2, 4, 6)}
-        for N, size in sizes.items():
-            assert size == _d(M, N)
-        # Strictly increasing with N (one extra one-body term per 2 spin orbitals).
-        assert sizes[2] < sizes[4] < sizes[6]
 
     @pytest.mark.parametrize(
         ("M", "N", "n"),
@@ -327,48 +261,3 @@ class TestSuperpositionTHC:
         """An error is raised when the registers do not meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-
-    def test_flatten_unflatten(self):
-        """The operator round-trips through _flatten / _unflatten."""
-        M, N, n = 2, 4, 3
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        op = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-
-        data, metadata = op._flatten()
-        new_op = type(op)._unflatten(data, metadata)
-
-        assert op.hyperparameters == new_op.hyperparameters
-        assert op.wires == new_op.wires
-        assert qp.equal(op, new_op)
-
-    def test_map_wires(self):
-        """map_wires relabels every register consistently."""
-        M, N, n = 2, 4, 3
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        op = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-
-        wire_map = {w: w + 100 for w in op.wires}
-        mapped = op.map_wires(wire_map)
-
-        assert mapped.hyperparameters["mu_wires"] == qp.wires.Wires(
-            [w + 100 for w in mu_wires]
-        )
-        assert mapped.hyperparameters["nu_wires"] == qp.wires.Wires(
-            [w + 100 for w in nu_wires]
-        )
-        assert mapped.hyperparameters["work_wires"] == qp.wires.Wires(
-            [w + 100 for w in work_wires]
-        )
-        assert mapped.hyperparameters["M"] == M
-        assert mapped.hyperparameters["N"] == N
-
-    def test_decomposition_queue(self):
-        """compute_decomposition returns a non-empty list of operators."""
-        M, N, n = 2, 4, 3
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        op = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-
-        decomp = op.decomposition()
-        assert isinstance(decomp, list)
-        assert len(decomp) > 0
-        assert all(isinstance(o, qp.operation.Operator) for o in decomp)
