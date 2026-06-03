@@ -39,7 +39,7 @@ from pennylane.exceptions import (
 from pennylane.gradients.parameter_shift import parameter_frequencies
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
-from pennylane.ops import Hermitian
+from pennylane.ops import Exp, Hermitian
 from pennylane.ops.functions import eigvals, generator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
@@ -1789,3 +1789,14 @@ class TestParameterFrequencies:
         freqs_from_eigvals = gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
         assert math.allclose(parameter_frequencies(op), freqs_from_eigvals)
+
+    def test_parameter_frequencies_given_an_op(self):
+        """Test that parameter_frequencies retrieves the parameter frequencies defined on an Operator."""
+        op = Exp(qp.PauliZ(1), 1j)
+        assert parameter_frequencies(op) == [(2,)]
+
+    def test_parameter_frequencies_raises(self):
+        """Test that parameter_frequencies raises an error if given the wrong type of object."""
+        wires = Wires([0, 1, 2])
+        with pytest.raises(NotImplementedError):
+            _ = parameter_frequencies(wires)
