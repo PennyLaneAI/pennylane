@@ -58,7 +58,6 @@ from pennylane.templates.subroutines import TemporaryAND
 def _add_cond_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object for conditional
     operators"""
-    n_wires = len(config.wire_map)
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
@@ -68,7 +67,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     ctrl_symbol = "╩"
     if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[max_b]):
         ctrl_symbol = "╝"
-    layer_str[max_b + n_wires] = f"═{ctrl_symbol}"
+    layer_str[max_b + config.n_wires] = f"═{ctrl_symbol}"
 
     for row in range(max_w + 1, config.n_wires):
         layer_str[row] = config.wire_filler(row) + "║"
@@ -78,10 +77,10 @@ def _add_cond_grouping_symbols(op, layer_str, config):
             intersection = "╬"
             if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[b]):
                 intersection = "╣"
-            layer_str[b + n_wires] = f"═{intersection}"
+            layer_str[b + config.n_wires] = f"═{intersection}"
         else:
-            filler = " " if layer_str[b + n_wires][-1] == " " else "═"
-            layer_str[b + n_wires] = f"{filler}║"
+            filler = " " if layer_str[b + config.n_wires][-1] == " " else "═"
+            layer_str[b + config.n_wires] = f"{filler}║"
 
     return layer_str
 
@@ -117,15 +116,14 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
     if op not in config.bit_map:
         return layer_str
 
-    n_wires = len(config.wire_map)
     mapped_wire = config.wire_map[op.wires[0]]
-    bit = config.bit_map[op] + n_wires
+    bit = config.bit_map[op] + config.n_wires
     layer_str[bit] += " ╚"
 
     for row in range(mapped_wire + 1, config.n_wires):
         layer_str[row] += config.wire_filler(row) + "║"
 
-    for b in range(n_wires, bit):
+    for b in range(config.n_wires, bit):
         filler = " " if layer_str[b][-1] == " " else "═"
         layer_str[b] += f"{filler}║"
 
