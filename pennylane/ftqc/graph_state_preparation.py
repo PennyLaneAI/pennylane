@@ -99,18 +99,18 @@ class GraphStatePrep(Operation):
         ``GraphStatePrep`` template is:
 
         >>> print(qp.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
-        QubitGraph<id=(0, 0), loc=[square]>: ──Y─╭●─╭●───────┤  Probs
-        QubitGraph<id=(0, 1), loc=[square]>: ──Y─│──╰X─╭●────┤  Probs
-        QubitGraph<id=(1, 0), loc=[square]>: ──Y─╰X────│──╭●─┤  Probs
-        QubitGraph<id=(1, 1), loc=[square]>: ──Y───────╰X─╰X─┤  Probs
+        QubitGraph<id=(0, 0), loc=[square]>: ──Y─╭●─╭●───────┤ ╭Probs
+        QubitGraph<id=(0, 1), loc=[square]>: ──Y─│──╰X─╭●────┤ ├Probs
+        QubitGraph<id=(1, 0), loc=[square]>: ──Y─╰X────│──╭●─┤ ├Probs
+        QubitGraph<id=(1, 1), loc=[square]>: ──Y───────╰X─╰X─┤ ╰Probs
 
         The circuit wires can also be customized by passing a wires argument to the circuit as follows:
 
         >>> print(qp.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops, wires=[0, 1, 2, 3]))
-        0: ──Y─╭●─╭●───────┤  Probs
-        1: ──Y─│──╰X─╭●────┤  Probs
-        2: ──Y─╰X────│──╭●─┤  Probs
-        3: ──Y───────╰X─╰X─┤  Probs
+        0: ──Y─╭●─╭●───────┤ ╭Probs
+        1: ──Y─│──╰X─╭●────┤ ├Probs
+        2: ──Y─╰X────│──╭●─┤ ├Probs
+        3: ──Y───────╰X─╰X─┤ ╰Probs
 
     .. details::
         :title: A Note on Node Ordering
@@ -139,10 +139,10 @@ class GraphStatePrep(Operation):
 
         >>> g1 = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])  # (a) -- (b) -- (c) -- (d)
         >>> print(qp.draw(circuit, level="device")(g1, wires=range(4)))
-        0: ──H─╭●───────┤  State
-        1: ──H─╰Z─╭●────┤  State
-        2: ──H────╰Z─╭●─┤  State
-        3: ──H───────╰Z─┤  State
+        0: ──H─╭●───────┤ ╭State
+        1: ──H─╰Z─╭●────┤ ├State
+        2: ──H────╰Z─╭●─┤ ├State
+        3: ──H───────╰Z─┤ ╰State
 
         In other words, ``GraphStatePrep`` has defined the node-label-to-wire mapping::
 
@@ -159,10 +159,10 @@ class GraphStatePrep(Operation):
 
         >>> g2 = nx.Graph([("b", "a"), ("a", "c"), ("c", "d")])  # (b) -- (a) -- (c) -- (d)
         >>> print(qp.draw(circuit, level="device")(g2, wires=range(4)))
-        0: ──H─╭Z─╭●────┤  State
-        1: ──H─╰●─│─────┤  State
-        2: ──H────╰Z─╭●─┤  State
-        3: ──H───────╰Z─┤  State
+        0: ──H─╭Z─╭●────┤ ╭State
+        1: ──H─╰●─│─────┤ ├State
+        2: ──H────╰Z─╭●─┤ ├State
+        3: ──H───────╰Z─┤ ╰State
 
         As before, ``GraphStatePrep`` defined the node-label-to-wire mapping to be::
 

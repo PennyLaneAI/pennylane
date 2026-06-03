@@ -155,8 +155,8 @@ def label(op: Operator, new_label: str) -> LabelledOp:
             return qp.probs()
 
     >>> print(qp.draw(circuit)())
-    0: ──H("my-h")─╭●─┤  Probs
-    1: ────────────╰X─┤  Probs
+    0: ──H("my-h")─╭●─┤ ╭Probs
+    1: ────────────╰X─┤ ╰Probs
 
     """
     return LabelledOp(op, new_label)
