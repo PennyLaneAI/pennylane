@@ -140,7 +140,7 @@ class AbstractArray:
         dtype (type): the data type of the array
 
 
-    Scalar ``AbstractArray`'s can indexed into to create an array with a different shape:
+    Scalar ``AbstractArray``\ s can indexed into to create an array with a different shape:
 
     >>> Int32 = qp.typing.AbstractArray((), np.int32)
     >>> Int32[3, 2]
