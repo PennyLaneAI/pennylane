@@ -1274,11 +1274,9 @@ class StatePrepBase2:
             array: A state vector for all wires in a circuit
         """
 
+    # pylint: disable=unused-argument
     def label(
-        self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
-    ) -> str:  # pylint: disable=unused-argument
+        self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
+    ) -> str:
         """The default label for a state prep."""
         return "|Ψ⟩"
