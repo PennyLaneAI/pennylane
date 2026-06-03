@@ -60,10 +60,13 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
     .. code-block:: python
 
+        rng = np.random.default_rng(42)
+
         L = 2; M=2; N=3
+
         hamiltonian = {
-            "core_tensors": np.random.rand(L, M, M, N, N),
-            "leaf_tensors": np.random.rand(L, M, N, N),
+            "core_tensors": rng.random((L, M, M, N, N)),
+            "leaf_tensors": rng.random((L, M, N, N)),
             "nuc_constant": 0.5
         }
 
@@ -98,14 +101,14 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
     We can now run this circuit consisting of just ``10`` Trotter steps.
 
-    >>> trotter_circuit() # doctest: +SKIP
-    Array(0.97630652, dtype=float64)
+    >>> trotter_circuit()
+    Array(0.0115551, dtype=float64)
 
     Or check the quantum resources required for this task:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].gate_types
-    >>> specs # doctest: +SKIP
-    {'RZ': 61, 'IsingZZ': 180, 'CNOT': 240, 'SingleExcitation': 186, 'PhaseShift': 1, 'Hadamard': 1}
+    >>> specs
+    {'PhaseShift': 1, 'IsingZZ': 180, 'CNOT': 240, 'RZ': 61, 'SingleExcitation': 186, 'Hadamard': 1}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into :class:`~.PhaseShift` and :class:`~.SingleExcitation`
     on ``lightning.qubit``.
