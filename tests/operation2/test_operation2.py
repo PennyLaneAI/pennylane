@@ -23,6 +23,7 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane import gradients, math
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -30,16 +31,20 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
+from pennylane.gradients.parameter_shift import parameter_frequencies
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
+from pennylane.ops import Hermitian
+from pennylane.ops.functions import eigvals, generator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 
 class TestInitSubclass:
@@ -1690,3 +1695,97 @@ class TestRepresentations:
 
         op = WithGen(wires=0)
         assert op.generator() == DynOp(0.5, wires=0)
+
+
+class TestParameterFrequencies:
+    """Tests for ``parameter_frequencies``."""
+
+    def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
+        """Test that parameter_frequencies raises an error if there are too many dynamic arguments."""
+
+        class MultiArgOpWithGen(Operator2):
+            num_params = 2
+            num_wires = 1
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+            def generator(self):
+                return Hermitian(np.zeros((2, 2)), wires=self.wires)
+
+        op = MultiArgOpWithGen(0.1, 0.2, 0)
+
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            _ = parameter_frequencies(op)
+
+    def test_parameter_frequencies_raises_error_no_generator(self):
+        """Test that parameter_frequencies raises an error if the op.generator() is undefined."""
+
+        class SingleArgOpNoGen(Operator2):
+            num_params = 1
+            num_wires = 1
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+        op = SingleArgOpNoGen(0.1, 0)
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            _ = parameter_frequencies(op)
+
+    @pytest.mark.parametrize(
+        "freqs", [[(0.5, 1.0), (0.5, 1.0)], [(0.3, 4.0), (0.1, 2.0)], [(0.5, 1.0), (0.8, 0.2)]]
+    )
+    def test_param_freqs_no_generator(self, freqs):
+        """Test that parameter_frequencies are accessible when provided explicitly, even if the op.generator() is undefined."""
+
+        class MultiArgOpNoGenParamFreqs(Operator2):
+            num_params = 2
+            num_wires = 1
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            parameter_frequencies = freqs
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+        op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])
+        assert parameter_frequencies(op) == freqs
+
+    @pytest.mark.parametrize(
+        "matrix",
+        [
+            np.zeros((2, 2)),
+            np.array([[1, 0], [0, 1]]),
+            np.array([[0, 1], [1, 0]]),
+        ],
+    )
+    def test_param_freqs_with_generator(self, matrix):
+        """Test that parameter_frequencies relate to the eigenvalues of the generator if the op.generator() is defined."""
+
+        class OpWithGen(Operator2):
+            num_params = 1
+            num_wires = 1
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, phi: float, wires: WiresLike):
+                super().__init__(phi, wires=wires)
+
+            def generator(self):
+                return Hermitian(matrix, wires=self.wires)
+
+        op = OpWithGen(0.1, 0)
+
+        gen = generator(op, format="observable")
+        gen_eigvals = eigvals(gen)
+        freqs_from_eigvals = gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+
+        assert math.allclose(parameter_frequencies(op), freqs_from_eigvals)

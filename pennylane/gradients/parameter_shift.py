@@ -17,24 +17,31 @@ of a qubit-based quantum tape.
 """
 
 import warnings
-from functools import partial
+from functools import partial, singledispatch
 
 import numpy as np
 
 from pennylane import math
 from pennylane.decomposition import gate_sets
-from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
+from pennylane.exceptions import (
+    GeneratorUndefinedError,
+    OperatorPropertyUndefined,
+    ParameterFrequenciesUndefinedError,
+)
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation import Operator
+from pennylane.operation import Operation, Operator
 from pennylane.ops import Prod, prod
+from pennylane.ops.functions import eigvals, generator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
+from ..operation2 import Operator2
 from .finite_difference import finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
+    eigvals_to_frequencies,
     frequencies_to_period,
     generate_shift_rule,
     generate_shifted_tapes,
@@ -1228,3 +1235,47 @@ def param_shift(
         return gradient_tapes, processing_fn
 
     return gradient_tapes, fn
+
+
+@singledispatch
+def parameter_frequencies(op: Operation | Operator2):
+    """Parameter frequencies are defined on an Operation or calculated in a dispatch handler for an Operator2."""
+    raise NotImplementedError
+
+
+@parameter_frequencies.register
+def _handle_operation(op: Operation):
+    """Returns the parameter frequencies for a given Operation."""
+    return op.parameter_frequencies
+
+
+@parameter_frequencies.register
+def _handle_operator2(op: Operator2):
+    """Calculates the parameter frequencies for a given Operator2 if they are not defined explicitly."""
+    # check if parameter_frequencies are defined on the op
+    if hasattr(op, "parameter_frequencies") and op.parameter_frequencies:
+        return op.parameter_frequencies
+
+    if len(op.dynamic_argnames) == 1:
+        # if the operator has a single parameter, we can query the
+        # generator, and if defined, use its eigenvalues.
+        try:
+            gen = generator(op, format="observable")
+        except GeneratorUndefinedError as e:
+            raise ParameterFrequenciesUndefinedError(
+                f"Operation {op.name} does not have parameter frequencies defined."
+            ) from e
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore", message=r".+ eigenvalues will be computed numerically\."
+            )
+            eigs = eigvals(gen, k=2 ** len(op.wires))
+
+        eigs = tuple(np.round(eigs, 8))
+        return [eigvals_to_frequencies(eigs)]
+
+    raise ParameterFrequenciesUndefinedError(
+        f"Operation {op.name} does not have parameter frequencies defined, "
+        "and parameter frequencies can not be computed as no generator is defined."
+    )

@@ -361,7 +361,7 @@ from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .hadamard_gradient import hadamard_grad
 from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor
-from .parameter_shift import param_shift
+from .parameter_shift import param_shift, parameter_frequencies
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
 from .pulse_gradient import stoch_pulse_grad
