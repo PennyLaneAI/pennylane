@@ -383,9 +383,7 @@ def _equal_operator2(
 ):
     """Check equality between Operator2 instances."""
     # Check dynamic arguments
-    for (dname, dval1), (_, dval2) in zip(
-        op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
-    ):
+    for (dname, dval1), (_, dval2) in zip(op1.dynamic_args.items(), op2.dynamic_args.items()):
         res = _check_dynamic_value(
             dname,
             dval1,
@@ -399,23 +397,17 @@ def _equal_operator2(
             return res
 
     # Check static arguments
-    for (sname, sval1), (_, sval2) in zip(
-        op1.static_args.items(), op2.static_args.items(), strict=True
-    ):
+    for (sname, sval1), (_, sval2) in zip(op1.static_args.items(), op2.static_args.items()):
         if sval1 != sval2:
             return f"op1 and op2 have different values for '{sname}'.\n" f"Got {sval1} and {sval2}."
 
     # Check static compilable arguments
-    for (cname, cval1), (_, cval2) in zip(
-        op1.compilable_args.items(), op2.compilable_args.items(), strict=True
-    ):
+    for (cname, cval1), (_, cval2) in zip(op1.compilable_args.items(), op2.compilable_args.items()):
         if cval1 != cval2:
             return f"op1 and op2 have different values for '{cname}'.\n" f"Got {cval1} and {cval2}."
 
     # Check wire arguments
-    for (wname, wval1), (_, wval2) in zip(
-        op1.wire_args.items(), op2.wire_args.items(), strict=True
-    ):
+    for (wname, wval1), (_, wval2) in zip(op1.wire_args.items(), op2.wire_args.items()):
         if wval1 != wval2:
             if op1.wire_argnames == ("wires",):
                 return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
@@ -426,9 +418,7 @@ def _equal_operator2(
             )
 
     # Check hybrid arguments
-    for (hname, hval1), (_, hval2) in zip(
-        op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
-    ):
+    for (hname, hval1), (_, hval2) in zip(op1.hybrid_args.items(), op2.hybrid_args.items()):
         if hname in op1.wire_argnames:
             continue
 
@@ -508,11 +498,9 @@ def _check_pytree_value(
     if len(leaves1) != len(leaves2) or tree1 != tree2:
         return unequal_str
 
-    for l1, l2 in zip(leaves1, leaves2, strict=True):
-        if not isinstance(l1, type(l2)):
-            return unequal_str
-
-        if isinstance(l1, Operator2):
+    for l1, l2 in zip(leaves1, leaves2):
+        # Case 1: Both leaf values are operators
+        if isinstance(l1, Operator2) and isinstance(l2, Operator2):
             ops_equal = _equal(
                 l1,
                 l2,
@@ -527,6 +515,11 @@ def _check_pytree_value(
                     f"The operator arguments do not match:\n{ops_equal}"
                 )
 
+        # Case 2: One leaf value is an operator and the other is not. Not valid
+        elif isinstance(l1, Operator2) or isinstance(l2, Operator2):
+            return unequal_str
+
+        # Case 3: Neither leaf value is an operator. l1 and l2 are assumed to be numbers or arrays
         else:
             res = _check_dynamic_value(
                 hname,
