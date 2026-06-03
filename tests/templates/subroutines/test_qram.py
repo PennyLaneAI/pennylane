@@ -20,12 +20,11 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, measure, qnode, registers, workflow
+from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import probs
+from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
-from pennylane.tape import QuantumScript
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
 
@@ -1209,12 +1208,28 @@ def test_ffqram_standard_validity():
     assert_valid(op)
 
 
-def test_ffqram_postselected_probabilities():
+@pytest.mark.parametrize(
+    ("amplitudes", "address", "wires"),
+    [
+        (
+            [np.sqrt(0.3), np.sqrt(0.7)],
+            ["1", "0"],  # single address wire
+            registers({"address": 1, "register": 1}),
+        ),
+        (
+            [np.sqrt(0.6), np.sqrt(1.4)],  # un-normalized amplitudes
+            np.array([[0, 0, 0], [0, 0, 1]]),  # tensor-like address
+            registers({"address": 3, "register": 1}),
+        ),
+        (
+            [-np.sqrt(0.3), -np.sqrt(0.2), np.sqrt(0.5)],  # negative amplitudes
+            ["1110", "0101", "0010"],
+            registers({"address": 4, "register": 1}),
+        ),
+    ],
+)
+def test_ffqram_postselected_probabilities(amplitudes, address, wires):
     """Post-selected (conditional) distribution matches the encoded amplitudes."""
-    amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
-    address = ["000", "001"]
-
-    wires = registers({"address": 3, "register": 1})
 
     @qnode(dev)
     def circuit():
@@ -1227,20 +1242,39 @@ def test_ffqram_postselected_probabilities():
         measure(wires["register"], postselect=1)
         return probs(wires=wires["address"])
 
-    # addresses "000" -> index 0, "001" -> index 1; everything else should vanish
     expected = np.zeros(2 ** len(wires["address"]))
-    expected[0] = 0.3
-    expected[1] = 0.7
+    probabilities = np.abs(np.asarray(amplitudes)) ** 2
+    probabilities = probabilities / np.sum(probabilities)
+
+    for address_, probability in zip(address, probabilities, strict=True):
+        address_string = address_ if isinstance(address_, str) else "".join(map(str, address_))
+        expected[int(address_string, 2)] = probability
 
     assert np.allclose(circuit(), expected)
 
 
-def test_ffqram_success_probability():
+@pytest.mark.parametrize(
+    ("amplitudes", "address", "wires"),
+    [
+        (
+            [np.sqrt(0.3), np.sqrt(0.7)],
+            ["1", "0"],
+            registers({"address": 1, "register": 1}),
+        ),
+        (
+            [np.sqrt(0.6), np.sqrt(1.4)],
+            np.array([[0, 0, 0], [0, 0, 1]]),
+            registers({"address": 3, "register": 1}),
+        ),
+        (
+            [-np.sqrt(0.3), -np.sqrt(0.2), np.sqrt(0.5)],
+            ["1110", "0101", "0010"],
+            registers({"address": 4, "register": 1}),
+        ),
+    ],
+)
+def test_ffqram_success_probability(amplitudes, address, wires):
     """The post-selection succeeds with probability 1 / 2^m."""
-    amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
-    address = ["000", "001"]
-
-    wires = registers({"address": 3, "register": 1})
 
     @qnode(dev)
     def circuit():
@@ -1253,7 +1287,8 @@ def test_ffqram_success_probability():
         return probs(wires=wires["register"])
 
     success_prob = circuit()[1]  # P(register = 1)
-    assert np.allclose(success_prob, 0.125)  # 1 / 2**3 for 3 address wires
+    m = len(wires["address"])
+    assert np.allclose(success_prob, 1 / 2**m)  # 1 / 2**m for m address wires
 
 
 @pytest.mark.parametrize(
@@ -1307,51 +1342,40 @@ class TestFFQRAMDecomposition:
 
     def test_decomposition_contents(self):
         """Checks the decomposition for a standard FF-QRAM example."""
-        amplitudes = [np.sqrt(0.3), np.sqrt(0.7)]
+        amplitudes = [-np.sqrt(0.3), np.sqrt(0.7)]
         op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])
-        tape = QuantumScript(op.decomposition())
+        operations = op.decomposition()
 
-        expected_names = [
-            "Hadamard",
-            "Hadamard",
-            "Hadamard",
-            "PauliX",
-            "PauliX",
-            "PauliX",
-            "C(RY)",
-            "PauliX",
-            "PauliX",
-            "PauliX",
-            "PauliX",
-            "PauliX",
-            "C(RY)",
-            "PauliX",
-            "PauliX",
-        ]
-        expected_wires = [
-            [0],
-            [1],
-            [2],
-            [0],
-            [1],
-            [2],
-            [0, 1, 2, 3],
-            [0],
-            [1],
-            [2],
-            [0],
-            [1],
-            [0, 1, 2, 3],
-            [0],
-            [1],
-        ]
-
-        assert [gate.name for gate in tape.operations] == expected_names
-        assert [gate.wires.tolist() for gate in tape.operations] == expected_wires
-
+        gate_names = [gate.name for gate in operations]
+        assert {name: gate_names.count(name) for name in set(gate_names)} == {
+            "Hadamard": 3,
+            "PauliX": 10,
+            "C(RY)": 2,
+        }
         expected_angles = 2 * np.arcsin(amplitudes)
-        assert np.allclose(tape.operations[6].parameters, [expected_angles[0]])
-        assert np.allclose(tape.operations[12].parameters, [expected_angles[1]])
+        cry_angles = [gate.parameters[0] for gate in operations if gate.name == "C(RY)"]
+        assert np.allclose(np.sort(cry_angles), np.sort(expected_angles))
+
+        @qnode(dev)
+        def circuit():
+            for gate in operations:
+                apply(gate)
+            return state()
+
+        expected_state = np.zeros(2**4)
+        base_amplitude = 1 / np.sqrt(2**3)
+
+        for address_int in range(2**3):
+            expected_state[2 * address_int] = base_amplitude
+
+        for address_, amplitude in zip(["000", "001"], amplitudes, strict=True):
+            address_int = int(address_, 2)
+            # |addr, 1>
+            expected_state[2 * address_int + 1] = amplitude * base_amplitude
+            # |addr, 0>
+            expected_state[2 * address_int] = np.sqrt(1 - amplitude**2) * base_amplitude
+
+        assert np.allclose(circuit(), expected_state)
 
     @pytest.mark.capture
     def test_decomposition_new(self):
@@ -1373,12 +1397,20 @@ class TestFFQRAMDecomposition:
         op = FFQRAM(amplitudes, wires=[0, 1, 2, 3], address=["000", "001"])
         assert op.batch_size == 2
 
-        tape = QuantumScript(op.decomposition())
-        assert tape.operations[6].name == "C(RY)"
-        assert tape.operations[12].name == "C(RY)"
-        assert tape.operations[6].batch_size == 2
-        assert tape.operations[12].batch_size == 2
+        operations = op.decomposition()
+        gate_names = [gate.name for gate in operations]
+        assert {name: gate_names.count(name) for name in set(gate_names)} == {
+            "Hadamard": 3,
+            "PauliX": 10,
+            "C(RY)": 2,
+        }
+
+        cry_gates = [gate for gate in operations if gate.name == "C(RY)"]
+        assert all(gate.batch_size == 2 for gate in cry_gates)
 
         expected_angles = 2 * np.arcsin(amplitudes)
-        assert np.allclose(tape.operations[6].parameters[0], expected_angles[:, 0])
-        assert np.allclose(tape.operations[12].parameters[0], expected_angles[:, 1])
+        cry_angles = np.array([gate.parameters[0] for gate in cry_gates])
+        sorted_cry_angles = cry_angles[np.argsort(cry_angles[:, 0])]
+        sorted_expected_angles = expected_angles.T[np.argsort(expected_angles.T[:, 0])]
+
+        assert np.allclose(sorted_cry_angles, sorted_expected_angles)
