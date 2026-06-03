@@ -162,6 +162,7 @@ SKIP_ASSERT_VALID = {
 
 class TestOperations:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
