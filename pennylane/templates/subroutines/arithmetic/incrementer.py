@@ -199,6 +199,7 @@ def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
 def _decompose_mcxs(wires, work_wires, control_wires=None):
     if control_wires is None:
         wires = wires[::-1]
+        num_controls = 0
     else:
         if enabled() and control_wires.shape[0] > 0:
             wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
@@ -209,7 +210,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
     def _increment():
         # Construct the wires on which the ladder will act.
-        zipped = sum(zip(wires[1:], work_wires, strict=True), start=tuple())
+        zipped = sum(zip(wires[1:], work_wires), start=tuple())
         if enabled():
             zipped = array(zipped, like="jax")
             all_wires = jnp.concatenate([wires[:1], zipped])
@@ -229,7 +230,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Backward ladder
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
-            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
+            cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
             if enabled():
                 adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
@@ -237,8 +238,9 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
-        # Trailing CNOT
-        CNOT(wires[:2])
+        if num_controls <= 1:
+            # Trailing CNOT
+            CNOT(wires[:2])
 
     cond(len(wires) > 1, _increment)()
 
@@ -301,6 +303,9 @@ def _incrementer_decomposition(wires, work_wires, **_):
 def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[resource_rep(X)] = 0
+    if num_control_wires > 2:
+        resources[resource_rep(CNOT)] -= num_control_wires - 2
+    resources[resource_rep(CNOT)] -= num_control_wires > 1
     return resources
 
 

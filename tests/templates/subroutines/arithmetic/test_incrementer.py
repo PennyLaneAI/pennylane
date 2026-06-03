@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import Incrementer, device, qnode
-from pennylane.decomposition import list_decomps, enable_graph
+from pennylane.decomposition import enable_graph, list_decomps
 from pennylane.measurements import state
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
@@ -199,18 +199,76 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
     "wires, init_state, expected, work_wires, control_wires, control_values",
     [
         # one control wire
-        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11], [12], [0]),
-        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], [12], [1]),
-        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], [12], [1]),
-        # ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], [12], [1]),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [0],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [1],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 1, 1, 0],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [1],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [1, 1, 0, 1, 0, 1],
+            [1, 1, 0, 1, 1, 0],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [1],
+        ),
         # multiple control wires
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11, 12], [13, 14], [0, 0]),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11, 12], [13, 14], [1, 1]),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 0, 1], [6, 7, 8, 9, 10, 11, 12, 13], [14, 15, 16], [1, 1, 0]),
-        ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11, 12, 13], [14, 15, 16], [1, 1, 1]),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [6, 7, 8, 9, 10, 11, 12],
+            [13, 14],
+            [0, 0],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [6, 7, 8, 9, 10, 11, 12],
+            [13, 14],
+            [1, 1],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 1, 0, 1],
+            [6, 7, 8, 9, 10, 11, 12, 13],
+            [14, 15, 16],
+            [1, 1, 0],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [1, 1, 0, 1, 0, 1],
+            [1, 1, 0, 1, 1, 0],
+            [6, 7, 8, 9, 10, 11, 12, 13],
+            [14, 15, 16],
+            [1, 1, 1],
+        ),
     ],
 )
-def test_controlled_decomposition(wires, init_state, expected, work_wires, control_wires, control_values):
+def test_controlled_decomposition(
+    wires, init_state, expected, work_wires, control_wires, control_values
+):
     """Tests the controlled decomposition rule."""
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
 
@@ -231,7 +289,9 @@ def test_controlled_decomposition(wires, init_state, expected, work_wires, contr
 
     result = c_inc(control_wires, control_values, init_state, wires)
 
-    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array(control_values)])
+    expected = np.concatenate(
+        [np.array(expected), np.zeros(len(work_wires)), np.array(control_values)]
+    )
     value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert result[value] == 1
     result[value] -= 1
