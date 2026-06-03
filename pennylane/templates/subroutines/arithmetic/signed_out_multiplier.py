@@ -68,8 +68,7 @@ class SignedOutMultiplier(Operator):
         work_wires (Sequence[int]): auxiliary wires to use for the multiplication. The needed
             number of work wires depends on the decomposition, the register sizes and
             ``output_wires_zeroed``. If the output wires are zeroed, we only need 2 work wires.
-            Otherwise, we need ``2*len(output_wires) + 1`` work wires. Defaults to an empty
-            tuple, i.e., no work wires.
+            Otherwise, we need ``2*len(output_wires) + 1`` work wires.
         output_wires_zeroed (bool): Whether the ``output_wires`` are guaranteed to be in state
             :math:`|0\rangle` initially. Setting this argument to ``True`` reduces the cost of
             the operation.
@@ -316,20 +315,19 @@ class SignedOutMultiplier(Operator):
         x_wires: WiresLike,
         y_wires: WiresLike,
         output_wires: WiresLike,
-        work_wires: WiresLike = (),
+        work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
+        work_wires = Wires(work_wires)
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        if any(wire in work_wires for wire in x_wires):
+            raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        if any(wire in work_wires for wire in y_wires):
+            raise ValueError("None of the wires in work_wires should be included in y_wires.")
 
         if any(wire in y_wires for wire in x_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
