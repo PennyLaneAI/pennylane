@@ -517,3 +517,113 @@ class TestAbstractDynamicArgs:
 
         with pytest.raises(AssertionError, match="tracer value for 'ops'"):
             jax.jit(_check)(0.5, 0.5)
+
+
+class ExtendedDynOp(DynOp):
+    """A subclass of ``DynOp`` that adds an extra dynamic argument. An instance of
+    this class passes ``isinstance(op, DynOp)``, but has different ``dynamic_argnames``."""
+
+    dynamic_argnames = ("phi", "theta")
+
+    def __init__(self, phi, theta, wires):
+        # pylint: disable=non-parent-init-called,super-init-not-called
+        Operator2.__init__(self, phi, theta, wires=wires)
+
+
+class StaticDynOp(DynOp):
+    """A subclass of ``DynOp`` that adds a static argument. An instance of this class
+    passes ``isinstance(op, DynOp)``, but has different ``static_argnames``."""
+
+    static_argnames = ("label",)
+
+    def __init__(self, phi, label, wires):
+        # pylint: disable=non-parent-init-called,super-init-not-called
+        Operator2.__init__(self, phi, label, wires=wires)
+
+
+class CompilableDynOp(DynOp):
+    """A subclass of ``DynOp`` that adds a compilable argument. An instance of this class
+    passes ``isinstance(op, DynOp)``, but has different ``compilable_argnames``."""
+
+    compilable_argnames = ("n",)
+
+    def __init__(self, phi, n, wires):
+        # pylint: disable=non-parent-init-called,super-init-not-called
+        Operator2.__init__(self, phi, n, wires=wires)
+
+
+class WireDynOp(DynOp):
+    """A subclass of ``DynOp`` that adds a wire argument. An instance of this class
+    passes ``isinstance(op, DynOp)``, but has different ``wire_argnames``."""
+
+    wire_argnames = ("wires", "ctrl_wires")
+
+    def __init__(self, phi, wires, ctrl_wires):
+        # pylint: disable=non-parent-init-called,super-init-not-called
+        Operator2.__init__(self, phi, wires=wires, ctrl_wires=ctrl_wires)
+
+
+class HybridDynOp(DynOp):
+    """A subclass of ``DynOp`` that adds a hybrid argument. An instance of this class
+    passes ``isinstance(op, DynOp)``, but has different ``hybrid_argnames``."""
+
+    hybrid_argnames = ("ops",)
+
+    def __init__(self, phi, ops, wires):
+        # pylint: disable=non-parent-init-called,super-init-not-called
+        Operator2.__init__(self, phi, ops, wires=wires)
+
+
+class TestArgnames:
+    """Tests that operators whose ``*_argnames`` differ are not equal.
+
+    A subclass passes the ``isinstance(op2, type(op1))`` check used by ``qp.equal``,
+    so two related operators may reach ``_equal_operator2`` with differing argnames.
+    """
+
+    def test_different_dynamic_argnames_not_equal(self):
+        """Test that operators with different ``dynamic_argnames`` are unequal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = ExtendedDynOp(0.5, 0.7, wires=0)
+        # Sanity check: op2 is an instance of op1's type, so the top-level type
+        # check in ``qp.equal`` passes and dispatch reaches ``_equal_operator2``.
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different 'dynamic_argnames'"):
+            qp.assert_equal(op1, op2)
+
+    def test_different_static_argnames_not_equal(self):
+        """Test that operators with different ``static_argnames`` are unequal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = StaticDynOp(0.5, "label", wires=0)
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different 'static_argnames'"):
+            qp.assert_equal(op1, op2)
+
+    def test_different_compilable_argnames_not_equal(self):
+        """Test that operators with different ``compilable_argnames`` are unequal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = CompilableDynOp(0.5, 3, wires=0)
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different 'compilable_argnames'"):
+            qp.assert_equal(op1, op2)
+
+    def test_different_wire_argnames_not_equal(self):
+        """Test that operators with different ``wire_argnames`` are unequal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = WireDynOp(0.5, wires=0, ctrl_wires=1)
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different 'wire_argnames'"):
+            qp.assert_equal(op1, op2)
+
+    def test_different_hybrid_argnames_not_equal(self):
+        """Test that operators with different ``hybrid_argnames`` are unequal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = HybridDynOp(0.5, [], wires=0)
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different 'hybrid_argnames'"):
+            qp.assert_equal(op1, op2)

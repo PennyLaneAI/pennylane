@@ -382,6 +382,17 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
+    for argname in (
+        "dynamic_argnames",
+        "wire_argnames",
+        "static_argnames",
+        "compilable_argnames",
+        "hybrid_argnames",
+    ):
+        res = _check_argnames(argname, op1, op2)
+        if isinstance(res, str):
+            return res
+
     # Check dynamic arguments
     for (dname, dval1), (_, dval2) in zip(op1.dynamic_args.items(), op2.dynamic_args.items()):
         res = _check_dynamic_value(
@@ -434,6 +445,14 @@ def _equal_operator2(
         if isinstance(res, str):
             return res
 
+    return True
+
+
+def _check_argnames(argname: str, op1: Operator2, op2: Operator2):
+    argnames1 = getattr(op1, argname)
+    argnames2 = getattr(op2, argname)
+    if argnames1 != argnames2:
+        return f"op1 and op2 have different '{argname}'.\nGot {argnames1} and {argnames2}."
     return True
 
 
