@@ -2,6 +2,19 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
+  of a ZYZ decomposition of a single-qubit operator has been added.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
+  ```pycon
+  >>> qp.single_qubit_zyz_angles(qp.H(0))
+  (3.14159..., 1.57079..., 0.0, 1.57079...)
+
+  ```
+
+  The new function returns a tuple of four values, where the first three corresponds to the rotation
+  angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
@@ -158,6 +171,10 @@
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
+
+* The output of :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` is
+  now formatted for clearer visual inspection when used in a Jupyter notebook environment.
+  [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -337,6 +354,9 @@
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
+* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
 <h3>Internal changes ⚙️</h3>
 
 * CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
@@ -393,6 +413,9 @@
 
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
+
+* Functions with ``singledispatch`` stop having its signature duplicated in the documentation for every registered dispatch function.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
