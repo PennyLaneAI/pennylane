@@ -453,7 +453,7 @@ def _check_capture(op):
         return
     try:
         import jax
-    except ImportError as e:
+    except ImportError as e:  # pragma: no cover
         raise ImportError(
             "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
             "Either install JAX, set skip_capture=True, or mark the test with @pytest.mark.jax."
