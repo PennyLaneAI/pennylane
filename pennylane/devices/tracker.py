@@ -190,7 +190,13 @@ class Tracker:
         self.active = False
 
     def __repr__(self):
-        return f"Tracker(active={self.active}, totals={self.totals}, persistent={self.persistent}, history={self.history}, latest={self.latest})"
+        return (
+            f"Tracker(active={self.active}, "
+            f"totals={self.totals}, "
+            f"persistent={self.persistent}, "
+            f"history={self.history}, "
+            f"latest={self.latest})"
+        )
 
     def update(self, **kwargs):
         """Store passed keyword-value pairs into ``totals``,``history``, and ``latest`` attributes.
