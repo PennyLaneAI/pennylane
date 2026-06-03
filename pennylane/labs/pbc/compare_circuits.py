@@ -189,6 +189,7 @@ def compare_circuits(
 
         if len(branches1) != len(branches2):
 
+            # if branches dont match, duplicate states on the side with fewer branches
             branches1 = np.repeat(branches1, np.max([len(branches2) // len(branches1), 1]), axis=0)
             branches2 = np.repeat(branches2, np.max([len(branches1) // len(branches2), 1]), axis=0)
 
