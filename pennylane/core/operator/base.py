@@ -15,7 +15,7 @@
 Defines the base class for Operator and Operation.
 """
 
-# pylint: disable=access-member-before-definition
+# pylint: disable=access-member-before-definition, import-outside-toplevel
 import abc
 import copy
 import warnings
@@ -28,8 +28,7 @@ from warnings import warn
 import numpy as np
 from scipy.sparse import spmatrix
 
-import pennylane as qp
-from pennylane import capture
+from pennylane import capture, math
 from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -44,9 +43,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
@@ -93,23 +91,33 @@ def _get_abstract_operator() -> type:
 
         @staticmethod
         def _matmul(*args):
-            return qp.prod(*args)
+            from pennylane.ops.op_math import prod
+
+            return prod(*args)
 
         @staticmethod
         def _mul(a, b):
-            return qp.s_prod(b, a)
+            from pennylane.ops.op_math import s_prod
+
+            return s_prod(b, a)
 
         @staticmethod
         def _rmul(a, b):
-            return qp.s_prod(b, a)
+            from pennylane.ops.op_math import s_prod
+
+            return s_prod(b, a)
 
         @staticmethod
         def _add(a, b):
-            return qp.sum(a, b)
+            from pennylane.ops.op_math import sum as pl_sum
+
+            return pl_sum(a, b)
 
         @staticmethod
         def _pow(a, b):
-            return qp.pow(a, b)
+            from pennylane.ops.op_math import pow as pl_pow
+
+            return pl_pow(a, b)
 
     return AbstractOperator
 
@@ -149,7 +157,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if math.is_abstract(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
@@ -170,7 +178,7 @@ def _process_data(op):
     def _mod_and_round(x, mod_val):
         if mod_val is None:
             return x
-        return qp.math.round(qp.math.real(x) % mod_val, 10)
+        return math.round(math.real(x) % mod_val, 10)
 
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
@@ -180,7 +188,7 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
@@ -522,9 +530,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         iterable_wires_types = (
             list,
             tuple,
-            qp.wires.Wires,
+            Wires,
             range,
-            qp.capture.autograph.ag_primitives.PRange,
+            capture.autograph.ag_primitives.PRange,
             set,
             *array_types,
         )
@@ -600,7 +608,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return hash(self)
 
     def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
+        from pennylane.ops.functions import equal
+
+        return equal(self, other)
 
     def __hash__(self) -> int:
         return hash(
@@ -661,17 +671,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
+        from pennylane.ops.qubit.attributes import symmetric_over_all_wires
+
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
-            or (
-                self.name in qp.ops.qubit.attributes.symmetric_over_all_wires
-                and set(self.wires) == set(wire_order)
-            )
+            or (self.name in symmetric_over_all_wires and set(self.wires) == set(wire_order))
         ):
             return canonical_matrix
 
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_sparse_matrix(
@@ -730,7 +739,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             *self.parameters, format="csr", **self.hyperparameters
         )
 
-        return expand_matrix(
+        return math.expand_matrix(
             canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
         ).asformat(format)
 
@@ -788,7 +797,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
-                return qp.math.linalg.eigvals(self.matrix())
+                return math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
     def terms(self) -> tuple[list[TensorLike], list["Operation"]]:  # pylint: disable=no-self-use
@@ -882,12 +891,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
             from/to cache, formatting its position in the cache as parameter string."""
-            if len(qp.math.shape(x)) == 0:
+            if len(math.shape(x)) == 0:
                 # Scalar case
                 if decimals is None:
                     return ""
                 try:
-                    return format(qp.math.toarray(x), f".{decimals}f")
+                    return format(math.toarray(x), f".{decimals}f")
                 except ValueError:
                     # If the parameter can't be displayed as a float
                     return format(x)
@@ -898,7 +907,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
             # Retrieve matrix location in cache, or write the matrix to cache as new entry
             for i, mat in enumerate(mat_cache):
-                if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
+                if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
                     return f"M{i}"
             mat_num = len(mat_cache)
             mat_cache.append(x)
@@ -914,9 +923,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
 
-        self._pauli_rep: qp.pauli.PauliSentence | None = (
-            None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
-        )
+        self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
 
         wires_from_args = False
         if wires is None:
@@ -970,7 +977,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         params = self.data
 
         try:
-            ndims = tuple(qp.math.ndim(p) for p in params)
+            ndims = tuple(math.ndim(p) for p in params)
         except (
             ValueError
         ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -982,13 +989,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(is_abstract(p) for p in params):
+            if any(math.is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
                 return
             raise e  # pragma: no cover
 
-        if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
+        if any(len(math.shape(p)) >= 1 and math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
@@ -1007,11 +1014,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qp.math.shape(p)[0]
+                math.shape(p)[0]
                 for (_, batched), p in zip(ndims_matches, params, strict=True)
                 if batched
             ]
-            if not qp.math.allclose(first_dims, first_dims[0]):
+            if not math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
@@ -1094,7 +1101,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self._hyperparameters
 
     @property
-    def pauli_rep(self) -> Optional["qp.pauli.PauliSentence"]:
+    def pauli_rep(self) -> Optional["PauliSentence"]:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
@@ -1138,7 +1145,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         r"""Bool: Whether or not the Operator returns a defined decomposition."""
         # if compute_decomposition or decomposition overwritten and property
         # not overwritten, set as class property during __init_subclass__
-        return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
+        from pennylane.decomposition import list_decomps
+
+        return any(rule.is_applicable(**self.resource_params) for rule in list_decomps(self))
 
     def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
@@ -1157,7 +1166,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 *self.parameters, wires=self.wires, **self.hyperparameters
             )
 
-        for decomp in qp.list_decomps(self):
+        from pennylane.decomposition import list_decomps
+
+        for decomp in list_decomps(self):
             if decomp.is_applicable(**self.resource_params):
                 with AnnotatedQueue() as q:
                     decomp(*self.data, wires=self.wires, **self.hyperparameters)
@@ -1349,7 +1360,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return []
         if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qp.apply(self) for _ in range(z)]
+                return [apply(self) for _ in range(z)]
             return [copy.copy(self) for _ in range(z)]
         raise PowUndefinedError
 
@@ -1429,14 +1440,19 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The addition operation of Operator-Operator objects and Operator-scalar."""
+
+        from pennylane.ops.op_math import s_prod
+        from pennylane.ops.op_math import sum as pl_sum
+        from pennylane.ops.qubit import Identity
+
         if isinstance(other, Operator):
-            return qp.sum(self, other, lazy=False)
+            return pl_sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if qp.math.allequal(other, 0):
+            if math.allequal(other, 0):
                 return self
-            return qp.sum(
+            return pl_sum(
                 self,
-                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                s_prod(scalar=other, operator=Identity(self.wires), lazy=False),
                 lazy=False,
             )
         return NotImplemented
@@ -1445,10 +1461,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __mul__(self, other: Callable | TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
+
+        from pennylane.pulse import ParametrizedHamiltonian
+
         if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
+            return ParametrizedHamiltonian([other], [self])
+
+        from pennylane.ops.op_math import s_prod
+
         if isinstance(other, TensorLike):
-            return qp.s_prod(scalar=other, operator=self, lazy=False)
+            return s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
     def __truediv__(self, other: TensorLike):
@@ -1461,14 +1483,20 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __matmul__(self, other: "Operator") -> "Operator":
         """The product operation between Operator objects."""
-        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+
+        from pennylane.ops.op_math import prod
+
+        return prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
     def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+
+        from pennylane.ops.op_math import s_prod
+
         if isinstance(other, Operator):
-            return self + qp.s_prod(-1, other, lazy=False)
+            return self + s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
-            return self + (qp.math.multiply(-1, other))
+            return self + (math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other: Union["Operator", TensorLike]):
@@ -1477,12 +1505,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+        from pennylane.ops.op_math import s_prod
+
+        return s_prod(scalar=-1, operator=self, lazy=False)
 
     def __pow__(self, other: TensorLike) -> "Operator":
         r"""The power operation of an Operator object."""
+
+        from pennylane.ops.op_math import pow as pl_pow
+
         if isinstance(other, TensorLike):
-            return qp.pow(self, z=other)
+            return pl_pow(self, z=other)
         return NotImplemented
 
     def _flatten(self) -> FlatPytree:
@@ -1701,8 +1735,10 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
+            from pennylane.ops.functions import eigvals, generator
+
             try:
-                gen = qp.generator(self, format="observable")
+                gen = generator(self, format="observable")
             except GeneratorUndefinedError as e:
                 raise ParameterFrequenciesUndefinedError(
                     f"Operation {self.name} does not have parameter frequencies defined."
@@ -1712,10 +1748,12 @@ class Operation(Operator):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qp.eigvals(gen, k=2 ** len(self.wires))
+                eigvals = eigvals(gen, k=2 ** len(self.wires))
 
             eigvals = tuple(np.round(eigvals, 8))
-            return [qp.gradients.eigvals_to_frequencies(eigvals)]
+            from pennylane.gradients import eigvals_to_frequencies
+
+            return [eigvals_to_frequencies(eigvals)]
 
         raise ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "

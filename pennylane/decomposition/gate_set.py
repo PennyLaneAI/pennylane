@@ -18,8 +18,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
-from pennylane.operation import Operator
-
 from .utils import to_name
 
 
@@ -123,6 +121,8 @@ class GateSet(Mapping):
         return GateSet(self._gate_set | other._gate_set)
 
     def __sub__(self, other: Set | Mapping) -> GateSet:
+        from pennylane.operation import Operator  # pylint: disable=import-outside-toplevel
+
         if (isinstance(other, type) and issubclass(other, Operator)) or isinstance(other, str):
             other = GateSet({other})
         if not isinstance(other, (Mapping, Set)):

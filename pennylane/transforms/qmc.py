@@ -17,8 +17,8 @@ Contains the quantum_monte_carlo transform.
 
 from copy import copy
 
-import pennylane as qp
-from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
+from pennylane.ops import CZ, Hadamard, MultiControlledX, PauliX, adjoint
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
@@ -118,7 +118,7 @@ def apply_controlled_Q(
     operations = tape.operations.copy()
     updated_operations = []
 
-    with qp.queuing.QueuingManager.stop_recording():
+    with QueuingManager.stop_recording():
         op_inv = [adjoint(copy(op)) for op in reversed(operations)]
 
         wires = Wires(wires)
@@ -371,7 +371,7 @@ def quantum_monte_carlo(
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")
 
     updated_operations = []
-    with qp.queuing.QueuingManager.stop_recording():
+    with QueuingManager.stop_recording():
         updated_operations.extend(operations)
         for i, control_wire in enumerate(estimation_wires):
             updated_operations.append(Hadamard(control_wire))
