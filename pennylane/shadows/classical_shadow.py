@@ -430,7 +430,7 @@ class ClassicalShadow:
             shadow = qp.ClassicalShadow(bitstrings, recipes)
 
         >>> [float(shadow.entropy(wires=[0, 1], alpha=alpha)) for alpha in [1., 2., 3.]]
-        [0.3294975328851038, 0.18807402049095295, 0.14794589906838812]
+        [0.32949..., 0.18807..., 0.14794...]
 
         """
 
