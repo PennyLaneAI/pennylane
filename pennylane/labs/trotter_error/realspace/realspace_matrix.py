@@ -404,8 +404,8 @@ class RealspaceMatrix(Fragment):
         >>> n_states = 1
         >>> n_modes = 3
         >>> gridpoints = 2
-        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
-        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1), label="lambda"))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> vib_matrix = RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
         >>> state_dict = {(1, 0, 0): 1, (0, 1, 1): 1}

@@ -244,7 +244,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
         >>> parent = _RealspaceTree.sum_node(left_child, right_child)
         >>> parent
-        >>> (alpha[idx0]) + (beta[idx0])
+        (alpha[idx0]) + (beta[idx0])
 
         """
 

@@ -99,7 +99,7 @@ class HOState:
         >>> n_modes = 3
         >>> gridpoints = 5
         >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
-        >>> HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> HOState(n_modes, gridpoints, state_dict)
         HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
             with 2 stored elements and shape (125, 1)>
           Coords	Values
