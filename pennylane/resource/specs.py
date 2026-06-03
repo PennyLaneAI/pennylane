@@ -38,6 +38,23 @@ if TYPE_CHECKING:
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
 
+def _unwrap_partial(func):
+    """Unwrap nested :class:`functools.partial` objects to get the underlying
+    callable and all pre-bound arguments.
+
+    Args:
+        func (callable): The callable to unwrap.
+
+    Returns:
+        tuple[callable, tuple, dict]: ``(inner_func, bound_args, bound_kwargs)``
+    """
+    bound_args = ()
+    bound_kwargs = {}
+    while isinstance(func, partial):
+        bound_args = func.args + bound_args
+        bound_kwargs = {**func.keywords, **bound_kwargs}
+        func = func.func
+    return func, bound_args, bound_kwargs
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
@@ -827,24 +844,30 @@ def specs(
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    qnode, bound_args, bound_kwargs = _unwrap_partial(qnode)
 
     if isinstance(qnode, qp.QNode):
-        return partial(_specs_qnode, qnode, level, compute_depth)
+        def wrapper(*args, **kwargs):
+            return _specs_qnode(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+        return wrapper
 
     try:
         from ..qnn.torch import TorchLayer
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return partial(_specs_qnode, qnode, level, compute_depth)
+            def wrapper_torch(*args, **kwargs):
+                return _specs_qnode(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+            return wrapper_torch
     except ImportError:  # pragma: no cover
         pass
 
     try:  # pragma: no cover
-        # This is tested by integration tests within the Catalyst frontend
         import catalyst
 
         if isinstance(qnode, catalyst.jit.QJIT):
-            return partial(_specs_qjit, qnode, level, compute_depth)
+            def wrapper_qjit(*args, **kwargs):
+                return _specs_qjit(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+            return wrapper_qjit
     except ImportError:  # pragma: no cover
         pass
 

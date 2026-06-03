@@ -1246,3 +1246,78 @@ def test_sort_wires_fallback(use_qnode):
 
     expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
     assert qp.draw(func)() == expected
+
+class TestPartialSupport:
+    """Tests that qp.draw and qp.draw_mpl handle functools.partial wrappers."""
+
+    @pytest.fixture
+    def circuit(self):
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def _circuit(x, n_iter):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        return _circuit
+
+    def test_draw_partial_positional_args(self, circuit):
+        """draw works when positional args are pre-bound via partial."""
+        from functools import partial
+
+        fixed = partial(circuit, 0.5)
+        result = draw(fixed)(3)
+        assert "RX" in result
+        assert result.count("RX") == 3
+
+    def test_draw_partial_keyword_args(self, circuit):
+        """draw works when keyword args are pre-bound via partial."""
+        from functools import partial
+
+        fixed = partial(circuit, n_iter=3)
+        result = draw(fixed)(0.5)
+        assert "RX" in result
+        assert result.count("RX") == 3
+
+    def test_draw_partial_nested(self, circuit):
+        """draw works with nested partial(partial(...))."""
+        from functools import partial
+
+        fixed = partial(partial(circuit, 0.5), n_iter=2)
+        result = draw(fixed)()
+        assert "RX" in result
+        assert result.count("RX") == 2
+
+    def test_draw_partial_mixed(self, circuit):
+        """draw works when both positional and keyword args are pre-bound."""
+        from functools import partial
+
+        fixed = partial(circuit, 0.5, n_iter=4)
+        result = draw(fixed)()
+        assert result.count("RX") == 4
+
+    def test_draw_plain_qnode_unaffected(self, circuit):
+        """Non-partial QNode still works correctly (regression check)."""
+        result = draw(circuit)(0.5, 2)
+        assert "RX" in result
+
+    def test_draw_mpl_partial_keyword_args(self, circuit):
+        """draw_mpl works when keyword args are pre-bound via partial."""
+        from functools import partial
+        import matplotlib
+        matplotlib.use("Agg")
+
+        fixed = partial(circuit, n_iter=2)
+        fig, ax = qp.draw_mpl(fixed)(0.5)
+        assert fig is not None
+
+    def test_draw_mpl_partial_nested(self, circuit):
+        """draw_mpl works with nested partial."""
+        from functools import partial
+        import matplotlib
+        matplotlib.use("Agg")
+
+        fixed = partial(partial(circuit, 0.3), n_iter=1)
+        fig, ax = qp.draw_mpl(fixed)()
+        assert fig is not None

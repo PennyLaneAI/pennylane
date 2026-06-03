@@ -570,6 +570,71 @@ Batched tape c:
 
         assert qp.specs(c, level="my_level")()["resources"] == expected
 
+class TestSpecsPartialSupport:
+    """Tests that qp.specs handles functools.partial wrappers."""
+
+    @pytest.fixture
+    def circuit(self):
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def _circuit(x, n_iter):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        return _circuit
+
+    def test_specs_partial_positional_args(self, circuit):
+        """specs works when positional args are pre-bound via partial."""
+        from functools import partial
+
+        fixed = partial(circuit, 0.5)
+        result = qp.specs(fixed)(3)
+        assert result.resources.gate_types["RX"] == 3
+
+    def test_specs_partial_keyword_args(self, circuit):
+        """specs works when keyword args are pre-bound via partial."""
+        from functools import partial
+
+        fixed = partial(circuit, n_iter=3)
+        result = qp.specs(fixed)(0.5)
+        assert result.resources.gate_types["RX"] == 3
+
+    def test_specs_partial_nested(self, circuit):
+        """specs works with nested partial(partial(...))."""
+        from functools import partial
+
+        fixed = partial(partial(circuit, 0.5), n_iter=2)
+        result = qp.specs(fixed)()
+        assert result.resources.gate_types["RX"] == 2
+
+    def test_specs_partial_mixed(self, circuit):
+        """specs works when both positional and keyword args are pre-bound."""
+        from functools import partial
+
+        fixed = partial(circuit, 0.5, n_iter=4)
+        result = qp.specs(fixed)()
+        assert result.resources.gate_types["RX"] == 4
+
+    def test_specs_plain_qnode_unaffected(self, circuit):
+        """Non-partial QNode still works correctly (regression check)."""
+        result = qp.specs(circuit)(0.5, 2)
+        assert result.resources.gate_types["RX"] == 2
+
+    def test_specs_partial_raises_for_non_qnode(self):
+        """specs still raises ValueError if inner callable is not a QNode."""
+        from functools import partial
+
+        def plain_fn(x):
+            return x
+
+        fixed = partial(plain_fn, 1.0)
+        with pytest.raises(
+            ValueError, match="qp.specs can only be applied to a QNode or qjit'd QNode"
+        ):
+            qp.specs(fixed)()
+
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestSpecsGraphModeExclusive:
@@ -672,3 +737,4 @@ class TestSpecsGraphModeExclusive:
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 2
+

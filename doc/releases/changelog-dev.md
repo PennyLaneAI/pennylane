@@ -233,6 +233,11 @@
   trace time, and only the correct branch will be queued.
   [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
 
+* `qml.draw`, `qml.draw_mpl`, and `qml.specs` now support `functools.partial`
+  wrappers around `QNode` objects, including arbitrarily nested partials with
+  mixed positional and keyword arguments.
+  [(#9573)](https://github.com/PennyLaneAI/pennylane/pull/9573)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
