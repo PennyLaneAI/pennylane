@@ -62,8 +62,9 @@ class LeftClassicalComparator(Operation):
         import pennylane as qp
         from pennylane.labs.templates import LeftClassicalComparator
 
-        dev = qp.device("lightning.qubit", wires=6, shots=1)
+        dev = qp.device("lightning.qubit", wires=6)
 
+        @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x_val, L_val):
             qp.BasisState(x_val, wires=[0, 1, 2])

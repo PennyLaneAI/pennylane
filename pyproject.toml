@@ -148,6 +148,7 @@ doctest = [
     "jaxlib==0.7.1",
     "stim",
     "quimb",
+    "tqdm",
 ]
 
 [[project.maintainers]]

@@ -54,7 +54,7 @@ class LabsMottonenStatePreparation(ResourceOperator):
        allocated wires: 0
          zero state: 0
          any state: 0
-     Total gates : 1.841E+5
+     Total gates : 8.143E+3
        'RZ': 4.091E+3,
        'CNOT': 4.052E+3
 
@@ -253,17 +253,17 @@ class LabsSumOfSlatersPrep(ResourceOperator):
     >>> sos_state = qre.SumOfSlatersPrep(num_coeffs=100, num_wires=10)
     >>> print(qre.estimate(sos_state))
     --- Resources: ---
-     Total wires: 32
+     Total wires: 51
        algorithmic wires: 10
-       allocated wires: 22
-         zero state: 22
+       allocated wires: 41
+         zero state: 41
          any state: 0
-     Total gates : 2.909E+4
-       'Toffoli': 949,
+     Total gates : 2.659E+4
+       'Toffoli': 1.735E+3,
        'T': 2.231E+4,
-       'CNOT': 2.204E+3,
-       'X': 1.107E+3,
-       'Hadamard': 2.520E+3
+       'CNOT': 1.403E+3,
+       'X': 1.046E+3,
+       'Hadamard': 96
 
     """
 
