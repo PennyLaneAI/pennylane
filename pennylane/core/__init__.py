@@ -27,7 +27,7 @@ Operator Types
     ~Channel
     ~StatePrepBase
 
-.. currentmodule:: pennylane.operation
+.. currentmodule:: pennylane.core.operator
 
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
