@@ -228,7 +228,7 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(AbstractWires(len(val)))
+            key.append(Wires[len(val)])
         else:
             leaves, struct = flatten(val)
 
