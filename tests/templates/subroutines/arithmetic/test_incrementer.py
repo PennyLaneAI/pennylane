@@ -20,11 +20,13 @@ import pytest
 
 from pennylane import Incrementer, device, qnode
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import state, sample
+from pennylane.measurements import state
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.arithmetic.incrementer import _controlled_incrementer_decomposition
+from pennylane.templates.subroutines.arithmetic.incrementer import (
+    _controlled_incrementer_decomposition,
+)
 
 
 @pytest.mark.parametrize(
@@ -198,7 +200,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
         ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], 1),
         ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
         ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
-    ]
+    ],
 )
 def test_controlled_decomposition(wires, init_state, expected, work_wires, control):
     """Tests the controlled decomposition rule."""
@@ -209,7 +211,8 @@ def test_controlled_decomposition(wires, init_state, expected, work_wires, contr
     @qnode(dev)
     def c_inc(init_state, wires):
         BasisEmbedding(init_state, wires)
-        if control: PauliX(12)
+        if control:
+            PauliX(12)
         _controlled_incrementer_decomposition(
             control_wires=[12],
             work_wires=[],
