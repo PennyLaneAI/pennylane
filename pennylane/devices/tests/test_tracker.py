@@ -65,3 +65,18 @@ class TestTracker:
         
         expected_string = "Tracker(active=False, totals={'executions': 5}, persistent=False, history={}, latest={})"
         assert repr(tracker) == expected_string
+
+    def test_repr_updated_tracker():
+        """Test the representation after a tracker has stored data."""
+        from pennylane.devices.tracker import Tracker
+    
+        tracker = Tracker(persistent=True)
+        tracker.update(a=2, b="b2", c=1)
+        tracker.active = True
+    
+        expected_string = (
+            "Tracker(active=True, totals={'a': 2, 'c': 1}, persistent=True, "
+            "history={'a': [2], 'b': ['b2'], 'c': [1]}, "
+            "latest={'a': 2, 'b': 'b2', 'c': 1})"
+        )
+        assert repr(tracker) == expected_string
