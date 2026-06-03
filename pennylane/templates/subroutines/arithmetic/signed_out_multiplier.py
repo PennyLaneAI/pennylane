@@ -532,8 +532,6 @@ def _signed_out_multiplier_decomposition_zeroed(
             math.array(output_wires, like="jax"),
         )
 
-    # We have a more efficient decomposition if the output wires are zeroed
-
     x_aux = work_wires[0]
     y_aux = work_wires[1]
 
