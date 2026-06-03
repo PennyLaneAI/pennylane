@@ -20,10 +20,11 @@ import pytest
 
 from pennylane import Incrementer, device, qnode
 from pennylane.decomposition import list_decomps
-from pennylane.measurements import state
+from pennylane.measurements import state, sample
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
+from pennylane.templates.subroutines.arithmetic.incrementer import _controlled_incrementer_decomposition
 
 
 @pytest.mark.parametrize(
@@ -188,3 +189,38 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
     )
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.parametrize(
+    "wires, init_state, expected, work_wires, control",
+    [
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11], 0),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], 1),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
+        ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
+    ]
+)
+def test_controlled_decomposition(wires, init_state, expected, work_wires, control):
+    """Tests the controlled decomposition rule."""
+    dev = device("default.qubit", wires=wires + work_wires + [len(wires + work_wires)])
+
+    inc = Incrementer(wires, work_wires)
+
+    @qnode(dev)
+    def c_inc(init_state, wires):
+        BasisEmbedding(init_state, wires)
+        if control: PauliX(12)
+        _controlled_incrementer_decomposition(
+            control_wires=[12],
+            work_wires=[],
+            base=inc,
+        )
+        return state()
+
+    result = c_inc(init_state, wires)
+
+    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array([control])])
+    value = int(2 ** np.arange(len(expected)) @ expected[::-1])
+    assert result[value] == 1
+    result[value] -= 1
+    assert np.allclose(result, 0)
