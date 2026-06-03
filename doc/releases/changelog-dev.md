@@ -162,6 +162,11 @@
 
   ```
 
+* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
+  hypercontraction (THC) qubitization.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+
+
 <h3>Breaking changes 💔</h3>
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
