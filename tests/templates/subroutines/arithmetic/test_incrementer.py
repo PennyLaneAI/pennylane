@@ -196,35 +196,42 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
 
 
 @pytest.mark.parametrize(
-    "wires, init_state, expected, work_wires, control",
+    "wires, init_state, expected, work_wires, control_wires, control_values",
     [
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11], 0),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], 1),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
-        ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], 1),
+        # one control wire
+        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11], [12], [0]),
+        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], [12], [1]),
+        # ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], [12], [1]),
+        # ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11], [12], [1]),
+        # multiple control wires
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11, 12], [13, 14], [0, 0]),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11, 12], [13, 14], [1, 1]),
+        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 0, 1], [0, 0, 0, 1, 0, 1], [6, 7, 8, 9, 10, 11, 12, 13], [14, 15, 16], [1, 1, 0]),
+        ([0, 1, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1], [1, 1, 0, 1, 1, 0], [6, 7, 8, 9, 10, 11, 12, 13], [14, 15, 16], [1, 1, 1]),
     ],
 )
-def test_controlled_decomposition(wires, init_state, expected, work_wires, control):
+def test_controlled_decomposition(wires, init_state, expected, work_wires, control_wires, control_values):
     """Tests the controlled decomposition rule."""
-    dev = device("default.qubit", wires=wires + work_wires + [len(wires + work_wires)])
+    dev = device("default.qubit", wires=wires + work_wires + control_wires)
 
     inc = Incrementer(wires, work_wires)
 
     @qnode(dev)
-    def c_inc(init_state, wires):
+    def c_inc(control_wires, control_values, init_state, wires):
         BasisEmbedding(init_state, wires)
-        if control:
-            PauliX(12)
+        for control_wire, control_value in zip(control_wires, control_values, strict=True):
+            if control_value:
+                PauliX(control_wire)
         _controlled_incrementer_decomposition(
-            control_wires=[12],
+            control_wires=control_wires,
             work_wires=[],
             base=inc,
         )
         return state()
 
-    result = c_inc(init_state, wires)
+    result = c_inc(control_wires, control_values, init_state, wires)
 
-    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array([control])])
+    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array(control_values)])
     value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert result[value] == 1
     result[value] -= 1
