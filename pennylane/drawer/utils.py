@@ -296,7 +296,7 @@ def _get_mp(op: MeasurementProcess, bit_map):
     return [m.measurements[0] for m in op.mv], None
 
 
-def cwire_connections(layers, bit_map):
+def cwire_connections(layers, bit_map, wire_map):
     """Extract the information required for classical control wires.
 
     Args:
@@ -304,6 +304,7 @@ def cwire_connections(layers, bit_map):
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
         bit_map (Dict): Dictionary containing mid-circuit measurements that are used for
             classical conditions or measurement statistics as keys.
+        wire_map (Dict): Dictionary mapping wire labels to their vertical drawing indices.
 
     Returns:
         dict, dict, dict: The first dictionary is the updated ``bit_map``, potentially with
@@ -323,8 +324,9 @@ def cwire_connections(layers, bit_map):
     ...     qp.cond(m0, qp.S)(3)
     >>> tape = qp.tape.QuantumScript.from_queue(q)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
-    >>> layers = drawable_layers(tape, bit_map=bit_map)
-    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    >>> wire_map = {wire: wire for wire in tape.wires}
+    >>> layers = drawable_layers(tape, wire_map=wire_map, bit_map=bit_map)
+    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map, wire_map)
     >>> new_bit_map == bit_map # No reusage happening
     True
     >>> cwire_layers

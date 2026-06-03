@@ -311,13 +311,16 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     tape = ops.functions.map_wires(tape, wire_map=full_wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
-    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
+    mapped_wire_map = {i: i for i in tape.wires}
+    layers = drawable_layers(tape.operations, wire_map=mapped_wire_map, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
         if any(isinstance(o, ops.MidMeasure) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(
+        layers + [tape.measurements], bit_map, mapped_wire_map
+    )
 
     config = _Config(
         decimals=kwargs.get("decimals", None),

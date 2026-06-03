@@ -451,7 +451,7 @@ def tape_text(
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
-    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
+    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map, wire_map)
     wire_map, wire_layers = dynamic_wire_connections(layers, wire_map)
     # Collect information needed for drawing layers
     config = _Config(
