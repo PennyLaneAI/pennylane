@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import Incrementer, device, qnode
-from pennylane.decomposition import list_decomps
+from pennylane.decomposition import list_decomps, enable_graph
 from pennylane.measurements import state
 from pennylane.ops import Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
@@ -115,6 +115,8 @@ def test_correct(wires, init_state, expected, work_wires):
 )
 def test_controlled(wires, init_state, expected, work_wires, control):
     dev = device("default.qubit", wires=wires + work_wires + [len(wires + work_wires)])
+
+    enable_graph()
 
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires=None, control=0):
