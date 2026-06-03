@@ -57,7 +57,7 @@ class LeftClassicalComparator(Operation):
 
     **Example**
 
-    .. code-block:: python
+    .. code-block:: python3
 
         import pennylane as qp
         from pennylane.labs.templates import LeftClassicalComparator
@@ -78,11 +78,10 @@ class LeftClassicalComparator(Operation):
             )
             return qp.sample(wires=3)
 
-    .. code-block:: pycon
+    >>> output = circuit(3, 2)
+    >>> print(bool(output)) # 3 >= 2
+    True
 
-        >>> output = circuit(3, 2)
-        >>> print(bool(output)) # 3 >= 2
-        True
     """
 
     grad_method = None

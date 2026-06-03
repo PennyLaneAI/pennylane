@@ -22,7 +22,6 @@ from pennylane.estimator.resource_operator import GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
 from pennylane.estimator.wires_manager import Allocate as estimator_Allocate
 from pennylane.estimator.wires_manager import Deallocate as estimator_Deallocate
-from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.labs.estimator_beta.wires_manager import (
     Allocate,
     Deallocate,
@@ -38,7 +37,7 @@ def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,
     gate_set: set = DefaultGateSet,
-    config: LabsResourceConfig | None = None,
+    config: "LabsResourceConfig | None" = None,
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
 ):  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
@@ -78,6 +77,9 @@ def _estimate_auxiliary_wires(
         return 0, 0, 0
 
     if config is None:
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
+
         config = LabsResourceConfig()
 
     total = 0
@@ -246,7 +248,7 @@ def _process_circuit_lst(
 def estimate_wires_from_circuit(
     circuit_as_lst: Iterable[ResourceOperator | Operator | MeasurementProcess | MarkQubits],
     gate_set: set | None = None,
-    config: LabsResourceConfig | None = None,
+    config: "LabsResourceConfig | None" = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -275,6 +277,9 @@ def estimate_wires_from_circuit(
         ValueError: if more qubits were deallocated than initially allocated
     """
     if config is None:
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
+
         config = LabsResourceConfig()
 
     if gate_set is None:
@@ -333,7 +338,7 @@ def estimate_wires_from_circuit(
 def estimate_wires_from_resources(
     workflow: Resources,
     gate_set: set | None = None,
-    config: LabsResourceConfig | None = None,
+    config: "LabsResourceConfig | None" = None,
     zeroed: int = 0,
     any_state: int = 0,
 ):
@@ -359,6 +364,9 @@ def estimate_wires_from_resources(
         ValueError: if more qubits were deallocated than initially allocated
     """
     if config is None:
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
+
         config = LabsResourceConfig()
 
     if gate_set is None:
