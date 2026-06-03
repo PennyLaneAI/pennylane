@@ -270,6 +270,27 @@ def test_assert_equal_unspecified():
 
 
 class TestEqual:
+    """Tests for ``qp.equal``."""
+
+    def test_subclasses_not_equal(self):
+        """Test that comparing operators where one is a subclass of the other returns False."""
+
+        class ParentOp(Operator):
+            """Parent operator for testing."""
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        class ChildOp(ParentOp):
+            """Child operator for testing."""
+
+        op1 = ParentOp(wires=0)
+        op2 = ChildOp(wires=0)
+
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+            qp.assert_equal(op1, op2)
+
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
         I1 = qp.Identity()

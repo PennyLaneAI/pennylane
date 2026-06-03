@@ -232,7 +232,7 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool | str:
-    if not isinstance(op2, type(op1)):
+    if type(op1) != type(op2):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
     dispatch_result = _equal_dispatch(
@@ -509,7 +509,7 @@ def _check_pytree_value(
         return unequal_str
 
     for l1, l2 in zip(leaves1, leaves2, strict=True):
-        if not isinstance(l2, type(l1)):
+        if type(l1) != type(l2):
             return unequal_str
 
         if isinstance(l1, Operator2):
