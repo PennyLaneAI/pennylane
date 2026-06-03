@@ -229,7 +229,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Backward ladder
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
-            cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
+            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
             if enabled():
                 adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
