@@ -27,7 +27,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 
 from functools import singledispatch
 
-from pennylane.allocation import Allocate, Deallocate
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -140,7 +140,7 @@ def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
     if not any(mcm in config.bit_map for mcm in mcms):
         return layer_str
 
-    n_wires = len(config.wire_map)
+    n_wires = config.n_wires
     mapped_wire = max(config.wire_map[w] for w in op.wires)
     bits = [config.bit_map[mcm] + n_wires for mcm in mcms if mcm in config.bit_map]
     for bit in bits:
@@ -263,8 +263,7 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(obj.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
-        n_wires = len(config.wire_map)
-        for i, s in enumerate(layer_str[:n_wires]):
+        for i, s in enumerate(layer_str[: config.n_wires]):
             layer_str[i] = s + label
     else:
         for w in obj.wires:
@@ -291,13 +290,14 @@ def _add_global_op(
     tape_cache=None,
     skip_grouping_symbols=False,
 ):
-    n_wires = len(config.wire_map)
+    active_wires = [w for w, row in config.wire_map.items() if config.wire_filler(row) == "─"]
     if not skip_grouping_symbols:
-        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
+        layer_str = _add_grouping_symbols(active_wires, layer_str, config)
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    for i, s in enumerate(layer_str[:n_wires]):
-        layer_str[i] = s + label
+    for row in range(config.n_wires):
+        if config.wire_filler(row) == "─":  # proxy for occupied wire
+            layer_str[row] = layer_str[row] + label
 
     return layer_str
 
@@ -344,15 +344,14 @@ def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
     """Adds symbols indicating the extent of a given object for mid-circuit measurement
     statistics."""
     if len(mcms) > 1:
-        n_wires = len(config.wire_map)
         mapped_bits = [config.bit_map[m] for m in mcms]
-        min_b, max_b = min(mapped_bits) + n_wires, max(mapped_bits) + n_wires
-
+        min_b = min(mapped_bits) + config.n_wires
+        max_b = max(mapped_bits) + config.n_wires
         layer_str[min_b] = "╭"
         layer_str[max_b] = "╰"
 
         for b in range(min_b + 1, max_b):
-            layer_str[b] = "├" if b - n_wires in mapped_bits else "│"
+            layer_str[b] = "├" if b - config.n_wires in mapped_bits else "│"
 
     return layer_str
 
@@ -366,9 +365,8 @@ def _add_cwire_measurement(m, layer_str, config):
     mv_label = "PPM" if isinstance(mcms[0], PauliMeasure) else "MCM"
     meas_label = measurement_label_map[type(m)](mv_label)
 
-    n_wires = len(config.wire_map)
     for mcm in mcms:
-        ind = config.bit_map[mcm] + n_wires
+        ind = config.bit_map[mcm] + config.n_wires
         layer_str[ind] += meas_label
 
     return layer_str
@@ -399,9 +397,9 @@ def _add_measurement(
 
     if len(m.wires) == 0:
         # add grouping symbols for measurements that span all device wires.
-        n_wires = len(config.wire_map)
-        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
-        for i, s in enumerate(layer_str[:n_wires]):
+        algo_wires = [w for w in config.wire_map if not isinstance(w, DynamicWire)]
+        layer_str = _add_grouping_symbols(algo_wires, layer_str, config)
+        for i, s in enumerate(layer_str[: len(algo_wires)]):
             layer_str[i] = s + meas_label
 
     for w in m.wires:

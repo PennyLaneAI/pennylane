@@ -1300,6 +1300,78 @@ class TestWireAllocation:
 
         assert qp.draw(f)() == "  |0>├──┤    "
 
+    def test_mcm_with_dynamic_wire_reuse(self):
+        """Test that we can have mcm's and conditionals with dynamic wire reuse."""
+
+        def f():
+            m = qp.measure(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.cond(m, qp.CNOT)((wires[0], 0))
+
+            qp.H(0)
+            qp.H(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.cond(m, qp.CZ)((wires[0], 0))
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ──┤↗├─╭X──H──H─╭Z────┤  \n"
+            "      ║├─╰●──┤  ├─╰●──┤    \n"
+            "      ╚═══╩════════╝       "
+        )
+        assert out == expected
+
+    def test_identity_global_phase_dynamic_wires(self):
+        """Test that global phase and identity on all wires can be drawn with active dynamic wires.
+        Make sure to hit both:
+        1) blank space between active wires
+        2) Reused line.
+        """
+
+        def f():
+            qp.I()
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.I()
+
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.I()
+
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.GlobalPhase(0.5)
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ──I─╭●─╭I────╭●─╭I────╭●─╭GlobalPhase(0.50)────┤  \n"
+            "     ├─╰X─╰I──┤ │  │   ├─╰X─╰GlobalPhase(0.50)──┤    \n"
+            "              ├─╰X─╰I──┤                             "
+        )
+        assert out == expected
+
+    def test_measurement_on_all_wires(self):
+        """Test that a measurement on all wires works with line reuse for dynamic wires."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.H(0)
+            qp.H(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.X(1)
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ────╭●──H──H─╭●────┤ ╭Probs\n"
+            "1: ────│────────│───X─┤ ╰Probs\n"
+            "     ├─╰X──┤  ├─╰X──┤         "
+        )
+        assert out == expected
+
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""

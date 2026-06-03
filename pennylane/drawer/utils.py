@@ -261,34 +261,34 @@ def unwrap_controls(op):
 
 # pylint: disable=unused-argument
 @singledispatch
-def _get_meas(op, bit_map):
+def _get_meas(op, bit_map, wire_map):
     return [], None
 
 
 @_get_meas.register
-def _get_subroutine_mcms(op: SubroutineOp, bit_map):
+def _get_subroutine_mcms(op: SubroutineOp, bit_map, wire_map):
     _meas = []
     for mcm in (mcm for mv in _get_subroutine_mvs(op) for mcm in mv.measurements):
         if mcm in bit_map:
             _meas.append(mcm)
-    return _meas, max(op.wires)
+    return _meas, max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register(MidMeasure)
 @_get_meas.register(PauliMeasure)
-def _get_mm(op: MidMeasure | PauliMeasure, bit_map):
+def _get_mm(op: MidMeasure | PauliMeasure, bit_map, wire_map):
     if op not in bit_map:
         return [], None
-    return [op], op.wires[0]
+    return [op], max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register
-def _get_c(op: Conditional, bit_map):
-    return op.meas_val.measurements, max(op.wires)
+def _get_c(op: Conditional, bit_map, wire_map):
+    return op.meas_val.measurements, max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register
-def _get_mp(op: MeasurementProcess, bit_map):
+def _get_mp(op: MeasurementProcess, bit_map, wire_map):
     if op.mv is None:
         return [], None
     if isinstance(op.mv, MeasurementValue):
@@ -348,7 +348,7 @@ def cwire_connections(layers, bit_map, wire_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            _meas, con_wire = _get_meas(op, bit_map)
+            _meas, con_wire = _get_meas(op, bit_map, wire_map)
 
             for m in _meas:
                 cwire = bit_map[m]
