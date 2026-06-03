@@ -149,7 +149,7 @@ class AbstractArray:
     Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
 
     >>> Int32[..., 2]
-    AbstractArray(shape=(Ellipsis, 1), dtype=dtype('int32'))
+    AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
 
     ``AbstractArray``'s can be used together with ``isinstance`` checks:
 
@@ -188,7 +188,7 @@ class AbstractArray:
                 raise TypeError(
                     f"size is undefined for {self} with unknown shape dimension specified by Ellipsis."
                 ) from e
-            raise e
+            raise e  # pragma: no cover
 
     @property
     def T(self) -> "AbstractArray":

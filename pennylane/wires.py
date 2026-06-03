@@ -740,7 +740,11 @@ class Wires(Sequence):
         return Wires(set(_process(other)) ^ set(self.labels))
 
     def __class_getitem__(cls, item) -> "AbstractWires":
-        return AbstractWires[item]
+        if not isinstance(item, int) and item != ...:
+            raise TypeError(
+                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
+            )
+        return AbstractWires(item)
 
 
 @dataclass(frozen=True)
@@ -775,13 +779,6 @@ class AbstractWires:
 
     def __len__(self) -> int:
         return self.num_wires
-
-    def __class_getitem__(cls, item) -> "AbstractWires":
-        if not isinstance(item, int) and item != ...:
-            raise TypeError(
-                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
-            )
-        return AbstractWires(item)
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable

@@ -212,6 +212,13 @@ class TestAbstractArray:
         with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
             _ = a[1]
 
+    def test_error_len_on_scalar(self):
+        """Test that requesting the len of a scalar results in an error."""
+        a = AbstractArray((), Int)
+
+        with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
+            len(a)
+
     @pytest.mark.parametrize("bad_index", (5.0, "a", None))
     def test_error_bad_indices(self, bad_index):
         """Test that an error is raised on invalid indices."""

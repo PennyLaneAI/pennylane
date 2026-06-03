@@ -622,22 +622,6 @@ class TestAbstractWires:
         a = AbstractWires(...)
         assert a.num_wires == ...
 
-    def test_create_by_getitem(self):
-        """Test that AbstractWires can be created by __getitem__."""
-
-        a = AbstractWires[4]
-        assert isinstance(a, AbstractWires)
-        assert a.num_wires == 4
-
-        b = AbstractWires[...]
-        assert isinstance(b, AbstractWires)
-        assert b.num_wires == ...
-
-        with pytest.raises(
-            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
-        ):
-            _ = AbstractWires[2, 3, 4]
-
     def test_wires_getitem(self):
         """Test that AbstractWires can created by indexing into Wires."""
 
