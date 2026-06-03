@@ -39,14 +39,14 @@ def _wire_layout(n, work_offset=None):
 def _valid_pairs(M, N):
     r"""The valid THC index pairs :math:`\mathcal{S}` flagged by the success qubit.
 
-    Following Lee et al. (2021), Eqs. (27)-(28) of `arXiv:2011.03494
+    Following Lee et al. (2021) `arXiv:2011.03494
     <https://arxiv.org/abs/2011.03494>`_, the template prepares a *uniform*
     superposition over
 
-    * the upper-triangular two-body pairs ``{(mu, nu): mu <= nu <= M - 1}``
+    * the upper-triangular two-body pairs ``{(mu, nu): mu <= nu < M}``
       (0-indexed registers), of size ``M (M + 1) / 2``, and
     * the ``N / 2`` one-body terms ``{(mu, M): mu < N / 2}``, flagged by the
-      sentinel column ``nu = M`` (the value ``M + 1`` in the paper's 1-indexed
+      sentinel column ``nu = M`` (the value ``M`` in the paper's 1-indexed
       convention).
 
     The total size is the THC coefficient count ``d = N / 2 + M (M + 1) / 2``.
@@ -60,11 +60,6 @@ def _valid_pairs(M, N):
     two_body = {(mu, nu) for nu in range(M) for mu in range(nu + 1)}
     one_body = {(mu, M) for mu in range(N // 2)}
     return two_body | one_body
-
-
-def _d(M, N):
-    """Number of THC coefficients (Eq. (28) of arXiv:2011.03494)."""
-    return N // 2 + M * (M + 1) // 2
 
 
 def _full_state(M, N, n):
@@ -125,14 +120,10 @@ class TestSuperpositionTHC:
     )
     def test_operation_result(self, M, N, n, qjit):
         """The template prepares a uniform superposition over the valid index set
-        ``S = {(mu, nu): mu <= nu <= M - 1} U {(mu, M): mu < N / 2}`` conditioned on
+        ``S = {(mu, nu): mu <= nu < M} U {(mu, M): mu < N / 2}`` conditioned on
         the output success flag (``work_wires[6] == 1``).
-
-        ``qml.probs`` marginalizes out every other wire for us and returns
-        ``P(mu, nu, flag)`` flattened over the ``mu_wires + nu_wires + [success_flag]``
-        register. We reshape it into a ``(2**n, 2**n, 2)`` array so that
-        ``probs[mu, nu, flag]`` is indexed directly, with no bit arithmetic.
         """
+
         mu_wires, nu_wires, work_wires = _wire_layout(n)
         success_flag = work_wires[6]
         dev = qp.device("lightning.qubit", wires=2 * n + len(work_wires))
@@ -157,7 +148,9 @@ class TestSuperpositionTHC:
         }
 
         assert set(support) == _valid_pairs(M, N)
-        assert len(support) == _d(M, N)
+
+        d = N // 2 + M * (M + 1) // 2
+        assert len(support) == d
 
         # The flagged amplitudes must be uniform.
         weights = np.array(list(support.values()))
@@ -188,14 +181,14 @@ class TestSuperpositionTHC:
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
             return [qp.probs(wires=[w]) for w in work_wires]
 
-        marginals = circuit()
+        probs = circuit()
 
         flag_indices = {0, 3, 6}
-        for fw, marginal in enumerate(marginals):
-            prob_one = float(marginal[1])
-            if fw in flag_indices:
-                continue  # may or may not carry weight depending on (M, N)
-            assert np.isclose(prob_one, 0.0), f"work_wires[{fw}] not returned to zero"
+        for i, prob in enumerate(probs):
+            prob_one = float(prob[1])
+            if i in flag_indices:
+                continue
+            assert np.isclose(prob_one, 0.0), f"work_wires[{i}] not returned to zero"
 
     @pytest.mark.parametrize(
         ("M", "N", "n"),
@@ -210,6 +203,7 @@ class TestSuperpositionTHC:
         vector is real-valued."""
         state = _full_state(M, N, n)
         assert np.allclose(state.imag, 0.0), "Phase error: imaginary components detected"
+        assert np.allclose(state, np.abs(state)), "Phase error: negative components detected"
 
     @pytest.mark.parametrize(
         ("M", "N", "mu_wires", "nu_wires", "work_wires", "msg_match"),

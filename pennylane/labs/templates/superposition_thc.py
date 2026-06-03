@@ -14,6 +14,8 @@
 """Contains the SuperpositionTHC template, used as a subroutine in tensor
 hypercontraction (THC) qubitization."""
 
+import numpy as np
+
 from pennylane import adjoint, math
 from pennylane.decomposition import (
     add_decomps,
@@ -21,11 +23,11 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.operation import Operation
-from pennylane.ops import BasisState, Controlled, Hadamard, MultiControlledX, RY, X, Z
+from pennylane.ops import RY, BasisState, Controlled, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
-from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 
 
 class SuperpositionTHC(Operation):
@@ -33,30 +35,22 @@ class SuperpositionTHC(Operation):
     pairs of the tensor hypercontraction (THC) representation.
 
     This template prepares the state used by the ``SELECT``/``PREPARE`` pair in THC
-    qubitization. Starting from two zeroed index registers, :math:`\lvert \mu \rangle`
-    and :math:`\lvert \nu \rangle` (plus a flag/auxiliary register), it produces a
-    uniform superposition restricted to the set of indices that label the symmetry-unique
-    THC factors, namely the one-body terms and the upper-triangular two-body pairs
-    :math:`\mu \geq \nu`:
+    qubitization given the THC rank :math:`M` and the number of spin orbitals :math:`N`.
+    It produces the state:
 
     .. math::
 
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
         \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
 
-    where :math:`\mathcal{S}` is the valid index set and
-    :math:`d = N/2 + M(M+1)/2` is its size. It is the union of the upper-triangular
-    two-body pairs and the :math:`N/2` one-body terms:
+    where :math:`\mathcal{S}` is the valid index set defined as
 
     .. math::
 
-       \mathcal{S} = \{ (\mu, \nu) \mid \mu \le \nu \le M \} \;\cup\;
-       \{ (\mu, M+1) \mid \mu < N/2 \}
+       \mathcal{S} = \{ (\mu, \nu) \mid \mu \le \nu < M \} \;\cup\;
+       \{ (\mu, M) \mid \mu < N/2 \}
 
-    Because :math:`d` is generally not a power of two, the uniform superposition is obtained
-    by combining Hadamards with a single round of amplitude amplification: an :class:`~.RY`
-    rotation marks the success amplitude, a reflection amplifies it, and the rotation is
-    uncomputed.
+    and :math:`d = N/2 + M(M+1)/2` is its size.
 
     The construction follows the tensor hypercontraction state preparation of
     `Lee et al. (2021), Fig. 3 <https://arxiv.org/abs/2011.03494>`_.
@@ -64,19 +58,18 @@ class SuperpositionTHC(Operation):
     .. note::
 
         Every work wire is returned to the zero state
-        except the wires that carry the prepared flags, so no external uncomputation is
-        required by the caller.
+        except the wires that carry the prepared flags:  `work_wires[0]`, `work_wires[3]` and `work_wires[6]`.
 
     Args:
-        M (int): The THC rank, i.e. the number of auxiliary THC vectors. Together with ``N``
-            it determines the size :math:`d = N/2 + M(M+1)` of the prepared superposition.
+        M (int): The THC rank. Together with ``N``
+            it determines the size :math:`d = N/2 + M(M+1)/2` of the prepared superposition.
         N (int): The number of spin orbitals. Used to count the one-body contribution
             :math:`N/2` to the valid index set.
         mu_wires (WiresLike): The :math:`n` wires that store the first THC index :math:`\mu`.
         nu_wires (WiresLike): The :math:`n` wires that store the second THC index :math:`\nu`.
             Must contain the same number of wires as ``mu_wires``.
-        work_wires (WiresLike): The auxiliary wires. The first seven encode the flag/ancilla
-            register of Fig. 3 of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_;
+        work_wires (WiresLike): The auxiliary wires. The first seven wires are the once shown in
+            Fig. 3 of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_;
             the remaining wires are scratch space for the comparators and multi-controlled
             gates. At least :math:`3\,n + 5` zeroed work wires must be provided, where
             :math:`n` is the size of `nu_wires`.
@@ -211,7 +204,7 @@ class SuperpositionTHC(Operation):
         r"""Representation of the operator as a product of other operators.
 
         Args:
-            M (int): The THC rank (number of auxiliary THC vectors).
+            M (int): The THC rank.
             N (int): The number of spin orbitals.
             mu_wires (WiresLike): The wires that store the first THC index :math:`\mu`.
             nu_wires (WiresLike): The wires that store the second THC index :math:`\nu`.
@@ -239,9 +232,9 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     wires of the ancilla register (Fig. 3 of `Lee et al. (2021)
     <https://arxiv.org/abs/2011.03494>`_):
 
-    * ``work_wires[1]``: :math:`\nu \leq M` (classical comparison against the THC rank).
+    * ``work_wires[1]``: :math:`\nu < M` (classical comparison against the THC rank).
     * ``work_wires[2]``: :math:`\mu \leq \nu` (quantum comparison between the two registers).
-    * ``work_wires[3]``: :math:`\nu = M + 1` (classical equality against the THC rank,
+    * ``work_wires[3]``: :math:`\nu = M` (classical equality against the THC rank,
       i.e. the one-body sentinel column). Only computed when ``keep_eq`` is ``False``.
     * ``work_wires[4]``: :math:`\mu \geq N/2` (classical comparison selecting two-body
       terms; equivalently, the one-body block keeps :math:`\mu < N/2`, the :math:`N/2`
@@ -313,25 +306,8 @@ def _controlled_rep(base_class, num_control_wires):
 
 
 def _superposition_thc_resources(num_mu_wires, M, N):
-    r"""Exact gate counts of the SuperpositionTHC decomposition.
+    r"""Exact gate counts of the SuperpositionTHC decomposition."""
 
-    * Single-qubit gates applied directly: ``6 * n`` Hadamards (three rounds over
-      both ``n``-wire registers), ``4 * n + 4`` PauliX gates, and ``2`` RY rotations.
-    * Multi-controlled gates built with ``Controlled(...)``: four ``C(X)`` with two
-      controls, one ``C(X)`` with three controls, one ``C(Z)`` with three controls,
-      and one ``C(Z)`` with ``2 * n`` controls (the reflection).
-    * The ``left_equalities`` block, applied twice forward and twice as an adjoint.
-      Each call contains two ``LeftClassicalComparator`` (``L = M`` with ``<=`` and
-      ``L = N // 2`` with ``>=``), one ``LeftQuantumComparator`` and one ``BasisState``.
-    * The zero-controlled ``MultiControlledX`` that writes ``work_wires[3]`` fires only
-      when ``keep_eq`` is ``False``: twice in the forward direction (steps 3 and 6) and
-      once as an adjoint (the first ``adjoint(left_equalities)``). The final
-      ``adjoint(left_equalities)`` uses ``keep_eq=True`` and therefore skips it.
-
-    ``M`` and ``N`` enter the resource estimate through the classical comparison
-    constants ``L = M`` and ``L = N // 2``, which is why they are part of
-    ``resource_keys``.
-    """
     n = num_mu_wires
 
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
@@ -347,6 +323,7 @@ def _superposition_thc_resources(num_mu_wires, M, N):
     )
 
     resources = {
+        resource_rep(GlobalPhase): 1,
         resource_rep(Hadamard): 6 * n,
         resource_rep(X): 4 * n + 4,
         resource_rep(RY): 2,
@@ -364,10 +341,6 @@ def _superposition_thc_resources(num_mu_wires, M, N):
         adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
         adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
         adjoint_resource_rep(BasisState, basis.params): 2,
-        # The work_wires[3] MultiControlledX fires only when keep_eq is False. It is
-        # therefore applied in the two forward left_equalities calls (steps 3 and 6) and
-        # in the first adjoint(left_equalities) (step 4, keep_eq=False). The final
-        # adjoint(left_equalities) uses keep_eq=True, so it is suppressed there.
         mcx: 2,
         adjoint_resource_rep(MultiControlledX, mcx.params): 1,
     }
@@ -394,8 +367,6 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # 2. Rotation angle for the single round of amplitude amplification.
-    #    The valid index set has size d = N/2 + M(M+1); frac_valid is its fraction of the
-    #    full 2^(2n) basis, and the angle marks the corresponding success amplitude.
     n_total_vals = 2 ** len(mu_wires)
     d = N // 2 + M * (M + 1)
     frac_valid = d / n_total_vals**2
@@ -426,6 +397,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # The diagram in Fig 3. has a typo and these X gates have to be added
     for wire in mu_wires + nu_wires + [work_wires[0]]:
         X(wires=wire)
+    GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
     for wire in mu_wires + nu_wires + [work_wires[0]]:
         X(wires=wire)
