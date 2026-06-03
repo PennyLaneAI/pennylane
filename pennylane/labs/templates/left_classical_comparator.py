@@ -57,7 +57,7 @@ class LeftClassicalComparator(Operation):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import pennylane as qp
         from pennylane.labs.templates import LeftClassicalComparator
@@ -202,27 +202,32 @@ class LeftClassicalComparator(Operation):
 
         **Example**
 
-        >>> dev = qp.device("lightning.qubit", wires=6)
-        >>> @qp.qnode(dev)
-        >>> @qp.decompose(gate_set={"TemporaryAND", 'CNOT', 'PauliX'})
-        >>> def circuit(x_val, L_val):
-        ...    qp.BasisState(x_val, wires=[0, 1, 2])
-        ...    qp.LeftClassicalComparator(
-        ...     x_wires=[0, 1, 2],
-        ...     L=L_val,
-        ...     target_wire=3,
-        ...     work_wires=[4, 5],
-        ...     comparator='<='
-        ... )
-        ... return qp.state()
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=6)
+
+            from pennylane.labs.templates import LeftClassicalComparator
+
+            @qp.qnode(dev)
+            @qp.decompose(gate_set={"TemporaryAND", 'CNOT', 'PauliX'})
+            def circuit(x_val, L_val):
+                qp.BasisState(x_val, wires=[0, 1, 2])
+                LeftClassicalComparator(
+                    x_wires=[0, 1, 2],
+                    L=L_val,
+                    target_wire=3,
+                    work_wires=[4, 5],
+                    comparator='<='
+                )
+                return qp.state()
 
         >>> print(qp.draw(circuit, wire_order = [2, 4, 1, 5, 0, 6, 3])(2,0))
-        2: ──X─╭●──X──────────┤  State
-        4: ────╰X─╭●─╭●───────┤  State
-        1: ───────├●─│────────┤  State
-        5: ───────╰⊕─╰X─╭●─╭●─┤  State
-        0: ─────────────├●─│──┤  State
-        3: ─────────────╰⊕─╰X─┤  State
+        2: ──X─╭●──X──────────┤ ╭State
+        4: ────╰X─╭●─╭●───────┤ ├State
+        1: ──X────├●─│────────┤ ├State
+        5: ───────╰⊕─╰X─╭●─╭●─┤ ├State
+        0: ─────────────├●─│──┤ ├State
+        3: ─────────────╰⊕─╰X─┤ ╰State
 
         Returns:
             list[.Operator]: Decomposition of the operator

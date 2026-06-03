@@ -149,6 +149,7 @@ doctest = [
     "stim",
     "quimb",
     "tqdm",
+    "optax",
 ]
 
 [[project.maintainers]]
