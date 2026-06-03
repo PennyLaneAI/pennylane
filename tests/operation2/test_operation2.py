@@ -1683,7 +1683,7 @@ class TestRepresentations:
 
         class WithGen(Operator2):
             def __init__(self, wires):
-                super().__init__(wires=wires)
+                super().__init__()
 
             def generator(self):
                 return DynOp(0.5, wires=self.wires[0])
@@ -1694,5 +1694,15 @@ class TestRepresentations:
 
 def test_state_prep_base_label():
     """Tests that the default label is as expected."""
-    op = StatePrepBase2()
+
+    class MyStatePrep(StatePrepBase2):
+        wire_argnames = ("wires",)
+
+        def __init__(self, wires):
+            super().__init__(wires)
+
+        def state_vector(self, wire_order=None):
+            return np.zeros(5)
+
+    op = MyStatePrep(0)
     assert op.label() == "|Ψ⟩"
