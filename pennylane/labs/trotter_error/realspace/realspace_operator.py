@@ -60,7 +60,7 @@ class RealspaceOperator:
     >>> ops = ("Q", "Q")
     >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
     >>> RealspaceOperator(n_modes, ops, coeffs)
-    RealspaceOperator(5, ('Q', 'Q'), phi[idx0,idx1])
+    RealspaceOperator(2, ('Q', 'Q'), phi[idx0,idx1])
     """
 
     def __init__(
@@ -97,10 +97,10 @@ class RealspaceOperator:
         >>> ops = ("Q", "Q")
         >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
         >>> RealspaceOperator(n_modes, ops, coeffs).matrix(2)
-        [[6.28318531 0.         0.         0.        ]
-         [0.         3.14159265 0.         0.        ]
-         [0.         0.         3.14159265 0.        ]
-         [0.         0.         0.         0.        ]]
+        array([[6.28318531, 0.        , 0.        , 0.        ],
+           [0.        , 3.14159265, 0.        , 0.        ],
+           [0.        , 0.        , 3.14159265, 0.        ],
+           [0.        , 0.        , 0.        , 0.        ]])
         """
 
         matrices = [
