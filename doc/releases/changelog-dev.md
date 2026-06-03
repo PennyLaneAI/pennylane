@@ -153,6 +153,9 @@
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
 
+* Added a `__repr__` method to the `Tracker` class to improve state inspection and debugging capabilities.
+  [(#9565)](https://github.com/XanaduAI/pennylane/pull/9565)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
