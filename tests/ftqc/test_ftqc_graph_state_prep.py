@@ -92,6 +92,7 @@ class TestGraphStatePrep:
         assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
