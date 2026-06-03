@@ -300,7 +300,6 @@ def _incrementer_decomposition(wires, work_wires, **_):
 def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
     resources[resource_rep(X)] = 0
-    resources[resource_rep(CNOT)] -= num_control_wires - 1 + num_control_wires == 1
     return resources
 
 
