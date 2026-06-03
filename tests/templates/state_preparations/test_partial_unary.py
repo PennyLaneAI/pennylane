@@ -99,7 +99,7 @@ class TestPartialUnaryStatePreparation:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.parametrize("provide_work_wires", [False, "half", True])
+    @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
@@ -108,16 +108,12 @@ class TestPartialUnaryStatePreparation:
         """Test that PartialUnaryStatePreparation is a valid PennyLane operator."""
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
         wires = list(range(num_wires))
-        if provide_work_wires == "half":
-            ell = max(qp.math.ceil_log2(num_entries), 1)
-            work_wires = tuple(range(num_wires, num_wires + ell // 2))
-        elif provide_work_wires:
-            ell = max(qp.math.ceil_log2(num_entries), 1)
-            work_wires = tuple(range(num_wires, num_wires + ell))
+        if provide_work_wires:
+            num_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
+            work_wires = tuple(range(num_wires, num_wires + num_work_wires))
         else:
             work_wires = ()
 
-        print(f"{wires=}, {work_wires=}")
         op = PartialUnaryStatePreparation(
             coefficients, wires, indices=indices, work_wires=work_wires
         )
@@ -134,7 +130,7 @@ class TestPartialUnaryStatePreparation:
         # In this case, assert_valid actually asserts that compute_decomposition raises an error.
         assert op.has_decomposition is False
 
-    @pytest.mark.parametrize("provide_work_wires", [False, "half", True])
+    @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
@@ -144,19 +140,23 @@ class TestPartialUnaryStatePreparation:
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
-        if provide_work_wires == "half":
-            ell = max(qp.math.ceil_log2(num_entries), 1)
-            work_wires = list(range(num_wires, num_wires + ell // 2))
-        elif provide_work_wires:
-            ell = max(qp.math.ceil_log2(num_entries), 1)
-            work_wires = list(range(num_wires, num_wires + ell))
+        if provide_work_wires:
+            num_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         else:
-            work_wires = ()
+            num_work_wires = 0
 
-        for rule in list_decomps(PartialUnaryStatePreparation):
+        work_wires = list(range(num_wires, num_wires + num_work_wires))
+
+        for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
+            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            # If provide_work_wires=False/True (=> cast to 0/1), we expect the decomposition
+            # rule with index 0/1 to be applicable.
+            assert applicable is (j == int(provide_work_wires))
+            if not applicable:
+                continue
 
             @qp.qnode(qp.device("lightning.qubit"))
-            @qp.transforms.resolve_dynamic_wires(min_int=num_wires + len(work_wires))
+            @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
@@ -171,11 +171,6 @@ class TestPartialUnaryStatePreparation:
             num_all_wires = ceil_log2(out_state.shape[0])
             num_aux_wires = num_all_wires - num_wires
             for _ in range(num_aux_wires):
-                assert np.allclose(out_state[1::2], 0.0), "\n".join(
-                    [
-                        f"{a} : {b}"
-                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
-                    ]
-                )
+                assert np.allclose(out_state[1::2], 0.0)
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
