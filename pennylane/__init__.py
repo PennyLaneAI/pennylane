@@ -153,6 +153,7 @@ from pennylane.ops.functions import (
     iterative_qpe,
     commutator,
     comm,
+    single_qubit_zyz_angles,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *

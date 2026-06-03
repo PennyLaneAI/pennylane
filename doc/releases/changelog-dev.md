@@ -2,6 +2,71 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
+  of a ZYZ decomposition of a single-qubit operator has been added.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
+  ```pycon
+  >>> qp.single_qubit_zyz_angles(qp.H(0))
+  (3.14159..., 1.57079..., 0.0, 1.57079...)
+
+  ```
+
+  The new function returns a tuple of four values, where the first three corresponds to the rotation
+  angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
+
+* :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
+  that can't be resolved at compile time.
+  In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.SymbolicSpecsResources` instances instead of the usual :class:`~.resource.SpecsResources` instances.
+
+  ```python
+  @qp.qjit(autograph=True)
+  @qp.qnode(qp.device("lightning.qubit", wires=1))
+  def circuit(x):
+      qp.Hadamard(0)
+      qp.PauliX(0)
+      for _ in range(x):
+          qp.PauliX(0)
+      return qp.expval(qp.PauliX(0))
+
+  specs_result = qp.specs(circuit, level=0)(5)
+  ```
+
+  ```pycon
+  >>> print(specs_result)
+  Device: lightning.qubit
+  Device wires: 1
+  Shots: Shots(total=None)
+  Level: Before MLIR Passes
+  <BLANKLINE>
+  Symbolic Variables: a
+  Wire allocations: 1
+  Total gates: a + 2
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: a + 1
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+
+  ```
+
+  These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
+
+  ```pycon
+  >>> res = specs_result.resources
+  >>> print(res.subs(a=5))
+  Wire allocations: 1
+  Total gates: 7
+  Gate counts:
+  - Hadamard: 1
+  - PauliX: 6
+  Measurements:
+  - expval(PauliX): 1
+  Depth: Not computed
+
+  ```
+
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
   This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
   efficient simulation of quantum materials and chemistry systems.
@@ -79,7 +144,7 @@
   ```
   [(#9368)](https://github.com/PennyLaneAI/pennylane/pull/9368)
 
-* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})). 
+* Updated `qp.registers` to accept empty registers (e.g., `qp.registers({"algo_wires": 5, "work_wires": 0})).
   [(#9543)](https://github.com/PennyLaneAI/pennylane/pull/9543)
 
 * Removed instances of using the deprecated way to set shots on a device `device(..., shots=...)`.
@@ -100,6 +165,10 @@
 * A more informative error message is raised when quantum functions without registered resource
   estimates are passed to the `fixed_decomps` and `alt_decomps` arguments of the :func:`~.transforms.decompose` transform.
   [(#9528)](https://github.com/PennyLaneAI/pennylane/pull/9528)
+
+* The output of :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` is
+  now formatted for clearer visual inspection when used in a Jupyter notebook environment.
+  [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -279,6 +348,9 @@
   ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
+* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
 <h3>Internal changes ⚙️</h3>
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
@@ -340,11 +412,18 @@
 * References to TensorFlow integration have been removed from the documentation following the end of maintenance support as of PennyLane v0.44.
   [(#9486)](https://github.com/PennyLaneAI/pennylane/pull/9486)
 
+* Functions with ``singledispatch`` stop having its signature duplicated in the documentation for every registered dispatch function.
+  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
+
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
+  accidentally being masked by internal try/except logic.
+  [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
+  
 * Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
   if the number of selected operators is notably smaller than the maximal capacity for the given
   number of control wires. This bug only surfaced for `partial=False`.
@@ -408,4 +487,5 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
-David Wierichs.
+David Wierichs,
+Jake Zaia.
