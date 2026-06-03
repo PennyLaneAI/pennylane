@@ -438,7 +438,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
         >>> parent = _RealspaceTree.outer_node(left_child, right_child)
-        >>> parent.compute((1, 1, 2))
+        >>> print(parent.compute((1, 1, 2)))
         12
         """
 
@@ -490,7 +490,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         >>> import numpy as np
         >>> node = _RealspaceTree.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
-        {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
+        {(0, 0): 1.0, (0, 3): 1.0, (1, 2): 1.0, (1, 3): 1.0}
         """
 
         if self.node_type == _NodeType.TENSOR:

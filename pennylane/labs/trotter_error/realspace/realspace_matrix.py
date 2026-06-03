@@ -167,19 +167,19 @@ class RealspaceMatrix(Fragment):
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).matrix(2)
-        [[-25.58680776   0.           0.         ...   0.           0.
-            0.        ]
-         [  0.         -16.72453851   0.         ...   0.           0.
-            0.        ]
-         [  0.           0.         -18.49699236 ...   0.           0.
-            0.        ]
-         ...
-         [  0.           0.           0.         ...  -6.0898154    0.
-            0.        ]
-         [  0.           0.           0.         ...   0.          -7.86226925
-            0.        ]
-         [  0.           0.           0.         ...   0.           0.
-            1.        ]]
+        array([[-25.58680776,   0.        ,   0.        , ...,   0.        ,
+              0.        ,   0.        ],
+           [  0.        , -16.72453851,   0.        , ...,   0.        ,
+              0.        ,   0.        ],
+           [  0.        ,   0.        , -18.49699236, ...,   0.        ,
+              0.        ,   0.        ],
+           ...,
+           [  0.        ,   0.        ,   0.        , ...,  -6.0898154 ,
+              0.        ,   0.        ],
+           [  0.        ,   0.        ,   0.        , ...,   0.        ,
+             -7.86226925,   0.        ],
+           [  0.        ,   0.        ,   0.        , ...,   0.        ,
+              0.        ,   1.        ]], shape=(32, 32))
         """
         pow2 = _next_pow_2(self.states)
         dim = pow2 * gridpoints**self.modes
@@ -222,7 +222,7 @@ class RealspaceMatrix(Fragment):
         >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> params = {"gridpoints": 2, "sparse": True}
-        >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).norm(params)
+        >>> print(RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).norm(params))
         27.586807763582737
         """
         try:
