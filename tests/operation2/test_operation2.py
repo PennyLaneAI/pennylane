@@ -1683,7 +1683,7 @@ class TestRepresentations:
 
         class WithGen(Operator2):
             def __init__(self, wires):
-                super().__init__()
+                super().__init__(wires=wires)
 
             def generator(self):
                 return DynOp(0.5, wires=self.wires[0])
