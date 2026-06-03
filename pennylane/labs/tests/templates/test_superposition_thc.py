@@ -163,7 +163,6 @@ class TestSuperpositionTHC:
         weights = np.array(list(support.values()))
         assert np.allclose(weights, weights[0])
 
-
     @pytest.mark.parametrize(
         ("M", "N", "n"),
         [
