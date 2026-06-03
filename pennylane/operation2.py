@@ -1258,7 +1258,7 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
-class StatePrepBase2(Operator2):
+class StatePrepBase2(Operator2, is_base=True):
     """An interface for state-prep operations."""
 
     @abc.abstractmethod
