@@ -268,10 +268,7 @@ class Operator2(ABC):
             )
 
         # Wire sizes setup
-        # We check if vars(cls) has wire_sizes because it only finds keys belonging to a class but
-        # not its bases. Thus, if a parent class has wire_sizes, we don't want to inherit it in
-        # case the wire_argnames of the child is different from the wire_argnames of the parent.
-        if "wire_sizes" in vars(cls) and cls.wire_sizes is not None:
+        if cls.wire_sizes is not None:
             if not isinstance(cls.wire_sizes, Sequence):
                 cls.wire_sizes = (cls.wire_sizes,)
 
