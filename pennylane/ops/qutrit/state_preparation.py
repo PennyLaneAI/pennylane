@@ -22,7 +22,6 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, StatePrepBase
-from pennylane.ops.qubit.state_preparation import QubitDensityMatrix
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires
 
