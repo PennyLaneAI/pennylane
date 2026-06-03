@@ -1386,7 +1386,7 @@ class TestModifiedTemplates:
             "x_wires": [0, 1],
             "y_wires": [2, 3],
             "output_wires": [4, 5],
-            "work_wires": None,
+            "work_wires": [],
         }
 
         def qfunc():
