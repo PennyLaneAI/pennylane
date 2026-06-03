@@ -91,6 +91,7 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
