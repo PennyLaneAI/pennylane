@@ -199,7 +199,6 @@ def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
 def _decompose_mcxs(wires, work_wires, control_wires=None):
     if control_wires is None:
         wires = wires[::-1]
-        num_controls = 0
     else:
         if enabled() and control_wires.shape[0] > 0:
             wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
