@@ -44,11 +44,14 @@ class SuperpositionTHC(Operation):
         \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle^{\otimes n} \lvert 0 \rangle \;\mapsto\;
         \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle \lvert \text{flag} \rangle ,
 
-    where :math:`\mathcal{S}` is the valid index set and :math:`d = N/2 + M(M+1)` is its size:
+    where :math:`\mathcal{S}` is the valid index set and
+    :math:`d = N/2 + M(M+1)/2` is its size. It is the union of the upper-triangular
+    two-body pairs and the :math:`N/2` one-body terms:
 
     .. math::
 
-       S = \{ p \mid \mu \le \nu \le M + 1, \text{ with } \mu \le \frac{N}{2} \}
+       \mathcal{S} = \{ (\mu, \nu) \mid \mu \le \nu \le M \} \;\cup\;
+       \{ (\mu, M+1) \mid \mu < N/2 \}
 
     Because :math:`d` is generally not a power of two, the uniform superposition is obtained
     by combining Hadamards with a single round of amplitude amplification: an :class:`~.RY`
@@ -104,17 +107,17 @@ class SuperpositionTHC(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0.04335852 0.04335852 0.04335852 0.04335852 0.04335852 0.04335852
-         0.00208072 0.00208072 0.00208072 0.04335852 0.04335852 0.04335852
-         0.04335852 0.04335852 0.00208072 0.00208072 0.00208072 0.00208072
-         0.04335852 0.04335852 0.04335852 0.04335852 0.00208072 0.00208072
-         0.00208072 0.00208072 0.00208072 0.04335852 0.04335852 0.04335852
-         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
-         0.04335852 0.04335852 0.00208072 0.00208072 0.00208072 0.00208072
-         0.00208072 0.00208072 0.00208072 0.04335852 0.00208072 0.00208072
-         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
-         0.00208072 0.00208072 0.00208072 0.00208072 0.00208072 0.00208072
-         0.00208072 0.00208072 0.00208072 0.00208072]
+        [0.05001301 0.05001301 0.05001301 0.05001301 0.05001301 0.05001301
+         0.00416233 0.00416233 0.00416233 0.05001301 0.05001301 0.05001301
+         0.05001301 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.05001301 0.05001301 0.05001301 0.00416233 0.00416233 0.00416233
+         0.00416233 0.00416233 0.00416233 0.05001301 0.05001301 0.00416233
+         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.05001301 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
+         0.00416233 0.00416233 0.00416233 0.00416233]
     """
 
     grad_method = None
@@ -232,14 +235,17 @@ class SuperpositionTHC(Operation):
 def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
-    Computes the for comparisons that define the valid index set onto dedicated flag
+    Computes the comparisons that define the valid index set onto dedicated flag
     wires of the ancilla register (Fig. 3 of `Lee et al. (2021)
     <https://arxiv.org/abs/2011.03494>`_):
 
     * ``work_wires[1]``: :math:`\nu \leq M` (classical comparison against the THC rank).
     * ``work_wires[2]``: :math:`\mu \leq \nu` (quantum comparison between the two registers).
-    * ``work_wires[3]``: :math:`\nu = M + 1` (classical equality against the THC rank).
-    * ``work_wires[4]``: :math:`\mu > N/2` (classical comparison selecting two-body terms).
+    * ``work_wires[3]``: :math:`\nu = M + 1` (classical equality against the THC rank,
+      i.e. the one-body sentinel column). Only computed when ``keep_eq`` is ``False``.
+    * ``work_wires[4]``: :math:`\mu \geq N/2` (classical comparison selecting two-body
+      terms; equivalently, the one-body block keeps :math:`\mu < N/2`, the :math:`N/2`
+      one-body terms).
 
     The auxiliary wires used on each comparator are drawn from disjoint slices of ``work_wires``
     starting at index ``7``.
@@ -250,7 +256,11 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
         mu_wires (WiresLike): The wires storing the first THC index :math:`\mu`.
         nu_wires (WiresLike): The wires storing the second THC index :math:`\nu`.
         work_wires (WiresLike): The auxiliary wires.
-        keep_eq (bool): only if ``True``, ``work_wires[3]`` is calculated.
+        keep_eq (bool): If ``False`` (the default, used in the forward passes and the
+            first adjoint), ``work_wires[3]`` is computed via the zero-controlled
+            ``MultiControlledX``. If ``True`` (used only in the final
+            ``adjoint(left_equalities)``), that gate is skipped so the prepared
+            ``work_wires[3]`` flag is left in place as an output.
     """
     n = len(mu_wires)
 
@@ -273,13 +283,13 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
         N // 2,
         target_wire=work_wires[4],
         work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 1],
-        comparator=">",
+        comparator=">=",
     )
 
     BasisState(M, wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
-    cond(keep_eq, MultiControlledX)(
+    cond(not keep_eq, MultiControlledX)(
         wires=nu_wires + [work_wires[3]],
         control_values=[0] * len(nu_wires),
         work_wires=work_wires[7 + 3 * n - 1 : 7 + 4 * n - 1],
@@ -311,9 +321,11 @@ def _superposition_thc_resources(num_mu_wires, M, N):
       and one ``C(Z)`` with ``2 * n`` controls (the reflection).
     * The ``left_equalities`` block, applied twice forward and twice as an adjoint.
       Each call contains two ``LeftClassicalComparator`` (``L = M`` with ``<=`` and
-      ``L = N // 2`` with ``>``), one ``LeftQuantumComparator`` and one ``BasisState``.
-    * One adjoint zero-controlled ``MultiControlledX`` (the ``keep_eq=True`` branch is
-      only reached inside the final ``adjoint(left_equalities)`` call).
+      ``L = N // 2`` with ``>=``), one ``LeftQuantumComparator`` and one ``BasisState``.
+    * The zero-controlled ``MultiControlledX`` that writes ``work_wires[3]`` fires only
+      when ``keep_eq`` is ``False``: twice in the forward direction (steps 3 and 6) and
+      once as an adjoint (the first ``adjoint(left_equalities)``). The final
+      ``adjoint(left_equalities)`` uses ``keep_eq=True`` and therefore skips it.
 
     ``M`` and ``N`` enter the resource estimate through the classical comparison
     constants ``L = M`` and ``L = N // 2``, which is why they are part of
@@ -322,7 +334,7 @@ def _superposition_thc_resources(num_mu_wires, M, N):
     n = num_mu_wires
 
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
-    lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">")
+    lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
     lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
     basis = resource_rep(BasisState, num_wires=n)
     mcx = resource_rep(
@@ -351,7 +363,11 @@ def _superposition_thc_resources(num_mu_wires, M, N):
         adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
         adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
         adjoint_resource_rep(BasisState, basis.params): 2,
-        # the keep_eq MultiControlledX only fires inside the final adjoint(left_equalities).
+        # The work_wires[3] MultiControlledX fires only when keep_eq is False. It is
+        # therefore applied in the two forward left_equalities calls (steps 3 and 6) and
+        # in the first adjoint(left_equalities) (step 4, keep_eq=False). The final
+        # adjoint(left_equalities) uses keep_eq=True, so it is suppressed there.
+        mcx: 2,
         adjoint_resource_rep(MultiControlledX, mcx.params): 1,
     }
 
