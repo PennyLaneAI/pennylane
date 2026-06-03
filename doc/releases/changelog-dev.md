@@ -357,6 +357,7 @@
   instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
   [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
+  [(#9559)](https://github.com/PennyLaneAI/pennylane/pull/9559)
 
 * A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
