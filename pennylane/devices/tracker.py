@@ -191,11 +191,11 @@ class Tracker:
 
     def __repr__(self):
         return (
-            f"Tracker(active={self.active}, "
-            f"totals={self.totals}, "
-            f"persistent={self.persistent}, "
-            f"history={self.history}, "
-            f"latest={self.latest})"
+            f"Tracker(active={self.active!r}, "
+            f"totals={self.totals!r}, "
+            f"persistent={self.persistent!r}, "
+            f"history={self.history!r}, "
+            f"latest={self.latest!r})"
         )
 
     def update(self, **kwargs):
