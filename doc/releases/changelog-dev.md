@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* A new :func:`~single_qubit_zyz_angles` function that returns the pre-defined rotation angles
+* A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
