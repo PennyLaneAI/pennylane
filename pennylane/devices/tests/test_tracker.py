@@ -55,3 +55,13 @@ class TestTracker:
             circ()
         assert dev.tracker.history["batches"] == [1]
         assert dev.tracker.history["executions"] == [1]
+
+    def test_tracker_repr():
+        """Test that the __repr__ method correctly stringifies the Tracker object."""
+        from pennylane.devices.tracker import Tracker
+        
+        tracker = Tracker()
+        tracker.totals = {"executions": 5}
+        
+        expected_string = "Tracker(active=False, totals={'executions': 5}, persistent=False, history={}, latest={})"
+        assert repr(tracker) == expected_string
