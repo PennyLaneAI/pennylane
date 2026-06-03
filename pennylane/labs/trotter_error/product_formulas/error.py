@@ -178,29 +178,25 @@ def perturbation_error(
 
     >>> import numpy as np
     >>> from pennylane.labs.trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
-    >>>
     >>> frag_labels = [0, 1, 1, 0]
     >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
     >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
-    >>>
     >>> n_modes = 2
     >>> r_state = np.random.RandomState(42)
     >>> freqs = r_state.random(n_modes)
     >>> taylor_coeffs = [
-    >>>     np.array(0),
-    >>>     r_state.random(size=(n_modes, )),
-    >>>     r_state.random(size=(n_modes, n_modes)),
-    >>>     r_state.random(size=(n_modes, n_modes, n_modes))
-    >>> ]
+    ...     np.array(0),
+    ...     r_state.random(size=(n_modes, )),
+    ...     r_state.random(size=(n_modes, n_modes)),
+    ...     r_state.random(size=(n_modes, n_modes, n_modes))
+    ... ]
     >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    >>>
     >>> gridpoints = 5
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
-    >>>
     >>> errors = perturbation_error(pf, frags, [state1, state2], max_order=3)
     >>> print(errors)
-    [{3: 0.9189251160920876j}, {3: 4.7977166824268505j}]
+    [{3: np.complex128(0.9189251160920877j)}, {3: np.complex128(4.797716682426849j)}]
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
