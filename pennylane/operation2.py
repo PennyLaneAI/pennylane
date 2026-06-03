@@ -1261,7 +1261,6 @@ def _is_hash_leaf(l) -> bool:
 class StatePrepBase2:
     """An interface for state-prep operations."""
 
-
     @abc.abstractmethod
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
@@ -1280,5 +1279,6 @@ class StatePrepBase2:
         decimals: int | None = None,
         base_label: str | None = None,
         cache: dict | None = None,
-    ) -> str:
+    ) -> str:  # pylint: disable=unused-argument
+        """The default label for a state prep."""
         return "|Ψ⟩"
