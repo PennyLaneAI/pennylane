@@ -130,6 +130,8 @@ def check_commutation_relation(
     True
     """
 
+    if len(ops1) == 0 or len(ops2) == 0:
+        return True
     ops1_is_tensor = any(isinstance(op, TensorLike) for op in ops1)
     ops2_is_tensor = any(isinstance(op, TensorLike) for op in ops2)
     if not isinstance(vspace, PauliVSpace):

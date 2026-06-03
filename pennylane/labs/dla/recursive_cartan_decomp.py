@@ -216,9 +216,9 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         >>> g = [qp.matrix(op, wire_order=range(2)) for op in qp.pauli.pauli_group(2)] # u(4)
         >>> chain = [AI, DIII, AII]
         >>> decompositions = recursive_cartan_decomp(g, chain)
-        Traceback (most recent call last):
-            ...
-        TypeError: All inputs `ops1`, `ops2` and `vspace` to qp.liealg.check_commutation_relation need to either be iterables of operators or matrices.
+        Iteration 0:   16 ----AI--->    6,  10
+        Iteration 1:    6 ---DIII-->    4,   2
+        Iteration 2:    4 ---AII--->    4,   0
 
         We see that the ``AII`` decomposition did not further decompose :math:`\mathfrak{u}(2)`.
         It works if we provide the correct ``wire`` argument:
