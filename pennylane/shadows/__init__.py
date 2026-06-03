@@ -76,11 +76,13 @@ Basic usage
 
 The easiest way of computing expectation values with classical shadows in PennyLane is to return :func:`shadow_expval` directly from the qnode.
 
-.. code-block:: python3
+.. code-block:: python
+
+    from pennylane import numpy as np
 
     H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.Z(1)])
 
-    dev = qp.device("default.qubit")
+    dev = qp.device("default.qubit", seed=42)
 
     # shadow_expval + mid-circuit measurements require to defer measurements
     @qp.defer_measurements
@@ -91,16 +93,16 @@ The easiest way of computing expectation values with classical shadows in PennyL
         qp.CNOT((0,1))
         qp.RX(x, wires=0)
         qp.measure(1)
-        return qp.shadow_expval(H)
+        return qp.shadow_expval(H, seed=99)
 
     x = np.array(0.5, requires_grad=True)
 
 The big advantage of this way of computing expectation values is that it is differentiable.
 
 >>> qnode(x)
-array(0.8406)
->>> qp.grad(qnode)(x)
--0.49680000000000013
+array(0.8532)
+>>> print(qp.grad(qnode)(x))
+-0.46440000000000015
 
 There are more options for post-processing classical shadows in :class:`ClassicalShadow`.
 """
