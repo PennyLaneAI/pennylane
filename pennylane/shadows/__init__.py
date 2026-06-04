@@ -102,7 +102,7 @@ The big advantage of this way of computing expectation values is that it is diff
 >>> qnode(x)
 array(0.8532)
 >>> print(qp.grad(qnode)(x))
--0.46440000000000015
+-0.4644...
 
 There are more options for post-processing classical shadows in :class:`ClassicalShadow`.
 """
