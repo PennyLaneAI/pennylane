@@ -1240,7 +1240,7 @@ def param_shift(
 @singledispatch
 def parameter_frequencies(op: Operation | Operator2):
     """Parameter frequencies are defined on an Operation or calculated in a dispatch handler for an Operator2."""
-    raise ParameterFrequenciesUndefinedError
+    raise ParameterFrequenciesUndefinedError(f"Operation {op.name} does not have parameter frequencies defined.")
 
 
 @parameter_frequencies.register
