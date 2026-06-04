@@ -45,6 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
+from pennylane.operation2 import Operator2
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -303,7 +304,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
-class PauliX(Operation):
+class PauliX(Operator2):
     r"""
     The Pauli X operator
 
@@ -319,6 +320,10 @@ class PauliX(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
+    dynamic_argnames = ()
+
+    wire_sizes = (1,)
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
