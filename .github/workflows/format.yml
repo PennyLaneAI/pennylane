@@ -58,8 +58,8 @@ jobs:
 
       - name: Run isort
         run: |
-          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
-          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./tests --check
+          uvx ruff check --select I --check pennylane/
+          uvx ruff check --select I --check tests/
 
       - name: Run Pylint (source files)
         if: always()
@@ -71,4 +71,4 @@ jobs:
 
       - name: Run ruff 
         if: always()
-        run: ruff check pennylane/ tests/
+        run: uvx ruff check pennylane/ tests/

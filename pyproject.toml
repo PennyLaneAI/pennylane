@@ -218,9 +218,19 @@ skips = [
 [tool.ruff]
 # Tells ruff to only suggest/apply 3.11+ modernizations
 target-version="py311"
+line-length=100
 
 [tool.ruff.lint]
 select = [
     "B905", # zip without explicit strict 
     "UP", # enforce all 'pyupgrade' rules
+    "I", # enable isort 
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pennylane"]
+extra-standard-library = ["autoray"]
+
+[tool.ruff.lint.per-file-ignores]
+# Replicates --skip __init__.py for import sorting
+"**/__init__.py" = ["I001"]
