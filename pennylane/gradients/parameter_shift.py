@@ -1239,8 +1239,67 @@ def param_shift(
 
 @singledispatch
 def parameter_frequencies(op: Operation | Operator2):
-    """Parameter frequencies are defined on an Operation or calculated in a dispatch handler for an Operator2."""
-    raise ParameterFrequenciesUndefinedError(f"Operation {op.name} does not have parameter frequencies defined.")
+    """
+    Returns the frequencies for each operator parameter with respect
+    to an expectation value of the form
+    :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+
+    These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+    on the value of the expectation value as the parameters are modified.
+    For more details, please see the :mod:`.pennylane.fourier` module.
+
+    Returns:
+        list[tuple[int or float]]: Tuple of frequencies for each parameter.
+        Note that only non-negative frequency values are returned.
+
+    **Example**
+
+    >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+    >>> parameter_frequencies(op)
+    [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+
+    For operators that define a generator, the parameter frequencies are directly
+    related to the eigenvalues of the generator:
+
+    >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
+    >>> parameter_frequencies(op)
+    [(1,)]
+    >>> gen = qp.generator(op, format="observable")
+    >>> gen_eigvals = qp.eigvals(gen)
+    >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+    (np.float64(1.0),)
+
+    For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+
+    **Registering Handlers**
+
+    Parameter frequencies are defined on an ``Operation`` or calculated in a dispatch handler
+    for an ``Operator2``. To register parameter frequencies for a new ``Operator2`` subclass,
+    please register a new handler like:
+
+    .. code-block:: python
+
+        from pennylane.operation2 import Operator2
+        from pennylane.wires import WiresLike
+        from pennylane.gradients import parameter_frequencies
+
+        class MultiArgOpNoGenParamFreqs(Operator2):
+            num_params = 2
+            num_wires = 1
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+        @parameter_frequencies.register
+        def multi_arg_op_no_gen_param_freqs(op: MultiArgOpNoGenParamFreqs):
+            return [(0.5, 1.0), (0.8, 0.2)]
+
+    """
+    raise ParameterFrequenciesUndefinedError(
+        f"Operation {op.name} does not have parameter frequencies defined."
+    )
 
 
 @parameter_frequencies.register
