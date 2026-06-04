@@ -40,9 +40,32 @@ processes are top-level imports:
     ~pennylane.vn_entropy
 
 
-.. automodapi:: pennylane.measurements
-    :no-heading:
-    :no-main-docstr:
-    :include-all-objects:
-    :inheritance-diagram:
-    :skip: MeasurementShapeError, classical_shadow, counts, density_matrix, expval, mutual_info, probs, purity, sample, shadow_expval, state, var, vn_entropy
+Core Infrastructure
+^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.core.measurements.MeasurementProcess
+    ~pennylane.core.measurements.StateMeasurement
+    ~pennylane.core.measurements.SampleMeasurement
+    ~pennylane.core.measurements.MeasurementTransform
+
+
+Measurement Classes
+^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.measurements.ClassicalShadowMP
+    ~pennylane.measurements.CountsMP
+    ~pennylane.measurements.DensityMatrixMP
+    ~pennylane.measurements.ExpectationMP
+    ~pennylane.measurements.MutualInfoMP
+    ~pennylane.measurements.NullMeasurement
+    ~pennylane.measurements.ProbabilityMP
+    ~pennylane.measurements.PurityMP
+    ~pennylane.measurements.SampleMP
+    ~pennylane.measurements.ShadowExpvalMP
+    ~pennylane.measurements.StateMP
+    ~pennylane.measurements.VarianceMP
+    ~pennylane.measurements.VnEntropyMP
