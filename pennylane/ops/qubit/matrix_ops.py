@@ -27,10 +27,10 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,

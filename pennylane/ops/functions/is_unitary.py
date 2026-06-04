@@ -16,7 +16,7 @@ This module contains the qp.is_unitary function.
 """
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 
 def is_unitary(op: Operator):

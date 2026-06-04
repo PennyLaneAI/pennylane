@@ -375,6 +375,7 @@
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+  [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)

@@ -22,7 +22,7 @@ from collections.abc import Sequence
 from functools import singledispatch
 
 from pennylane import ops
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
