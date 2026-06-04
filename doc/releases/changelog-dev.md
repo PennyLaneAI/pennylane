@@ -178,6 +178,12 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
+  This variant handles work wires explicitly instead of allocating them dynamically in the
+  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with 
+  capture _disabled_ (`qp.capture.disable()`).
+  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
+
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
