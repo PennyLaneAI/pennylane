@@ -612,7 +612,7 @@ class QuantumScript:
             for the provided trainable parameter.
         """
         # get the index of the parameter in the script
-        t_idx = self.trainable_params[idx]
+        t_idx = self.trainable_params[idx]  # pylint: disable=unsubscriptable-object
 
         # get the info for the parameter
         info = self.par_info[t_idx]
