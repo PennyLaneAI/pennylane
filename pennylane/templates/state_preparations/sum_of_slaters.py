@@ -1051,7 +1051,7 @@ def _preprocess(v_bits, wires):
 
 
 def _sos_state_prep_with_wires(
-    data: tuple(np.ndarray, np.ndarray, SoSData),
+    data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
     wires,
     enumeration_wires,
