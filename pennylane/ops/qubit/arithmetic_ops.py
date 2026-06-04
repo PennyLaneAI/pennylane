@@ -34,8 +34,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     qjit_compatible_self_adjoint,
 )
-from pennylane.operation import FlatPytree, Operation
-from pennylane.typing import TensorLike
+from pennylane.operation import Operation
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
