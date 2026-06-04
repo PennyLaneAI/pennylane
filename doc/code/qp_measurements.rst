@@ -45,6 +45,8 @@ Core Infrastructure
 
 .. autosummary::
 
+.. currentmodule:: pennylane
+
     ~pennylane.core.measurements.MeasurementProcess
     ~pennylane.core.measurements.StateMeasurement
     ~pennylane.core.measurements.SampleMeasurement
@@ -56,16 +58,18 @@ Measurement Classes
 
 .. autosummary::
 
-    ~pennylane.measurements.ClassicalShadowMP
-    ~pennylane.measurements.CountsMP
-    ~pennylane.measurements.DensityMatrixMP
-    ~pennylane.measurements.ExpectationMP
-    ~pennylane.measurements.MutualInfoMP
-    ~pennylane.measurements.NullMeasurement
-    ~pennylane.measurements.ProbabilityMP
-    ~pennylane.measurements.PurityMP
-    ~pennylane.measurements.SampleMP
-    ~pennylane.measurements.ShadowExpvalMP
-    ~pennylane.measurements.StateMP
-    ~pennylane.measurements.VarianceMP
-    ~pennylane.measurements.VnEntropyMP
+.. currentmodule:: pennylane.measurements
+
+    ~ClassicalShadowMP
+    ~CountsMP
+    ~DensityMatrixMP
+    ~ExpectationMP
+    ~MutualInfoMP
+    ~NullMeasurement
+    ~ProbabilityMP
+    ~PurityMP
+    ~SampleMP
+    ~ShadowExpvalMP
+    ~StateMP
+    ~VarianceMP
+    ~VnEntropyMP
