@@ -471,6 +471,10 @@
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
 
+* Fixed a bug where :func:`~.pennylane.draw`, :func:`~.pennylane.draw_mpl`, and :func:`~.pennylane.specs`
+  did not support ``functools.partial`` wrappers around QNodes and Catalyst ``QJIT`` objects.
+  [(#9581)](https://github.com/PennyLaneAI/pennylane/pull/9581)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
