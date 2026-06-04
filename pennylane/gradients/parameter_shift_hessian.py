@@ -102,7 +102,7 @@ def _process_argnum(argnum, tape):
 
     if len(math.shape(argnum)) == 1:
         # If the iterable is 1D, consider all combinations of all marked parameters
-        if not math.array(argnum).dtype == bool:
+        if math.array(argnum).dtype != bool:
             # If the 1D iterable contains indices, make sure it contains valid indices...
             if math.max(argnum) >= tape.num_params:
                 raise ValueError(
