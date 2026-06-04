@@ -152,7 +152,7 @@ def _multiplexer_state_prep_decomposition(
     if not is_real:
         omega = math.angle(state_vector)
         if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
-        qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
+            qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
 
 
 add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
