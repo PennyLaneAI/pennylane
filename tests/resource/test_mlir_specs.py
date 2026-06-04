@@ -224,6 +224,42 @@ class TestAnalysisPassConversion:
             ),
         ]
 
+    def test_same_op_name_multiple_widths(self):
+        """A single op name at multiple qubit widths must accumulate in gate_types,
+        not overwrite. Regression for the 'Inconsistent gate counts' ValueError."""
+        actual = _get_resources_from_analysis_pass(
+            {
+                "circuit": {
+                    "auto_qubit_management": False,
+                    "classical_instructions": {},
+                    "device_name": "NullQubit",
+                    "function_calls": {},
+                    "has_branches": False,
+                    "measurements": {},
+                    "num_alloc_qubits": 4,
+                    "num_arg_qubits": 0,
+                    "num_qubits": 4,
+                    "operations": {
+                        "MultiControlledX(2)": 5,
+                        "MultiControlledX(3)": 7,
+                        "Hadamard(1)": 2,
+                    },
+                    "qnode": True,
+                    "var_function_calls": {},
+                }
+            }
+        )
+
+        assert actual == [
+            SpecsResources(
+                gate_types={"Hadamard": 2, "MultiControlledX": 12},
+                gate_sizes={1: 2, 2: 5, 3: 7},
+                measurements={},
+                num_allocs=4,
+                depth=None,
+            )
+        ]
+
     def test_mlir_resources_to_specs_resources(self, example_loop_analysis_pass_result):
         fn_resources = {}
         display_names = {}
