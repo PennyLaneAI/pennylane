@@ -27,9 +27,10 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
+from pennylane.typing import FlatPytree
 from pennylane.wires import Wires
 
 
