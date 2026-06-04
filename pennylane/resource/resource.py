@@ -35,10 +35,22 @@ from .error.error import _compute_algo_error
 from .expression import Expression, convert_int_vals_to_expression
 
 
-def _count_to_str(count: int | Expression) -> str:
-    """Helper for printing counts, converts large counts to scientific notation."""
+def _count_to_str(count: int | Expression, extra_compact: bool = False, markdown_safe: bool = False) -> str:
+    """
+    Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
+
+    Args:
+        count (int | Expression): the count to convert to a string
+        extra_compact (bool): whether to remove spaces from expressions for compactness
+        markdown_safe (bool): whether to escape asterisks for markdown tables
+    """
     if isinstance(count, Expression):
-        return str(count).replace(" ", "")
+        retval = str(count)
+        if markdown_safe:
+            retval = retval.replace("*", "\\*")  # Escape asterisks for markdown tables
+        if extra_compact:
+            retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
+        return retval
     return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
 
 
@@ -377,24 +389,26 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Wire allocations: {self.num_allocs}")
-        lines.append(f"{prefix}Total gates: {self.num_gates}")
+        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
+        lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
 
         lines.append(f"{prefix}Gate counts:")
         if not self.gate_types:
             lines.append(prefix + "- No gates.")
         else:
             for gate, count in self.gate_types.items():
-                lines.append(f"{prefix}- {gate}: {count}")
+                lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurements:")
         if not self.measurements:
             lines.append(prefix + "- No measurements.")
         else:
             for meas, count in self.measurements.items():
-                lines.append(f"{prefix}- {meas}: {count}")
+                lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Depth: {self.depth if self.depth is not None else 'Not computed'}")
+        lines.append(
+            f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
+        )
 
         return "\n".join(lines)
 
@@ -413,21 +427,21 @@ class SpecsResources:
         lines = []
         lines.append("| **Metric** | **Value** |")
         lines.append("|---|---|")
-        lines.append(f"| **Wire allocations** | {self.num_allocs} |")
-        lines.append(f"| **Total gates** | {self.num_gates} |")
+        lines.append(f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |")
+        lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
         lines.append("| **Gate counts:** | |")
         if not self.gate_types:
             lines.append("| *No gates* | |")
         else:
             for gate, count in self.gate_types.items():
-                lines.append(f"| {gate} | {_count_to_str(count)} |")
+                lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
         lines.append("| **Measurements:** | |")
         if not self.measurements:
             lines.append("| *No measurements* | |")
         else:
             for meas, count in self.measurements.items():
-                lines.append(f"| {meas} | {_count_to_str(count)} |")
-        depth_str = str(self.depth) if self.depth is not None else "Not computed"
+                lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
+        depth_str = _count_to_str(self.depth, markdown_safe=True) if self.depth is not None else "Not computed"
         lines.append(f"| **Depth** | {depth_str} |")
         return "\n".join(lines)
 
@@ -761,15 +775,15 @@ class CircuitSpecs:
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 2)
-                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+                max_column_size = max(max_column_size, len(_count_to_str(count, extra_compact=True)) + 1)
             for meas, count in res.measurements.items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
-                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+                max_column_size = max(max_column_size, len(_count_to_str(count, extra_compact=True)) + 1)
             max_column_size = max(
                 max_column_size,
-                len(_count_to_str(res.num_allocs)) + 1,
-                len(_count_to_str(res.num_gates)) + 1,
+                len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
+                len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
             )
 
         return max_metric_length, max_column_size, all_gate_types, all_meas_types
@@ -796,7 +810,7 @@ class CircuitSpecs:
             "Wire allocations".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_allocs).rjust(max_column_size)
+                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -804,7 +818,7 @@ class CircuitSpecs:
             "Total gates".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_gates).rjust(max_column_size)
+                _count_to_str(res.num_gates, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -815,7 +829,7 @@ class CircuitSpecs:
                 f"- {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.gate_types.get(gate, 0)).rjust(max_column_size)
+                    _count_to_str(res.gate_types.get(gate, 0), extra_compact=True).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )
@@ -825,7 +839,7 @@ class CircuitSpecs:
                 f"- {meas}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.measurements.get(meas, 0)).rjust(max_column_size)
+                    _count_to_str(res.measurements.get(meas, 0), extra_compact=True).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )
@@ -884,12 +898,12 @@ class CircuitSpecs:
         lines.append(
             data_row(
                 "**Wire allocations**",
-                [_count_to_str(r.num_allocs) for r in flat_resources.values()],
+                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
             )
         )
         lines.append(
             data_row(
-                "**Total gates**", [_count_to_str(r.num_gates) for r in flat_resources.values()]
+                "**Total gates**", [_count_to_str(r.num_gates, markdown_safe=True) for r in flat_resources.values()]
             )
         )
         lines.append(data_row("**Gate counts**", [""] * len(levels)))
@@ -897,7 +911,7 @@ class CircuitSpecs:
             lines.append(
                 data_row(
                     gate,
-                    [_count_to_str(r.gate_types.get(gate, 0)) for r in flat_resources.values()],
+                    [_count_to_str(r.gate_types.get(gate, 0), markdown_safe=True) for r in flat_resources.values()],
                 )
             )
         lines.append(data_row("**Measurements**", [""] * len(levels)))
@@ -905,7 +919,7 @@ class CircuitSpecs:
             lines.append(
                 data_row(
                     meas,
-                    [_count_to_str(r.measurements.get(meas, 0)) for r in flat_resources.values()],
+                    [_count_to_str(r.measurements.get(meas, 0), markdown_safe=True) for r in flat_resources.values()],
                 )
             )
         return "\n".join(lines)

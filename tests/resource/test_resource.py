@@ -1328,16 +1328,16 @@ Levels:
 - 1: l1
 - 2: l2
 
-↓Metric   Level→ |     1 |  2-a |  2-b
+↓Metric   Level→ |     1 |   2-a |   2-b
 ----------------------------------------
-Wire allocations |     2 |    2 |    2
-Total gates      | 4*x+2 |    x |    x
+Wire allocations |     2 |     2 |     2
+Total gates      | 4*x+2 |     x |     x
 Gate counts:     |
-- Hadamard       | 2*x+2 |    0 |    0
-- CNOT           |   2*x |    x |    x
+- Hadamard       | 2*x+2 |     0 |     0
+- CNOT           |   2*x |     x |     x
 Measurements:    |
-- expval(PauliX) |     1 |    1 |    0
-- expval(PauliZ) |     1 |    0 |    1""".split()]
+- expval(PauliX) |     1 |     1 |     0
+- expval(PauliZ) |     1 |     0 |     1""".split()]
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
@@ -1405,7 +1405,7 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | 100001 |
+| **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
 | Hadamard | 1 |
 | CNOT | 1.000E+5 |
@@ -1423,9 +1423,9 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | a*a*b + a*a + a + 1 |
+| **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
 | **Gate counts:** | |
-| Hadamard | a*a*b+a*a+a |
+| Hadamard | a\\*a\\*b + a\\*a + a |
 | CNOT | 1 |
 | **Measurements:** | |
 | expval(PauliZ) | 1 |
@@ -1458,7 +1458,7 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | 100001 |
+| **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
 | Hadamard | 1 |
 | CNOT | 1.000E+5 |
@@ -1495,7 +1495,7 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | 100001 |
+| **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
 | Hadamard | 1 |
 | CNOT | 1.000E+5 |
@@ -1508,7 +1508,7 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | 100001 |
+| **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
 | Hadamard | 1 |
 | CNOT | 1.000E+5 |
@@ -1549,9 +1549,9 @@ class TestIPythonDisplays:
 | ↓Metric / Level→ | 0 | 1-a | 1-b |
 |---|---|---|---|
 | **Wire allocations** | 2 | 2 | 2 |
-| **Total gates** | a*a*b+a*a+a+1 | 1.000E+5 | 1.000E+5 |
+| **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
 | **Gate counts** |  |  |  |
-| Hadamard | a*a*b+a*a+a | 1 | 1 |
+| Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
 | CNOT | 1 | 1.000E+5 | 1.000E+5 |
 | **Measurements** |  |  |  |
 | expval(PauliZ) | 1 | 1 | 1 |
