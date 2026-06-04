@@ -273,6 +273,10 @@
 
   ```
 
+* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
+  hypercontraction (THC) qubitization.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+
 * Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
   Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
   application algorithms.

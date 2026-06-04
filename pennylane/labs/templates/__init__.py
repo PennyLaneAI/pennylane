@@ -21,9 +21,11 @@ This module contains templates, which are pre-coded routines that can be used in
 
     ~LeftClassicalComparator
     ~LeftQuantumComparator
+    ~SuperpositionTHC
     ~trotter_fragmented
 """
 
 from .left_classical_comparator import LeftClassicalComparator
 from .left_quantum_comparator import LeftQuantumComparator
+from .superposition_thc import SuperpositionTHC
 from .trotter_fragmented import trotter_fragmented
