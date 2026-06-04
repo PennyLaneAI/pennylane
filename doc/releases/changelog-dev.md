@@ -108,7 +108,7 @@
   The example below shows a snippet and the Markdown table that would be shown in JupyterLabs when running it.
 
   ```python
-  from IPython import display  # Not necessary if running within Jupyter
+  from IPython.display import display  # Not necessary if running within Jupyter
 
   @qp.qjit
   @qp.qnode(qp.device("lightning.qubit", wires=2))
