@@ -216,19 +216,9 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    indices1 = (
-        qp.math.arange(1, 2 ** (n - k + 1) + 1, 2)[:, None] * 2 ** (k - 1)
-        + qp.math.arange(2 ** (k - 1))[None]
-    )
-    indices2 = (
-        qp.math.arange(0, 2 ** (n - k + 1), 2)[:, None] * 2 ** (k - 1)
-        + qp.math.arange(2 ** (k - 1))[None]
-    )
-
-    term1 = qp.math.take(omega, indices=indices1, axis=-1)
-    term2 = qp.math.take(omega, indices=indices2, axis=-1)
-    diff = (term1 - term2) / 2 ** (k - 1)
-
+    shape = qp.math.shape(omega)[:-1] + (2 ** (n - k), 2**k)
+    omega = qp.math.reshape(omega, shape)
+    diff = (omega[..., 2 ** (k - 1) :] - omega[..., : 2 ** (k - 1)]) / 2 ** (k - 1)
     return qp.math.sum(diff, axis=-1)
 
 
@@ -253,23 +243,19 @@ def _get_alpha_y(a, n, k):
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
-    if k == 1:
-        # At the leaf level, use arctan2 with signed amplitudes to correctly encode
-        # the sign of real-valued states into the Y rotation angle, avoiding the need
-        # for subsequent Z rotations or DiagonalQubitUnitary gates.
-        even = qp.math.take(a, indices=qp.math.arange(0, 2**n, 2), axis=-1)
-        odd = qp.math.take(a, indices=qp.math.arange(1, 2**n, 2), axis=-1)
-        return 2 * qp.math.arctan2(odd, even)
 
-    indices_numerator = (qp.math.arange(1, 2 ** (n - k + 1) + 1, 2) * 2 ** (k - 1))[
-        :, None
-    ] + np.arange(2 ** (k - 1))[None]
-    numerator = qp.math.take(a, indices=indices_numerator, axis=-1)
-    numerator = qp.math.sum(qp.math.abs(numerator) ** 2, axis=-1)
+    # Reshape a so that each block of size 2**k forms the final axis
+    shape = qp.math.shape(a)[:-1] + (2 ** (n - k), 2**k)
+    a = qp.math.reshape(a, shape)
+    if k == 1:  # leaf level
+        return 2 * qp.math.arctan2(a[..., 1], a[..., 0])
 
-    indices_denominator = (qp.math.arange(2 ** (n - k)) * 2**k)[:, None] + np.arange(2**k)[None]
-    denominator = qp.math.take(a, indices=indices_denominator, axis=-1)
-    denominator = qp.math.sum(qp.math.abs(denominator) ** 2, axis=-1)
+    # Compute squared absolute values
+    abs_sq = qp.math.abs(a) ** 2
+    # Denominator is the sum over the entire block
+    denominator = qp.math.sum(abs_sq, axis=-1)
+    # Numerator is the sum over the second half of the block
+    numerator = qp.math.sum(abs_sq[..., 2 ** (k - 1) :], axis=-1)
 
     # Divide only where denominator is nonzero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
