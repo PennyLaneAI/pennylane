@@ -382,10 +382,30 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
-    if type(op1) != type(op2):
+    if type(op1) is not type(op2):
         return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
 
-    # Check dynamic arguments
+    # Check static arguments
+    for (sname, sval1), (_, sval2) in zip(op1.static_args.items(), op2.static_args.items()):
+        if sval1 != sval2:
+            return f"op1 and op2 have different values for '{sname}'.\nGot {sval1} and {sval2}."
+
+    # Check static compilable arguments
+    for (cname, cval1), (_, cval2) in zip(op1.compilable_args.items(), op2.compilable_args.items()):
+        if cval1 != cval2:
+            return f"op1 and op2 have different values for '{cname}'.\nGot {cval1} and {cval2}."
+
+    # Check wire arguments
+    for (wname, wval1), (_, wval2) in zip(op1.wire_args.items(), op2.wire_args.items()):
+        if wval1 != wval2:
+            if op1.wire_argnames == ("wires",):
+                return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+            return (
+                f"op1 and op2 have different wires for the '{wname}' argument.\n"
+                f"Got {wval1} and {wval2}."
+            )
+
+    # Expensive: array comparison via math.allclose.
     for (dname, dval1), (_, dval2) in zip(op1.dynamic_args.items(), op2.dynamic_args.items()):
         res = _check_dynamic_value(
             dname,
@@ -399,32 +419,10 @@ def _equal_operator2(
         if isinstance(res, str):
             return res
 
-    # Check static arguments
-    for (sname, sval1), (_, sval2) in zip(op1.static_args.items(), op2.static_args.items()):
-        if sval1 != sval2:
-            return f"op1 and op2 have different values for '{sname}'.\n" f"Got {sval1} and {sval2}."
-
-    # Check static compilable arguments
-    for (cname, cval1), (_, cval2) in zip(op1.compilable_args.items(), op2.compilable_args.items()):
-        if cval1 != cval2:
-            return f"op1 and op2 have different values for '{cname}'.\n" f"Got {cval1} and {cval2}."
-
-    # Check wire arguments
-    for (wname, wval1), (_, wval2) in zip(op1.wire_args.items(), op2.wire_args.items()):
-        if wval1 != wval2:
-            if op1.wire_argnames == ("wires",):
-                return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-
-            return (
-                f"op1 and op2 have different wires for the '{wname}' argument.\n"
-                f"Got {wval1} and {wval2}."
-            )
-
-    # Check hybrid arguments
+    # Most expensive: pytree flatten + recursive _equal.
     for (hname, hval1), (_, hval2) in zip(op1.hybrid_args.items(), op2.hybrid_args.items()):
         if hname in op1.wire_argnames:
             continue
-
         res = _check_pytree_value(
             hname,
             hval1,
