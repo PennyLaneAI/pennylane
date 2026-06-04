@@ -1721,5 +1721,5 @@ class TestStatePrepBase:
 
             # state_vector is not implemented!
 
-        with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep without an implementation"):
+        with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
             BadStatePrep(0)
