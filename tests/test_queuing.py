@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import QueuingError
-from pennylane.operation2 import Operator2
 from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
@@ -462,55 +461,15 @@ class TestWrappedObj:
         assert wo.__repr__() == "Wrapped(test_repr)"
 
 
-def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object it cant handle."""
-    q = AnnotatedQueue()
-    q.append(1)
-    with pytest.raises(QueuingError, match="Encountered object 1 in queue while processing."):
-        qp.queuing.process_queue(q)
+def test_error_on_process_queue():
+    """Test that an informative error is raised indicating that process_queue has moved."""
+
+    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
+        _ = qp.queuing.process_queue
 
 
-# pylint: disable=too-few-public-methods
-class Op2(Operator2):
-    """A simple ``Operator2`` subclass for testing."""
+def test_error_on_nonexistent_item():
+    """Test an AttributeError is raised if an object does not exist."""
 
-    dynamic_argnames = ("phi",)
-
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
-
-
-class TestProcessQueueOperator2:
-    """Tests that ``process_queue`` correctly handles :class:`~.Operator2` instances."""
-
-    def test_operator2_collected_as_op(self):
-        """Test that an ``Operator2`` instance in the queue ends up in the ``ops`` list."""
-        with AnnotatedQueue() as q:
-            op = Op2(0.5, wires=0)
-            m = qp.expval(qp.PauliZ(0))
-
-        ops, measurements = qp.queuing.process_queue(q)
-        assert ops == [op]
-        assert measurements == [m]
-
-    def test_operator2_after_measurement_error(self):
-        """Test that an ``Operator2`` appearing after a measurement raises an error."""
-        with AnnotatedQueue() as q:
-            qp.expval(qp.PauliZ(0))
-            Op2(0.5, wires=0)
-
-        with pytest.raises(ValueError, match="must occur prior to measurements"):
-            qp.queuing.process_queue(q)
-
-    def test_mixed_operator_and_operator2(self):
-        """Test that legacy ``Operator`` and new ``Operator2`` instances both end up in
-        ``ops`` and preserve insertion order."""
-        with AnnotatedQueue() as q:
-            o1 = qp.PauliX(0)
-            o2 = Op2(0.5, wires=1)
-            o3 = qp.PauliY(2)
-            m = qp.expval(qp.PauliZ(0))
-
-        ops, measurements = qp.queuing.process_queue(q)
-        assert ops == [o1, o2, o3]
-        assert measurements == [m]
+    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+        _ = qp.queuing.thing

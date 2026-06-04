@@ -353,10 +353,10 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ─╭●───┤  State
-    1: ─╰X───┤  State
-    2: ─╭|Ψ⟩─┤  State
-    3: ─╰|Ψ⟩─┤  State
+    0: ─╭●───┤ ╭State
+    1: ─╰X───┤ ├State
+    2: ─╭|Ψ⟩─┤ ├State
+    3: ─╰|Ψ⟩─┤ ╰State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
