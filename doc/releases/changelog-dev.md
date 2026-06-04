@@ -391,6 +391,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* New, experimental abstractions for creating PennyLane operators have been added, built around a new
+  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  integrated into the PennyLane ecosystem. Supported functionality so far:
+  - :func:`qp.equal` can check equality between two `Operator2` instances.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
@@ -403,9 +410,6 @@
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
   [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
   [(#9559)](https://github.com/PennyLaneAI/pennylane/pull/9559)
-
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
-  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.

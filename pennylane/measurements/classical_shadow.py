@@ -738,23 +738,23 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         def circuit():
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
-            return qp.classical_shadow(wires=[0, 1], seed=42)
+            return qp.classical_shadow(wires=[0, 1], seed=89)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
     >>> bits, recipes = circuit()
     >>> bits
     array([[1, 1],
-           [0, 0],
+           [0, 1],
            [1, 1],
            [1, 0],
            [0, 0]], dtype=int8)
     >>> recipes
     array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
     .. details::
         :title: Usage Details
@@ -766,15 +766,15 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         >>> bits
         array([[0, 0],
            [1, 1],
+           [1, 0],
            [1, 1],
-           [1, 1],
-           [0, 0]], dtype=int8)
+           [0, 1]], dtype=int8)
         >>> recipes
         array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
         To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
         interface should be used instead:
