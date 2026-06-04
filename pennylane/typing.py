@@ -18,14 +18,16 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 import types
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass
 from math import prod
 from numbers import Number
-from typing import Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+
+FlatPytree = tuple[Sequence[Any], Hashable]
 
 
 class InterfaceTensorMeta(type):

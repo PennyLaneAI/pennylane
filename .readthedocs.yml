@@ -14,6 +14,8 @@ build:
   jobs:
     post_install:
       - pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
+      # torch version must match pyproject.toml [dependency-groups] docs
+      - pip install 'torch~=2.9.0' --index-url https://download.pytorch.org/whl/cpu
       - pip install --group docs
 
 # Build documentation in the docs/ directory with Sphinx
