@@ -359,6 +359,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a new `pennylane/core` module.
+  Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
 
@@ -411,6 +415,10 @@
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
+
+* Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
+  removing the module from the documentation-test skip list.
+  [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
 
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
   [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
@@ -496,5 +504,6 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
+Dennis Wayo,
 David Wierichs,
 Jake Zaia.
