@@ -1706,3 +1706,4 @@ def test_state_prep_base_label():
 
     op = MyStatePrep(0)
     assert op.label() == "|Ψ⟩"
+    assert op.label(base_label="|x⟩") == "|x⟩"
