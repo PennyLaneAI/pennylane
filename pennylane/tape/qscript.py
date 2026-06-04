@@ -31,6 +31,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
+from pennylane.operation2 import Operator2
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import TensorLike
@@ -64,7 +65,7 @@ def process_queue(
     # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
     # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
     for obj, _ in queue.items():
-        if isinstance(obj, (Operator, QuantumScript)):
+        if isinstance(obj, (Operator, Operator2, QuantumScript)):
             if encountered_measurement:
                 raise ValueError(f"{obj} must occur prior to measurements.")
             ops.append(obj)
@@ -611,7 +612,7 @@ class QuantumScript:
             for the provided trainable parameter.
         """
         # get the index of the parameter in the script
-        t_idx = self.trainable_params[idx]
+        t_idx = self.trainable_params[idx]  # pylint: disable=unsubscriptable-object
 
         # get the info for the parameter
         info = self.par_info[t_idx]
