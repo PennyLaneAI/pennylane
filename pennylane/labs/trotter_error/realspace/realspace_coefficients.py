@@ -584,7 +584,7 @@ def _scale_dict(scalar, d, threshold):
         dict: the product of ``d`` and ``scalar``
     """
     scaled = {}
-    for key in d.keys():
+    for key in d:
         if abs(scalar * d[key]) > threshold:
             scaled[key] = scalar * d[key]
 

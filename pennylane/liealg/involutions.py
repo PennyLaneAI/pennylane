@@ -598,7 +598,7 @@ def _even_odd_involution(op):
 def _even_odd_involution_ps(op: PauliSentence):
     # Generalization to sums of Paulis: check each term and assert they all have the same parity
     parity = []
-    for pw in op.keys():
+    for pw in op:
         parity.append(len(pw) % 2)
 
     # only makes sense if parity is the same for all terms, e.g. Heisenberg model
@@ -674,7 +674,7 @@ def _concurrence_involution(op):
 def _concurrence_involution_pauli(op: PauliSentence):
     # Generalization to sums of Paulis: check each term and assert they all have the same parity
     parity = []
-    for pw in op.keys():
+    for pw in op:
         result = sum(1 if el == "Y" else 0 for el in pw.values())
         parity.append(result % 2)
 

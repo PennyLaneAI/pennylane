@@ -51,7 +51,7 @@ class FermiWord(dict):
         else:
             self.sorted_dic = dict(sorted(operator.items()))
 
-        indices = [i[0] for i in self.sorted_dic.keys()]
+        indices = [i[0] for i in self.sorted_dic]
 
         if indices:
             if list(range(max(indices) + 1)) != indices:
@@ -82,7 +82,7 @@ class FermiWord(dict):
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
-        return {i[1] for i in self.sorted_dic.keys()}
+        return {i[1] for i in self.sorted_dic}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in FermiWord."""
@@ -664,7 +664,7 @@ class FermiSentence(dict):
                [0. +0.j, 1.2+0.j, 3.1+0.j, 0. +0.j],
                [0. +0.j, 0. +0.j, 0. +0.j, 3.1+0.j]])
         """
-        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
+        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
                 f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."

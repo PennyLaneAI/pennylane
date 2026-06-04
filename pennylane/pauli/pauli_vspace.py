@@ -260,7 +260,7 @@ class PauliVSpace:
             int: updated number of :class:`~pennylane.pauli.PauliWord`\ s/number of rows of ``M``
             bool: whether ``pauli_sentence`` was linearly independent and whether its column was added to ``M``
         """
-        new_pws = [pw for pw in pauli_sentence.keys() if pw not in pw_to_idx]
+        new_pws = [pw for pw in pauli_sentence if pw not in pw_to_idx]
         new_num_pw = num_pw + len(new_pws)
 
         if new_num_pw < rank + 1:
