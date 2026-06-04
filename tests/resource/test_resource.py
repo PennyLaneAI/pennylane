@@ -1447,6 +1447,7 @@ class TestIPythonDisplays:
         actual = s._repr_markdown_()
         expected = """\
 **Circuit Specs:**
+
 | Metric | Value |
 |---|---|
 | **Device** | default.qubit |
@@ -1455,6 +1456,7 @@ class TestIPythonDisplays:
 | **Level** | 2 |
 
 **Resources:**
+
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
@@ -1481,6 +1483,7 @@ class TestIPythonDisplays:
         actual = s._repr_markdown_()
         expected = """\
 **Circuit Specs:**
+
 | Metric | Value |
 |---|---|
 | **Device** | default.qubit |
@@ -1536,6 +1539,7 @@ class TestIPythonDisplays:
         actual = s._repr_markdown_()
         expected = """\
 **Circuit Specs:**
+
 | Metric | Value |
 |---|---|
 | **Device** | default.qubit |
@@ -1546,6 +1550,7 @@ class TestIPythonDisplays:
 | 1 | l2 |
 
 **Resources:**
+
 | ↓Metric / Level→ | 0 | 1-a | 1-b |
 |---|---|---|---|
 | **Wire allocations** | 2 | 2 | 2 |

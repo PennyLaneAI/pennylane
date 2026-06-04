@@ -122,6 +122,7 @@
   ```
 
   **Circuit Specs:**
+
   | Metric | Value |
   |---|---|
   | **Device** | lightning.qubit |
@@ -130,6 +131,7 @@
   | **Level** | device |
 
   **Resources:**
+
   | **Metric** | **Value** |
   |---|---|
   | **Wire allocations** | 2 |

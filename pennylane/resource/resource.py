@@ -957,6 +957,7 @@ class CircuitSpecs:
         """
         lines = []
         lines.append("**Circuit Specs:**")
+        lines.append("")
         lines.append("| Metric | Value |")
         lines.append("|---|---|")
         lines.append(f"| **Device** | {self.device_name} |")
@@ -971,14 +972,13 @@ class CircuitSpecs:
 
         lines.append("")
         lines.append("**Resources:**")
+        lines.append("")
 
         if self.resources is None:
-            lines.append("")
             lines.append("*No resources.*")
         elif isinstance(self.resources, SpecsResources):
             lines.append(self.resources._repr_markdown_())  # pylint: disable=protected-access
         elif isinstance(self.resources, list):
-            lines.append("")
             for i, r in enumerate(self.resources):
                 lines.append(f"**Batched tape {num_to_letters(i)}:**")
                 lines.append("")
