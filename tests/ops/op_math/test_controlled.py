@@ -227,6 +227,7 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "base",
         [

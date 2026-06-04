@@ -125,6 +125,22 @@ class TestEqualBasic:
         op2 = StaticOp("a", wires=0)
         assert qp.equal(op1, op2) is False
 
+    def test_subclass_instance_not_equal(self):
+        """Test that an operator and an instance of a subclass are unequal. The
+        subclass instance passes the top-level ``isinstance`` check, so the exact-type
+        comparison inside ``_equal_operator2`` is what catches the difference."""
+
+        class SubDynOp(DynOp):
+            pass
+
+        op1 = DynOp(0.5, wires=0)
+        op2 = SubDynOp(0.5, wires=0)
+        # op2 is an instance of op1's type, so dispatch reaches ``_equal_operator2``.
+        assert isinstance(op2, DynOp)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+            qp.assert_equal(op1, op2)
+
     def test_assert_equal_raises_for_unequal_ops(self):
         """Test that ``qp.assert_equal`` raises an informative error for unequal operators."""
         op1 = DynOp(0.5, wires=0)
@@ -185,6 +201,8 @@ class TestDynamicArgs:
         op1 = DynOp(np.array(0.5), wires=0)
         op2 = DynOp(pnp.array(0.5, requires_grad=False), wires=0)
         assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different interfaces for 'phi'"):
+            qp.assert_equal(op1, op2)
 
     def test_different_interfaces_equal_when_disabled(self):
         """Test that ``check_interface=False`` ignores interface differences."""
@@ -284,7 +302,7 @@ class TestWireArgs:
         op1 = MultiWireOp(wires=[0, 1], ctrl_wires=2)
         op2 = MultiWireOp(wires=[0, 1], ctrl_wires=3)
         assert qp.equal(op1, op2) is False
-        with pytest.raises(AssertionError, match="different wires for the 'ctrl_wires' argument"):
+        with pytest.raises(AssertionError, match="different wires for 'ctrl_wires'"):
             qp.assert_equal(op1, op2)
 
 
@@ -352,7 +370,7 @@ class TestHybridArgs:
         op1 = HybridWireOp([[0, 1], [2]])
         op2 = HybridWireOp([[0, 1], [3]])
         assert qp.equal(op1, op2) is False
-        with pytest.raises(AssertionError, match="different wires for the 'pytree_wires' argument"):
+        with pytest.raises(AssertionError, match="different wires for 'pytree_wires'"):
             qp.assert_equal(op1, op2)
 
     def test_equal_with_numeric_leaves(self):
@@ -377,6 +395,36 @@ class TestHybridArgs:
         op2 = HybridOp([0.5 + 1e-10], wires=0)
         assert qp.equal(op1, op2, atol=1e-9, rtol=0) is True
         qp.assert_equal(op1, op2, atol=1e-9, rtol=0)
+
+    def test_numeric_leaves_different_interfaces_not_equal(self):
+        """Test that operators with the same value but different interfaces are unequal."""
+        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="different interfaces for 'hybrid'"):
+            qp.assert_equal(op1, op2)
+
+    def test_numeric_leaves_different_interfaces_equal_when_disabled(self):
+        """Test that ``check_interface=False`` ignores interface differences."""
+        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2, check_interface=False) is True
+        qp.assert_equal(op1, op2, check_interface=False)
+
+    def test_numeric_leaves_different_trainability_not_equal(self):
+        """Test that operators differing only in trainability are unequal."""
+        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="differ in trainability for 'hybrid'"):
+            qp.assert_equal(op1, op2)
+
+    def test_numeric_leaves_different_trainability_equal_when_disabled(self):
+        """Test that ``check_trainability=False`` ignores trainability differences."""
+        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        assert qp.equal(op1, op2, check_trainability=False) is True
+        qp.assert_equal(op1, op2, check_trainability=False)
 
     def test_op_leaves_within_tolerance(self):
         """Test that operators with operator leaves in hybrid arguments with dynamic
@@ -445,6 +493,14 @@ class TestEqualFullOperator:
             qp.assert_equal(op1, op2)
 
 
+def _jit_eq_fn(phi, wires, assert_=False):
+    op1 = DynOp(phi, wires=wires)
+    op2 = DynOp(phi, wires=wires)
+    if assert_:
+        qp.assert_equal(op1, op2)
+    return qp.equal(op1, op2)
+
+
 @pytest.mark.jax
 class TestAbstractDynamicArgs:
     """Tests for checking for equality of traced dynamic arguments."""
@@ -453,16 +509,24 @@ class TestAbstractDynamicArgs:
         """Test that operators with traced dynamic arguments are unequal."""
         import jax
 
-        result = jax.jit(qp.equal)(DynOp(0.5, wires=0), DynOp(0.5, wires=0))
+        test_fn = jax.jit(_jit_eq_fn, static_argnums=(1, 2))
+        result = test_fn(0.5, 0, assert_=False)
         assert bool(result) is False
+        with pytest.raises(AssertionError, match="tracer value for 'phi'"):
+            _ = test_fn(0.5, 0, assert_=True)
 
-    def test_abstract_dynamic_arg_assert_equal_message(self):
-        """Test that ``assert_equal`` on operators with traced dynamic arguments
-        raises the correct error."""
+    def test_abstract_wire_arg_not_equal(self):
+        """Test that operators with traced wire arguments are unequal."""
         import jax
 
-        with pytest.raises(AssertionError, match="tracer value for 'phi'"):
-            jax.jit(qp.assert_equal)(DynOp(0.5, wires=0), DynOp(0.5, wires=0))
+        test_fn = jax.jit(_jit_eq_fn, static_argnums=(0, 2))
+        result = test_fn(0.5, 0, assert_=False)
+        assert bool(result) is False
+        with pytest.raises(AssertionError, match="one or more tracer values"):
+            _ = test_fn(0.5, 0, assert_=True)
+
+        result = jax.jit(_jit_eq_fn, static_argnums=(0, 2))(0.5, 0)
+        assert bool(result) is False
 
     def test_abstract_hybrid_leaf_not_equal(self):
         """Test that operators with traced numeric leaves inside hybrid arguments

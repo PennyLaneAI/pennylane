@@ -30,7 +30,7 @@ from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import FlatPytree, Operation
+from pennylane.operation import Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -40,7 +40,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
