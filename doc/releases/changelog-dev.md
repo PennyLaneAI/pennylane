@@ -359,6 +359,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* New, experimental abstractions for creating PennyLane operators have been added, built around a new
+  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  integrated into the PennyLane ecosystem. Supported functionality so far:
+  - :func:`qp.equal` can check equality between two `Operator2` instances.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
@@ -371,9 +378,6 @@
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
   [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
   [(#9559)](https://github.com/PennyLaneAI/pennylane/pull/9559)
-
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
-  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
@@ -473,6 +477,15 @@
   values sometimes incorrectly have the same hash.
   [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
+* Fixed a bug where :func:`~.two_qubit_decomposition` would raise a
+  ``TracerArrayConversionError`` when decomposing a :class:`~.QubitUnitary`
+  that requires 2 CNOTs under ``qjit``. The guard preventing the 2-CNOT
+  decomposition path from being traced with abstract arrays only checked
+  ``capture.enabled()``, missing the ``qjit`` context where
+  ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
+  ``two_qubit_decomp_rule`` are fixed.
+  [(#9520)](https://github.com/PennyLaneAI/pennylane/pull/9520)
+  
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
