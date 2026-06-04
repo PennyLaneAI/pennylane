@@ -36,7 +36,7 @@ many_shots_shot_vector = tuple([1000000] * 3)
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
-    def test_non_differentiable_error(self):
+    def test_non_differentiable_error(self, seed):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
@@ -57,7 +57,7 @@ class TestFiniteDiff:
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         tapes, fn = finite_diff(tape, h=h_val)
 
         all_res = fn(dev.execute(tapes))
@@ -74,7 +74,7 @@ class TestFiniteDiff:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == (4,)
 
-    def test_independent_parameter_skipped(self, mocker):
+    def test_independent_parameter_skipped(self, mocker, seed):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
         spy = mocker.spy(qp.gradients.finite_difference, "generate_shifted_tapes")
@@ -85,7 +85,7 @@ class TestFiniteDiff:
             qp.expval(qp.PauliZ(0))
 
         tape = qp.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
         tapes, fn = finite_diff(tape, h=h_val)
         all_res = fn(dev.execute(tapes))
 
@@ -281,9 +281,9 @@ class TestFiniteDiff:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_y0_provided(self):
+    def test_y0_provided(self, seed):
         """Test that by providing y0 the number of tapes is equal the number of parameters."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RX(0.543, wires=[0])
@@ -296,10 +296,10 @@ class TestFiniteDiff:
 
         assert len(tapes) == tape.num_params
 
-    def test_independent_parameters(self):
+    def test_independent_parameters(self, seed):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         with qp.queuing.AnnotatedQueue() as q1:
             qp.RX(1.0, wires=[0])
@@ -334,9 +334,9 @@ class TestFiniteDiff:
             assert np.allclose(_j1, [exp, 0], atol=0.07)
             assert np.allclose(_j2, [0, exp], atol=0.07)
 
-    def test_output_shape_matches_qnode(self):
+    def test_output_shape_matches_qnode(self, seed):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         def cost1(x):
             qp.Rot(x[0], 0.3 * x[1], x[2], wires=0)
@@ -372,9 +372,9 @@ class TestFiniteDiff:
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
         assert all(t == q for t, q in zip(transform, expected))
 
-    def test_output_shape_matches_qnode_two_args(self):
+    def test_output_shape_matches_qnode_two_args(self, seed):
         """Test that the transform output shape matches that of a QNode with multiple args."""
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         def cost1(x, y, z):
             qp.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
@@ -477,10 +477,10 @@ class TestFiniteDiff:
 class TestFiniteDiffIntegration:
     """Tests for the finite difference gradient transform"""
 
-    def test_ragged_output(self, approx_order, strategy, validate):
+    def test_ragged_output(self, approx_order, strategy, validate, seed):
         """Test that the Jacobian is correctly returned for a tape
         with ragged output"""
-        dev = qp.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3, seed=seed)
         params = [1.0, 1.0, 1.0]
 
         with qp.queuing.AnnotatedQueue() as q:
