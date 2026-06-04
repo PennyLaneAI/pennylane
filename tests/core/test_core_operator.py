@@ -1623,6 +1623,19 @@ class TestCVOperation:
             U_high_order = np.array([np.eye(3)] * 3)
             op.heisenberg_expand(U_high_order, op.wires)
 
+    def test_supports_parameter_shift(self):
+        """Test the supports_parameter_shift property."""
+
+        class DummyOp(qp.operation.CVOperation):
+            num_wires = 1
+            grad_method = "A"
+
+            @staticmethod
+            def _heisenberg_rep(p):
+                return p  # just overwrite it?
+
+        assert DummyOp.supports_parameter_shift
+
 
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
@@ -1838,7 +1851,7 @@ def test_symmetric_matrix_early_return(op, mocker):
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
 
-    spy = mocker.spy(qp.operation, "expand_matrix")
+    spy = mocker.spy(qp.core.operator.base, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
 
     spy.assert_not_called()

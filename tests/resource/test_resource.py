@@ -24,12 +24,13 @@ import pytest
 import pennylane as qp
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
+from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
     Resources,
     ResourcesOperation,
     SpecsResources,
-    _batch_num_to_letters,
+    SymbolicSpecsResources,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -37,6 +38,7 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    num_to_letters,
     resources_from_tape,
     substitute,
 )
@@ -643,6 +645,7 @@ def test_specs_compute_depth(compute_depth):
 class TestSpecsResources:
     """Test the methods and attributes of the SpecsResource class"""
 
+    @pytest.fixture
     def example_specs_resource(self):
         """Generate an example SpecsResources instance."""
         return SpecsResources(
@@ -665,7 +668,7 @@ class TestSpecsResources:
 
         assert s.depth is None
 
-    def test_num_gates(self):
+    def test_num_gates(self, example_specs_resource):
         """Test that the SpecsResources class handles `num_gates` as expected."""
 
         with pytest.raises(
@@ -677,14 +680,14 @@ class TestSpecsResources:
                 gate_types={"Hadamard": 1}, gate_sizes={1: 2}, measurements={}, num_allocs=0
             )
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         assert s.num_gates == 3
 
-    def test_immutable(self):
+    def test_immutable(self, example_specs_resource):
         """Test that SpecsResources is immutable."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
             s.gate_types = {}
@@ -701,10 +704,10 @@ class TestSpecsResources:
         with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
             s.depth = 0
 
-    def test_getitem(self):
+    def test_getitem(self, example_specs_resource):
         """Test that SpecsResources supports indexing via __getitem__."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         assert s["gate_types"] == s.gate_types
         assert s["gate_counts"] == s.gate_types
@@ -734,10 +737,10 @@ class TestSpecsResources:
         ):
             _ = s["potato"]
 
-    def test_str(self):
+    def test_str(self, example_specs_resource):
         """Test the string representation of a SpecsResources instance."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         expected = "Wire allocations: 2\n"
         expected += "Total gates: 3\n"
@@ -772,10 +775,10 @@ class TestSpecsResources:
         assert s.to_pretty_str() == expected
         assert s.to_pretty_str(preindent=4) == expected_indented
 
-    def test_to_dict(self):
+    def test_to_dict(self, example_specs_resource):
         """Test the to_dict method of SpecsResources."""
 
-        s = self.example_specs_resource()
+        s = example_specs_resource
 
         expected = {
             "gate_types": {"Hadamard": 2, "CNOT": 1},
@@ -789,8 +792,240 @@ class TestSpecsResources:
         assert s.to_dict() == expected
 
 
-class TestCircuitSpecs:
+class TestSymbolicSpecsResources:
+    @pytest.fixture
+    def example_resource(self) -> SymbolicSpecsResources:
+        """
+        Generate an example SymbolicSpecsResources instance.
+        The resources roughly correspond to the following circuit:
 
+        .. code-block:: python
+
+            def circ():
+                qp.Hadamard(0)
+                qp.PauliX(0)
+                for i in range(x):
+                    qp.PauliX(i)
+                    for _ in range(z):
+                        qp.CNOT(wires=[0, 1])
+                for j in range(2 * z):
+                    qp.PauliZ(j)
+                return expval(qp.PauliZ(0))
+        """
+        return SymbolicSpecsResources(
+            gate_types={
+                "Hadamard": Expression({(): 1}),
+                "PauliX": Expression({("x"): 1, (): 1}),
+                "CNOT": Expression({("x", "z"): 1}),
+                "PauliZ": Expression({("z",): 2}),
+            },
+            gate_sizes={1: Expression({("z"): 2, "x": 1, (): 2}), 2: Expression({("x", "z"): 1})},
+            measurements={"expval(PauliZ)": 1},
+            # The values for allocs and depth are a bit off, but are helpful for testing substitutions
+            num_allocs=Expression({("x",): 1, ("z",): 2, (): 1}),
+            depth=Expression({("x", "z"): 1, ("z",): 2, ("x",): 1, (): 2}),
+        )
+
+    @pytest.fixture
+    def example_resource_concrete(self) -> SymbolicSpecsResources:
+        """
+        Generate an example SymbolicSpecsResources instance for a non-dynamic circuit.
+
+        Specifically, returns the resources for a simple Bell state circuit with a measurement.
+        """
+        return SymbolicSpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_init_converts_to_expression(self):
+        """Test that SymbolicSpecsResources can be instantiated with ints and correctly converts them."""
+        s = SymbolicSpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+        assert isinstance(s.gate_types, dict)
+        assert all(isinstance(v, Expression) for v in s.gate_types.values())
+        assert isinstance(s.gate_sizes, dict)
+        assert all(isinstance(v, Expression) for v in s.gate_sizes.values())
+        assert isinstance(s.measurements, dict)
+        assert all(isinstance(v, Expression) for v in s.measurements.values())
+        assert isinstance(s.num_allocs, Expression)
+        assert isinstance(s.depth, Expression)
+
+    def test_blank_subs(self, example_resource):
+        s = example_resource
+        assert s.subs() == s
+
+    def test_blank_subs_concrete(self, example_resource_concrete):
+        s = example_resource_concrete
+
+        concretized = s.subs()
+        assert isinstance(concretized, SpecsResources)
+        assert not isinstance(concretized, SymbolicSpecsResources)
+        assert concretized == SpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_partial_subs(self, example_resource):
+        s = example_resource
+
+        # Substitute x=2, leaving z symbolic
+        partially_substituted = s.subs({"x": 2})
+
+        expected = SymbolicSpecsResources(
+            gate_types={
+                "Hadamard": Expression({(): 1}),
+                "PauliX": Expression({(): 3}),
+                "CNOT": Expression({("z",): 2}),
+                "PauliZ": Expression({("z",): 2}),
+            },
+            gate_sizes={
+                1: Expression({("z",): 2, (): 4}),
+                2: Expression({("z",): 2}),
+            },
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=Expression({("z",): 2, (): 3}),
+            depth=Expression({("z",): 4, (): 4}),
+        )
+
+        assert partially_substituted == expected
+
+    def test_full_subs(self, example_resource):
+        s = example_resource
+
+        # Substitute x=2 and z=3
+        fully_substituted = s.subs({"x": 2, "z": 3})
+
+        expected = SpecsResources(
+            gate_types={"Hadamard": 1, "PauliX": 3, "CNOT": 6, "PauliZ": 6},
+            gate_sizes={1: 10, 2: 6},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=9,
+            depth=16,
+        )
+
+        assert fully_substituted == expected
+        assert not isinstance(fully_substituted, SymbolicSpecsResources)
+
+    def test_subs_kwargs(self, example_resource):
+        assert example_resource.subs(x=2, z=3) == example_resource.subs({"x": 2, "z": 3})
+
+    def test_invalid_subs(self, example_resource):
+        """Test that the subs method raises a TypeError for invalid substitutions."""
+        with pytest.raises(TypeError):
+            example_resource.subs({"x": "not an int"})
+        with pytest.raises(ValueError):
+            example_resource.subs({"not a var": 3})
+
+    def test_call(self, example_resource):
+        assert example_resource(x=2, z=3) == example_resource.subs(x=2, z=3)
+
+    def test_eq(self):
+        s1 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("x,"): 1})},
+            gate_sizes={1: Expression({("x,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+        s2 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("x,"): 1})},
+            gate_sizes={1: Expression({("x,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+        s3 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("z,"): 1})},
+            gate_sizes={1: Expression({("z,"): 1})},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+
+        assert s1 == s2
+        assert s1 != s3
+        assert s2 != s3
+        assert s1 != SpecsResources(
+            gate_types={"Hadamard": 1},
+            gate_sizes={1: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_eq_no_var(self):
+        s1 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression(1)},
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+
+        s2 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression(1)},
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+
+        s3 = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression(2)},  # different value here
+            gate_sizes={1: Expression(1)},
+            measurements={"expval(PauliZ)": Expression(1)},
+            num_allocs=Expression(1),
+            depth=Expression(1),
+        )
+
+        assert s1 == s2
+        assert s1 != s3
+        assert s2 != s3
+
+        assert s1 == SpecsResources(
+            gate_types={"Hadamard": 1},
+            gate_sizes={1: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=1,
+            depth=1,
+        )
+
+    def test_eq_invalid(self, example_resource):
+        assert example_resource != "not a SpecsResource"
+
+    def test_str(self, example_resource):
+        s = example_resource
+
+        expected = "Symbolic Variables: x, z\n"
+        expected += "Wire allocations: 2*z + x + 1\n"
+        expected += "Total gates: x*z + 2*z + x + 2\n"
+        expected += "Gate counts:\n"
+        expected += "- Hadamard: 1\n"
+        expected += "- PauliX: x + 1\n"
+        expected += "- CNOT: x*z\n"
+        expected += "- PauliZ: 2*z\n"
+        expected += "Measurements:\n"
+        expected += "- expval(PauliZ): 1\n"
+        expected += "Depth: x*z + 2*z + x + 2"
+
+        assert str(s) == expected
+
+
+class TestCircuitSpecs:
+    @pytest.fixture
     def example_specs_result(self):
         """Generate an example CircuitSpecs instance."""
         return CircuitSpecs(
@@ -807,6 +1042,7 @@ class TestCircuitSpecs:
             ),
         )
 
+    @pytest.fixture
     def example_specs_result_multi(self):
         """Generate an example CircuitSpecs instance with multiple levels and batches."""
         return CircuitSpecs(
@@ -822,7 +1058,7 @@ class TestCircuitSpecs:
                     num_allocs=2,
                     depth=2,
                 ),
-                3: [
+                2: [
                     SpecsResources(
                         gate_types={"CNOT": 1},
                         gate_sizes={2: 1},
@@ -841,6 +1077,44 @@ class TestCircuitSpecs:
             },
         )
 
+    @pytest.fixture
+    def example_specs_result_multi_symbolic(self):
+        """Generate an example CircuitSpecs instance with multiple levels and batches, as well as symbolic resources."""
+        return CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1", 2: "l2"},
+            resources={
+                1: SymbolicSpecsResources(
+                    gate_types={
+                        "Hadamard": Expression({("x",): 2, (): 2}),
+                        "CNOT": Expression({("x",): 2}),
+                    },
+                    gate_sizes={1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
+                    measurements={"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    num_allocs=2,
+                    depth=2,
+                ),
+                2: [
+                    SymbolicSpecsResources(
+                        gate_types={"CNOT": Expression({("x",): 1})},
+                        gate_sizes={2: Expression({("x",): 1})},
+                        measurements={"expval(PauliX)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                    SymbolicSpecsResources(
+                        gate_types={"CNOT": Expression({("x",): 1})},
+                        gate_sizes={2: Expression({("x",): 1})},
+                        measurements={"expval(PauliZ)": 1},
+                        num_allocs=2,
+                        depth=1,
+                    ),
+                ],
+            },
+        )
+
     def test_blank_init(self):
         """Test that CircuitSpecss can be instantiated with no arguments."""
         r = CircuitSpecs()  # should not raise any errors
@@ -851,10 +1125,10 @@ class TestCircuitSpecs:
         assert r.level is None
         assert r.resources is None
 
-    def test_getitem(self):
+    def test_getitem(self, example_specs_result):
         """Test that CircuitSpecs supports indexing via __getitem__."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         assert r["device_name"] == r.device_name
         assert r["num_device_wires"] == r.num_device_wires
@@ -862,10 +1136,10 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_getitem_removed_keys(self):
+    def test_getitem_removed_keys(self, example_specs_result):
         """Test that CircuitSpecs raises more descriptive KeyErrors for removed keys."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         with pytest.raises(
             KeyError,
@@ -899,10 +1173,12 @@ class TestCircuitSpecs:
         ):
             _ = r["potato"]
 
-    def test_to_dict(self):
+    def test_to_dict(
+        self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
+    ):
         """Test the to_dict method of CircuitSpecs."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         expected = {
             "device_name": "default.qubit",
@@ -921,7 +1197,7 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
 
         expected = {
             "device_name": "default.qubit",
@@ -937,7 +1213,7 @@ class TestCircuitSpecs:
                     "depth": 2,
                     "num_gates": 6,
                 },
-                3: [
+                2: [
                     {
                         "gate_types": {"CNOT": 1},
                         "gate_sizes": {2: 1},
@@ -960,10 +1236,55 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
-    def test_str(self):
+        r = example_specs_result_multi_symbolic
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": {1: "l1", 2: "l2"},
+            "resources": {
+                1: {
+                    "gate_types": {
+                        "Hadamard": Expression({("x",): 2, (): 2}),
+                        "CNOT": Expression({("x",): 2}),
+                    },
+                    "gate_sizes": {1: Expression({("x",): 2, (): 2}), 2: Expression({("x",): 2})},
+                    "measurements": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "num_allocs": 2,
+                    "depth": 2,
+                    "num_gates": Expression({("x",): 4, (): 2}),
+                    "vars": ["x"],
+                },
+                2: [
+                    {
+                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_sizes": {2: Expression({("x",): 1})},
+                        "measurements": {"expval(PauliX)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": Expression({("x",): 1}),
+                        "vars": ["x"],
+                    },
+                    {
+                        "gate_types": {"CNOT": Expression({("x",): 1})},
+                        "gate_sizes": {2: Expression({("x",): 1})},
+                        "measurements": {"expval(PauliZ)": 1},
+                        "num_allocs": 2,
+                        "depth": 1,
+                        "num_gates": Expression({("x",): 1}),
+                        "vars": ["x"],
+                    },
+                ],
+            },
+        }
+
+        assert r.to_dict() == expected
+
+    def test_str(self, example_specs_result):
         """Test the string representation of a CircuitSpecs instance."""
 
-        r = self.example_specs_result()
+        r = example_specs_result
 
         expected = "Device: default.qubit\n"
         expected += "Device wires: 5\n"
@@ -974,10 +1295,10 @@ class TestCircuitSpecs:
 
         assert str(r) == expected
 
-    def test_str_multi_tabular(self):
+    def test_str_multi_tabular(self, example_specs_result_multi):
         """Test the tabular string representation of a CircuitSpecs instance."""
 
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
         assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
 Device wires: 5
 Shots: Shots(total=1000)
@@ -996,9 +1317,31 @@ Measurements:    |
 - expval(PauliX) |    1 |    1 |    0
 - expval(PauliZ) |    1 |    0 |    1""".split()]
 
-    def test_str_multi_non_tabular(self):
+    def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
+        """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
+
+        r = example_specs_result_multi_symbolic
+        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
+Device wires: 5
+Shots: Shots(total=1000)
+Levels:
+- 1: l1
+- 2: l2
+
+↓Metric   Level→ |     1 |  2-a |  2-b
+----------------------------------------
+Wire allocations |     2 |    2 |    2
+Total gates      | 4*x+2 |    x |    x
+Gate counts:     |
+- Hadamard       | 2*x+2 |    0 |    0
+- CNOT           |   2*x |    x |    x
+Measurements:    |
+- expval(PauliX) |     1 |    1 |    0
+- expval(PauliZ) |     1 |    0 |    1""".split()]
+
+    def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
-        r = self.example_specs_result_multi()
+        r = example_specs_result_multi
 
         expected = "Device: default.qubit\n"
         expected += "Device wires: 5\n"
@@ -1013,11 +1356,11 @@ Measurements:    |
 
         expected += "\n\n" + "-" * 60 + "\n\n"
 
-        expected += "Level = 3:\n"
+        expected += "Level = 2:\n"
         expected += "    Batched tape a:\n"
-        expected += r.resources[3][0].to_pretty_str(preindent=8)
+        expected += r.resources[2][0].to_pretty_str(preindent=8)
         expected += "\n\n    Batched tape b:\n"
-        expected += r.resources[3][1].to_pretty_str(preindent=8)
+        expected += r.resources[2][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
 
@@ -1117,12 +1460,12 @@ class TestCountResources:
         assert computed_resources == expected_resources
 
 
-def test_batch_num_to_letters():
-    """Test the _batch_num_to_letters helper function."""
-    assert _batch_num_to_letters(0) == "a"
-    assert _batch_num_to_letters(1) == "b"
-    assert _batch_num_to_letters(25) == "z"
-    assert _batch_num_to_letters(26) == "aa"
-    assert _batch_num_to_letters(27) == "ab"
-    assert _batch_num_to_letters(51) == "az"
-    assert _batch_num_to_letters(52) == "ba"
+def test_num_to_letters():
+    """Test the num_to_letters helper function."""
+    assert num_to_letters(0) == "a"
+    assert num_to_letters(1) == "b"
+    assert num_to_letters(25) == "z"
+    assert num_to_letters(26) == "aa"
+    assert num_to_letters(27) == "ab"
+    assert num_to_letters(51) == "az"
+    assert num_to_letters(52) == "ba"

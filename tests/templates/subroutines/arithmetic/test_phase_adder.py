@@ -34,6 +34,7 @@ def test_standard_validity_Phase_Adder():
     qp.ops.functions.assert_valid(op)
 
 
+@pytest.mark.jax
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     k = 6

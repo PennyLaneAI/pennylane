@@ -162,6 +162,7 @@ SKIP_ASSERT_VALID = {
 
 class TestOperations:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
@@ -2826,6 +2827,7 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
+    @pytest.mark.jax
     def test_assert_valid(self):
         """Tests that a PauliRot is valid"""
 
@@ -3311,6 +3313,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
+    @pytest.mark.jax
     def test_MultiRZ_assert_valid(self):
         """Tests that MultiRZ is valid."""
 
