@@ -403,7 +403,8 @@ Completed deprecation cycles
 
 .. code-block:: python
 
-    from pennylane.operation import TermsUndefinedError, Operator
+    from pennylane.core.operator import Operator
+    from pennylane.operation import TermsUndefinedError
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)

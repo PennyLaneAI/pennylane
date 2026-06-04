@@ -22,8 +22,9 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import _UNSET_BATCH_SIZE, Operator
+from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.queuing import QueuingManager
 
 from .composite import handle_recursion_error

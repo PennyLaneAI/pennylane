@@ -22,12 +22,12 @@ from functools import singledispatch
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,

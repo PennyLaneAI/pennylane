@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, for_loop, math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -27,7 +28,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
