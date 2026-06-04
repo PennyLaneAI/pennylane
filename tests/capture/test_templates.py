@@ -235,6 +235,11 @@ unmodified_templates_cases = [
         (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
         {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
     ),
+    (
+        qp.PartialUnaryStatePreparation,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+    ),
 ]
 
 
