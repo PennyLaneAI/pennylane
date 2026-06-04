@@ -103,6 +103,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Simplified Trotter Product and added test for trotter simplification.
+  [(#9262)](https://github.com/PennyLaneAI/pennylane/pull/9262)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
@@ -494,6 +497,7 @@ Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 Mudit Pandey,
+Shrey Patel,
 Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,

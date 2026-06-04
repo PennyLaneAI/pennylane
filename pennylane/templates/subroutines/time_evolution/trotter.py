@@ -76,6 +76,39 @@ def _recursive_expression(x, order, ops):
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
+@QueuingManager.stop_recording()
+def _simplify_trotter_sequence(decomp):
+    """Simplify a list of operations by merging consecutive evolutions with the same base.
+
+    Args:
+        decomp (list): A list of operations to simplify.
+
+    Returns:
+        list: The simplified list of operations.
+    """
+    if not decomp:
+        return []
+
+    merged = [decomp[0]]
+
+    prev = decomp[0]
+
+    for op in decomp[1:]:
+        if (
+            isinstance(prev, qp_ops.Evolution)
+            and isinstance(op, qp_ops.Evolution)
+            and qp_ops.functions.equal(prev.base, op.base)
+        ):
+            merged[-1] = qp_ops.Evolution(op.base, prev.param + op.param)
+            prev = merged[-1]
+            continue
+
+        merged.append(op)
+        prev = op
+
+    return merged
+
+
 class TrotterProduct(ErrorOperation, ResourcesOperation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
@@ -481,9 +514,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
+        decomp = _simplify_trotter_sequence(decomp)
 
         if QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in decomp:
                 apply(op)
 
         return decomp

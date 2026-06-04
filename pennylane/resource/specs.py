@@ -405,7 +405,7 @@ def specs(
     Gate counts:
     - RX: 1
     - CNOT: 1
-    - Evolution: 96
+    - Evolution: 50
     Measurements:
     - probs(all wires): 1
     Depth: 98
@@ -414,7 +414,7 @@ def specs(
     access to the data fields. For example:
 
     >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
-    {'RX': 1, 'CNOT': 1, 'Evolution': 96}
+    {'RX': 1, 'CNOT': 1, 'Evolution': 50}
 
     .. details::
         :title: Specs with Tape Transforms
