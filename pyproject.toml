@@ -216,4 +216,6 @@ skips = [
 ]
 
 [tool.ruff.lint]
-select = ["B905"]
+select = [
+    "B905" # zip without explicit strict 
+]
