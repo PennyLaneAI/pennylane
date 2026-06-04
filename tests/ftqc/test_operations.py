@@ -36,18 +36,11 @@ class TestRotXZX:
         assert op.wires == Wires(wires)
         assert op.data == (phi, theta, omega)
 
+    @pytest.mark.jax
     def test_is_valid_op(self):
         """Assert RotXZX is a valid operator"""
         op = RotXZX(1.2, 2.3, -0.5, wires=0)
         assert_valid(op)
-
-    def test_single_qubit_rot_angles(self):
-        """Test that the single_qubit_rot_angles method works as expected for the
-        RotXZX gate"""
-        phi, theta, omega = np.pi / 4, 1.23, -0.5
-        op = RotXZX(phi, theta, omega, wires=0)
-
-        assert op.single_qubit_rot_angles() == (phi, theta, omega)
 
     @pytest.mark.parametrize("use_graph", [True, False])
     def test_decomposition(self, use_graph):

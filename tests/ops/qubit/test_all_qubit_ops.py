@@ -17,11 +17,13 @@ multiple types of operations should exist in this file. Type-specific tests shou
 the more specific file.
 """
 
-# pylint: disable=too-few-public-methods
 import pytest
 from gate_data import I
 
 import pennylane as qp
+
+# pylint: disable=too-few-public-methods
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 @pytest.mark.parametrize(
@@ -74,7 +76,10 @@ class TestOperations:
     def test_single_qubit_rot_angles(self, op):
         """Tests that the Rot gates yielded by single_qubit_rot_angles
         are equivalent to the true operations up to a global phase."""
-        angles = op.single_qubit_rot_angles()
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="single_qubit_rot_angles method"):
+            angles = op.single_qubit_rot_angles()
+
         obtained_mat = qp.Rot(*angles, wires=0).matrix()
 
         # Check whether the two matrices are each others conjugate transposes

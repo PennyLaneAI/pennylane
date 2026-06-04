@@ -91,6 +91,7 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
@@ -1707,6 +1708,7 @@ class TestDecomposition:
 
         assert q.queue == list(op[::-1])
 
+    @pytest.mark.jax
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
         op = qp.ctrl(
