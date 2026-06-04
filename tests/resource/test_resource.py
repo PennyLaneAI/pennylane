@@ -1566,6 +1566,28 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
+    def test_empty_resources_ipython_display(self):
+        """Test the IPython display of an empty SpecsResources instance."""
+        s = SpecsResources(
+            gate_types={},
+            gate_sizes={},
+            measurements={},
+            num_allocs=1,
+        )
+        actual = s._repr_markdown_()
+        expected= """\
+| **Metric** | **Value** |
+| :--- | ---: |
+| **Wire allocations** | 1 |
+| **Total gates** | 0 |
+| **Gate counts:** | |
+| *No gates* | |
+| **Measurements:** | |
+| *No measurements* | |
+| **Depth** | Not computed |"""
+
+        assert actual.strip() == expected.strip()
+
 
 class TestCountResources:
     class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
