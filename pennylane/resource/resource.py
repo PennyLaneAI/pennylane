@@ -402,8 +402,14 @@ class SpecsResources:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
-    def _table_markdown(self, skip_header: bool = False) -> str:
-        """Return a Markdown table for this object."""
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of the :class:`SpecsResources` for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
         lines = []
         lines.append("| **Metric** | **Value** |")
         lines.append("|---|---|")
@@ -424,20 +430,6 @@ class SpecsResources:
         depth_str = str(self.depth) if self.depth is not None else "Not computed"
         lines.append(f"| **Depth** | {depth_str} |")
         return "\n".join(lines)
-
-    def _repr_markdown_(self) -> str:
-        """Return a Markdown table representation for Jupyter notebook display."""
-        return self._table_markdown()
-
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays a Markdown table in Jupyter notebooks instead of plain text."""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        try:
-            from IPython.display import Markdown, display
-
-            display(Markdown(self._repr_markdown_()))
-        except ImportError:
-            print(str(self))
 
 
 @dataclass(frozen=True)
@@ -919,7 +911,13 @@ class CircuitSpecs:
         return "\n".join(lines)
 
     def _repr_markdown_(self) -> str:
-        """Return a Markdown representation of the CircuitSpecs for Jupyter notebook display."""
+        """
+        Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
         lines = []
         lines.append("**Circuit Specs:**")
         lines.append("| Metric | Value |")
@@ -941,28 +939,18 @@ class CircuitSpecs:
             lines.append("")
             lines.append("*No resources.*")
         elif isinstance(self.resources, SpecsResources):
-            lines.append(self.resources._table_markdown(skip_header=True))
+            lines.append(self.resources._repr_markdown_())
         elif isinstance(self.resources, list):
             lines.append("")
             for i, r in enumerate(self.resources):
-                lines.append(f"**Batched tape {_batch_num_to_letters(i)}:**")
+                lines.append(f"**Batched tape {num_to_letters(i)}:**")
                 lines.append("")
-                lines.append(r._table_markdown())
+                lines.append(r._repr_markdown_())
                 lines.append("")
         elif isinstance(self.resources, dict):
             lines.append(self._to_markdown_tabular())
 
         return "\n".join(lines)
-
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays a Markdown table in Jupyter notebooks instead of plain text."""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        try:
-            from IPython.display import Markdown, display
-
-            display(Markdown(self._repr_markdown_()))
-        except ImportError:
-            print(str(self))
 
 
 class ResourcesOperation(Operation):

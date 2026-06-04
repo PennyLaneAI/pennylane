@@ -1365,6 +1365,78 @@ Measurements:    |
         assert r.to_pretty_str(tabular=False) == expected
 
 
+class TestIPythonDisplays:
+    """
+    Test the IPython display methods for all applicable resource classes.
+
+    Note that we don't test the `_ipython_display_` methods directly since this method does not
+    return a value (it uses side-effects only). Instead, we check the output of the _repr_markdown_
+    or other related methods.
+
+    See also: https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+    """
+
+    @pytest.fixture
+    def example_specs_resource(self) -> SpecsResources:
+        return SpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            depth=2,
+        )
+
+    @pytest.fixture
+    def example_symbolic_specs_resource(self) -> SymbolicSpecsResources:
+        return SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({"a": 1}), "CNOT": 1},
+            gate_sizes={1: Expression({"a": 1}), 2: 1},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            depth=2,
+        )
+
+    @pytest.fixture
+    def example_circuit_specs(self) -> CircuitSpecs:
+        pass
+
+    def test_specs_resources_ipython_display(self, example_specs_resource):
+        """Test the IPython display of a SpecsResources instance."""
+        expected = """\
+| **Metric** | **Value** |
+|---|---|
+| **Wire allocations** | 2 |
+| **Total gates** | 2 |
+| **Gate counts:** | |
+| Hadamard | 1 |
+| CNOT | 1 |
+| **Measurements:** | |
+| expval(PauliZ) | 1 |
+| **Depth** | 2 |
+"""
+        actual = example_specs_resource._repr_markdown_()
+
+        assert expected.strip() == actual.strip()
+
+    def test_symbolic_specs_resources_ipython_display(self, example_symbolic_specs_resource):
+        """Test the IPython display of a SymbolicSpecsResources instance."""
+        expected = """\
+| **Metric** | **Value** |
+|---|---|
+| **Wire allocations** | 2 |
+| **Total gates** | a + 1 |
+| **Gate counts:** | |
+| Hadamard | a |
+| CNOT | 1 |
+| **Measurements:** | |
+| expval(PauliZ) | 1 |
+| **Depth** | 2 |
+"""
+        actual = example_symbolic_specs_resource._repr_markdown_()
+
+        assert expected.strip() == actual.strip()
+
+
 class TestCountResources:
     class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
         num_wires = 2
