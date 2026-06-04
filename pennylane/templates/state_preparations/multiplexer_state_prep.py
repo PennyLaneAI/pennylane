@@ -138,10 +138,7 @@ def _multiplexer_state_prep_decomposition(
     # _get_alpha_y so that at the leaf level (k=1) the sign is encoded directly into
     # the SelectPauliRot("Y") angle, eliminating the need for SelectPauliRot("Z") gates.
     is_real = math.is_real_obj_or_close(state_vector) and not math.requires_grad(state_vector)
-    if is_real:
-        a = qp.math.real(state_vector)
-    else:
-        a = qp.math.abs(state_vector)
+    a = qp.math.real(state_vector) if is_real else qp.math.abs(state_vector)
 
     n = len(wires)
 

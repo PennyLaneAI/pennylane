@@ -179,12 +179,12 @@ def is_real_obj_or_close(obj):
     # Check if object is purely real
     if not get_dtype_name(obj).startswith("complex"):
         return True
-        
+
     # If it's a concrete array, check if the imaginary part is effectively zero
     if type(obj).__name__ != "AbstractArray":
         imag = ar.imag(obj)
         return not is_abstract(imag) and allclose(imag, 0.0)
-        
+
     return False
 
 

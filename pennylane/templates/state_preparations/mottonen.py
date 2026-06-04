@@ -408,10 +408,7 @@ class MottonenStatePreparation(Operation):
             state_vector
         )
 
-        if is_real:
-            a = qp.math.real(state_vector)
-        else:
-            a = qp.math.abs(state_vector)
+        a = qp.math.real(state_vector) if is_real else qp.math.abs(state_vector)
 
         op_list = []
 
