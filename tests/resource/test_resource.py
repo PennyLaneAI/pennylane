@@ -1379,8 +1379,8 @@ class TestIPythonDisplays:
     @pytest.fixture
     def example_specs_resource(self) -> SpecsResources:
         return SpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 1},
-            gate_sizes={1: 1, 2: 1},
+            gate_types={"Hadamard": 1, "CNOT": 100_000},
+            gate_sizes={1: 1, 2: 100_000},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
             depth=2,
@@ -1389,16 +1389,15 @@ class TestIPythonDisplays:
     @pytest.fixture
     def example_symbolic_specs_resource(self) -> SymbolicSpecsResources:
         return SymbolicSpecsResources(
-            gate_types={"Hadamard": Expression({"a": 1}), "CNOT": 1},
-            gate_sizes={1: Expression({"a": 1}), 2: 1},
+            gate_types={
+                "Hadamard": Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}),
+                "CNOT": 1,
+            },
+            gate_sizes={1: Expression({("a", "a", "b"): 1, ("a", "a"): 1, ("a",): 1}), 2: 1},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
             depth=2,
         )
-
-    @pytest.fixture
-    def example_circuit_specs(self) -> CircuitSpecs:
-        pass
 
     def test_specs_resources_ipython_display(self, example_specs_resource):
         """Test the IPython display of a SpecsResources instance."""
@@ -1406,17 +1405,17 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | 2 |
+| **Total gates** | 100001 |
 | **Gate counts:** | |
 | Hadamard | 1 |
-| CNOT | 1 |
+| CNOT | 1.000E+5 |
 | **Measurements:** | |
 | expval(PauliZ) | 1 |
 | **Depth** | 2 |
 """
         actual = example_specs_resource._repr_markdown_()
 
-        assert expected.strip() == actual.strip()
+        assert actual.strip() == expected.strip()
 
     def test_symbolic_specs_resources_ipython_display(self, example_symbolic_specs_resource):
         """Test the IPython display of a SymbolicSpecsResources instance."""
@@ -1424,9 +1423,9 @@ class TestIPythonDisplays:
 | **Metric** | **Value** |
 |---|---|
 | **Wire allocations** | 2 |
-| **Total gates** | a + 1 |
+| **Total gates** | a*a*b + a*a + a + 1 |
 | **Gate counts:** | |
-| Hadamard | a |
+| Hadamard | a*a*b+a*a+a |
 | CNOT | 1 |
 | **Measurements:** | |
 | expval(PauliZ) | 1 |
@@ -1434,7 +1433,131 @@ class TestIPythonDisplays:
 """
         actual = example_symbolic_specs_resource._repr_markdown_()
 
-        assert expected.strip() == actual.strip()
+        assert actual.strip() == expected.strip()
+
+    def test_single_level_circuit_specs_ipython_display(self, example_specs_resource):
+        """Test the IPython display of a single-level CircuitSpecs instance."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=example_specs_resource,
+        )
+        actual = s._repr_markdown_()
+        expected = """\
+**Circuit Specs:**
+| Metric | Value |
+|---|---|
+| **Device** | default.qubit |
+| **Device wires** | 5 |
+| **Shots** | Shots(total=1000) |
+| **Level** | 2 |
+
+**Resources:**
+| **Metric** | **Value** |
+|---|---|
+| **Wire allocations** | 2 |
+| **Total gates** | 100001 |
+| **Gate counts:** | |
+| Hadamard | 1 |
+| CNOT | 1.000E+5 |
+| **Measurements:** | |
+| expval(PauliZ) | 1 |
+| **Depth** | 2 |
+"""
+
+        assert actual.strip() == expected.strip()
+
+    def test_batched_circuit_specs_ipython_display(self, example_specs_resource):
+        """Test the IPython display of a single-level CircuitSpecs instance."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=[example_specs_resource, example_specs_resource],
+        )
+        actual = s._repr_markdown_()
+        expected = """\
+**Circuit Specs:**
+| Metric | Value |
+|---|---|
+| **Device** | default.qubit |
+| **Device wires** | 5 |
+| **Shots** | Shots(total=1000) |
+| **Level** | 2 |
+
+**Resources:**
+
+**Batched tape a:**
+
+| **Metric** | **Value** |
+|---|---|
+| **Wire allocations** | 2 |
+| **Total gates** | 100001 |
+| **Gate counts:** | |
+| Hadamard | 1 |
+| CNOT | 1.000E+5 |
+| **Measurements:** | |
+| expval(PauliZ) | 1 |
+| **Depth** | 2 |
+
+**Batched tape b:**
+
+| **Metric** | **Value** |
+|---|---|
+| **Wire allocations** | 2 |
+| **Total gates** | 100001 |
+| **Gate counts:** | |
+| Hadamard | 1 |
+| CNOT | 1.000E+5 |
+| **Measurements:** | |
+| expval(PauliZ) | 1 |
+| **Depth** | 2 |
+"""
+
+        assert actual.strip() == expected.strip()
+
+    def test_multi_level_circuit_specs_ipython_display(
+        self, example_symbolic_specs_resource, example_specs_resource
+    ):
+        """Test the IPython display of a single-level CircuitSpecs instance."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={0: "l1", 1: "l2"},
+            resources={
+                0: example_symbolic_specs_resource,
+                1: [example_specs_resource, example_specs_resource],
+            },
+        )
+        actual = s._repr_markdown_()
+        expected = """\
+**Circuit Specs:**
+| Metric | Value |
+|---|---|
+| **Device** | default.qubit |
+| **Device wires** | 5 |
+| **Shots** | Shots(total=1000) |
+| **Levels** | |
+| 0 | l1 |
+| 1 | l2 |
+
+**Resources:**
+| ↓Metric / Level→ | 0 | 1-a | 1-b |
+|---|---|---|---|
+| **Wire allocations** | 2 | 2 | 2 |
+| **Total gates** | a*a*b+a*a+a+1 | 1.000E+5 | 1.000E+5 |
+| **Gate counts** |  |  |  |
+| Hadamard | a*a*b+a*a+a | 1 | 1 |
+| CNOT | 1 | 1.000E+5 | 1.000E+5 |
+| **Measurements** |  |  |  |
+| expval(PauliZ) | 1 | 1 | 1 |
+"""
+
+        assert actual.strip() == expected.strip()
 
 
 class TestCountResources:
