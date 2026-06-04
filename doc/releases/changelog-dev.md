@@ -119,25 +119,25 @@
 
   The prior code snippet renders as a Markdown table:
 
-  **Circuit Specs:**
-  | Metric | Value |
-  |---|---|
-  | **Device** | lightning.qubit |
-  | **Device wires** | 2 |
-  | **Shots** | Shots(total=None) |
-  | **Level** | device |
-
-  **Resources:**
-  | **Metric** | **Value** |
-  |---|---|
-  | **Wire allocations** | 2 |
-  | **Total gates** | 2 |
-  | **Gate counts:** | |
-  | CNOT | 1 |
-  | Hadamard | 1 |
-  | **Measurements:** | |
-  | probs(all wires) | 1 |
-  | **Depth** | 2 |
+  > **Circuit Specs:**
+  > | Metric | Value |
+  > |---|---|
+  > | **Device** | lightning.qubit |
+  > | **Device wires** | 2 |
+  > | **Shots** | Shots(total=None) |
+  > | **Level** | device |
+  >
+  > **Resources:**
+  > | **Metric** | **Value** |
+  > |---|---|
+  > | **Wire allocations** | 2 |
+  > | **Total gates** | 2 |
+  > | **Gate counts:** | |
+  > | CNOT | 1 |
+  > | Hadamard | 1 |
+  > | **Measurements:** | |
+  > | probs(all wires) | 1 |
+  > | **Depth** | 2 |
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
@@ -467,7 +467,7 @@
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
   [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
-  
+
 * Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
   if the number of selected operators is notably smaller than the maximal capacity for the given
   number of control wires. This bug only surfaced for `partial=False`.
