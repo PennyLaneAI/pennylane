@@ -607,7 +607,7 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
     if control_values is not None:
-        for wire, cv in zip(ctrl_wires, control_values):
+        for wire, cv in zip(ctrl_wires, control_values, strict=True):
             if cv == 0:
                 X(wires=wire)
 
@@ -641,7 +641,7 @@ def _measurement_qrom_inner(controls, targets, bitstrings, k):
     if k <= 1:
         return
 
-    num_bits = math.ceil(math.log2(k))
+    num_bits = math.ceil_log2(k)
     needed = 2 * num_bits + 1
     controls = list(controls[:1]) + list(controls[-(needed - 1) :])
 
@@ -669,7 +669,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     Base corrections absorbed into measurements where possible (MID, CLOSE).
     Remaining corrections (diff_q1 in variant 3, diff_q2) are explicit CNOTs.
     """
-    a = math.ceil(math.log2(k))
+    a = math.ceil_log2(k)
     controls = list(controls[: 2 * a - 1])
 
     and_wires = controls[:3]
@@ -678,15 +678,14 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     k01 = 2 ** (a - 1)
     k0 = k1 = 2 ** (a - 2)
     l = k - k01
-    k2 = int(math.ceil(2 ** (math.ceil(math.log2(l)) - 1))) if l > 1 else l
+    k2 = 2 ** (math.ceil_log2(l) - 1) if l > 1 else l
     k3 = k - k01 - k2
 
     # --- OPEN ---
     TemporaryAND(and_wires, control_values=[0, 0])
 
     # --- Q0 ---
-    if k0 > 1:
-        _measurement_qrom_inner(child_controls, targets, bitstrings[:k0], k0)
+    _measurement_qrom_inner(child_controls, targets, bitstrings[:k0], k0)
 
     # --- Q0 -> Q1 transition ---
     ctrl(X(controls[2]), control=controls[0], control_values=[0])
@@ -708,7 +707,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
                 ctrl(X(targets[i]), control=controls[0], control_values=[1])
         return
 
-    c_bar = 2 * (a - math.ceil(math.log2(l)) - 1)
+    c_bar = 2 * (a - math.ceil_log2(l) - 1)
 
     if c_bar > 0:
         # Variant 2: close first half via measurement, open new AND for second half
@@ -796,6 +795,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     weights of XOR products between bitstrings), so this resource estimate is
     marked as non-exact (exact=False). The listed counts are upper bounds.
     """
+    # When called for Adjoint(QROM), extract params from the base parameters
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
         num_target_wires = base_params["num_target_wires"]
@@ -831,7 +831,7 @@ def _qrom_measurement_condition(num_bitstrings=None, num_work_wires=None, base_p
         num_work_wires = base_params["num_work_wires"]
     if num_bitstrings <= 2:
         return True
-    n_input = max(1, math.ceil(math.log2(num_bitstrings)))
+    n_input = max(1, math.ceil_log2(num_bitstrings))
     return num_work_wires >= n_input - 1
 
 

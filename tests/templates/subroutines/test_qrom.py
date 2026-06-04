@@ -602,43 +602,35 @@ class TestMeasurementQROM:
         "L",
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
     )
-    def test_correctness(self, L):
+    def test_correctness(self, L, seed):
         """Test correctness of measurement-based QROM for various sizes."""
-        rng = random.Random(42 + L)
+        rng = np.random.default_rng(seed)
         n_target = 3
         n_input = math.ceil(math.log2(L))
         n_work = n_input - 1
 
-        bitstrings = [[rng.randint(0, 1) for _ in range(n_target)] for _ in range(L)]
+        bitstrings = rng.choice(2, size=(L, n_target))
 
         total_wires = n_input + n_work + n_target
         dev = qp.device("lightning.qubit", wires=total_wires)
 
-        control_wires = list(range(n_input))
-        work_wires = list(range(n_input, n_input + n_work))
-        target_wires = list(range(n_input + n_work, total_wires))
-
+        wires = qp.registers("control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(j):
             qp.BasisState(j, wires=control_wires)
-            _qrom_measurement_decomposition(
-                data=bitstrings,
-                control_wires=control_wires,
-                target_wires=target_wires,
-                work_wires=work_wires,
-                clean=True,
-            )
-            return qp.sample(wires=target_wires), qp.sample(wires=work_wires)
+            _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
+            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L):
-            result = [int(x) for x in circuit(j)[0].flatten()]
-            assert result == bitstrings[j], f"L={L}, j={j}: got {result}, expected {bitstrings[j]}"
-
-            output_wires = [int(x) for x in circuit(j)[1].flatten()]
-            assert output_wires == [0] * n_work, f"j={j}: work wires not clean, got {output_wires}"
+            output = circuit(j)
+            assert np.array_equal(output[0], bitstrings[j:j+1]), (
+                f"L={L}, j={j}: got {output[0]}, expected {bitstrings[j:j+1]}"
+            )
+            assert np.allclose(output[1], 0), f"j={j}: work wires not clean, got {output[1]}"
 
     @pytest.mark.external
     @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
