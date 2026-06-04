@@ -33,6 +33,7 @@ from pennylane.resource.resource import (
     SymbolicSpecsResources,
     _combine_dict,
     _count_resources,
+    _count_to_str,
     _scale_dict,
     add_in_parallel,
     add_in_series,
@@ -1379,8 +1380,9 @@ class TestIPythonDisplays:
     @pytest.fixture
     def example_specs_resource(self) -> SpecsResources:
         return SpecsResources(
-            gate_types={"Hadamard": 1, "CNOT": 100_000},
-            gate_sizes={1: 1, 2: 100_000},
+            # Pick a number that forces scientific notation
+            gate_types={"Hadamard": 1, "CNOT": 100_001},
+            gate_sizes={1: 1, 2: 100_001},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
             depth=2,
@@ -1403,7 +1405,7 @@ class TestIPythonDisplays:
         """Test the IPython display of a SpecsResources instance."""
         expected = """\
 | **Metric** | **Value** |
-|---|---|
+| :--- | ---: |
 | **Wire allocations** | 2 |
 | **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
@@ -1421,7 +1423,7 @@ class TestIPythonDisplays:
         """Test the IPython display of a SymbolicSpecsResources instance."""
         expected = """\
 | **Metric** | **Value** |
-|---|---|
+| :--- | ---: |
 | **Wire allocations** | 2 |
 | **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
 | **Gate counts:** | |
@@ -1449,7 +1451,7 @@ class TestIPythonDisplays:
 **Circuit Specs:**
 
 | Metric | Value |
-|---|---|
+| :--- | ---: |
 | **Device** | default.qubit |
 | **Device wires** | 5 |
 | **Shots** | Shots(total=1000) |
@@ -1458,7 +1460,7 @@ class TestIPythonDisplays:
 **Resources:**
 
 | **Metric** | **Value** |
-|---|---|
+| :--- | ---: |
 | **Wire allocations** | 2 |
 | **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
@@ -1485,7 +1487,7 @@ class TestIPythonDisplays:
 **Circuit Specs:**
 
 | Metric | Value |
-|---|---|
+| :--- | ---: |
 | **Device** | default.qubit |
 | **Device wires** | 5 |
 | **Shots** | Shots(total=1000) |
@@ -1496,7 +1498,7 @@ class TestIPythonDisplays:
 **Batched tape a:**
 
 | **Metric** | **Value** |
-|---|---|
+| :--- | ---: |
 | **Wire allocations** | 2 |
 | **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
@@ -1509,7 +1511,7 @@ class TestIPythonDisplays:
 **Batched tape b:**
 
 | **Metric** | **Value** |
-|---|---|
+| :--- | ---: |
 | **Wire allocations** | 2 |
 | **Total gates** | 1.000E+5 |
 | **Gate counts:** | |
@@ -1541,7 +1543,7 @@ class TestIPythonDisplays:
 **Circuit Specs:**
 
 | Metric | Value |
-|---|---|
+| :--- | ---: |
 | **Device** | default.qubit |
 | **Device wires** | 5 |
 | **Shots** | Shots(total=1000) |
@@ -1552,7 +1554,7 @@ class TestIPythonDisplays:
 **Resources:**
 
 | ↓Metric / Level→ | 0 | 1-a | 1-b |
-|---|---|---|---|
+| :--- | ---: | ---: | ---: |
 | **Wire allocations** | 2 | 2 | 2 |
 | **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
 | **Gate counts** |  |  |  |
@@ -1658,6 +1660,20 @@ class TestCountResources:
         )
 
         assert computed_resources == expected_resources
+
+
+def test_count_to_str():
+    """Test the _count_to_str helper function."""
+    assert _count_to_str(0) == "0"
+    assert _count_to_str(999) == "999"
+    assert _count_to_str(1_000) == "1,000"
+    assert _count_to_str(10_000) == "10,000"
+    assert _count_to_str(100_000) == "1.000E+5"
+    assert _count_to_str(12_345_678) == "1.235E+7"
+    assert _count_to_str(Expression(0)) == "0"
+    assert _count_to_str(Expression(15)) == "15"
+    assert _count_to_str(Expression(100_000)) == "1.000E+5"
+    assert _count_to_str(Expression({("y",): 3, ("x",): 2})) == "3*y + 2*x"
 
 
 def test_num_to_letters():

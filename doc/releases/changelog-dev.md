@@ -124,7 +124,7 @@
   **Circuit Specs:**
 
   | Metric | Value |
-  |---|---|
+  | :--- | ---: |
   | **Device** | lightning.qubit |
   | **Device wires** | 2 |
   | **Shots** | Shots(total=None) |
@@ -133,7 +133,7 @@
   **Resources:**
 
   | **Metric** | **Value** |
-  |---|---|
+  | :--- | ---: |
   | **Wire allocations** | 2 |
   | **Total gates** | 2 |
   | **Gate counts:** | |

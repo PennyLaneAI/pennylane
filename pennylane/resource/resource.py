@@ -47,13 +47,15 @@ def _count_to_str(
         markdown_safe (bool): whether to escape asterisks for markdown tables
     """
     if isinstance(count, Expression):
-        retval = str(count)
-        if markdown_safe:
-            retval = retval.replace("*", "\\*")  # Escape asterisks for markdown tables
-        if extra_compact:
-            retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
-        return retval
-    return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
+        if count.vars:
+            retval = str(count)
+            if markdown_safe:
+                retval = retval.replace("*", "\\*")  # Escape asterisks for markdown tables
+            if extra_compact:
+                retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
+            return retval
+        count = int(count)
+    return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
 
 
 @lru_cache
@@ -428,7 +430,7 @@ class SpecsResources:
         """
         lines = []
         lines.append("| **Metric** | **Value** |")
-        lines.append("|---|---|")
+        lines.append("| :--- | ---: |")
         lines.append(
             f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
         )
@@ -910,7 +912,7 @@ class CircuitSpecs:
 
         lines = []
         lines.append("| ↓Metric / Level→ | " + " | ".join(str(lvl) for lvl in levels) + " |")
-        lines.append("|---|" + "---|" * len(levels))
+        lines.append("| :--- |" + " ---: |" * len(levels))
         lines.append(
             data_row(
                 "**Wire allocations**",
@@ -959,7 +961,7 @@ class CircuitSpecs:
         lines.append("**Circuit Specs:**")
         lines.append("")
         lines.append("| Metric | Value |")
-        lines.append("|---|---|")
+        lines.append("| :--- | ---: |")
         lines.append(f"| **Device** | {self.device_name} |")
         lines.append(f"| **Device wires** | {self.num_device_wires} |")
         lines.append(f"| **Shots** | {self.shots} |")
