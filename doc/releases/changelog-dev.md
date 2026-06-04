@@ -103,6 +103,42 @@
 
 <h3>Improvements 🛠</h3>
 
+* The result objects from running :func:`specs` now have markdown formatting for IPython, improving their readability in JupyterLabs.
+
+  ```python
+  @qp.qjit
+  @qp.qnode(qp.device("lightning.qubit", wires=2))
+  def circ():
+      qp.Hadamard(0)
+      qp.CNOT([0, 1])
+      return qp.probs()
+
+  res = qp.specs(circ)()
+  display(res)
+  ```
+
+  The prior code snippet renders as a Markdown table:
+
+  **Circuit Specs:**
+  | Metric | Value |
+  |---|---|
+  | **Device** | lightning.qubit |
+  | **Device wires** | 2 |
+  | **Shots** | Shots(total=None) |
+  | **Level** | device |
+
+  **Resources:**
+  | **Metric** | **Value** |
+  |---|---|
+  | **Wire allocations** | 2 |
+  | **Total gates** | 2 |
+  | **Gate counts:** | |
+  | CNOT | 1 |
+  | Hadamard | 1 |
+  | **Measurements:** | |
+  | probs(all wires) | 1 |
+  | **Depth** | 2 |
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
