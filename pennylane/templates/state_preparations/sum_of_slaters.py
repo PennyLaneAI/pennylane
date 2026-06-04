@@ -29,7 +29,17 @@ from pennylane.decomposition import (
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
 
-SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "m", "r"])
+SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
+r"""This is a data container for preprocessed SumOfSlatersPrep data.
+
+Args:
+    u_bits (np.ndarray): Encoding bit strings obtained from ``compute_sos_encoding``.
+    b_bits (np.ndarray): Enumeration bit strings obtained from ``compute_sos_encoding``.
+    d (int): Number of enumeration qubits, given by :math:`\lceil \log_2(D)\rceil` where :math:`D`
+        is the number of Slater determinants populated in the state to be prepared.
+    r (int): Number of bits required after reducing the state ``indices`` with ``select_sos_rows``.
+    m (int): Number of encoding qubits. Equals :math:`\min(2d-1, r)`.
+"""
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -1047,7 +1057,7 @@ def _preprocess(v_bits, wires):
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
-    return selected_wires, SoSData(u_bits, b_bits, d, m, r)
+    return selected_wires, SoSData(u_bits, b_bits, d, r, m)
 
 
 def _sos_state_prep_with_wires(
