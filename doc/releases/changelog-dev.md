@@ -468,6 +468,9 @@
   with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
   [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
 
+* Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
+  [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
