@@ -30,6 +30,7 @@ from pennylane.exceptions import (
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.operation import Operation, Operator
+from pennylane.operation2 import Operator2
 from pennylane.ops import Prod, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -37,7 +38,6 @@ from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
-from ..operation2 import Operator2
 from .finite_difference import finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
