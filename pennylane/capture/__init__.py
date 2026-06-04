@@ -168,7 +168,6 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 
-from typing import Type
 from collections.abc import Callable
 
 from .switches import disable, enable, enabled, pause
