@@ -58,8 +58,7 @@ jobs:
 
       - name: Run isort
         run: |
-          uvx ruff check --select I --check pennylane/
-          uvx ruff check --select I --check tests/
+          uvx ruff check --select I --check pennylane/ tests/
 
       - name: Run Pylint (source files)
         if: always()
