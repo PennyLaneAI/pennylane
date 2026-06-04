@@ -40,6 +40,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
+from tests.operation2.operator_utils import DynOp, FullOp
 
 
 class TestInitSubclass:
@@ -231,26 +232,6 @@ class TestInitSubclass:
 
                 def __init__(self, wires):
                     super().__init__(wires=wires)
-
-
-class DynOp(Operator2):
-    """A simple operator with one dynamic param and wires."""
-
-    dynamic_argnames = ("phi",)
-
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
-
-
-class FullOp(Operator2):
-    """An operator using all argname groups."""
-
-    dynamic_argnames = ("phi",)
-    static_argnames = ("static",)
-    hybrid_argnames = ("hybrid",)
-
-    def __init__(self, phi, static, hybrid, wires):
-        super().__init__(phi, static, hybrid, wires=wires)
 
 
 class TestOperatorInit:
