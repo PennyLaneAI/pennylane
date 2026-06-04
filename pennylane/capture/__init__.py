@@ -192,7 +192,7 @@ qnode_prim: "jax.extend.core.Primitive"
 PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
-QpPrimitive: "Type[jax.extend.core.Primitive]"
+QpPrimitive: "type[jax.extend.core.Primitive]"
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements

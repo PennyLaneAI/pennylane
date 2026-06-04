@@ -18,7 +18,7 @@ Note: care needs to be taken to make it fully differentiable. An explanation can
 be found in pennylane/math/fidelity_gradient.md
 """
 
-from functools import lru_cache
+from functools import cache
 
 import autograd
 import autoray as ar
@@ -294,7 +294,7 @@ ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 ################################# jax #####################################
 
 
-@lru_cache(maxsize=None)
+@cache
 def _register_jax_vjp():
     """
     Register the custom VJP for JAX
@@ -321,7 +321,7 @@ def _register_jax_vjp():
 ################################ torch ###################################
 
 
-@lru_cache(maxsize=None)
+@cache
 def _register_torch_vjp():
     """
     Register the custom VJP for torch
@@ -349,7 +349,7 @@ def _register_torch_vjp():
 ############################### tensorflow ################################
 
 
-@lru_cache(maxsize=None)
+@cache
 def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """
     Register the custom VJP for tensorflow

@@ -16,8 +16,8 @@ Contains classes used to compactly store the metadata of various Hamiltonians wh
 """
 
 import copy
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 
 def _validate_positive_int(name, value):
