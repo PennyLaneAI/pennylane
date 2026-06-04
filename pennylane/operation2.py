@@ -29,7 +29,12 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty  # tach-ignore
+from pennylane.core.operator.base import (  # tach-ignore
+    _UNSET_BATCH_SIZE,
+    FlatPytree,
+    _get_abstract_operator,
+    classproperty,
+)
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -180,7 +185,8 @@ class Operator2(ABC):
         self.tracer = None
         if qp.capture.enabled():
             self._bind_primitive()
-        self.queue()
+        else:
+            self.queue()
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -1222,10 +1228,13 @@ class Operator2(ABC):
         ]
         hybrid_lens, hybrid_trees = [], []
         for name in hybrid_argnames:
-            leaves, tree = flatten(self.arguments[name])
-            op_leaves = filter(_is_op, leaves)
-            _delete_op_eqns(op_leaves)
+            # Partial flattening to extract operators used as data so their
+            # equations can be deleted from the jaxpr.
+            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
+            _delete_op_eqns(filter(_is_op, op_leaves))
 
+            # Full flattening to feed the operator's dynamic data to the primitive.
+            leaves, tree = flatten(self.arguments[name])
             pos_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
@@ -1260,7 +1269,6 @@ class Operator2(ABC):
 if has_jax:
     # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
-    from pennylane.operation import _get_abstract_operator
 
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
@@ -1279,22 +1287,25 @@ if has_jax:
         hybrid_trees,
         **static_args,
     ):
-        args = {name: unflatten(*value) for name, value in static_args.items()}
-        i = 0
+        # Pause capture so that reconstructing the operator (including unflattening
+        # nested operators in hybrid arguments) does not re-bind the primitive.
+        with qp.capture.pause():
+            args = {name: unflatten(*value) for name, value in static_args.items()}
+            i = 0
 
-        for name in dynamic_argnames:
-            args[name] = all_args[i]
-            i += 1
-        for name, len_ in zip(wire_argnames, wire_lens, strict=True):
-            if name not in hybrid_argnames:
-                args[name] = all_args[i : i + len_] if len_ > 1 else all_args[i]
+            for name in dynamic_argnames:
+                args[name] = all_args[i]
+                i += 1
+            for name, len_ in zip(wire_argnames, wire_lens, strict=True):
+                if name not in hybrid_argnames:
+                    args[name] = all_args[i : i + len_] if len_ > 1 else all_args[i]
+                    i += len_
+            for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+                leaves = all_args[i : i + len_]
+                args[name] = unflatten(leaves, tree)
                 i += len_
-        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
-            leaves = all_args[i : i + len_]
-            args[name] = unflatten(leaves, tree)
-            i += len_
 
-        return op_cls(**args)
+            return op_cls(**args)
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
