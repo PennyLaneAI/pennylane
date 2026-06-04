@@ -411,6 +411,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
+  removing the module from the documentation-test skip list.
+  [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
+
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
   [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
 
@@ -495,5 +499,6 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
+Dennis Wayo,
 David Wierichs,
 Jake Zaia.
