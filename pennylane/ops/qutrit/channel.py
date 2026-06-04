@@ -24,9 +24,6 @@ from pennylane.operation import Channel
 
 QUDIT_DIM = 3
 
-#: Small constant to avoid negative sqrt from floating point errors during normalization
-_SQRT_STABILITY_EPS = 1e-14
-
 
 class QutritDepolarizingChannel(Channel):
     r"""
@@ -138,8 +135,8 @@ class QutritDepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -222,9 +219,9 @@ class QutritDepolarizingChannel(Channel):
             [[z, z, w], [one, z, z], [z, w2, z]],
         ]
 
-        normalization = math.sqrt(p / 8 + _SQRT_STABILITY_EPS)
+        normalization = math.sqrt(p / 8 + math.eps)
         Ks = [normalization * math.array(m, like=interface) for m in depolarizing_mats]
-        identity = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.array(
+        identity = math.sqrt(1 - p + math.eps) * math.array(
             math.eye(QUDIT_DIM, dtype=complex), like=interface
         )
 
@@ -293,7 +290,7 @@ class QutritAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma_10, gamma_20, gamma_21, wires):
+    def __init__(self, gamma_10, gamma_20, gamma_21, wires, id=None):
         # Verify input
         for gamma in (gamma_10, gamma_20, gamma_21):
             if not math.is_abstract(gamma):
@@ -302,7 +299,7 @@ class QutritAmplitudeDamping(Channel):
         if not (math.is_abstract(gamma_20) or math.is_abstract(gamma_21)):
             if not 0.0 <= gamma_20 + gamma_21 <= 1.0:
                 raise ValueError(r"\gamma_{20}+\gamma_{21} must be in the interval [0,1]")
-        super().__init__(gamma_10, gamma_20, gamma_21, wires=wires)
+        super().__init__(gamma_10, gamma_20, gamma_21, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma_10, gamma_20, gamma_21):  # pylint:disable=arguments-differ
@@ -334,19 +331,15 @@ class QutritAmplitudeDamping(Channel):
             [0. , 0. , 0. ]])]
         """
         K0 = math.diag(
-            [
-                1,
-                math.sqrt(1 - gamma_10 + _SQRT_STABILITY_EPS),
-                math.sqrt(1 - gamma_20 - gamma_21 + _SQRT_STABILITY_EPS),
-            ]
+            [1, math.sqrt(1 - gamma_10 + math.eps), math.sqrt(1 - gamma_20 - gamma_21 + math.eps)]
         )
-        K1 = math.sqrt(gamma_10 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K1 = math.sqrt(gamma_10 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [0, 0, 0], [0, 0, 0]]), gamma_10), gamma_10
         )
-        K2 = math.sqrt(gamma_20 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K2 = math.sqrt(gamma_20 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 0, 0], [0, 0, 0]]), gamma_20), gamma_20
         )
-        K3 = math.sqrt(gamma_21 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K3 = math.sqrt(gamma_21 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 0, 0], [0, 0, 1], [0, 0, 0]]), gamma_21), gamma_21
         )
         return [K0, K1, K2, K3]
@@ -412,7 +405,7 @@ class TritFlip(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p_01, p_02, p_12, wires):
+    def __init__(self, p_01, p_02, p_12, wires, id=None):
         # Verify input
         ps = (p_01, p_02, p_12)
         for p in ps:
@@ -422,7 +415,7 @@ class TritFlip(Channel):
             if not 0.0 <= sum(ps) <= 1.0:
                 raise ValueError("The sum of probabilities must be in the interval [0,1]")
 
-        super().__init__(p_01, p_02, p_12, wires=wires)
+        super().__init__(p_01, p_02, p_12, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p_01, p_02, p_12):  # pylint:disable=arguments-differ
@@ -453,16 +446,16 @@ class TritFlip(Channel):
             [0.        , 0.        , 0.31622777],
             [0.        , 0.31622777, 0.        ]])]
         """
-        K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + _SQRT_STABILITY_EPS) * math.convert_like(
+        K0 = math.sqrt(1 - (p_01 + p_02 + p_12) + math.eps) * math.convert_like(
             math.cast_like(np.eye(3), p_01), p_01
         )
-        K1 = math.sqrt(p_01 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K1 = math.sqrt(p_01 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), p_01), p_01
         )
-        K2 = math.sqrt(p_02 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K2 = math.sqrt(p_02 + math.eps) * math.convert_like(
             math.cast_like(math.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), p_02), p_02
         )
-        K3 = math.sqrt(p_12 + _SQRT_STABILITY_EPS) * math.convert_like(
+        K3 = math.sqrt(p_12 + math.eps) * math.convert_like(
             math.cast_like(math.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]]), p_12), p_12
         )
         return [K0, K1, K2, K3]
@@ -489,8 +482,8 @@ class QutritChannel(Channel):
 
     grad_method = None
 
-    def __init__(self, K_list, wires=None):
-        super().__init__(*K_list, wires=wires)
+    def __init__(self, K_list, wires=None, id=None):
+        super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):

@@ -179,7 +179,7 @@ class IQPEmbedding(Operation):
 
     resource_keys = {"pattern_size", "n_repeats", "num_wires"}
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None):
+    def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -197,7 +197,7 @@ class IQPEmbedding(Operation):
             pattern = tuple(combinations(wires, 2))
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
-        super().__init__(features, wires=wires)
+        super().__init__(features, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

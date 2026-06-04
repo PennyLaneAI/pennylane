@@ -28,7 +28,7 @@ from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True):
+def s_prod(scalar, operator, lazy=True, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -38,6 +38,7 @@ def s_prod(scalar, operator, lazy=True):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
+        id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
 
@@ -69,9 +70,9 @@ def s_prod(scalar, operator, lazy=True):
            [2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
-        return SProd(scalar, operator)
+        return SProd(scalar, operator, id=id)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base)
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, id=id)
     QueuingManager.remove(operator)
     return sprod_op
 
@@ -83,6 +84,9 @@ class SProd(ScalarSymbolicOp):
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
         base (~.operation.Operator): the operator which will get scaled.
+
+    Keyword Args:
+        id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
@@ -130,8 +134,8 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, _pauli_rep=None):
-        super().__init__(base=base, scalar=scalar)
+    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
+        super().__init__(base=base, scalar=scalar, id=id)
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep
@@ -307,7 +311,7 @@ class SProd(ScalarSymbolicOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.prune()
+            pr.simplify()
             return pr.operation(wire_order=self.wires)
 
         if self.scalar == 1:

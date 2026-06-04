@@ -23,7 +23,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 matI = np.eye(2)
@@ -645,7 +644,7 @@ class TestPauliSentence:
         copy_ps2 = copy(pauli2)
 
         simplified_product = pauli1 @ pauli2
-        simplified_product.prune()
+        simplified_product.simplify()
 
         assert simplified_product == res
         assert pauli1 == copy_ps1
@@ -714,7 +713,7 @@ class TestPauliSentence:
         copy_ps2 = copy(string2)
 
         simplified_product = string1 + string2
-        simplified_product.prune()
+        simplified_product.simplify()
 
         assert simplified_product == result
         assert string1 == copy_ps1
@@ -855,7 +854,7 @@ class TestPauliSentence:
         copied_string1 = copy(string1)
         copied_string2 = copy(string2)
         copied_string1 += copied_string2
-        copied_string1.prune()
+        copied_string1.simplify()
 
         assert copied_string1 == result  # Check if the modified object matches the expected result
         assert copied_string2 == string2  # Ensure the original object is not modified
@@ -878,19 +877,11 @@ class TestPauliSentence:
         expected_simplified_ps1 = PauliSentence({pw2: 0.05, pw3: 1})
         expected_simplified_ps2 = PauliSentence({pw3: 1})
 
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_ps.simplify()
-
+        un_simplified_ps.simplify()
         assert un_simplified_ps == expected_simplified_ps0  # default tol = 1e-8
-
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_ps.simplify(tol=1e-2)
-
+        un_simplified_ps.simplify(tol=1e-2)
         assert un_simplified_ps == expected_simplified_ps1
-
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_ps.simplify(tol=1e-1)
-
+        un_simplified_ps.simplify(tol=1e-1)
         assert un_simplified_ps == expected_simplified_ps2
 
     def test_prune(self):

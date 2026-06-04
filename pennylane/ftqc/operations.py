@@ -61,8 +61,8 @@ class RotXZX(Operation):
     parameter_frequencies = [(1,), (1,), (1,)]
 
     # pylint: disable = too-many-arguments, too-many-positional-arguments
-    def __init__(self, phi, theta, omega, wires):
-        super().__init__(phi, theta, omega, wires=wires)
+    def __init__(self, phi, theta, omega, wires, id=None):
+        super().__init__(phi, theta, omega, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

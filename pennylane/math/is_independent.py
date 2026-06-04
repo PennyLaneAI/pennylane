@@ -17,6 +17,7 @@ a function is independent of its arguments for the interfaces
 
 * Autograd
 * JAX
+* TensorFlow
 * PyTorch
 """
 

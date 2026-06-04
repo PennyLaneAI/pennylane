@@ -31,6 +31,8 @@ class VnEntropyMP(StateMeasurement):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
         log_base (float): Base for the logarithm.
     """
 
@@ -46,14 +48,17 @@ class VnEntropyMP(StateMeasurement):
     def __init__(
         self,
         wires: Wires | None = None,
+        id: str | None = None,
         log_base: float | None = None,
     ):
         self.log_base = log_base
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
-    def __hash__(self):
+    @property
+    def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (self.__class__.__name__, tuple(self.wires.tolist()), self.log_base)
+
         return hash(fingerprint)
 
     @property

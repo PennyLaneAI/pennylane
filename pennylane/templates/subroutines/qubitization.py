@@ -81,7 +81,7 @@ class Qubitization(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(self, hamiltonian, control):
+    def __init__(self, hamiltonian, control, id=None):
         wires = Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
@@ -89,7 +89,7 @@ class Qubitization(Operation):
             "control": Wires(control),
         }
 
-        super().__init__(*hamiltonian.data, wires=wires)
+        super().__init__(*hamiltonian.data, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

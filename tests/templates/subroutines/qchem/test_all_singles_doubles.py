@@ -342,6 +342,19 @@ class TestInputs:
                 doubles=doubles,
             )
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qp.AllSinglesDoubles(
+            [1, 2],
+            wires=range(4),
+            hf_state=np.array([1, 1, 0, 0]),
+            singles=[[0, 1]],
+            doubles=[[0, 1, 2, 3]],
+            id="a",
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

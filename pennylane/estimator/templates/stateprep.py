@@ -711,7 +711,6 @@ class QROMStatePreparation(ResourceOperator):
         if isinstance(selswap_depths, int) or selswap_depths is None:
             selswap_depths = [selswap_depths] * expected_size
 
-        # precision = precision or 1e-9
         num_precision_wires = ceil_log2(math.pi / precision)
         gate_counts.append(Allocate(num_precision_wires))
 

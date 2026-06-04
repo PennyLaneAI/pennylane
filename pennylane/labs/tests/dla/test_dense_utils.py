@@ -170,7 +170,7 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.prune()
+            expected.simplify()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
@@ -208,7 +208,7 @@ class TestPauliDecompose:
         if pauli:
             for _op, e in zip(op, expected):
                 e = e.pauli_rep
-                e.prune()
+                e.simplify()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
@@ -236,7 +236,7 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.prune()
+            expected.simplify()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
@@ -276,7 +276,7 @@ class TestPauliDecompose:
         if pauli:
             for _op, e in zip(op, expected):
                 e = e.pauli_rep
-                e.prune()
+                e.simplify()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())

@@ -369,13 +369,13 @@ class TestInitialization:
         diff_ret_intmdt = ParametrizedEvolution(H_0, params_0, t_0, True, False, atol=atol_0)
         diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, False, True, atol=atol_0)
 
-        assert hash(compare_to) == hash(equal)
-        assert hash(compare_to) != hash(diff_H)
-        assert hash(compare_to) != hash(diff_params)
-        assert hash(compare_to) != hash(diff_t)
-        assert hash(compare_to) != hash(diff_atol)
-        assert hash(compare_to) != hash(diff_ret_intmdt)
-        assert hash(compare_to) != hash(diff_complementary)
+        assert compare_to.hash == equal.hash
+        assert compare_to.hash != diff_H.hash
+        assert compare_to.hash != diff_params.hash
+        assert compare_to.hash != diff_t.hash
+        assert compare_to.hash != diff_atol.hash
+        assert compare_to.hash != diff_ret_intmdt.hash
+        assert compare_to.hash != diff_complementary.hash
 
     @pytest.mark.parametrize(
         "params",

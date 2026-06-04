@@ -28,7 +28,7 @@ import pennylane as qp
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.resource import SpecsResources
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -803,6 +803,296 @@ class TestIntegration:
         tape = qp.workflow.construct_tape(circuit)()
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(tape.operations) == 1
+
+
+class TestShots:
+    """Unit tests for specifying shots per call."""
+
+    # pylint: disable=unexpected-keyword-arg
+    def test_specify_shots_per_call_sample(self):
+        """Tests that shots can be set per call for a sample return type."""
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev = DefaultQubitLegacy(wires=1, shots=10)
+
+            @qnode(dev)
+            @qp.qnode(dev)
+            def circuit(a):
+                qp.RX(a, wires=0)
+                return qp.sample(qp.PauliZ(wires=0))
+
+            assert len(circuit(0.8)) == 10
+            with pytest.warns(
+                PennyLaneDeprecationWarning,
+                match="Specifying 'shots' when executing a QNode is deprecated",
+            ):
+                assert len(circuit(0.8, shots=2)) == 2
+                assert len(circuit(0.8, shots=3178)) == 3178
+            assert len(circuit(0.8)) == 10
+
+    # pylint: disable=unexpected-keyword-arg, protected-access
+    def test_specify_shots_per_call_expval(self):
+        """Tests that shots can be set per call for an expectation value.
+        Note: this test has a vanishingly small probability to fail."""
+        dev = DefaultQubitLegacy(wires=1)
+
+        @qnode(dev)
+        def circuit():
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliZ(wires=0))
+
+        # check that the circuit is analytic
+        res1 = [circuit() for _ in range(100)]
+        assert np.std(res1) == 0.0
+        assert circuit.device._shots is None
+
+        # check that the circuit is temporary non-analytic
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
+        assert np.std(res1) != 0.0
+
+        # check that the circuit is analytic again
+        res1 = [circuit() for _ in range(100)]
+        assert np.std(res1) == 0.0
+        assert circuit.device._shots is None
+
+    # pylint: disable=unexpected-keyword-arg
+    def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
+        """Tests that the per-call shots overwriting is suspended if user
+        has a shots keyword argument, but a warning is raised."""
+
+        dev = DefaultQubitLegacy(wires=2, shots=10)
+
+        def circuit(a, shots=0):
+            qp.RX(a, wires=shots)
+            return qp.sample(qp.PauliZ(wires=0))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            with pytest.warns(
+                UserWarning, match="The 'shots' argument name is reserved for overriding"
+            ):
+                circuit = QNode(circuit, dev)
+
+        assert len(circuit(0.8)) == 10
+        tape = qp.workflow.construct_tape(circuit)(0.8)
+        assert tape.operations[0].wires.labels == (0,)
+
+        assert len(circuit(0.8, shots=1)) == 10
+        tape = qp.workflow.construct_tape(circuit)(0.8, shots=1)
+        assert tape.operations[0].wires.labels == (1,)
+
+        assert len(circuit(0.8, shots=0)) == 10
+        tape = qp.workflow.construct_tape(circuit)(0.8, shots=0)
+        assert tape.operations[0].wires.labels == (0,)
+
+    # pylint: disable=unexpected-keyword-arg
+    def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
+        """Tests that the per-call shots overwriting is suspended
+        if user has a shots argument, but a warning is raised."""
+        dev = DefaultQubitLegacy(wires=[0, 1])
+
+        def ansatz0(a, shots):
+            qp.RX(a, wires=shots)
+            return qp.sample(qp.PauliZ(wires=0))
+
+        # assert that warning is still raised
+        with pytest.warns(
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
+        ):
+            circuit = QNode(ansatz0, dev, shots=10)
+
+        assert len(circuit(0.8, 1)) == 10
+        tape = qp.workflow.construct_tape(circuit)(0.8, 1)
+        assert tape.operations[0].wires.labels == (1,)
+
+        dev = DefaultQubitLegacy(wires=2)
+
+        with pytest.warns(
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
+        ):
+
+            @qnode(dev, shots=10)
+            def ansatz1(a, shots):
+                qp.RX(a, wires=shots)
+                return qp.sample(qp.PauliZ(wires=0))
+
+        assert len(ansatz1(0.8, shots=0)) == 10
+        tape = qp.workflow.construct_tape(circuit)(0.8, 0)
+        assert tape.operations[0].wires.labels == (0,)
+
+    # pylint: disable=unexpected-keyword-arg
+    def test_shots_setting_does_not_mutate_device(self):
+        """Tests that per-call shots setting does not change the number of shots in the device."""
+
+        dev = DefaultQubitLegacy(wires=1, shots=3)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            @qnode(dev)
+            def circuit(a):
+                qp.RX(a, wires=0)
+                return qp.sample(qp.PauliZ(wires=0))
+
+        assert dev.shots == 3
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            res = circuit(0.8, shots=2)
+        assert len(res) == 2
+        assert dev.shots == 3
+
+    def test_warning_finite_shots_dev(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = DefaultQubitLegacy(wires=1, shots=5)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            @qp.qnode(dev, cache={})
+            def circuit(x):
+                qp.RZ(x, wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+        # no warning on the first execution
+        circuit(0.3)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            circuit(0.3)
+
+    # pylint: disable=unexpected-keyword-arg
+    def test_warning_finite_shots_override(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = DefaultQubitLegacy(wires=1)
+
+        @qp.set_shots(5)
+        @qp.qnode(dev, cache={})
+        def circuit(x):
+            qp.RZ(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        # no warning on the first execution
+        circuit(0.3)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qp.set_shots(shots=5)(circuit)(0.3)
+
+    def test_warning_finite_shots_tape(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = DefaultQubitLegacy(wires=1)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RZ(0.3, wires=0)
+            qp.expval(qp.PauliZ(0))
+
+        tape = QuantumScript.from_queue(q, shots=5)
+        # no warning on the first execution
+        cache = {}
+        qp.execute([tape], dev, None, cache=cache)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qp.execute([tape], dev, None, cache=cache)
+
+    def test_no_warning_infinite_shots(self):
+        """Tests that no warning is raised when caching is used with infinite shots."""
+        dev = DefaultQubitLegacy(wires=1)
+
+        @qp.qnode(dev, cache={})
+        def circuit(x):
+            qp.RZ(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", message="Cached execution with finite shots detected")
+            circuit(0.3)
+            circuit(0.3)
+
+    @pytest.mark.autograd
+    def test_no_warning_internal_cache_reuse(self):
+        """Tests that no warning is raised when only the internal cache is reused."""
+        dev = DefaultQubitLegacy(wires=1)
+
+        @qp.set_shots(5)
+        @qp.qnode(dev, cache=True)
+        def circuit(x):
+            qp.RZ(x, wires=0)
+            return qp.probs(wires=0)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", message="Cached execution with finite shots detected")
+            qp.jacobian(circuit, argnums=0)(0.3)
+
+    # pylint: disable=unexpected-keyword-arg
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+        ],
+    )
+    def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
+        """test that shots are placed on the tape if they are specified during a call."""
+        dev = DefaultQubitLegacy(wires=2, shots=5)
+
+        def func(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            qn = QNode(func, dev)
+
+        # No override
+        tape = qp.workflow.construct_tape(qn)(0.1, 0.2)
+        assert tape.shots.total_shots == 5
+
+        # Override
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            tape = qp.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        assert tape.shots.total_shots == total_shots
+        assert tape.shots.shot_vector == shot_vector
+
+        # Decorator syntax
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+
+            @qnode(dev)
+            def qn2(x, y):
+                qp.RX(x, wires=0)
+                qp.RY(y, wires=1)
+                return qp.expval(qp.PauliZ(0))
+
+        # No override
+        tape = qp.workflow.construct_tape(qn2)(0.1, 0.2)
+        assert tape.shots.total_shots == 5
+
+        # Override
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Specifying 'shots' when executing a QNode is deprecated",
+        ):
+            tape = qp.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        assert tape.shots.total_shots == total_shots
+        assert tape.shots.shot_vector == shot_vector
 
 
 class TestCompilePipelineIntegration:

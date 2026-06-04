@@ -706,77 +706,89 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert res_wires == exp_wires
 
 
-@pytest.mark.parametrize(
-    ("weights", "wires", "msg_match"),
-    [
-        (
-            qp.math.array([[[-0.080, 2.629]]]),
-            [0],
-            "This template requires the number of qubits to be greater than four",
-        ),
-        (
-            qp.math.array([[[-0.080, 2.629]]]),
-            [5],
-            "This template requires the number of qubits to be greater than four",
-        ),
-        (
-            qp.math.array([[[-0.080, 2.629]]]),
-            [0, 1, 2, 3, 4],
-            "This template requires an even number of qubits",
-        ),
-        (
-            qp.math.array([[[-0.080]]]),
-            [0, 1, 2, 3],
-            "Weights tensor must have third dimension of length 2",
-        ),
-        (
-            qp.math.array([[[-0.080, 2.629, -0.710, 5.383]]]),
-            [0, 1, 2, 3],
-            "Weights tensor must have third dimension of length 2",
-        ),
-        (
-            qp.math.array(
-                [
-                    [
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                    ]
-                ]
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "msg_match"),
+        [
+            (
+                qp.math.array([[[-0.080, 2.629]]]),
+                [0],
+                "This template requires the number of qubits to be greater than four",
             ),
-            [0, 1, 2, 3],
-            "Weights tensor must have second dimension of length",
-        ),
-        (
-            qp.math.array([[[-0.080, 2.629], [-0.710, 5.383]]]),
-            [0, 1, 2, 3],
-            "Weights tensor must have second dimension of length",
-        ),
-        (
-            qp.math.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
-            [0, 1, 2, 3],
-            "Weights tensor must be 3-dimensional",
-        ),
-    ],
-)
-def test_exceptions(weights, wires, msg_match):
-    """Test that GateFabric template throws an exception if the parameters have illegal
-    shapes, types or values."""
-    N = len(wires)
-    init_state = qp.math.array([1, 1, 0, 0])
+            (
+                qp.math.array([[[-0.080, 2.629]]]),
+                [5],
+                "This template requires the number of qubits to be greater than four",
+            ),
+            (
+                qp.math.array([[[-0.080, 2.629]]]),
+                [0, 1, 2, 3, 4],
+                "This template requires an even number of qubits",
+            ),
+            (
+                qp.math.array([[[-0.080]]]),
+                [0, 1, 2, 3],
+                "Weights tensor must have third dimension of length 2",
+            ),
+            (
+                qp.math.array([[[-0.080, 2.629, -0.710, 5.383]]]),
+                [0, 1, 2, 3],
+                "Weights tensor must have third dimension of length 2",
+            ),
+            (
+                qp.math.array(
+                    [
+                        [
+                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                            [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        ]
+                    ]
+                ),
+                [0, 1, 2, 3],
+                "Weights tensor must have second dimension of length",
+            ),
+            (
+                qp.math.array([[[-0.080, 2.629], [-0.710, 5.383]]]),
+                [0, 1, 2, 3],
+                "Weights tensor must have second dimension of length",
+            ),
+            (
+                qp.math.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 3-dimensional",
+            ),
+        ],
+    )
+    def test_exceptions(self, weights, wires, msg_match):
+        """Test that GateFabric template throws an exception if the parameters have illegal
+        shapes, types or values."""
+        N = len(wires)
+        init_state = qp.math.array([1, 1, 0, 0])
 
-    dev = qp.device("default.qubit", wires=N)
+        dev = qp.device("default.qubit", wires=N)
 
-    @qp.qnode(dev)
-    def circuit():
-        qp.GateFabric(
-            weights=weights,
-            wires=wires,
-            init_state=init_state,
+        @qp.qnode(dev)
+        def circuit():
+            qp.GateFabric(
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
+            )
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        init_state = qp.math.array([1, 1, 0, 0])
+        template = qp.GateFabric(
+            weights=np.random.random(size=(1, 1, 2)), wires=range(4), init_state=init_state, id="a"
         )
-        return qp.expval(qp.PauliZ(0))
-
-    with pytest.raises(ValueError, match=msg_match):
-        circuit()
+        assert template.id == "a"
 
 
 class TestAttributes:

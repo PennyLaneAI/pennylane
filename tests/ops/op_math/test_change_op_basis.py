@@ -252,7 +252,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         # test not the same hash if different order
         op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
         op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
-        assert hash(op1) != hash(op2)
+        assert op1.hash != op2.hash
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""

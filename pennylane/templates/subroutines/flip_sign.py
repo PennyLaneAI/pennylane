@@ -76,7 +76,7 @@ class FlipSign(Operation):
     def __repr__(self):
         return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
 
-    def __init__(self, n, wires):
+    def __init__(self, n, wires, id=None):
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("At least one valid wire is required.")
 
@@ -94,7 +94,7 @@ class FlipSign(Operation):
             raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
 
         self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
     @property
     def resource_params(self):

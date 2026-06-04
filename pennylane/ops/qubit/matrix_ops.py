@@ -108,6 +108,8 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex] or csr_matrix): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
 
     Raises:
@@ -140,6 +142,7 @@ class QubitUnitary(Operation):
         self,
         U: TensorLike | csr_matrix,
         wires: WiresLike,
+        id: str | None = None,
         unitary_check: bool = False,
     ):
         wires = Wires(wires)
@@ -168,7 +171,7 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        super().__init__(U, wires=wires)
+        super().__init__(U, wires=wires, id=id)
 
     @staticmethod
     def _unitary_check(U, dim):
@@ -714,6 +717,7 @@ class BlockEncode(Operation):
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
+        id (str or None): String representing the operation (optional)
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
@@ -770,7 +774,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WiresLike):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         shape_a = qp.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -800,7 +804,7 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(A, wires=wires)
+        super().__init__(A, wires=wires, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 

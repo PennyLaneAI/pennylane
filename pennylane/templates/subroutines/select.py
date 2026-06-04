@@ -381,7 +381,7 @@ class Select(Operation):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, ops, control, work_wires=None, partial=False):
+    def __init__(self, ops, control, work_wires=None, partial=False, id=None):
         control = Wires(control)
         work_wires = Wires(() if work_wires is None else work_wires)
         self.hyperparameters["ops"] = tuple(ops)
@@ -414,7 +414,7 @@ class Select(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires)
+        super().__init__(*self.data, wires=all_wires, id=id)
 
     def map_wires(self, wire_map: dict) -> "Select":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]

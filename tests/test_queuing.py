@@ -471,7 +471,7 @@ def test_process_queue_error_if_not_operator_or_measurement():
         qp.queuing.process_queue(q)
 
 
-def test_queue_category_none_removal():
+def test_queue_category_none_deprecation():
 
     class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         _queue_category = None
@@ -480,6 +480,7 @@ def test_queue_category_none_removal():
 
     q = AnnotatedQueue()
     q.append(DummyOp(wires=[0]))
+    match = "an object from being queued via `_queue_category=None` is deprecated"
 
-    with pytest.raises(ValueError, match="_queue_category can no longer be set to None."):
+    with pytest.warns(qp.exceptions.PennyLaneDeprecationWarning, match=match):
         qp.queuing.process_queue(q)

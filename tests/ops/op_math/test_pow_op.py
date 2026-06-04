@@ -34,7 +34,7 @@ class TempOperator(qp.operation.Operator):
 
 
 # pylint: disable=unused-argument
-def pow_using_dunder_method(base, z):
+def pow_using_dunder_method(base, z, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
@@ -937,10 +937,7 @@ class TestOperationProperties:
         base = qp.RX(1.2, wires=0)
         op: Pow = power_method(base, 2.1)
 
-        with pytest.warns(
-            qp.exceptions.PennyLaneDeprecationWarning, match="Operation.basis is deprecated"
-        ):
-            assert base.basis == op.basis
+        assert base.basis == op.basis
 
     def test_control_wires(self, power_method):
         """Test that the control wires of a Pow operator are the same as the control wires of the base op."""

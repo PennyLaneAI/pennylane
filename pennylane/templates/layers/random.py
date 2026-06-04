@@ -163,6 +163,7 @@ class RandomLayers(Operation):
         imprimitive=None,
         rotations=None,
         seed=42,
+        id=None,
     ):
         shape = math.shape(weights)
         if len(shape) != 2:
@@ -175,7 +176,7 @@ class RandomLayers(Operation):
             "seed": seed,
         }
 
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

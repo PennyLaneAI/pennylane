@@ -510,7 +510,7 @@ class QSVT(Operation):
 
     resource_keys = {"UA", "projectors"}
 
-    def __init__(self, UA, projectors):
+    def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -521,7 +521,7 @@ class QSVT(Operation):
 
         total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
 
-        super().__init__(wires=total_wires)
+        super().__init__(wires=total_wires, id=id)
 
     @property
     def resource_params(self) -> dict:

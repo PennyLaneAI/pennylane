@@ -278,6 +278,18 @@ class TestBoundTransform:
         with pytest.raises(ValueError, match="cannot be passed if a transform is provided"):
             _ = BoundTransform(qp.transform(first_valid_transform), is_informative=True)
 
+    def test_transform_property_deprecated(self):
+        """Test that BoundTransform.transform is deprecated."""
+        container = BoundTransform(qp.transform(first_valid_transform))
+
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning,
+            match=r"'BoundTransform.transform' property is deprecated",
+        ):
+            result = container.transform
+
+        assert result is first_valid_transform
+
 
 class TestTransformExtension:
     @pytest.mark.parametrize("explicit_type", (True, False))

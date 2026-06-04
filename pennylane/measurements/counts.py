@@ -46,6 +46,8 @@ class CountsMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
     """
@@ -58,13 +60,14 @@ class CountsMP(SampleMeasurement):
         obs: Operator | None = None,
         wires=None,
         eigvals=None,
+        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
         self._shortname = "allcounts" if all_outcomes else "counts"
         if wires is not None:
             wires = Wires(wires)
-        super().__init__(obs, wires, eigvals)
+        super().__init__(obs, wires, eigvals, id)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
@@ -92,11 +95,12 @@ class CountsMP(SampleMeasurement):
             "CountsMP returns a dictionary, which is not compatible with capture."
         )
 
-    def __hash__(self):
+    @property
+    def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
-            hash(self.obs),
+            getattr(self.obs, "hash", "None"),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
             self.all_outcomes,
@@ -209,17 +213,15 @@ class CountsMP(SampleMeasurement):
         batched = len(shape) == batched_ndims
         if not batched:
             samples = samples[None]
-            shape = (1, *shape)
 
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
-
         results = [math.unique(batch, return_counts=True) for batch in samples]
 
-        for result, outcome_dict in zip(results, outcome_dicts, strict=True):
+        for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(math.unwrap(states), _counts, strict=True):
+            for state, count in zip(math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         def outcome_to_eigval(outcome: str):
@@ -262,7 +264,7 @@ class CountsMP(SampleMeasurement):
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
         """
-        wire_map = {w: i for i, w in enumerate(wire_order)}
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
 
         mapped_counts = {}

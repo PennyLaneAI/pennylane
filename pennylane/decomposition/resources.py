@@ -344,10 +344,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 
     _validate_resource_rep(base_class, base_params)
 
-    # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
-    if base_class is qp.BasisEmbedding:
-        base_class = qp.BasisState
-
     # Flattens nested controlled structures.
     if base_class in (qp.ops.Controlled, qp.ops.ControlledOp):
         num_control_wires += base_params["num_control_wires"]

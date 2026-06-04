@@ -142,7 +142,7 @@ class StronglyEntanglingLayers(Operation):
 
     resource_keys = {"imprimitive", "n_wires", "n_layers"}
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=CNOT):
+    def __init__(self, weights, wires, ranges=None, imprimitive=CNOT, id=None):
         shape = math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -173,7 +173,7 @@ class StronglyEntanglingLayers(Operation):
 
         self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or CNOT}
 
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

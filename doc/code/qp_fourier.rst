@@ -104,7 +104,7 @@ the potential expressivity of a type of ansatz.
 The theoretically supported frequencies can be computed
 using the :func:`~.pennylane.fourier.circuit_spectrum` function. To mark which gates encode
 inputs (and, for example, which ones are only used for trainable parameters), we
-have to use the :func:`~.pennylane.fourier.mark` helper to mark an operator with a custom tag:
+have to give input-encoding gates an ``id``:
 
 .. code::
 
@@ -114,8 +114,8 @@ have to use the :func:`~.pennylane.fourier.mark` helper to mark an operator with
 
     @qp.qnode(dev)
     def simple_circuit_marked(x):
-        qp.fourier.mark(qp.RX(x[0], wires=0), "x")
-        qp.fourier.mark(qp.RY(x[0], wires=1), "x")
+        qp.RX(x[0], wires=0, id="x")
+        qp.RY(x[0], wires=1, id="x")
         qp.CNOT(wires=[1, 0])
         return qp.expval(qp.PauliZ(0))
 

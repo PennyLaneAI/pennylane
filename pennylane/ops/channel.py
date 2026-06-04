@@ -25,9 +25,6 @@ from pennylane import math as np
 from pennylane.operation import Channel
 from pennylane.wires import Wires, WiresLike
 
-#: Small epsilon added to sqrt to prevent floating-point errors during qubit channel normalization.
-_SQRT_STABILITY_EPS = 1e-14
-
 
 class AmplitudeDamping(Channel):
     r"""
@@ -65,9 +62,9 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires: WiresLike):
+    def __init__(self, gamma, wires: WiresLike, id=None):
         wires = Wires(wires)
-        super().__init__(gamma, wires=wires)
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -90,8 +87,8 @@ class AmplitudeDamping(Channel):
         if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
-        K1 = np.sqrt(gamma + _SQRT_STABILITY_EPS) * np.convert_like(
+        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K1 = np.sqrt(gamma + np.eps) * np.convert_like(
             np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma
         )
         return [K0, K1]
@@ -148,8 +145,8 @@ class GeneralizedAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires):
-        super().__init__(gamma, p, wires=wires)
+    def __init__(self, gamma, p, wires, id=None):
+        super().__init__(gamma, p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
@@ -176,19 +173,15 @@ class GeneralizedAmplitudeDamping(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
-        K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.diag(
-            [1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)]
-        )
+        K0 = np.sqrt(1 - p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
         K1 = (
-            np.sqrt(1 - p + _SQRT_STABILITY_EPS)
+            np.sqrt(1 - p + np.eps)
             * np.sqrt(gamma)
             * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
         )
-        K2 = np.sqrt(p + _SQRT_STABILITY_EPS) * np.diag(
-            [np.sqrt(1 - gamma + _SQRT_STABILITY_EPS), 1]
-        )
+        K2 = np.sqrt(p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
         K3 = (
-            np.sqrt(p + _SQRT_STABILITY_EPS)
+            np.sqrt(p + np.eps)
             * np.sqrt(gamma)
             * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
         )
@@ -231,8 +224,8 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires):
-        super().__init__(gamma, wires=wires)
+    def __init__(self, gamma, wires, id=None):
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -253,8 +246,8 @@ class PhaseDamping(Channel):
         if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
-        K1 = np.diag([0, np.sqrt(gamma + _SQRT_STABILITY_EPS)])
+        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K1 = np.diag([0, np.sqrt(gamma + np.eps)])
         return [K0, K1]
 
 
@@ -318,8 +311,8 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -351,14 +344,12 @@ class DepolarizingChannel(Channel):
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = np.cast_like(p, 1j)
 
-        K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.eye(2, dtype=complex), p)
-        K1 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
-            np.array([[0, 1], [1, 0]], dtype=complex), p
-        )
-        K2 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.eye(2, dtype=complex), p)
+        K1 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[0, 1], [1, 0]], dtype=complex), p)
+        K2 = np.sqrt(p / 3 + np.eps) * np.convert_like(
             np.array([[0, -1j], [1j, 0]], dtype=complex), p
         )
-        K3 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K3 = np.sqrt(p / 3 + np.eps) * np.convert_like(
             np.array([[1, 0], [0, -1]], dtype=complex), p
         )
         return [K0, K1, K2, K3]
@@ -400,8 +391,8 @@ class BitFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -422,10 +413,8 @@ class BitFlip(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
-        K1 = np.sqrt(p + _SQRT_STABILITY_EPS) * np.convert_like(
-            np.cast_like(np.array([[0, 1], [1, 0]]), p), p
-        )
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p)
         return [K0, K1]
 
 
@@ -484,8 +473,8 @@ class ResetError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires):
-        super().__init__(p0, p1, wires=wires)
+    def __init__(self, p0, p1, wires, id=None):
+        super().__init__(p0, p1, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
@@ -518,19 +507,17 @@ class ResetError(Channel):
 
         interface = np.get_interface(p_0, p_1)
         p_0, p_1 = np.coerce([p_0, p_1], like=interface)
-        K0 = np.sqrt(1 - p_0 - p_1 + _SQRT_STABILITY_EPS) * np.convert_like(
-            np.cast_like(np.eye(2), p_0), p_0
-        )
-        K1 = np.sqrt(p_0 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.convert_like(np.cast_like(np.eye(2), p_0), p_0)
+        K1 = np.sqrt(p_0 + np.eps) * np.convert_like(
             np.cast_like(np.array([[1, 0], [0, 0]]), p_0), p_0
         )
-        K2 = np.sqrt(p_0 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K2 = np.sqrt(p_0 + np.eps) * np.convert_like(
             np.cast_like(np.array([[0, 1], [0, 0]]), p_0), p_0
         )
-        K3 = np.sqrt(p_1 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K3 = np.sqrt(p_1 + np.eps) * np.convert_like(
             np.cast_like(np.array([[0, 0], [1, 0]]), p_0), p_0
         )
-        K4 = np.sqrt(p_1 + _SQRT_STABILITY_EPS) * np.convert_like(
+        K4 = np.sqrt(p_1 + np.eps) * np.convert_like(
             np.cast_like(np.array([[0, 0], [0, 1]]), p_0), p_0
         )
 
@@ -590,9 +577,9 @@ class PauliError(Channel):
 
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires: WiresLike):
+    def __init__(self, operators, p, wires: WiresLike, id=None):
         wires = Wires(wires)
-        super().__init__(p, wires=wires)
+        super().__init__(p, wires=wires, id=id)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z", "I"}):
@@ -654,9 +641,7 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(
-            np.cast_like(np.eye(2**nq), p), p
-        )
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2**nq), p), p)
 
         interface = np.get_interface(p)
         if interface == "tensorflow" or "Y" in operators:
@@ -673,7 +658,7 @@ class PauliError(Channel):
         }
 
         # K1 is composed by Kraus matrices of operators
-        K1 = np.sqrt(p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(1), p), p)
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.eye(1), p), p)
         for op in operators[::-1]:
             K1 = np.multi_dispatch()(np.kron)(ops[op], K1)
 
@@ -716,8 +701,8 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -738,10 +723,8 @@ class PhaseFlip(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
-        K1 = np.sqrt(p + _SQRT_STABILITY_EPS) * np.convert_like(
-            np.cast_like(np.diag([1, -1]), p), p
-        )
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.diag([1, -1]), p), p)
         return [K0, K1]
 
 
@@ -766,9 +749,9 @@ class QubitChannel(Channel):
 
     grad_method = None
 
-    def __init__(self, K_list, wires: WiresLike):
+    def __init__(self, K_list, wires: WiresLike, id=None):
         wires = Wires(wires)
-        super().__init__(*K_list, wires=wires)
+        super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
         if any(K.shape[0] != K.shape[1] for K in K_list):
@@ -798,7 +781,7 @@ class QubitChannel(Channel):
 
     # pylint: disable=arguments-differ, unused-argument
     @classmethod
-    def _primitive_bind_call(cls, K_list, wires: WiresLike):
+    def _primitive_bind_call(cls, K_list, wires: WiresLike, id=None):
         wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 
@@ -917,8 +900,8 @@ class ThermalRelaxationError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tg, wires):
-        super().__init__(pe, t1, t2, tg, wires=wires)
+    def __init__(self, pe, t1, t2, tg, wires, id=None):
+        super().__init__(pe, t1, t2, tg, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
@@ -971,29 +954,29 @@ class ThermalRelaxationError(Channel):
             pr1 = pe * p_reset
             pid = 1 - pz - pr0 - pr1
 
-            K0 = np.sqrt(pid + _SQRT_STABILITY_EPS) * np.eye(2)
-            K1 = np.sqrt(pz + _SQRT_STABILITY_EPS) * np.array([[1, 0], [0, -1]])
-            K2 = np.sqrt(pr0 + _SQRT_STABILITY_EPS) * np.array([[1, 0], [0, 0]])
-            K3 = np.sqrt(pr0 + _SQRT_STABILITY_EPS) * np.array([[0, 1], [0, 0]])
-            K4 = np.sqrt(pr1 + _SQRT_STABILITY_EPS) * np.array([[0, 0], [1, 0]])
-            K5 = np.sqrt(pr1 + _SQRT_STABILITY_EPS) * np.array([[0, 0], [0, 1]])
+            K0 = np.sqrt(pid + np.eps) * np.eye(2)
+            K1 = np.sqrt(pz + np.eps) * np.array([[1, 0], [0, -1]])
+            K2 = np.sqrt(pr0 + np.eps) * np.array([[1, 0], [0, 0]])
+            K3 = np.sqrt(pr0 + np.eps) * np.array([[0, 1], [0, 0]])
+            K4 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [1, 0]])
+            K5 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [0, 1]])
 
             return [K0, K1, K2, K3, K4, K5]
 
         def kraus_ops_large_t2():
             e0 = p_reset * pe
             v0 = np.array([[0, 0], [1, 0]])
-            K0 = np.sqrt(e0 + _SQRT_STABILITY_EPS) * v0
+            K0 = np.sqrt(e0 + np.eps) * v0
             e1 = -p_reset * pe + p_reset
             v1 = np.array([[0, 1], [0, 0]])
-            K1 = np.sqrt(e1 + _SQRT_STABILITY_EPS) * v1
+            K1 = np.sqrt(e1 + np.eps) * v1
             base = sum(
                 (
                     4 * eT2**2,
                     4 * p_reset**2 * pe**2,
                     -4 * p_reset**2 * pe,
                     p_reset**2,
-                    _SQRT_STABILITY_EPS,
+                    np.eps,
                 )
             )
             common_term = np.sqrt(base)
@@ -1002,13 +985,13 @@ class ThermalRelaxationError(Channel):
             v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
                 term2**2 + 1
             )
-            K2 = np.sqrt(e2 + _SQRT_STABILITY_EPS) * v2
+            K2 = np.sqrt(e2 + np.eps) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
             v3 = (term3 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
                 term3**2 + 1
             )
-            K3 = np.sqrt(e3 + _SQRT_STABILITY_EPS) * v3
+            K3 = np.sqrt(e3 + np.eps) * v3
             K4 = np.cast_like(np.zeros((2, 2)), K1)
             K5 = np.cast_like(np.zeros((2, 2)), K1)
 

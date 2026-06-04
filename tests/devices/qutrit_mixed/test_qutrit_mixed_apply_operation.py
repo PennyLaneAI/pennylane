@@ -25,9 +25,6 @@ from pennylane import math
 from pennylane.devices.qutrit_mixed import apply_operation, measure
 from pennylane.operation import Channel
 
-# Small additive constant to prevent negative sqrt arguments from floating-point errors
-_SQRT_STABILITY_EPS = 1e-14
-
 ml_frameworks_list = [
     "numpy",
     pytest.param("autograd", marks=pytest.mark.autograd),
@@ -44,18 +41,16 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
     num_params = 1
     num_wires = 1
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):
         if math.get_interface(p) == "tensorflow":
             p = math.cast_like(p, 1j)
 
-        K0 = math.sqrt(1 - p + _SQRT_STABILITY_EPS) * math.convert_like(
-            math.eye(3, dtype=complex), p
-        )
-        K1 = math.sqrt(p + _SQRT_STABILITY_EPS) * math.convert_like(kraus_matrix, p)
+        K0 = math.sqrt(1 - p + math.eps) * math.convert_like(math.eye(3, dtype=complex), p)
+        K1 = math.sqrt(p + math.eps) * math.convert_like(kraus_matrix, p)
         return [K0, K1]
 
 
@@ -317,8 +312,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         num_params = 1
         num_wires = 1
 
-        def __init__(self, p, wires):
-            super().__init__(p, wires=wires)
+        def __init__(self, p, wires, id=None):
+            super().__init__(p, wires=wires, id=id)
 
         @staticmethod
         def compute_kraus_matrices(p):

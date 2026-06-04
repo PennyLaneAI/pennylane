@@ -15,10 +15,7 @@ r"""
 Contains the ``layer`` template constructor.
 """
 
-import warnings
-
 from pennylane import math
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 def _preprocess(args, depth):
@@ -42,37 +39,6 @@ def _preprocess(args, depth):
 
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
-
-    .. warning::
-        This function is deprecated and will be removed in v0.47.
-        Please use a for loop instead i.e. instead of:
-
-        .. code-block:: python
-
-            dev = qp.device("default.qubit")
-
-            def ansatz(params):
-                qp.RX(params[0], wires=[0])
-                qp.MultiRZ(params[1], wires=[0, 1])
-                qp.RY(params[2], wires=[1])
-
-            params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4]])
-
-            @qp.qnode(dev)
-            def circuit(params):
-                qp.layer(ansatz, 2, params)
-                return [qp.expval(qp.Z(0)), qp.expval(qp.Z(1))]
-
-        We would do:
-
-        .. code-block:: python
-
-            @qp.qnode(dev)
-            def circuit(params):
-                for i in range(params):
-                    ansatz(params[i])
-
-                return [qp.expval(qp.Z(0)), qp.expval(qp.Z(1))]
 
     Args:
         template (callable): The sequence of quantum gates that is being repeated.
@@ -122,7 +88,7 @@ def layer(template, depth, *args, **kwargs):
 
         This creates the following circuit:
 
-        >>> print(qp.draw(circuit)())  # doctest: +SKIP
+        >>> print(qp.draw(circuit)())
         0: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         1: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
@@ -152,7 +118,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> print(qp.draw(circuit)())  # doctest: +SKIP
+        >>> print(qp.draw(circuit)())
         1: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         2: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
@@ -193,7 +159,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> print(qp.draw(circuit)(params))  # doctest: +SKIP
+        >>> print(qp.draw(circuit)(params))
         0: ──RX(0.50)─╭MultiRZ(0.50)──RX(0.40)─╭MultiRZ(0.40)───────────┤  <Z>
         1: ───────────╰MultiRZ(0.50)──RY(0.50)─╰MultiRZ(0.40)──RY(0.40)─┤  <Z>
 
@@ -234,18 +200,11 @@ def layer(template, depth, *args, **kwargs):
 
         This gives us the following circuit:
 
-        >>> print(qp.draw(circuit)(param1, param2))  # doctest: +SKIP
+        >>> print(qp.draw(circuit)(param1, param2))
         1: ──RX(0.10)─╭MultiRZ(0.30)──RX(0.20)─╭MultiRZ(0.40)────┤  <Z>
         2: ───────────╰MultiRZ(0.30)──H────────╰MultiRZ(0.40)──H─┤  <Z>
 
     """
-
-    warnings.warn(
-        "Using qp.templates.layer is deprecated "
-        "and will be removed in v0.47. Instead, please apply "
-        "your unitary in a for loop. ",
-        PennyLaneDeprecationWarning,
-    )
 
     _preprocess(args, depth)
 

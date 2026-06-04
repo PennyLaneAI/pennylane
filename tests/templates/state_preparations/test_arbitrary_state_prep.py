@@ -228,6 +228,14 @@ class TestInputs:
             weights = np.zeros(12)
             circuit(weights)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qp.ArbitraryStatePreparation(
+            np.random.random(size=2**4 - 2), wires=[0, 1, 2], id="a"
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Tests additional methods and attributes"""

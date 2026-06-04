@@ -93,7 +93,7 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike) -> None:
+    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike, id=None) -> None:
         control = Wires(control)
         target_wires = lcu.wires
 
@@ -105,7 +105,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires)
+        super().__init__(*self.data, wires=all_wires, id=id)
 
     def _flatten(self):
         return (self.lcu,), (self.control,)
@@ -132,7 +132,7 @@ class PrepSelPrep(Operation):
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         op_label = base_label or self.__class__.__name__
         if cache is None or not isinstance(cache.get("matrices", None), list):
-            return op_label
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
@@ -144,7 +144,7 @@ class PrepSelPrep(Operation):
             cache["matrices"].append(coeffs)
             str_wo_id = f"{op_label}(M{mat_num})"
 
-        return str_wo_id
+        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
 
     @staticmethod
     def compute_decomposition(lcu, control):

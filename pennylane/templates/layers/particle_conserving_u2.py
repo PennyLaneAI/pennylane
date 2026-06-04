@@ -160,7 +160,7 @@ class ParticleConservingU2(Operation):
 
     resource_keys = {"num_wires", "n_layers"}
 
-    def __init__(self, weights, wires, init_state=None):
+    def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than one;"
@@ -181,7 +181,7 @@ class ParticleConservingU2(Operation):
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

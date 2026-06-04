@@ -132,10 +132,10 @@ class TemporaryAND(Operation):
             return f"TemporaryAND(wires={self.wires})"
         return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
 
-    def __init__(self, wires: WiresLike, control_values=(1, 1)):
+    def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
         wires = Wires(wires)
         self.hyperparameters["control_values"] = tuple(control_values)
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

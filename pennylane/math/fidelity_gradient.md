@@ -65,7 +65,7 @@ $$\begin{align}
 
 Equations (2) and (3) are what we use for the custom gradient of the fidelity function.
 
-Note that these equations are what Autograd and JAX use for the gradient of a real-valued function defined on complex inputs. On the other hand, PyTorch uses the Wirtinger derivatives given by
+Note that these equations are what Autograd and JAX use for the gradient of a real-valued function defined on complex inputs. On the other hand, PyTorch and TensorFlow use the Wirtinger derivatives given by
 
 $$\begin{align}
 \frac{\partial F}{\partial\rho^\*}&=\sqrt{F(\rho,\sigma)}\sqrt{\sigma}\\,\left(\sqrt{\sigma}\\,\rho\sqrt{\sigma}\right)^{-\frac{1}{2}}\sqrt{\sigma}\\

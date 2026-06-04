@@ -143,7 +143,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         # we request parameter-shift (or "analytic") differentiation.
         grad_method = "A"
 
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
 
             # checking the inputs --------------
 
@@ -170,7 +170,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
             # The parent class expects all trainable parameters to be fed as positional
             # arguments, and all wires acted on fed as a keyword argument.
-            super().__init__(angle, wires=all_wires)
+            # The id keyword argument allows users to give their instance a custom name.
+            super().__init__(angle, wires=all_wires, id=id)
 
         @property
         def num_params(self):

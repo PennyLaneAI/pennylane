@@ -130,7 +130,7 @@ class Reflection(Operation):
         U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
-    def __init__(self, U, alpha=np.pi, reflection_wires=None):
+    def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
         self._name = "Reflection"
         wires = U.wires
 
@@ -145,7 +145,7 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, *U.data, wires=wires)
+        super().__init__(alpha, *U.data, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

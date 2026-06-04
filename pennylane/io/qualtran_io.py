@@ -148,7 +148,7 @@ def _(op: qtemps.state_preparations.Superposition):
     num_basis_states = len(bases)
     size_basis_state = len(bases[0])  # assuming they are all the same size
 
-    dic_state = dict(zip(bases, coeffs, strict=True))
+    dic_state = dict(zip(bases, coeffs))
     perms = order_states(bases)
     new_dic_state = {perms[key]: val for key, val in dic_state.items() if key in perms}
 
@@ -998,7 +998,7 @@ class FromBloq(Operation):
         if not isinstance(bloq, qt.Bloq):
             raise TypeError(f"bloq must be an instance of {qt.Bloq}.")
         self._hyperparameters = {"bloq": bloq}
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=None)
 
     def __repr__(self):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
@@ -1330,7 +1330,7 @@ class ToBloq(Bloq):
                 assert reg.name in in_quregs
                 soqs = initial_soqs[reg.name]
                 assert in_quregs[reg.name].shape == soqs.shape
-                qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten(), strict=True)
+                qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
 
             # Add each operation to the composite Bloq.
             for op in ops:
@@ -1371,7 +1371,7 @@ class ToBloq(Bloq):
                     if reg.side != qt.Side.LEFT:
                         assert quregs.shape == np.array(qvars_out[reg.name]).shape
                         qreg_to_qvar |= zip(
-                            quregs.flatten(), np.array(qvars_out[reg.name]).flatten(), strict=True
+                            quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
                         )
 
             # Combine Soquets to match the right signature.

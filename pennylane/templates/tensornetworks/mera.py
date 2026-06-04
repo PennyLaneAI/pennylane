@@ -180,7 +180,7 @@ class MERA(Operation):
 
     @classmethod
     def _primitive_bind_call(
-        cls, wires, n_block_wires, block, n_params_block, template_weights=None
+        cls, wires, n_block_wires, block, n_params_block, template_weights=None, id=None
     ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(
             wires=wires,
@@ -188,6 +188,7 @@ class MERA(Operation):
             block=block,
             n_params_block=n_params_block,
             template_weights=template_weights,
+            id=id,
         )
 
     @classmethod
@@ -204,6 +205,7 @@ class MERA(Operation):
         block: Callable,
         n_params_block,
         template_weights=None,
+        id=None,
     ):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
@@ -225,7 +227,7 @@ class MERA(Operation):
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
-        super().__init__(template_weights, wires=wires)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ

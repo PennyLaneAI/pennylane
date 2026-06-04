@@ -136,7 +136,7 @@ class CommutingEvolution(Operation):
             "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
         }
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
             "shifts": shifts,
         }
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires)
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

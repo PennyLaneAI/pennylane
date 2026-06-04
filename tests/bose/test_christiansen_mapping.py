@@ -128,10 +128,10 @@ class TestBoseWordMapping:
         """Test that the christiansen_mapping function returns the correct qubit operator."""
 
         qubit_op = christiansen_mapping(bosonic_op, ps=True)
-        qubit_op.prune()
+        qubit_op.simplify()
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op.prune()
+        expected_op.simplify()
 
         assert qubit_op == expected_op
 
@@ -168,7 +168,7 @@ class TestBoseWordMapping:
         op = christiansen_mapping(w, wire_map=wire_map)
         result = qp.sum(*ops)
 
-        op = op.simplify()
+        op.simplify()
 
         assert pauli_sentence(op) == pauli_sentence(result)
 
@@ -182,8 +182,8 @@ class TestBoseWordMapping:
         result_op = qp.sum(*ops)
         ps = pauli_sentence(result_op)
 
-        ps.prune()
-        op.prune()
+        ps.simplify()
+        op.simplify()
 
         assert ps == op
 
@@ -293,7 +293,7 @@ class TestBoseSentencesMapping:
         op = BoseSentence({})
 
         ps_op = christiansen_mapping(op, ps=True)
-        ps_op.prune()
+        ps_op.simplify()
         assert ps_op == PauliSentence({})
 
         op = christiansen_mapping(op).simplify()
@@ -319,7 +319,7 @@ class TestBoseSentencesMapping:
     def test_christiansen_mapping_for_bose_sentence_ps(self, bosonic_op, result):
         r"""Test that christiansen_mapping function returns the correct PauliSentence."""
         qubit_op = christiansen_mapping(bosonic_op, ps=True)
-        qubit_op.prune()
+        qubit_op.simplify()
 
         assert qubit_op == result
 
@@ -360,8 +360,8 @@ class TestBoseSentencesMapping:
         result_op = qp.sum(*ops)
         ps = pauli_sentence(result_op)
 
-        ps.prune()
-        op.prune()
+        ps.simplify()
+        op.simplify()
 
         assert ps == op
 

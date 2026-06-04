@@ -31,7 +31,6 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
-    ~prod
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,8 +94,6 @@ Templates
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
     ~LabsQROM
-    ~SelectCopyQROM
-    ~ResourceQfunc
 
 """
 
@@ -125,7 +122,6 @@ from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
 
 from .templates import (
-    SelectCopyQROM,
     LabsQROM,
     OutOfPlaceIntegerComparator,
     RegisterEquality,
@@ -138,8 +134,6 @@ from .templates import (
     select_thc_controlled_resource_decomp,
 )
 from .ops import (
-    prod,
-    ResourceQfunc,
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
     hadamard_controlled_resource_decomp,

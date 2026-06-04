@@ -201,55 +201,67 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert res_wires == exp_wires
 
 
-@pytest.mark.parametrize(
-    ("weights", "wires", "msg_match"),
-    [
-        (
-            np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-            [0],
-            "This template requires the number of qubits to be greater than one",
-        ),
-        (
-            np.array([[-0.080, 2.629, -0.710, 5.383]]),
-            [0, 1, 2, 3],
-            "Weights tensor must",
-        ),
-        (
-            np.array(
-                [
-                    [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                    [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                ]
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    @pytest.mark.parametrize(
+        ("weights", "wires", "msg_match"),
+        [
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+                [0],
+                "This template requires the number of qubits to be greater than one",
             ),
-            [0, 1, 2, 3],
-            "Weights tensor must",
-        ),
-        (
-            np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
-            [0, 1, 2, 3],
-            "Weights tensor must be 2-dimensional",
-        ),
-    ],
-)
-def test_exceptions(weights, wires, msg_match):
-    """Test that ParticleConservingU2 throws an exception if the parameters have illegal
-    shapes, types or values."""
-    N = len(wires)
-    init_state = np.array([1, 1, 0, 0])
+            (
+                np.array([[-0.080, 2.629, -0.710, 5.383]]),
+                [0, 1, 2, 3],
+                "Weights tensor must",
+            ),
+            (
+                np.array(
+                    [
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                    ]
+                ),
+                [0, 1, 2, 3],
+                "Weights tensor must",
+            ),
+            (
+                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+                [0, 1, 2, 3],
+                "Weights tensor must be 2-dimensional",
+            ),
+        ],
+    )
+    def test_exceptions(self, weights, wires, msg_match):
+        """Test that ParticleConservingU2 throws an exception if the parameters have illegal
+        shapes, types or values."""
+        N = len(wires)
+        init_state = np.array([1, 1, 0, 0])
 
-    dev = qp.device("default.qubit", wires=N)
+        dev = qp.device("default.qubit", wires=N)
 
-    @qp.qnode(dev)
-    def circuit():
-        qp.ParticleConservingU2(
-            weights=weights,
-            wires=wires,
-            init_state=init_state,
+        @qp.qnode(dev)
+        def circuit():
+            qp.ParticleConservingU2(
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
+            )
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        init_state = np.array([1, 1, 0])
+        template = qp.ParticleConservingU2(
+            weights=np.random.random(size=(1, 5)), wires=range(3), init_state=init_state, id="a"
         )
-        return qp.expval(qp.PauliZ(0))
-
-    with pytest.raises(ValueError, match=msg_match):
-        circuit()
+        assert template.id == "a"
 
 
 class TestAttributes:

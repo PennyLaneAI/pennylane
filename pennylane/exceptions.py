@@ -229,7 +229,7 @@ class NonDifferentiableError(Exception):
 
 
 _TF_DEPRECATION_MSG = (
-    "Support for the TensorFlow interface is deprecated and will be removed in a future release. "
+    "Support for the TensorFlow interface is deprecated and will be removed in v0.44. "
     "Future versions of PennyLane are not guaranteed to work with TensorFlow. "
     "Please migrate your workflows to JAX or Pytorch to benefit from enhanced support and features."
 )

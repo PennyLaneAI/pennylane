@@ -206,7 +206,9 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_x_wires", "num_y_wires", "num_work_wires"}
 
-    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None):
+    def __init__(
+        self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -231,7 +233,7 @@ class SemiAdder(Operation):
         else:
             all_wires = Wires.all_wires([x_wires, y_wires])
 
-        super().__init__(wires=all_wires)
+        super().__init__(wires=all_wires, id=id)
 
     @property
     def resource_params(self) -> dict:

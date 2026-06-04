@@ -333,17 +333,17 @@ class CH(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Hadamard, wires=target_wires)
-        super().__init__(base, control_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
@@ -451,6 +451,8 @@ class CY(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
     """
 
     num_wires = 2
@@ -474,14 +476,14 @@ class CY(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Y, wires=wires[1:])
-        super().__init__(base, wires[:1])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -624,14 +626,14 @@ class CZ(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Z, wires=wires[1:])
-        super().__init__(base, wires[:1])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -762,17 +764,17 @@ class CSWAP(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=3)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.SWAP, wires=target_wires)
-        super().__init__(base, control_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
@@ -919,7 +921,7 @@ class CCZ(ControlledOp):
     """
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=3)
 
     def _flatten(self):
@@ -942,14 +944,14 @@ class CCZ(ControlledOp):
 
     name = "CCZ"
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Z, wires=target_wires)
-        super().__init__(base, control_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
@@ -1143,14 +1145,14 @@ class CNOT(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.X, wires=wires[1:])
-        super().__init__(base, wires[:1])
+        super().__init__(base, wires[:1], id=id)
 
     def adjoint(self):
         return CNOT(self.wires)
@@ -1297,16 +1299,16 @@ class Toffoli(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires):
+    def _primitive_bind_call(cls, wires, id=None):
         return cls._primitive.bind(*wires, n_wires=3)
 
-    def __init__(self, wires):
+    def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.X, wires=target_wires)
-        super().__init__(base, control_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
@@ -1583,7 +1585,7 @@ class MultiControlledX(ControlledOp):
 
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed"
+        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
     ):
         return cls._primitive.bind(
             *wires,
@@ -1739,7 +1741,7 @@ class MultiControlledX(ControlledOp):
 
         .. code-block:: python
 
-            decomp = qp.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1, 1, 1], work_wires=qp.wires.Wires("aux"))
+            decomp = qp.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1,1,1], work_wires=qp.wires.Wires("aux"))
 
         >>> print(decomp)
         [Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux']), Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux'])]
@@ -1758,7 +1760,7 @@ class MultiControlledX(ControlledOp):
 
         work_wires = work_wires or []
 
-        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
+        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
@@ -1767,7 +1769,7 @@ class MultiControlledX(ControlledOp):
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
-        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
+        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
 
         return flips1 + decomp + flips2
 
@@ -1792,9 +1794,7 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     elif len(wires) == 2:
         qp.CNOT(wires=wires)
     elif len(wires) == 3:
-        zero_control_wires = [
-            w for w, val in zip(control_wires, control_values, strict=True) if not val
-        ]
+        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
             qp.PauliX(w)
         qp.Toffoli(wires=wires)
@@ -1876,6 +1876,7 @@ class CRX(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1892,11 +1893,11 @@ class CRX(ControlledOp):
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires: WiresLike):
+    def __init__(self, phi, wires: WiresLike, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RX, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1909,7 +1910,7 @@ class CRX(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires: WiresLike):
+    def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2092,6 +2093,7 @@ class CRY(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2108,11 +2110,11 @@ class CRY(ControlledOp):
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RY, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -2125,7 +2127,7 @@ class CRY(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires):
+    def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2287,6 +2289,7 @@ class CRZ(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2304,11 +2307,11 @@ class CRZ(ControlledOp):
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RZ, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -2321,7 +2324,7 @@ class CRZ(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires):
+    def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2517,6 +2520,7 @@ class CRot(ControlledOp):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2535,11 +2539,11 @@ class CRot(ControlledOp):
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, phi, theta, omega, wires):
+    def __init__(self, phi, theta, omega, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Rot, phi, theta, omega, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -2554,7 +2558,7 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires):
+    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
     @property
@@ -2726,6 +2730,7 @@ class ControlledPhaseShift(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2743,11 +2748,11 @@ class ControlledPhaseShift(ControlledOp):
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires, id=None):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.PhaseShift, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
@@ -2760,7 +2765,7 @@ class ControlledPhaseShift(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires):
+    def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property

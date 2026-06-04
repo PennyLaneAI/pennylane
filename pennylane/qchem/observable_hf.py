@@ -89,7 +89,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             sentence.update(
                 {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
             )
-    sentence.prune()
+    sentence.simplify()
 
     return sentence
 
@@ -133,7 +133,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
             sorted(h.items(), key=lambda item: max(item[0].wires.tolist(), default=0))
         )
 
-    h.prune(tol=cutoff)
+    h.simplify(tol=cutoff)
 
     if not h.wires:
         return h.operation(wire_order=[0])

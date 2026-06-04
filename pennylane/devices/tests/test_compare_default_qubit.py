@@ -32,13 +32,13 @@ pytestmark = pytest.mark.skip_unsupported
 class TestComparison:
     """Test that a device different to default.qubit gives the same result"""
 
-    def test_hermitian_expectation(self, device, tol, shots):
+    def test_hermitian_expectation(self, device, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
         dev_def = qp.device("default.qubit")
 
-        if shots:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         if dev.name == "default.qubit":
@@ -62,8 +62,8 @@ class TestComparison:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.Hermitian(A_, wires=[0, 1]))
 
-        qnode_def = qp.QNode(circuit, dev_def, shots=shots)
-        qnode = qp.QNode(circuit, dev, shots=shots)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
         grad_def = qp.grad(qnode_def, argnums=[0, 1])
         grad = qp.grad(qnode, argnums=[0, 1])
@@ -78,8 +78,8 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
-        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol)
-        assert pnp.allclose(grad_res, grad_def_res, atol=tol)
+        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
         "state",
@@ -98,13 +98,13 @@ class TestComparison:
             np.array([1, 1, 1, 1]) / 2,
         ],
     )
-    def test_projector_expectation(self, device, state, tol, shots):
+    def test_projector_expectation(self, device, state, tol):
         """Test that arbitrary multi-mode Projector expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
         dev_def = qp.device("default.qubit", wires=n_wires)
 
-        if shots:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
@@ -122,8 +122,8 @@ class TestComparison:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.Projector(state, wires=[0, 1]))
 
-        qnode_def = qp.QNode(circuit, dev_def, shots=shots)
-        qnode = qp.QNode(circuit, dev, shots=shots)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
         grad_def = qp.grad(qnode_def, argnums=[0, 1])
         grad = qp.grad(qnode, argnums=[0, 1])
@@ -138,10 +138,10 @@ class TestComparison:
 
         qnode_res, qnode_def_res, grad_res, grad_def_res = workload()
 
-        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol)
-        assert pnp.allclose(grad_res, grad_def_res, atol=tol)
+        assert pnp.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
+        assert pnp.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
-    def test_pauliz_expectation_analytic(self, device, tol, shots):
+    def test_pauliz_expectation_analytic(self, device, tol):
         """Test that the tensor product of PauliZ expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -157,7 +157,7 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if shots:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         theta = 0.432
@@ -169,17 +169,17 @@ class TestComparison:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        qnode_def = qp.QNode(circuit, dev_def, shots=shots)
-        qnode = qp.QNode(circuit, dev, shots=shots)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
         grad_def = qp.grad(qnode_def, argnums=[0, 1])
         grad = qp.grad(qnode, argnums=[0, 1])
 
-        assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol)
-        assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol)
+        assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
+        assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
     @pytest.mark.parametrize("ret", ["expval", "var"])
-    def test_random_circuit(self, device, tol, ret, shots):
+    def test_random_circuit(self, device, tol, ret):
         """Compare the result of a random circuit to default.qubit"""
         n_wires = 2
         dev = device(n_wires)
@@ -195,7 +195,7 @@ class TestComparison:
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
-        if shots:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         n_layers = pnp.random.randint(1, 5)
@@ -207,16 +207,16 @@ class TestComparison:
             RandomLayers(weights, wires=range(n_wires))
             return ret_type(qp.Z(0) @ qp.X(1))
 
-        qnode_def = qp.QNode(circuit, dev_def, shots=shots)
-        qnode = qp.QNode(circuit, dev, shots=shots)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
         grad_def = qp.grad(qnode_def, argnums=0)
         grad = qp.grad(qnode, argnums=0)
 
-        assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol)
-        assert pnp.allclose(grad(weights), grad_def(weights), atol=tol)
+        assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
+        assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
 
-    def test_four_qubit_random_circuit(self, device, tol, shots):
+    def test_four_qubit_random_circuit(self, device, tol):
         """Compare a four-qubit random circuit with lots of different gates to default.qubit"""
         n_wires = 4
         dev = device(n_wires)
@@ -225,7 +225,7 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        if shots:
+        if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
         gates = [
@@ -264,7 +264,7 @@ class TestComparison:
                     qp.apply(gate)
             return qp.expval(qp.Z(0))
 
-        qnode_def = qp.QNode(circuit, dev_def, shots=shots)
-        qnode = qp.QNode(circuit, dev, shots=shots)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
-        assert pnp.allclose(qnode(), qnode_def(), atol=tol)
+        assert pnp.allclose(qnode(), qnode_def(), atol=tol(dev.shots))

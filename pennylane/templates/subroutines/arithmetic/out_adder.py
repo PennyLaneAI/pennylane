@@ -157,6 +157,7 @@ class OutAdder(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
+        id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -199,7 +200,7 @@ class OutAdder(Operation):
             all_wires += self.hyperparameters["work_wires"]
 
         self.hyperparameters["mod"] = mod
-        super().__init__(wires=all_wires)
+        super().__init__(wires=all_wires, id=id)
 
     @property
     def resource_params(self) -> dict:

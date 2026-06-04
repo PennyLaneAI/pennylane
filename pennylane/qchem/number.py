@@ -61,6 +61,6 @@ def particle_number(orbitals):
         raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     sentence = FermiSentence({FermiWord({(0, i): "+", (1, i): "-"}): 1.0 for i in range(orbitals)})
-    sentence.prune()
+    sentence.simplify()
 
     return qubit_observable(sentence)

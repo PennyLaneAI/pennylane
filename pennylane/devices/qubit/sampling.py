@@ -29,9 +29,6 @@ from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 from .measure import flatten_state
 
-#: Tolerance for checking the normalization of probability arrays.
-_PROB_NORMALISATION_TOLERANCE = 1e-6
-
 
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
@@ -268,7 +265,7 @@ def measure_with_samples(
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*sorted_res, strict=True))
+        sorted_res = tuple(zip(*sorted_res))
 
     return sorted_res
 
@@ -330,7 +327,7 @@ def _measure_with_samples_diagonalizing_gates(
         processed_samples.append(shot)
 
     if shots.has_partitioned_shots:
-        return tuple(zip(*processed_samples, strict=True))
+        return tuple(zip(*processed_samples))
 
     return processed_samples[0]
 
@@ -396,11 +393,11 @@ def _measure_hamiltonian_with_samples(
             rng=rng,
             prng_key=prng_key,
         )
-        return sum(c * res for c, res in zip(mp.obs.terms()[0], results, strict=True))
+        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
     keys = jax_random_split(prng_key, num=shots.num_copies)
     unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys, strict=True)
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
@@ -431,7 +428,7 @@ def _measure_sum_with_samples(
 
     keys = jax_random_split(prng_key, num=shots.num_copies)
     unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys, strict=True)
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
     )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
@@ -513,9 +510,10 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     rng = np.random.default_rng(rng)
     norm = qp.math.sum(probs, axis=-1)
     norm_err = qp.math.abs(norm - 1.0)
+    cutoff = 1e-06
 
     norm_err = norm_err if is_state_batched else norm_err[..., np.newaxis]
-    if qp.math.any(norm_err > _PROB_NORMALISATION_TOLERANCE):
+    if qp.math.any(norm_err > cutoff):
         raise ValueError("probabilities do not sum to 1")
 
     basis_states = np.arange(2**num_wires)
@@ -562,7 +560,7 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-                for _key, prob in zip(keys, probs, strict=True)
+                for _key, prob in zip(keys, probs)
             ]
         )
     else:

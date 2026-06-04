@@ -14,11 +14,9 @@
 """The fermionic representation classes and functions."""
 
 import re
-import warnings
 from copy import copy
 
 from pennylane import fermi, math
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
 
 
@@ -138,7 +136,15 @@ class FermiWord(dict):
 
         symbol_map = {"+": "\u207a", "-": ""}
 
-        return " ".join((f"a{symbol_map[j]}({i[1]})" for i, j in self.sorted_dic.items()))
+        string = " ".join(
+            [
+                "a" + symbol_map[j] + "(" + i + ")"
+                for i, j in zip(
+                    [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
+                )
+            ]
+        )
+        return string
 
     def __str__(self):
         r"""String representation of a FermiWord."""
@@ -187,7 +193,7 @@ class FermiWord(dict):
             return self_fs + FermiSentence({other: -1.0})
 
         if isinstance(other, FermiSentence):
-            other_fs = FermiSentence({key: -val for key, val in other.items()})
+            other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
         if not isinstance(other, TensorLike):
@@ -507,7 +513,7 @@ class FermiSentence(dict):
             return self.__add__(other)
 
         if isinstance(other, FermiSentence):
-            other = FermiSentence({key: -val for key, val in other.items()})
+            other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
             return self.__add__(other)
 
         if not isinstance(other, TensorLike):
@@ -536,7 +542,7 @@ class FermiSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        self_fs = FermiSentence({key: -val for key, val in self.items()})
+        self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
         other_fs = FermiSentence({FermiWord({}): other})  # constant * I
         return self_fs + other_fs
 
@@ -567,7 +573,8 @@ class FermiSentence(dict):
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
             )
-        return FermiSentence({key: val * other for key, val in self.items()})
+        vals = [i * other for i in self.values()]
+        return FermiSentence(dict(zip(self.keys(), vals)))
 
     def __rmul__(self, other):
         r"""Reverse multiply a FermiSentence
@@ -586,7 +593,8 @@ class FermiSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        return FermiSentence({key: val * other for key, val in self.items()})
+        vals = [i * other for i in self.values()]
+        return FermiSentence(dict(zip(self.keys(), vals)))
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
@@ -627,16 +635,7 @@ class FermiSentence(dict):
 
         .. seealso:: :meth:`~.prune`
 
-        .. warning::
-
-            The ``simplify`` method is deprecated and will be removed in v0.47. Please use
-            the :meth:`~.prune` method instead.
-
         """
-        warnings.warn(
-            "FermiSentence.simplify is deprecated. Please use FermiSentence.prune instead.",
-            PennyLaneDeprecationWarning,
-        )
         self.prune(tol)
 
     def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):

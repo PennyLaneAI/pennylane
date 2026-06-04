@@ -279,6 +279,19 @@ class TestInputs:
                 shif=False,
             )
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Test that the id attribute can be set."""
+        template = qp.templates.TwoLocalSwapNetwork(
+            wires=range(4),
+            acquaintances=None,
+            weights=None,
+            fermionic=True,
+            shif=False,
+            id="a",
+        )
+        assert template.id == "a"
+
 
 class TestAttributes:
     """Test additional methods and attributes"""

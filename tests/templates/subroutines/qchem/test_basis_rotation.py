@@ -388,55 +388,73 @@ class TestDecomposition:
         assert np.allclose([qp.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
 
 
-@pytest.mark.parametrize(
-    ("wires", "unitary_matrix", "msg_match"),
-    [
-        (
-            [0, 1, 2],
-            np.array(
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    @pytest.mark.parametrize(
+        ("wires", "unitary_matrix", "msg_match"),
+        [
+            (
+                [0, 1, 2],
+                np.array(
+                    [
+                        [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                        [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    ]
+                ),
+                "The unitary matrix should be of shape NxN",
+            ),
+            (
+                [0, 1, 2],
+                np.array(
+                    [
+                        [0.21378719 + 0.0j, 0.0546265 - 0.79145487j, -0.2051466 + 0.2540723j],
+                        [0.0 + 0.0j, -0.00821925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                        [-0.0 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                    ]
+                ),
+                "The provided transformation matrix should be unitary.",
+            ),
+            (
+                [0],
+                np.array([[1.0]]),
+                "This template requires at least two wires",
+            ),
+        ],
+    )
+    def test_basis_rotation_exceptions(self, wires, unitary_matrix, msg_match):
+        """Test that BasisRotation template throws an exception if the parameters have illegal
+        shapes, types or values."""
+
+        dev = qp.device("default.qubit", wires=len(wires))
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg_match):
+            circuit()
+
+        with pytest.raises(ValueError, match=msg_match):
+            qp.BasisRotation.compute_decomposition(
+                wires=wires, unitary_matrix=unitary_matrix, check=True
+            )
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Test that the id attribute can be set."""
+        template = qp.BasisRotation(
+            wires=range(2),
+            unitary_matrix=qp.math.array(
                 [
-                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
+                    [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
                 ]
             ),
-            "The unitary matrix should be of shape NxN",
-        ),
-        (
-            [0, 1, 2],
-            np.array(
-                [
-                    [0.21378719 + 0.0j, 0.0546265 - 0.79145487j, -0.2051466 + 0.2540723j],
-                    [0.0 + 0.0j, -0.00821925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                    [-0.0 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-                ]
-            ),
-            "The provided transformation matrix should be unitary.",
-        ),
-        (
-            [0],
-            np.array([[1.0]]),
-            "This template requires at least two wires",
-        ),
-    ],
-)
-def test_basis_rotation_exceptions(wires, unitary_matrix, msg_match):
-    """Test that BasisRotation template throws an exception if the parameters have illegal
-    shapes, types or values."""
-
-    dev = qp.device("default.qubit", wires=len(wires))
-
-    @qp.qnode(dev)
-    def circuit():
-        qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
-        return qp.expval(qp.PauliZ(0))
-
-    with pytest.raises(ValueError, match=msg_match):
-        circuit()
-
-    with pytest.raises(ValueError, match=msg_match):
-        qp.BasisRotation.compute_decomposition(
-            wires=wires, unitary_matrix=unitary_matrix, check=True
+            id="a",
         )
+        assert template.id == "a"
 
 
 def circuit_template(unitary_matrix, check=False):

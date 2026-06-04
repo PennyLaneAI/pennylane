@@ -78,13 +78,13 @@ def draw(
         def circuit(a, w):
             qp.Hadamard(0)
             qp.CRX(a, wires=[0, 1])
-            qp.drawer.label(qp.Rot(*w, wires=[1]), "arbitrary")
+            qp.Rot(*w, wires=[1], id="arbitrary")
             qp.CRX(-a, wires=[0, 1])
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
     >>> print(qp.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●──────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
-    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70, "arbitrary")─╰RX(-2.30)─┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
+    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╰RX(-2.30)─┤ ╰<Z@Z>
 
     .. details::
         :title: Usage Details
@@ -92,8 +92,8 @@ def draw(
         By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
         >>> print(qp.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
-        0: ──H─╭●──────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
-        1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000, "arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
+        0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
+        1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
 
         Parameters can be omitted by requesting ``decimals=None``:
 
@@ -159,8 +159,8 @@ def draw(
         top to bottom:
 
         >>> print(qp.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
-        1: ────╭RX(2.30)──Rot(1.20,3.20,0.70, "arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
-        0: ──H─╰●──────────────────────────────────────────╰●─────────┤ ╰<Z@Z>
+        1: ────╭RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
+        0: ──H─╰●─────────────────────────────────────────╰●─────────┤ ╰<Z@Z>
 
         If the device or ``wire_order`` has wires not used by operations, those wires are omitted
         unless requested with ``show_all_wires=True``

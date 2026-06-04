@@ -294,19 +294,19 @@ class BasisRotation(Operation):
     resource_keys = {"dim", "is_real"}
 
     @classmethod
-    def _primitive_bind_call(cls, wires, unitary_matrix, check=False):
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
-            return type.__call__(cls, wires, unitary_matrix, check=check)  # pragma: no cover
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
 
-        return cls._primitive.bind(*wires, unitary_matrix, check=check)
+        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(wires=metadata[0], unitary_matrix=data[0])
 
-    def __init__(self, wires, unitary_matrix, check=False):
+    def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = math.shape(unitary_matrix)
 
         if M != N:
@@ -323,7 +323,7 @@ class BasisRotation(Operation):
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
-        super().__init__(unitary_matrix, wires=wires)
+        super().__init__(unitary_matrix, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

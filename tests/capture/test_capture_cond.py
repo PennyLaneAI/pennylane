@@ -648,20 +648,6 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    def test_circuit_cond_on_operator_jaxpr_check(self):
-        """Test that the cond has no output when the functions are an operator type."""
-
-        def f(pred):
-            return qp.cond(pred, qp.X, qp.Z)(0)
-
-        jaxpr = jax.make_jaxpr(f)(True).jaxpr
-        assert len(jaxpr.outvars) == 0
-        assert jaxpr.eqns[-1].primitive == cond_prim
-        assert jaxpr.eqns[-1].outvars == []
-
-        for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
-            assert branch.outvars == []
-
     @pytest.mark.parametrize(
         "pred, arg1, arg2, expected",
         [
@@ -715,6 +701,7 @@ class TestCondCircuits:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
+    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
@@ -1057,6 +1044,21 @@ class TestDynamicShapes:
 
         res = f(True, 6)  # slicing out the shape variable
         assert qp.math.allclose(res["result"], jax.numpy.arange(6))
+
+    def test_return_operators_with_dynamic_enabled(self):
+        """Test that we can return operators when dynamic shapes are enabled."""
+
+        def f(val, w):
+            return qp.cond(val, qp.X, false_fn=qp.Y)(w)
+
+        x_op = f(True, 0)
+        qp.assert_equal(x_op, qp.X(0))
+        y_op = f(False, 3)
+        qp.assert_equal(y_op, qp.Y(3))
+
+        jaxpr = jax.make_jaxpr(f)(False, 3)
+        [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
+        qp.assert_equal(x_op2, qp.X(3))
 
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""

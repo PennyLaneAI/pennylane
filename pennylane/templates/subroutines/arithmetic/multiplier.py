@@ -118,7 +118,7 @@ class Multiplier(Operation):
     resource_keys = {"num_x_wires", "mod", "num_work_wires"}
 
     def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -150,7 +150,7 @@ class Multiplier(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
         all_wires = x_wires + work_wires
-        super().__init__(wires=all_wires)
+        super().__init__(wires=all_wires, id=id)
 
     @property
     def resource_params(self) -> dict:

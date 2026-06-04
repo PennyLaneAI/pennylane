@@ -19,18 +19,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots, StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
-
-
-def test_adjoint_deprecated():
-    qs = QuantumScript([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
-    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
-        qs.adjoint()
 
 
 class TestInitialization:
@@ -939,9 +932,8 @@ def test_adjoint():
     m = [qp.expval(qp.PauliZ(0))]
     qs = QuantumScript(ops, m)
 
-    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
-        with qp.queuing.AnnotatedQueue() as q:
-            adj_qs = qs.adjoint()
+    with qp.queuing.AnnotatedQueue() as q:
+        adj_qs = qs.adjoint()
 
     assert len(q.queue) == 0  # not queued
 

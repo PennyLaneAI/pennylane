@@ -154,9 +154,9 @@ def cut_circuit_mc(
            [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
-    the qnode with :func:`~pennylane.set_shots`:
+    the qnode:
 
-    >>> results = qp.set_shots(circuit, shots=123)(x)
+    >>> results = circuit(x, shots=123)
     >>> results.shape
     (123, 2)
 
@@ -292,7 +292,7 @@ def cut_circuit_mc(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qp.device("default.qubit", wires=2)
+        >>> dev = qp.device("default.qubit", wires=2, shots=1)
         >>> fragment_tapes = [qp.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Note that the number of shots on the device is set to :math:`1` here since we

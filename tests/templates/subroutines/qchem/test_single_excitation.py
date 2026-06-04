@@ -180,27 +180,36 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.parametrize(
-    ("weight", "single_wires", "msg_match"),
-    [
-        (0.2, [0], "expected at least two wires"),
-        (0.2, [], "expected at least two wires"),
-        ([0.2, 1.1], [0, 1, 2], "Weight must be a scalar"),
-    ],
-)
-def test_single_excitation_unitary_exceptions(weight, single_wires, msg_match):
-    """Test that FermionicSingleExcitation throws an exception if ``weight`` or
-    ``single_wires`` parameter has illegal shapes, types or values."""
-    dev = qp.device("default.qubit", wires=5)
+class TestInputs:
+    """Test inputs and pre-processing."""
 
-    def circuit(weight=weight):
-        qp.FermionicSingleExcitation(weight=weight, wires=single_wires)
-        return qp.expval(qp.PauliZ(0))
+    @pytest.mark.parametrize(
+        ("weight", "single_wires", "msg_match"),
+        [
+            (0.2, [0], "expected at least two wires"),
+            (0.2, [], "expected at least two wires"),
+            ([0.2, 1.1], [0, 1, 2], "Weight must be a scalar"),
+        ],
+    )
+    def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
+        """Test that FermionicSingleExcitation throws an exception if ``weight`` or
+        ``single_wires`` parameter has illegal shapes, types or values."""
+        dev = qp.device("default.qubit", wires=5)
 
-    qnode = qp.QNode(circuit, dev)
+        def circuit(weight=weight):
+            qp.FermionicSingleExcitation(weight=weight, wires=single_wires)
+            return qp.expval(qp.PauliZ(0))
 
-    with pytest.raises(ValueError, match=msg_match):
-        qnode(weight=weight)
+        qnode = qp.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qnode(weight=weight)
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qp.FermionicSingleExcitation(0.4, wires=[1, 0, 2], id="a")
+        assert template.id == "a"
 
 
 def circuit_template(weight):

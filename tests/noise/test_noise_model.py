@@ -194,9 +194,6 @@ class TestNoiseModels:
         noise_model2 = qp.NoiseModel({fcond: noise1})
         assert noise_model != noise_model2
 
-        noise_model3 = qp.NoiseModel({fcond1: noise1, fcond: noise})
-        assert noise_model != noise_model3
-
         noise_model = qp.NoiseModel({fcond: noise}, {m_fcond: noise1})
         noise_model2 = qp.NoiseModel({fcond: noise}, {m_fcond: m_noise})
         assert noise_model != noise_model2

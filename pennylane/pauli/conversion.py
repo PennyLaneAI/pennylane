@@ -32,9 +32,6 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
-#: Tolerance for checking if a sparse matrix is Hermitian.
-_HERMITIAN_TOLERANCE = 1e-8
-
 
 def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
     """Validate matrix shape and wire order for Pauli decomposition.
@@ -422,7 +419,7 @@ def _check_hermitian_sparse(H):
         nnz = diff.count_nonzero()
     if nnz:
         max_diff = np.abs(diff.data).max()
-        if max_diff > _HERMITIAN_TOLERANCE:
+        if max_diff > 1e-8:
             raise ValueError(f"The matrix is not Hermitian. (max diff: {max_diff})")
 
 

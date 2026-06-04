@@ -32,12 +32,14 @@ class StateMP(StateMeasurement):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
     _shortname = "state"
 
-    def __init__(self, wires: Wires | None = None):
-        super().__init__(wires=wires)
+    def __init__(self, wires: Wires | None = None, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
@@ -115,10 +117,12 @@ class DensityMatrixMP(StateMP):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
-    def __init__(self, wires: Wires):
-        super().__init__(wires=wires)
+    def __init__(self, wires: Wires, id: str | None = None):
+        super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
@@ -138,7 +142,7 @@ class DensityMatrixMP(StateMP):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = {w: i for i, w in enumerate(wire_order)}
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not math.is_abstract(state) and math.any(math.iscomplex(state)):
@@ -147,7 +151,7 @@ class DensityMatrixMP(StateMP):
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        wire_map = {w: i for i, w in enumerate(wire_order)}
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
         if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):

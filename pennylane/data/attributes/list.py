@@ -84,7 +84,7 @@ class DatasetList(
         if not len(self) == len(__value):
             return False
 
-        return all(x == y for x, y in zip(self, __value, strict=True))
+        return all(x == y for x, y in zip(self, __value))
 
     def __str__(self) -> str:
         return str(list(self))

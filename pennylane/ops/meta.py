@@ -44,11 +44,11 @@ class Barrier(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, wires: WiresLike = (), only_visual=False):
+    def __init__(self, wires: WiresLike = (), only_visual=False, id=None):
         wires = Wires(wires)
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
@@ -117,9 +117,9 @@ class WireCut(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, wires: WiresLike = ()):
+    def __init__(self, wires: WiresLike = (), id=None):
         wires = Wires(wires)
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
         if not self._wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."

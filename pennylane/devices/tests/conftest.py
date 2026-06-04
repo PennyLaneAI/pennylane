@@ -41,14 +41,17 @@ LIST_CORE_DEVICES = {
 
 
 @pytest.fixture(scope="function")
-def tol(shots):  # pylint: disable=redefined-outer-name
+def tol():
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices, which allows us to define the
     standard for deterministic or stochastic test results dynamically."""
 
-    if shots is None:
-        return float(os.environ.get("TOL", TOL))
-    return TOL_STOCHASTIC
+    def _tol(shots):
+        if shots is None:
+            return float(os.environ.get("TOL", TOL))
+        return TOL_STOCHASTIC
+
+    return _tol
 
 
 @pytest.fixture(scope="session")
@@ -109,18 +112,11 @@ def skip_if():
 
 
 @pytest.fixture
-def shots(request) -> None | int:
-    """The number of shots to use during an execution."""
-    shots_value = request.config.getoption("--shots")
-    return None if shots_value in (None, "None") else int(shots_value)
-
-
-@pytest.fixture
-def validate_diff_method(device, diff_method, shots):  # pylint: disable=redefined-outer-name
+def validate_diff_method(device, diff_method, device_kwargs):
     """Skip tests if a device does not support a diff_method"""
     if diff_method in {"parameter-shift", "hadamard"}:
         return
-    if diff_method == "backprop" and shots is not None:
+    if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
     config = qp.devices.ExecutionConfig(gradient_method=diff_method)
@@ -268,6 +264,12 @@ def pytest_generate_tests(metafunc):
 
     for dev in devices_to_test:
         device_kwargs = {"name": dev}
+
+        # if shots specified in command line,
+        # add to the device kwargs
+        if opt.shots is not None:
+            # translate command line string to None if necessary
+            device_kwargs["shots"] = None if (opt.shots == "None") else int(opt.shots)
 
         # store user defined device kwargs
         device_kwargs.update(opt.device_kwargs)

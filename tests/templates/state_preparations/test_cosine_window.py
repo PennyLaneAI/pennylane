@@ -24,6 +24,7 @@ import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompose import DecomposeInterpreter
+from pennylane.wires import Wires
 
 
 @pytest.mark.jax
@@ -147,10 +148,21 @@ class TestDecomposition:
         assert np.allclose(state1, state2)
 
 
-def test_label():
-    """Test label method returns CosineWindow"""
-    op = qp.CosineWindow(wires=[0, 1])
-    assert op.label() == "CosineWindow"
+class TestRepresentation:
+    """Test id and label."""
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        wires = [0, 1, 2]
+        template = qp.CosineWindow(wires=wires, id="a")
+        assert template.id == "a"
+        assert template.wires == Wires(wires)
+
+    def test_label(self):
+        """Test label method returns CosineWindow"""
+        op = qp.CosineWindow(wires=[0, 1])
+        assert op.label() == "CosineWindow"
 
 
 class TestStateVector:

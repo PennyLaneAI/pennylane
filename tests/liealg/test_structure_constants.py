@@ -80,7 +80,7 @@ class TestAdjointRepr:
                 comm_res = 1j * dla[alpha].commutator(dla[beta])
 
                 res = sum(ad_rep[gamma, alpha, beta] * dla[gamma] for gamma in range(d))
-                res.prune()
+                res.simplify()
                 assert set(comm_res) == set(res)  # Compare keys
                 assert all(np.isclose(comm_res[k], res[k]) for k in res)
 
@@ -100,10 +100,10 @@ class TestAdjointRepr:
             for beta in range(d):
 
                 comm_res = 1j * dla[alpha].commutator(dla[beta])
-                comm_res.prune()
+                comm_res.simplify()
 
                 res = sum(ad_rep[gamma, alpha, beta] * dla[gamma] for gamma in range(d))
-                res.prune()
+                res.simplify()
                 assert set(comm_res) == set(res)  # Compare keys
                 assert all(np.isclose(comm_res[k], res[k]) for k in res)
 

@@ -215,6 +215,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
+        id: str | None = None,
     ):  # pylint: disable=too-many-arguments
         control_wires = Wires(control_wires)
 
@@ -264,7 +265,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             "wire_manager": wire_manager,
         }
 
-        super().__init__(data, wires=all_wires)
+        super().__init__(data, wires=all_wires, id=id)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -493,6 +494,7 @@ class HybridQRAM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
+        id: str | None = None,
     ):  # pylint: disable=too-many-arguments
 
         if isinstance(data, (list, tuple)):
@@ -552,7 +554,7 @@ class HybridQRAM(Operation):
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
 
-        super().__init__(data, wires=all_wires)
+        super().__init__(data, wires=all_wires, id=id)
 
         self._hyperparameters = {
             "select_wires": select_wires,
@@ -861,6 +863,8 @@ class SelectOnlyQRAM(Operation):
             If provided, only entries whose select bits match this value are loaded.
             The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
             and cannot be used if no ``select_wires`` are provided.
+        id (str or None):
+            Optional name for the operation.
 
     Raises:
         ValueError: if the ``data`` are of the wrong length, a ``select_value`` is provided without
@@ -953,6 +957,7 @@ class SelectOnlyQRAM(Operation):
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
         select_value: int | None = None,
+        id: str | None = None,
     ):
 
         if isinstance(data, (list, tuple)):
@@ -997,7 +1002,9 @@ class SelectOnlyQRAM(Operation):
             "select_value": select_value,
         }
 
-        super().__init__(data, wires=list(control_wires) + list(target_wires) + list(select_wires))
+        super().__init__(
+            data, wires=list(control_wires) + list(target_wires) + list(select_wires), id=id
+        )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):

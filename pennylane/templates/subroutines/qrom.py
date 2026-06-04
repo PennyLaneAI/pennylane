@@ -195,6 +195,7 @@ class QROM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
+        id=None,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
 
         control_wires = Wires(control_wires)
@@ -241,7 +242,7 @@ class QROM(Operation):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
-        super().__init__(data, wires=all_wires)
+        super().__init__(data, wires=all_wires, id=id)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())

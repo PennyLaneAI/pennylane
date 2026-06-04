@@ -375,8 +375,8 @@ def finite_diff(
     >>> qp.jacobian(circuit)(params)
     array([-0.38751725, -0.18884792, -0.38355708])
 
-    When differentiating QNodes with multiple measurements using Autograd, the outputs of the QNode first
-    need to be stacked. The reason is that this framework only allows differentiating functions with array or
+    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
+    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
     tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
     post-processing.
 

@@ -276,6 +276,7 @@ class OutPoly(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
+        id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         r"""Initialize the OutPoly class"""
@@ -335,7 +336,7 @@ class OutPoly(Operation):
                 "None of the wires in a register should be included in other register."
             )
 
-        super().__init__(wires=all_wires)
+        super().__init__(wires=all_wires, id=id)
 
     def _flatten(self):
         metadata1 = tuple((key, value) for key, value in self.hyperparameters.items())

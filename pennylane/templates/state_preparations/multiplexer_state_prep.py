@@ -67,7 +67,7 @@ class MultiplexerStatePreparation(Operation):
     resource_keys = {"num_wires"}
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments
-    def __init__(self, state_vector, wires):
+    def __init__(self, state_vector, wires, id=None):
 
         wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
@@ -84,7 +84,7 @@ class MultiplexerStatePreparation(Operation):
                 )
 
         self.state_vector = state_vector
-        super().__init__(state_vector, wires=wires)
+        super().__init__(state_vector, wires=wires, id=id)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):

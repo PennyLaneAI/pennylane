@@ -28,9 +28,6 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
-#: Threshold for identifying singular matrices in non-equidistant shift rules.
-_SINGULAR_MATRIX_THRESHOLD = 1e-6
-
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     """Utility function to process gradient rules.
@@ -180,7 +177,7 @@ def _get_shift_rule(frequencies, shifts=None):
     else:  # non-equidistant case
         sin_matrix = -4 * np.sin(np.outer(shifts, frequencies))
         det_sin_matrix = np.linalg.det(sin_matrix)
-        if abs(det_sin_matrix) < _SINGULAR_MATRIX_THRESHOLD:
+        if abs(det_sin_matrix) < 1e-6:
             warnings.warn(
                 f"Solving linear problem with near zero determinant ({det_sin_matrix}) "
                 "may give unstable results for the parameter shift rules."

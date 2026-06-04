@@ -187,7 +187,6 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
-from warnings import warn
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -420,10 +419,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     to know about wire labels) or ``(*parameters, wires, **hyperparameters)``, where ``parameters``, ``wires``, and
     ``hyperparameters`` are the respective attributes of the operator class.
 
+    .. warning::
+
+        The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
+        id (str | None): *Deprecated* A custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
 
     **Example**
 
@@ -466,6 +471,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
                 # The parent class expects all trainable parameters to be fed as positional
                 # arguments, and all wires acted on fed as a keyword argument.
+                # The id keyword argument allows users to give their instance a custom name.
                 super().__init__(angle, wires=all_wires)
 
             @property
@@ -795,16 +801,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
-        warnings.warn(
-            "The Operator.hash property has been deprecated, use hash(op) instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return hash(self)
-
-    def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
-
-    def __hash__(self) -> int:
         return hash(
             (
                 str(self.name),
@@ -813,6 +809,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 _process_data(self),
             )
         )
+
+    def __eq__(self, other) -> bool:
+        return qp.equal(self, other)
+
+    def __hash__(self) -> int:
+        return self.hash
 
     @staticmethod
     def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
@@ -1014,6 +1016,22 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """String for the name of the operator."""
         return self._name
 
+    @property
+    def id(self) -> str:
+        """Custom string to label a specific operator instance.
+
+        .. warning::
+
+            The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
+        """
+        warnings.warn(
+            "The 'id' argument is deprecated and will be removed in v0.46.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._id
+
     @name.setter
     def name(self, value: str):
         self._name = value
@@ -1078,8 +1096,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         op_label = base_label or self.__class__.__name__
 
+        if self._id is not None:
+            warnings.warn(
+                "Using 'id' to add a custom label to your operator is deprecated. "
+                "Please use 'pennylane.drawer.label' to add a custom label to "
+                "your operator instead. ",
+                PennyLaneDeprecationWarning,
+            )
+
         if len(self.data) == 0:
-            return op_label
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
@@ -1109,13 +1135,27 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # Format each parameter individually, excluding those that lead to empty strings
         param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
         inner_string = ",\n".join(param_strings)
+        # Include operation's id in string
+        if self._id is not None:
+            if inner_string == "":
+                inner_string = f'"{self._id}"'
+            else:
+                inner_string = f'{inner_string},"{self._id}"'
         if inner_string == "":
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
 
-    def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
+    def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
 
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
+
+        self._id: str = id
         self._pauli_rep: qp.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
@@ -1561,7 +1601,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @property
-    def _queue_category(self) -> Literal["_ops", "_measurements"]:
+    def _queue_category(self) -> Literal["_ops", "_measurements", None]:
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
         This property is a temporary solution that should not exist long-term and should not be
@@ -1570,6 +1610,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
+            * `None` (deprecated)
         """
         return "_ops"
 
@@ -1792,10 +1833,16 @@ class Operation(Operator):
     please see the documentation for :class:`~.gradients.param_shift`,
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
+    .. warning::
+
+        The ``id`` argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
+        id (str | None): *Deprecated* A custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     @property
@@ -1835,26 +1882,15 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    # pylint: disable=useless-return
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.
 
-        .. warning::
-
-            ``Operation.basis`` is deprecated in v0.46 and will be removed in v0.47.
-            To check commutivity, :func:`~.is_commuting` should be used instead.
-
         For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
         ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
         """
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
         return None
 
     @property
@@ -1941,8 +1977,9 @@ class Operation(Operator):
         self,
         *params: TensorLike,
         wires: WiresLike | None = None,
+        id: str | None = None,
     ):
-        super().__init__(*params, wires=wires)
+        super().__init__(*params, wires=wires, id=id)
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
@@ -1960,6 +1997,8 @@ class Channel(Operation, abc.ABC):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     @staticmethod
@@ -2146,6 +2185,8 @@ class CVOperation(CV, Operation):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     @classproperty
@@ -2265,6 +2306,8 @@ class CVObservable(CV, Operator):
        params (tuple[tensor_like]): trainable parameters
        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
            If not given, args[-1] is interpreted as wires.
+       id (str): custom label given to an operator instance,
+           can be useful for some applications where the instance has to be identified
     """
 
     is_verified_hermitian = True

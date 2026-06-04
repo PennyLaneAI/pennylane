@@ -34,6 +34,9 @@ from ._qutrit_device import QutritDevice
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+# tolerance for numerical errors
+tolerance = 1e-10
+
 OMEGA = qp.math.exp(2 * np.pi * 1j / 3)
 
 
@@ -194,7 +197,9 @@ class DefaultQutrit(QutritDevice):
     def define_wire_map(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
-        return {w: i for i, w in enumerate(wires)}
+        consecutive_wires = range(self.num_wires)
+        wire_map = zip(wires, consecutive_wires)
+        return dict(wire_map)
 
     @debug_logger
     def apply(self, operations, rotations=None, **kwargs):

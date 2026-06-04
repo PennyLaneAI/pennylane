@@ -428,9 +428,20 @@ class TestDecomposition:
         assert qp.math.allclose(circuit(), jit_circuit())
 
 
-def test_same_wires():
-    """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
-    common element"""
+class TestInputs:
+    """Test inputs and pre-processing."""
 
-    with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
-        qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
+    def test_same_wires(self):
+        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+        common element"""
+
+        with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
+            qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qp.QuantumPhaseEstimation(
+            np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
+        )
+        assert template.id == "a"

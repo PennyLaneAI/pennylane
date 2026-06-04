@@ -76,6 +76,15 @@ def test_single_wire_error(bad_wires):
         qp.GroverOperator(wires=bad_wires)
 
 
+@pytest.mark.usefixtures("ignore_id_deprecation")
+def test_id():
+    """Assert id keyword works"""
+
+    op = qp.GroverOperator(wires=(0, 1), id="hello")
+
+    assert op.id == "hello"
+
+
 decomp_3wires = [
     qp.Hadamard,
     qp.Hadamard,

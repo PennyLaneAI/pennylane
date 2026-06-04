@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import execute
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
 
@@ -633,8 +634,8 @@ class TestJaxExecuteIntegration:
             qscript = qp.tape.QuantumScript(
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
-            [qscript], _ = qp.decompose(
-                qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
+            qscript = qscript.expand(
+                stop_at=lambda obj: qp.devices.default_qubit.stopping_condition(obj)
             )
             return execute([qscript], device, **execute_kwargs)[0]
 
@@ -652,7 +653,8 @@ class TestJaxExecuteIntegration:
 
             dev = qp.device("default.qubit", wires=1)
 
-            res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
 
             expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
                 np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
@@ -661,7 +663,8 @@ class TestJaxExecuteIntegration:
 
             jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
 
-            res = jac_fn(a, p, device=dev)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                res = jac_fn(a, p, device=dev)
 
             expected = jax.numpy.array(
                 [

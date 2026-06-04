@@ -16,12 +16,13 @@ This module contains the qp.measure measurement.
 """
 
 import uuid
+import warnings
 from collections.abc import Hashable
 from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -112,6 +113,7 @@ class MidMeasure(Operator):
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
+        id (str | None): *Deprecated* Custom unique id given to a measurement instance.
         meas_uid (str | None): Custom unique id given to a measurement instance.
     """
 
@@ -130,7 +132,16 @@ class MidMeasure(Operator):
         reset: bool = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
+        id: str | None = None,
     ):
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+            )
+            # Only override if meas_uid wasn't explicitly provided
+            if meas_uid is None:
+                meas_uid = id
         super().__init__(wires=Wires(wires))
         self._hyperparameters = {"reset": reset, "postselect": postselect, "meas_uid": meas_uid}
         self._name = "MidMeasureMP"
@@ -184,7 +195,8 @@ class MidMeasure(Operator):
     def resource_params(self) -> dict:
         return {}
 
-    def __hash__(self):
+    @property
+    def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
         return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.meas_uid))
 

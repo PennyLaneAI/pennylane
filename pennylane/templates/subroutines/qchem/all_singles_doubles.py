@@ -138,6 +138,7 @@ class AllSinglesDoubles(Operation):
         hf_state: Sequence[int],
         singles: Sequence[tuple[int, int]] | None = None,
         doubles: Sequence[tuple[int, int, int, int]] | None = None,
+        id=None,
     ):
         wires = Wires(wires)
         if len(wires) < 2:
@@ -175,18 +176,18 @@ class AllSinglesDoubles(Operation):
             "doubles": doubles,
         }
 
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     @classmethod
     def _primitive_bind_call(
-        cls, weights, wires, hf_state, singles=None, doubles=None
+        cls, weights, wires, hf_state, singles=None, doubles=None, id=None
     ):  # pylint: disable=arguments-differ
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
         hf_state = math.array(hf_state)
         weights = math.array(weights)
-        return cls._primitive.bind(weights, wires, hf_state, singles, doubles)
+        return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
 
     @property
     def resource_params(self) -> dict:

@@ -88,14 +88,14 @@ class ArbitraryStatePreparation(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weights, wires):
+    def __init__(self, weights, wires, id=None):
         shape = qp.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(
                 f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
             )
 
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

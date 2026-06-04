@@ -37,6 +37,8 @@ class AmplitudeEmbedding(StatePrep):
         wires (Any or Iterable[Any]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
 
     Example:
@@ -111,13 +113,16 @@ class AmplitudeEmbedding(StatePrep):
     def resource_params(self):
         return {"num_wires": len(self.wires)}
 
-    def __init__(self, features, wires, *, pad_with=None, normalize=False, validate_norm=True):
+    def __init__(
+        self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
+    ):
         super().__init__(
             features,
             wires=wires,
             pad_with=pad_with,
             normalize=normalize,
             validate_norm=validate_norm,
+            id=id,
         )
 
 

@@ -52,7 +52,7 @@ def _construct_tf_autograph_pipeline(
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
     This function determines the execution function (`execute_fn`) and gradient method specifically
-    for the Autograph interface.
+    for the TensorFlow Autograph interface.
 
     Args:
         config (qp.devices.ExecutionConfig): resolved execution configuration
@@ -184,7 +184,7 @@ def _get_ml_boundary_execute(
     Args:
         resolved_execution_config (ExecutionConfig): resolved execution configuration set-up for execution
         differentiable (bool): Specifies if the operation should be differentiable within the framework.
-            Defaults to ``False``.
+            Relevant for TensorFlow and similar interfaces. Defaults to ``False``.
 
     Returns:
         Callable: Execution function for the specified machine learning framework.

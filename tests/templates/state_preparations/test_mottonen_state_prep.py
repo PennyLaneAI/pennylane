@@ -431,6 +431,12 @@ class TestInputs:
         with pytest.raises(ValueError, match="state_vector must be one-dimensional"):
             qp.MottonenStatePreparation(state_vector, 2)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qp.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")
+        assert template.id == "a"
+
 
 class TestGradient:
     """Tests gradients."""

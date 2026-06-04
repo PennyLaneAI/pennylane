@@ -32,6 +32,7 @@ class Evolution(Exp):
         base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
+        id (str): id for the Evolution operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
@@ -76,8 +77,8 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param=1):
-        super().__init__(generator, coeff=-1j * param)
+    def __init__(self, generator, param=1, id=None):
+        super().__init__(generator, coeff=-1j * param, id=id)
         self._data = (param,)
 
     def __repr__(self):

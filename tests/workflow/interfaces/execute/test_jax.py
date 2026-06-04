@@ -211,7 +211,6 @@ class TestJaxExecuteIntegration:
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
         assert np.allclose(res, -jnp.sin(a), atol=atol_for_shots(shots))
 
-    @pytest.mark.local_salt(1)
     def test_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test jacobian calculation"""
 

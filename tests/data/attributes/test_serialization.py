@@ -192,7 +192,7 @@ H_TWO_QUBITS = np.array(
             shots=50,
             trainable_params=[0, 1],
         ),
-        Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1)),
+        Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
         Sum(
             qp.Hermitian(H_ONE_QUBIT, 2),
             qp.Hermitian(H_TWO_QUBITS, [0, 1]),
@@ -223,7 +223,7 @@ def test_pennylane_pytree_roundtrip(obj_in: Any):
                 [qp.expval(2 * qp.X(0))],
                 trainable_params=[0, 1],
             ),
-            Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1)),
+            Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
             Sum(
                 qp.Hermitian(H_ONE_QUBIT, 2),
                 qp.Hermitian(H_TWO_QUBITS, [0, 1]),

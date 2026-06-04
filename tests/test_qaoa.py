@@ -1243,8 +1243,7 @@ class TestIntegration:
             for w in wires:
                 qp.Hadamard(wires=w)
 
-            qaoa_layer(params[0][0], params[1][0])
-            qaoa_layer(params[0][1], params[1][1])
+            qp.layer(qaoa_layer, 2, params[0], params[1])
 
         # Defines the device and the QAOA cost function
         dev = qp.device("default.qubit", wires=len(wires))
@@ -1283,8 +1282,7 @@ class TestIntegration:
             for w in wires:
                 qp.Hadamard(wires=w)
 
-            qaoa_layer(params[0][0], params[1][0])
-            qaoa_layer(params[0][1], params[1][1])
+            qp.layer(qaoa_layer, 2, params[0], params[1])
 
         # Defines the device and the QAOA cost function
         dev = qp.device("default.qubit", wires=len(wires))

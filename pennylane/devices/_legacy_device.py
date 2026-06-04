@@ -295,7 +295,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         >>> dev.wire_map()
         OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
         """
-        wire_map = {w: i for i, w in enumerate(wires)}
+        consecutive_wires = Wires(range(self.num_wires))
+
+        wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
     def order_wires(self, subset_wires):
@@ -647,7 +649,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         .. warning::
 
             This method will be tracked by autodifferentiation libraries,
-            such as Autograd, JAX, and Torch. Please make sure
+            such as Autograd, JAX, TensorFlow, and Torch. Please make sure
             to use ``qp.math`` for autodiff-agnostic tensor processing
             if required.
 

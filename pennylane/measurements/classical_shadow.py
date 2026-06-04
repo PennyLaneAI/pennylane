@@ -41,6 +41,8 @@ class ClassicalShadowMP(MeasurementTransform):
     Args:
         wires (.Wires): The wires the measurement process applies to.
         seed (Union[int, None]): The seed used to generate the random measurements
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
     _shortname = "shadow"
@@ -49,21 +51,24 @@ class ClassicalShadowMP(MeasurementTransform):
         self,
         wires: WiresLike | None = None,
         seed: int | None = None,
+        id: str | None = None,
     ):
         self.seed = seed
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
     def _flatten(self):
         metadata = (("wires", self.wires), ("seed", self.seed))
         return (None, None), metadata
 
-    def __hash__(self):
+    @property
+    def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
             self.seed,
             tuple(self.wires.tolist()),
         )
+
         return hash(fingerprint)
 
     def process(self, tape, device):
@@ -429,6 +434,8 @@ class ShadowExpvalMP(MeasurementTransform):
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
     _shortname = "shadowexpval"
@@ -444,17 +451,17 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    # pylint: disable=arguments-renamed
     def __init__(
         self,
         H: Operator | Sequence[Operator],
         seed: int | None = None,
         k: int = 1,
+        id: str | None = None,
     ):
         self.seed = seed
         self.H = H
         self.k = k
-        super().__init__()
+        super().__init__(id=id)
 
     # pylint: disable=arguments-differ
     @classmethod
@@ -611,9 +618,8 @@ def shadow_expval(
 
                 .. code-block:: python
 
-                    dev = qp.device("default.qubit", seed=42)
+                    dev = qp.device("default.qubit", seed=42, shots=100)
 
-                    @qp.set_shots(100)
                     @qp.qnode(dev)
                     def circuit():
                         qp.H(0)

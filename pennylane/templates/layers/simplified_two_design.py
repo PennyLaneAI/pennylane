@@ -112,7 +112,7 @@ class SimplifiedTwoDesign(Operation):
 
     resource_keys = {"num_wires", "n_layers"}
 
-    def __init__(self, initial_layer_weights, weights, wires):
+    def __init__(self, initial_layer_weights, weights, wires, id=None):
         shape = math.shape(weights)
 
         if len(shape) > 1:
@@ -134,7 +134,7 @@ class SimplifiedTwoDesign(Operation):
 
         self.n_layers = shape[0]
 
-        super().__init__(initial_layer_weights, weights, wires=wires)
+        super().__init__(initial_layer_weights, weights, wires=wires, id=id)
 
     @property
     def num_params(self):

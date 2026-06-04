@@ -253,7 +253,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True
+        self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
 
@@ -298,7 +298,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
     @property
     def resource_params(self) -> dict:
@@ -656,6 +656,7 @@ class TrotterizedQfunc(Operation):
         n=1,
         order=2,
         reverse=False,
+        id=None,
         **non_trainable_kwargs,
     ):
         # This class requires the input function (qfunc) has a very specific
@@ -679,7 +680,7 @@ class TrotterizedQfunc(Operation):
         self._hyperparameters["qfunc"] = qfunc
         self._hyperparameters["reverse"] = reverse
 
-        super().__init__(time, *trainable_args, wires=wires)
+        super().__init__(time, *trainable_args, wires=wires, id=id)
 
     def decomposition(self) -> list[Operator]:
         """The decomposition"""

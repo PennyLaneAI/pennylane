@@ -20,8 +20,27 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.fourier.circuit_spectrum import circuit_spectrum
 from pennylane.fourier.mark import mark
+
+
+def test_deprecated_usage():
+    """Tests that an informative warning is raised when a user
+    uses 'id' with 'circuit_spectrum'"""
+
+    dev = qp.device("default.qubit", wires=1)
+
+    @qp.qnode(dev)
+    def _circuit(x):
+        qp.RX(x, wires=0, id="x")
+        return qp.expval(qp.PauliZ(wires=0))
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="Using 'id' with 'circuit_spectrum' is deprecated"
+    ):
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            _ = circuit_spectrum(_circuit)(0.1)
 
 
 class TestCircuits:

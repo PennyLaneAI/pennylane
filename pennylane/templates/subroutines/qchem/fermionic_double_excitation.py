@@ -523,7 +523,7 @@ class FermionicDoubleExcitation(Operation):
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
-    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike):
+    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
         wires1 = Wires(wires1)
         wires2 = Wires(wires2)
         if len(wires1) < 2:
@@ -550,7 +550,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
         wires = wires1 + wires2
-        super().__init__(weight, wires=wires)
+        super().__init__(weight, wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

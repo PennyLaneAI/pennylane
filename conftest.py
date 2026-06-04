@@ -15,7 +15,6 @@
 # pylint: disable = missing-module-docstring
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
-
 import pytest
 from sybil import Sybil
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
@@ -65,13 +64,6 @@ def local_decomp_context():
     """enable and disable graph-decomposition around each test."""
     with qp.decomposition.local_decomps():
         yield
-
-
-def pytest_configure(config):
-    """Used to amend to the pytest.ini used for testing."""
-    config.addinivalue_line(
-        "filterwarnings", "error::pennylane.exceptions.PennyLaneDeprecationWarning"
-    )
 
 
 pytest_collect_file = Sybil(

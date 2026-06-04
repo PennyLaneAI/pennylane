@@ -45,6 +45,18 @@ class DummyDevice(DefaultGaussian):
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
+@pytest.fixture
+def ignore_id_deprecation():
+    """Fixture to suppress PennyLaneDeprecationWarning for 'id' tests."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=PennyLaneDeprecationWarning,
+            message="The 'id' argument is deprecated",
+        )
+        yield
+
+
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""

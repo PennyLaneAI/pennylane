@@ -88,7 +88,7 @@ class ControlledSequence(SymbolicOp, Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], control=metadata[0])
 
-    def __init__(self, base, control):
+    def __init__(self, base, control, id=None):
         control_wires = Wires(control)
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
@@ -99,7 +99,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
         self._name = "ControlledSequence"
 
-        super().__init__(base)
+        super().__init__(base, id=id)
 
     @property
     def resource_params(self) -> dict:
@@ -110,12 +110,13 @@ class ControlledSequence(SymbolicOp, Operation):
         }
         return params
 
-    def __hash__(self):
+    @property
+    def hash(self):
         return hash(
             (
                 str(self.name),
                 self.control,
-                hash(self.base),
+                self.base.hash,
             )
         )
 

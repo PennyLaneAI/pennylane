@@ -153,7 +153,7 @@ class RotosolveOptimizer:
         ``RotosolveOptimizer`` will only update parameters that are *explicitly*
         marked as trainable. This can be done via ``requires_grad`` if using Autograd
         or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
-        manner with JAX.
+        manner with TensorFlow or JAX.
 
     Args:
         substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
@@ -257,6 +257,8 @@ class RotosolveOptimizer:
     The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
     gradient-based optimizers when using Autograd or Torch.
+    With TensorFlow, a ``tf.Variable`` inside a ``tf.GradientTape`` may be used to
+    mark variables as trainable.
 
     Now we carry out the optimization.
     The minimized cost of the intermediate univariate reconstructions can

@@ -112,7 +112,7 @@ class GroverOperator(Operation):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
         return tuple(), (self.wires, hyperparameters)
 
-    def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
+    def __init__(self, wires: WiresLike, work_wires: WiresLike = (), id=None):
         wires = Wires(wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -124,7 +124,7 @@ class GroverOperator(Operation):
             "work_wires": work_wires,
         }
 
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:

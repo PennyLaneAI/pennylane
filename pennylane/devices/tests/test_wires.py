@@ -22,12 +22,12 @@ from pennylane import numpy as np
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
 
-def make_simple_circuit_expval(device, wires, shots):
+def make_simple_circuit_expval(device, wires):
     """Factory for a qnode returning expvals."""
 
     n_wires = len(wires)
 
-    @qp.qnode(device, shots=shots)
+    @qp.qnode(device)
     def circuit():
         qp.RX(0.5, wires=wires[0 % n_wires])
         qp.RY(2.0, wires=wires[1 % n_wires])
@@ -57,13 +57,13 @@ class TestWiresIntegration:
     )
     @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
     def test_wires_expval(
-        self, device, circuit_factory, wires1, wires2, shots, tol
+        self, device, circuit_factory, wires1, wires2, tol
     ):  # pylint: disable=too-many-arguments
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
         dev2 = device(wires2)
 
-        circuit1 = circuit_factory(dev1, wires1, shots)
-        circuit2 = circuit_factory(dev2, wires2, shots)
+        circuit1 = circuit_factory(dev1, wires1)
+        circuit2 = circuit_factory(dev2, wires2)
 
-        assert np.allclose(circuit1(), circuit2(), atol=tol)
+        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.shots))

@@ -556,8 +556,8 @@ class TestMapToResourceOp:
         class DummyOp(Operation):
             num_wires = 2
 
-            def __init__(self, theta, wires=None):
-                super().__init__(theta, wires=wires)
+            def __init__(self, theta, wires=None, id=None):
+                super().__init__(theta, wires=wires, id=id)
 
             @staticmethod
             def compute_decomposition(theta, wires):

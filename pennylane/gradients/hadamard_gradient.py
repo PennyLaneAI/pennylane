@@ -16,6 +16,7 @@ This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 
+import warnings
 from functools import partial
 from itertools import islice
 from typing import Literal
@@ -24,6 +25,7 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Sum
@@ -107,6 +109,11 @@ def hadamard_grad(
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
 
+    .. warning::
+        Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"``
+        or ``mode="standard"`` has been deprecated and will no longer be supported in 0.46. An ``aux_wire`` will
+        no longer be automatically assigned.
+
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
@@ -114,6 +121,8 @@ def hadamard_grad(
             trainable parameters are returned. Note that the indices are with respect to
             the list of trainable parameters.
         aux_wire (pennylane.wires.Wires or None): Auxiliary wire to be used for the Hadamard tests.
+            If ``None`` (the default) and ``mode`` is "standard" or "reversed", a suitable wire
+            is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
@@ -438,10 +447,13 @@ def hadamard_grad(
     # unless using direct or reversed-direct modes
 
     if mode in ["standard", "reversed"] and aux_wire is None:
-        raise ValueError("""
-            The reversed and standard modes of hadamard_gradient require an auxiliary wire. Please 
-            specify an auxiliary in the aux_wire argument.
-            """)
+        warnings.warn(
+            """
+            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will
+            no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
+            """,
+            PennyLaneDeprecationWarning,
+        )
 
     aux_wire = (
         _get_aux_wire(aux_wire, tape, device_wires)

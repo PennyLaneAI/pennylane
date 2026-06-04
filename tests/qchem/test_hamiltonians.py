@@ -217,7 +217,7 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
 
-    h.prune(tol=1e-7)
+    h.simplify(tol=1e-7)
 
     assert pnp.allclose(list(h.values()), list(h_ref.values()))
     assert h.keys() == h_ref.keys()

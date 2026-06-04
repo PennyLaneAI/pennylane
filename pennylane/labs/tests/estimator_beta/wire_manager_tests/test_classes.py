@@ -54,7 +54,7 @@ class TestAllocate:
     @pytest.mark.parametrize(
         "num_wires, state, restored, error_msg",
         (
-            # (0, "zero", False, "num_wires must be a positive integer,"),  # TODO: @Jaybsoni to add once set_decomp bug fixed
+            (0, "zero", False, "num_wires must be a positive integer,"),
             (2.3, "zero", False, "num_wires must be a positive integer,"),
             (-4, "zero", False, "num_wires must be a positive integer,"),
             (1, "NotZero", False, "'NotZero' is not a valid AllocateState"),
@@ -250,7 +250,7 @@ class TestDeallocate:
                 True,
                 "Must provide the `allocated_register` when deallocating an ANY state register",
             ),
-            # (0, None, "zero", False, "num_wires must be a positive integer,"),  # TODO: @Jaybsoni to add once set_decomp bug fixed
+            (0, None, "zero", False, "num_wires must be a positive integer,"),
             (2.3, None, "zero", False, "num_wires must be a positive integer,"),
             (-4, None, "zero", False, "num_wires must be a positive integer,"),
             (1, None, "NotZero", False, "'NotZero' is not a valid AllocateState"),

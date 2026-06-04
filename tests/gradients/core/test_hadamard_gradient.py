@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
 
 
@@ -501,24 +501,24 @@ class TestDifferentModes:
         assert standard.call_count == 1
         assert reverse.call_count == 0
 
-    def test_aux_wire_none_raises(self):
+    def test_aux_wire_none_deprecated(self):
         t = np.array(0.0)
 
         op = qp.evolve(qp.X(0) @ qp.X(1) + qp.Y(2) + qp.Z(0) @ qp.Z(1), t)
         mp = qp.expval(qp.Z(0) @ qp.X(1) + qp.Y(0) + qp.X(0) @ qp.Z(1))
         tape = qp.tape.QuantumScript([op], [mp, qp.probs((0, 1))])
 
-        with pytest.raises(
-            ValueError,
-            match="require an auxiliary wire",
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing a value of None to aux_wire",
         ):
             _, _ = qp.gradients.hadamard_grad(tape, mode="standard", aux_wire=None)
 
         tape = qp.tape.QuantumScript([op], [mp])
 
-        with pytest.raises(
-            ValueError,
-            match="require an auxiliary wire",
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing a value of None to aux_wire",
         ):
             _, _ = qp.gradients.hadamard_grad(tape, mode="reversed", aux_wire=None)
 

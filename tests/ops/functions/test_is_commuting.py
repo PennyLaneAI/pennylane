@@ -38,47 +38,6 @@ control_base_map_data = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class DummyOp(qp.operation.Operator):
-    """An operator that hasn't been seen before."""
-
-
-test_cases = [
-    # things commuting with identities, global phases.
-    (qp.X(0), qp.GlobalPhase(0.5), True),
-    (qp.X(0), qp.GlobalPhase(0.5, wires=(0, 1, 2)), True),
-    (qp.QFT((0, 1, 2)), qp.I((0, 1, 2)), True),
-    (DummyOp((0, 1)), qp.GlobalPhase(0.5, wires=0), True),
-    # controlled versions of operators.
-    (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(0), False),
-    (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
-    (qp.ctrl(qp.QFT((0, 1, 2)), 3), qp.Z(3), True),
-    (qp.ctrl(qp.I(0), (1, 2)), qp.RX(0.5, 0), True),
-    # adjoint versions of operators
-    (qp.adjoint(qp.U1(0.5, 0)), qp.Z(0), True),
-    (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2))), qp.T(0), True),
-    # pow
-    (qp.Z(0) ** 0.5, qp.Z(0), True),
-    (qp.H(0) ** 2.5, qp.H(0), True),
-    (qp.GlobalPhase(0.5, 0) ** 0.25, qp.H(0), True),
-    # various things in the same group
-    (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
-    (qp.H(0), qp.H(0), True),
-    (qp.BasisState((0, 1), (0, 1)), qp.X(1), True),
-    (qp.BasisState((0, 1), (0, 1)), qp.X(0), True),
-    # various things that shouldn't commute
-    (qp.U2(0.5, 2.4, 0), qp.U2(-0.7, 1.9, wires=0), False),
-    (qp.Rot(1.2, 2.3, 3.4, 0), qp.Rot(0.12, 0.23, 0.34, 0), False),
-]
-
-
-@pytest.mark.parametrize("op1, op2, expected", test_cases)
-def test_various_cases(op1, op2, expected):
-    """Parameterize over various things that should and shouldn't commute."""
-    assert qp.is_commuting(op1, op2) == expected
-    assert qp.is_commuting(op2, op1) == expected
-
-
 class TestGetTargetName:
     """Tests the _get_target_name helper function."""
 

@@ -270,7 +270,7 @@ def _ctrl_transform(op, control, control_values, work_wires):
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
         if flip_control_on_zero:
-            _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
+            _ = [qp.X(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
             ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
@@ -278,7 +278,7 @@ def _ctrl_transform(op, control, control_values, work_wires):
         ]
 
         if flip_control_on_zero:
-            _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
+            _ = [qp.X(w) for w, val in zip(control, control_values) if not val]
 
         if qp.QueuingManager.recording():
             _ = [qp.apply(m) for m in qscript.measurements]
@@ -593,6 +593,7 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
+        id=None,
     ):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
@@ -614,6 +615,7 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires: WiresLike = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+        id=None,
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -649,9 +651,10 @@ class Controlled(SymbolicOp):
         self.hyperparameters["work_wire_type"] = work_wire_type
         self._name = f"C({base.name})"
 
-        super().__init__(base)
+        super().__init__(base, id)
 
-    def __hash__(self):
+    @property
+    def hash(self):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
@@ -668,7 +671,7 @@ class Controlled(SymbolicOp):
                 )
             )
         else:
-            base_hash = hash(self.base)
+            base_hash = self.base.hash
         return hash(
             (
                 "Controlled",
@@ -880,11 +883,7 @@ class Controlled(SymbolicOp):
             return decomp
 
         # We need to add paulis to flip some control wires
-        d = [
-            qp.X(w)
-            for w, val in zip(self.control_wires, self.control_values, strict=True)
-            if not val
-        ]
+        d = [qp.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
 
         decomp = _decompose_no_control_values(self)
         if decomp is None:
@@ -894,11 +893,7 @@ class Controlled(SymbolicOp):
         else:
             d += decomp
 
-        d += [
-            qp.X(w)
-            for w, val in zip(self.control_wires, self.control_values, strict=True)
-            if not val
-        ]
+        d += [qp.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -909,8 +904,7 @@ class Controlled(SymbolicOp):
     def generator(self):
         sub_gen = self.base.generator()
         projectors = (
-            qp.Projector([val], wires=w)
-            for val, w in zip(self.control_values, self.control_wires, strict=True)
+            qp.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
         )
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle ControlledGlobalPhase, see PR #5194
@@ -1094,8 +1088,9 @@ class ControlledOp(Controlled, Operation):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
+        id=None,
     ):
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+        super().__init__(base, control_wires, control_values, work_wires, work_wire_type, id)
         # check the grad_recipe validity
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
@@ -1152,8 +1147,8 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
+        id=None,
     ):
-        control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
         return type.__call__(
             Controlled,
             base,
@@ -1161,6 +1156,7 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
+            id=id,
         )
 
 

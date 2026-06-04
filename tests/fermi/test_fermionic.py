@@ -22,7 +22,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.fermi.fermionic import (
     FermiA,
     FermiC,
@@ -782,19 +781,11 @@ class TestFermiSentence:
         expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
         expected_simplified_fs2 = FermiSentence({fw3: 1})
 
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_fs.simplify()
-
+        un_simplified_fs.simplify()
         assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
-
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_fs.simplify(tol=1e-2)
-
+        un_simplified_fs.simplify(tol=1e-2)
         assert un_simplified_fs == expected_simplified_fs1
-
-        with pytest.warns(PennyLaneDeprecationWarning):
-            un_simplified_fs.simplify(tol=1e-1)
-
+        un_simplified_fs.simplify(tol=1e-1)
         assert un_simplified_fs == expected_simplified_fs2
 
     def test_pickling(self):
@@ -888,7 +879,7 @@ class TestFermiSentenceArithmetic:
         FermiSentences is produced."""
 
         simplified_product = f1 * f2
-        simplified_product.prune()
+        simplified_product.simplify()
 
         assert simplified_product == result
 
@@ -957,7 +948,7 @@ class TestFermiSentenceArithmetic:
         """Test that the correct result of addition is produced for two FermiSentences."""
 
         simplified_product = f1 + f2
-        simplified_product.prune()
+        simplified_product.simplify()
 
         assert simplified_product == result
 
@@ -1046,7 +1037,7 @@ class TestFermiSentenceArithmetic:
         subtracted from a FermiSentence"""
 
         simplified_diff = fs - fw
-        simplified_diff.prune()
+        simplified_diff.simplify()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
@@ -1087,7 +1078,7 @@ class TestFermiSentenceArithmetic:
         subtracted from a FermiSentence"""
 
         simplified_diff = fs - c
-        simplified_diff.prune()
+        simplified_diff.simplify()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
@@ -1123,7 +1114,7 @@ class TestFermiSentenceArithmetic:
         subtracted from a FermiSentence"""
 
         simplified_diff = c - fs
-        simplified_diff.prune()
+        simplified_diff.simplify()
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
@@ -1143,7 +1134,7 @@ class TestFermiSentenceArithmetic:
         """Test that the correct result of subtraction is produced for two FermiSentences."""
 
         simplified_product = f1 - f2
-        simplified_product.prune()
+        simplified_product.simplify()
 
         assert simplified_product == result
 

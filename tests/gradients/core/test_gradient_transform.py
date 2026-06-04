@@ -252,7 +252,6 @@ class TestGradientTransformIntegration:
         else:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):

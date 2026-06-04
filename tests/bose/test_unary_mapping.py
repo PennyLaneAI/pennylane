@@ -213,10 +213,10 @@ class TestBoseWordMapping:
     def test_unary_mapping_boseword(self, bose_op, n_states, result):
         """Test that the unary_mapping function returns the correct qubit operator."""
         qubit_op = unary_mapping(bose_op, n_states=n_states, ps=True)
-        qubit_op.prune(tol=1e-8)
+        qubit_op.simplify(tol=1e-8)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op.prune(tol=1e-8)
+        expected_op.simplify(tol=1e-8)
         assert qubit_op == expected_op
 
     @pytest.mark.parametrize("bosonic_op, n_states, result", BOSE_WORDS_AND_OPS)
@@ -416,7 +416,7 @@ class TestBoseSentenceMapping:
         op = BoseSentence({})
 
         ps_op = unary_mapping(op, ps=True)
-        ps_op.prune()
+        ps_op.simplify()
         assert ps_op == PauliSentence({})
 
         op = unary_mapping(op).simplify()
@@ -429,10 +429,10 @@ class TestBoseSentenceMapping:
         """Test that the unary_mapping function returns the correct qubit operator."""
 
         qubit_op = unary_mapping(bose_op, n_states=n_states, ps=True)
-        qubit_op.prune(tol=1e-8)
+        qubit_op.simplify(tol=1e-8)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op.prune(tol=1e-8)
+        expected_op.simplify(tol=1e-8)
         assert qubit_op == expected_op
 
 
@@ -499,10 +499,10 @@ def test_return_unary_mapping_ps(bose_op):
 def test_unary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
     qubit_op = unary_mapping(bose_op, n_states=2, wire_map=wire_map, ps=True)
-    qubit_op.prune(tol=1e-8)
+    qubit_op.simplify(tol=1e-8)
 
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op.prune(tol=1e-8)
+    expected_op.simplify(tol=1e-8)
     assert qubit_op == expected_op
 
 

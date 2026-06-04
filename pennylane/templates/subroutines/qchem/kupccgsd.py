@@ -228,6 +228,7 @@ class kUpCCGSD(Operation):
         k: int = 1,
         delta_sz: int = 0,
         init_state: Sequence[int] | None = None,
+        id: str | None = None,
     ):
         wires = Wires(wires)
 
@@ -262,7 +263,7 @@ class kUpCCGSD(Operation):
             "k": k,
             "delta_sz": delta_sz,
         }
-        super().__init__(weights, wires=wires)
+        super().__init__(weights, wires=wires, id=id)
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

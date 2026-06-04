@@ -107,7 +107,7 @@ class DisplacementEmbedding(Operation):
         return new_op
 
     # pylint: disable=too-many-arguments
-    def __init__(self, features, wires, method="amplitude", c=0.1):
+    def __init__(self, features, wires, method="amplitude", c=0.1, id=None):
         shape = math.shape(features)
         constants = [c] * shape[0]
         constants = math.convert_like(constants, features)
@@ -128,7 +128,7 @@ class DisplacementEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize method {method}")
 
-        super().__init__(pars, wires=wires)
+        super().__init__(pars, wires=wires, id=id)
 
     @property
     def num_params(self):

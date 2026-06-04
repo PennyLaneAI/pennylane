@@ -126,7 +126,7 @@ def _check_clifford_op(op, use_decomposition=False):
     for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qp.pauli.pauli_sentence(qp.prod(*pauli_prod))
-        upu.prune()
+        upu.simplify()
         # Pauli sum always lie outside set P
         if len(upu) != 1:
             return False
