@@ -976,13 +976,13 @@ class CircuitSpecs:
             lines.append("")
             lines.append("*No resources.*")
         elif isinstance(self.resources, SpecsResources):
-            lines.append(self.resources._repr_markdown_())
+            lines.append(self.resources._repr_markdown_())  # pylint: disable=protected-access
         elif isinstance(self.resources, list):
             lines.append("")
             for i, r in enumerate(self.resources):
                 lines.append(f"**Batched tape {num_to_letters(i)}:**")
                 lines.append("")
-                lines.append(r._repr_markdown_())
+                lines.append(r._repr_markdown_())  # pylint: disable=protected-access
                 lines.append("")
         elif isinstance(self.resources, dict):
             lines.append(self._to_markdown_tabular())

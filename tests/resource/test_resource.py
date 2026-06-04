@@ -15,7 +15,7 @@
 Test base Resource class and its associated methods
 """
 
-# pylint: disable=unnecessary-dunder-call
+# pylint: disable=unnecessary-dunder-call,protected-access
 from collections import defaultdict
 from dataclasses import FrozenInstanceError
 

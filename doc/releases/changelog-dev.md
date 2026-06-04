@@ -106,6 +106,8 @@
 * The result objects from running :func:`specs` now have markdown formatting for IPython, improving their readability in JupyterLabs.
 
   ```python
+  from IPython import display  # Not necessary if running within Jupyter
+
   @qp.qjit
   @qp.qnode(qp.device("lightning.qubit", wires=2))
   def circ():
