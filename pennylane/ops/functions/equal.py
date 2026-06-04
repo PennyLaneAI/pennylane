@@ -382,10 +382,40 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
+    if type(op1) is not type(op2):
+        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
+
+    # Check static arguments
+    for (sname, sval1), (_, sval2) in zip(op1.static_args.items(), op2.static_args.items()):
+        if sval1 != sval2:
+            return f"op1 and op2 have different values for '{sname}'.\nGot {sval1} and {sval2}."
+
+    # Check static compilable arguments
+    for (cname, cval1), (_, cval2) in zip(op1.compilable_args.items(), op2.compilable_args.items()):
+        if cval1 != cval2:
+            return f"op1 and op2 have different values for '{cname}'.\nGot {cval1} and {cval2}."
+
+    # Check wire arguments
+    for (wname, wval1), (_, wval2) in zip(op1.wire_args.items(), op2.wire_args.items()):
+        if wname in op1.hybrid_argnames:
+            leaves1, tree1 = flatten(wval1, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
+            leaves2, tree2 = flatten(wval2, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
+
+            if len(leaves1) != len(leaves2) or tree1 != tree2:
+                return f"op1 and op2 have different wires for '{wname}'.\nGot {wval1} and {wval2}."
+            for l1, l2 in zip(leaves1, leaves2):
+                res = _check_wire_value(wname, l1, l2)
+                if isinstance(res, str):
+                    return res
+
+        else:
+            res = _check_wire_value(wname, wval1, wval2)
+            if isinstance(res, str):
+                return res
+
     # Check dynamic arguments
-    for (dname, dval1), (_, dval2) in zip(
-        op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
-    ):
+    # Expensive: array comparison via math.allclose.
+    for (dname, dval1), (_, dval2) in zip(op1.dynamic_args.items(), op2.dynamic_args.items()):
         res = _check_dynamic_value(
             dname,
             dval1,
@@ -398,40 +428,11 @@ def _equal_operator2(
         if isinstance(res, str):
             return res
 
-    # Check static arguments
-    for (sname, sval1), (_, sval2) in zip(
-        op1.static_args.items(), op2.static_args.items(), strict=True
-    ):
-        if sval1 != sval2:
-            return f"op1 and op2 have different values for '{sname}'.\n" f"Got {sval1} and {sval2}."
-
-    # Check static compilable arguments
-    for (cname, cval1), (_, cval2) in zip(
-        op1.compilable_args.items(), op2.compilable_args.items(), strict=True
-    ):
-        if cval1 != cval2:
-            return f"op1 and op2 have different values for '{cname}'.\n" f"Got {cval1} and {cval2}."
-
-    # Check wire arguments
-    for (wname, wval1), (_, wval2) in zip(
-        op1.wire_args.items(), op2.wire_args.items(), strict=True
-    ):
-        if wval1 != wval2:
-            if op1.wire_argnames == ("wires",):
-                return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-
-            return (
-                f"op1 and op2 have different wires for the '{wname}' argument.\n"
-                f"Got {wval1} and {wval2}."
-            )
-
     # Check hybrid arguments
-    for (hname, hval1), (_, hval2) in zip(
-        op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
-    ):
+    # Most expensive: pytree flatten + recursive _equal.
+    for (hname, hval1), (_, hval2) in zip(op1.hybrid_args.items(), op2.hybrid_args.items()):
         if hname in op1.wire_argnames:
             continue
-
         res = _check_pytree_value(
             hname,
             hval1,
@@ -443,6 +444,35 @@ def _equal_operator2(
         )
         if isinstance(res, str):
             return res
+
+    return True
+
+
+def _check_wire_value(wname: str, wval1: Any, wval2: Any):
+    """Check for equality of a wire argument of an Operator2 instance."""
+    unequal_wires = False
+    abstract_wires = False
+
+    if len(wval1) != len(wval2):
+        unequal_wires = True
+
+    else:
+        for w1, w2 in zip(wval1, wval2):
+            if math.is_abstract(w1) or math.is_abstract(w2):
+                unequal_wires = True
+                abstract_wires = True
+                break
+            if w1 != w2:
+                unequal_wires = True
+                break
+
+    if unequal_wires:
+        if abstract_wires:
+            return (
+                f"At least one of op1 or op2 has one or more tracer values for '{wname}'. "
+                "Abstract tracers are assumed to be unique."
+            )
+        return f"op1 and op2 have different wires for '{wname}'.\nGot {wval1} and {wval2}."
 
     return True
 
@@ -468,7 +498,7 @@ def _check_dynamic_value(
     if math.shape(dval1) != math.shape(dval2) or not math.allclose(
         dval1, dval2, atol=atol, rtol=rtol
     ):
-        return f"op1 and op2 have different values for '{dname}'.\n" f"Got {dval1} and {dval2}."
+        return f"op1 and op2 have different values for '{dname}'.\nGot {dval1} and {dval2}."
 
     if check_interface:
         interface1 = math.get_interface(dval1)
@@ -502,17 +532,15 @@ def _check_pytree_value(
     atol=1e-9,
 ):
     """Check for equality of a hybrid argument of an Operator2 instance."""
-    unequal_str = f"op1 and op2 have different values for '{hname}'.\n" f"Got {hval1} and {hval2}."
+    unequal_str = f"op1 and op2 have different values for '{hname}'.\nGot {hval1} and {hval2}."
     leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
     leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
     if len(leaves1) != len(leaves2) or tree1 != tree2:
         return unequal_str
 
-    for l1, l2 in zip(leaves1, leaves2, strict=True):
-        if not isinstance(l2, type(l1)):
-            return unequal_str
-
-        if isinstance(l1, Operator2):
+    for l1, l2 in zip(leaves1, leaves2):
+        # Case 1: Both leaf values are operators
+        if isinstance(l1, Operator2) and isinstance(l2, Operator2):
             ops_equal = _equal(
                 l1,
                 l2,
@@ -527,6 +555,11 @@ def _check_pytree_value(
                     f"The operator arguments do not match:\n{ops_equal}"
                 )
 
+        # Case 2: One leaf value is an operator and the other is not. Not valid
+        elif isinstance(l1, Operator2) or isinstance(l2, Operator2):
+            return unequal_str
+
+        # Case 3: Neither leaf value is an operator. l1 and l2 are assumed to be numbers or arrays
         else:
             res = _check_dynamic_value(
                 hname,

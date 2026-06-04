@@ -28,9 +28,10 @@ import numpy as np
 import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import AdjointUndefinedError, PowUndefinedError
-from pennylane.operation import _UNSET_BATCH_SIZE, FlatPytree, classproperty
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
+from pennylane.typing import FlatPytree
 from pennylane.wires import Wires
 
 
@@ -920,6 +921,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     else:
         mod_val = None
 
+    # We stringify the data because arrays are unhashable
     return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
 
 
