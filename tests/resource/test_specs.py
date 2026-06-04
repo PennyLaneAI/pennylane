@@ -14,6 +14,8 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -672,3 +674,49 @@ class TestSpecsGraphModeExclusive:
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 2
+
+
+class TestFunctoolsPartial:
+    """Tests that qp.specs supports functools.partial-wrapped QNodes."""
+
+    @staticmethod
+    def _example_qnode():
+        @qp.qnode(qp.device("default.qubit"))
+        def rx_circuit(x, n_iter):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        return rx_circuit
+
+    def test_specs_keyword_partial(self):
+        """A partial binding keyword arguments can be inspected with specs."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(qnode, n_iter=3)
+        result = qp.specs(fixed_qnode)(0.5)
+        assert result.resources.gate_types["RX"] == 3
+        assert result.resources.depth == 3
+
+    def test_specs_positional_partial(self):
+        """A partial binding positional arguments can be inspected with specs."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(qnode, 0.5)
+        result = qp.specs(fixed_qnode)(n_iter=3)
+        assert result.resources.gate_types["RX"] == 3
+
+    def test_specs_nested_partial(self):
+        """Nested partial wrappers can be inspected with specs."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(partial(qnode, n_iter=3), 0.5)
+        result = qp.specs(fixed_qnode)()
+        assert result.resources.gate_types["RX"] == 3
+
+    def test_specs_qjit_partial(self):
+        """specs supports partial-wrapped QJIT objects when Catalyst is available."""
+        catalyst = pytest.importorskip("catalyst")
+
+        qnode = TestFunctoolsPartial._example_qnode()
+        qjit = catalyst.jit(qnode)
+        fixed_qjit = partial(qjit, n_iter=3)
+        result = qp.specs(fixed_qjit)(0.5)
+        assert result.resources.gate_types["RX"] == 3

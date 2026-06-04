@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pennylane as qp
+from pennylane.callables import bind_functools_partial, unwrap_functools_partial
 
 from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
@@ -343,6 +344,7 @@ def specs(
 
     Args:
         qnode (:class:`~pennylane.QNode` | :class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
+            ``functools.partial`` wrappers around these objects are also supported.
 
     Keyword Args:
         level (str | int | slice | iter[int | str] | None): An indication of which transforms, expansions, and passes to apply before
@@ -828,14 +830,20 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
+    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+
     if isinstance(qnode, qp.QNode):
-        return partial(_specs_qnode, qnode, level, compute_depth)
+        return bind_functools_partial(
+            partial(_specs_qnode, qnode, level, compute_depth), bound_args, bound_kwargs
+        )
 
     try:
         from ..qnn.torch import TorchLayer
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return partial(_specs_qnode, qnode, level, compute_depth)
+            return bind_functools_partial(
+                partial(_specs_qnode, qnode, level, compute_depth), bound_args, bound_kwargs
+            )
     except ImportError:  # pragma: no cover
         pass
 
@@ -844,7 +852,9 @@ def specs(
         import catalyst
 
         if isinstance(qnode, catalyst.jit.QJIT):
-            return partial(_specs_qjit, qnode, level, compute_depth)
+            return bind_functools_partial(
+                partial(_specs_qjit, qnode, level, compute_depth), bound_args, bound_kwargs
+            )
     except ImportError:  # pragma: no cover
         pass
 

@@ -23,6 +23,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
+from pennylane.callables import bind_functools_partial, unwrap_functools_partial
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 
@@ -53,7 +54,8 @@ def draw(
     r"""Create a function that draws the given QNode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
+            ``functools.partial`` wrappers around QNodes and Catalyst ``QJIT`` objects are also supported.
         wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
@@ -288,19 +290,25 @@ def draw(
         2: ─╰●─────────────────┤
 
     """
+    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return _draw_qnode(
-            qnode,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            max_length=max_length,
-            show_matrices=show_matrices,
-            show_wire_labels=show_wire_labels,
-            level=level,
+        return bind_functools_partial(
+            _draw_qnode(
+                qnode,
+                wire_order=wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                max_length=max_length,
+                show_matrices=show_matrices,
+                show_wire_labels=show_wire_labels,
+                level=level,
+            ),
+            bound_args,
+            bound_kwargs,
         )
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
@@ -331,7 +339,7 @@ def draw(
             max_length=max_length,
         )
 
-    return wrapper
+    return bind_functools_partial(wrapper, bound_args, bound_kwargs)
 
 
 # pylint: disable=too-many-arguments
@@ -405,6 +413,7 @@ def draw_mpl(
 
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
+            ``functools.partial`` wrappers around QNodes and Catalyst ``QJIT`` objects are also supported.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
@@ -780,20 +789,26 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
+    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return _draw_mpl_qnode(
-            qnode,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            max_length=max_length,
-            level=level,
-            style=style,
-            fig=fig,
-            **kwargs,
+        return bind_functools_partial(
+            _draw_mpl_qnode(
+                qnode,
+                wire_order=wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                max_length=max_length,
+                level=level,
+                style=style,
+                fig=fig,
+                **kwargs,
+            ),
+            bound_args,
+            bound_kwargs,
         )
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
@@ -825,7 +840,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    return wrapper
+    return bind_functools_partial(wrapper, bound_args, bound_kwargs)
 
 
 # pylint: disable=too-many-arguments

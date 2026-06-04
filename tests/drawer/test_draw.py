@@ -16,6 +16,8 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -1190,6 +1192,65 @@ def test_applied_transforms():
 
     expected = "0: ──X─┤  "
     assert qp.draw(my_circuit)(1.234) == expected
+
+
+class TestFunctoolsPartial:
+    """Tests that draw and draw_mpl support functools.partial-wrapped QNodes."""
+
+    @staticmethod
+    def _example_qnode():
+        @qp.qnode(qp.device("default.qubit"))
+        def rx_circuit(x, n_iter):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        return rx_circuit
+
+    def test_draw_keyword_partial(self):
+        """A partial binding keyword arguments can be drawn."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(qnode, n_iter=3)
+        result = qp.draw(fixed_qnode)(0.5)
+        assert result == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
+
+    def test_draw_positional_partial(self):
+        """A partial binding positional arguments can be drawn."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(qnode, 0.5)
+        result = qp.draw(fixed_qnode, decimals=2)(n_iter=3)
+        assert result == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
+
+    def test_draw_nested_partial(self):
+        """Nested partial wrappers can be drawn."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(partial(qnode, n_iter=3), 0.5)
+        assert qp.draw(fixed_qnode)() == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
+
+    def test_draw_mpl_keyword_partial(self):
+        """draw_mpl supports partial-wrapped QNodes."""
+        qnode = self._example_qnode()
+        fixed_qnode = partial(qnode, n_iter=3)
+        fig, _ = qp.draw_mpl(fixed_qnode)(0.5)
+        assert fig is not None
+
+    def test_draw_qjit_partial(self):
+        """draw supports partial-wrapped objects that unwrap to a QJIT user function."""
+
+        class QJIT:  # pylint: disable=too-few-public-methods
+            """Minimal QJIT stand-in for catalyst_qjit detection."""
+
+            def __init__(self, user_function):
+                self.user_function = user_function
+
+            def __call__(self, *args, **kwargs):
+                return self.user_function(*args, **kwargs)
+
+        qnode = self._example_qnode()
+        qjit = QJIT(qnode)
+        fixed_qjit = partial(qjit, n_iter=3)
+        result = qp.draw(fixed_qjit)(0.5)
+        assert result == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
 
 
 def test_draw_with_qfunc():
