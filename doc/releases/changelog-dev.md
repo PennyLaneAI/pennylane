@@ -360,10 +360,14 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
 
+* ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
+  [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
+
 * CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
   instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
   [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
+  [(#9559)](https://github.com/PennyLaneAI/pennylane/pull/9559)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
@@ -467,6 +471,9 @@
   :func:`~.counts` without an explicit ``wires`` argument). The brackets now render consistently
   with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
   [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
+
+* Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
+  [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
 
 <h3>Contributors ✍️</h3>
 
