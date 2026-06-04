@@ -28,7 +28,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty  # tach-ignore
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE, classproperty  # tach-ignore
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
