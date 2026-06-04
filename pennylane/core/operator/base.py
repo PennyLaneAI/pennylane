@@ -992,7 +992,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
-            return
+            return  # pragma: no cover
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:

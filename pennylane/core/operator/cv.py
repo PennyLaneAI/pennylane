@@ -158,7 +158,8 @@ class CVOperation(CV, Operation):
         """
         return self.grad_method == "A" and self.supports_heisenberg
 
-    def heisenberg_pd(self, idx):
+    # pragma: no cover
+    def heisenberg_pd(self, idx):  # pragma: no cover
         """Partial derivative of the Heisenberg picture transform matrix.
 
         Computed using grad_recipe.

@@ -66,7 +66,7 @@ class Channel(Operation, abc.ABC):
          array([[0.        , 0.31622777],
                 [0.        , 0.        ]])]
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def kraus_matrices(self):
         r"""Kraus matrices of an instantiated channel
