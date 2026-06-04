@@ -143,6 +143,26 @@ class TestTrackerCoreBehavior:
 
         assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
+    def test_repr(self):
+        """Test the string representation of Tracker."""
+        tracker = Tracker(persistent=True)
+
+        assert repr(tracker) == (
+            "Tracker(active=False, totals={}, history={}, latest={}, persistent=True)"
+        )
+
+        tracker.update(a=2, b="b2", c=1)
+
+        expected = (
+            "Tracker(active=False, totals={'a': 2, 'c': 1}, "
+            "history={'a': [2], 'b': ['b2'], 'c': [1]}, "
+            "latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=True)"
+        )
+        assert repr(tracker) == expected
+
+        with tracker:
+            assert repr(tracker) == expected.replace("active=False", "active=True", 1)
+
     def test_record_callback(self, mocker):
         # pylint: disable=too-few-public-methods
         class callback_wrapper:
