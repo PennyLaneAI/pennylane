@@ -104,9 +104,6 @@ class RotXZX(Operation):
         phi, theta, omega = self.parameters
         return RotXZX(-omega, -theta, -phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
-        return self.data
-
 
 @register_resources({RX: 2, RZ: 1})
 def _xzx_decompose(phi, theta, omega, wires, **__):

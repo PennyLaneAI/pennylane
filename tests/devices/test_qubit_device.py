@@ -1228,7 +1228,7 @@ class TestNativeMidCircuitMeasurements:
     def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
         """Test that the specified postselect mode propagates to execution as expected."""
         dev = self.MCMDevice(wires=1)
-        dev.operations.add("MidMeasure")
+        dev.operations.add("MidMeasureMP")
         pm_propagated = False
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument

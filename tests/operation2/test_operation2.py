@@ -702,6 +702,9 @@ class TestHash:
         op2 = HybridWireOp([[0, 1], [2]])
         assert hash(op1) == hash(op2)
 
+        op3 = HybridWireOp([[0, 3], [2]])
+        assert hash(op1) != hash(op3)
+
     def test_hybrid_different_pytree_structure_different_hash(self):
         """Test that hybrid arguments with different pytree structures hash differently."""
         op1 = FullOp(0.5, "a", [0.1, 0.2], wires=0)
@@ -1183,6 +1186,15 @@ class TestGeneralMethods:
         new_op = op.map_wires({0: "a", 1: "b"})
 
         assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
+
+    def test_map_wires_op_argument(self):
+        """Test that ``map_wires`` correctly maps hybrid arguments with operator leaves."""
+        op = FullOp(0.5, static="static", hybrid=[DynOp(1.5, wires=[2, 3, 4])], wires=[0, 1])
+        new_op = op.map_wires({0: "a", 2: "b", 3: "c"})
+
+        assert new_op == FullOp(
+            0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
+        )
 
     def test_map_wires_pauli_rep(self):
         """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly."""
