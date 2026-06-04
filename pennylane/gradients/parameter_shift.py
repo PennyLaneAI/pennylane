@@ -1239,7 +1239,7 @@ def param_shift(
 
 @singledispatch
 def parameter_frequencies(op: Operation | Operator2):
-    """
+    r"""
     Returns the frequencies for each operator parameter with respect
     to an expectation value of the form
     :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
