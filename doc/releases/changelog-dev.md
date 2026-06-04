@@ -105,6 +105,8 @@
 
 * The result objects from running :func:`specs` now have markdown formatting for IPython, improving their readability in JupyterLabs.
 
+  The example below shows a snippet and the Markdown table that would be shown in JupyterLabs when running it.
+
   ```python
   from IPython import display  # Not necessary if running within Jupyter
 
@@ -119,27 +121,25 @@
   display(res)
   ```
 
-  The prior code snippet renders as a Markdown table:
+  **Circuit Specs:**
+  | Metric | Value |
+  |---|---|
+  | **Device** | lightning.qubit |
+  | **Device wires** | 2 |
+  | **Shots** | Shots(total=None) |
+  | **Level** | device |
 
-  > **Circuit Specs:**
-  > | Metric | Value |
-  > |---|---|
-  > | **Device** | lightning.qubit |
-  > | **Device wires** | 2 |
-  > | **Shots** | Shots(total=None) |
-  > | **Level** | device |
-  >
-  > **Resources:**
-  > | **Metric** | **Value** |
-  > |---|---|
-  > | **Wire allocations** | 2 |
-  > | **Total gates** | 2 |
-  > | **Gate counts:** | |
-  > | CNOT | 1 |
-  > | Hadamard | 1 |
-  > | **Measurements:** | |
-  > | probs(all wires) | 1 |
-  > | **Depth** | 2 |
+  **Resources:**
+  | **Metric** | **Value** |
+  |---|---|
+  | **Wire allocations** | 2 |
+  | **Total gates** | 2 |
+  | **Gate counts:** | |
+  | CNOT | 1 |
+  | Hadamard | 1 |
+  | **Measurements:** | |
+  | probs(all wires) | 1 |
+  | **Depth** | 2 |
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
