@@ -189,6 +189,16 @@ class Tracker:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.active = False
 
+    def __repr__(self):
+        """Return a readable string representation of the Tracker."""
+        return (
+            f"Tracker(active={self.active}, "
+            f"persistent={self.persistent}, "
+            f"totals={self.totals}, "
+            f"history_keys={list(self.history.keys())}, "
+            f"latest_keys={list(self.latest.keys())})"
+        )
+
     def update(self, **kwargs):
         """Store passed keyword-value pairs into ``totals``,``history``, and ``latest`` attributes.
 

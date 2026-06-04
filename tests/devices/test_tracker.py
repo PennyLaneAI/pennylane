@@ -129,6 +129,25 @@ class TestTrackerCoreBehavior:
 
         assert tracker.active is False
 
+    def test_repr(self):
+        """Test that __repr__ returns a readable string representation"""
+
+        tracker = Tracker()
+        tracker.update(a=2, b="b2", c=1)
+
+        repr_str = repr(tracker)
+        assert "Tracker" in repr_str
+        assert "active=" in repr_str
+        assert "persistent=" in repr_str
+        assert "totals=" in repr_str
+        assert "history_keys=" in repr_str
+        assert "latest_keys=" in repr_str
+
+        # Test with active tracker
+        tracker.active = True
+        repr_str_active = repr(tracker)
+        assert "active=True" in repr_str_active
+
     def test_update(self):
         """Checks update stores to history and totals"""
 
