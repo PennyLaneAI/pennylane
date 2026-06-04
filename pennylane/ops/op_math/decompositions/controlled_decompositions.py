@@ -176,10 +176,7 @@ def ctrl_decomp_zyz(
 
     if isinstance(target_operation, Operation):
         try:
-            rot_angles = target_operation.single_qubit_rot_angles()
-            _, global_phase = math.convert_to_su2(
-                ops.functions.matrix(target_operation), return_global_phase=True
-            )
+            *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
         except NotImplementedError:
             *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
                 ops.functions.matrix(target_operation), return_global_phase=True

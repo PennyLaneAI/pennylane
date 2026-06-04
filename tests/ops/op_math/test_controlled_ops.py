@@ -64,6 +64,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(qp.operation.DecompositionUndefinedError):
             op.decomposition()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "op",
         [
