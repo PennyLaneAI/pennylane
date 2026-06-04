@@ -1284,5 +1284,5 @@ class StatePrepBase2(Operator2, is_baseclass=True):
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:
-        """The default label for a state prep."""
-        return "|Ψ⟩"
+        """The default label for a state prep operation."""
+        return base_label or "|Ψ⟩"
