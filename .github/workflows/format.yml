@@ -68,3 +68,11 @@ jobs:
       - name: Run Pylint (test files)
         if: always()
         run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+
+      - name: Run ruff (source files)
+        if: always()
+        run: ruff check --select B905 $(find pennylane -name "*.py")
+
+      - name: Run ruff (test files)
+        if: always()
+        run: ruff check --select B905 $(find tests -name "*.py")
