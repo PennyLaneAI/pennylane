@@ -14,40 +14,20 @@
 r"""Contains the PartialUnaryStatePreparation template."""
 
 from collections import defaultdict
-from dataclasses import dataclass, field
 
 import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
+from pennylane.decomposition import controlled_resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
-from pennylane.wires import Wires, WiresLike
-
-
-@dataclass
-class Batch:
-    """Bookkeeping class for batches of states handled at once by the isometry finding
-    algorithm in ``IsometryFinder`` below. A batch consists of a list of states (defined
-    by their index) and a list of non-subspace qubit indices, indicating the qubit per state
-    that is set to 1 to mark it."""
-
-    states: list = field(default_factory=list)
-    qubit_positions: list = field(default_factory=list)
-
-    def append(self, state, qubit_pos):
-        """Append a state and the corresponding marking qubit position to the batch."""
-        self.states.append(state)
-        self.qubit_positions.append(qubit_pos)
-
-    def __len__(self):
-        return len(self.states)
+from pennylane.wires import Wires
 
 
 class IsometryFinder:
-    """
-    Classical algorithm that finds the isometry circuit and bijection.
-    """
+    """Classical algorithm that finds the isometry circuit and bijection for
+    PartialUnaryStatePreparation."""
 
     def __init__(self, basis_states: list, n_qubits: int):
         self.n = n_qubits
@@ -55,11 +35,11 @@ class IsometryFinder:
         r = self.n - self.l
         self.m = 1 << int(math.floor(math.log2(max(r, 1))))
 
-        # Initialize tableau as int8 for memory efficiency
         self.tableau = qp.math.int_to_binary(basis_states, self.n)
-        self.circuit_ops = []
+        # self.circuit_ops = []
+        self.circuit = []
 
-        # Pre-compute subspace membership (track incrementally)
+        # Pre-compute subspace membership (will track incrementally)
         self._in_subspace = np.all(self.tableau[:, self.l :] == 0, axis=1)
 
     def apply_multi_controlled_x(self, controls, control_values, target: int):
@@ -74,46 +54,39 @@ class IsometryFinder:
         match = np.all(ctrl_cols == cv, axis=1)
         self.tableau[:, target] ^= match.astype(np.int8)
 
-    def pui(self, k, batch_qubit_positions, wires, work_wires):
+    def pui(self, k, batch_size):
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
-        b = len(batch_qubit_positions)
-
-        subspace_wires = wires[: self.l]
-        nonsubspace_wires = wires[self.l :]
-
-        k_start = k - b
-        target_wires = [nonsubspace_wires[batch_qubit_positions[idx]] for idx in range(b)]
-        self.circuit_ops.append(qp.BasisState(k_start, subspace_wires))
-        sub_ops = [qp.X(w) for w in target_wires]
-        self.circuit_ops.append(qp.Select(sub_ops, subspace_wires, work_wires, partial=False))
-        self.circuit_ops.append(qp.BasisState(k_start, subspace_wires))
+        k_start = k - batch_size
+        self.circuit.append(("PUI", k_start, k))
 
         # Update tableau for PUI effect
-        target_bits = qp.math.int_to_binary(k_start + np.arange(b), self.l)
+        target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.l)
         for j, _bits in enumerate(target_bits):
-            ns_qubit = self.l + batch_qubit_positions[j]
-            self.apply_multi_controlled_x(slice(0, self.l), _bits, ns_qubit)
+            self.apply_multi_controlled_x(slice(0, self.l), _bits, self.l + j)
 
         # Update subspace status after PUI
         self._in_subspace = np.all(self.tableau[:, self.l :] == 0, axis=1)
 
-    def cx(self, control: int, target: int, wires: WiresLike):
+    def fanout(self, control: int, bits: np.ndarray):
         """Add a CNOT operation to the circuit ops and apply CNOT to the tableau."""
-        self.circuit_ops.append(qp.CNOT([wires[control], wires[target]]))
-        self.tableau[:, target] ^= self.tableau[:, control]
+        self.circuit.append(("Fanout", control, bits))
+        ctrl_bits = self.tableau[:, control]
+        for i, bit in enumerate(bits[:control]):
+            if bit:
+                self.tableau[:, i] ^= ctrl_bits
+        for i, bit in enumerate(bits[control:], start=control + 1):
+            if bit:
+                self.tableau[:, i] ^= ctrl_bits
 
-    def mcx(self, controls, control_values, target, wires, work_wires):
+    def mcx(self, controls, control_values, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
-        # pylint: disable=too-many-arguments
-        mcx_wires = [wires[c] for c in controls] + [wires[target]]
-        mcx_op = qp.MultiControlledX(mcx_wires, control_values, work_wires, work_wire_type="zeroed")
-        self.circuit_ops.append(mcx_op)
+        self.circuit.append(("Toffoli", controls + [target], control_values))
         self.apply_multi_controlled_x(controls, control_values, target)
 
-    def swap(self, w0, w1, wires):
+    def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
-        self.circuit_ops.append(qp.SWAP([wires[w0], wires[w1]]))
+        self.circuit.append(("SWAP", [w0, w1]))
         self.tableau[:, [w0, w1]] = self.tableau[:, [w1, w0]]
 
     def _next_state_with_target_set(self, target_qubit):
@@ -124,28 +97,27 @@ class IsometryFinder:
         search_idx = np.where(col)[0]
         return int(search_idx[0]) if len(search_idx) else None
 
-    def _try_swap(self, remaining, target_qubit, wires):
+    def _try_swap(self, remaining, target_qubit):
         ns_cols = self.tableau[np.array(remaining), self.l + target_qubit + 1 : self.n]
         if ns_cols.size > 0:
             # Find first (row, col) with a 1
             row_idx, col_idx = np.where(ns_cols)
             if len(row_idx):
                 swap_from = self.l + target_qubit + 1 + int(col_idx[0])
-                self.swap(self.l + target_qubit, swap_from, wires)
+                self.swap(self.l + target_qubit, swap_from)
                 return int(remaining[row_idx[0]])
 
         return None
 
     def _get_diff_qubit(self, idx, j, actual_qubit, batch):
-        mismatches = np.where(self.tableau[idx] != self.tableau[batch.states[j]])[0]
+        mismatches = np.where(self.tableau[idx] != self.tableau[batch[j]])[0]
         if len(mismatches) and mismatches[0] != actual_qubit:
             return int(mismatches[0])
         if len(mismatches) > 1:
             return int(mismatches[1] if mismatches[0] == actual_qubit else mismatches[0])
         return None
 
-    def _toffoli_trick(self, remaining, target_qubit, batch, wires, work_wires):
-        # pylint: disable=too-many-arguments
+    def _toffoli_trick(self, remaining, target_qubit, batch):
         actual_qubit = self.l + target_qubit
 
         for idx in remaining:
@@ -159,33 +131,25 @@ class IsometryFinder:
 
                     controls = [self.l + j, diff_qubit]
                     control_values = [1, int(self.tableau[idx, diff_qubit])]
-                    self.mcx(controls, control_values, actual_qubit, wires, work_wires[0])
+                    self.mcx(controls, control_values, actual_qubit)
                     return idx
 
         return None
 
-    def _zero_non_subspace(self, found_state, target_qubit, wires):
-        actual_qubit = self.l + target_qubit
-        ns = self.tableau[found_state, self.l :]
-        for j in np.where(ns)[0]:
-            j = int(j)
-            if j != target_qubit:
-                self.cx(actual_qubit, self.l + j, wires)
-
-    def _set_subspace_to_k(self, found_state, k, target_qubit, wires):
+    def _map_full_state(self, found_state, k, target_qubit):
         actual_qubit = self.l + target_qubit
         k_bits = qp.math.int_to_binary(k, self.l)
-        current_sub = self.tableau[found_state, : self.l]
-        for j in np.where(current_sub != k_bits)[0]:
-            self.cx(actual_qubit, int(j), wires)
+        target_state = qp.math.concatenate([k_bits, np.zeros(self.n - self.l, dtype=int)])
+        current_state = self.tableau[found_state]
+        diff = np.delete(np.bitwise_xor(target_state, current_state), actual_qubit)
+        self.fanout(actual_qubit, diff)
 
-    @qp.QueuingManager.stop_recording()
-    def find_isometry(self, wires, work_wires):
+    def find_isometry(self):
         """
         Find isometry using the batched PUI approach (Algorithm 1).
         """
         bijection = {}
-        batch = Batch()
+        batch = []
 
         k = 0
         while True:
@@ -193,11 +157,11 @@ class IsometryFinder:
 
             # Get remaining indices not in subspace and not in batch
             remaining = np.where(~self._in_subspace)[0]
-            remaining = [int(i) for i in remaining if i not in batch.states]
+            remaining = [int(i) for i in remaining if i not in batch]
 
             if b == self.m or (not remaining and b > 0):
-                self.pui(k, batch.qubit_positions, wires, work_wires)
-                batch = Batch()
+                self.pui(k, len(batch))
+                batch = []
                 continue
 
             if not remaining:
@@ -213,27 +177,25 @@ class IsometryFinder:
             if found_state is None:
                 # Try swapping with a qubit further right to get a state with b-th
                 # non-subspace qubit set to 1
-                found_state = self._try_swap(remaining, target_qubit, wires)
+                found_state = self._try_swap(remaining, target_qubit)
 
             if found_state is None and b > 0:
                 # Use Toffoli trick to find a state
-                found_state = self._toffoli_trick(remaining, target_qubit, batch, wires, work_wires)
+                found_state = self._toffoli_trick(remaining, target_qubit, batch)
 
             if found_state is None:
                 # If really no state could be found, flush the PUI and start a new batch.
                 if b > 0:
-                    self.pui(k, batch.qubit_positions, wires, work_wires)
-                    batch = Batch()
+                    self.pui(k, len(batch))
+                    batch = []
                 continue
 
             # Transform found_state: zero out other non-subspace bits using CX
-            self._zero_non_subspace(found_state, target_qubit, wires)
-
-            # Transform subspace to |k>
-            self._set_subspace_to_k(found_state, k, target_qubit, wires)
+            # Then transform subspace to |k>
+            self._map_full_state(found_state, k, target_qubit)
 
             # Append the found state to the batch and register it in the state bijection
-            batch.append(found_state, target_qubit)
+            batch.append(found_state)
             bijection[found_state] = k
             k += 1
 
@@ -242,7 +204,7 @@ class IsometryFinder:
         for i, val in enumerate(vals):
             bijection.setdefault(i, int(val))
 
-        return self.circuit_ops, bijection
+        return self.circuit, bijection
 
 
 class PartialUnaryStatePreparation(Operation):
@@ -280,7 +242,7 @@ class PartialUnaryStatePreparation(Operation):
     Consider a sparse state, specified in terms of its ``coefficients``, or amplitudes, and the
     corresponding computational basis state ``indices``:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         import pennylane as qp
         import numpy as np
@@ -292,7 +254,7 @@ class PartialUnaryStatePreparation(Operation):
     Let's prepare this state on a six-qubit register, using three auxiliary qubits:
 
 
-    .. code-block:: python3
+    .. code-block:: python
 
         wires = list(range(6))
         work_wires = list(range(6, 9))
@@ -304,11 +266,11 @@ class PartialUnaryStatePreparation(Operation):
             qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
             return qp.state()
 
-        prepared_state = circuit()
+        prepared_state = circuit()[::8] # Slice out three work wires
 
     We can check that the correct basis states are populated with the correct amplitudes:
 
-    >>> where = np.where(prepared_state)
+    >>> where = np.where(prepared_state)[0]
     >>> print(tuple(where)==indices)
     True
     >>> print(np.allclose(prepared_state[where], coefficients))
@@ -316,13 +278,16 @@ class PartialUnaryStatePreparation(Operation):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=190, show_matrices=False)())
-    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭Select─╭|Ψ⟩────╭X─╭X─╭|Ψ⟩─╭Select─╭|Ψ⟩─────────────╭|Ψ⟩─╭Select─╭|Ψ⟩──────────╭|Ψ⟩─╭Select─╭|Ψ⟩───────╭|Ψ⟩─╭Select─╭|Ψ⟩──────────┤ ╭State
-    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├Select─├|Ψ⟩─╭X─│──│──├|Ψ⟩─├Select─├|Ψ⟩────╭X────╭X─├|Ψ⟩─├Select─├|Ψ⟩────╭X────├|Ψ⟩─├Select─├|Ψ⟩───────├|Ψ⟩─├Select─├|Ψ⟩──────────┤ ├State
-    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├Select─├|Ψ⟩─│──│──│──├|Ψ⟩─├Select─├|Ψ⟩────│─────│──├|Ψ⟩─├Select─├|Ψ⟩────│──╭X─├|Ψ⟩─├Select─├|Ψ⟩─╭X─╭X─├|Ψ⟩─├Select─├|Ψ⟩───────╭X─┤ ├State
-    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├Select─╰|Ψ⟩─│──│──│──╰|Ψ⟩─├Select─╰|Ψ⟩─╭X─│──╭X─│──╰|Ψ⟩─├Select─╰|Ψ⟩─╭X─│──│──╰|Ψ⟩─├Select─╰|Ψ⟩─│──│──╰|Ψ⟩─├Select─╰|Ψ⟩─╭X─╭X─│──┤ ├State
-    4: ───────────────────────────────────────├Select──────│──│──╰●──────├Select──────│──│──╰●─╰●─╭●───├Select──────│──│──╰●─╭●───├Select──────│──╰●──────├Select──────│──╰●─╰●─┤ ├State
-    5: ───────────────────────────────────────╰Select──────╰●─╰●─────────╰Select──────╰●─╰●───────╰X───╰Select──────╰●─╰●────╰X───╰Select──────╰●─────────╰Select──────╰●───────┤ ╰State
+    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
+    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─┤ ├State
+    4: ───────────────────────────────────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────┤ ├State
+    5: ───────────────────────────────────────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────┤ ├State
+    6: ───────────────────────────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────┤ ├State
+    7: ───────────────────────────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────┤ ├State
+    8: ───────────────────────────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────┤ ╰State
 
     We can make out the dense state preparation on the subspace wires ``0`` through ``3``, followed
     by the isometry circuit consisting of partial unary iteration circuits and ``CNOT`` blocks.
@@ -333,7 +298,7 @@ class PartialUnaryStatePreparation(Operation):
     For more complex examples, the circuit may also contain :class:`~.SWAP` and/or Toffoli
     gates (in the form of :class:`~.MultiControlledX`):
 
-    .. code-block:: python3
+    .. code-block:: python
 
         np.random.seed(31)
         K = 2553
@@ -344,14 +309,14 @@ class PartialUnaryStatePreparation(Operation):
         num_work_wires = qp.math.ceil_log2(K) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"]
-    Wire allocations: 15
-    Total gates: 18907
+    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
+    Wire allocations: 26
+    Total gates: 4834
     Gate counts:
     - MultiplexerStatePreparation: 1
-    - BasisState: 2414
-    - Select: 1207
-    - CNOT: 15281
+    - BasisState: 1208
+    - QROM: 1207
+    - C(BasisState): 2414
     - MultiControlledX: 3
     - SWAP: 1
     Measurements:
@@ -408,37 +373,45 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     num_work_wires = max(num_work_wires, ell - 1, 1)
     resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=ell)] += 1
+
     R = num_wires - ell
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
-    select_rep = qp.resource_rep(
-        qp.Select,
-        op_reps=(qp.resource_rep(qp.X),) * main_pui_batch_size,
-        num_control_wires=ell,
-        num_work_wires=num_work_wires,
-        partial=False,
-    )
-    resources[select_rep] += max(num_entries // main_pui_batch_size, 1)
-
     rest_pui_batch_size = num_entries % main_pui_batch_size or main_pui_batch_size
-    select_rep = qp.resource_rep(
-        qp.Select,
-        op_reps=(qp.resource_rep(qp.X),) * rest_pui_batch_size,
-        num_control_wires=ell,
-        num_work_wires=num_work_wires,
-        partial=False,
-    )
-    resources[select_rep] += 1
 
-    resources[qp.resource_rep(qp.CNOT)] += int(num_entries**1.15 * 4)
+    qrom_rep = qp.resource_rep(
+        qp.QROM,
+        num_bitstrings=main_pui_batch_size,
+        num_control_wires=ell,
+        num_target_wires=main_pui_batch_size,
+        num_work_wires=num_work_wires,
+        clean=True,
+    )
+    resources[qrom_rep] += max(num_entries // main_pui_batch_size, 1)
+
+    last_qrom_rep = qp.resource_rep(
+        qp.QROM,
+        num_bitstrings=rest_pui_batch_size,
+        num_control_wires=ell,
+        num_target_wires=rest_pui_batch_size,
+        num_work_wires=num_work_wires,
+        clean=True,
+    )
+    resources[last_qrom_rep] += 1
+
+    resources[
+        controlled_resource_rep(
+            qp.BasisState, base_params={"num_wires": num_wires - 1}, num_control_wires=1
+        )
+    ] += num_entries
+
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=ell)
-    resources[embed_rep] += max(num_entries // 4, 1)
+    resources[embed_rep] += num_entries // main_pui_batch_size + 2
 
     swap_rep = qp.resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
 
     num_toffolis = int(num_wires / 10) + 1
     toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
-
     mcx_rep_0 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=0, **toffoli_params)
     resources[mcx_rep_0] += max(num_toffolis // 2, 1)
     mcx_rep_1 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=1, **toffoli_params)
@@ -458,9 +431,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
     ell = max(math.ceil_log2(s), 1)
     iso_finder = IsometryFinder(np.array(indices), len(wires))
-    ops, bijection = iso_finder.find_isometry(wires, work_wires)
+    circuit, bijection = iso_finder.find_isometry()
 
-    subspace_wires = wires[:ell]
+    subspace_wires = Wires(wires[:ell])
+    nonsubspace_wires = Wires(wires[ell:])
 
     # Step 1: Dense state preparation
     dense_state = np.zeros(2**ell, dtype=complex)
@@ -469,10 +443,34 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
+    wires = Wires(wires)
+
+    last_pui_k = 0
     # Step 2: Apply the inverse of the isometry circuit
-    for op in reversed(ops):
-        if qp.QueuingManager.recording():
-            qp.apply(op)
+    for _type, *data in reversed(circuit):
+        if _type == "PUI":
+            k_start, k = data
+            qp.BasisState(np.bitwise_xor(k_start, last_pui_k), subspace_wires)
+            last_pui_k = k_start
+            b = k - k_start
+            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
+            continue
+        if _type == "Fanout":
+            control, bits = data
+            _wires = wires[:control] + wires[control + 1 :]
+            qp.ctrl(qp.BasisState(bits, _wires), control)
+            continue
+
+        ids = data[0]
+        _wires = [wires[idx] for idx in ids]
+        if _type == "SWAP":
+            qp.SWAP(_wires)
+        elif _type == "Toffoli":
+            qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
+        else:
+            raise NotImplementedError
+
+    qp.BasisState(last_pui_k, subspace_wires)
 
 
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
