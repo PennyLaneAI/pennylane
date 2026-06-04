@@ -216,19 +216,9 @@ def _get_alpha_z(omega, n, k):
     Returns:
         array representing :math:`\alpha^{z,k}`
     """
-    indices1 = (
-        qp.math.arange(1, 2 ** (n - k + 1) + 1, 2)[:, None] * 2 ** (k - 1)
-        + qp.math.arange(2 ** (k - 1))[None]
-    )
-    indices2 = (
-        qp.math.arange(0, 2 ** (n - k + 1), 2)[:, None] * 2 ** (k - 1)
-        + qp.math.arange(2 ** (k - 1))[None]
-    )
-
-    term1 = qp.math.take(omega, indices=indices1, axis=-1)
-    term2 = qp.math.take(omega, indices=indices2, axis=-1)
-    diff = (term1 - term2) / 2 ** (k - 1)
-
+    shape = qp.math.shape(omega)[:-1] + (2 ** (n - k), 2**k)
+    omega = qp.math.reshape(omega, shape)
+    diff = (omega[..., 2 ** (k - 1) :] - omega[..., : 2 ** (k - 1)]) / 2 ** (k - 1)
     return qp.math.sum(diff, axis=-1)
 
 
@@ -236,27 +226,36 @@ def _get_alpha_y(a, n, k):
     r"""Computes the rotation angles required to implement the uniformly controlled Y rotation
     applied to the :math:`k`th qubit.
 
-    The :math:`j`-th angle is related to the absolute values, a, of the desired amplitudes via:
+    For :math:`k = 1` (leaf level), the :math:`j`-th angle is computed using :func:`~numpy.arctan2`
+    to preserve the signs of real-valued amplitudes:
+
+    .. math:: \alpha^{y,1}_j = 2 \operatorname{arctan2}(a_{2j+1},\; a_{2j})
+
+    For :math:`k > 1`, the angle is related to the absolute values of the desired amplitudes via:
 
     .. math:: \alpha^{y,k}_j = 2 \arcsin \sqrt{ \frac{ \sum_{l=1}^{2^{k-1}} a_{(2j-1)2^{k-1} +l}^2  }{ \sum_{l=1}^{2^{k}} a_{(j-1)2^{k} +l}^2  } }
 
     Args:
-        a (tensor_like): absolute values of the state to prepare
+        a (tensor_like): amplitudes of the state to prepare (signed real values or absolute values)
         n (int): total number of qubits for the uniformly-controlled rotation
         k (int): index of current qubit
 
     Returns:
         array representing :math:`\alpha^{y,k}`
     """
-    indices_numerator = (qp.math.arange(1, 2 ** (n - k + 1) + 1, 2) * 2 ** (k - 1))[
-        :, None
-    ] + np.arange(2 ** (k - 1))[None]
-    numerator = qp.math.take(a, indices=indices_numerator, axis=-1)
-    numerator = qp.math.sum(qp.math.abs(numerator) ** 2, axis=-1)
 
-    indices_denominator = (qp.math.arange(2 ** (n - k)) * 2**k)[:, None] + np.arange(2**k)[None]
-    denominator = qp.math.take(a, indices=indices_denominator, axis=-1)
-    denominator = qp.math.sum(qp.math.abs(denominator) ** 2, axis=-1)
+    # Reshape a so that each block of size 2**k forms the final axis
+    shape = qp.math.shape(a)[:-1] + (2 ** (n - k), 2**k)
+    a = qp.math.reshape(a, shape)
+    if k == 1:  # leaf level
+        return 2 * qp.math.arctan2(a[..., 1], a[..., 0])
+
+    # Compute squared absolute values
+    abs_sq = qp.math.abs(a) ** 2
+    # Denominator is the sum over the entire block
+    denominator = qp.math.sum(abs_sq, axis=-1)
+    # Numerator is the sum over the second half of the block
+    numerator = qp.math.sum(abs_sq[..., 2 ** (k - 1) :], axis=-1)
 
     # Divide only where denominator is nonzero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
@@ -397,23 +396,35 @@ class MottonenStatePreparation(Operation):
         CNOT(wires=['a', 'b'])]
 
         """
-        a = qp.math.abs(state_vector)
         omega = qp.math.angle(state_vector)
         # change ordering of wires, since original code
         # was written for IBM machines
         wires_reverse = wires[::-1]
 
+        # Determine if the state is real-valued. For real states, we pass signed
+        # amplitudes to _get_alpha_y so that at the leaf level (k=1) the sign is
+        # encoded directly into the RY angle, eliminating the need for RZ gates.
+        is_real = qp.math.is_real_obj_or_close(state_vector) and not qp.math.requires_grad(
+            state_vector
+        )
+
+        a = qp.math.real(state_vector) if is_real else qp.math.abs(state_vector)
+
         op_list = []
 
-        # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+        # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes.
+        # For real states, the leaf level (k=1) uses signed amplitudes via arctan2,
+        # correctly encoding negative signs into Y rotation angles.
         for k in range(len(wires_reverse), 0, -1):
             alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
             control = wires_reverse[k:]
             target = wires_reverse[k - 1]
             op_list.extend(_uniform_rotation_dagger_ops(qp.RY, alpha_y_k, control, target))
 
-        # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-        if (
+        # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes.
+        # For real states, phases are fully captured by the signed Y angles above, so this
+        # block is skipped entirely — no RZ gates or GlobalPhase needed.
+        if not is_real and (
             qp.math.is_abstract(omega)
             or qp.math.requires_grad(omega)
             or not qp.math.allclose(omega, 0)

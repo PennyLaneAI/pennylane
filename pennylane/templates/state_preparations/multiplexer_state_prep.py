@@ -13,12 +13,11 @@
 # limitations under the License.
 r"""Contains the MultiplexerStatePreparation template."""
 
-import numpy as np
-
 import pennylane as qp
 from pennylane import math, queuing
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
 
@@ -135,36 +134,22 @@ def _multiplexer_state_prep_decomposition(
         list: List of decomposition operations.
     """
 
-    probs = math.abs(state_vector) ** 2
-    phases = math.angle(state_vector) % (2 * np.pi)
+    # Determine if the state is real-valued. For real states, we pass signed amplitudes to
+    # _get_alpha_y so that at the leaf level (k=1) the sign is encoded directly into
+    # the SelectPauliRot("Y") angle, eliminating the need for SelectPauliRot("Z") gates.
+    is_real = math.is_real_obj_or_close(state_vector) and not math.requires_grad(state_vector)
+    a = qp.math.real(state_vector) if is_real else qp.math.abs(state_vector)
 
-    num_iterations = int(math.log2(math.shape(probs)[0]))
+    n = len(wires)
 
-    shapes = []
-    for i in range(num_iterations):
-        shapes.append([int(2 ** (i + 1)), -1])
-        probs_aux = math.reshape(probs, [1, -1])
+    for k in range(n):
+        alpha_y_k = _get_alpha_y(a, n, n - k)
+        qp.SelectPauliRot(alpha_y_k, target_wire=wires[k], control_wires=wires[:k], rot_axis="Y")
 
-        # From Eq. 5 of arXiv:quant-ph/0208112.
-        for itx in range(i + 1):
-            probs_denominator = math.sum(probs_aux, axis=1)
-            probs_aux = math.reshape(probs_aux, shapes[itx])
-            probs_numerator = math.sum(probs_aux, axis=1)[::2]
-
-        # arcos(x) = arctan2(sqrt(1-x^2), x)
-        thetas = 2 * math.arctan2(
-            math.sqrt(probs_denominator - probs_numerator),
-            math.sqrt(probs_numerator),
-        )
-
-        qp.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
-
-    if not math.is_abstract(phases):
-        if not math.allclose(phases, 0.0):
-            qp.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
-
-    else:
-        qp.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
+    if not is_real:
+        omega = math.angle(state_vector)
+        if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
+            qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
 
 
 add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)
