@@ -52,13 +52,13 @@ class SignedOutSquare(Operation):
             ``output_wires_zeroed=True`` to reduce the cost of the operation.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
             ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
-            otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
+            otherwise ``min(len(output_wires), len(x_wires))`` work wires are required.
         output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
     **Example**
 
-    Let's compute the square of :math:`x=-3` and :math:`x=7` in superposition, added to :math`b=5`
+    Let's compute the square of :math:`x=-5` and :math:`x=7` in superposition, added to :math`b=5`
     modulo :math:`2^n=2^6=64`.
 
     .. code-block:: python
@@ -159,12 +159,10 @@ class SignedOutSquare(Operation):
         n = len(x_wires)
         m = len(output_wires)
 
-        if output_wires_zeroed:
-            num_required_work_wires = min(n, m)
-        else:
-            num_required_work_wires = m
-        sign_correc_adder = min(m - n, n)
-        num_required_work_wires = max(num_required_work_wires, sign_correc_adder - 1)
+        # Work wires required for the unsigned square (its input is reduced by one)
+        num_required_work_wires = min(n, m) if output_wires_zeroed else m
+        # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
+        # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
