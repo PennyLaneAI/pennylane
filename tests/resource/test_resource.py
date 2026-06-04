@@ -1575,7 +1575,7 @@ class TestIPythonDisplays:
             num_allocs=1,
         )
         actual = s._repr_markdown_()
-        expected= """\
+        expected = """\
 | **Metric** | **Value** |
 | :--- | ---: |
 | **Wire allocations** | 1 |

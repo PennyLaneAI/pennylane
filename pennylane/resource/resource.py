@@ -976,9 +976,7 @@ class CircuitSpecs:
         lines.append("**Resources:**")
         lines.append("")
 
-        if self.resources is None:
-            lines.append("*No resources.*")
-        elif isinstance(self.resources, SpecsResources):
+        if isinstance(self.resources, SpecsResources):
             lines.append(self.resources._repr_markdown_())  # pylint: disable=protected-access
         elif isinstance(self.resources, list):
             for i, r in enumerate(self.resources):
