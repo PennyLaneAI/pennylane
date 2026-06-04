@@ -208,13 +208,13 @@ class Operator2(ABC):
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
     def __init_subclass__(
-        cls: type["Operator2"], is_base: bool = False
+        cls: type["Operator2"], is_baseclass: bool = False
     ) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
 
-        if is_base:
+        if is_baseclass:
             return
 
         _add_dynamic_properties(cls)
@@ -1264,7 +1264,7 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
-class StatePrepBase2(Operator2, is_base=True):
+class StatePrepBase2(Operator2, is_baseclass=True):
     """An interface for state-prep operations."""
 
     @abc.abstractmethod
