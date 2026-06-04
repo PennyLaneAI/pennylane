@@ -21,7 +21,7 @@ import copy
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional
+from typing import Optional, Union
 
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
@@ -34,7 +34,6 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
-from pennylane.ops import MeasurementValue  # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -166,7 +165,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     def __init__(
         self,
-        obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
+        obs: Union[None, Operator, "MeasurementValue", Sequence["MeasurementValue"]] = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
     ):

@@ -355,7 +355,10 @@
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  Moves `MeasurementProcess`, `StateMeasurement`, `SampleMeasurement`, `MeasurementTransform`,
+  `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+  [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
