@@ -770,9 +770,8 @@ class QNode:
         # pylint: disable=import-outside-toplevel
         from pennylane.debugging import pldb_device_manager
 
-        with pldb_device_manager(self.device):
-            with AnnotatedQueue() as q:
-                self._qfunc_output = self.func(*args, **kwargs)
+        with pldb_device_manager(self.device), AnnotatedQueue() as q:
+            self._qfunc_output = self.func(*args, **kwargs)
 
         tape = QuantumScript.from_queue(q, self.shots)
 

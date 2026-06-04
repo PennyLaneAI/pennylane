@@ -223,4 +223,9 @@ target-version="py311"
 select = [
     "B905", # zip without explicit strict 
     "UP", # enforce all 'pyupgrade' rules
+    "SIM115", # Force context manager for opening files
+    "SIM117", # Flatten nested 'with' statements
+    "SIM118", # Use 'if key in dict' instead of '.keys()'
+    "SIM201", # Change 'not a == b' to 'a != b'
+    "SIM202", # Change 'not a != b' to 'a == b'
 ]

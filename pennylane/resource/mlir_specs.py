@@ -176,7 +176,7 @@ def _get_resources_from_analysis_pass(
 ) -> list[SpecsResources]:
     resource_data = {}
 
-    for fn_name in all_data.keys():
+    for fn_name in all_data:
         _mlir_resources_to_specs_resources(
             all_data, focus=fn_name, fn_resources=resource_data, display_names={}
         )
