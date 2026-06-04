@@ -81,14 +81,24 @@ class ClassicalShadow:
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
+    >>> dev = qp.device("default.qubit", wires=range(2))
+    >>> @qp.set_shots(shots=1000)
+    ... @qp.qnode(dev)
+    ... def qnode(x):
+    ...     qp.Hadamard(0)
+    ...     qp.CNOT((0,1))
+    ...     qp.RX(x, wires=0)
+    ...     return qp.classical_shadow(wires=range(2))
+    >>> bits, recipes = qnode(0)
+    >>> shadow = qp.ClassicalShadow(bits, recipes)
     >>> shadow.expval(qp.X(0) @ qp.X(1), k=1)
-    array(0.972)
+    array(...)
 
     or of a Hamiltonian:
 
     >>> H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.X(1)])
     >>> shadow.expval(H, k=1)
-    array(1.917)
+    array(...)
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
     value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
@@ -211,6 +221,17 @@ class ClassicalShadow:
 
             bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
 
+        >>> dev = qp.device("default.qubit", wires=range(2))
+        >>> @qp.set_shots(shots=1000)
+        ... @qp.qnode(dev)
+        ... def qnode():
+        ...     qp.Hadamard(0)
+        ...     qp.CNOT((0,1))
+        ...     return qp.classical_shadow(wires=range(2))
+        >>> bits, recipes = qnode()
+        >>> shadow = qp.ClassicalShadow(bits, recipes)
+        >>> shadow_state = np.mean(shadow.global_snapshots(), axis=0)
+        >>> bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
         >>> np.allclose(bell_state, shadow_state, atol=1e-1)
         True
 
@@ -316,14 +337,24 @@ class ClassicalShadow:
 
         Compute Pauli string observables
 
+        >>> dev = qp.device("default.qubit", wires=range(2))
+        >>> @qp.set_shots(shots=1000)
+        ... @qp.qnode(dev)
+        ... def qnode(x):
+        ...     qp.Hadamard(0)
+        ...     qp.CNOT((0,1))
+        ...     qp.RX(x, wires=0)
+        ...     return qp.classical_shadow(wires=range(2))
+        >>> bits, recipes = qnode(0)
+        >>> shadow = qp.ClassicalShadow(bits, recipes)
         >>> shadow.expval(qp.X(0) @ qp.X(1), k=1)
-        array(1.116)
+        array(...)
 
         or of a Hamiltonian using `the same` measurement results
 
         >>> H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.X(1)])
         >>> shadow.expval(H, k=1)
-        array(1.9980000000000002)
+        array(...)
         """
         if not isinstance(H, (list, tuple)):
             H = [H]
@@ -405,6 +436,18 @@ class ClassicalShadow:
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
+        >>> wires = 4
+        >>> dev = qp.device("default.qubit", wires=range(wires))
+        >>> @qp.set_shots(shots=1000)
+        ... @qp.qnode(dev)
+        ... def max_entangled_circuit():
+        ...     qp.Hadamard(wires=0)
+        ...     for i in range(1, wires):
+        ...         qp.CNOT(wires=[0, i])
+        ...     return qp.classical_shadow(wires=range(wires))
+        >>> bits, recipes = max_entangled_circuit()
+        >>> shadow = qp.ClassicalShadow(bits, recipes)
+        >>> entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
         >>> print(np.isclose(entropies, entropies[0], atol=5e-2))
         [ True  True  True]
 
@@ -426,8 +469,21 @@ class ClassicalShadow:
             bitstrings, recipes = qnode(x)
             shadow = qp.ClassicalShadow(bitstrings, recipes)
 
+        >>> wires = 4
+        >>> dev = qp.device("default.qubit", wires=range(wires))
+        >>> @qp.set_shots(shots=1000)
+        ... @qp.qnode(dev)
+        ... def qnode(x):
+        ...     for i in range(wires):
+        ...         qp.RY(x[i], wires=i)
+        ...     for i in range(wires - 1):
+        ...         qp.CNOT((i, i + 1))
+        ...     return qp.classical_shadow(wires=range(wires))
+        >>> x = np.linspace(0.5, 1.5, num=wires)
+        >>> bitstrings, recipes = qnode(x)
+        >>> shadow = qp.ClassicalShadow(bitstrings, recipes)
         >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]]
-        [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
+        [...]
 
         """
 

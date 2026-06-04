@@ -97,10 +97,22 @@ The easiest way of computing expectation values with classical shadows in PennyL
 
 The big advantage of this way of computing expectation values is that it is differentiable.
 
+>>> H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.Z(1)])
+>>> dev = qp.device("default.qubit")
+>>> @qp.defer_measurements
+... @qp.set_shots(shots=10000)
+... @qp.qnode(dev)
+... def qnode(x):
+...     qp.Hadamard(0)
+...     qp.CNOT((0,1))
+...     qp.RX(x, wires=0)
+...     qp.measure(1)
+...     return qp.shadow_expval(H)
+>>> x = qp.numpy.array(0.5, requires_grad=True)
 >>> qnode(x)
-array(0.8406)
+array(...)
 >>> qp.grad(qnode)(x)
--0.49680000000000013
+np.float64(-0...)
 
 There are more options for post-processing classical shadows in :class:`ClassicalShadow`.
 """

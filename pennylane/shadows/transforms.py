@@ -158,17 +158,20 @@ def shadow_state(
             qp.RX(x, wires=0)
             return qp.classical_shadow(wires=[0, 1])
 
-    >>> x = np.array(1.2)
+    >>> dev = qp.device("default.qubit", wires=2)
+    >>> @qp.set_shots(shots=10000)
+    ... @qp.shadows.shadow_state(wires=[0, 1], diffable=True)
+    ... @qp.qnode(dev)
+    ... def circuit(x):
+    ...     qp.Hadamard(wires=0)
+    ...     qp.CNOT(wires=[0, 1])
+    ...     qp.RX(x, wires=0)
+    ...     return qp.classical_shadow(wires=[0, 1])
+    >>> x = qp.numpy.array(1.2, requires_grad=True)
     >>> circuit(x)
-    array([[ 0.33835   +0.j     , -0.01215   +0.2241j , -0.00465   +0.237j  ,  0.35504997-0.01755j],
-       [-0.01215   -0.2241j ,  0.1528    +0.j     ,  0.16919999-0.0036j , -0.00285   -0.22065j],
-       [-0.00465   -0.237j  ,  0.16919999+0.0036j ,  0.17529999+0.j     ,  0.0099    -0.2358j ],
-       [ 0.35504997+0.01755j, -0.00285   +0.22065j,  0.0099    +0.2358j ,  0.33355   +0.j     ]], dtype=complex64)
+    array(...)
     >>> qp.jacobian(lambda x: np.real(circuit(x)))(x)
-    array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
-           [-0.005325,  0.235275,  0.2358  , -0.004275],
-           [ 0.004275,  0.2358  ,  0.244875, -0.002175],
-           [-0.2358  , -0.004275, -0.002175, -0.235125]])
+    array(...)
     """
     tapes, fn = (
         _shadow_state_diffable(tape, wires) if diffable else _shadow_state_undiffable(tape, wires)
