@@ -738,7 +738,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         def circuit():
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
-            return qp.classical_shadow(wires=[0, 1], seed=42)
+            return qp.classical_shadow(wires=[0, 1], seed=89)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
