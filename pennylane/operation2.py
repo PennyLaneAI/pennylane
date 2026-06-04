@@ -31,7 +31,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator.base import (  # tach-ignore
     _UNSET_BATCH_SIZE,
-    FlatPytree,
     _get_abstract_operator,
     classproperty,
 )
@@ -48,7 +47,7 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 has_jax = find_spec("jax") is not None
