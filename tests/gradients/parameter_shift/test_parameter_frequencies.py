@@ -76,10 +76,12 @@ class TestParameterFrequencies:
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
-            parameter_frequencies = freqs
-
             def __init__(self, phi: float, theta: float, wires: WiresLike):
                 super().__init__(phi, theta, wires=wires)
+
+        @parameter_frequencies.register
+        def multi_arg_op_no_gen_param_freqs(op: MultiArgOpNoGenParamFreqs):
+            return freqs
 
         op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])
         assert parameter_frequencies(op) == freqs
