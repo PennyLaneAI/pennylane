@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
@@ -275,7 +276,7 @@ class TestParameterFrequencies:
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
         freqs_from_gen = qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
-        freqs = op.parameter_frequencies
+        freqs = parameter_frequencies(op)
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 

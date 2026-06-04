@@ -127,6 +127,12 @@ class TestParameterFrequencies:
 
     def test_parameter_frequencies_raises(self):
         """Test that parameter_frequencies raises an error if given the wrong type of object."""
-        wires = Wires([0, 1, 2])
+
+        class DummyClass:
+            name = "DummyClass"
+
+            def __int__(self):
+                return
+
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            _ = parameter_frequencies(wires)
+            _ = parameter_frequencies(DummyClass())

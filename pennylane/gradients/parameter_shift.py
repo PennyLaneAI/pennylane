@@ -98,7 +98,7 @@ def _process_op_recipe(op, p_idx, order):
 
     # Try to obtain the period of the operator frequencies for iteration of custom recipe
     try:
-        period = frequencies_to_period(op.parameter_frequencies[p_idx])
+        period = frequencies_to_period(parameter_frequencies(op)[p_idx])
     except ParameterFrequenciesUndefinedError:
         period = None
 
@@ -287,7 +287,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
-        frequencies = op.parameter_frequencies[p_idx]
+        frequencies = parameter_frequencies(op)[p_idx]
     except ParameterFrequenciesUndefinedError as e:
         raise OperatorPropertyUndefined(
             f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
