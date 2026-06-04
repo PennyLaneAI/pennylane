@@ -242,6 +242,19 @@ class Tracker:
         self.history = {}
         self.latest = {}
 
+    def __repr__(self):
+        callback_info = "custom" if self.callback is not None else None
+        return (
+            f"Tracker("
+            f"active={self.active}, "
+            f"totals={self.totals}, "
+            f"persistent={self.persistent}, "
+            f"history={self.history}, "
+            f"latest={self.latest}, "
+            f"callback={callback_info}"
+            f")"
+        )
+
     def record(self):
         """This method allows users to interact with the stored data.  While it's intended purpose
         is monitoring large jobs through ``print`` statements or logging, the function is

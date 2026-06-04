@@ -143,6 +143,29 @@ class TestTrackerCoreBehavior:
 
         assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
+    def test_repr(self):
+        """Tests that __repr__ displays relevant information"""
+        tracker = Tracker()
+
+        repr_str = repr(tracker)
+        assert repr_str.startswith("Tracker(")
+        assert "active=False" in repr_str
+        assert "totals={}" in repr_str
+        assert "persistent=False" in repr_str
+        assert "history={}" in repr_str
+        assert "latest={}" in repr_str
+        assert "callback=None" in repr_str
+
+        tracker.update(a=1, b="b")
+        repr_str = repr(tracker)
+        assert "a" in repr_str
+        assert "b" in repr_str
+        assert "callback=None" in repr_str
+
+        tracker.callback = lambda **kwargs: None
+        repr_str = repr(tracker)
+        assert "callback=custom" in repr_str
+
     def test_record_callback(self, mocker):
         # pylint: disable=too-few-public-methods
         class callback_wrapper:
