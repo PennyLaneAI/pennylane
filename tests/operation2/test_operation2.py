@@ -34,7 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
+from pennylane.operation import _UNSET_BATCH_SIZE, StatePrepBase
 from pennylane.operation2 import Operator2, StatePrepBase2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
@@ -1692,18 +1692,34 @@ class TestRepresentations:
         assert op.generator() == DynOp(0.5, wires=0)
 
 
-def test_state_prep_base_label():
-    """Tests that the default label is as expected."""
+class TestStatePrepBase:
 
-    class MyStatePrep(StatePrepBase2):
-        wire_argnames = ("wires",)
+    def test_state_prep_base_label(self):
+        """Tests that the default label is as expected."""
 
-        def __init__(self, wires):
-            super().__init__(wires)
+        class MyStatePrep(StatePrepBase2):
+            wire_argnames = ("wires",)
 
-        def state_vector(self, wire_order=None):
-            return np.zeros(5)
+            def __init__(self, wires):
+                super().__init__(wires)
 
-    op = MyStatePrep(0)
-    assert op.label() == "|Ψ⟩"
-    assert op.label(base_label="|x⟩") == "|x⟩"
+            def state_vector(self, wire_order=None):
+                return np.zeros(5)
+
+        op = MyStatePrep(0)
+        assert op.label() == "|Ψ⟩"
+        assert op.label(base_label="|x⟩") == "|x⟩"
+
+    def test_interface_not_implemented(self):
+        """Tests that an error is raised if an interface isn't implemented."""
+
+        class BadStatePrep(StatePrepBase2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires)
+
+            # state_vector is not implemented!
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep without an implementation"):
+            BadStatePrep(0)
