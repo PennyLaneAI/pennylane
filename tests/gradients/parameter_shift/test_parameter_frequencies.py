@@ -22,7 +22,9 @@ from pennylane.gradients import parameter_frequencies
 from pennylane.operation2 import Operator2
 from pennylane.ops import Exp, Hermitian, PauliZ
 from pennylane.ops.functions import eigvals, generator
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
+
+# pytest: disable=too-few-public-methods
 
 
 class TestParameterFrequencies:
@@ -80,7 +82,9 @@ class TestParameterFrequencies:
                 super().__init__(phi, theta, wires=wires)
 
         @parameter_frequencies.register
-        def multi_arg_op_no_gen_param_freqs(op: MultiArgOpNoGenParamFreqs):
+        def multi_arg_op_no_gen_param_freqs(
+            op: MultiArgOpNoGenParamFreqs,
+        ):  # pytest: disable=unused-argument
             return freqs
 
         op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])

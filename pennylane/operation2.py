@@ -28,6 +28,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty  # tach-ignore
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -39,7 +40,6 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
