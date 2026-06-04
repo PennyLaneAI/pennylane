@@ -43,20 +43,10 @@ gate_set = {
     qp.Z,
     qp.CNOT,
     qp.CZ,
-    qp.CY,
     qp.PauliX,
     qp.PauliY,
     qp.PauliZ,
     qp.Hadamard,
-    qp.RX,
-    qp.RY,
-    qp.RZ,
-    qp.Rot,
-    qp.PhaseShift,
-    qp.GlobalPhase,
-    qp.BasisState,
-    qp.Toffoli,
-    qp.SWAP,
     PauliMeasure,
 }
 
@@ -614,23 +604,29 @@ class TestMeasurementQROM:
         total_wires = n_input + n_work + n_target
         dev = qp.device("lightning.qubit", wires=total_wires)
 
-        wires = qp.registers("control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
-        
+        wires = qp.registers(
+            {"control_wires": n_input, "work_wires": n_work, "target_wires": n_target}
+        )
+
+        shots = 10
+
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set)
-        @qp.set_shots(1)
+        @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
-            qp.BasisState(j, wires=control_wires)
+            qp.BasisState(j, wires=wires["control_wires"])
             _qrom_measurement_decomposition(data=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L):
-            output = circuit(j)
-            assert np.array_equal(output[0], bitstrings[j:j+1]), (
-                f"L={L}, j={j}: got {output[0]}, expected {bitstrings[j:j+1]}"
-            )
-            assert np.allclose(output[1], 0), f"j={j}: work wires not clean, got {output[1]}"
+            target_samples, work_samples = circuit(j)
+
+            assert target_samples.shape == (shots, n_target)
+            assert np.all(
+                target_samples == bitstrings[j]
+            ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
+            assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
     @pytest.mark.external
     @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
