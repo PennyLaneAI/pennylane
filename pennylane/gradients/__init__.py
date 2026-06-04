@@ -76,6 +76,7 @@ Utility functions
     generate_multishifted_tapes
     generate_shift_rule
     generate_multi_shift_rule
+    parameter_frequencies
     eigvals_to_frequencies
     compute_vjp_single
     compute_vjp_multi
