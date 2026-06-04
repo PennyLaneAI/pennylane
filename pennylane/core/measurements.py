@@ -26,7 +26,6 @@ from typing import Optional
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
-from pennylane.core.operator import Operator
 from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -35,17 +34,19 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
-from pennylane.ops import MeasurementValue
+from pennylane.ops import MeasurementValue  # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .capture_measurements import (
+# tach-ignore
+from ._capture_measurements import (
     create_measurement_mcm_primitive,
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
+from .operator import Operator
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -576,3 +577,6 @@ class MeasurementTransform(MeasurementProcess):
             tape (QuantumTape): quantum tape to transform
             device (pennylane.devices.LegacyDevice): device used to transform the quantum tape
         """
+
+
+__all__ = ["MeasurementProcess", "SampleMeasurement", "StateMeasurement", "MeasurementTransform"]

@@ -22,7 +22,7 @@ from functools import singledispatch
 
 import pennylane as qp
 from pennylane import math
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP

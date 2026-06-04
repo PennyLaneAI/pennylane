@@ -17,21 +17,23 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
+from pennylane.core.shots import Shots
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,

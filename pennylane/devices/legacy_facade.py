@@ -24,6 +24,7 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
+from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
@@ -33,7 +34,7 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math import Interface, requires_grad
-from pennylane.measurements import ExpectationMP, Shots
+from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript

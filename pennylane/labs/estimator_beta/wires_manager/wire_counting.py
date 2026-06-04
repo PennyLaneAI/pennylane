@@ -16,6 +16,7 @@
 from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import GateCount, ResourceOperator
@@ -29,7 +30,6 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     MarkClean,
     MarkQubits,
 )
-from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -300,7 +300,7 @@ def estimate_wires_from_circuit(
             for w in active_wires:
                 state_circuit_wires[w] = 0
 
-            num_clean_logical_wires = sum((state_circuit_wires[w_i] for w_i in circuit_wires))
+            num_clean_logical_wires = sum(state_circuit_wires[w_i] for w_i in circuit_wires)
             num_any_state_logical_wires = (
                 len(circuit_wires) - num_clean_logical_wires
             )  # Note this contains the wires that circuit_element acts on

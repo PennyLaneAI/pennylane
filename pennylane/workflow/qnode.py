@@ -29,10 +29,10 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import BoundTransform, CompilePipeline, Transform

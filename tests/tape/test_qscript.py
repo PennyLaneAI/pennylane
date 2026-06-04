@@ -19,8 +19,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import Shots, StateMP
+from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
 from pennylane.queuing import AnnotatedQueue

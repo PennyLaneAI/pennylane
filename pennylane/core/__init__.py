@@ -33,9 +33,32 @@ Operator Types
     :parts: 1
 
 
+Other
+~~~~~
+
+..currentmodule:: pennylane.core
+.. autosummary::
+    :toctree: api
+
+    ~MeasurementProcess
+    ~StateMeasurement
+    ~SampleMeasurement
+    ~MeasurementTransform
+    ~Shots
+    ~ShotCopies
+    ~ShotsLike
+
+
 """
 
 from .operator import Operator, Operation, Channel, CV, CVOperation, CVObservable, StatePrepBase
+from .measurements import (
+    MeasurementProcess,
+    StateMeasurement,
+    SampleMeasurement,
+    MeasurementTransform,
+)
+from .shots import Shots, ShotCopies, ShotsLike
 
 __all__ = [
     "Operator",
@@ -45,4 +68,11 @@ __all__ = [
     "CVOperation",
     "CVObservable",
     "StatePrepBase",
+    "MeasurementProcess",
+    "StateMeasurement",
+    "SampleMeasurement",
+    "MeasurementTransform",
+    "Shots",
+    "ShotCopies",
+    "ShotsLike",
 ]

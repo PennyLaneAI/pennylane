@@ -21,9 +21,9 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff
-from pennylane.measurements import Shots
 
 # pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 

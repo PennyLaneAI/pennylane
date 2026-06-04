@@ -25,7 +25,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement
+from ..core.measurements import SampleMeasurement, StateMeasurement
 from .probs import probs
 from .sample import SampleMP
 

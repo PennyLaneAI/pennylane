@@ -240,7 +240,17 @@ class Shots:
         return self.total_shots is not None
 
     def __add__(self, other):
-        return add_shots(self, other)
+        if self.total_shots is None:
+            return other
+
+        if other.total_shots is None:
+            return self
+
+        shot_vector = []
+        for shot in self.shot_vector + other.shot_vector:
+            shot_vector.append((shot.shots, shot.copies))
+
+        return Shots(shots=shot_vector)
 
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
@@ -294,32 +304,3 @@ class Shots:
 
 
 ShotsLike = Shots | int | Sequence[int | tuple[int, int]] | None
-
-
-def add_shots(s1: Shots, s2: Shots) -> Shots:
-    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
-
-    Args:
-        s1 (Shots): a Shots object to add
-        s2 (Shots): a Shots object to add
-
-    Returns:
-        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
-
-    Example:
-        >>> s1 = Shots((5, (10, 2)))
-        >>> s2 = Shots((3, 2, (10, 3)))
-        >>> print(qp.measurements.add_shots(s1, s2))
-        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
-    """
-    if s1.total_shots is None:
-        return s2
-
-    if s2.total_shots is None:
-        return s1
-
-    shot_vector = []
-    for shot in s1.shot_vector + s2.shot_vector:
-        shot_vector.append((shot.shots, shot.copies))
-
-    return Shots(shots=shot_vector)

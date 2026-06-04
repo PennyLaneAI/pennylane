@@ -23,7 +23,7 @@ from functools import cached_property
 import numpy as np
 import rustworkx as rx
 
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure

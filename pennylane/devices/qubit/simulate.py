@@ -24,6 +24,7 @@ from numpy.random import default_rng
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.shots import ShotCopies, Shots
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
@@ -31,8 +32,6 @@ from pennylane.measurements import (
     ExpectationMP,
     ProbabilityMP,
     SampleMP,
-    ShotCopies,
-    Shots,
     VarianceMP,
 )
 from pennylane.operation import StatePrepBase

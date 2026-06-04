@@ -26,7 +26,9 @@ from functools import lru_cache
 from string import ascii_lowercase
 from typing import Any
 
-from pennylane.measurements import MeasurementProcess, Shots, add_shots
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.shots import Shots
+from pennylane.measurements import add_shots
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
@@ -149,7 +151,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 r1 = Resources(
@@ -201,7 +203,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 resources = Resources(
@@ -903,7 +905,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -970,7 +972,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -1038,7 +1040,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -1096,7 +1098,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -1151,7 +1153,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             initial_resources = Resources(

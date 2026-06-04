@@ -26,8 +26,8 @@ from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.exceptions import TransformError
-from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply

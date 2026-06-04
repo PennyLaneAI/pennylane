@@ -20,8 +20,9 @@ from collections.abc import Callable, Sequence
 from itertools import product
 
 from pennylane import ops
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.decomposition import gate_sets
-from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
+from pennylane.measurements import ExpectationMP, SampleMP, expval, sample
 from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word

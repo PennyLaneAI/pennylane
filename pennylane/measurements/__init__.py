@@ -137,7 +137,7 @@ obtained of a given state:
 .. code-block:: python
 
     import pennylane as qp
-    from pennylane.measurements import SampleMeasurement
+    from pennylane.core.measurements import SampleMeasurement
 
     class CountState(SampleMeasurement):
         def __init__(self, state: str):
@@ -266,25 +266,44 @@ You can find more about Pennylane standards in the guidelines on :doc:`/developm
 """
 
 from pennylane.exceptions import MeasurementShapeError
-
-from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
-from .counts import CountsMP, counts
-from .expval import ExpectationMP, expval
-from .measurements import (
+from pennylane.core.shots import Shots, ShotCopies, ShotsLike
+from pennylane.core.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
 )
+
+from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
+from .counts import CountsMP, counts
+from .expval import ExpectationMP, expval
 from .mutual_info import MutualInfoMP, mutual_info
 from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
+
+
+def add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+
+    Example:
+        >>> s1 = Shots((5, (10, 2)))
+        >>> s2 = Shots((3, 2, (10, 3)))
+        >>> print(qp.measurements.add_shots(s1, s2))
+        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
+    """
+    return s1 + s2
 
 
 # pylint: disable=import-outside-toplevel
