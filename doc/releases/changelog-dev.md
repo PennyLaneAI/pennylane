@@ -103,6 +103,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a custom ``__repr__`` method to :class:`~.Tracker` for improved readability and debugging.
+  [(#9389)](https://github.com/PennyLaneAI/pennylane/issues/9389)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
