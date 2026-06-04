@@ -103,6 +103,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
+  `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
+  that contain negative signs. This allows the preparation circuits to skip phase gates when the
+  phases are purely real, i.e. :math:`\pm 1`.
+  [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
