@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Contains the SumOfSlatersPrep template."""
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from itertools import combinations, product
 
 import numpy as np
@@ -28,6 +28,8 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
+
+SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "m", "r"])
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -932,10 +934,11 @@ class SumOfSlatersPrep(Operation):
         reuse.
 
         Args:
-            indices (tuple[int]): Indices of computational basis states of the sparse state to be
-                prepared with ``SumOfSlatersPrep``.
-            wires (qp.wires.WiresLike): Target wires on which ``SumOfSlatersPrep`` will prepare
-                the state.
+            num_entries (int): Number of bit strings prepared by ``SumOfSlatersPrep``.
+            num_bits (int): Number of bits per bit string used in ``SumOfSlatersPrep`` to
+                represent the individual basis states in the sparse state. That is, number of
+                bits after using ``select_sos_rows``.
+            num_wires (int): Number of qubits on which ``SumOfSlatersPrep`` prepares the state.
 
         Returns:
             dict[str, int]: Required register size per register name. Includes the target wires
@@ -1044,11 +1047,11 @@ def _preprocess(v_bits, wires):
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
-    return selected_wires, u_bits, b_bits, d, m, r
+    return selected_wires, SoSData(u_bits, b_bits, d, m, r)
 
 
 def _sos_state_prep_with_wires(
-    data,
+    data: tuple(np.ndarray, np.ndarray, SoSData),
     *,
     wires,
     enumeration_wires,
@@ -1058,8 +1061,9 @@ def _sos_state_prep_with_wires(
     selected_wires,
 ):
     # pylint: disable=too-many-arguments, no-value-for-parameter
-    coefficients, v_bits, u_bits, b_bits, d, m, r = data
-    identity_encoding = r == m
+    coefficients, v_bits, data = data
+    identity_encoding = data.r == data.m
+    b_bits = data.b_bits
     num_entries = v_bits.shape[1]
 
     # Step 1: Dense state preparation in enumeration register
@@ -1082,11 +1086,11 @@ def _sos_state_prep_with_wires(
         # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
         # register. Note that we skip this step if identity_encoding=True, because the encoding
         # is trivial in this case. This is an additional optimization compared to the paper.
-        @for_loop(m)
+        @for_loop(data.m)
         def encoding(i):
-            u = u_bits[i]
+            u = data.u_bits[i]
 
-            @for_loop(r)
+            @for_loop(data.r)
             def inner_loop(j):
                 qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
 
@@ -1099,9 +1103,9 @@ def _sos_state_prep_with_wires(
 
     # Create wires for elbow ladder
     elbow_wires = mcx_ctrl_wires[:1] + [
-        _wires[k] for k in range(m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
+        _wires[k] for k in range(data.m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
     ]
-    elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(m - 1)]
+    elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(data.m - 1)]
     cnot_control_wire = elbow_wires[-1]
 
     if qp.compiler.active() or qp.capture.enabled():
@@ -1110,21 +1114,21 @@ def _sos_state_prep_with_wires(
         mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
         elbow_triples = qp.math.array(elbow_triples, like="jax")
 
-    @for_loop(m - 1)
+    @for_loop(data.m - 1)
     def left_elbow_ladder(i):
         qp.TemporaryAND(elbow_triples[i])
 
-    @for_loop(d)
+    @for_loop(data.d)
     def cnot_loop(j, k):
-        bit_is_set = (k >> (d - 1 - j)) & 1
+        bit_is_set = (k >> (data.d - 1 - j)) & 1
         qp.cond(bit_is_set, qp.CNOT)([cnot_control_wire, enumeration_wires[j]])
         return k
 
-    @for_loop(m - 2, -1, -1)
+    @for_loop(data.m - 2, -1, -1)
     def right_elbow_ladder(i):
         qp.adjoint(qp.TemporaryAND(elbow_triples[i]))
 
-    @for_loop(m)
+    @for_loop(data.m)
     def flip(i, bits_to_flip):
         qp.cond(bits_to_flip[i], qp.X)(mcx_ctrl_wires[i])
         return bits_to_flip
@@ -1134,16 +1138,16 @@ def _sos_state_prep_with_wires(
     def uncompute_enumeration(k, prev_bits):
         bits = b_bits[:, k]
         flip(bits ^ prev_bits)
-        if m > 1:
+        if data.m > 1:
             left_elbow_ladder()
         cnot_loop(k)
-        if m > 1:
+        if data.m > 1:
             right_elbow_ladder()
         return bits
 
-    last_bits = uncompute_enumeration(np.ones(m, dtype=int))
+    last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
-    @for_loop(m)
+    @for_loop(data.m)
     def last_flip(i):
         qp.cond(1 - last_bits[i], qp.X)(mcx_ctrl_wires[i])
 
@@ -1166,9 +1170,9 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_wires, *data = _preprocess(v_bits, wires)
+    selected_wires, data = _preprocess(v_bits, wires)
     # pylint: disable-next=protected-access
-    sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data[-1], n)
+    sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
     all_allocate_wires = sum(sizes.values()) - n
     with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
         start = 0
@@ -1177,7 +1181,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         all_wires = {name: allocated[start : (start := start + sizes[name])] for name in names}
         all_wires["wires"] = wires
         all_wires["selected_wires"] = selected_wires
-        data = (coefficients, v_bits, *data)
+        data = (coefficients, v_bits, data)
         _sos_state_prep_with_wires(data, **all_wires)
 
 
