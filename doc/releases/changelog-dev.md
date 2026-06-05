@@ -293,7 +293,7 @@
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
-  explicitly, to match the behaviour of most `Templates`.
+  explicitly, to match the behaviour of all other `Operator` classes.
   [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
