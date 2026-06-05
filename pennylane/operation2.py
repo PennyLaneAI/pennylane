@@ -1246,7 +1246,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             leaves, tree = flatten(value)
             static_args[name] = (tuple(leaves), tree)
 
-        self.tracer = operator_p.bind(
+        res = operator_p.bind(
             *pos_args,
             op_cls=type(self),
             dynamic_argnames=self.dynamic_argnames,
@@ -1257,6 +1257,10 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             hybrid_trees=hybrid_trees,
             **static_args,
         )
+        # If we bind the primitive outside a tracing context, `res`` will be an operator,
+        # not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res
 
 
 # ------------------------------------------------------------------------------
