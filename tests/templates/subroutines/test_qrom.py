@@ -667,6 +667,7 @@ class TestMeasurementQROM:
             )
 
             qp.adjoint(qp.StatePrep(x_state, wires=control_wires, pad_with=0.0))
-            return qp.probs(wires=control_wires)
+            return qp.probs(wires=control_wires), qp.probs(wires=work_wires)
 
-        assert np.isclose(circuit()[0], 1.0)
+        assert np.isclose(circuit()[0][0], 1.0)
+        assert np.isclose(circuit()[1][0], 1.0)
