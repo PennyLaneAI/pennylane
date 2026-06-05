@@ -21,7 +21,7 @@ from functools import reduce
 
 import numpy as np
 
-import pennylane.math as math
+from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.decomposition import (
     add_decomps,
