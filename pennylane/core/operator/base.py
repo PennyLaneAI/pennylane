@@ -229,7 +229,7 @@ class Operator1(abc.ABC):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        return getattr(subclass, "_operator_version") == 1
+        return getattr(subclass, "_operator_version", None) == 1
 
 
 class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
