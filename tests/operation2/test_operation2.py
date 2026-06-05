@@ -569,6 +569,162 @@ class TestBroadcasting:
             _ = op.batch_size
 
 
+class TestEquality:
+    """Tests for operator equality. Since ``Operator2.__eq__`` uses ``qp.equal``
+    under the hood, the bulk of testing for operator equality are elsewhere."""
+
+    def test_eq_identical_instance(self):
+        """Test that an operator is equal to itself."""
+        op = DynOp(0.5, wires=0)
+        assert op == op  # pylint: disable=comparison-with-itself
+
+    def test_eq_equal_operators(self):
+        """Test that distinct operators with the same arguments are equal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.5, wires=0)
+        assert op1 == op2
+        assert op2 == op1
+
+    def test_eq_different_dynamic_args(self):
+        """Test that operators with different dynamic args are not equal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.6, wires=0)
+        assert op1 != op2
+        assert op2 != op1
+
+    def test_eq_different_wires(self):
+        """Test that operators acting on different wires are not equal."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.5, wires=1)
+        assert op1 != op2
+        assert op2 != op1
+
+    def test_eq_different_type(self):
+        """Test that two ``Operator2`` subclasses are not equal."""
+
+        class Other(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op1 = DynOp(0.5, wires=0)
+        op2 = Other(0.5, wires=0)
+        assert op1 != op2
+        assert op2 != op1
+
+    @pytest.mark.parametrize("other", [42, "string", 0.5, None, [DynOp(0.5, wires=0)]])
+    def test_eq_against_non_operator(self, other):
+        """Test that comparing an operator with a non-``Operator2`` value returns False."""
+        op = DynOp(0.5, wires=0)
+        assert op != other
+
+
+class TestHash:
+    """Tests for ``Operator2`` hashing."""
+
+    def test_op_is_hashable(self):
+        """Test that ``Operator2`` is hashable."""
+        op = DynOp(0.5, wires=0)
+        assert isinstance(hash(op), int)
+
+    def test_op_can_be_dict_key(self):
+        """Test that an ``Operator2`` instance can be used as a dict key."""
+        op = DynOp(0.5, wires=0)
+        d = {op: "value"}
+        assert d[DynOp(0.5, wires=0)] == "value"
+
+    def test_set_deduplicates_equal_operators(self):
+        """Test that equal operators do not make unique entries when collected into a set."""
+        ops = {DynOp(0.5, wires=0) for _ in range(5)}
+        assert len(ops) == 1
+
+    def test_equal_ops_hash(self):
+        """Test the hash-equality invariant: ``a == b`` implies ``hash(a) == hash(b)``."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.5, wires=0)
+        assert op1 == op2
+        assert hash(op1) == hash(op2)
+
+    def test_close_floats_same_hash(self):
+        """Test that float values that round to the same 10 decimal places hash equally."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.5 + 1e-12, wires=0)
+        assert hash(op1) == hash(op2)
+
+    def test_different_args_hash(self):
+        """Test that differing arguments produces different hashes."""
+        op1 = FullOp(phi=0.5, static="a", hybrid=[0, 1], wires=0)
+        op2 = FullOp(phi=0.6, static="ab", hybrid=[1, 1], wires=1)
+        assert hash(op1) != hash(op2)
+
+    def test_different_types_different_hash(self):
+        """Test that operators of different types produce different hashes."""
+
+        class Other(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op1 = DynOp(0.5, wires=0)
+        op2 = Other(0.5, wires=0)
+        assert hash(op1) != hash(op2)
+
+    def test_different_hybrid_operator_args_different_hash(self):
+        """Test that differing hybrid arguments that have operator leaves produces different
+        hashes."""
+        op1 = FullOp(0.5, "a", [DynOp(0.5, wires=0)], wires=0)
+        op2 = FullOp(0.5, "a", [DynOp(0.6, wires=0)], wires=0)
+        assert hash(op1) != hash(op2)
+
+    def test_hybrid_with_wires_leaf_equal_hash(self):
+        """Test that hybrid arguments with ``Wires`` leaves hash equally for the same values."""
+
+        class HybridWireOp(Operator2):
+            wire_argnames = ("pytree_wires",)
+            hybrid_argnames = ("pytree_wires",)
+
+            def __init__(self, pytree_wires):
+                super().__init__([Wires(w) for w in pytree_wires])
+
+        op1 = HybridWireOp([[0, 1], [2]])
+        op2 = HybridWireOp([[0, 1], [2]])
+        assert hash(op1) == hash(op2)
+
+        op3 = HybridWireOp([[0, 3], [2]])
+        assert hash(op1) != hash(op3)
+
+    def test_hybrid_different_pytree_structure_different_hash(self):
+        """Test that hybrid arguments with different pytree structures hash differently."""
+        op1 = FullOp(0.5, "a", [0.1, 0.2], wires=0)
+        op2 = FullOp(0.5, "a", [0.1, [0.2]], wires=0)
+        assert hash(op1) != hash(op2)
+
+    @pytest.mark.parametrize("name", ["RX", "RY", "RZ", "PhaseShift", "Rot"])
+    def test_rotation_gate_modulo_2pi(self, name):
+        """Test that operators with designated rotation gate names hash modulo 2 * pi."""
+
+        Op = type(
+            name,
+            (Operator2,),
+            {
+                "dynamic_argnames": ("phi",),
+                "__init__": lambda self, phi, wires: Operator2.__init__(self, phi, wires=wires),
+            },
+        )
+
+        op1 = Op(0.5, wires=0)
+        op2 = Op(0.5 + 2 * np.pi, wires=0)
+        assert hash(op1) == hash(op2)
+
+    def test_non_rotation_no_modulo(self):
+        """Test that non-rotation operators do not apply modulo 2 * pi hashing."""
+        op1 = DynOp(0.5, wires=0)
+        op2 = DynOp(0.5 + 2 * np.pi, wires=0)
+        assert hash(op1) != hash(op2)
+
+
 class TestPytreeMethods:
     """Tests for ``_flatten`` and ``_unflatten``."""
 

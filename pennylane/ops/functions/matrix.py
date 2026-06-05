@@ -20,8 +20,8 @@ from functools import partial
 
 import pennylane as qp
 from pennylane import transform
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MatrixUndefinedError, TransformError
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch

@@ -27,8 +27,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.operation import Operator
 from pennylane.ops.op_math.condition import Conditional
 
 terminal_meas = [

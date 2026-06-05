@@ -35,9 +35,9 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
-from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
 from .reconstruct import decomps_use_reconstructor
