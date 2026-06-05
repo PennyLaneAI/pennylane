@@ -353,6 +353,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
+  :class:`~.Operation` or calculate them for an :class:`~.Operator2`.
+  [(#9569)](https://github.com/PennyLaneAI/pennylane/pull/9569)
+
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
   base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
   integrated into the PennyLane ecosystem. Supported functionality so far:
