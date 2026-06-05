@@ -111,13 +111,12 @@ class TestTrackerCoreBehavior:
         assert "history={}" in repr(tracker)
         assert "callback=None" in repr(tracker)
 
-        tracker.totals = {"a": 1}
-        tracker.latest = {"a": 1}
-        tracker.history = {"a": [1]}
+        tracker.update(a=1, b="b", c=None)
+        tracker.update(a=2, b="b2", c=1)
 
-        assert "totals={'a': 1}" in repr(tracker)
-        assert "latest={'a': 1}" in repr(tracker)
-        assert "history={'a': [1]}" in repr(tracker)
+        assert "totals={'a': 3, 'c': 1}" in repr(tracker)
+        assert "latest={'a': 2, 'b': 'b2', 'c': 1}" in repr(tracker)
+        assert "history={'a': [1, 2], 'b': ['b', 'b2'], 'c': [None, 1]}" in repr(tracker)
         assert "callback=None" in repr(tracker)
 
     def test_enter_and_exit(self):
