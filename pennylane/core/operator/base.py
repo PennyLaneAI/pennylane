@@ -183,6 +183,15 @@ def _process_data(op):
     return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
+# pylint: disable=too-few-public-methods
+class Operator1:
+    """docstring"""
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return getattr(subclass, "_operator_version") == 1
+
+
 class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -467,6 +476,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    _operator_version = 1
+
     _primitive: Optional["jax.extend.core.Primitive"] = None
     """
     Optional[jax.extend.core.Primitive]
@@ -486,6 +497,10 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         :meth:`~.Operator.resource_params`
 
     """
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return getattr(subclass, "_operator_version", None) in {1, 2}
 
     def __init_subclass__(cls, **_):
         # turn has_decomposition into a class property if possible

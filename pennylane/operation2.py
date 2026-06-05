@@ -51,6 +51,8 @@ class Operator2(ABC):
     TODO: [sc-120453] Fill docstring
     """
 
+    _operator_version = 2
+
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     # ----------------- Class variables set manually -------------------------
