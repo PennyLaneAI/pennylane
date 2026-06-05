@@ -3364,6 +3364,7 @@ class TestSinglePrecision:
 
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)
 
+    @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
     @pytest.mark.usefixtures("preserve_jax_x64")
     def test_float32_return(self, diff_method):
@@ -3379,6 +3380,7 @@ class TestSinglePrecision:
         grad = jax.grad(circuit)(jax.numpy.array(0.1))
         assert qp.math.allclose(grad, -np.sin(0.1))
 
+    @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
     @pytest.mark.usefixtures("preserve_jax_x64")
     def test_complex64_return(self, diff_method):

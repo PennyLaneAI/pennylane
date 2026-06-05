@@ -1532,6 +1532,7 @@ class TestDtypePreservedJax:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
+    @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
     @pytest.mark.parametrize(
         "measurement",
@@ -1564,6 +1565,7 @@ class TestDtypePreservedJax:
         res = circuit(p)
         assert res.dtype == r_dtype
 
+    @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("enable_x64, c_dtype", [(False, np.complex64), (True, np.complex128)])
     @pytest.mark.usefixtures("preserve_jax_x64")
     def test_complex_dtype(self, enable_x64, c_dtype, use_jit):

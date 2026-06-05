@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
