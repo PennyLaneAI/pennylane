@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a readable `` __repr__`` method for the ``Tracker`` class 
+* Added a `` __repr__`` method for the ``Tracker`` class to improve readability.
   [(#9592)](https://github.com/PennyLaneAI/pennylane/pull/9592)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
@@ -492,7 +492,7 @@ Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,
+Nidarshana Srinath,
 Paul Haochen Wang,
 David Wierichs,
-Jake Zaia,
-Nidarshana Srinath.
+Jake Zaia.
