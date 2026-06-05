@@ -49,7 +49,7 @@ class IQP(Operation):
 
     Args:
         weights (list): The parameters of the IQP gates.
-        num_wires (int): Number of wires in the circuit.
+        wires (WiresLike, optional): The wires that the IQP circuit operates on.
         pattern (list[list[list[int]]]): Specification of the trainable gates. Each element of ``pattern`` corresponds to a
             unique trainable parameter. Each sublist specifies the generators to which that parameter applies.
             Generators are specified by listing the qubits on which an X operator acts. For example, the ``pattern``
@@ -74,7 +74,7 @@ class IQP(Operation):
 
         @qp.qnode(dev)
         def iqp_circuit(weights, pattern, spin_sym):
-            qp.IQP(weights=weights, num_wires=2, pattern=pattern, spin_sym=spin_sym)
+            qp.IQP(weights=weights, wires=[0, 1], pattern=pattern, spin_sym=spin_sym)
             return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
     >>> iqp_circuit(weights=[0.89, 0.54], pattern=[[[0]], [[1]]], spin_sym=False)  # doctest: +SKIP
