@@ -45,12 +45,12 @@ Core Infrastructure
 
 .. autosummary::
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane.core.measurements
 
-    ~pennylane.core.measurements.MeasurementProcess
-    ~pennylane.core.measurements.StateMeasurement
-    ~pennylane.core.measurements.SampleMeasurement
-    ~pennylane.core.measurements.MeasurementTransform
+    ~MeasurementProcess
+    ~StateMeasurement
+    ~SampleMeasurement
+    ~MeasurementTransform
 
 
 Measurement Classes
