@@ -365,6 +365,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds a new test fixture `preserve_jax_x64` to help automatically restore the `jax.config.jax_enable_x64` to prevent
+  accidental context contamination.
+  [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
+
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
   base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
   integrated into the PennyLane ecosystem. Supported functionality so far:
