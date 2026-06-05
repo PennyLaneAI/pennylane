@@ -483,7 +483,7 @@
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
-  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
+  [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
 
