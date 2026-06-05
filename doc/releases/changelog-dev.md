@@ -530,4 +530,5 @@ Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
-Jake Zaia.
+Jake Zaia,
+Pranavi Jain.

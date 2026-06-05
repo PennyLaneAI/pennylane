@@ -104,16 +104,21 @@ class TestTrackerCoreBehavior:
 
         tracker = Tracker()
 
+        assert "active=False" in repr(tracker)
+        assert "totals={}" in repr(tracker)
+        assert "persistent=False" in repr(tracker)
+        assert "latest={}" in repr(tracker)
+        assert "history={}" in repr(tracker)
+        assert "callback=None" in repr(tracker)
+
         tracker.totals = {"a": 1}
-        tracker.history = {"a": [1]}
         tracker.latest = {"a": 1}
+        tracker.history = {"a": [1]}
 
-        expected = (
-            f"Tracker(active={tracker.active}, totals={tracker.totals}, persistent= {tracker.persistent}, "
-            f"latest={tracker.latest}, history={tracker.history}, callback={tracker.callback})"
-        )
-
-        assert repr(tracker) == expected
+        assert "totals={'a': 1}" in repr(tracker)
+        assert "latest={'a': 1}" in repr(tracker)
+        assert "history={'a': [1]}" in repr(tracker)
+        assert "callback=None" in repr(tracker)
 
     def test_enter_and_exit(self):
         """Assert entering and exit work as expected"""
