@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, TensorLike
+from pennylane.typing import AbstractArray, TensorLike
 
 
 class TestTensorLike:
@@ -122,10 +122,10 @@ class TestAbstractArray:
 
         assert len(a) == 2
 
-        with pytest.raises(IndexError, match="Cannot index into an abstract array."):
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             a[1] = 2
 
-        with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             _ = a[1]
 
     @pytest.mark.torch
@@ -179,68 +179,23 @@ class TestAbstractArray:
 
         assert a.ndim == 2
 
-    def test_indexing_into_scalar(self):
-        """Test that we can index into a scalar to produce a new hint with a size."""
-
-        a = AbstractArray((), int)
-
-        b = a[2, 3]
-        assert isinstance(b, AbstractArray)
-        assert b.dtype == np.int64
-        assert b.shape == (2, 3)
-
-        c = a[2]
-        assert isinstance(c, AbstractArray)
-        assert c.shape == (2,)
-        assert c.dtype == np.int64
-
-        d = a[...]
-        assert isinstance(d, AbstractArray)
-        assert d.shape == (...,)
-        assert d.dtype == np.int64
-
-        e = a[5, ..., 2]
-        assert isinstance(e, AbstractArray)
-        assert e.shape == (5, ..., 2)
-        assert e.dtype == np.int64
-
-    def test_error_indexing_into_non_scalar(self):
+    def test_error_indexing(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
 
         a = AbstractArray((2,), int)
 
-        with pytest.raises(IndexError, match="Only scalar AbstractArray's can be indexed into"):
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
             _ = a[1]
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
+            a[1] = 2
 
     def test_error_len_on_scalar(self):
         """Test that requesting the len of a scalar results in an error."""
-        a = AbstractArray((), Int)
+        a = AbstractArray((), int)
 
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
             len(a)
-
-    @pytest.mark.parametrize("bad_index", (5.0, "a", None))
-    def test_error_bad_indices(self, bad_index):
-        """Test that an error is raised on invalid indices."""
-
-        a = AbstractArray((), int)
-
-        with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
-            _ = a[bad_index]
-
-    @pytest.mark.parametrize(
-        "shortcut, dtype",
-        [(Int, np.int64), (Float, np.float64), (Bool, np.bool), (Complex, np.complex128)],
-    )
-    def test_scalar_shortcuts(self, shortcut, dtype):
-        """Test for the various available shortcuts."""
-
-        assert shortcut.dtype == dtype
-        assert shortcut.shape == ()
-
-        a = shortcut[2, 3, ...]
-        assert a.shape == (2, 3, ...)
-        assert a.dtype == dtype
 
     # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):

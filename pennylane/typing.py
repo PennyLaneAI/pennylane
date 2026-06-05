@@ -203,21 +203,10 @@ class AbstractArray:
         return len(self.shape)
 
     def __getitem__(self, item):
-        if self.shape:
-            raise IndexError(
-                "Only scalar AbstractArray's can be indexed into to create new versions."
-            )
-
-        if isinstance(item, int) or item == ...:
-            item = (item,)
-        if not isinstance(item, tuple) or not all(isinstance(n, int) or n == ... for n in item):
-            raise TypeError(
-                "AbstractArray scalars can only be subscripted with integers and Ellipsis."
-            )
-        return AbstractArray(item, self.dtype)
+        raise IndexError("Cannot index into an AbstractArray.")
 
     def __setitem__(self, *_, **__):
-        raise IndexError("Cannot index into an abstract array.")
+        raise IndexError("Cannot index into an AbstractArray.")
 
     def __len__(self) -> int:
         if not self.shape:
@@ -233,50 +222,3 @@ class AbstractArray:
 
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
-
-
-Int = AbstractArray((), int)
-"""An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
-
->>> isinstance(np.array(2), qp.typing.Int)
-True
->>> qp.typing.Int[4,2]
-AbstractArray(shape=(4, 2), dtype=dtype('int64'))
-
-"""
-
-
-Float = AbstractArray((), float)
-"""An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
-
->>> isinstance(np.array(2.0), qp.typing.Float)
-True
->>> qp.typing.Int[4,2]
-AbstractArray(shape=(4, 2), dtype=dtype('float64'))
-
-"""
-
-Bool = AbstractArray((), bool)
-"""An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
-
->>> isinstance(np.array(False), qp.typing.Bool)
-True
->>> qp.typing.Bool[4]
-AbstractArray(shape=(4,), dtype=dtype('bool'))
-
-"""
-
-
-Complex = AbstractArray((), complex)
-"""An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
-
->>> isinstance(np.array(0+1.2j), qp.typing.Complex)
-True
->>> qp.typing.Complex[..., 2]
-AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
-
-"""
