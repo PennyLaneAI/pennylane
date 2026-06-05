@@ -317,6 +317,27 @@ class TestSpecsTransform:
         assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.num_gates == 3
 
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_qjit_partial_all_levels(self):
+        """Test all-level specs for a partial-wrapped Catalyst jitted QNode."""
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.specs(partial(circuit, 0.1, z=0.3), level="all")(0.2)
+
+        assert specs["level"] == {0: "Before MLIR Passes"}
+        resources = specs["resources"]["Before MLIR Passes"]
+        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.num_gates == 3
+
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):
         """Test that the specs transform computes the depth of the circuit"""
