@@ -330,6 +330,18 @@ class Operator2(ABC):
         if it doesn't have one."""
         return self._pauli_rep
 
+    @property
+    def hyperparameters(self) -> dict:
+        return {
+            k: v
+            for k, v in self.arguments.items()
+            if k not in self.dynamic_argnames and k != "wires"
+        }
+
+    @property
+    def num_wires(self):
+        return self.wire_sizes[0]
+
     # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
     # ------------------------------------------------------------------------
