@@ -80,7 +80,7 @@ def test_raises(params, error, match):
             math.random.uniform(0, 2 * np.pi, 6),
             local_gates(6, 1),
             True,
-            [i for i in range(6)],
+            range(6),
         ),
     ],
 )
