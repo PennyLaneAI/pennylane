@@ -254,6 +254,8 @@ class Tracker:
             self.callback(totals=self.totals, history=self.history, latest=self.latest)
 
     def __repr__(self):
+        """This method overwrites the default __repr__ method making it readable"""
+
         return(f"Tracker("
                f"active= {self.active}, "
                f"totals= {self.totals}, "
