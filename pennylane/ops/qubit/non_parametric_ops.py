@@ -350,9 +350,10 @@ class PauliX(Operator2):
 
     @property
     def pauli_rep(self):
-        if hasattr(self, "_pauli_rep"):
-            return self._pauli_rep
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
+        if self._pauli_rep is None:
+            self._pauli_rep = qp.pauli.PauliSentence(
+                {qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0}
+            )
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -640,9 +641,10 @@ class PauliY(Operator2):
 
     @property
     def pauli_rep(self):
-        if hasattr(self, "_pauli_rep"):
-            return self._pauli_rep
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
+        if self._pauli_rep is None:
+            self._pauli_rep = qp.pauli.PauliSentence(
+                {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
+            )
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -900,9 +902,10 @@ class PauliZ(Operator2):
 
     @property
     def pauli_rep(self):
-        if hasattr(self, "_pauli_rep"):
-            return self._pauli_rep
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
+        if self._pauli_rep is None:
+            self._pauli_rep = qp.pauli.PauliSentence(
+                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
+            )
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
