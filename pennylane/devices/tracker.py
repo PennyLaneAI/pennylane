@@ -252,3 +252,14 @@ class Tracker:
         """
         if self.callback is not None:
             self.callback(totals=self.totals, history=self.history, latest=self.latest)
+
+    def __repr__(self):
+        return(f"Tracker("
+               f"active= {self.active}, "
+               f"totals= {self.totals}, "
+               f"persistent= {self.persistent}, "
+               f"callback= {self.callback}, "
+               f"history= {self.history}, "
+               f"latest= {self.latest}, "
+               f")")
+ 

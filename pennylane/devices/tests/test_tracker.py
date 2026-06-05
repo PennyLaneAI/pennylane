@@ -55,3 +55,21 @@ class TestTracker:
             circ()
         assert dev.tracker.history["batches"] == [1]
         assert dev.tracker.history["executions"] == [1]
+    
+    def test_tracker_repr(self):
+        tracker = qp.Tracker()
+
+        representation = repr(tracker)
+        
+        assert "Tracker" in representation
+        assert "active" in representation
+        assert "totals" in representation
+        assert "persistent" in representation
+        assert "callback" in representation
+        assert "history" in representation
+        assert "latest" in representation
+        assert "(" in representation
+        assert ")" in representation
+        
+
+        
