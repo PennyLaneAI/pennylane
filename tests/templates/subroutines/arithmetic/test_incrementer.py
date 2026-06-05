@@ -26,6 +26,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule, asser
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "wires, work_wires",
     [

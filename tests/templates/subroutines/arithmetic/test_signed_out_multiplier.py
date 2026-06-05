@@ -52,6 +52,7 @@ def twos_complement_value(bits):
     return sum
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
