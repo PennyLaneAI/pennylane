@@ -64,7 +64,7 @@ def _select_pauli_rot_phase_gradient(
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[: len(angle_wires) - 1])
 
     def inner_cob():
-        return change_op_basis(compute_fn, target_fn)
+        return change_op_basis(compute_fn, target_fn, compute_fn)
 
     match rot_axis:
         case "X":
@@ -204,8 +204,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 3. Prod: MUST be a dict {CompressedResourceOp: count}
         prod_res = {
-            qrom_rep: 1,
             ctrl_x_rep: len(phase_grad_wires),
+            qrom_rep: 1,
         }
         prod_rep = resource_rep(Prod, resources=prod_res)
 
