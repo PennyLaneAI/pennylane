@@ -34,6 +34,7 @@ from pennylane.core.operator.base import (  # tach-ignore
     _get_abstract_operator,
     classproperty,
 )
+from pennylane.core.operator.capture import ABCOperatorMeta  # tach-ignore
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -53,7 +54,7 @@ from pennylane.wires import Wires, WiresLike
 has_jax = find_spec("jax") is not None
 
 
-class Operator2(ABC):
+class Operator2(ABC, metaclass=ABCOperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
@@ -186,10 +187,7 @@ class Operator2(ABC):
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.tracer = None
-        if qp.capture.enabled():
-            self._bind_primitive()
-        else:
-            self.queue()
+        self.queue()
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -1267,7 +1265,9 @@ class Operator2(ABC):
 
 
 if has_jax:
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel,ungrouped-imports
+    import jax.numpy as jnp
+
     from pennylane.capture.custom_primitives import QpPrimitive
 
     operator_p = QpPrimitive("operator")
@@ -1287,25 +1287,22 @@ if has_jax:
         hybrid_trees,
         **static_args,
     ):
-        # Pause capture so that reconstructing the operator (including unflattening
-        # nested operators in hybrid arguments) does not re-bind the primitive.
-        with qp.capture.pause():
-            args = {name: unflatten(*value) for name, value in static_args.items()}
-            i = 0
+        args = {name: unflatten(*value) for name, value in static_args.items()}
+        i = 0
 
-            for name in dynamic_argnames:
-                args[name] = all_args[i]
-                i += 1
-            for name, len_ in zip(wire_argnames, wire_lens, strict=True):
-                if name not in hybrid_argnames:
-                    args[name] = all_args[i : i + len_] if len_ > 1 else all_args[i]
-                    i += len_
-            for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
-                leaves = all_args[i : i + len_]
-                args[name] = unflatten(leaves, tree)
+        for name in dynamic_argnames:
+            args[name] = all_args[i]
+            i += 1
+        for name, len_ in zip(wire_argnames, wire_lens, strict=True):
+            if name not in hybrid_argnames:
+                args[name] = jnp.array(all_args[i : i + len_] if len_ > 1 else all_args[i])
                 i += len_
+        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+            leaves = all_args[i : i + len_]
+            args[name] = unflatten(leaves, tree)
+            i += len_
 
-            return op_cls(**args)
+        return type.__call__(op_cls, **args)
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
