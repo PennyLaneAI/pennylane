@@ -23,12 +23,14 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import (
-    _UNSET_BATCH_SIZE,
+from pennylane.core.operator import (
     Operation,
     Operator,
     StatePrepBase,
+)
+from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum

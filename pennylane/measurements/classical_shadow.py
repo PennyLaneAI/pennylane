@@ -22,8 +22,8 @@ from string import ascii_letters
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MeasurementShapeError
-from pennylane.operation import Operator
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike

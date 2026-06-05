@@ -17,6 +17,7 @@ Contains the Multiplier template.
 
 import numpy as np
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -24,7 +25,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
