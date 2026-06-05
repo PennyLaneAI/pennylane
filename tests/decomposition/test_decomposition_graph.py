@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -32,7 +33,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
-from pennylane.operation import Operation
 
 # pylint: disable=protected-access,no-name-in-module
 

@@ -79,7 +79,7 @@ if TYPE_CHECKING:
 
     from jax.extend.core import Jaxpr
 
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 # Base gate set for DefaultQubit

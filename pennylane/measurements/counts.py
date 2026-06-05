@@ -23,8 +23,8 @@ import numpy as np
 from pennylane import math
 from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
 from pennylane.core.measurements import SampleMeasurement
+from pennylane.core.operator import Operator
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires

@@ -28,6 +28,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 from functools import singledispatch
 
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -37,7 +38,6 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     Conditional,

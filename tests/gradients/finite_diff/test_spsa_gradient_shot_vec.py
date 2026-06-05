@@ -23,10 +23,10 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operator
 from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
-from pennylane.operation import Operator
 
 h_val = 0.1
 spsa_shot_vec_tol = 0.33

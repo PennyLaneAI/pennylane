@@ -17,6 +17,7 @@ from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import GateCount, ResourceOperator
@@ -30,7 +31,6 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     MarkClean,
     MarkQubits,
 )
-from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 

@@ -27,9 +27,8 @@ from string import ascii_lowercase
 from typing import Any
 
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operation
 from pennylane.core.shots import Shots
-from pennylane.measurements import add_shots
-from pennylane.operation import Operation
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
@@ -943,7 +942,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = r1.depth + r2.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -1010,7 +1009,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = max(r1.depth, r2.depth)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)

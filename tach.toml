@@ -353,6 +353,10 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.operation"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[interfaces]]
+expose = ["operation_derivative", "is_trainable"]
+from = ["pennylane.operation"]
+
 [[modules]]
 path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]

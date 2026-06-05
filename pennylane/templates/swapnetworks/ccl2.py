@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops import SWAP, FermionicSWAP
 
 

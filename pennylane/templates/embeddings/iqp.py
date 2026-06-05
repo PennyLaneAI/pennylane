@@ -21,8 +21,8 @@ from itertools import combinations
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.wires import Wires
 

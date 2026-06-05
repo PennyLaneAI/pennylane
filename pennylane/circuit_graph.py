@@ -24,7 +24,7 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional

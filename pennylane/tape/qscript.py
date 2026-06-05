@@ -28,9 +28,9 @@ from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qp
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operation, Operator
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.operation2 import Operator2
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue
@@ -38,6 +38,8 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 QS = TypeVar("QS", bound="QuantumScript")
+
+_UNSET_BATCH_SIZE = -1
 
 
 def process_queue(
