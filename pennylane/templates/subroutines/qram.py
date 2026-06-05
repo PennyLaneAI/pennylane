@@ -1214,7 +1214,7 @@ class FFQRAM(Operation):
 
             \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
 
-        The first :math:`m` wires are used as address wires and are initialized to
+        This template splits the input ``wires`` into two sets. The first :math:`m` wires are used as address wires and are initialized to
         :math:`|+\rangle^{\otimes m}`. The last wire is a register qubit. For each
         address :math:`d_l`, the circuit flips the zero bits of :math:`d_l`, applies a
         multi-controlled :class:`~.RY` rotation with angle
