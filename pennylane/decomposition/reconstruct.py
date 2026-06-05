@@ -17,8 +17,8 @@
 from collections.abc import Callable
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.decomposition.resources import resource_rep
-from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 _reconstructors = {}

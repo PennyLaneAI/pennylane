@@ -22,10 +22,10 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose, split_to_single_terms

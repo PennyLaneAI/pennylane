@@ -19,11 +19,11 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane._class_property import classproperty
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
 from pennylane.devices.execution_config import MCMConfig
 from pennylane.exceptions import DecompositionWarning, DeviceError
-from pennylane.operation import classproperty
 
 
 class NoMatOp(qp.operation.Operation):

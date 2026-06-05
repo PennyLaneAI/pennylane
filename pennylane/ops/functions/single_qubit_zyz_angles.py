@@ -18,8 +18,8 @@ from functools import singledispatch
 
 import numpy as np
 
+from pennylane.core.operator import Operator
 from pennylane.math.decomposition import zyz_rotation_angles
-from pennylane.operation import Operator
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.qubit import (
     RX,
