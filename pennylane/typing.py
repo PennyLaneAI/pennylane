@@ -142,12 +142,6 @@ class AbstractArray:
         dtype (type): the data type of the array
 
 
-    Scalar ``AbstractArray``s can indexed into to create an array with a different shape:
-
-    >>> Int32 = qp.typing.AbstractArray((), np.int32)
-    >>> Int32[3, 2]
-    AbstractArray(shape=(3, 2), dtype=dtype('int32'))
-
     Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
 
     >>> Int32[..., 2]
