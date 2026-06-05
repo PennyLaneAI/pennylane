@@ -22,6 +22,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
+from pennylane.core.operator import CVObservable, Operation
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import (
@@ -29,7 +30,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_pow_rotation,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
 
 

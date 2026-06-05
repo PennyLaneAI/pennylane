@@ -19,13 +19,13 @@ Decomposition rule for SelectPauliRot in terms of `phase gradient states <https:
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     change_op_basis_resource_rep,
     controlled_resource_rep,
     resource_rep,
 )
-from pennylane.operation import Operator
 from pennylane.ops import Prod
 from pennylane.ops.op_math import change_op_basis
 from pennylane.wires import WireError, Wires

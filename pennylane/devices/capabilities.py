@@ -23,8 +23,8 @@ from itertools import repeat
 
 import tomlkit as toml
 
+from pennylane.core.operator import Operator
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import CompositeOp, SymbolicOp
 
 from .execution_config import MCM_METHOD

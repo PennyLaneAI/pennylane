@@ -38,10 +38,11 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation, Operator
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose
@@ -626,7 +627,7 @@ class TestControlledOperationProperties:
         """Test parameter-frequencies against expected values."""
 
         op = Controlled(base, (4, 5))
-        assert op.parameter_frequencies == expected
+        assert parameter_frequencies(op) == expected
 
     def test_parameter_frequencies_no_generator_error(self):
         """An error should be raised if the base doesn't have a generator."""
@@ -637,7 +638,7 @@ class TestControlledOperationProperties:
             qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
-            op.parameter_frequencies
+            parameter_frequencies(op)
 
     def test_parameter_frequencies_multiple_params_error(self):
         """An error should be raised if the base has more than one parameter."""
@@ -648,7 +649,7 @@ class TestControlledOperationProperties:
             qp.operation.ParameterFrequenciesUndefinedError,
             match=r"does not have parameter frequencies",
         ):
-            op.parameter_frequencies
+            parameter_frequencies(op)
 
 
 class TestControlledSimplify:
