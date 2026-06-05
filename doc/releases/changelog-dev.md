@@ -399,6 +399,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
+  :class:`~.Operation` or calculate them for an :class:`~.Operator2`.
+  [(#9569)](https://github.com/PennyLaneAI/pennylane/pull/9569)
+
 * Adds a new test fixture `preserve_jax_x64` to help automatically restore the `jax.config.jax_enable_x64` to prevent
   accidental context contamination.
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
@@ -410,6 +414,7 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+  [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
