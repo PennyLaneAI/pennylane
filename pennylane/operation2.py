@@ -29,6 +29,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty  # tach-ignore
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -40,7 +41,6 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, FlatPytree, classproperty # tach-ignore
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -990,7 +990,9 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"], is_baseclass = False) -> None:  # pylint: disable=too-many-branches
+    def __init_subclass__(
+        cls: type["Operator2"], is_baseclass=False
+    ) -> None:  # pylint: disable=too-many-branches
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)

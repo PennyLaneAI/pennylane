@@ -34,7 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE, StatePrepBase
+from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2, StatePrepBase2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
@@ -1707,11 +1707,12 @@ class TestRepresentations:
 class TestStatePrepBase:
 
     def test_state_prep_base_label(self):
-        """Tests that the default label is as expected."""
+        """Tests that the label is as expected."""
 
         class MyStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
+            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 
@@ -1728,6 +1729,7 @@ class TestStatePrepBase:
         class BadStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
+            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 
