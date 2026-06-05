@@ -24,6 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -33,7 +34,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform

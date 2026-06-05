@@ -23,13 +23,13 @@ import numpy as np
 
 import pennylane.math as pl_math
 from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike

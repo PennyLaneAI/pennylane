@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
@@ -28,6 +29,7 @@ class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):
     """Run basic operator validity fucntions."""
@@ -427,9 +429,10 @@ class TestAdjointOperation:
         base = qp.RX(param, wires=0)
         op = Adjoint(base)
 
-        base_angles = base.single_qubit_rot_angles()
-        angles = op.single_qubit_rot_angles()
+        *base_angles, base_phase = single_qubit_zyz_angles(base)
+        *angles, phase = single_qubit_zyz_angles(op)
 
+        assert base_phase == phase
         for angle1, angle2 in zip(angles, reversed(base_angles)):
             assert angle1 == -angle2
 

@@ -16,7 +16,7 @@ import re
 import sys
 from docutils import nodes
 from datetime import datetime
-from sphinx.util import logging
+from sphinx.util import logging, inspect
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,11 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
+
+# Prevent Sphinx from identifying functions/methods as single-dispatch.
+# This forces autodoc to output only the single base signature.
+inspect.is_singledispatch_function = lambda _: False
+inspect.is_singledispatch_method = lambda _: False
 
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
 bibtex_bibfiles = ["bibfile.bib"]

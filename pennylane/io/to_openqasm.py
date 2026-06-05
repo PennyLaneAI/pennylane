@@ -19,8 +19,8 @@ from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Any, overload
 
+from pennylane.core.operator import Operator
 from pennylane.devices.preprocess import decompose
-from pennylane.operation import Operator
 from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters

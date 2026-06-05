@@ -18,6 +18,7 @@ core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+
 import functools
 import math as builtin_math
 from itertools import combinations
@@ -28,6 +29,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -41,7 +43,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
-from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -179,11 +180,6 @@ class RX(Operation):
             return qp.Identity(wires=self.wires)
 
         return RX(theta, wires=self.wires)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        pi_half = qp.math.ones_like(self.data[0]) * (np.pi / 2)
-        return [pi_half, self.data[0], -pi_half]
 
 
 def _rx_to_rot_resources():
@@ -390,10 +386,6 @@ class RY(Operation):
             return qp.Identity(wires=self.wires)
 
         return RY(theta, wires=self.wires)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-        return [0.0, self.data[0], 0.0]
 
 
 def _ry_to_rot_resources():
@@ -654,10 +646,6 @@ class RZ(Operation):
             return qp.Identity(wires=self.wires)
 
         return RZ(theta, wires=self.wires)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
 
 
 def _rz_to_ps_resources():
@@ -950,10 +938,6 @@ class PhaseShift(Operation):
 
         return PhaseShift(phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
-
 
 def _phaseshift_to_rz_gp_resources():
     return {qp.RZ: 1, qp.GlobalPhase: 1}
@@ -1152,9 +1136,6 @@ class Rot(Operation):
 
     def _controlled(self, wire: WiresLike) -> "qp.CRot":
         return qp.CRot(*self.parameters, wires=wire + self.wires)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        return self.data
 
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.

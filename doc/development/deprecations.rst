@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
 
   - Deprecated in v0.46
@@ -398,7 +403,8 @@ Completed deprecation cycles
 
 .. code-block:: python
 
-    from pennylane.operation import TermsUndefinedError, Operator
+    from pennylane.core.operator import Operator
+    from pennylane.exceptions import TermsUndefinedError
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)
