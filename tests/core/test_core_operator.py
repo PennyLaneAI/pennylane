@@ -67,38 +67,57 @@ def test_operator2_isinstance_operator():
     assert issubclass(NewOp, Operator)
 
 
-def test_operator1_against_new_op():
-    """Test that Operator1 checks reject new operator interface."""
+class TestOperator1:
 
-    class NewOp(qp.operation2.Operator2):
-        """dummy operator2"""
+    def test_operator1_against_new_op(self):
+        """Test that Operator1 checks reject new operator interface."""
 
-        dynamic_argnames = ()
+        class NewOp(qp.operation2.Operator2):
+            """dummy operator2"""
 
-        def __init__(self, wires):
-            super().__init__(wires=wires)
+            dynamic_argnames = ()
 
-    new_op = NewOp(wires=0)
-    assert not isinstance(new_op, Operator1)
-    assert not issubclass(NewOp, Operator1)
+            def __init__(self, wires):
+                super().__init__(wires=wires)
 
+        new_op = NewOp(wires=0)
+        assert not isinstance(new_op, Operator1)
+        assert not issubclass(NewOp, Operator1)
 
-def test_operator1_against_old_op():
-    """Test that Operator1 checks accept old interface."""
+    def test_operator1_against_old_op(self):
+        """Test that Operator1 checks accept old interface."""
 
-    class OldOp(Operator):
-        pass
+        class OldOp(Operator):
+            pass
 
-    old_op = OldOp(wires=0)
-    assert isinstance(old_op, Operator1)
-    assert issubclass(OldOp, Operator1)
+        old_op = OldOp(wires=0)
+        assert isinstance(old_op, Operator1)
+        assert issubclass(OldOp, Operator1)
 
+    def test_operator1_against_random_obj(self):
+        """Test that operator1 checks reject random objects."""
 
-def test_operator1_against_random_obj():
-    """Test that operator1 checks reject random objects."""
+        assert not isinstance(1, Operator1)
+        assert not issubclass(list, Operator1)
 
-    assert not isinstance(1, Operator1)
-    assert not issubclass(list, Operator1)
+    def test_inheritance_switch_for_Operator(self):
+        """Test that inheriting from Operator1 switches it out for Operator."""
+
+        class OldOp(Operator1):
+            """op inheriting from Operator1"""
+
+        assert OldOp.__bases__ == (Operator,)
+
+        op = OldOp(wires=0)
+        assert isinstance(op, Operator)
+        assert isinstance(op, Operator1)
+        qp.ops.functions.assert_valid(op, skip_pickle=True)
+
+    def test_instantiating_Opeartor1_on_its_own(self):
+        """Test that an error is raised if someone tries to instantiate Operator1."""
+
+        with pytest.raises(ValueError, match="Operator1 cannot be instantiated on its own."):
+            Operator1()
 
 
 class TestOperatorConstruction:

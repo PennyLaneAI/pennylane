@@ -183,8 +183,17 @@ def _process_data(op):
     return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
+# pylint: disable=abstract-method
+class _GiveOperatorMeta(capture.ABCCaptureMeta):
+    """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
+
+    def __new__(mcs, name, bases, attrs):
+        new_bases = tuple(Operator if base.__name__ == "Operator1" else base for base in bases)
+        return super().__new__(mcs, name, new_bases, attrs)
+
+
 # pylint: disable=too-few-public-methods
-class Operator1(abc.ABC):
+class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
 
     While inheriting from :class:`~.Operator` provides the old, version 1 interface, using ``Operator``
@@ -224,8 +233,21 @@ class Operator1(abc.ABC):
     >>> isinstance(new_op, qp.core.Operator1)
     False
 
+    When inheriting from this class, it is switched out for :class:`~.Operator`. The following
+    is equivalent inheriting from ``qp.core.Operator``.
+
+    .. code-block:: python
+
+        class AnotherOldOp(qp.core.Operator1):
+            pass
+
 
     """
+
+    def __new__(cls, *args, **kwargs):
+        raise ValueError(
+            "Operator1 cannot be instantiated on its own. Please inherit from it instead."
+        )
 
     @classmethod
     def __subclasshook__(cls, subclass):
