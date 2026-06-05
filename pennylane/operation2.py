@@ -46,6 +46,7 @@ from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
+# pylint: disable=too-many-public-methods
 class Operator2(ABC):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring

@@ -223,7 +223,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
 
     >>> isinstance(old_op, qp.core.Operator)
     True
-    >>> isinstance(new_old qp.core.Operator)
+    >>> isinstance(new_op, qp.core.Operator)
     True
 
     but only ``old_op`` is an instance of ``Operator1``.
