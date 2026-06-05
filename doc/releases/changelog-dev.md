@@ -2,7 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Added a readable `` __repr__`` method for the ``Tracker`` class [(#9592)](https://github.com/PennyLaneAI/pennylane/pull/9592)
+* Added a readable `` __repr__`` method for the ``Tracker`` class 
+  [(#9592)](https://github.com/PennyLaneAI/pennylane/pull/9592)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -493,4 +494,5 @@ Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
 David Wierichs,
-Jake Zaia.
+Jake Zaia,
+Nidarshana Srinath.
