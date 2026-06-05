@@ -299,7 +299,8 @@ class TestSpecsTransform:
 
     @pytest.mark.external
     @pytest.mark.catalyst
-    def test_qjit_partial(self):
+    @pytest.mark.parametrize("level", [0, "device"])
+    def test_qjit_partial(self, level):
         """Test specs for a partial-wrapped Catalyst jitted QNode."""
         pytest.importorskip("catalyst")
 
@@ -311,7 +312,7 @@ class TestSpecsTransform:
             qp.RZ(z, wires=0)
             return qp.expval(qp.Z(0))
 
-        resources = qp.specs(partial(circuit, 0.1, z=0.3), level=0)(0.2)["resources"]
+        resources = qp.specs(partial(circuit, 0.1, z=0.3), level=level)(0.2)["resources"]
 
         assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.num_gates == 3

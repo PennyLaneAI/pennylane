@@ -149,6 +149,10 @@
   
   ```
 
+* :func:`~pennylane.draw`, :func:`~pennylane.draw_mpl`, and :func:`~.specs` now support
+  ``functools.partial`` wrappers around supported circuit callables.
+  [(#9595)](https://github.com/PennyLaneAI/pennylane/pull/9595)
+
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
@@ -563,11 +567,6 @@
 
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
-
-* Fixed a bug where :func:`~pennylane.draw`, :func:`~pennylane.draw_mpl`, and
-  :func:`~.specs` did not support ``functools.partial`` wrappers around supported
-  circuit callables.
-  [(#9394)](https://github.com/PennyLaneAI/pennylane/issues/9394)
 
 <h3>Contributors ✍️</h3>
 

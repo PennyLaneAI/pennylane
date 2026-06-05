@@ -178,6 +178,9 @@ class TestCatalystDrawMpl:
         fig, ax = qp.draw_mpl(partial(circuit, 1.234, z=3.456), decimals=None)(2.345)
         assert isinstance(fig, mpl.figure.Figure)
         assert isinstance(ax, mpl.axes._axes.Axes)
+        assert {text.get_text() for text in ax.texts}.issuperset(
+            {"0", "a", "1.234", "RX", "RY", "RZ"}
+        )
 
     @pytest.mark.parametrize("c", [0, 1])
     def test_cond_circuit(self, c):
