@@ -105,7 +105,7 @@
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
 
   ```pycon
   >>> tracker = qp.Tracker()
