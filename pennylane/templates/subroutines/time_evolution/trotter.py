@@ -21,8 +21,8 @@ from collections import defaultdict
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
@@ -638,12 +638,12 @@ class TrotterizedQfunc(Operation):
     >>> time = 0.1
     >>> angles = (0.12, -3.45)
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 
@@ -795,12 +795,12 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
     >>> theta, phi = (0.12, -3.45)
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 

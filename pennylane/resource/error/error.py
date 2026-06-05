@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import partial
 
 import pennylane as qp
-from pennylane.operation import Operation, Operator
+from pennylane.core.operator import Operation, Operator
 
 
 class AlgorithmicError(ABC):

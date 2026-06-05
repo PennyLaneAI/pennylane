@@ -27,6 +27,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 
 from functools import singledispatch
 
+from pennylane.core.operator import Operator
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -37,7 +38,6 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     Conditional,
@@ -383,8 +383,10 @@ def _add_measurement(
     else:
         meas_label = str(m)
 
-    if len(m.wires) == 0:  # state or probability across all wires
+    if len(m.wires) == 0:
+        # add grouping symbols for measurements that span all device wires.
         n_wires = len(config.wire_map)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
         for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 

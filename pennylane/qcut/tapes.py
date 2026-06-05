@@ -20,9 +20,9 @@ from collections.abc import Callable, Sequence
 from itertools import product
 
 from pennylane import ops
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
-from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
 from pennylane.queuing import QueuingManager, WrappedObj
@@ -331,7 +331,8 @@ def expand_fragment_tape(
                 group = []
 
             prepare_mapping = {
-                id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+                id(n): PREPARE_SETTINGS[s]
+                for n, s in zip(prepare_nodes, prepare_settings, strict=True)
             }
 
             ops_list = []

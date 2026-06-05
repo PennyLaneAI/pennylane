@@ -40,6 +40,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
@@ -362,11 +363,6 @@ class TestProperties:
 
         op: Pow = power_method(base=DummyOp(1), z=2.5)
         assert op.is_verified_hermitian is value
-
-    def test_queue_category(self, power_method):
-        """Test that the queue category `"_ops"` carries over."""
-        op: Pow = power_method(base=qp.PauliX(0), z=3.5)
-        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""

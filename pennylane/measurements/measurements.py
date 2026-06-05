@@ -26,6 +26,8 @@ from typing import Optional
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator
+from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
@@ -33,7 +35,6 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
-from pennylane.operation import Operator, _get_abstract_operator
 from pennylane.ops import MeasurementValue
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
@@ -381,16 +382,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         context.append(self)
 
         return self
-
-    @property
-    def _queue_category(self):
-        """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
-        in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-        """
-        return "_measurements"
 
     @property
     def hash(self):

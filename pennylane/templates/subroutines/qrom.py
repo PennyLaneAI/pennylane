@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,

@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
@@ -36,7 +37,6 @@ from pennylane.devices.preprocess import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
-from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
 # pylint: disable=too-few-public-methods

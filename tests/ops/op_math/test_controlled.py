@@ -38,10 +38,10 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose
@@ -226,6 +226,7 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "base",
         [
@@ -383,15 +384,6 @@ class TestControlledProperties:
 
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
-
-    def test_queue_cateogry(self):
-        """Test that Controlled belongs in the ops."""
-
-        class DummyOp(Operator):
-            pass
-
-        op = Controlled(DummyOp(1), 0)
-        assert op._queue_category == "_ops"
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):

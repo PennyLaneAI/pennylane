@@ -42,6 +42,7 @@ import numpy as np
 
 from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -50,7 +51,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import auto_wrap
-from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires, is_abstract_qubit
@@ -827,6 +827,8 @@ class Subroutine:
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
                     wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
+                    if not any(is_abstract_qubit(w) for w in wires):
+                        wires = math.array(wires, like="jax")
                     bound_args.arguments[wire_argname] = wires
 
             else:

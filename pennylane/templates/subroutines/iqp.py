@@ -21,13 +21,13 @@ from functools import reduce
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
 from pennylane.math import expand_matrix
-from pennylane.operation import Operation
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
 
