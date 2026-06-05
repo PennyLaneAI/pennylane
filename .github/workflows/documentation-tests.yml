@@ -53,7 +53,7 @@ jobs:
 
   documentation-tests:
     if: github.event.pull_request.draft == false
-    needs: [determine_runner]
+    needs: [determine_runner, determine_if_workflow_should_run]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
     name: Documentation Tests on Python 3.11
