@@ -990,9 +990,10 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
+    # pylint: disable=too-many-branches
     def __init_subclass__(
         cls: type["Operator2"], is_baseclass=False
-    ) -> None:  # pylint: disable=too-many-branches
+    ) -> None:
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)

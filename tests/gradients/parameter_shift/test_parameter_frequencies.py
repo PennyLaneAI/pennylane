@@ -24,7 +24,7 @@ from pennylane.ops import Exp, Hermitian, PauliZ
 from pennylane.ops.functions import eigvals, generator
 from pennylane.wires import WiresLike
 
-# pytest: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
 
 
 class TestParameterFrequencies:
@@ -81,10 +81,11 @@ class TestParameterFrequencies:
             def __init__(self, phi: float, theta: float, wires: WiresLike):
                 super().__init__(phi, theta, wires=wires)
 
+        # pylint: disable=unused-argument
         @parameter_frequencies.register
         def multi_arg_op_no_gen_param_freqs(
             op: MultiArgOpNoGenParamFreqs,
-        ):  # pytest: disable=unused-argument
+        ):
             return freqs
 
         op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])
