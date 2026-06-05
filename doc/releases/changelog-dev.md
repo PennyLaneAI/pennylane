@@ -123,25 +123,27 @@
 
   **Circuit Specs:**
 
-  | Metric | Value |
-  | :--- | ---: |
-  | **Device** | lightning.qubit |
-  | **Device wires** | 2 |
-  | **Shots** | Shots(total=None) |
-  | **Level** | device |
+  <table>
+    <tr><th align="left">Metric</th><th align="right">Value</th></tr>
+    <tr><td align="left"><b>Device</b></td><td align="right">lightning.qubit</td></tr>
+    <tr><td align="left"><b>Device wires</b></td><td align="right">2</td></tr>
+    <tr><td align="left"><b>Shots</b></td><td align="right">Shots(total=None)</td></tr>
+    <tr><td align="left"><b>Level</b></td><td align="right">device</td></tr>
+  </table>
 
   **Resources:**
 
-  | **Metric** | **Value** |
-  | :--- | ---: |
-  | **Wire allocations** | 2 |
-  | **Total gates** | 2 |
-  | **Gate counts:** | |
-  | CNOT | 1 |
-  | Hadamard | 1 |
-  | **Measurements:** | |
-  | probs(all wires) | 1 |
-  | **Depth** | 2 |
+  <table>
+    <tr><th align="left"><b>Metric</b></th><th align="right"><b>Value</b></th></tr>
+    <tr><td align="left"><b>Wire allocations</b></td><td align="right">2</td></tr>
+    <tr><td align="left"><b>Total gates</b></td><td align="right">2</td></tr>
+    <tr><td align="left"><b>Gate counts:</b></td><td align="right"></td></tr>
+    <tr><td align="left">CNOT</td><td align="right">1</td></tr>
+    <tr><td align="left">Hadamard</td><td align="right">1</td></tr>
+    <tr><td align="left"><b>Measurements:</b></td><td align="right"></td></tr>
+    <tr><td align="left">probs(all wires)</td><td align="right">1</td></tr>
+    <tr><td align="left"><b>Depth</b></td><td align="right">2</td></tr>
+  </table>
 
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
