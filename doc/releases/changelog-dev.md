@@ -103,7 +103,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `AbstractArray`, `Bool`, `Int`, `Float`, and `Complex` have been added to
+* `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
   These will support a new method of having compressed operators for resource estimation
   and decomposition.
