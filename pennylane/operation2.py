@@ -212,10 +212,15 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
+    def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
+
+        if is_baseclass:
+            return
+
         _add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -520,7 +525,7 @@ class Operator2(ABC):
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
-    def queue(self, context: QueuingManager = QueuingManager):
+    def queue(self, context=QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
