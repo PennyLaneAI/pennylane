@@ -99,6 +99,22 @@ class TestTrackerCoreBehavior:
         assert tracker.history == {}
         assert tracker.latest == {}
 
+    def test_repr(self):
+        """Assert __repr__ includes all tracker attributes with correct values."""
+
+        tracker = Tracker()
+
+        tracker.totals = {"a": 1}
+        tracker.history = {"a": [1]}
+        tracker.latest = {"a": 1}
+
+        expected = (
+            f"Tracker(active={tracker.active}, totals={tracker.totals}, persistent= {tracker.persistent}, "
+            f"latest={tracker.latest}, history={tracker.history}, callback={tracker.callback})"
+        )
+
+        assert repr(tracker) == expected
+
     def test_enter_and_exit(self):
         """Assert entering and exit work as expected"""
 

@@ -179,6 +179,13 @@ class Tracker:
                 raise ValueError(f"Device '{dev.short_name}' does not support device tracking")
             dev.tracker = self
 
+    def __repr__(self):
+        """Return a string representation of the Tracker with all its current state."""
+        return (
+            f"Tracker(active={self.active}, totals={self.totals}, persistent={self.persistent}, "
+            f"latest={self.latest}, history={self.history}, callback={self.callback})"
+        )
+
     def __enter__(self):
         if not self.persistent:
             self.reset()
