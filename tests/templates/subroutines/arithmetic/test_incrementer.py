@@ -25,6 +25,8 @@ from pennylane.ops import CNOT, Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
+# pylint: disable=too-many-arguments
+
 
 @pytest.mark.jax
 @pytest.mark.parametrize(
@@ -156,9 +158,7 @@ def test_correct(wires, init_state, expected, work_wires):
         ),
     ],
 )
-def test_controlled(
-    wires, init_state, expected, work_wires, control_wires, control_values
-):  # pylint: disable=too-many-arguments
+def test_controlled(wires, init_state, expected, work_wires, control_wires, control_values):
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
 
     # pylint: disable=too-many-arguments
