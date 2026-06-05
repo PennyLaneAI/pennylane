@@ -20,10 +20,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionWarning
-from pennylane.operation import Operation
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional

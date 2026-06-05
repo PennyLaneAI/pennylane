@@ -22,7 +22,7 @@ import numbers
 from copy import copy
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .sprod import SProd
 from .sum import Sum

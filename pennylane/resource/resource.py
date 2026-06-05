@@ -26,8 +26,8 @@ from functools import lru_cache
 from string import ascii_lowercase
 from typing import Any
 
+from pennylane.core.operator import Operation
 from pennylane.measurements import MeasurementProcess, Shots, add_shots
-from pennylane.operation import Operation
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 

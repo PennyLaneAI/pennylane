@@ -22,9 +22,9 @@ from typing import Generic, TypeVar
 import numpy as np
 
 from pennylane import ops as qops
+from pennylane.core.operator import Operator
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
-from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from ._wires import wires_to_json
