@@ -23,9 +23,6 @@ from pennylane.queuing import QueuingManager
 class SymbolicOp2(Operator2, is_baseclass=True):
     """Developer-facing base class for symbolic operators."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @property
     def base(self) -> Operator2:
         """The base of this symbolic operator."""

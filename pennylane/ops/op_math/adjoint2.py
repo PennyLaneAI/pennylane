@@ -18,6 +18,7 @@ from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
+from pennylane._class_property import classproperty
 from pennylane.operation2 import Operator2
 
 from .symbolicop2 import SymbolicOp2
@@ -83,9 +84,10 @@ class Adjoint2(SymbolicOp2):
     def compute_diagonalizing_gates(base):
         return base.diagonalizing_gates
 
-    @property
+    @classproperty
+    @classmethod
     @override
-    def has_adjoint(self):
+    def has_adjoint(cls):
         return True
 
     @override
