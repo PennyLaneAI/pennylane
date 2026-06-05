@@ -100,8 +100,9 @@
   3: ───────╰RY(1.16)───────╰RY(1.98)──┤↗₁├─┤
 
   ```
+
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
-  This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
+This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
   efficient simulation of quantum materials and chemistry systems.
   [(#9354)](https://github.com/PennyLaneAI/pennylane/pull/9354)
 
