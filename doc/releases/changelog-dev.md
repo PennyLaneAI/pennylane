@@ -176,6 +176,10 @@
   now formatted for clearer visual inspection when used in a Jupyter notebook environment.
   [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
+* `qp.Tracker` now has a `__repr__` that displays all instance state (`active`, `totals`,
+  `persistent`, `latest`, `history`, `callback`) for easier inspection by its users.
+  [(#9591)](https://github.com/PennyLaneAI/pennylane/pull/9591)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
