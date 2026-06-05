@@ -761,11 +761,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
       - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
       - 1 CZ (phase correction conditioned on X measurement)
-      - conditional X gates on work + targets (Pauli frame update)
-
-    Exact gate counts for PauliX and CNOT are data-dependent (depend on Hamming
-    weights of XOR products between bitstrings), so this resource estimate is
-    marked as non-exact (exact=False). The listed counts are upper bounds.
+      - conditional X gates on work + targets
     """
     # When called for Adjoint(QROM), extract params from the base parameters
     if base_params is not None:
@@ -786,6 +782,8 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     num_measurements = 2 * num_ands  # X-type + Z per uncomputation
     num_cz = num_ands  # CZ correction per uncomputation
 
+    # TemporaryAND counts are exact
+    # CNOTs, PauliX gates and BasisState ops are an approximation
     return {
         resource_rep(TemporaryAND): num_ands,
         resource_rep(PauliMeasure): num_measurements,
