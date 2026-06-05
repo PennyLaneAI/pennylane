@@ -379,6 +379,7 @@
   - :func:`qp.equal` can check equality between two `Operator2` instances.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+  [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
