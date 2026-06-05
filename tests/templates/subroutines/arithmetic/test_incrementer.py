@@ -97,6 +97,7 @@ def test_correct(wires, init_state, expected, work_wires):
     assert np.allclose(result, 0)
 
 
+# pylint: disable=too-many-arguments
 @pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "wires, init_state, expected, work_wires, control_wires, control_values",
