@@ -18,13 +18,13 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import I, X, Y, Z
 from pennylane.labs.dla import (
     batched_pauli_decompose,
     check_orthonormal,
     orthonormalize,
     pauli_coefficients,
 )
+from pennylane.ops import I, X, Y, Z
 from pennylane.pauli import PauliSentence, PauliVSpace, trace_inner_product
 
 # Make an operator matrix on given wire and total wire count

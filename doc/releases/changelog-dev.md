@@ -114,6 +114,12 @@
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
   ```
 
+* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
+  `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
+  that contain negative signs. This allows the preparation circuits to skip phase gates when the
+  phases are purely real, i.e. :math:`\pm 1`.
+  [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
@@ -182,6 +188,12 @@
   [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
+  This variant handles work wires explicitly instead of allocating them dynamically in the
+  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with 
+  capture _disabled_ (`qp.capture.disable()`).
+  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
@@ -364,14 +376,26 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* New, experimental abstractions for creating PennyLane operators have been added, built around a new
+  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  integrated into the PennyLane ecosystem. Supported functionality so far:
+  - :func:`qp.equal` can check equality between two `Operator2` instances.
+  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
+  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+
+* Adds a new `pennylane/core` module.
+  Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+  [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
+
+* ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
+  [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
+
 * CI workflows now install CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu`)
   instead of the default GPU-enabled build. This eliminates transitive NVIDIA package downloads
   and reduces CI install times. The GPU test workflow (`tests-gpu.yml`) is excluded from this change.
   [(#9551)](https://github.com/PennyLaneAI/pennylane/pull/9551)
   [(#9559)](https://github.com/PennyLaneAI/pennylane/pull/9559)
-
-* A new, experimental `Operator2` base class has been added containing new abstractions for creating PennyLane operators.
-  [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
 
 * `Operator._queue_category` and `MeasurementProcess._queue_category` have been removed in favor of `isinstance` checks
   when processing an `AnnotatedQueue` into a `QuantumScript`.
@@ -413,6 +437,10 @@
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
+
+* Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
+  removing the module from the documentation-test skip list.
+  [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
 
 * Fixed expected outputs in documentation of `"default.clifford"` device due to a new Stim version.
   [(#9533)](https://github.com/PennyLaneAI/pennylane/pull/9533)
@@ -467,6 +495,15 @@
   values sometimes incorrectly have the same hash.
   [(#9488)](https://github.com/PennyLaneAI/pennylane/pull/9488)
 
+* Fixed a bug where :func:`~.two_qubit_decomposition` would raise a
+  ``TracerArrayConversionError`` when decomposing a :class:`~.QubitUnitary`
+  that requires 2 CNOTs under ``qjit``. The guard preventing the 2-CNOT
+  decomposition path from being traced with abstract arrays only checked
+  ``capture.enabled()``, missing the ``qjit`` context where
+  ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
+  ``two_qubit_decomp_rule`` are fixed.
+  [(#9520)](https://github.com/PennyLaneAI/pennylane/pull/9520)
+  
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
@@ -475,6 +512,9 @@
   :func:`~.counts` without an explicit ``wires`` argument). The brackets now render consistently
   with the multi-wire case, matching the existing behavior of :func:`~pennylane.draw_mpl`.
   [(#9532)](https://github.com/PennyLaneAI/pennylane/pull/9532)
+
+* Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
+  [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
 
 <h3>Contributors ✍️</h3>
 
@@ -496,5 +536,6 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 Jay Soni,
 Paul Haochen Wang,
+Dennis Wayo,
 David Wierichs,
 Jake Zaia.

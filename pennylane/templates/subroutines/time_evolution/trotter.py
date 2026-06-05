@@ -21,8 +21,8 @@ from collections import defaultdict
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
