@@ -21,8 +21,8 @@ from itertools import combinations, combinations_with_replacement
 from scipy.linalg import null_space, sqrtm
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.liealg.center import _intersect_bases
-from pennylane.operation import Operator
 from pennylane.ops import Identity
 from pennylane.ops.functions import commutator, equal, matrix, simplify
 from pennylane.pauli import PauliSentence, trace_inner_product

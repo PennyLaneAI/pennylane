@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
 
