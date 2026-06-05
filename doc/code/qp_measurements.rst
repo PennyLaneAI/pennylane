@@ -43,9 +43,9 @@ processes are top-level imports:
 Core Infrastructure
 ^^^^^^^^^^^^^^^^^^^
 
-.. autosummary::
-
 .. currentmodule:: pennylane.core.measurements
+
+.. autosummary::
 
     ~MeasurementProcess
     ~StateMeasurement
@@ -56,9 +56,9 @@ Core Infrastructure
 Measurement Classes
 ^^^^^^^^^^^^^^^^^^^
 
-.. autosummary::
-
 .. currentmodule:: pennylane.measurements
+
+.. autosummary::
 
     ~ClassicalShadowMP
     ~CountsMP
