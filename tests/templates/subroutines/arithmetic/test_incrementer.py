@@ -99,11 +99,10 @@ def test_correct(wires, init_state, expected, work_wires):
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
-    "wires, init_state, expected, work_wires, control_wires, control_values",
+    "init_state, expected, work_wires, control_wires, control_values",
     [
         # enough work wires for our rule
         (
-            [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
             [6, 7, 8, 9, 10, 11],
@@ -111,7 +110,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [0],
         ),
         (
-            [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 1],
             [6, 7, 8, 9, 10, 11],
@@ -119,11 +117,10 @@ def test_correct(wires, init_state, expected, work_wires):
             [1],
         ),
         # not enough work wires
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
         # multiple control wires
         (
-            [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
             [6, 7, 8, 9, 10, 11, 12],
@@ -131,7 +128,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [0, 0],
         ),
         (
-            [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 1],
             [6, 7, 8, 9, 10, 11, 12],
@@ -139,7 +135,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [1, 1],
         ),
         (
-            [0, 1, 2, 3, 4, 5],
             [0, 0, 0, 1, 0, 1],
             [0, 0, 0, 1, 0, 1],
             [6, 7, 8, 9, 10, 11, 12, 13],
@@ -147,7 +142,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [1, 1, 0],
         ),
         (
-            [0, 1, 2, 3, 4, 5],
             [1, 1, 0, 1, 0, 1],
             [1, 1, 0, 1, 1, 0],
             [6, 7, 8, 9, 10, 11, 12, 13],
@@ -156,8 +150,9 @@ def test_correct(wires, init_state, expected, work_wires):
         ),
     ],
 )
-# pylint: disable=too-many-arguments
-def test_controlled(wires, init_state, expected, work_wires, control_wires, control_values):
+def test_controlled(init_state, expected, work_wires, control_wires, control_values):
+    wires = [0, 1, 2, 3, 4, 5]
+
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
 
     # pylint: disable=too-many-arguments
