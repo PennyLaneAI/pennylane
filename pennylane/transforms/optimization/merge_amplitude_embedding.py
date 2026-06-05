@@ -38,7 +38,7 @@ def _get_plxpr_merge_amplitude_embedding():
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
         from pennylane.capture.primitives import cond_prim, measure_prim
-        from pennylane.operation import Operator
+        from pennylane.core.operator import Operator
     except ImportError:  # pragma: no cover
         return None, None
 

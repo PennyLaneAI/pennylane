@@ -17,8 +17,8 @@ Contains the 'label' function for customizing operator labels.
 
 # pylint: disable=unused-argument
 
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,

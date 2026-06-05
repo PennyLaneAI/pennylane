@@ -24,8 +24,8 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import WiresLike

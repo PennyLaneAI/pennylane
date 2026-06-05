@@ -25,6 +25,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math, ops
+from pennylane.core.operator import Channel, Operator, StatePrepBase
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -40,7 +41,6 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropyMP,
 )
-from pennylane.operation import Channel, Operator, StatePrepBase
 from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.pauli.utils import _binary_matrix_from_pws

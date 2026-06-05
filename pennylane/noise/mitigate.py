@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from pennylane import math
-from pennylane.operation import Channel
+from pennylane.core.operator import Channel
 from pennylane.ops.op_math import adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform

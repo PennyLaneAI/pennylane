@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, compiler, control_flow, math, ops, queuing
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 

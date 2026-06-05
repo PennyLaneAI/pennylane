@@ -26,6 +26,7 @@ from pennylane.queuing import QueuingManager, apply
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels

@@ -18,7 +18,7 @@ This submodule contains the qutrit quantum observables.
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
