@@ -123,8 +123,8 @@
 
   **Circuit Specs:**
 
-  <table>
-    <tr><th align="left">Metric</th><th align="right">Value</th></tr>
+  <table border=1>
+    <tr><th align="left"><b>Metric</b></th><th align="right"><b>Value</b></th></tr>
     <tr><td align="left"><b>Device</b></td><td align="right">lightning.qubit</td></tr>
     <tr><td align="left"><b>Device wires</b></td><td align="right">2</td></tr>
     <tr><td align="left"><b>Shots</b></td><td align="right">Shots(total=None)</td></tr>
