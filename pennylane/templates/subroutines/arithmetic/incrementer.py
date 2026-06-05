@@ -15,7 +15,7 @@
 
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
-from pennylane.core import Operator
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
