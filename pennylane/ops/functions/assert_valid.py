@@ -273,7 +273,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         ), "decomposition must produce the same matrix as the operator."
 
 
-def _check_has_matrix(op):
+def _check_matrix(op):
     """Check that if the operation says it has a matrix, it does. Otherwise a ``MatrixUndefinedError`` should be raised."""
     if op.has_matrix:
         mat = op.matrix()
@@ -632,7 +632,7 @@ def assert_valid(
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
         _check_reconstructor(op)
-    _check_has_matrix(op)
+    _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
