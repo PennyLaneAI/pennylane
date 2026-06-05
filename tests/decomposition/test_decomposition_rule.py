@@ -19,6 +19,7 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -28,7 +29,6 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
-from pennylane.operation import Operator
 
 
 class CustomOp(Operator):  # pylint: disable=too-few-public-methods

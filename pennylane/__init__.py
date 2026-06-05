@@ -26,11 +26,13 @@ from pennylane.queuing import QueuingManager, apply
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
+from pennylane.core import operator
 from pennylane import operation2
 from pennylane import allocation
 from pennylane.allocation import allocate, deallocate

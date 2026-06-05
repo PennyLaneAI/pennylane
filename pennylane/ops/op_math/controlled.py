@@ -30,15 +30,16 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane._class_property import classproperty
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator, classproperty
 from pennylane.wires import Wires, WiresLike
 
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
