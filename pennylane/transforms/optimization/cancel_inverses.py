@@ -15,8 +15,8 @@
 
 from functools import lru_cache, partial
 
+from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,

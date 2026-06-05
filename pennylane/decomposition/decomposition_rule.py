@@ -27,7 +27,7 @@ from typing import overload
 
 import pennylane as qp
 from pennylane import queuing
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .reconstruct import get_decomp_kwargs
 from .resources import Resources, auto_wrap, resource_rep

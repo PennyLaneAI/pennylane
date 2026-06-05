@@ -22,13 +22,13 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation, Operator
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 

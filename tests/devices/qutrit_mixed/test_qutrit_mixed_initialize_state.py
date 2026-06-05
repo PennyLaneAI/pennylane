@@ -18,8 +18,8 @@ import pytest
 import pennylane as qp
 from pennylane import QutritBasisState
 from pennylane import numpy as np
+from pennylane.core.operator import StatePrepBase
 from pennylane.devices.qutrit_mixed import create_initial_state
-from pennylane.operation import StatePrepBase
 
 
 class TestInitializeState:

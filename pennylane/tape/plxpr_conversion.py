@@ -37,7 +37,7 @@ from pennylane.capture.primitives import (
     value_and_grad_prim,
     vjp_prim,
 )
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     MidMeasure,

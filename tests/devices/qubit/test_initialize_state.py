@@ -18,8 +18,8 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import StatePrepBase
 from pennylane.devices.qubit import create_initial_state
-from pennylane.operation import StatePrepBase
 
 
 class TestInitializeState:
