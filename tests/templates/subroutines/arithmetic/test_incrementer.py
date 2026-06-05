@@ -18,15 +18,12 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, device, qnode, decompose
-from pennylane.decomposition import enable_graph, list_decomps
+from pennylane import Incrementer, decompose, device, qnode
+from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
-from pennylane.ops import Controlled, PauliX, CNOT
+from pennylane.ops import CNOT, Controlled, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
-from pennylane.templates.subroutines.arithmetic.incrementer import (
-    _controlled_incrementer_decomposition,
-)
 
 
 @pytest.mark.parametrize(
@@ -104,8 +101,22 @@ def test_correct(wires, init_state, expected, work_wires):
     "wires, init_state, expected, work_wires, control_wires, control_values",
     [
         # enough work wires for our rule
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [6, 7, 8, 9, 10, 11], [12], [0]),
-        ([0, 1, 2, 3, 4, 5], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [6, 7, 8, 9, 10, 11], [12], [1]),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [0],
+        ),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1],
+            [6, 7, 8, 9, 10, 11],
+            [12],
+            [1],
+        ),
         # not enough work wires
         ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
         ([0, 1, 2, 3, 4, 5], [0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
@@ -147,6 +158,7 @@ def test_correct(wires, init_state, expected, work_wires):
 def test_controlled(wires, init_state, expected, work_wires, control_wires, control_values):
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
 
+    # pylint: disable=too-many-arguments
     @decompose(gate_set={TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1})
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
@@ -159,7 +171,9 @@ def test_controlled(wires, init_state, expected, work_wires, control_wires, cont
 
     result = controlled_increment(wires, init_state, work_wires, control_wires, control_values)
 
-    expected = np.concatenate([np.array(expected), np.zeros(len(work_wires)), np.array(control_values)])
+    expected = np.concatenate(
+        [np.array(expected), np.zeros(len(work_wires)), np.array(control_values)]
+    )
     value = int(2 ** np.arange(len(expected)) @ expected[::-1])
     assert np.isclose(result[value], 1)
     result[value] -= 1
