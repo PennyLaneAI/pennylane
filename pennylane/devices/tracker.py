@@ -258,5 +258,5 @@ class Tracker:
         return (
             f"Tracker(active={self.active}, totals={self.totals}, "
             f"history={self.history}, latest={self.latest}, "
-            f"persistent={self.persistent})"
+            f"persistent={self.persistent}, callback={self.callback!r})"
         )

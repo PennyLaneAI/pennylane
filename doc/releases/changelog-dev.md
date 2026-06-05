@@ -103,6 +103,17 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Tracker` now has a readable `__repr__` that displays all relevant internals
+  (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+  ```pycon
+  >>> tracker = qp.Tracker()
+  >>> tracker.update(a=2, b="b2", c=1)
+  >>> print(tracker)
+  Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
+  ```
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
@@ -471,6 +482,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
