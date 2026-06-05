@@ -29,6 +29,7 @@ from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.queuing import AnnotatedQueue
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
@@ -42,6 +43,7 @@ ops = (
 )
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
@@ -137,7 +139,8 @@ def test_change_op_basis_raises():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -156,7 +159,8 @@ def test_change_op_basis_raises_capture():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -191,8 +195,8 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
-    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
 def test_change_op_basis_with_mixed_types():
@@ -325,12 +329,6 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category_ops(self, ops_lst):
-        """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        assert change_op_basis_op._queue_category == "_ops"
-
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
     """Test wrapper function."""
@@ -385,7 +383,6 @@ class TestIntegration:
 
 
 class TestDecomposition:
-
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
@@ -476,3 +473,53 @@ class TestDecomposition:
         tape = qp.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             qp.assert_equal(op1, op2)
+
+
+def test_callable_validation_doesnt_hide_bugs_with_typeerror():
+    """Regression test for sc-121194."""
+
+    def f():
+        # Create TypeError
+        wire = "0" + 1
+        qp.X(wire)
+
+    with pytest.raises(TypeError, match="can only concatenate"):
+        change_op_basis(f, qp.Y(0))
+
+
+def blah(a, b, c=3):
+    pass
+
+
+partially_bound_func = partial(blah, a=1)
+partially_bound_with_opt_kwarg_func = partial(blah, a=1, b=2)
+fully_bound_func = partial(blah, a=1, b=2, c=3)
+
+
+@pytest.mark.parametrize(
+    "f, valid",
+    [
+        # Standard
+        pytest.param(lambda: None, True, id="no_params"),
+        pytest.param(lambda a: None, False, id="single_arg"),
+        pytest.param(lambda a, b=None: None, False, id="mixed_arg_kwarg"),
+        pytest.param(lambda a=None, b=None: None, True, id="only_kwargs"),
+        # *args, **kwargs special cases
+        pytest.param(lambda *args: None, True, id="star_args"),
+        pytest.param(lambda **kwargs: None, True, id="star_kwargs"),
+        pytest.param(lambda *args, **kwargs: None, True, id="mixed_star_args_star_kwargs"),
+        # Partial integration
+        pytest.param(partially_bound_func, False, id="partially_bound_function"),
+        pytest.param(
+            partially_bound_with_opt_kwarg_func, True, id="partially_bound_function_with_opt_kwarg"
+        ),
+        pytest.param(fully_bound_func, True, id="fully_bound_function"),
+    ],
+)
+def test_validate_callable_helper(f, valid):
+    """Tests helpers ability to validate callables."""
+    if valid:
+        _validate_callable(f)
+    else:
+        with pytest.raises(TypeError):
+            _validate_callable(f)

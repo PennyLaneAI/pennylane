@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
@@ -155,15 +155,6 @@ class TestProperties:
         base = DummyOp("b")
         op = SymbolicOp(base)
         assert op.is_verified_hermitian == is_herm
-
-    def test_queuecateory(self):
-        """Test that a symbolic operator inherits the queue_category from its base."""
-
-        class DummyOp(Operator):
-            pass
-
-        op = SymbolicOp(DummyOp("b"))
-        assert op._queue_category == "_ops"  # pylint:disable=protected-access
 
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""

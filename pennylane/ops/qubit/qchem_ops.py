@@ -23,13 +23,13 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_adjoint_rotation,
     qjit_compatible_pow_rotation,
 )
-from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -1531,7 +1531,7 @@ class FermionicSWAP(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
-        return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)
+        return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
 def _fermionic_swap_decomp_resources():

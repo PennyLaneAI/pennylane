@@ -18,7 +18,7 @@ from functools import singledispatch
 import numpy as np
 
 import pennylane.ops.functions as op_func
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Y, Z, op_math
 from pennylane.pauli import PauliSentence
 

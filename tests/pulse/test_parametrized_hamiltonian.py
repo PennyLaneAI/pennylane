@@ -410,7 +410,7 @@ class TestInteractionWithOperators:
         assert q.queue[0] == pH
         assert isinstance(pH, ParametrizedHamiltonian)
         assert len(pH.coeffs_fixed) == 0
-        assert isinstance(pH.H_parametrized(param, 0.5), qp.ops.SProd)
+        assert isinstance(pH.H_parametrized(param[:1], 0.5), qp.ops.SProd)
 
 
 class TestProperties:

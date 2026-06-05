@@ -91,10 +91,6 @@ class TestRegisters:
                 "Got an empty dictionary",
             ),
             (
-                {"alice": 3, "bob": {"nest1": 0}, "cleo": 3},
-                "Expected '0' to be greater than 0. Please ensure that the number of wires for the register is a positive integer",
-            ),
-            (
                 {"alice": 3, "bob": {"nest1": {"nest2": {"nest3": {1}}}}, "cleo": 3},
                 r"Expected '\{1\}' to be either a dict or an int",
             ),
@@ -104,3 +100,17 @@ class TestRegisters:
         """Test that the registers function raises the right error for given Wires dictionaries"""
         with pytest.raises(ValueError, match=expected_error_msg):
             qp.registers(wire_dict)
+
+    def test_with_empty_register(self):
+        """Test that empty wire registers are allowed and processed correctly."""
+
+        out_0 = qp.registers({"a": 2, "b": 0})
+        assert out_0 == {"a": Wires([0, 1]), "b": Wires([])}
+
+        out_1 = qp.registers({"a": 2, "b": {"first b": 0, "second b": 4}})
+        assert out_1 == {
+            "a": Wires([0, 1]),
+            "b": Wires([2, 3, 4, 5]),
+            "first b": Wires([]),
+            "second b": Wires([2, 3, 4, 5]),
+        }

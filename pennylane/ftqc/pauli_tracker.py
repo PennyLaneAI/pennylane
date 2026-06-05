@@ -21,7 +21,7 @@ import itertools
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from pennylane.tape import QuantumScript
 

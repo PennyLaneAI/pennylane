@@ -25,8 +25,8 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MatrixUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
@@ -675,13 +675,6 @@ class TestProperties:
             true_hermitian_state = true_hermitian_state and op.is_verified_hermitian
 
         assert sum_op.is_verified_hermitian == true_hermitian_state
-
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category(self, ops_lst, sum_method):
-        """Test queue_category property is "_ops" by inheritance."""
-        sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""

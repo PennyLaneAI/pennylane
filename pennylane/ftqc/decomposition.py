@@ -19,11 +19,27 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
-from pennylane import PhaseShift, adjoint, math, measure
+from pennylane import math
 from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
+from pennylane.ops import (
+    CNOT,
+    CZ,
+    RZ,
+    GlobalPhase,
+    H,
+    Identity,
+    PhaseShift,
+    Rot,
+    S,
+    X,
+    Y,
+    Z,
+    adjoint,
+    cond,
+    measure,
+)
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
