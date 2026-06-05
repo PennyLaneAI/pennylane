@@ -20,6 +20,7 @@ from typing import Any, Hashable, Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core import Operator
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -27,7 +28,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operator
 from pennylane.ops import CNOT, Controlled, PauliX
 from pennylane.wires import Wires, WiresLike
 
