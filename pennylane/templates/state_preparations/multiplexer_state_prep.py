@@ -20,8 +20,6 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.wires import Wires
 
-from .mottonen import _get_alpha_y
-
 
 class MultiplexerStatePreparation(Operation):
     r"""Prepares a quantum state using multiplexed rotations.
@@ -112,10 +110,7 @@ class MultiplexerStatePreparation(Operation):
 def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
     resources = dict.fromkeys(
-        [
-            resource_rep(qp.SelectPauliRot, num_wires=i, rot_axis="Y")
-            for i in range(1, num_wires + 1)
-        ],
+        [resource_rep(qp.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
         1,
     )
 
@@ -125,7 +120,9 @@ def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
 
 
 @register_resources(_multiplexer_state_prep_decomposition_resources, exact=False)
-def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
+def _multiplexer_state_prep_decomposition(
+    state_vector, wires, **_
+):  # pylint: disable=arguments-differ
     r"""
     Computes the decomposition operations for the given state vector.
 
@@ -136,6 +133,7 @@ def _multiplexer_state_prep_decomposition(state_vector, wires, **_):
     Returns:
         list: List of decomposition operations.
     """
+
     # Determine if the state is real-valued. For real states, we pass signed amplitudes to
     # _get_alpha_y so that at the leaf level (k=1) the sign is encoded directly into
     # the SelectPauliRot("Y") angle, eliminating the need for SelectPauliRot("Z") gates.
