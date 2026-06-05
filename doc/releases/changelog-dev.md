@@ -112,6 +112,7 @@
   >>> tracker.update(a=2, b="b2", c=1)
   >>> print(tracker)
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
+  
   ```
 
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
