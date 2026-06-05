@@ -388,7 +388,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qram/hybrid_qram_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`Flip FLop QRAM <../code/api/pennylane.FFQRAM>`
+    :description: :doc:`Flip Flop QRAM <../code/api/pennylane.FFQRAM>`
     :figure: _static/templates/qram/ffqram_thumbnail.png
 
 .. gallery-item::
