@@ -68,7 +68,7 @@ class TestTrackerCoreBehavior:
         """Tests that the callback is shown correctly in the repr."""
 
         def my_callback(_totals, _history, _latest):
-            pass  # pragma: no cover
+            pass
 
         tracker = Tracker(callback=my_callback)
         r = repr(tracker)
