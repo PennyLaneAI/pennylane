@@ -24,8 +24,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
 jax = pytest.importorskip("jax")
