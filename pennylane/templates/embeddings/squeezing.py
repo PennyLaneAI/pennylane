@@ -162,5 +162,5 @@ class SqueezingEmbedding(Operation):
         Squeezing(tensor(2.), tensor(0.), wires=['b'])]
         """
         return [
-            Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
+            Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i, _ in enumerate(wires)
         ]

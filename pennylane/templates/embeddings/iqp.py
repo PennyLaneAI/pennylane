@@ -265,9 +265,9 @@ class IQPEmbedding(Operation):
             features = math.T(features)
 
         for _ in range(n_repeats):
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(H(wires=wires[i]))
-                op_list.append(RZ(features[i], wires=wires[i]))
+            for i, w in enumerate(wires):
+                op_list.append(H(wires=w))
+                op_list.append(RZ(features[i], wires=w))
 
             for wire_pair in pattern:
                 # get the position of the wire indices in the array

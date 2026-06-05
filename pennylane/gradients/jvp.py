@@ -438,7 +438,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
         jvps = []
         start = 0
 
-        for t_idx in range(len(tapes)):
+        for t_idx, _ in enumerate(tapes):
             # extract the correct results from the flat list
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
