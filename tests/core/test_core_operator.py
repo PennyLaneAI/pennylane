@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator, Operator1, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     operation_derivative,
@@ -954,7 +955,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies == [(0.4,)]
+        assert parameter_frequencies(op) == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
@@ -972,7 +973,7 @@ class TestOperationConstruction:
         with pytest.raises(
             qp.exceptions.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
-            _ = op.parameter_frequencies
+            _ = parameter_frequencies(op)
 
     @pytest.mark.parametrize("num_param", [1, 2])
     def test_frequencies_parameter_dependent(self, num_param):
@@ -993,7 +994,7 @@ class TestOperationConstruction:
 
         x = [0.654, 2.31][:num_param]
         op = DummyOp(*x, wires=0)
-        f = op.parameter_frequencies
+        f = parameter_frequencies(op)
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
 
@@ -1005,7 +1006,7 @@ class TestOperationConstruction:
 
         op = DummyOp(0.7, [0, 1, 2, 3])
         assert isinstance(op.generator(), qp.SparseHamiltonian)
-        assert op.parameter_frequencies == [(1.0,)]
+        assert parameter_frequencies(op) == [(1.0,)]
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
