@@ -23,12 +23,10 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation, Operator, Operator1, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
-    Operation,
-    Operator,
-    StatePrepBase,
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum
@@ -51,6 +49,56 @@ def test_basis_deprecation():
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
         assert MyOp(0).basis is None
+
+
+def test_operator2_isinstance_operator():
+    """Test that anything that inherits from Operator2 is an Operator."""
+
+    class NewOp(qp.operation2.Operator2):
+        """dummy operator2"""
+
+        dynamic_argnames = ()
+
+        def __init__(self, wires):
+            super().__init__(wires=wires)
+
+    new_op = NewOp(wires=0)
+    assert isinstance(new_op, Operator)
+    assert issubclass(NewOp, Operator)
+
+
+def test_operator1_against_new_op():
+    """Test that Operator1 checks reject new operator interface."""
+
+    class NewOp(qp.operation2.Operator2):
+        """dummy operator2"""
+
+        dynamic_argnames = ()
+
+        def __init__(self, wires):
+            super().__init__(wires=wires)
+
+    new_op = NewOp(wires=0)
+    assert not isinstance(new_op, Operator1)
+    assert not issubclass(NewOp, Operator1)
+
+
+def test_operator1_against_old_op():
+    """Test that Operator1 checks accept old interface."""
+
+    class OldOp(Operator):
+        pass
+
+    old_op = OldOp(wires=0)
+    assert isinstance(old_op, Operator1)
+    assert issubclass(OldOp, Operator1)
+
+
+def test_operator1_against_random_obj():
+    """Test that operator1 checks reject random objects."""
+
+    assert not isinstance(1, Operator1)
+    assert not issubclass(list, Operator1)
 
 
 class TestOperatorConstruction:

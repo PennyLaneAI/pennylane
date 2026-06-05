@@ -184,8 +184,48 @@ def _process_data(op):
 
 
 # pylint: disable=too-few-public-methods
-class Operator1:
-    """docstring"""
+class Operator1(abc.ABC):
+    """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
+
+    While inheriting from :class:`~.Operator` provides the old, version 1 interface, using ``Operator``
+    with ``isinstance`` and ``issubclass`` checks returns whether an object is *either* ``Operator``
+    *or* the new :class:`~.Operator2`. This has been done to speed integration, as the exposed interfaces
+    are mostly the same. This ``Operator1`` class be used to check if an instance is *specifically*
+    the old version of the interface.
+
+    Suppose we have an old operator and a new operator:
+
+    .. code-block:: python
+
+        class OldOp(qp.core.Operator):
+            pass
+
+        class NewOp(qp.operation2.Operator2):
+
+            dynamic_argnames = ()
+
+            def __init__(self, wires):
+                super().__init__(wires)
+
+        old_op = OldOp(wires=0)
+        new_op = NewOp(wires=0)
+
+    We can see that both versions are "instances" of ``Operator``:
+
+    >>> isinstance(old_op, qp.core.Operator)
+    True
+    >>> isinstance(new_old qp.core.Operator)
+    True
+
+    but only ``old_op`` is an instance of ``Operator1``.
+
+    >>> isinstance(old_op, qp.core.Operator1)
+    True
+    >>> isinstance(new_op, qp.core.Operator1)
+    False
+
+
+    """
 
     @classmethod
     def __subclasshook__(cls, subclass):
