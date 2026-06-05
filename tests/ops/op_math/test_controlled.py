@@ -38,6 +38,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError

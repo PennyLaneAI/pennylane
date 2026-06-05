@@ -22,6 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
     GeneratorUndefinedError,

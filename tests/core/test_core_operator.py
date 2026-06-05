@@ -30,6 +30,10 @@ from pennylane.operation import (
     Operation,
     Operator,
     StatePrepBase,
+)
+from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum

@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import rustworkx as rx
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Identity, LinearCombination, X, Y, Z
 
 if TYPE_CHECKING:

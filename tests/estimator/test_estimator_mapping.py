@@ -24,8 +24,8 @@ import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
-from pennylane.operation import Operation
 
 # pylint: disable= no-self-use,too-few-public-methods
 

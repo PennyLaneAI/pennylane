@@ -20,8 +20,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operator
 from pennylane.decomposition.decomposition_graph import DecompositionGraph
-from pennylane.operation import Operator
 
 
 @pytest.mark.jax
