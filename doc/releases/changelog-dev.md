@@ -67,7 +67,38 @@
 
   ```
 
-* Added :class:`~.FFQRAM`, a template for probabilistic state preparation based on the flip-flop QRAM construction. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+
+  For example, the following circuit creates the state :math:`\sqrt{0.3}|000\rangle + \sqrt{0.7}|001\rangle` in the first three wires when the last wire is measured to be :math:`|1\rangle`.
+
+  ```python
+  import pennylane as qp
+
+  addrs = ["000", "001"]
+  amps = qp.math.array([qp.math.sqrt(0.3), qp.math.sqrt(0.7)])
+  wires = qp.registers({"address": 3, "register": 1})
+  shots = 1000
+
+  @qp.set_shots(shots)
+  @qp.qnode(qp.device("default.qubit", seed=42))
+  def circuit():
+      qp.FFQRAM(
+          amplitudes=amps,
+          wires=wires["address"] + wires["register"],
+          address=addrs,
+      )
+      qp.measure(wires["register"], postselect=1)
+      return qp.probs(wires=wires["address"])
+
+  ```
+
+  ```pycon
+  >>> print(qp.draw(circuit, level=2)())
+  0: ──H──X─╭●─────────X──X─╭●─────────X────┤ ╭Probs
+  1: ──H──X─├●─────────X──X─├●─────────X────┤ ├Probs
+  2: ──H──X─├●─────────X────├●──────────────┤ ╰Probs
+  3: ───────╰RY(1.16)───────╰RY(1.98)──┤↗₁├─┤
+  ```
 
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
   This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to

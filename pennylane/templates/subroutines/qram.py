@@ -1099,45 +1099,22 @@ class FFQRAM(Operation):
     consult `Park et al. (2019) <https://www.nature.com/articles/s41598-019-40439-3>`__
     and `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
 
-    ``FFQRAM`` prepares a real-amplitude quantum state over a sparse list of computational
-    basis states using the flip-register-flop construction. Given :math:`L` distinct
-    :math:`m`-bit addresses :math:`d_l` and real amplitudes :math:`b_l`, where
-    :math:`L \leq N = 2^m`, the amplitudes are normalized internally as
+    ``FFQRAM`` encodes :math:`L` distinct :math:`m`-bit addresses :math:`d_l` and
+    real amplitudes :math:`b_l`, where :math:`L \leq N = 2^m`, into the state
+
+    .. math::
+
+        \sum_{l=0}^{L - 1} \tilde{b}_l |d_l\rangle,
+
+    where :math:`\tilde{b}_l` is the normalized amplitude
 
     .. math::
 
         \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
 
-    The first :math:`m` wires are used as address wires and are initialized to
-    :math:`|+\rangle^{\otimes m}`. The last wire is a register qubit. For each address
-    :math:`d_l`, the circuit flips the zero bits of :math:`d_l`, applies a multi-controlled
-    :class:`~.RY` rotation with angle :math:`2\arcsin(\tilde{b}_l)` to the register qubit,
-    and then uncomputes the flips.
-
-    Before post-selection, the output state is
-
-    .. math::
-
-        \frac{1}{\sqrt{2^m}}
-        \left[
-        \sum_{x \notin D}|x\rangle|0\rangle
-        +
-        \sum_l |d_l\rangle
-        \left(
-        \sqrt{1 - \tilde{b}_l^2}|0\rangle
-        +
-        \tilde{b}_l|1\rangle
-        \right)
-        \right],
-
-    where :math:`D` is the set of supplied addresses. After post-selecting the register
-    qubit in :math:`|1\rangle`, the address register is prepared in
-
-    .. math::
-
-        \sum_l \tilde{b}_l |d_l\rangle.
-
-    The post-selection success probability is :math:`P(\mathrm{reg}=1)=1 / 2^m`.
+    The preparation is successful only when the register qubit is in state
+    :math:`|1\rangle`, and the success probability is
+    :math:`P(\mathrm{reg}=1)=1 / 2^m`.
 
     Args:
         amplitudes (TensorLike):
@@ -1164,14 +1141,13 @@ class FFQRAM(Operation):
 
     The following example is adapted from Section 4 of
     `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__. The
-    data to be registered is
+    data to be registered has two entries:
 
     .. math::
 
         \left\{(\sqrt{0.3}, |000\rangle), (\sqrt{0.7}, |001\rangle)\right\}.
 
-    Since ``num_entries = 2`` and ``m = 3``, this example uses three address wires and
-    one register wire.
+    To store this data we need three address wires (``m = 3``) and one register wire.
 
     .. code-block:: python
 
@@ -1224,6 +1200,51 @@ class FFQRAM(Operation):
     1: ──H──X─├●─────────X──X─├●─────────X────┤ ├Probs
     2: ──H──X─├●─────────X────├●──────────────┤ ╰Probs
     3: ───────╰RY(1.16)───────╰RY(1.98)──┤↗₁├─┤
+
+    .. details::
+        :title: Usage Details
+
+        ``FFQRAM`` prepares a real-amplitude quantum state over a sparse list of
+        computational basis states using the flip-register-flop construction. Given
+        :math:`L` distinct :math:`m`-bit addresses :math:`d_l` and real amplitudes
+        :math:`b_l`, where :math:`L \leq N = 2^m`, the amplitudes are normalized
+        internally as
+
+        .. math::
+
+            \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
+
+        The first :math:`m` wires are used as address wires and are initialized to
+        :math:`|+\rangle^{\otimes m}`. The last wire is a register qubit. For each
+        address :math:`d_l`, the circuit flips the zero bits of :math:`d_l`, applies a
+        multi-controlled :class:`~.RY` rotation with angle
+        :math:`2\arcsin(\tilde{b}_l)` to the register qubit, and then uncomputes the
+        flips.
+
+        Before post-selection, the output state is
+
+        .. math::
+
+            \frac{1}{\sqrt{2^m}}
+            \left[
+            \sum_{x \notin D}|x\rangle|0\rangle
+            +
+            \sum_l |d_l\rangle
+            \left(
+            \sqrt{1 - \tilde{b}_l^2}|0\rangle
+            +
+            \tilde{b}_l|1\rangle
+            \right)
+            \right],
+
+        where :math:`D` is the set of supplied addresses. After post-selecting the
+        register qubit in :math:`|1\rangle`, the address register is prepared in
+
+        .. math::
+
+            \sum_l \tilde{b}_l |d_l\rangle.
+
+        The post-selection success probability is :math:`P(\mathrm{reg}=1)=1 / 2^m`.
     """
 
     grad_method = None
