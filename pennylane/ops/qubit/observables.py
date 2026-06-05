@@ -24,7 +24,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qp
-from pennylane.operation import Operation, Operator
+from pennylane.core.operator import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -54,7 +54,6 @@ class Hermitian(Operator):
     Args:
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str or None): String representing the operation (optional)
 
     .. warning::
 
@@ -78,7 +77,7 @@ class Hermitian(Operator):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, A: TensorLike, wires: WiresLike):
         A = np.array(A) if isinstance(A, list) else A
         if not qp.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -93,7 +92,7 @@ class Hermitian(Operator):
 
             Hermitian._validate_input(A, expected_mx_shape)
 
-        super().__init__(A, wires=wires, id=id)
+        super().__init__(A, wires=wires)
 
     @staticmethod
     def _validate_input(A: TensorLike, expected_mx_shape: int | None = None):
@@ -292,7 +291,6 @@ class SparseHamiltonian(Operator):
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires.
         wires (Sequence[int]): the wire(s) the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -316,10 +314,10 @@ class SparseHamiltonian(Operator):
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: WiresLike, id: str | None = None):
+    def __init__(self, H: csr_matrix, wires: WiresLike):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
-        super().__init__(H, wires=wires, id=id)
+        super().__init__(H, wires=wires)
         self.H = H
         mat_len = 2 ** len(self.wires)
         if H.shape != (mat_len, mat_len):
@@ -412,7 +410,7 @@ class SparseHamiltonian(Operator):
 
 
 class Projector(Operator):
-    r"""Projector(state, wires, id=None)
+    r"""Projector(state, wires)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
     The expectation of this observable returns the value
@@ -432,7 +430,6 @@ class Projector(Operator):
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
             for a statevector projector.
         wires (Iterable): wires that the projector acts on.
-        id (str or None): String representing the operation (optional).
 
     **Example**
 
@@ -514,7 +511,7 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, state: TensorLike, wires: WiresLike):
         wires = Wires(wires)
 
         if qp.math.get_interface(state) == "jax":
@@ -528,7 +525,7 @@ class BasisStateProjector(Projector, Operation):
             if not set(state).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
@@ -696,9 +693,9 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, state: TensorLike, wires: WiresLike):
         wires = Wires(wires)
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)

@@ -23,6 +23,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qp
 from pennylane import math, queuing
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -34,7 +35,6 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
-from pennylane.operation import Operation, Operator
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
@@ -64,7 +64,7 @@ def _find_equal_generator(base, coeff):
     for op_class in _get_has_generator_types(len(base.wires)):
         g, c = qp.generator(op_class)(coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
-        mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires)))
+        mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
         if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator
@@ -81,13 +81,12 @@ def _find_equal_generator(base, coeff):
     return None
 
 
-def exp(op, coeff: float = 1.0, id: str | None = None):
+def exp(op, coeff: float = 1.0):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff (float): a scalar coefficient of the operator
-        id (str): id for the Exp operator. Default is None.
 
     Returns:
        :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
@@ -153,7 +152,7 @@ def exp(op, coeff: float = 1.0, id: str | None = None):
 
 
     """
-    return Exp(op, coeff, id=id)
+    return Exp(op, coeff)
 
 
 class Exp(ScalarSymbolicOp, Operation):
@@ -162,7 +161,6 @@ class Exp(ScalarSymbolicOp, Operation):
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
-        id (str): id for the Exp operator. Default is None.
 
     **Example**
 
@@ -216,10 +214,10 @@ class Exp(ScalarSymbolicOp, Operation):
         base, coeff = data
         return cls(base, coeff)
 
-    def __init__(self, base, coeff=1.0, id=None):
+    def __init__(self, base, coeff=1.0):
         if not isinstance(base, Operator):
             raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
-        super().__init__(base, scalar=coeff, id=id)
+        super().__init__(base, scalar=coeff)
         self.grad_recipe = [None]
 
     def __repr__(self):
@@ -229,9 +227,8 @@ class Exp(ScalarSymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
-    @property
-    def hash(self):
-        return hash((str(self.name), self.base.hash, str(self.coeff)))
+    def __hash__(self):
+        return hash((str(self.name), hash(self.base), str(self.coeff)))
 
     @property
     def coeff(self):

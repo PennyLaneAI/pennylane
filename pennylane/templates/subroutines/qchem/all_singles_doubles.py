@@ -23,8 +23,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -138,7 +138,6 @@ class AllSinglesDoubles(Operation):
         hf_state: Sequence[int],
         singles: Sequence[tuple[int, int]] | None = None,
         doubles: Sequence[tuple[int, int, int, int]] | None = None,
-        id=None,
     ):
         wires = Wires(wires)
         if len(wires) < 2:
@@ -176,18 +175,18 @@ class AllSinglesDoubles(Operation):
             "doubles": doubles,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @classmethod
     def _primitive_bind_call(
-        cls, weights, wires, hf_state, singles=None, doubles=None, id=None
+        cls, weights, wires, hf_state, singles=None, doubles=None
     ):  # pylint: disable=arguments-differ
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
         hf_state = math.array(hf_state)
         weights = math.array(weights)
-        return cls._primitive.bind(weights, wires, hf_state, singles, doubles, id=id)
+        return cls._primitive.bind(weights, wires, hf_state, singles, doubles)
 
     @property
     def resource_params(self) -> dict:

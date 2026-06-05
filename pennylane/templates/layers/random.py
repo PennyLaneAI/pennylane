@@ -20,7 +20,7 @@ Contains the RandomLayers template.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.wires import Wires
 
@@ -163,7 +163,6 @@ class RandomLayers(Operation):
         imprimitive=None,
         rotations=None,
         seed=42,
-        id=None,
     ):
         shape = math.shape(weights)
         if len(shape) != 2:
@@ -176,7 +175,7 @@ class RandomLayers(Operation):
             "seed": seed,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def num_params(self):

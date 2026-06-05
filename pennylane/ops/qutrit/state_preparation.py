@@ -20,8 +20,8 @@ with preparing a certain state on the qutrit device.
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import StatePrepBase
 from pennylane.exceptions import WireError
-from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires
 
@@ -112,7 +112,7 @@ class QutritBasisState(StatePrepBase):
                 raise WireError("Custom wire_order must contain all QutritBasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals):
+            for base_wire_label, value in zip(self.wires, prep_vals, strict=True):
                 indices[wire_order.index(base_wire_label)] = value
 
         ket = np.zeros((3,) * num_wires)

@@ -14,7 +14,7 @@
 """Functionality for Cartan decomposition"""
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.typing import TensorLike
 
@@ -160,7 +160,7 @@ def check_commutation_relation(
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
-            com.simplify()
+            com.prune()
             if len(com) != 0:
                 if vspace.is_independent(com):
                     return False

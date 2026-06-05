@@ -20,8 +20,8 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -46,15 +46,13 @@ class SampleMP(SampleMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         dtype (str or None): The dtype of the samples returned by this measurement process.
     """
 
     _shortname = "sample"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None, dtype=None):
+    def __init__(self, obs=None, wires=None, eigvals=None, dtype=None):
 
         self._dtype = dtype
 
@@ -83,7 +81,7 @@ class SampleMP(SampleMeasurement):
                 )
             wires = Wires(wires)
 
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals)
 
     @classmethod
     def _abstract_eval(

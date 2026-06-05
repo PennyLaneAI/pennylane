@@ -20,16 +20,15 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
-
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False
@@ -60,7 +59,7 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True

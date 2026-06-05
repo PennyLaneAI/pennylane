@@ -22,10 +22,10 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose, split_to_single_terms
@@ -948,8 +948,8 @@ def param_shift(
     >>> qp.jacobian(circuit)(params)
     array([-0.3875172 , -0.18884787, -0.38355704])
 
-    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
-    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
+    When differentiating QNodes with multiple measurements using Autograd, the outputs of the QNode first
+    need to be stacked. The reason is that this framework only allows differentiating functions with array or
     tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
     post-processing.
 

@@ -18,7 +18,7 @@ Contains the QutritBasisStatePreparation template.
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 
 
 class QutritBasisStatePreparation(Operation):
@@ -56,7 +56,7 @@ class QutritBasisStatePreparation(Operation):
     num_params = 1
     grad_method = None
 
-    def __init__(self, basis_state, wires, id=None):
+    def __init__(self, basis_state, wires):
         basis_state = qp.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
@@ -87,7 +87,7 @@ class QutritBasisStatePreparation(Operation):
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
         # The transform should be rewritten to support hyperparameters as well.
-        super().__init__(basis_state, wires=wires, id=id)
+        super().__init__(basis_state, wires=wires)
 
     @staticmethod
     def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ

@@ -18,13 +18,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     pow_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
@@ -88,7 +88,7 @@ class ControlledSequence(SymbolicOp, Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], control=metadata[0])
 
-    def __init__(self, base, control, id=None):
+    def __init__(self, base, control):
         control_wires = Wires(control)
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
@@ -99,7 +99,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
         self._name = "ControlledSequence"
 
-        super().__init__(base, id=id)
+        super().__init__(base)
 
     @property
     def resource_params(self) -> dict:
@@ -110,13 +110,12 @@ class ControlledSequence(SymbolicOp, Operation):
         }
         return params
 
-    @property
-    def hash(self):
+    def __hash__(self):
         return hash(
             (
                 str(self.name),
                 self.control,
-                self.base.hash,
+                hash(self.base),
             )
         )
 
@@ -178,10 +177,10 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qp.state()
 
         >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●────────────────────────────┤  State
-        1: ─│─────────╭●──────────────────┤  State
-        2: ─│─────────│─────────╭●────────┤  State
-        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤  State
+        0: ─╭●────────────────────────────┤ ╭State
+        1: ─│─────────╭●──────────────────┤ ├State
+        2: ─│─────────│─────────╭●────────┤ ├State
+        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
 
         To display the operators as powers of the base operator without further simplification,
         the `compute_decomposition` method can be used with `lazy=True`.
@@ -197,10 +196,10 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qp.state()
 
         >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭(RX(0.25))⁴───────────────────────────┤  State
-        1: ─│────────────╭(RX(0.25))²──────────────┤  State
-        2: ─│────────────│────────────╭(RX(0.25))¹─┤  State
-        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
+        0: ─╭(RX(0.25))⁴───────────────────────────┤ ╭State
+        1: ─│────────────╭(RX(0.25))²──────────────┤ ├State
+        2: ─│────────────│────────────╭(RX(0.25))¹─┤ ├State
+        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤ ╰State
 
         """
 

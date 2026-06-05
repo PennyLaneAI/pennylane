@@ -18,7 +18,7 @@ Contains the CVNeuralNetLayers template.
 from pennylane import math
 
 # pylint: disable=too-many-arguments
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.cv import Displacement, Kerr, Squeezing
 from pennylane.templates.subroutines import Interferometer
 
@@ -101,7 +101,6 @@ class CVNeuralNetLayers(Operation):
         phi_a,
         k,
         wires,
-        id=None,
     ):
         n_wires = len(wires)
         # n_if -> theta and phi shape for Interferometer
@@ -137,7 +136,6 @@ class CVNeuralNetLayers(Operation):
             phi_a,
             k,
             wires=wires,
-            id=id,
         )
 
     @property

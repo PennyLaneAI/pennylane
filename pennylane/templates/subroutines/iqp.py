@@ -21,13 +21,13 @@ from functools import reduce
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
 from pennylane.math import expand_matrix
-from pennylane.operation import Operation
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
 
@@ -90,7 +90,7 @@ class IQP(Operation):
     resource_keys = {"spin_sym", "pattern", "num_wires"}
 
     def __init__(
-        self, weights, wires, pattern, spin_sym=False, id=None
+        self, weights, wires, pattern, spin_sym=False
     ):  # pylint: disable=too-many-arguments
         if len(pattern) != len(weights):
             raise ValueError(
@@ -109,7 +109,7 @@ class IQP(Operation):
             "pattern": pattern,
             "num_wires": len(wires),
         }
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     # pylint: disable=arguments-differ
     @staticmethod

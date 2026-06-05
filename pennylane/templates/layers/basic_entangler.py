@@ -17,8 +17,8 @@ Contains the BasicEntanglerLayers template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, cond
 
 
@@ -129,7 +129,7 @@ class BasicEntanglerLayers(Operation):
 
     resource_keys = {"repeat", "num_wires", "rotation"}
 
-    def __init__(self, weights, wires=None, rotation=None, id=None):
+    def __init__(self, weights, wires=None, rotation=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = math.get_interface(weights)
         weights = math.asarray(weights, like=interface)
@@ -148,7 +148,7 @@ class BasicEntanglerLayers(Operation):
             )
 
         self._hyperparameters = {"rotation": rotation or RX}
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def num_params(self):

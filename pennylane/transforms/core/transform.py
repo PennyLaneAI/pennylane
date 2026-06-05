@@ -22,12 +22,13 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
-from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
+from pennylane.core.operator import Operator
+from pennylane.exceptions import TransformError
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
 from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
@@ -487,9 +488,22 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 tape_transform.register = _dummy_register
                 return tape_transform
             if setup_inputs:
-                setup_inputs.custom_qnode_transform = lambda x: x
-                setup_inputs.register = _dummy_register
-                return setup_inputs
+                # NOTE: Prepend "qnode" as an argument to the docstring
+                # so that it's consistent with tape based transform signatures.
+                @wraps(setup_inputs)
+                def _modified_setup_inputs(
+                    qnode, *args, **kwargs
+                ):  # pylint: disable=unused-argument
+                    return setup_inputs(*args, **kwargs)  # pragma: no cover
+
+                orig_sig = signature(setup_inputs)
+                qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
+                _modified_setup_inputs.__signature__ = orig_sig.replace(
+                    parameters=[qnode_param, *orig_sig.parameters.values()]
+                )
+                _modified_setup_inputs.custom_qnode_transform = lambda x: x
+                _modified_setup_inputs.register = _dummy_register
+                return _modified_setup_inputs
             raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
         return super().__new__(cls)
@@ -910,23 +924,6 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def tape_transform(self) -> Callable | None:
         """The raw tape transform definition for the transform."""
         return self._transform.tape_transform
-
-    @property
-    def transform(self) -> Callable | None:
-        """The raw tape transform definition of the transform.
-
-        .. warning::
-            This property is deprecated and will be removed in v0.46.
-            Please use :attr:`~.BoundTransform.tape_transform` instead.
-
-        """
-        warnings.warn(
-            "The 'BoundTransform.transform' property is deprecated and will be removed in v0.46. "
-            "Please use 'BoundTransform.tape_transform' instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.tape_transform
 
     @property
     def expand_transform(self) -> BoundTransform | None:

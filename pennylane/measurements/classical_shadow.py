@@ -22,8 +22,8 @@ from string import ascii_letters
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MeasurementShapeError
-from pennylane.operation import Operator
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
@@ -41,8 +41,6 @@ class ClassicalShadowMP(MeasurementTransform):
     Args:
         wires (.Wires): The wires the measurement process applies to.
         seed (Union[int, None]): The seed used to generate the random measurements
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "shadow"
@@ -51,24 +49,21 @@ class ClassicalShadowMP(MeasurementTransform):
         self,
         wires: WiresLike | None = None,
         seed: int | None = None,
-        id: str | None = None,
     ):
         self.seed = seed
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def _flatten(self):
         metadata = (("wires", self.wires), ("seed", self.seed))
         return (None, None), metadata
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
             self.seed,
             tuple(self.wires.tolist()),
         )
-
         return hash(fingerprint)
 
     def process(self, tape, device):
@@ -434,8 +429,6 @@ class ShadowExpvalMP(MeasurementTransform):
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "shadowexpval"
@@ -451,17 +444,17 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
+    # pylint: disable=arguments-renamed
     def __init__(
         self,
         H: Operator | Sequence[Operator],
         seed: int | None = None,
         k: int = 1,
-        id: str | None = None,
     ):
         self.seed = seed
         self.H = H
         self.k = k
-        super().__init__(id=id)
+        super().__init__()
 
     # pylint: disable=arguments-differ
     @classmethod
@@ -618,8 +611,9 @@ def shadow_expval(
 
                 .. code-block:: python
 
-                    dev = qp.device("default.qubit", seed=42, shots=100)
+                    dev = qp.device("default.qubit", seed=42)
 
+                    @qp.set_shots(100)
                     @qp.qnode(dev)
                     def circuit():
                         qp.H(0)
@@ -744,23 +738,23 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         def circuit():
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
-            return qp.classical_shadow(wires=[0, 1], seed=42)
+            return qp.classical_shadow(wires=[0, 1], seed=89)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
     >>> bits, recipes = circuit()
     >>> bits
     array([[1, 1],
-           [0, 0],
+           [0, 1],
            [1, 1],
            [1, 0],
            [0, 0]], dtype=int8)
     >>> recipes
     array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
     .. details::
         :title: Usage Details
@@ -772,15 +766,15 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         >>> bits
         array([[0, 0],
            [1, 1],
+           [1, 0],
            [1, 1],
-           [1, 1],
-           [0, 0]], dtype=int8)
+           [0, 1]], dtype=int8)
         >>> recipes
         array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
         To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
         interface should be used instead:

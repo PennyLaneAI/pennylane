@@ -25,8 +25,8 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import MatrixUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
@@ -88,7 +88,7 @@ def _get_pw(w, pauli_op):
 
 
 # pylint: disable=unused-argument
-def sum_using_dunder_method(*summands, id=None):
+def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)
@@ -290,7 +290,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]  # pylint: disable=protected-access
+        eigs_cache = diag_sum_op._eigs[diag_sum_op]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -656,13 +656,13 @@ class TestProperties:
         """Test the hash property is independent of order."""
         op1 = Sum(qp.PauliX("a"), qp.PauliY("b"))
         op2 = Sum(qp.PauliY("b"), qp.PauliX("a"))
-        assert op1.hash == op2.hash
+        assert hash(op1) == hash(op2)
 
         op3 = Sum(qp.PauliX("a"), qp.PauliY("b"), qp.PauliZ(-1))
-        assert op3.hash != op1.hash
+        assert hash(op3) != hash(op1)
 
         op4 = Sum(qp.X("a"), qp.X("a"), qp.Y("b"))
-        assert op4.hash != op1.hash
+        assert hash(op4) != hash(op1)
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
     @pytest.mark.parametrize("ops_lst", ops)
@@ -675,13 +675,6 @@ class TestProperties:
             true_hermitian_state = true_hermitian_state and op.is_verified_hermitian
 
         assert sum_op.is_verified_hermitian == true_hermitian_state
-
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category(self, ops_lst, sum_method):
-        """Test queue_category property is "_ops" by inheritance."""
-        sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""

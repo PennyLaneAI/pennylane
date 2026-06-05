@@ -23,13 +23,13 @@ import numpy as np
 
 import pennylane.math as pl_math
 from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
@@ -195,7 +195,6 @@ class QROM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-        id=None,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
 
         control_wires = Wires(control_wires)
@@ -242,7 +241,7 @@ class QROM(Operation):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
-        super().__init__(data, wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())

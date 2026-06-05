@@ -19,8 +19,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, CZ, CRot, PhaseShift
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
@@ -255,7 +255,7 @@ class ParticleConservingU1(Operation):
 
     resource_keys = {"num_wires", "n_layers"}
 
-    def __init__(self, weights, wires, init_state=None, id=None):
+    def __init__(self, weights, wires, init_state=None):
         if len(wires) < 2:
             raise ValueError(
                 f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
@@ -280,7 +280,7 @@ class ParticleConservingU1(Operation):
 
         self._hyperparameters = {"init_state": tuple(init_state)}
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def num_params(self):

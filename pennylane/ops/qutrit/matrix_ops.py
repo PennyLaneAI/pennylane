@@ -19,9 +19,9 @@ accept a unitary matrix as a parameter.
 import warnings
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
-from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -37,8 +37,6 @@ class QutritUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires(Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     **Example**
 

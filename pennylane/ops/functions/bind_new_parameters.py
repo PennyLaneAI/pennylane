@@ -22,7 +22,7 @@ from collections.abc import Sequence
 from functools import singledispatch
 
 from pennylane import ops
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -122,7 +122,7 @@ def bind_new_parameters_fermionic_double_excitation(
 
 @bind_new_parameters.register
 def bind_new_parameters_angle_embedding(op: AngleEmbedding, params: Sequence[TensorLike]):
-    rotation = op.hyperparameters["rotation"].basis
+    rotation = op.hyperparameters["rotation"].__name__[-1]  # RX -> X, RY-> Y, RZ -> Z
     return AngleEmbedding(params[0], wires=op.wires, rotation=rotation)
 
 

@@ -28,11 +28,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.operation import Operator
 from pennylane.ops import Conditional, PauliMeasure
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
@@ -2271,7 +2271,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="Coeffs have different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_comparison_with_trainability(self):
@@ -2283,7 +2283,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=False, check_trainability=True) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Coeffs have different trainability"):
             assert_equal(op1, op2, check_interface=False, check_trainability=True)
 
     def test_exp_base_op_comparison_with_interface(self):
@@ -2361,7 +2361,7 @@ class TestSymbolicOpComparison:
 
         assert qp.equal(op1, op2, check_interface=False, check_trainability=False) is True
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
-        with pytest.raises(AssertionError, match="Parameters have different interfaces."):
+        with pytest.raises(AssertionError, match="Scalars have different interfaces."):
             assert_equal(op1, op2)
 
     def test_s_prod_comparison_with_trainability(self):
@@ -2371,7 +2371,7 @@ class TestSymbolicOpComparison:
 
         assert qp.equal(op1, op2, check_interface=False, check_trainability=False) is True
         assert qp.equal(op1, op2, check_interface=False, check_trainability=True) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability."):
+        with pytest.raises(AssertionError, match="Scalars have different trainability."):
             assert_equal(op1, op2)
 
     def test_s_prod_base_op_comparison_with_interface(self):
@@ -2757,14 +2757,21 @@ class TestParametrizedEvolutionComparisons:
         """Test that coefficients are compared for two ParametrizedEvolution ops"""
         coeffs1 = [3, f1, f2]
         coeffs2 = [3, 4, f2]
+        coeffs4 = [f1, f2]
+        coeffs5 = [f2, f1]
         ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
+        ops4 = [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(2)]
 
         h1 = qp.dot(coeffs1, ops)
         h2 = qp.dot(coeffs2, ops)
+        h4 = qp.dot(coeffs4, ops4)
+        h5 = qp.dot(coeffs5, ops4)
 
         ev1 = qp.evolve(h1)
         ev2 = qp.evolve(h1)
         ev3 = qp.evolve(h2)
+        ev4 = qp.evolve(h4)
+        ev5 = qp.evolve(h5)
 
         params1 = [6.0, 7.0]
         params2 = [6.0, 7.0]
@@ -2772,7 +2779,12 @@ class TestParametrizedEvolutionComparisons:
         t = 3
 
         assert qp.equal(ev1(params1, t), ev2(params2, t)) is True
+        # Differing evolutions due to different parameters
         assert qp.equal(ev1(params1, t), ev3(params3, t)) is False
+        # Differing evolutions due to differing coefficient lengths
+        assert qp.equal(ev1(params1, t), ev4(params1, t)) is False
+        # Differing evolutions due to different coefficients
+        assert qp.equal(ev4(params1, t), ev5(params1, t)) is False
 
     def test_different_times(self):
         """Test that times are compared for two ParametrizedEvolution ops"""
@@ -3197,6 +3209,13 @@ class TestCompareSubroutines:
 
         op1 = qp.tape.make_qscript(f)((0.5,), 0)[0]
         op2 = qp.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+
+        assert not qp.equal(op1, op2)
+        with pytest.raises(AssertionError, match="return a different number of leaves"):
+            qp.assert_equal(op1, op2)
+
+        op1 = qp.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+        op2 = qp.tape.make_qscript(f)((0.5, {"a": 0.6}), 0)[0]
 
         assert not qp.equal(op1, op2)
         with pytest.raises(AssertionError, match="have different pytree structures"):

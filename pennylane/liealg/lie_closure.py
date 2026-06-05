@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane.ops.functions as op_func
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import (
     PauliSentence,
     PauliVSpace,
@@ -34,6 +34,10 @@ from pennylane.pauli import (
 )
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+#: Tolerance for linear independence checks of Hermitian basis matrices.
+#: Note: if this value is changed, update the docstring of :func:`_hermitian_basis` accordingly.
+_LINEAR_DEPENDENCE_TOL = 1e-10
 
 
 def lie_closure(
@@ -170,7 +174,7 @@ def lie_closure(
         # nesting level of the commutators.
         for ps1, ps2 in product(vspace.basis[old_length:], vspace.basis[:initial_length]):
             com = ps1.commutator(ps2)
-            com.simplify(tol=vspace.tol)
+            com.prune(tol=vspace.tol)
 
             if len(com) == 0:  # skip because operators commute
                 continue
@@ -207,7 +211,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     Args:
         matrices (Union[numpy.ndarray, Iterable[numpy.ndarray]]): A list of Hermitian matrices.
-        tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+        tol (float): Tolerance for linear dependence check. Defaults to ``(1e-10)``.
         subbasis_length (int): The first `subbasis_length` elements in `matrices` are left untouched.
 
     Returns:
@@ -217,7 +221,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
         ValueError: If not all input matrices are (skew-) Hermitian.
     """
     if tol is None:
-        tol = 1e-10
+        tol = _LINEAR_DEPENDENCE_TOL
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:

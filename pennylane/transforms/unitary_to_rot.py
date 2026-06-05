@@ -18,7 +18,7 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 from functools import lru_cache, partial
 
 from pennylane import capture, math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.queuing import QueuingManager
@@ -106,7 +106,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         operations. See usage details below.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.

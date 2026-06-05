@@ -21,7 +21,7 @@ import itertools
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from pennylane.tape import QuantumScript
 
@@ -324,7 +324,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
 
             # Step 2: Merge the new xz with the byproduct by_op
             by_op = by_ops.pop()
-            for _by_op, _xz_comm in zip(by_op, xz_commutated):
+            for _by_op, _xz_comm in zip(by_op, xz_commutated, strict=True):
                 new_xz.append(math.bitwise_xor(_by_op, _xz_comm))
         else:  # branch for Paulis
             # Commutate step is skipped.

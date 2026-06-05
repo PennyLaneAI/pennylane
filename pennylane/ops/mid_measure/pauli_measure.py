@@ -16,16 +16,21 @@ Implements the pauli measurement.
 """
 
 import uuid
-import warnings
 from functools import lru_cache
+from importlib.util import find_spec
 
+import numpy as np
+
+import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import Operator
+from pennylane.compiler import compiler
+from pennylane.core.operator import Operator
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
+
+has_jax = find_spec("jax") is not None
 
 _VALID_PAULI_CHARS = "XYZ"
 
@@ -39,17 +44,8 @@ class PauliMeasure(Operator):
         pauli_word: str,
         wires: WiresLike,
         postselect: int | None = None,
-        id: str | None = None,
         meas_uid: str | None = None,
     ):
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-            )
-            # Only override if meas_uid wasn't explicitly provided
-            if meas_uid is None:
-                meas_uid = id
 
         if not all(c in _VALID_PAULI_CHARS for c in pauli_word):
             raise ValueError(
@@ -98,8 +94,7 @@ class PauliMeasure(Operator):
             return f"┤↗{postselect}{self.pauli_word}├"
         return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
 
-    @property
-    def hash(self) -> int:
+    def __hash__(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
         return hash(
             (self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.meas_uid)
@@ -135,6 +130,37 @@ def _create_pauli_measure_primitive():
         return jax.core.ShapedArray((), dtype)
 
     return pauli_measure_p
+
+
+@lru_cache
+def _get_array_types():
+    if has_jax:
+        import jax  # pylint: disable=import-outside-toplevel
+
+        return (jax.numpy.ndarray, np.ndarray)
+    return (np.ndarray,)
+
+
+@lru_cache
+def _get_non_array_iterables():
+    return (
+        list,
+        tuple,
+        Wires,
+        range,
+        qp.capture.autograph.ag_primitives.PRange,
+        set,
+    )
+
+
+def _setup_wires(wires):
+    if isinstance(wires, _get_array_types()):
+        if wires.shape == ():
+            return (wires,)
+        return wires
+    if isinstance(wires, _get_non_array_iterables()):
+        return tuple(wires)
+    return (wires,)
 
 
 def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
@@ -211,7 +237,12 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()
-        wires = (wires,) if math.shape(wires) == () else tuple(wires)
+        wires = _setup_wires(wires)
         return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
-    return _pauli_measure_impl(wires, pauli_word, postselect)
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.pauli_measure(pauli_word=pauli_word, wires=wires, postselect=postselect)
+
+    return _pauli_measure_impl(wires=wires, pauli_word=pauli_word, postselect=postselect)

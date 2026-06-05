@@ -25,6 +25,7 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.boolean_fn import BooleanFn
+from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
@@ -37,7 +38,6 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
@@ -295,9 +295,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         >>> dev.wire_map()
         OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
         """
-        consecutive_wires = Wires(range(self.num_wires))
-
-        wire_map = zip(wires, consecutive_wires)
+        wire_map = {w: i for i, w in enumerate(wires)}
         return OrderedDict(wire_map)
 
     def order_wires(self, subset_wires):
@@ -649,7 +647,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         .. warning::
 
             This method will be tracked by autodifferentiation libraries,
-            such as Autograd, JAX, TensorFlow, and Torch. Please make sure
+            such as Autograd, JAX, and Torch. Please make sure
             to use ``qp.math`` for autodiff-agnostic tensor processing
             if required.
 

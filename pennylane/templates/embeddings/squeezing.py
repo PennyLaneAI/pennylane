@@ -18,7 +18,7 @@ Contains the SqueezingEmbedding template.
 from pennylane import math
 
 # pylint: disable=too-many-arguments
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.cv import Squeezing
 
 
@@ -110,7 +110,7 @@ class SqueezingEmbedding(Operation):
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
-    def __init__(self, features, wires, method="amplitude", c=0.1, id=None):
+    def __init__(self, features, wires, method="amplitude", c=0.1):
         shape = math.shape(features)
         constants = [c] * shape[0]
         constants = math.convert_like(constants, features)
@@ -131,7 +131,7 @@ class SqueezingEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize method {method}")
 
-        super().__init__(pars, wires=wires, id=id)
+        super().__init__(pars, wires=wires)
 
     @property
     def num_params(self):

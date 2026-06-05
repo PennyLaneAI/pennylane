@@ -18,6 +18,7 @@ Contains the SelectPauliRot template.
 from collections import defaultdict
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -25,7 +26,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math import Prod
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
@@ -103,7 +103,7 @@ class SelectPauliRot(Operation):
     resource_keys = {"num_wires", "rot_axis"}
 
     def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z", id=None
+        self, angles, control_wires, target_wire, rot_axis="Z"
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         self.hyperparameters["control_wires"] = Wires(control_wires)
@@ -120,7 +120,7 @@ class SelectPauliRot(Operation):
             raise ValueError("Only one target wire can be specified")
 
         all_wires = self.hyperparameters["control_wires"] + self.hyperparameters["target_wire"]
-        super().__init__(angles, wires=all_wires, id=id)
+        super().__init__(angles, wires=all_wires)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())

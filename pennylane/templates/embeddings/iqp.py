@@ -21,8 +21,8 @@ from itertools import combinations
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.wires import Wires
 
@@ -179,7 +179,7 @@ class IQPEmbedding(Operation):
 
     resource_keys = {"pattern_size", "n_repeats", "num_wires"}
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
+    def __init__(self, features, wires, n_repeats=1, pattern=None):
         shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -197,7 +197,7 @@ class IQPEmbedding(Operation):
             pattern = tuple(combinations(wires, 2))
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
-        super().__init__(features, wires=wires, id=id)
+        super().__init__(features, wires=wires)
 
     @property
     def resource_params(self) -> dict:

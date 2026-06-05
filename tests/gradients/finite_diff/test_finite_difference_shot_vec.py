@@ -296,10 +296,10 @@ class TestFiniteDiff:
 
         assert len(tapes) == tape.num_params
 
-    def test_independent_parameters(self):
+    def test_independent_parameters(self, seed):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
         with qp.queuing.AnnotatedQueue() as q1:
             qp.RX(1.0, wires=[0])
@@ -598,6 +598,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
+    @pytest.mark.local_salt(1)
     def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to

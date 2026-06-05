@@ -19,9 +19,10 @@ from collections.abc import Callable, Sequence
 from types import FunctionType
 
 from pennylane import templates
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
-from pennylane.operation import DecompositionUndefinedError, Operation, Operator
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.transforms import transform

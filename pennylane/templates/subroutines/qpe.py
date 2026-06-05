@@ -19,6 +19,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 from pennylane import math, ops
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -27,7 +28,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import pow as qp_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
@@ -180,7 +180,7 @@ class QuantumPhaseEstimation(ErrorOperation):
             "num_estimation_wires": len(self.estimation_wires),
         }
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
+    def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
@@ -216,7 +216,7 @@ class QuantumPhaseEstimation(ErrorOperation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(*unitary.data, wires=wires, id=id)
+        super().__init__(*unitary.data, wires=wires)
 
     @property
     def target_wires(self):

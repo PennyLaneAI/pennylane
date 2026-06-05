@@ -57,7 +57,7 @@ def compile(
       (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
         pipeline (Sequence[transform]): A list of
             tape and/or quantum function transforms to apply.
             The default ``pipeline`` applies the following transforms:

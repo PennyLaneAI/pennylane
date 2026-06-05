@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, compiler, control_flow, math, ops, queuing
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 
@@ -176,10 +176,7 @@ def ctrl_decomp_zyz(
 
     if isinstance(target_operation, Operation):
         try:
-            rot_angles = target_operation.single_qubit_rot_angles()
-            _, global_phase = math.convert_to_su2(
-                ops.functions.matrix(target_operation), return_global_phase=True
-            )
+            *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
         except NotImplementedError:
             *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
                 ops.functions.matrix(target_operation), return_global_phase=True
@@ -401,7 +398,7 @@ def _controlled_two_qubit_unitary_resource(
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
+    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
     for w in zero_control_wires:
         ops.PauliX(w)
     ops.ctrl(

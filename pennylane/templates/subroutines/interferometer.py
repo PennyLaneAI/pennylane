@@ -18,7 +18,7 @@ Contains the ``Interferometer`` template.
 from itertools import product
 
 from pennylane import math
-from pennylane.operation import CVOperation
+from pennylane.core.operator import CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments
 from pennylane.ops import Beamsplitter, Rotation
@@ -170,7 +170,6 @@ class Interferometer(CVOperation):
         wires,
         mesh="rectangular",
         beamsplitter="pennylane",
-        id=None,
     ):
         wires = Wires(wires)
 
@@ -193,7 +192,7 @@ class Interferometer(CVOperation):
             "mesh": mesh,
             "beamsplitter": beamsplitter,
         }
-        super().__init__(theta, phi, varphi, wires=wires, id=id)
+        super().__init__(theta, phi, varphi, wires=wires)
 
     @staticmethod
     def compute_decomposition(

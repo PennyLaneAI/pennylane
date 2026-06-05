@@ -22,8 +22,8 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.wires import Wires, WiresLike
 
@@ -129,10 +129,10 @@ class QFT(Operation):
     grad_method = None
     resource_keys = {"num_wires"}
 
-    def __init__(self, wires: WiresLike, id=None):
+    def __init__(self, wires: WiresLike):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())

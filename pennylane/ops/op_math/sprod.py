@@ -18,8 +18,8 @@ computing the scalar product of operations.
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -28,7 +28,7 @@ from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True, id=None):
+def s_prod(scalar, operator, lazy=True):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -38,7 +38,6 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
-        id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
 
@@ -70,9 +69,9 @@ def s_prod(scalar, operator, lazy=True, id=None):
            [2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
-        return SProd(scalar, operator, id=id)
+        return SProd(scalar, operator)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, id=id)
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base)
     QueuingManager.remove(operator)
     return sprod_op
 
@@ -84,9 +83,6 @@ class SProd(ScalarSymbolicOp):
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
         base (~.operation.Operator): the operator which will get scaled.
-
-    Keyword Args:
-        id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
@@ -134,8 +130,8 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
-        super().__init__(base=base, scalar=scalar, id=id)
+    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, _pauli_rep=None):
+        super().__init__(base=base, scalar=scalar)
 
         if _pauli_rep:
             self._pauli_rep = _pauli_rep
@@ -201,7 +197,11 @@ class SProd(ScalarSymbolicOp):
     def is_verified_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return self.base.is_verified_hermitian and not math.iscomplex(self.scalar)
+        if not self.base.is_verified_hermitian:
+            return False
+        if math.is_abstract(self.scalar):
+            return not math.get_dtype_name(self.scalar).startswith("complex")
+        return not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
@@ -307,7 +307,7 @@ class SProd(ScalarSymbolicOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         if self.scalar == 1:

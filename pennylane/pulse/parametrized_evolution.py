@@ -21,7 +21,7 @@ import warnings
 from collections.abc import Sequence
 
 from pennylane import math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops import functions
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -42,7 +42,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -376,7 +376,6 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        id=None,
         **odeint_kwargs,
     ):
         if not all(op.has_matrix for op in H.ops):
@@ -406,7 +405,7 @@ class ParametrizedEvolution(Operation):
                     f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
                     f"expected {len(H.coeffs_parametrized)} parameters."
                 )
-        super().__init__(*params, wires=H.wires, id=id)
+        super().__init__(*params, wires=H.wires)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
@@ -443,7 +442,6 @@ class ParametrizedEvolution(Operation):
             return_intermediate=return_intermediate,
             complementary=complementary,
             dense=dense,
-            id=self._id,
             **odeint_kwargs,
         )
 
@@ -460,8 +458,7 @@ class ParametrizedEvolution(Operation):
         mapped_op.H = self.H.map_wires(wire_map)
         return mapped_op
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: Integer hash that uniquely represents the operator."""
         return hash(
             (

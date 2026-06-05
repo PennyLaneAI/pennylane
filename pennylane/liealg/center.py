@@ -18,7 +18,7 @@ from itertools import combinations
 import numpy as np
 from scipy.linalg import norm, null_space
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .structure_constants import structure_constants
@@ -184,11 +184,13 @@ def center(
             return []
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in kernel_intersection.T]
+    res = [
+        sum(c * x for c, x in zip(c_coeffs, g, strict=True)) for c_coeffs in kernel_intersection.T
+    ]
 
     have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:
-        _ = [el.simplify() for el in res]
+        _ = [el.prune() for el in res]
         if not pauli:
             res = [el.operation() for el in res]
     else:

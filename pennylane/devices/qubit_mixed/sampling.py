@@ -105,7 +105,7 @@ def _measure_with_samples_diagonalizing_gates(
         processed_samples.append(shot)
 
     if shots.has_partitioned_shots:
-        return tuple(zip(*processed_samples))
+        return tuple(zip(*processed_samples, strict=True))
 
     return processed_samples[0]
 
@@ -198,11 +198,11 @@ def _measure_hamiltonian_with_samples(
             prng_key=prng_key,
             readout_errors=readout_errors,
         )
-        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
+        return sum(c * res for c, res in zip(mp.obs.terms()[0], results, strict=True))
 
     keys = jax_random_split(prng_key, num=shots.num_copies)
     unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys, strict=True)
     )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
@@ -233,7 +233,7 @@ def _measure_sum_with_samples(
 
     keys = jax_random_split(prng_key, num=shots.num_copies)
     unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys, strict=True)
     )
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
@@ -344,6 +344,6 @@ def measure_with_samples(
 
     # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*sorted_res))
+        sorted_res = tuple(zip(*sorted_res, strict=True))
 
     return sorted_res

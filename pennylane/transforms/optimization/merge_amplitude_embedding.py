@@ -38,7 +38,7 @@ def _get_plxpr_merge_amplitude_embedding():
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
         from pennylane.capture.primitives import cond_prim, measure_prim
-        from pennylane.operation import Operator
+        from pennylane.core.operator import Operator
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -328,7 +328,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
@@ -353,60 +353,13 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ─╭●───┤  State
-    1: ─╰X───┤  State
-    2: ─╭|Ψ⟩─┤  State
-    3: ─╰|Ψ⟩─┤  State
+    0: ─╭●───┤ ╭State
+    1: ─╰X───┤ ├State
+    2: ─╭|Ψ⟩─┤ ├State
+    3: ─╰|Ψ⟩─┤ ╰State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
-
-    .. details::
-        :title: Usage Details
-
-        You can also apply the transform on a quantum function:
-
-        .. code-block:: python
-
-            def qfunc():
-                qp.CNOT(wires = [0,1])
-                qp.AmplitudeEmbedding([0,1], wires = 2)
-                qp.AmplitudeEmbedding([0,1], wires = 3)
-                return qp.state()
-
-        The circuit before compilation will not work because of using two amplitude embedding.
-
-        Using the transformation we can join the different amplitude embedding into a single one:
-
-        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)())
-        0: ─╭●───┤  State
-        1: ─╰X───┤  State
-        2: ─╭|Ψ⟩─┤  State
-        3: ─╰|Ψ⟩─┤  State
-
-        You can also apply this transform on quantum functions:
-
-        .. code-block:: python
-
-            def qfunc():
-                qp.CNOT(wires = [0,1])
-                qp.AmplitudeEmbedding([0,1], wires = 2)
-                qp.AmplitudeEmbedding([0,1], wires = 3)
-                return qp.state()
-
-        This circuit will not run because there are two separate instances of ``AmplitudeEmbedding``.
-        Using the transformation we can join the different instances into a single one:
-
-        >>> optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
-        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        >>> print(qp.draw(optimized_qnode)())
-        0: ─╭●───┤  State
-        1: ─╰X───┤  State
-        2: ─╭|Ψ⟩─┤  State
-        3: ─╰|Ψ⟩─┤  State
-
     """
     new_operations = []
     visited_wires = set()

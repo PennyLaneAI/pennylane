@@ -22,6 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
@@ -381,7 +381,7 @@ class Select(Operation):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, ops, control, work_wires=None, partial=False, id=None):
+    def __init__(self, ops, control, work_wires=None, partial=False):
         control = Wires(control)
         work_wires = Wires(() if work_wires is None else work_wires)
         self.hyperparameters["ops"] = tuple(ops)
@@ -414,7 +414,7 @@ class Select(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires, id=id)
+        super().__init__(*self.data, wires=all_wires)
 
     def map_wires(self, wire_map: dict) -> "Select":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
@@ -1005,7 +1005,9 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
-            for val, triple in zip(closing_ctrl_bits[2:], reversed(unary_triples[: c - 1]))
+            for val, triple in zip(
+                reversed(closing_ctrl_bits[2:]), reversed(unary_triples[1 : c - 1]), strict=True
+            )
         ]
     )
     ops_decomp.append(adjoint(TemporaryAND(unary_triples[0], control_values=closing_ctrl_bits[:2])))

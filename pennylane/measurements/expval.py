@@ -18,7 +18,7 @@ This module contains the qp.expval measurement.
 from collections.abc import Sequence
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import I, MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -41,8 +41,6 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "expval"
