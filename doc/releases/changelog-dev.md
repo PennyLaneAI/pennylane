@@ -482,6 +482,9 @@
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
+* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
+  [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
@@ -561,6 +564,7 @@ Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
+David D.W. Ren,
 Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
