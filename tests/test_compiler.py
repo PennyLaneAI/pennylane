@@ -108,7 +108,6 @@ class TestCatalyst:
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
-    @pytest.mark.usefixtures("preserve_jax_x64")
     def test_jax_enable_x64(self, jax_enable_x64):
         """Test whether `qp.compiler.active` changes `jax_enable_x64`."""
         jax.config.update("jax_enable_x64", jax_enable_x64)

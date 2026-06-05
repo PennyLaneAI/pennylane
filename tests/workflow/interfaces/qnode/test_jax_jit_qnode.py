@@ -3366,7 +3366,6 @@ class TestSinglePrecision:
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
-    @pytest.mark.usefixtures("preserve_jax_x64")
     def test_float32_return(self, diff_method):
         """Test that jax jit works when float64 mode is disabled."""
         jax.config.update("jax_enable_x64", False)
@@ -3382,7 +3381,6 @@ class TestSinglePrecision:
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
-    @pytest.mark.usefixtures("preserve_jax_x64")
     def test_complex64_return(self, diff_method):
         """Test that jax jit works with differentiating the state."""
         jax.config.update("jax_enable_x64", False)
