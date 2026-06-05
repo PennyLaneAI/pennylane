@@ -564,6 +564,11 @@
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
 
+* Fixed a bug where :func:`~pennylane.draw`, :func:`~pennylane.draw_mpl`, and
+  :func:`~.specs` did not support ``functools.partial`` wrappers around supported
+  circuit callables.
+  [(#9394)](https://github.com/PennyLaneAI/pennylane/issues/9394)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -573,6 +578,7 @@ Guillermo Alonso,
 Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
+Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,

@@ -14,6 +14,8 @@
 """Test the pennylane drawer with Catalyst."""
 
 # pylint: disable=import-outside-toplevel,protected-access
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -41,6 +43,21 @@ class TestCatalystDraw:
 
         expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
         assert qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
+
+    def test_partial_circuit(self):
+        """Test a partial-wrapped Catalyst jitted QNode."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=(0, "a", 1.234)))
+        def circuit(x, y, z):
+            """A quantum circuit on three wires."""
+            qp.RX(x, wires=0)
+            qp.RY(y, wires="a")
+            qp.RZ(z, wires=1.234)
+            return qp.expval(qp.PauliZ(0))
+
+        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
+        assert qp.draw(partial(circuit, 1.234, z=3.456), decimals=None)(2.345) == expected
 
     @pytest.mark.parametrize("c", [0, 1])
     def test_cond_circuit(self, c):
@@ -143,6 +160,22 @@ class TestCatalystDrawMpl:
             return qp.expval(qp.PauliZ(0))
 
         fig, ax = qp.draw_mpl(circuit, decimals=None)(1.234, 2.345, 3.456)
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+    def test_partial_circuit(self):
+        """Test a partial-wrapped Catalyst jitted QNode."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=(0, "a", 1.234)))
+        def circuit(x, y, z):
+            """A quantum circuit on three wires."""
+            qp.RX(x, wires=0)
+            qp.RY(y, wires="a")
+            qp.RZ(z, wires=1.234)
+            return qp.expval(qp.PauliZ(0))
+
+        fig, ax = qp.draw_mpl(partial(circuit, 1.234, z=3.456), decimals=None)(2.345)
         assert isinstance(fig, mpl.figure.Figure)
         assert isinstance(ax, mpl.axes._axes.Axes)
 
