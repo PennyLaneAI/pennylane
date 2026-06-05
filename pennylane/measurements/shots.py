@@ -16,3 +16,22 @@ previous location of pennylane.core.shots
 """
 
 from pennylane.core.shots import *  # pylint: disable=wildcard-import, unused-import, unused-wildcard-import # tach-ignore
+
+
+def add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+
+    Example:
+        >>> s1 = Shots((5, (10, 2)))
+        >>> s2 = Shots((3, 2, (10, 3)))
+        >>> print(qp.measurements.add_shots(s1, s2))
+        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
+    """
+    return s1 + s2

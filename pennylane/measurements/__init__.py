@@ -285,25 +285,7 @@ from .sample import SampleMP, sample
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy
-
-
-def add_shots(s1: Shots, s2: Shots) -> Shots:
-    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
-
-    Args:
-        s1 (Shots): a Shots object to add
-        s2 (Shots): a Shots object to add
-
-    Returns:
-        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
-
-    Example:
-        >>> s1 = Shots((5, (10, 2)))
-        >>> s2 = Shots((3, 2, (10, 3)))
-        >>> print(qp.measurements.add_shots(s1, s2))
-        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
-    """
-    return s1 + s2
+from .shots import add_shots
 
 
 # pylint: disable=import-outside-toplevel
