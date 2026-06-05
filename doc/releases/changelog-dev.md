@@ -137,6 +137,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Tracker` now has a readable `__repr__` that displays all relevant internals
+  (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
+  [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
+
+  ```pycon
+  >>> tracker = qp.Tracker()
+  >>> tracker.update(a=2, b="b2", c=1)
+  >>> print(tracker)
+  Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
+  
+  ```
+
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
@@ -558,6 +570,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
