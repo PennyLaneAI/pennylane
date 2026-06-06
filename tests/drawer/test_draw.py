@@ -21,6 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.drawer import draw
+from functools import partial
 
 
 @qp.qnode(qp.device("default.qubit", wires=(0, "a", 1.234)))
@@ -1264,7 +1265,6 @@ class TestPartialSupport:
 
     def test_draw_partial_positional_args(self, circuit):
         """draw works when positional args are pre-bound via partial."""
-        from functools import partial
 
         fixed = partial(circuit, 0.5)
         result = draw(fixed)(3)
@@ -1273,7 +1273,6 @@ class TestPartialSupport:
 
     def test_draw_partial_keyword_args(self, circuit):
         """draw works when keyword args are pre-bound via partial."""
-        from functools import partial
 
         fixed = partial(circuit, n_iter=3)
         result = draw(fixed)(0.5)
@@ -1282,7 +1281,6 @@ class TestPartialSupport:
 
     def test_draw_partial_nested(self, circuit):
         """draw works with nested partial(partial(...))."""
-        from functools import partial
 
         fixed = partial(partial(circuit, 0.5), n_iter=2)
         result = draw(fixed)()
@@ -1291,7 +1289,6 @@ class TestPartialSupport:
 
     def test_draw_partial_mixed(self, circuit):
         """draw works when both positional and keyword args are pre-bound."""
-        from functools import partial
 
         fixed = partial(circuit, 0.5, n_iter=4)
         result = draw(fixed)()
@@ -1304,20 +1301,18 @@ class TestPartialSupport:
 
     def test_draw_mpl_partial_keyword_args(self, circuit):
         """draw_mpl works when keyword args are pre-bound via partial."""
-        from functools import partial
         import matplotlib
         matplotlib.use("Agg")
 
         fixed = partial(circuit, n_iter=2)
         fig, ax = qp.draw_mpl(fixed)(0.5)
-        assert fig is not None
+        assert len(fig.axes) > 0
 
     def test_draw_mpl_partial_nested(self, circuit):
         """draw_mpl works with nested partial."""
-        from functools import partial
         import matplotlib
         matplotlib.use("Agg")
 
         fixed = partial(partial(circuit, 0.3), n_iter=1)
         fig, ax = qp.draw_mpl(fixed)()
-        assert fig is not None
+        assert len(fig.axes) > 0

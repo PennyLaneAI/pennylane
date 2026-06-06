@@ -20,6 +20,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
+from functools import partial
 from pennylane.resource.specs import (
     _get_last_tape_transform_level,
     _preprocess_level_input,
@@ -587,7 +588,6 @@ class TestSpecsPartialSupport:
 
     def test_specs_partial_positional_args(self, circuit):
         """specs works when positional args are pre-bound via partial."""
-        from functools import partial
 
         fixed = partial(circuit, 0.5)
         result = qp.specs(fixed)(3)
@@ -595,7 +595,6 @@ class TestSpecsPartialSupport:
 
     def test_specs_partial_keyword_args(self, circuit):
         """specs works when keyword args are pre-bound via partial."""
-        from functools import partial
 
         fixed = partial(circuit, n_iter=3)
         result = qp.specs(fixed)(0.5)
@@ -603,7 +602,6 @@ class TestSpecsPartialSupport:
 
     def test_specs_partial_nested(self, circuit):
         """specs works with nested partial(partial(...))."""
-        from functools import partial
 
         fixed = partial(partial(circuit, 0.5), n_iter=2)
         result = qp.specs(fixed)()
@@ -611,7 +609,6 @@ class TestSpecsPartialSupport:
 
     def test_specs_partial_mixed(self, circuit):
         """specs works when both positional and keyword args are pre-bound."""
-        from functools import partial
 
         fixed = partial(circuit, 0.5, n_iter=4)
         result = qp.specs(fixed)()
@@ -624,7 +621,6 @@ class TestSpecsPartialSupport:
 
     def test_specs_partial_raises_for_non_qnode(self):
         """specs still raises ValueError if inner callable is not a QNode."""
-        from functools import partial
 
         def plain_fn(x):
             return x
@@ -634,6 +630,23 @@ class TestSpecsPartialSupport:
             ValueError, match="qp.specs can only be applied to a QNode or qjit'd QNode"
         ):
             qp.specs(fixed)()
+
+    def test_specs_partial_qjit(self):
+        """specs works with partial wrapping a qjit\'d QNode."""
+        catalyst = pytest.importorskip("catalyst")
+
+        dev = qp.device("lightning.qubit", wires=1)
+
+        @catalyst.qjit
+        @qp.qnode(dev)
+        def circuit(x, n_iter: int):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        fixed = partial(circuit, n_iter=3)
+        result = qp.specs(fixed, level="device")(0.5)
+        assert result is not None
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

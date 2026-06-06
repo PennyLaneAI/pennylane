@@ -38,7 +38,6 @@ def catalyst_qjit(qnode):
     """A method checking whether a qnode is compiled by catalyst.qjit"""
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
-
 def _unwrap_partial(func):
     """Unwrap nested :class:`functools.partial` objects to retrieve the
     underlying callable and all pre-bound arguments.
@@ -48,14 +47,19 @@ def _unwrap_partial(func):
 
     Returns:
         tuple[callable, tuple, dict]: ``(inner_func, bound_args, bound_kwargs)``
+        where ``inner_func`` is the innermost non-partial callable,
+        ``bound_args`` collects positional bindings outermost-first, and
+        ``bound_kwargs`` collects keyword bindings with inner layers taking
+        precedence.
     """
     bound_args = ()
     bound_kwargs = {}
     while isinstance(func, functools.partial):
         bound_args = func.args + bound_args
-        bound_kwargs = {**func.keywords, **bound_kwargs}
+        bound_kwargs = {**(func.keywords or {}), **bound_kwargs}
         func = func.func
     return func, bound_args, bound_kwargs
+
 
 # pylint: disable=too-many-arguments
 def draw(
@@ -382,7 +386,6 @@ def _draw_qnode(
         merged_kwargs = {**bound_kwargs, **kwargs}
         merged_args = bound_args + args
         tapes, _ = construct_batch(qnode, level=level)(*merged_args, **merged_kwargs)
-
         if wire_order:
             _wire_order = wire_order
         elif qnode.device.wires:
@@ -887,7 +890,7 @@ def _draw_mpl_qnode(
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
         args = bound_args + args
-        kwargs_qnode = {**bound_kwargs, **kwargs_qnode}
+        kwargs_qnode = {**(bound_kwargs or {}), **kwargs_qnode}
         tapes, _ = construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
         if len(tapes) > 1:

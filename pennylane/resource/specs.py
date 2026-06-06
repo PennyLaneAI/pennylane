@@ -52,7 +52,7 @@ def _unwrap_partial(func):
     bound_kwargs = {}
     while isinstance(func, partial):
         bound_args = func.args + bound_args
-        bound_kwargs = {**func.keywords, **bound_kwargs}
+        bound_kwargs = {**(func.keywords or {}), **bound_kwargs}
         func = func.func
     return func, bound_args, bound_kwargs
 
@@ -870,5 +870,6 @@ def specs(
             return wrapper_qjit
     except ImportError:  # pragma: no cover
         pass
+
 
     raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
