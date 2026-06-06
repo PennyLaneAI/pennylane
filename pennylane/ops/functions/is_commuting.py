@@ -153,18 +153,7 @@ def _create_commute_function():
 _commutes = _create_commute_function()
 
 
-def _check_opmath_operations(operation1, operation2):
-    """Check that `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
 
-    for op in [operation1, operation2]:
-
-        if op.pauli_rep is not None:
-            continue
-
-        if isinstance(op, (SProd, Prod, Sum)):
-            raise QuantumFunctionError(
-                f"Operation {op} currently not supported. Prod, Sprod, and Sum instances must have a valid Pauli representation."
-            )
 
 
 def intersection(wires1, wires2):
@@ -318,8 +307,20 @@ def is_commuting(operation1, operation2):
         operation1 = qp.simplify(operation1)
         operation2 = qp.simplify(operation2)
 
-    # Arithmetic non-disjoint operations only contain Pauli words
-    _check_opmath_operations(operation1, operation2)
+    if isinstance(operation1, SProd):
+        return is_commuting(operation1.base, operation2)
+    if isinstance(operation2, SProd):
+        return is_commuting(operation1, operation2.base)
+
+    if isinstance(operation1, Prod):
+        return all(is_commuting(op, operation2) for op in operation1)
+    if isinstance(operation2, Prod):
+        return all(is_commuting(operation1, op) for op in operation2)
+
+    if isinstance(operation1, Sum):
+        return all(is_commuting(op, operation2) for op in operation1)
+    if isinstance(operation2, Sum):
+        return all(is_commuting(operation1, op) for op in operation2)
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
