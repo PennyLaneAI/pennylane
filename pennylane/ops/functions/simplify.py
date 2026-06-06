@@ -22,8 +22,8 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn

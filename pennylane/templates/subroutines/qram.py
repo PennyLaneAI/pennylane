@@ -11,23 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
+"""Contains four different implementations of QRAM: BBQRAM, HybridQRAM, SelectOnlyQRAM, and FFQRAM."""
 
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import (
     CNOT,
     CSWAP,
+    RY,
     SWAP,
     Controlled,
     Hadamard,
@@ -1060,7 +1062,7 @@ def _select_only_qram_decomposition(
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
 
-    if select_value is not None and len(select_wires) > 0:
+    if select_value is not None and num_select > 0:
         BasisEmbedding(select_value, wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
@@ -1088,3 +1090,293 @@ def _select_only_qram_decomposition(
 
 
 add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
+
+
+class FFQRAM(Operation):
+    r"""Flip-flop QRAM (FF-QRAM) with an even-superposition initialization. FF-QRAM
+    is a probabilistic protocol that encodes classical bitstrings and real amplitudes into
+    a quantum circuit. For more theoretical details on how this algorithm works, please
+    consult `Park et al. (2019) <https://www.nature.com/articles/s41598-019-40439-3>`__
+    and `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__.
+
+    ``FFQRAM`` encodes :math:`L` distinct :math:`m`-bit addresses :math:`d_l` and
+    real amplitudes :math:`b_l`, where :math:`L \leq N = 2^m`, into the state
+
+    .. math::
+
+        \sum_{l=0}^{L - 1} \tilde{b}_l |d_l\rangle,
+
+    where :math:`\tilde{b}_l` is the normalized amplitude
+
+    .. math::
+
+        \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
+
+    The preparation is successful only when the register qubit is in state
+    :math:`|1\rangle`, and the success probability is
+    :math:`P(\mathrm{reg}=1)=1 / 2^m`.
+
+    Args:
+        amplitudes (TensorLike):
+            The real continuous amplitudes. The shape must be ``(L,)`` or
+            ``(batch_size, L)``, where ``L <= 2**m``.
+        wires (WiresLike):
+            The wires the template acts on. The first ``m`` wires are address wires and
+            the last wire is the register qubit used for post-selection.
+        address (TensorLike | Sequence[str]):
+            The classical address bitstrings as a 2-D array with shape ``(L, m)`` or as
+            a sequence of unique bitstrings.
+
+    Raises:
+        ValueError: if the number of entries indicated by ``amplitudes`` and ``address``
+            do not agree, if the number of entries exceeds ``2**m``, or if the addresses
+            are not unique.
+
+    .. seealso::
+        :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`,
+        :class:`~.QROM`, :class:`~.QROMStatePreparation`, :class:`~.AngleEmbedding`,
+        :class:`~.AmplitudeEmbedding`
+
+    **Example:**
+
+    The following example is adapted from Section 4 of
+    `de Veras et al. (2021) <https://ieeexplore.ieee.org/abstract/document/9259210>`__. The
+    data to be registered has two entries:
+
+    .. math::
+
+        \left\{(\sqrt{0.3}, |000\rangle), (\sqrt{0.7}, |001\rangle)\right\}.
+
+    To store this data we need three address wires (``m = 3``) and one register wire.
+
+    .. code-block:: python
+
+        import pennylane as qp
+        import numpy as np
+
+        addrs = ["000", "001"]
+        amps = np.array([np.sqrt(0.3), np.sqrt(0.7)])
+        wires = qp.registers({"address": 3, "register": 1})
+
+        shots = 1000
+
+        @qp.set_shots(shots)
+        @qp.qnode(qp.device("default.qubit", seed=42))
+        def circuit():
+            qp.FFQRAM(
+                amplitudes=amps,
+                wires=wires["address"] + wires["register"],
+                address=addrs,
+            )
+            # Postselect on the register qubit being in the |1> state
+            qp.measure(wires["register"], postselect=1)
+            return qp.probs(wires=wires["address"])
+
+        results = circuit()
+
+        # Theoretical post-selected probabilities: b_l^2 / sum_k b_k^2.
+        expected = amps**2 / np.sum(amps**2)
+
+        n = len(wires["address"])
+        expected_full = np.zeros(2**n)
+        for addr, prob in zip(addrs, expected, strict=True):
+            expected_full[int(addr, 2)] = prob
+
+        basis_states = [f"{i:0{n}b}" for i in range(2**n)]
+
+    Because the protocol is sampled with a finite number of shots, the observed
+    distribution approximates the theoretical values:
+
+    >>> rows = [f"{'address':>8}{'observed':>11}{'expected':>11}"]
+    >>> for state, obs, exp in zip(basis_states, results, expected_full, strict=True):
+    ...     if obs > 1e-9 or exp > 1e-9:
+    ...         rows.append(f"{state:>8}{obs:>11.3f}{exp:>11.3f}")
+    >>> print("\n".join(rows))
+     address   observed   expected
+         000      0.238      0.300
+         001      0.762      0.700
+    >>> print(qp.draw(circuit, level=2)())
+    0: ──H──X─╭●─────────X──X─╭●─────────X────┤ ╭Probs
+    1: ──H──X─├●─────────X──X─├●─────────X────┤ ├Probs
+    2: ──H──X─├●─────────X────├●──────────────┤ ╰Probs
+    3: ───────╰RY(1.16)───────╰RY(1.98)──┤↗₁├─┤
+
+    .. details::
+        :title: Usage Details
+
+        ``FFQRAM`` prepares a real-amplitude quantum state over a sparse list of
+        computational basis states using the flip-register-flop construction. Given
+        :math:`L` distinct :math:`m`-bit addresses :math:`d_l` and real amplitudes
+        :math:`b_l`, where :math:`L \leq N = 2^m`, the amplitudes are normalized
+        internally as
+
+        .. math::
+
+            \tilde{b}_l = \frac{b_l}{\sqrt{\sum_k b_k^2}}.
+
+        This template splits the input ``wires`` into two sets. The first :math:`m` wires are used as address wires and are initialized to
+        :math:`|+\rangle^{\otimes m}`. The last wire is a register qubit. For each
+        address :math:`d_l`, the circuit flips the zero bits of :math:`d_l`, applies a
+        multi-controlled :class:`~.RY` rotation with angle
+        :math:`2\arcsin(\tilde{b}_l)` to the register qubit, and then uncomputes the
+        flips.
+
+        Before post-selection, the output state is
+
+        .. math::
+
+            \frac{1}{\sqrt{2^m}}
+            \left[
+            \sum_{x \notin D}|x\rangle|0\rangle
+            +
+            \sum_l |d_l\rangle
+            \left(
+            \sqrt{1 - \tilde{b}_l^2}|0\rangle
+            +
+            \tilde{b}_l|1\rangle
+            \right)
+            \right],
+
+        where :math:`D` is the set of supplied addresses. After post-selecting the
+        register qubit in :math:`|1\rangle`, the address register is prepared in
+
+        .. math::
+
+            \sum_l \tilde{b}_l |d_l\rangle.
+
+        The post-selection success probability is :math:`P(\mathrm{reg}=1)=1 / 2^m`.
+    """
+
+    grad_method = None
+
+    # num of zero bits in address -> num of X flips
+    resource_keys = {"num_zero_bits", "num_address_wires", "num_entries"}
+
+    def __init__(
+        self, amplitudes: TensorLike, wires: WiresLike, address: TensorLike | Sequence[str]
+    ):
+
+        wires = Wires(wires)
+
+        # use same input format as QROM
+        if isinstance(address[0], str):
+            address = math.array(
+                list(map(lambda bitstring: [int(bit) for bit in bitstring], address))
+            )
+
+        if isinstance(address, (list, tuple)):
+            address = math.array(address)
+
+        num_address_wires = len(wires) - 1
+
+        num_entries = math.shape(amplitudes)[-1]
+        if num_entries != math.shape(address)[0]:
+            raise ValueError("The number of amplitudes must equal the number of addresses.")
+        if num_address_wires != math.shape(address)[1]:
+            raise ValueError("Address bitstring length must equal the number of address wires.")
+        if num_entries > 2**num_address_wires:
+            raise ValueError("The number of entries cannot exceed 2 ** num_address_wires.")
+        if len(math.unique(address, axis=0)) != len(address):
+            raise ValueError("Addresses must be unique.")
+
+        # hyperparameters should be hashable
+        self._hyperparameters = {
+            "address": tuple(tuple(int(bit) for bit in addr_bits) for addr_bits in address),
+        }
+
+        super().__init__(amplitudes, wires=wires)
+
+    @property
+    def resource_params(self):
+        address = math.array(self._hyperparameters["address"])
+        return {
+            "num_zero_bits": int((1 - address).sum()),
+            "num_address_wires": len(self.wires) - 1,
+            "num_entries": address.shape[0],
+        }
+
+    @property
+    def num_params(self):
+        return 1  # amplitudes is the only trainable parameter
+
+    @property
+    def ndim_params(self):
+        return (1,)  # 1d amplitude (without broadcasting)
+
+
+def _flip_zero_bits(address_wires, addr_bits):
+    """
+    Apply X gates to where the addr_bits is zero.
+    """
+    for wire, bit in zip(address_wires, addr_bits, strict=True):
+        cond(bit == 0, PauliX)(wires=wire)
+
+
+def _normalize_amplitudes(amplitudes):
+    """Normalize along the last axis, supporting optional batching."""
+    norm = math.linalg.norm(amplitudes, axis=-1)
+
+    if not math.is_abstract(norm) and math.any(math.isclose(norm, 0.0)):
+        raise ValueError("The amplitudes must have a non-zero norm.")
+
+    # Follow StatePrep's pattern to deal with optional batch dimension.
+    return amplitudes / math.reshape(norm, (*math.shape(amplitudes)[:-1], 1))
+
+
+def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
+    """
+    - One Hadamard gate per address wire to initialize the |+>^n state.
+    - One "flip" and one "flop" for 0 bits.
+    - One controlled RY for each entry.
+    """
+    return {
+        resource_rep(Hadamard): num_address_wires,
+        resource_rep(PauliX): 2 * num_zero_bits,
+        controlled_resource_rep(
+            base_class=RY,
+            base_params={},
+            num_control_wires=num_address_wires,
+            num_zero_control_values=0,  # flipped to 1 already
+        ): num_entries,
+    }
+
+
+@register_resources(_ffqram_resources)
+def _ffqram_decomposition(amplitudes, wires, address, **_):
+    address_wires = wires[:-1]
+    reg_wire = wires[-1]
+
+    if capture.enabled():
+        amplitudes = math.array(amplitudes, like="jax")
+        address_wires = math.array(address_wires, like="jax")
+        address = math.array(address, like="jax")
+
+    amplitudes = _normalize_amplitudes(amplitudes)
+    angles = 2 * math.arcsin(amplitudes)
+
+    # optional batch dimension: align with AngleEmbedding
+    batched = math.ndim(angles) > 1
+    angles = math.T(angles) if batched else angles
+
+    @for_loop(len(address_wires))
+    def superposition_loop(i, wires):
+        Hadamard(wires=wires[i])
+        return wires
+
+    superposition_loop(address_wires)  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(address))
+    def main_loop(j, addr):
+        addr_bits = addr[j]
+        # flip
+        _flip_zero_bits(address_wires, addr_bits)
+        # register
+        ctrl(RY(angles[j], wires=reg_wire), control=address_wires)
+        # flop (unflip)
+        _flip_zero_bits(address_wires, addr_bits)
+        return addr
+
+    main_loop(address)  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(FFQRAM, _ffqram_decomposition)

@@ -120,6 +120,7 @@ def test_dynamic_register_not_hashable():
         qp.wires.Wires((0, reg))
 
 
+@pytest.mark.jax
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]
