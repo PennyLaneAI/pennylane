@@ -157,7 +157,7 @@
 
 * Calling ``print`` on :class:`~.devices.ExecutionConfig` now displays a readable multi-line
   output matching ``pprint``.
-  [(#9602)](https://github.com/PennyLaneAI/pennylane/pull/9602)
+  [(#9603)](https://github.com/PennyLaneAI/pennylane/pull/9603)
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
