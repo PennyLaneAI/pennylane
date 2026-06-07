@@ -1801,6 +1801,71 @@ class TestMeasurementsEqual:
         m2 = qp.shadow_expval(H=[op])
         assert qp.equal(m1, m2) is False
 
+    @pytest.mark.parametrize(
+        "op1, op2, match",
+        [
+            (
+                qp.expval(qp.Z(0)),
+                qp.expval(qp.X(0)),
+                "different observables because op1 and op2 are of different types",
+            ),
+            (
+                qp.expval(qp.X(1)),
+                qp.expval(qp.X(0)),
+                "different observables because op1 and op2 have different wires",
+            ),
+            (
+                qp.probs(wires=0),
+                qp.probs(wires=1),
+                "op1 and op2 have different wires",
+            ),
+            (
+                ProbabilityMP(eigvals=(1, 1e-3)),
+                ProbabilityMP(eigvals=(1, 0)),
+                "op1 and op2 have different eigenvalues",
+            ),
+            (
+                qp.shadow_expval(qp.X(0)),
+                qp.shadow_expval([qp.X(0)]),
+                "op1 and op2 have incompatible H observable types",
+            ),
+            (
+                qp.shadow_expval([qp.X(0)]),
+                qp.shadow_expval([qp.Z(0)]),
+                "op1 and op2 have different H observables at index 0",
+            ),
+            (
+                qp.counts(wires=0, all_outcomes=True),
+                qp.counts(wires=0, all_outcomes=False),
+                "op1 and op2 have different all_outcomes values",
+            ),
+            (
+                qp.vn_entropy(wires=0, log_base=2),
+                qp.vn_entropy(wires=0, log_base=None),
+                "op1 and op2 have different log bases",
+            ),
+            (
+                qp.mutual_info(wires0=0, wires1=1, log_base=2),
+                qp.mutual_info(wires0=0, wires1=1, log_base=None),
+                "op1 and op2 have different log bases",
+            ),
+        ],
+    )
+    def test_assert_equal_measurement_process_error_messages(self, op1, op2, match):
+        """Test that assert_equal gives informative errors for measurement processes."""
+        assert qp.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match=match):
+            qp.assert_equal(op1, op2)
+
+    def test_assert_equal_measurement_value_error_message(self):
+        """Test that assert_equal gives informative errors for mid-circuit measurement values."""
+        m1 = qp.measure(0)
+        m2 = qp.measure(1)
+
+        assert qp.equal(m1, m2) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different measurements"):
+            qp.assert_equal(m1, m2)
+
 
 def test_unsupported_object_type_not_implemented():
     dev = qp.device("default.qubit", wires=1)
