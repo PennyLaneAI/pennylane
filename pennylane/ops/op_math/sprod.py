@@ -18,8 +18,8 @@ computing the scalar product of operations.
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager

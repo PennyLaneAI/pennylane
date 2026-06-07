@@ -16,7 +16,7 @@ Contains the ``DisplacementEmbedding`` template.
 """
 
 from pennylane import math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.cv import Displacement
 
 
