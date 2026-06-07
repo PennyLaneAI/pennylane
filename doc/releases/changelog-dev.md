@@ -137,6 +137,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
+  symbols on the control wires and a compact Pauli rotation label on the target wire.
+  [(#7402)](https://github.com/PennyLaneAI/pennylane/issues/7402)
+
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
   [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
