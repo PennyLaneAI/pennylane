@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utilities for resolving callables wrapped with ``functools.partial``."""
+"""Private utilities for resolving callables wrapped with ``functools.partial``."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def unwrap_functools_partial(
 
     inner, bound_args, bound_kwargs = unwrap_functools_partial(obj.func)
     bound_args = bound_args + obj.args
-    bound_kwargs = {**bound_kwargs, **obj.keywords}
+    bound_kwargs = {**bound_kwargs, **(obj.keywords or {})}
     return inner, bound_args, bound_kwargs
 
 

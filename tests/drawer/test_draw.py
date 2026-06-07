@@ -1234,24 +1234,6 @@ class TestFunctoolsPartial:
         fig, _ = qp.draw_mpl(fixed_qnode)(0.5)
         assert fig is not None
 
-    def test_draw_qjit_partial(self):
-        """draw supports partial-wrapped objects that unwrap to a QJIT user function."""
-
-        class QJIT:  # pylint: disable=too-few-public-methods
-            """Minimal QJIT stand-in for catalyst_qjit detection."""
-
-            def __init__(self, user_function):
-                self.user_function = user_function
-
-            def __call__(self, *args, **kwargs):
-                return self.user_function(*args, **kwargs)
-
-        qnode = self._example_qnode()
-        qjit = QJIT(qnode)
-        fixed_qjit = partial(qjit, n_iter=3)
-        result = qp.draw(fixed_qjit)(0.5)
-        assert result == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
-
 
 def test_draw_with_qfunc():
     """Test a non-qnode qfunc can be drawn."""

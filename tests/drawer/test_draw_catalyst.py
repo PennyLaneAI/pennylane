@@ -14,6 +14,8 @@
 """Test the pennylane drawer with Catalyst."""
 
 # pylint: disable=import-outside-toplevel,protected-access
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -221,5 +223,35 @@ class TestCatalystDrawMpl:
             return qp.expval(qp.PauliZ(0))
 
         fig, ax = qp.draw_mpl(circuit, decimals=None)(1.234, 2.345, 3.456, c)
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+
+class TestFunctoolsPartial:
+    """Drawer integration tests for functools.partial-wrapped Catalyst QJIT objects."""
+
+    @staticmethod
+    def _example_qjit():
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def rx_circuit(x, n_iter):
+            for _ in range(n_iter):
+                qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        return rx_circuit
+
+    def test_draw_keyword_partial(self):
+        """A partial binding keyword arguments can be drawn."""
+        qjit = self._example_qjit()
+        fixed_qjit = partial(qjit, n_iter=3)
+        result = qp.draw(fixed_qjit, decimals=2)(0.5)
+        assert result == "0: ──RX(0.50)──RX(0.50)──RX(0.50)─┤  <Z>"
+
+    def test_draw_mpl_keyword_partial(self):
+        """draw_mpl supports partial-wrapped Catalyst QJIT objects."""
+        qjit = self._example_qjit()
+        fixed_qjit = partial(qjit, n_iter=3)
+        fig, ax = qp.draw_mpl(fixed_qjit, decimals=2)(0.5)
         assert isinstance(fig, mpl.figure.Figure)
         assert isinstance(ax, mpl.axes._axes.Axes)

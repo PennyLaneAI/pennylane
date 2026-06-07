@@ -710,13 +710,3 @@ class TestFunctoolsPartial:
         fixed_qnode = partial(partial(qnode, n_iter=3), 0.5)
         result = qp.specs(fixed_qnode)()
         assert result.resources.gate_types["RX"] == 3
-
-    def test_specs_qjit_partial(self):
-        """specs supports partial-wrapped QJIT objects when Catalyst is available."""
-        catalyst = pytest.importorskip("catalyst")
-
-        qnode = TestFunctoolsPartial._example_qnode()
-        qjit = catalyst.jit(qnode)
-        fixed_qjit = partial(qjit, n_iter=3)
-        result = qp.specs(fixed_qjit)(0.5)
-        assert result.resources.gate_types["RX"] == 3

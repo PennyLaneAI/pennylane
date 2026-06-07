@@ -23,7 +23,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
-from pennylane.callables import bind_functools_partial, unwrap_functools_partial
+from pennylane._functools_partial import bind_functools_partial, unwrap_functools_partial
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 

@@ -15,7 +15,7 @@
 
 from functools import partial
 
-from pennylane.callables import bind_functools_partial, unwrap_functools_partial
+from pennylane._functools_partial import bind_functools_partial, unwrap_functools_partial
 
 
 def multiply(x, y, z=1):

@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pennylane as qp
-from pennylane.callables import bind_functools_partial, unwrap_functools_partial
+from pennylane._functools_partial import bind_functools_partial, unwrap_functools_partial
 
 from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape

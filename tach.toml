@@ -135,10 +135,10 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
-path = "pennylane.callables"
+path = "pennylane._functools_partial"
+utility = true
 depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
 
 [[modules]]
 path = "pennylane.typing"
