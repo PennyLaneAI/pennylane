@@ -230,6 +230,7 @@ unmodified_templates_cases = [
     ),
     (qp.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
     (qp.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (qp.FFQRAM, (jnp.array([0.3, 0.7]),), {"wires": (0, 1, 2), "address": ((0, 0), (1, 1))}),
     (
         qp.SumOfSlatersPrep,
         (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
