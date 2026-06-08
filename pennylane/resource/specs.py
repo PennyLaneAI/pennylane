@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import re
 import tempfile
 import time
 import warnings
@@ -26,10 +25,11 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pennylane as qp
 
+from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 if TYPE_CHECKING:
@@ -37,31 +37,6 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
-# Used for MLIR analysis pass JSON filenames with pass-by-pass specs
-_RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
-
-
-def _make_level_name_unique(level_name: str, existing_names: set[str]) -> str:
-    """Helper function to make a level name unique by appending a suffix if necessary.
-
-    Args:
-        level_name (str): The original level name
-        existing_names (set[str]): The set of existing level names to check against
-
-    Returns:
-        str: A unique level name
-
-    Example:
-        >>> existing = {"cancel-inverses", "merge-rotations", "cancel-inverses-2"}
-        >>> _make_level_name_unique("cancel-inverses", existing)
-        'cancel-inverses-3'
-    """
-    unique_name = level_name
-    counter = 1
-    while unique_name in existing_names:
-        counter += 1
-        unique_name = f"{level_name}-{counter}"
-    return unique_name
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -223,235 +198,6 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     return level_sorted
 
 
-def _mlir_resources_to_specs_resources(
-    resources: dict[str, Any],
-) -> SpecsResources:  # pragma: no cover
-    # This function is covered by integration tests within the Catalyst frontend
-    """Helper function to convert the output of resource analysis pass into SpecsResources."""
-
-    # Sort the gate and measurement dictionaries by key to ensure consistent ordering, which is helpful for testing and readability of results
-    resources["operations"] = {
-        k: resources["operations"][k] for k in sorted(resources["operations"].keys())
-    }
-    resources["measurements"] = {
-        k: resources["measurements"][k] for k in sorted(resources["measurements"].keys())
-    }
-
-    gate_types = defaultdict(int)
-    gate_sizes = defaultdict(int)
-
-    for res_name, count in resources["operations"].items():
-        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
-        gate_name, gate_size = match.groups() if match else (res_name, 0)
-
-        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-            # Separate out PPMs and PPRs by weight
-            gate_name += f"-w{gate_size}"
-
-        gate_types[gate_name] += count
-        gate_sizes[int(gate_size)] += count
-
-    #if resources["has_dyn_loop"]:
-    #    warnings.warn(
-    #        "Specs was unable to determine the number of loop iterations. "
-    ##        "The results will assume the loop runs only once. "
-    #        "This may be fixed in some cases by inlining dynamic arguments.",
-    #        UserWarning,
-    #    )
-
-    if resources["has_branches"]:
-        warnings.warn(
-            "Specs was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
-            UserWarning,
-        )
-
-    return SpecsResources(
-        gate_types=dict(gate_types),
-        gate_sizes=dict(gate_sizes),
-        measurements=resources["measurements"],
-        num_allocs=resources["num_qubits"],
-        depth=None,  # Can't get depth from MLIR pass results
-    )
-
-
-def _execute_analysis_pass(
-    new_qnode,
-    compile_options,
-    *args,
-    **kwargs,
-):  # pragma: no cover
-    """
-    Helper function to compile the QNode with the resource analysis pass inserted, which will output
-    the necessary JSON files for MLIR analysis.
-
-    This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
-    compilation strategy.
-    """
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
-    # pylint: disable=import-outside-toplevel,protected-access
-    try:
-        from catalyst import QJIT
-    except ImportError as e:
-        raise ImportError(
-            "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
-            "Please install Catalyst and try again."
-        ) from e
-
-    new_qjit = QJIT(new_qnode, compile_options=compile_options)
-
-    # Force a compilation, which will output the necessary JSON files
-    # This code snippet is adapted from the source code of `QJIT.jit_compile`
-    if new_qjit.mlir_module is None:
-        new_qjit.workspace = new_qjit._get_workspace()
-        new_qjit.jaxed_function = None
-        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
-            new_qjit.compiled_function.shared_object.close()
-
-        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
-            args, **kwargs
-        )
-
-        new_qjit.mlir_module = new_qjit.generate_ir()
-
-    # Force resolution of this property to finish going through all MLIR passes
-    if new_qjit.mlir_opt is None:
-        raise ValueError(
-            "Specs failed to compile the QNode with the specified passes for MLIR analysis."
-        )
-
-
-def _specs_from_analysis_pass(
-    qjit,
-    original_qnode,
-    level: int | tuple[int] | list[int],
-    num_tape_levels: int,
-    level_to_markers: dict[int, list[str]],
-    level_to_name: dict[int, str],
-    *args,
-    **kwargs,
-) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-    """
-    Helper function to get specs information from MLIR analysis passes inserted at the specified
-    levels.
-
-    It works by creating a new compile pipeline with extra resources analysis passes inserted at
-    the appropriate levels, then compiles the QNode with this pipeline to get the resource
-    information from the output JSON files.
-
-    Args:
-        qjit (:class:`~catalyst.QJIT`): the QNode to calculate the specifications for.
-        original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
-        level (int | tuple[int] | list[int]): the levels at which to insert resource analysis passes
-            for resource counting
-        num_tape_levels (int): the number of tape transform levels in the compile pipeline
-        level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
-        level_to_name (dict[int, str]): mapping from level number to the name to use for that level
-            in the output. Note that this argument is mutated by this function
-        *args: the arguments to pass to the QNode when compiling
-        **kwargs: the keyword arguments to pass to the QNode when compiling
-    Returns:
-        dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
-            corresponding resource information.
-    """
-
-    # pylint: disable=protected-access,too-many-arguments
-
-    new_qnode = copy.deepcopy(original_qnode)
-    iter_pipeline = new_qnode._compile_pipeline
-    new_compile_pipeline = qp.CompilePipeline()
-
-    max_level = max(level) if isinstance(level, (list, tuple)) else level
-    max_legal_level = len(iter_pipeline)
-    fname_to_level = {}
-
-    with tempfile.TemporaryDirectory(
-        prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
-    ) as tmpdirname:
-        fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
-
-        if num_tape_levels > 0:
-            # Account for the inserted lowering pass which comes after all tape transforms
-            max_legal_level += 1
-
-            # Add all tape transforms first, which come before any MLIR passes
-            new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
-            iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
-
-        if max_level > max_legal_level:
-            bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
-            raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
-
-        if num_tape_levels in level:
-            fname = f"{fname_prefix}before.json"
-            fname_to_level[fname] = (
-                num_tape_levels  # num_tape_levels == the level of the lowering pass
-            )
-            level_to_name[num_tape_levels] = (
-                ", ".join(level_to_markers[num_tape_levels])
-                if num_tape_levels in level_to_markers
-                else "Before MLIR Passes"
-            )
-            new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
-            )
-
-        for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
-            if i > max_level:
-                break
-            new_compile_pipeline += comp_pass
-            if i in level:
-                fname = f"{fname_prefix}{i}.json"
-                level_name = (
-                    ", ".join(level_to_markers[i])
-                    if i in level_to_markers
-                    else comp_pass.pass_name or f"Level {i}"
-                )
-                level_name = _make_level_name_unique(level_name, set(level_to_name.values()))
-                fname_to_level[fname] = i
-                level_to_name[i] = level_name
-                new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
-                    output_json=True, output_fname=fname
-                )
-
-        new_qnode._compile_pipeline = new_compile_pipeline
-        compile_options = copy.deepcopy(qjit.compile_options)
-        compile_options.target = "mlir"
-        compile_options.lower_to_llvm = False
-        if compile_options.pipelines is None:
-            # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
-            # limiting which passes are applied to just the necessary ones. In this case, only
-            # the set of user-specified transforms (the quantum-compilation-stage) are run
-            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
-
-        # Partially compile the QNode, producing JSON data with resource info
-        _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
-
-        results = {}
-
-        for res_file, curr_level in fname_to_level.items():
-            res_file = Path(res_file)
-            with res_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            cur_level_resources = [
-                _mlir_resources_to_specs_resources(res)
-                for res in data.values()
-                if res[
-                    "qnode"
-                ]  # Only include information about qnodes, ignoring any extra functions
-            ]
-
-            if len(cur_level_resources) == 1:
-                cur_level_resources = cur_level_resources[0]
-
-            results[level_to_name[curr_level]] = cur_level_resources
-
-    return results
-
-
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
@@ -511,14 +257,14 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            trans_name = _make_level_name_unique(trans_name, set(level_to_name.values()))
+            trans_name = make_level_name_unique(trans_name, frozenset(level_to_name.values()))
             resources[trans_name] = res
             level_to_name[tape_level] = trans_name
 
     # Handle MLIR passes
     if len(mlir_levels) > 0:
         resources.update(
-            _specs_from_analysis_pass(
+            resources_from_analysis_pass(
                 qjit,
                 original_qnode,
                 mlir_levels,
@@ -996,6 +742,88 @@ def specs(
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
         returned and displayed separately, though the level name for both is the same, since they come from the same transform.
+
+    .. details::
+        :title: Symbolic Results for Pass-by-pass Specs with Catalyst
+
+        In cases where the exact resources of a circuit are not easily obtained at compile time,
+        ``specs`` may return resources which include expressions rather than exact values.
+        This can occur when the resources depend on values that are not known at
+        compile time, such as the number of iterations in a loop.
+        In these cases, the resource information will be returned as a
+        :class:`~.resource.SymbolicSpecsResources` including symbolic expressions,
+        rather than a
+        :class:`~.resource.SpecsResources` with concrete values.
+
+        For example, consider the following circuit which contains a ``for`` loop with a
+        non-static range:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(autograph=True)
+            @qp.qnode(dev)
+            def circuit(x, z):
+                qp.Hadamard(0)
+                qp.PauliX(0)
+                for _ in range(x):
+                    qp.PauliX(0)
+                for _ in range(z):
+                    qp.PauliZ(0)
+                return qp.expval(qp.PauliZ(0))
+
+            specs_result = qp.specs(circuit, level=0)(5, 3)
+
+        If we attempt to get pass-by-pass specs for this circuit, the resource information will be
+        symbolic due to the dependence on the input parameters ``x`` and ``z``:
+
+        >>> print(specs_result)
+        Device: lightning.qubit
+        Device wires: 1
+        Shots: Shots(total=None)
+        Level: Before MLIR Passes
+        <BLANKLINE>
+        Symbolic Variables: a, b
+        Wire allocations: 1
+        Total gates: b + a + 2
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: a + 1
+        - PauliZ: b
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        You can estimate the concrete resource values using the ``.subs`` method of the
+        returned :class:`~.resource.SymbolicSpecsResources` object, and providing keyword arguments
+        which describe the mapping from each symbolic variable to an integer value:
+
+        >>> res = specs_result.resources
+        >>> print(res.subs(a=5, b=3))
+        Wire allocations: 1
+        Total gates: 10
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: 6
+        - PauliZ: 3
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
+
+        These substitutions may also be provided as a dictionary, which can be helpful in
+        programmatic contexts:
+
+        >>> print(res.subs({"a": 5, "b": 3}))
+        Wire allocations: 1
+        Total gates: 10
+        Gate counts:
+        - Hadamard: 1
+        - PauliX: 6
+        - PauliZ: 3
+        Measurements:
+        - expval(PauliZ): 1
+        Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed

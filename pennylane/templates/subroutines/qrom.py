@@ -24,6 +24,7 @@ import numpy as np
 
 import pennylane.math as pl_math
 from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -32,9 +33,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
-from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike

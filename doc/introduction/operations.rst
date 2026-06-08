@@ -159,23 +159,24 @@ Non-parametrized gates
 
     ~pennylane.Identity
     ~pennylane.Hadamard
+    ~pennylane.S
+    ~pennylane.CNOT
+    ~pennylane.T
+    ~pennylane.Toffoli
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
-    ~pennylane.S
-    ~pennylane.T
     ~pennylane.SX
-    ~pennylane.CNOT
-    ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CZ
     ~pennylane.CH
+    ~pennylane.CCZ
     ~pennylane.SWAP
     ~pennylane.ISWAP
-    ~pennylane.ECR
-    ~pennylane.SISWAP
-    ~pennylane.SQISW
     ~pennylane.CSWAP
-    ~pennylane.Toffoli
+    ~pennylane.SISWAP
+    ~pennylane.ECR
+    ~pennylane.SQISW
     ~pennylane.MultiControlledX
     ~pennylane.Barrier
     ~pennylane.WireCut
