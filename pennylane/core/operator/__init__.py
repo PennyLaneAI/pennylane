@@ -182,7 +182,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 """
 
 from .base import Operator, Operation
-from .base2 import Operator2
+from .operator2 import Operator2
 from .channel import Channel
 from .cv import CV, CVObservable, CVOperation
 from .state_prep import StatePrepBase
