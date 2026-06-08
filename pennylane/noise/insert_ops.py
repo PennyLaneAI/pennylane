@@ -39,13 +39,13 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if not isinstance(operation, Operator):
+                if not (isinstance(operation, type) and issubclass(operation, Operator)):
                     not_op = True
             except AttributeError:
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if isinstance(position, Operator):
+            if isinstance(position, type) and issubclass(position, Operator):
                 req_ops = [position]
             else:
                 not_op = True
