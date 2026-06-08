@@ -705,7 +705,7 @@ class PauliY(Operator2):
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires) -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(wires=None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -968,7 +968,7 @@ class PauliZ(Operator2):
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires) -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(wires=None) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,

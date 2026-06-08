@@ -464,7 +464,7 @@ class TestAdjointOperationDiffInfo:
 
     def test_grad_method_None(self):
         """Test grad_method copies base grad_method when it is None."""
-        base = qp.PauliX(0)
+        base = qp.S(0)
         op = Adjoint(base)
 
         assert op.grad_method is None
