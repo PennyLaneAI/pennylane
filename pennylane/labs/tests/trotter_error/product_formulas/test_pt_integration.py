@@ -16,98 +16,65 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
-from pennylane.labs.trotter_error import (
-    NumpyFragment,
-    NumpyState,
-    ProductFormula,
-    perturbation_error,
-)
+import pennylane as qp
+from pennylane.labs.trotter_error import ProductFormula, generic_fragments, perturbation_error
 from pennylane.qchem import fermionic_observable
 
 symbols = ["H", "H", "H", "H"]
-geometry = qml.math.array([[0.0, 0.0, -0.2], [0.0, 0.0, -0.1], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2]])
+geometry = qp.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]])
 
-mol = qml.qchem.Molecule(symbols, geometry)
-nuc_core, one_body, two_body = qml.qchem.electron_integrals(mol)()
+mol = qp.qchem.Molecule(symbols, geometry, unit="angstrom")
+core_constant, one_body, two_body = qp.qchem.electron_integrals(mol)()
 
-two_chem = 0.5 * qml.math.swapaxes(two_body, 1, 3)  # V_pqrs
-one_chem = one_body - 0.5 * qml.math.einsum("pqss", two_body)  # T_pq
+two_chem = qp.math.swapaxes(two_body, 1, 3)  # V_pqrs
+one_chem = one_body - 0.5 * qp.math.einsum("pqss", two_body)  # T_pq
 
-core_shift, one_shift, two_shift = qml.qchem.symmetry_shift(
-    nuc_core, one_chem, two_chem, n_elec=mol.n_electrons
-)  # symmetry-shifted terms of the Hamiltonian
+_, two_body_cores, two_body_leaves = qp.qchem.factorize(two_chem, tol_factor=1e-2)
 
-_, two_body_cores, two_body_leaves = qml.qchem.factorize(
-    two_shift, tol_factor=1e-2, cholesky=True, compressed=True, regularization="L2"
-)  # compressed double-factorized shifted two-body terms with "L2" regularization
+one_body_eigvals, one_body_eigvecs = qp.math.linalg.eigh(one_chem)
+one_body_cores = qp.math.diag(one_body_eigvals)
+one_body_leaves = one_body_eigvecs
 
-two_core_prime = qml.math.eye(mol.n_orbitals) * two_body_cores.sum(axis=-1)[:, None, :]
-one_body_extra = qml.math.einsum(
-    "tpk,tkk,tqk->pq", two_body_leaves, two_core_prime, two_body_leaves
-)  # one-body correction
+# CDF Hamiltonian
+U0 = one_body_leaves
+Z0 = one_body_cores
+U = two_body_leaves
+Z = two_body_cores
 
-one_body_eigvals, one_body_eigvecs = qml.math.linalg.eigh(one_shift + one_body_extra)
-one_body_cores = qml.math.expand_dims(qml.math.diag(one_body_eigvals), axis=0)
-one_body_leaves = qml.math.expand_dims(one_body_eigvecs, axis=0)
-cdf_hamiltonian = {
-    "nuc_constant": core_shift[0],
-    "core_tensors": qml.math.concatenate((one_body_cores, two_body_cores), axis=0),
-    "leaf_tensors": qml.math.concatenate((one_body_leaves, two_body_leaves), axis=0),
-}  # CDF Hamiltonian
+eri = np.einsum("tpk,tqk,tkl,trl,tsl->tpqrs", U, U, Z, U, U)  # regenerate V_pqrs
+h1e = U0 @ Z0 @ U0.T
+h1e = h1e + 0.5 * qp.math.einsum("pqss", two_body)  # regenerate h_pq
 
-circ_wires = range(2 * mol.n_orbitals)
-hf_state = qml.qchem.hf_state(electrons=mol.n_electrons, orbitals=len(circ_wires))
+h_ferm = [fermionic_observable(constant=core_constant, one=h1e)]
+for frag in eri:
+    h_ferm.append(fermionic_observable(constant=np.array([0]), two=np.swapaxes(frag, 1, 3)))
 
+cdf_frags = [np.array(item.to_mat(format="dense")) for item in h_ferm]
 
-@qml.qnode(qml.device("default.qubit", wires=circ_wires))
-def create_state():
-    """Create a basis state"""
-    qml.BasisState(hf_state, wires=circ_wires)
-    return qml.state()
+frags = generic_fragments(cdf_frags)
+eigenvalues, eigenvectors = np.linalg.eigh(sum(cdf_frags))
+state = eigenvectors.T[:, eigenvalues.argsort()][0]
 
-
-state = NumpyState(create_state())
-h = 0.1
-
-# Load the CDF integrals
-U = np.array(cdf_hamiltonian["leaf_tensors"][1:])
-Z = np.array(cdf_hamiltonian["core_tensors"][1:])
-U0 = np.array(cdf_hamiltonian["leaf_tensors"][0])
-Z0 = np.array(cdf_hamiltonian["core_tensors"][0])
-
-# Recreate the fragments
-two_body_fragments = np.einsum("tpk,tqk,tkl,trl,tsl->tpqrs", U, U, Z, U, U)
-one_body = U0 @ Z0 @ U0.T
-
-fermionic_fragments = [fermionic_observable(one=one_body, constant=[0.0]).to_mat(format="dense")]
-for i in range(two_body_fragments.shape[0]):
-    obc = qml.math.einsum("pk,kk,qk->pq", U[i], Z[i], U[i])
-    fermionic_fragments.append(
-        fermionic_observable(one=-obc, two=two_body_fragments[i], constant=[0.0]).to_mat(
-            format="dense"
-        )
-    )
-
-fragments = dict(enumerate(NumpyFragment(fragment) for fragment in fermionic_fragments))
-
-frag_labels = list(fragments.keys()) + list(fragments.keys())[::-1]
+frags = dict(enumerate(frags))
+frag_labels = list(frags.keys()) + list(frags.keys())[::-1]
 frag_coeffs = [1 / 2] * len(frag_labels)
-order = 3
+
 
 params = [
-    ("serial", 1),
-    ("mp_pool", 1),
-    ("mp_pool", 2),
-    ("cf_procpool", 1),
-    ("cf_procpool", 2),
-    ("cf_threadpool", 1),
-    ("cf_threadpool", 2),
-    ("mpi4py_pool", 1),
-    ("mpi4py_pool", 2),
-    ("mpi4py_comm", 1),
-    ("mpi4py_comm", 2),
+    ("serial", 1, "state", 1),
+    ("serial", 1, "state", 2),
+    ("mp_pool", 2, "state", 2),
+    ("mp_pool", 2, "commutator", 2),
+    ("cf_procpool", 2, "state", 2),
+    ("cf_procpool", 2, "commutator", 2),
+    ("cf_threadpool", 2, "state", 2),
+    ("cf_threadpool", 2, "commutator", 2),
+    ("mpi4py_pool", 2, "state", 2),
+    ("mpi4py_pool", 2, "commutator", 2),
+    ("mpi4py_comm", 2, "state", 2),
+    ("mpi4py_comm", 2, "commutator", 2),
 ]
+
 
 @pytest.mark.parametrize("backend, num_workers, parallel_mode, n_states", params)
 def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4py_support):
