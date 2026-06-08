@@ -25,7 +25,7 @@ class RX2(Operator2):
 
     dynamic_argnames = ("theta",)
 
-    def __init__(self, theta, wires):
+    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(theta, wires)
 
     @property
@@ -42,14 +42,14 @@ class RX2(Operator2):
         )
 
 
-class CustomSymbolicOp(SymbolicOp2):
+class CustomSymbolicOp(SymbolicOp2):  # pylint: disable=too-few-public-methods
     """A custom symbolic operator class."""
 
     dynamic_argnames = ("val",)
 
     compilable_argnames = ("toggle",)
 
-    def __init__(self, val, base, toggle: bool = True):
+    def __init__(self, val, base, toggle: bool = True):  # pylint: disable=useless-parent-delegation
         super().__init__(val, base, toggle)
 
 
