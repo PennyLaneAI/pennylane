@@ -13,13 +13,27 @@
 """Basic unit tests for ``Operator2``."""
 
 # pylint: disable=redefined-outer-name,protected-access,too-few-public-methods
+# TODO: [sc-120817] Add interface tests
+# TODO: [sc-120982] Add integration tests
 
 import copy
 
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 
-from pennylane.exceptions import AdjointUndefinedError, PowUndefinedError
+import pennylane as qp
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.operation2 import Operator2
 from pennylane.pauli import PauliSentence, PauliWord
@@ -48,7 +62,7 @@ class TestInitSubclass:
         assert Op.wire_argnames == ("wires",)
         assert Op.compilable_argnames == ()
 
-    def test_static_and_compilable_both_set_raises(self):
+    def test_static_and_compilable_both_set_error(self):
         """Test that declaring both ``static_argnames`` and ``compilable_argnames``
         is not allowed."""
 
@@ -73,7 +87,7 @@ class TestInitSubclass:
             ("compilable_argnames", "wire_argnames"),
         ],
     )
-    def test_pairwise_overlap_raises(self, first, second):
+    def test_pairwise_overlap_error(self, first, second):
         """Test that dynamic, wire, static, and compilable argnames must be disjoint."""
 
         def __init__(self, x):
@@ -105,7 +119,7 @@ class TestInitSubclass:
     @pytest.mark.parametrize(
         "other_group", ["dynamic_argnames", "static_argnames", "compilable_argnames"]
     )
-    def test_hybrid_overlap_with_non_wire_raises(self, other_group):
+    def test_hybrid_overlap_with_non_wire_error(self, other_group):
         """Test that ``hybrid_argnames`` may not overlap with dynamic, static,
         or compilable argnames."""
 
@@ -119,7 +133,7 @@ class TestInitSubclass:
             # that we want to test.
             type("Op", (Operator2,), attrs)
 
-    def test_unclassified_signature_parameter_raises(self):
+    def test_unclassified_signature_parameter_error(self):
         """Test that every parameter in the signature must appear in some ``**_argnames`` tuple."""
 
         with pytest.raises(TypeError, match="not classified in any argnames"):
@@ -345,7 +359,7 @@ class TestOperatorInit:
         assert op.arguments["wires"] == expected
         assert op.wires == expected
 
-    def test_hybrid_wire_arg_with_non_wires_leaf_raises(self):
+    def test_hybrid_wire_arg_with_non_wires_leaf_error(self):
         """Test that a hybrid wire argument whose leaves are not ``Wires``
         instances raises a ``TypeError``."""
 
@@ -536,7 +550,7 @@ class TestBroadcasting:
         assert op._ndim_params is _UNSET_BATCH_SIZE
         assert op.ndim_params == expected_ndims
 
-    def test_wrong_ndim_raises(self):
+    def test_wrong_ndim_error(self):
         """Test that parameters with wrong dimensionality raise an error."""
 
         class Op(Operator2):
@@ -550,7 +564,7 @@ class TestBroadcasting:
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions"):
             _ = op.batch_size
 
-    def test_mismatched_broadcasting_raises(self):
+    def test_mismatched_broadcasting_error(self):
         """Test that different broadcast dimensions across parameters raise an error."""
 
         class Op(Operator2):
@@ -1103,7 +1117,7 @@ class TestGeneralMethods:
         assert len(result) == 2
 
     @pytest.mark.parametrize("z", [-1, -2, 1.5, 0.5])
-    def test_pow_invalid_raises(self, z):
+    def test_pow_invalid_error(self, z):
         """Test that ``op.pow`` raises ``PowUndefinedError`` for negative or non-integer exponents."""
         op = DynOp(0.5, wires=0)
         with pytest.raises(PowUndefinedError):
@@ -1236,12 +1250,147 @@ class TestHasRepresentations:
 
         assert SelfAdj.has_adjoint is True
 
+    def test_has_matrix_default(self):
+        """Test that ``has_matrix`` is False when ``compute_matrix`` is not overridden."""
+        assert DynOp.has_matrix is False
 
+    def test_has_matrix_true_when_compute_overridden(self):
+        """Test that ``has_matrix`` is True when ``compute_matrix`` is overridden."""
+
+        class WithMatrix(Operator2):
+            @staticmethod
+            def compute_matrix(*_, **__):
+                return np.eye(2)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithMatrix.has_matrix is True
+
+    def test_has_matrix_true_when_method_overridden(self):
+        """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
+
+        class WithMatrix(Operator2):
+            # pylint: disable=unused-argument
+            def matrix(self, wire_order=None):
+                return np.eye(2)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithMatrix.has_matrix is True
+
+    def test_has_sparse_matrix_default(self):
+        """Test that ``has_sparse_matrix`` is False by default."""
+        assert DynOp.has_sparse_matrix is False
+
+    def test_has_sparse_matrix_true_when_compute_overridden(self):
+        """Test that ``has_sparse_matrix`` is True when ``compute_sparse_matrix`` is overridden."""
+
+        class WithSparse(Operator2):
+            @staticmethod
+            def compute_sparse_matrix(*_, **__):
+                return csr_matrix(np.eye(2))
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithSparse.has_sparse_matrix is True
+
+    def test_has_sparse_matrix_true_when_method_overridden(self):
+        """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
+
+        class WithSparse(Operator2):
+            # pylint: disable=unused-argument
+            def sparse_matrix(self, wire_order=None, format="csr"):
+                return csr_matrix(np.eye(2))
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithSparse.has_sparse_matrix is True
+
+    def test_has_decomposition_default(self):
+        """Test that ``has_decomposition`` is False by default."""
+        assert DynOp.has_decomposition is False
+
+    def test_has_decomposition_true_when_compute_overridden(self):
+        """Test that ``has_decomposition`` is True when ``compute_decomposition`` is overridden."""
+
+        class WithDecomp(Operator2):
+            @staticmethod
+            def compute_decomposition(*_, **__):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithDecomp.has_decomposition is True
+
+    def test_has_decomposition_true_when_method_overridden(self):
+        """Test that ``has_decomposition`` is True when ``decomposition`` is overridden."""
+
+        class WithDecomp(Operator2):
+            def decomposition(self):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithDecomp.has_decomposition is True
+
+    def test_has_diagonalizing_gates_default(self):
+        """Test that ``has_diagonalizing_gates`` is False by default."""
+        assert DynOp.has_diagonalizing_gates is False
+
+    def test_has_diagonalizing_gates_true_when_compute_overridden(self):
+        """Test that ``has_diagonalizing_gates`` is True when ``compute_diagonalizing_gates`` is overridden."""
+
+        class WithDiag(Operator2):
+            @staticmethod
+            def compute_diagonalizing_gates(*_, **__):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithDiag.has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_true_when_method_overridden(self):
+        """Test that ``has_diagonalizing_gates`` is True when ``diagonalizing_gates`` is overridden."""
+
+        class WithDiag(Operator2):
+            def diagonalizing_gates(self):
+                return []
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithDiag.has_diagonalizing_gates is True
+
+    def test_has_generator_default(self):
+        """Test that ``has_generator`` is False by default."""
+        assert DynOp.has_generator is False
+
+    def test_has_generator_true_when_method_overridden(self):
+        """Test that ``has_generator`` is True when ``generator`` is overridden."""
+
+        class WithGen(Operator2):
+            def generator(self):
+                return DynOp(0.5, wires=self.wires)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        assert WithGen.has_generator is True
+
+
+# pylint: disable=unused-argument,too-many-public-methods
 class TestRepresentations:
     """Tests for the various operator representation methods
     (and their corresponding ``compute_**`` static methods)."""
 
-    def test_adjoint_default_raises(self):
+    def test_adjoint_default_error(self):
         """Test that the default ``adjoint`` raises ``AdjointUndefinedError``."""
         op = DynOp(0.5, wires=0)
         with pytest.raises(AdjointUndefinedError):
@@ -1260,3 +1409,296 @@ class TestRepresentations:
         op = SelfAdj(wires=0)
         adj = op.adjoint()
         assert adj == op
+
+    def test_matrix_undefined_error(self):
+        """Test that the default matrix representation raises ``MatrixUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(MatrixUndefinedError):
+            DynOp.compute_matrix(0.5, wires=0)
+        with pytest.raises(MatrixUndefinedError):
+            op.matrix()
+
+    def test_sparse_matrix_undefined_error(self):
+        """Test that the default sparse matrix representation raises ``SparseMatrixUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(SparseMatrixUndefinedError):
+            DynOp.compute_sparse_matrix(0.5, wires=0)
+        with pytest.raises(SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+    def test_decomposition_undefined_error(self):
+        """Test that the default decomposition raises ``DecompositionUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(DecompositionUndefinedError):
+            DynOp.compute_decomposition(0.5, wires=0)
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_eigvals_undefined_error(self):
+        """Test that the default eigenvalue representation raises ``EigvalsUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(EigvalsUndefinedError):
+            DynOp.compute_eigvals(0.5, wires=0)
+        with pytest.raises(EigvalsUndefinedError):
+            op.eigvals()
+
+    def test_diagonalizing_gates_undefined_error(self):
+        """Test that the default diagonalizing gates raise ``DiagGatesUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(DiagGatesUndefinedError):
+            DynOp.compute_diagonalizing_gates(0.5, wires=0)
+        with pytest.raises(DiagGatesUndefinedError):
+            op.diagonalizing_gates()
+
+    def test_terms_undefined_error(self):
+        """Test that the default terms representation raises ``TermsUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(TermsUndefinedError):
+            op.terms()
+
+    def test_generator_undefined_error(self):
+        """Test that the default generator raises ``GeneratorUndefinedError``."""
+        op = DynOp(0.5, wires=0)
+        with pytest.raises(GeneratorUndefinedError, match="does not have a generator"):
+            op.generator()
+
+    def test_compute_matrix_used_by_matrix(self):
+        """Test that ``matrix`` dispatches to ``compute_matrix`` with bound arguments."""
+
+        class WithMatrix(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_matrix(phi, wires):
+                return phi * np.eye(2)
+
+        op = WithMatrix(0.5, wires=0)
+        assert np.allclose(op.matrix(), 0.5 * np.eye(2))
+
+    def test_matrix_expands_for_wire_order(self):
+        """Test that ``matrix`` expands the canonical matrix when ``wire_order`` is given."""
+
+        class WithMatrix(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_matrix(phi, wires):
+                return phi * np.eye(2)
+
+        op = WithMatrix(0.5, wires=1)
+        canonical = op.compute_matrix(0.5, wires=op.wires)
+        expanded = op.matrix(wire_order=[0, 1])
+        expected = qp.math.expand_matrix(canonical, wires=op.wires, wire_order=[0, 1])
+        assert np.allclose(expanded, expected)
+
+    def test_compute_sparse_matrix_used_by_sparse_matrix(self):
+        """Test that ``sparse_matrix`` dispatches to ``compute_sparse_matrix``."""
+
+        class WithSparse(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_sparse_matrix(phi, wires, format="csr"):
+                return csr_matrix(phi * np.eye(2))
+
+        op = WithSparse(0.5, wires=0)
+        mat = op.sparse_matrix()
+        assert mat.format == "csr"
+        assert np.allclose(mat.toarray(), 0.5 * np.eye(2))
+
+    def test_compute_decomposition_used_by_decomposition(self):
+        """Test that ``decomposition`` dispatches to ``compute_decomposition``."""
+
+        class WithDecomp(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [DynOp(phi, wires=wires[0])]
+
+        op = WithDecomp(0.7, wires=0)
+        decomp = op.decomposition()
+        assert len(decomp) == 1
+        assert decomp[0] == DynOp(0.7, wires=0)
+
+    def test_compute_eigvals_used_by_eigvals(self):
+        """Test that ``eigvals`` dispatches to ``compute_eigvals`` when defined."""
+
+        class WithEigvals(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_eigvals(phi, wires):
+                return np.array([phi, -phi])
+
+        op = WithEigvals(0.5, wires=0)
+        assert np.allclose(op.eigvals(), [0.5, -0.5])
+
+    def test_eigvals_inferred_from_matrix(self):
+        """Test that ``eigvals`` is computed from the matrix when ``compute_eigvals`` is undefined."""
+
+        class WithMatrix(Operator2):
+            dynamic_argnames = ("theta",)
+
+            def __init__(self, theta, wires):
+                super().__init__(theta, wires=wires)
+
+            @staticmethod
+            def compute_matrix(theta, wires):
+                return theta * np.eye(2)
+
+        op = WithMatrix(0.3, wires=0)
+        assert np.allclose(op.eigvals(), [0.3, 0.3])
+
+    def test_compute_diagonalizing_gates_used_by_diagonalizing_gates(self):
+        """Test that ``diagonalizing_gates`` dispatches to ``compute_diagonalizing_gates``."""
+
+        class WithDiag(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_diagonalizing_gates(phi, wires):
+                return [DynOp(phi, wires=wires[0])]
+
+        op = WithDiag(0.5, wires=0)
+        assert op.diagonalizing_gates() == [DynOp(0.5, wires=0)]
+
+    def test_matrix_same_wire_order_returns_canonical(self):
+        """Test that ``matrix`` returns the canonical matrix when ``wire_order`` matches
+        ``op.wires`` exactly (no expansion)."""
+
+        class WithMatrix(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_matrix(phi, wires):
+                return phi * np.eye(2)
+
+        op = WithMatrix(0.5, wires=0)
+        canonical = op.matrix()
+        assert np.allclose(op.matrix(wire_order=[0]), canonical)
+
+    def test_matrix_same_wire_order_no_expand(self, mocker):
+        """Test that ``expand_matrix`` is not called when ``wire_order`` equals ``op.wires``."""
+
+        class WithMatrix(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_matrix(phi, wires):
+                return phi * np.eye(2)
+
+        op = WithMatrix(0.5, wires=0)
+        mock_expand = mocker.patch.object(qp.math, "expand_matrix")
+        result = op.matrix(wire_order=[0])
+        mock_expand.assert_not_called()
+        assert np.allclose(result, 0.5 * np.eye(2))
+
+    def test_sparse_matrix_with_wire_order_and_format(self):
+        """Test that ``sparse_matrix`` expands for ``wire_order`` and respects ``format``."""
+
+        class WithSparse(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_sparse_matrix(phi, wires, format="csr"):
+                return csr_matrix(phi * np.eye(2))
+
+        op = WithSparse(0.5, wires=1)
+        canonical = csr_matrix(0.5 * np.eye(2))
+        mat = op.sparse_matrix(wire_order=[0, 1], format="csc")
+        expected = qp.math.expand_matrix(canonical, wires=op.wires, wire_order=[0, 1]).asformat(
+            "csc"
+        )
+        assert mat.format == "csc"
+        assert np.allclose(mat.toarray(), expected.toarray())
+
+    def test_sparse_matrix_instance_override(self):
+        """Test that overriding ``sparse_matrix`` alone provides a working representation."""
+
+        class WithSparse(Operator2):
+            def sparse_matrix(self, wire_order=None, format="csr"):
+                return csr_matrix(np.eye(2)).asformat(format)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = WithSparse(wires=0)
+        assert np.allclose(op.sparse_matrix().toarray(), np.eye(2))
+
+    def test_decomposition_instance_override_only(self):
+        """Test that overriding only ``decomposition`` (not ``compute_decomposition``) works."""
+
+        class WithDecomp(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            def decomposition(self):
+                return [DynOp(self.arguments["phi"], wires=self.wires[0])]
+
+        op = WithDecomp(0.7, wires=0)
+        assert WithDecomp.has_decomposition is True
+        decomp = op.decomposition()
+        assert decomp == [DynOp(0.7, wires=0)]
+
+    def test_terms_returns_coefficients_and_operators(self):
+        """Test that a subclass may override ``terms`` to return a linear combination."""
+
+        class WithTerms(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            def terms(self):
+                return (
+                    [self.arguments["phi"]],
+                    [DynOp(self.arguments["phi"], wires=self.wires[0])],
+                )
+
+        op = WithTerms(0.5, wires=0)
+        coeffs, ops = op.terms()
+        assert coeffs == [0.5]
+        assert ops == [DynOp(0.5, wires=0)]
+
+    def test_generator_returns_operator(self):
+        """Test that a subclass may override ``generator`` to return an operator."""
+
+        class WithGen(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            def generator(self):
+                return DynOp(0.5, wires=self.wires[0])
+
+        op = WithGen(wires=0)
+        assert op.generator() == DynOp(0.5, wires=0)
