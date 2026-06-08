@@ -1662,6 +1662,12 @@ class Operation(Operator):
             If not given, args[-1] is interpreted as wires.
     """
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Operation and getattr(subclass, "_operator_version", None) == 2:
+            return True
+        return super().__subclasshook__(subclass)
+
     @property
     def grad_method(self) -> Literal["A", "F", None]:
         """Gradient computation method.

@@ -51,7 +51,7 @@ def test_basis_deprecation():
         assert MyOp(0).basis is None
 
 
-def test_operator2_isinstance_operator():
+def test_operator2_isinstance_operator_operation():
     """Test that anything that inherits from Operator2 is an Operator."""
 
     class NewOp(qp.operation2.Operator2):
@@ -65,6 +65,9 @@ def test_operator2_isinstance_operator():
     new_op = NewOp(wires=0)
     assert isinstance(new_op, Operator)
     assert issubclass(NewOp, Operator)
+
+    assert isinstance(new_op, Operation)
+    assert issubclass(NewOp, Operation)
 
 
 class TestOperator1:
