@@ -47,6 +47,8 @@ Core Infrastructure
 
 .. autosummary::
 
+    :toctree: api
+
     ~MeasurementProcess
     ~StateMeasurement
     ~SampleMeasurement
@@ -59,6 +61,8 @@ Measurement Classes
 .. currentmodule:: pennylane.measurements
 
 .. autosummary::
+
+    :toctree: api
 
     ~ClassicalShadowMP
     ~CountsMP

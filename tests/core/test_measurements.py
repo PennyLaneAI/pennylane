@@ -413,6 +413,21 @@ class TestDiagonalizingGates:
         for op, c in zip(res, expected_classes):
             assert isinstance(op, c)
 
+    def test_has_decomposition(self):
+        """Test with an observable with no diagonalizing gates."""
+
+        mp0 = qp.expval(qp.X(0))
+        assert mp0.has_decomposition
+
+        class _NoDiagonalizingGates(qp.core.operator.Operator):
+            pass
+
+        mp1 = qp.expval(_NoDiagonalizingGates(wires=0))
+        assert not mp1.has_decomposition
+
+        mp2 = qp.sample(wires=0)
+        assert not mp2.has_decomposition
+
 
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""

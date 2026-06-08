@@ -359,7 +359,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             try:
                 return self.obs.eigvals()
             except DecompositionUndefinedError as e:
-                raise EigvalsUndefinedError from e
+                raise EigvalsUndefinedError from e  # pragma: no cover
         return self._eigvals
 
     @property
