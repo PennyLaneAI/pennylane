@@ -26,7 +26,6 @@ from pennylane.labs.trotter_error.realspace import HOState, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
 
-
 # pylint: disable=protected-access
 
 

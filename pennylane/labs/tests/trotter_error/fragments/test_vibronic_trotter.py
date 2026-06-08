@@ -22,7 +22,6 @@ import scipy as sp
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
 from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, VibronicHO
 
-
 # pylint: disable=no-self-use
 
 

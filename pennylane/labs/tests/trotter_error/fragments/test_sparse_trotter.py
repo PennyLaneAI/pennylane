@@ -20,7 +20,6 @@ from scipy.sparse import csr_array
 from pennylane.labs.trotter_error.fragments import sparse_fragments
 from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
 
-
 identity = SparseFragment(csr_array([[1, 0], [0, 1]]))
 pauli_x = SparseFragment(csr_array([[0, 1], [1, 0]]))
 pauli_z = SparseFragment(csr_array([[1, 0], [0, -1]]))

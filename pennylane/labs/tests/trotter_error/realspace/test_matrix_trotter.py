@@ -24,7 +24,6 @@ from pennylane.labs.trotter_error.realspace import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _op_norm
 
-
 # pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
 
 

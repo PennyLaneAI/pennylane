@@ -27,7 +27,6 @@ import numpy as np
 
 from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 
-
 if TYPE_CHECKING:
     from pennylane.labs.trotter_error import Fragment
 

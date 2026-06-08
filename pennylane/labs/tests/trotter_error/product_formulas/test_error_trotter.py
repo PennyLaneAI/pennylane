@@ -25,7 +25,6 @@ from pennylane.labs.trotter_error import (
     perturbation_error,
 )
 
-
 symbols = ["A", "B", "C", "D"]
 frag_labels = symbols + symbols[::-1]
 frag_coeffs = [1 / 2] * len(frag_labels)

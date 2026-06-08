@@ -20,8 +20,8 @@ from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
 
 import numpy as np
-from pennylane import concurrency
 
+from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
@@ -31,7 +31,6 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
     SymbolNode,
 )
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
-
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 

@@ -36,7 +36,6 @@ from .realspace import (
     VibronicHO,
 )
 
-
 __all__ = [
     "AbstractState",
     "Fragment",

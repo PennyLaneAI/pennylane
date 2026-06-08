@@ -14,17 +14,16 @@
 """Tests for the perturbation theory function"""
 
 import numpy as np
-import pennylane as qml
 import pytest
-from pennylane.qchem import fermionic_observable
 
+import pennylane as qml
 from pennylane.labs.trotter_error import (
     NumpyFragment,
     NumpyState,
     ProductFormula,
     perturbation_error,
 )
-
+from pennylane.qchem import fermionic_observable
 
 symbols = ["H", "H", "H", "H"]
 geometry = qml.math.array([[0.0, 0.0, -0.2], [0.0, 0.0, -0.1], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2]])

@@ -17,7 +17,6 @@ from .bch import bch_expansion
 from .error import ImportanceConfig, effective_hamiltonian, perturbation_error
 from .product_formula import ProductFormula
 
-
 __all__ = [
     "bch_expansion",
     "ImportanceConfig",

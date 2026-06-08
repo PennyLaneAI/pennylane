@@ -18,7 +18,6 @@ from .realspace_coefficients import RealspaceCoeffs
 from .realspace_matrix import RealspaceMatrix
 from .realspace_operator import RealspaceOperator, RealspaceSum
 
-
 __all__ = [
     "HOState",
     "VibronicHO",

@@ -34,7 +34,6 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
     merge,
 )
 
-
 if TYPE_CHECKING:
     from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
