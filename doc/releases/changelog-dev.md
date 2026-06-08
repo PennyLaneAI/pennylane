@@ -411,7 +411,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Bump `codecov-action` to `v6`.
+* Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
 
 * :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
