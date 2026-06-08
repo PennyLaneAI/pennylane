@@ -15,13 +15,13 @@
 Contains the Adder template.
 """
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.operation import Operation
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike

@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 OP_NAME_ALIASES = {
     "X": "PauliX",

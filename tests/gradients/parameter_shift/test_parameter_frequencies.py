@@ -81,11 +81,10 @@ class TestParameterFrequencies:
             def __init__(self, phi: float, theta: float, wires: WiresLike):
                 super().__init__(phi, theta, wires=wires)
 
-        # pylint: disable=unused-argument
         @parameter_frequencies.register
         def multi_arg_op_no_gen_param_freqs(
             op: MultiArgOpNoGenParamFreqs,
-        ):
+        ):  # pylint: disable=unused-argument
             return freqs
 
         op = MultiArgOpNoGenParamFreqs(0.4, 0.3, wires=[0, 1])

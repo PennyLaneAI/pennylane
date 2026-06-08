@@ -322,7 +322,7 @@ class Operator2(ABC):
     def pauli_rep(self) -> "qp.pauli.PauliSentence | None":
         """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
-        return getattr(self, "_pauli_rep", None)
+        return self._pauli_rep
 
     # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
@@ -505,8 +505,7 @@ class Operator2(ABC):
             new_wires = unflatten(mapped_leaves, tree)
             new_op._bound_args.arguments[n] = new_wires
 
-        if (p_rep := getattr(self, "_pauli_rep", None)) is not None:
-            # pylint: disable=attribute-defined-outside-init
+        if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         for n, arg in self.hybrid_args.items():

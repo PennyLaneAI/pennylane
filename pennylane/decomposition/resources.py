@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .utils import to_name
 
