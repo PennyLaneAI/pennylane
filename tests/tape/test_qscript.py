@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator.base2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots, StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
