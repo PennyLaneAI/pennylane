@@ -18,12 +18,12 @@ Contains the SignedOutSquare template.
 from collections import defaultdict
 from itertools import combinations
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import BasisState, X
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
