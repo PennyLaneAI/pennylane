@@ -739,7 +739,7 @@ jobs:
         uses: actions/download-artifact@v8
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.codecov_token }}
           fail_ci_if_error: true  # upload errors should be caught early
