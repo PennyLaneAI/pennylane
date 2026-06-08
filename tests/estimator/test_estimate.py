@@ -606,15 +606,11 @@ class TestEstimateResources:
 
         cfg.set_decomp(BasisRotation, custom_decomp)
 
-        op = BasisRotation(3)
-        ctrl_op = Controlled(op, 1, 0)
-        adj_ctrl_op = Adjoint(ctrl_op)
+        ctrl = estimate(Controlled(BasisRotation(3), 1, 0), config=cfg)
+        adj_ctrl = estimate(Adjoint(Controlled(BasisRotation(3), 1, 0)), config=cfg)
 
-        result = estimate(adj_ctrl_op, config=cfg)
-        # Custom decomp gives dim=3 Hadamard gates; controlling each H gives
-        # Controlled(H) which decomposes further; adjoint wraps those.
-        # The important thing is that the two-layer nesting resolves correctly.
-        assert result.total_gates > 0
+        assert ctrl.total_gates == adj_ctrl.total_gates
+        assert ctrl.gate_counts == adj_ctrl.gate_counts
 
     def test_explicit_symbolic_override_takes_priority(self):
         """An explicit ctrl override in config should NOT be overwritten by the base wrapper."""
@@ -636,64 +632,47 @@ class TestEstimateResources:
         assert result.total_gates == 42  # explicit ctrl override wins
 
     def test_nested_symbolic_propagates_precision(self):
-        """Precision from ResourceConfig must reach the leaf op through nested symbolic wrappers.
+        """Precision from config reaches the leaf through nested symbolic wrappers."""
+        precision = 1e-3
+        cfg = ResourceConfig()
+        cfg.resource_op_precisions[RZ] = {"precision": precision}
 
-        Regression test: Adjoint(Controlled(op)) where op needs precision from ResourceConfig
-        previously failed with TypeError because precision was not propagated through the nesting.
-        """
-        op = RZ(wires=0)
-        ctrl_op = Controlled(op, 1, 0)
-        adj_ctrl_op = Adjoint(ctrl_op)
+        implicit = estimate(Adjoint(Controlled(RZ(wires=0), 1, 0)), config=cfg)
+        explicit = estimate(Adjoint(Controlled(RZ(precision=precision, wires=0), 1, 0)), config=cfg)
+        assert implicit == explicit
 
-        result = estimate(adj_ctrl_op)
-        assert result.total_gates > 0
+    def test_adjoint_involution(self):
+        """Adjoint(Adjoint(op)) gives identical resources to op."""
+        op = Controlled(QROMStatePreparation(20), 1, 0)
+        single = estimate(op)
+        double_adj = estimate(Adjoint(Adjoint(op)))
+        assert single == double_adj
 
-    def test_deep_nesting_three_levels(self):
-        """Controlled(Adjoint(Controlled(QROMStatePreparation))) resolves without error."""
-        op = QROMStatePreparation(20)
-        inner_ctrl = Controlled(op, 1, 0)
-        adj_inner_ctrl = Adjoint(inner_ctrl)
-        outer_ctrl = Controlled(adj_inner_ctrl, 2, 0)
+    def test_pow_multiplies_gate_count(self):
+        """Pow(op, z) multiplies total gate count by z."""
+        op = Controlled(QROMStatePreparation(20), 2, 0)
+        single = estimate(op)
+        tripled = estimate(Pow(op, 3))
+        assert tripled.total_gates == 3 * single.total_gates
 
-        result = estimate(outer_ctrl)
-        assert result.total_gates > 0
+    def test_adjoint_self_adjoint_op(self):
+        """Adjoint of a self-adjoint op gives the same resources as the op itself."""
+        h_result = estimate(Hadamard(wires=0))
+        adj_h_result = estimate(Adjoint(Hadamard(wires=0)))
+        assert h_result == adj_h_result
 
-    def test_deep_nesting_four_levels(self):
-        """Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation)))) resolves without error."""
-        op = QROMStatePreparation(20)
-        c1 = Controlled(op, 1, 0)
-        a1 = Adjoint(c1)
-        c2 = Controlled(a1, 2, 0)
-        a2 = Adjoint(c2)
+    def test_estimate_does_not_mutate_compressed_op(self):
+        """Re-estimating a Resources object with different configs gives correct results each time."""
+        rz_rep = resource_rep(RZ)
+        ctrl_rz = Controlled.resource_rep(rz_rep, num_ctrl_wires=1, num_zero_ctrl=0)
+        resources = Resources(zeroed_wires=0, algo_wires=2, gate_types={ctrl_rz: 1})
 
-        result = estimate(a2)
-        assert result.total_gates > 0
+        cfg1 = ResourceConfig()
+        cfg1.resource_op_precisions[RZ] = {"precision": 1e-3}
 
-    def test_deep_nesting_pow_over_controlled(self):
-        """Pow(Controlled(QROMStatePreparation), z=3) resolves without error."""
-        op = QROMStatePreparation(20)
-        ctrl_op = Controlled(op, 2, 0)
-        pow_op = Pow(ctrl_op, 3)
+        cfg2 = ResourceConfig()
+        cfg2.resource_op_precisions[RZ] = {"precision": 1e-6}
 
-        result = estimate(pow_op)
-        assert result.total_gates > 0
-
-    def test_deep_nesting_simple_no_precision(self):
-        """Adjoint(Hadamard) — operators without precision still work after the recursive fix."""
-        adj_h = Adjoint(Hadamard(wires=0))
-        result = estimate(adj_h)
-        assert result.total_gates > 0
-
-    @pytest.mark.parametrize(
-        "build_op",
-        [
-            lambda: Adjoint(Controlled(QROMStatePreparation(20), 1, 0)),
-            lambda: Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0),
-            lambda: Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0)),
-            lambda: Pow(Controlled(QROMStatePreparation(20), 2, 0), 3),
-        ],
-    )
-    def test_deep_nesting_parametrized(self, build_op):
-        """Arbitrary nesting of Adjoint/Controlled/Pow over an op with precision returns a result."""
-        result = estimate(build_op())
-        assert result.total_gates > 0
+        result1 = estimate(resources, config=cfg1)
+        result2 = estimate(resources, config=cfg2)
+        assert result1 != result2

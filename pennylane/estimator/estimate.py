@@ -13,6 +13,7 @@
 # limitations under the License.
 r"""Core resource estimation logic."""
 
+import copy
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
@@ -443,7 +444,7 @@ def _call_symbolic_decomp_func(decomp_func, comp_res_op, config):
     Pops ``base_cmpr_op`` from the params, applies config precisions recursively,
     and passes the remaining params plus ``target_resource_params`` to the function.
     """
-    base_cmpr_op = comp_res_op.params["base_cmpr_op"]
+    base_cmpr_op = copy.deepcopy(comp_res_op.params["base_cmpr_op"])
     if config is not None:
         _apply_config_precisions_recursive(base_cmpr_op, config)
 
@@ -510,6 +511,7 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
     if base_method.__func__ is not default_method.__func__:
         return _call_symbolic_decomp_func(base_method, comp_res_op, config)
 
+    base_cmpr_op = copy.deepcopy(base_cmpr_op)
     _apply_config_precisions_recursive(base_cmpr_op, config)
     base_decomp = _get_resource_decomposition(base_cmpr_op, config)
     return _apply_symbolic_wrapper(op_type, comp_res_op.params, base_decomp)
