@@ -150,49 +150,37 @@ class Operator2(ABC):
 
     # ----------------- Class variables set automatically --------------------
 
-        inputs = ", ".join(inputs)
-        return f"{self.name}({inputs})"
+    _sig: ClassVar[Signature]
+    """The signature of the operator. Internal use only."""
 
     # ----------------- Instance variables set automatically -----------------
 
-        serialized_hybrid = []
-        for h in self.hybrid_argnames:
-            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
-            ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
-            )
-            serialized_hybrid.append((ser_leaves, tree))
+    _bound_args: BoundArguments
+    """``BoundArguments`` mapping arguments names to their values."""
 
     # ------------------------------------------------------------------------
     # ----------------------------- Initialization ---------------------------
     # ------------------------------------------------------------------------
 
-    def __eq__(self, other) -> bool:
-        return qp.equal(self, other)
+    # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
+    # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
+    __array_priority__ = 1000
 
-    def __copy__(self) -> "Operator2":
-        cls = type(self)
-        copied_op = cls.__new__(cls)
-        for attr, value in vars(self).items():
-            setattr(copied_op, attr, value)
-        return copied_op
+    def __init__(self, *args, **kwargs):
+        # Union[PauliSentence, None]: Representation of the operator as a
+        # pauli sentence, if applicable
+        self._pauli_rep: qp.pauli.PauliSentence | None = None
 
-    def __deepcopy__(self, memo) -> "Operator2":
-        cls = type(self)
-        copied_op = cls.__new__(cls)
+        self._bound_args = self._sig.bind(*args, **kwargs)
+        self._bound_args.apply_defaults()
 
-        # The memo dict maps object ID to object, and is required by
-        # the deepcopy function to keep track of objects it has already
-        # deep copied.
-        memo[id(self)] = copied_op
+        self.__init_wires()
 
-        for attr, value in vars(self).items():
-            setattr(copied_op, attr, deepcopy(value, memo))
-        return copied_op
+        # Broadcasting-related initialization
+        self._batch_size: int | None = _UNSET_BATCH_SIZE
+        self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
-    # ----------------------------------------------------------------------------
-    # ------------------ Private utililities for initialization ------------------
-    # ----------------------------------------------------------------------------
+        self.queue()
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
