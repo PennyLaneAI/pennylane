@@ -109,27 +109,22 @@ params = [
     ("mpi4py_comm", 2),
 ]
 
-
-@pytest.mark.parametrize("backend, num_workers", params)
-def test_perturbation_error(backend, num_workers, mpi4py_support):
+@pytest.mark.parametrize("backend, num_workers, parallel_mode, n_states", params)
+def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4py_support):
     """Test that perturbation_error returns the correct result. This is a precomputed example
     of perturbation theory on a CDF Hamiltonian."""
 
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
-    pf = ProductFormula(list(zip(frag_labels, frag_coeffs)))
-    actual_dict = perturbation_error(
-        pf,
-        fragments,
-        state,
-        order=order,
-        timestep=h,
-        backend=backend,
-        num_workers=num_workers,
+    second_order = ProductFormula(frag_labels, frag_coeffs)
+    states = [state] * n_states
+    max_order, timestep = 3, 1.0
+    errors = perturbation_error(
+        second_order, frags, states, max_order, timestep, num_workers, backend, parallel_mode
     )
 
-    actual = actual_dict[3]
-    expected = 1.4492013019116461e-05j
+    actual = [sum(d.values()) for d in errors]
+    expected = np.array([0.009947958260807521j] * n_states)  # computed using effective_hamiltonian
 
-    assert np.allclose(actual, expected, atol=1e-07)
+    assert np.allclose(actual, expected)
