@@ -23,6 +23,8 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane.core.operator import Operator2
+from pennylane.core.operator.operator2 import StatePrepBase2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -35,7 +37,6 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.operation2 import Operator2, StatePrepBase2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue

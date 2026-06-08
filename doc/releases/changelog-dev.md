@@ -67,7 +67,9 @@
 
   ```
 
-* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit.
+  [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+  [(#9598)](https://github.com/PennyLaneAI/pennylane/pull/9598)
 
   For example, the following circuit creates the state :math:`\sqrt{0.3}|000\rangle + \sqrt{0.7}|001\rangle` in the first three wires when the last wire is measured to be :math:`|1\rangle`.
 
@@ -411,6 +413,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `codecov-action` to `v7`.
+  [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
+
 * :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
   :class:`~.Operation` or calculate them for an :class:`~.Operator2`.
   [(#9569)](https://github.com/PennyLaneAI/pennylane/pull/9569)
@@ -429,6 +434,7 @@
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
+  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
