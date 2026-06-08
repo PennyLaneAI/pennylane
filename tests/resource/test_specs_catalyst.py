@@ -29,7 +29,7 @@ class TestFunctoolsPartial:
 
     @staticmethod
     def _example_qjit():
-        @qp.qjit
+        @qp.qjit(static_argnums=1)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def rx_circuit(x, n_iter):
             for _ in range(n_iter):
@@ -49,6 +49,6 @@ class TestFunctoolsPartial:
         """Partial-wrapped QJIT objects can be inspected at an intermediate level."""
         qjit = self._example_qjit()
         fixed_qjit = partial(qjit, n_iter=3)
-        expected = qp.specs(qjit, level=0)(0.5)
+        expected = qp.specs(qjit, level=0)(0.5, 3)
         result = qp.specs(fixed_qjit, level=0)(0.5)
         assert result.resources.gate_types == expected.resources.gate_types

@@ -232,7 +232,7 @@ class TestFunctoolsPartial:
 
     @staticmethod
     def _example_qjit():
-        @qp.qjit
+        @qp.qjit(static_argnums=1)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def rx_circuit(x, n_iter):
             for _ in range(n_iter):
