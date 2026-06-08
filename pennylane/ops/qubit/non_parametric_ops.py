@@ -29,7 +29,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -45,7 +45,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     qjit_compatible_self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation2 import Operator2
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)

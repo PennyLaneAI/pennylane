@@ -27,7 +27,6 @@ from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation2 import Operator2
 from pennylane.queuing import QueuingManager
 
 from .symbolicop import SymbolicOp
@@ -352,7 +351,7 @@ class Adjoint(SymbolicOp):
 
         """
 
-        if isinstance(base, (Operation, Operator2)):
+        if isinstance(base, Operation):
             # not an observable
             return object.__new__(AdjointOperation)
 
