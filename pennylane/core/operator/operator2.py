@@ -28,7 +28,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, classproperty  # tach-ignore
+from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,6 +44,8 @@ from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
+
+from .base import _UNSET_BATCH_SIZE
 
 
 class Operator2(ABC):
@@ -419,9 +421,10 @@ class Operator2(ABC):
             z (float): exponent for the operator
 
         Returns:
-            list[:class:`~.operation2.Operator2`]
+            list[:class:`~.core.operator.Operator2`]
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -475,7 +478,8 @@ class Operator2(ABC):
         Returns:
             The adjointed operation.
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):

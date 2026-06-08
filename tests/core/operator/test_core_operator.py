@@ -23,7 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operation, Operator, Operator1, StatePrepBase
+from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
@@ -55,7 +55,7 @@ def test_basis_deprecation():
 def test_operator2_isinstance_operator_operation():
     """Test that anything that inherits from Operator2 is an Operator."""
 
-    class NewOp(qp.operation2.Operator2):
+    class NewOp(Operator2):
         """dummy operator2"""
 
         dynamic_argnames = ()
@@ -72,11 +72,12 @@ def test_operator2_isinstance_operator_operation():
 
 
 class TestOperator1:
+    """Test for the Operator1 class."""
 
     def test_operator1_against_new_op(self):
         """Test that Operator1 checks reject new operator interface."""
 
-        class NewOp(qp.operation2.Operator2):
+        class NewOp(Operator2):
             """dummy operator2"""
 
             dynamic_argnames = ()
