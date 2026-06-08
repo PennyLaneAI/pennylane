@@ -333,7 +333,7 @@
   Instead of the following call,
 
   ```python
-  qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)
+  qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)  # doctest: +SKIP
   ```
   
   we would now need to provide the wire labels themselves i.e.

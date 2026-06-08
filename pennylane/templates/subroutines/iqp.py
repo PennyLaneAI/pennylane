@@ -19,7 +19,6 @@ from collections import defaultdict
 from functools import reduce
 
 import numpy as np
-from pennylane.wires import Wires
 
 from pennylane import math
 from pennylane.core.operator import Operation
@@ -31,6 +30,7 @@ from pennylane.decomposition import (
 from pennylane.math import expand_matrix
 from pennylane.ops import Hadamard, MultiRZ, PauliRot, PauliX
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 class IQP(Operation):
