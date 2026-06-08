@@ -45,7 +45,7 @@ def _check_position(position):
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if isinstance(operation, Operator):
+            if isinstance(position, Operator):
                 req_ops = [position]
             else:
                 not_op = True
