@@ -205,7 +205,7 @@ class Operator2(ABC):
     def data(self):
         return tuple(self.dynamic_args.values())
 
-    control_wires = ()
+    control_wires = Wires(())
 
     @property
     def static_args(self) -> dict[str, Any]:
