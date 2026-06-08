@@ -27,10 +27,11 @@ from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qp
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.operation2 import Operator2
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue

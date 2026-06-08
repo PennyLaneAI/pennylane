@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .utils import to_name
 
