@@ -137,6 +137,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Tracker` now has a readable `__repr__` that displays all relevant internals
+  (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
+  [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
+
+  ```pycon
+  >>> tracker = qp.Tracker()
+  >>> tracker.update(a=2, b="b2", c=1)
+  >>> print(tracker)
+  Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
+  
+  ```
+
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
@@ -402,6 +414,10 @@
 * Add `labs` module to our documentation testing workflow.
   [(#9560)](https://github.com/PennyLaneAI/pennylane/pull/9560)
   
+* :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
+  :class:`~.Operation` or calculate them for an :class:`~.Operator2`.
+  [(#9569)](https://github.com/PennyLaneAI/pennylane/pull/9569)
+
 * Adds a new test fixture `preserve_jax_x64` to help automatically restore the `jax.config.jax_enable_x64` to prevent
   accidental context contamination.
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
@@ -413,6 +429,7 @@
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
+  [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -485,6 +502,9 @@
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
+* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
+  [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
@@ -553,6 +573,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
@@ -564,6 +585,7 @@ Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
+David D.W. Ren,
 Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
