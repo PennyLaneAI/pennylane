@@ -510,7 +510,7 @@ class Operator2(ABC):
             new_op._bound_args.arguments[n] = new_wires
 
         if (p_rep := self.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+            new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint: disable=attribute-defined-outside-init
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
