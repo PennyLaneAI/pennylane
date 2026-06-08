@@ -135,7 +135,19 @@ class TestPartialUnaryStatePreparation:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
-        [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (7, 63)],
+        [
+            (3, 1),
+            (3, 2),
+            (3, 3),
+            (4, 3),
+            (4, 15),
+            (5, 4),
+            (5, 21),
+            (7, 63),
+            (8, 32),
+            (12, 128),
+            (14, 16),
+        ],
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""

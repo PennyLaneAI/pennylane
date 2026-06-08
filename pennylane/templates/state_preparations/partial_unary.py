@@ -420,15 +420,15 @@ class PartialUnaryStatePreparation(Operation):
     The preparation circuit looks like this:
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
-    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
-    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─┤ ├State
-    4: ───────────────────────────────────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────├QROM(M1)─├|Ψ⟩─├●────────┤ ├State
-    5: ───────────────────────────────────────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────├QROM(M1)─╰●───╰|Ψ⟩──────┤ ├State
-    6: ───────────────────────────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────┤ ├State
-    7: ───────────────────────────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────├QROM(M1)────────────────┤ ├State
-    8: ───────────────────────────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────╰QROM(M1)────────────────┤ ╰State
+    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
+    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    4: ───────────────────────────────────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●───┤ ├State
+    5: ───────────────────────────────────────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩─┤ ├State
+    6: ───────────────────────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)────────────────┤ ├State
+    7: ───────────────────────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)────────────────┤ ├State
+    8: ───────────────────────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)────────────────┤ ╰State
 
     We can make out the dense state preparation on the subspace wires ``0`` through ``3``, followed
     by the isometry circuit consisting of partial unary iteration circuits and ``CNOT`` blocks.
@@ -452,10 +452,10 @@ class PartialUnaryStatePreparation(Operation):
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 26
-    Total gates: 4834
+    Total gates: 6040
     Gate counts:
     - MultiplexerStatePreparation: 1
-    - BasisState: 1208
+    - BasisState: 2414
     - QROM: 1207
     - C(BasisState): 2414
     - MultiControlledX: 3
@@ -546,7 +546,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     ] += num_entries
 
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
-    resources[embed_rep] += num_entries // main_pui_batch_size + 2
+    resources[embed_rep] += 2 * num_entries // main_pui_batch_size
 
     swap_rep = qp.resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
@@ -586,15 +586,14 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
     wires = Wires(wires)
 
-    last_pui_k = 0
     # Step 2: Apply the inverse of the isometry circuit
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            qp.BasisState(np.bitwise_xor(k_start, last_pui_k), subspace_wires)
-            last_pui_k = k_start
+            qp.BasisState(k_start, subspace_wires)
             b = k - k_start
             qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
+            qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
             control, bits = data
@@ -610,8 +609,6 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
         else:
             raise NotImplementedError
-
-    qp.BasisState(last_pui_k, subspace_wires)
 
 
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
