@@ -428,6 +428,9 @@
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
 
+* Added ``SymbolicOp2``, ``Adjoint2`` that inherit from the new ``Operator2``.
+  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)

@@ -23,10 +23,11 @@ from pennylane.queuing import QueuingManager
 class SymbolicOp2(Operator2, is_baseclass=True):
     """Developer-facing base class for symbolic operators."""
 
-    @property
-    def base(self) -> Operator2:
-        """The base of this symbolic operator."""
-        raise NotImplementedError
+    base: Operator2  # declares the existance of a `base` attribute for static type checking
+
+    wire_argnames = ()  # symbolic ops don't have wire args by default
+
+    hybrid_argnames = ("base",)
 
     @property
     @override

@@ -27,10 +27,6 @@ from .symbolicop2 import SymbolicOp2
 class Adjoint2(SymbolicOp2):
     """The adjoint of an operator."""
 
-    wire_argnames = ()
-
-    hybrid_argnames = ("base",)
-
     def __init__(self, base: Operator2):
         super().__init__(base)
 
