@@ -20,8 +20,8 @@ with preparing a certain state on the qutrit device.
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import StatePrepBase
 from pennylane.exceptions import WireError
-from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires
 

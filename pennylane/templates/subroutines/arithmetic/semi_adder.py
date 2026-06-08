@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike

@@ -25,7 +25,7 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math as pl_math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp

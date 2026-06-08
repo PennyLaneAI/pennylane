@@ -18,6 +18,7 @@ Contains the OutSquare template.
 from collections import defaultdict
 from itertools import combinations
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -26,7 +27,6 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
