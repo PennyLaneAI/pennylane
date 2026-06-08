@@ -67,7 +67,9 @@
 
   ```
 
-* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit. [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit.
+  [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+  [(#9598)](https://github.com/PennyLaneAI/pennylane/pull/9598)
 
   For example, the following circuit creates the state :math:`\sqrt{0.3}|000\rangle + \sqrt{0.7}|001\rangle` in the first three wires when the last wire is measured to be :math:`|1\rangle`.
 
