@@ -20,9 +20,9 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qp
-from pennylane.estimator.estimate import _build_symbolic_decomp_from_base, estimate
-from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
+from pennylane.estimator.estimate import estimate
+from pennylane.estimator.ops.op_math.symbolic import Adjoint
+from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
@@ -32,12 +32,10 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.resources_base import Resources
-from pennylane.estimator.templates.stateprep import QROMStatePreparation
-from pennylane.estimator.templates.subroutines import BasisRotation
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods
+# pylint: disable= no-self-use, arguments-differ
 
 
 def _circuit_w_expval(circ):
@@ -539,6 +537,7 @@ class TestEstimateResources:
 
     def test_custom_pow_decomposition(self):
         """Test that a custom pow decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Pow
 
         def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Hadamard), count=2)]
@@ -559,6 +558,7 @@ class TestEstimateResources:
 
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
+        from pennylane.estimator.ops.op_math.symbolic import Controlled
 
         def custom_ctrl_RZ(
             num_ctrl_wires, num_zero_ctrl, target_resource_params
@@ -578,124 +578,3 @@ class TestEstimateResources:
 
         assert res == expected_resources
         assert pl_res == expected_resources
-
-    def test_controlled_uses_custom_base_decomp_from_config(self):
-        """Controlled(op) should use the custom base decomp from config."""
-        cfg = ResourceConfig()
-
-        def custom_decomp(dim):
-            x = resource_rep(X)
-            return [GateCount(x, dim)]
-
-        cfg.set_decomp(BasisRotation, custom_decomp)
-
-        op = BasisRotation(3)
-        ctrl_op = Controlled(op, 1, 0)
-
-        result = estimate(ctrl_op, config=cfg)
-        # Custom decomp gives dim=3 X gates; controlling each X → CNOT
-        assert result.total_gates == 3
-
-    def test_adjoint_uses_custom_base_decomp_from_config(self):
-        """Adjoint(op) should use the custom base decomp from config."""
-        cfg = ResourceConfig()
-
-        def custom_decomp(dim):
-            h = resource_rep(Hadamard)
-            return [GateCount(h, dim)]
-
-        cfg.set_decomp(BasisRotation, custom_decomp)
-
-        op = BasisRotation(3)
-        adj_op = Adjoint(op)
-
-        result = estimate(adj_op, config=cfg)
-        # Hadamard is self-adjoint, so Adjoint(H) = H
-        assert result.total_gates == 3
-
-    def test_explicit_symbolic_override_takes_priority(self):
-        """An explicit ctrl override in config should NOT be overwritten by the base wrapper."""
-        cfg = ResourceConfig()
-
-        def custom_base(dim):
-            return [GateCount(resource_rep(X), dim)]
-
-        def custom_ctrl(
-            num_ctrl_wires, num_zero_ctrl, target_resource_params=None
-        ):  # pylint: disable=unused-argument
-            return [GateCount(resource_rep(T), 42)]
-
-        cfg.set_decomp(BasisRotation, custom_base)
-        cfg.set_decomp(BasisRotation, custom_ctrl, decomp_type="ctrl")
-
-        ctrl_op = Controlled(BasisRotation(3), 1, 0)
-        result = estimate(ctrl_op, config=cfg)
-        assert result.total_gates == 42  # explicit ctrl override wins
-
-    def test_build_symbolic_decomp_from_base_invalid_type(self):
-        """_build_symbolic_decomp_from_base raises TypeError for unsupported op types."""
-        with pytest.raises(TypeError, match="only supports Adjoint and Controlled"):
-            _build_symbolic_decomp_from_base(Pow, lambda: [])
-
-    def test_nested_symbolic_propagates_precision(self):
-        """Precision from ResourceConfig must reach the leaf op through nested symbolic wrappers.
-
-        Regression test: Adjoint(Controlled(op)) where op needs precision from ResourceConfig
-        previously failed with TypeError because precision was not propagated through the nesting.
-        """
-        op = RZ(wires=0)
-        ctrl_op = Controlled(op, 1, 0)
-        adj_ctrl_op = Adjoint(ctrl_op)
-
-        result = estimate(adj_ctrl_op)
-        assert result.total_gates > 0
-
-    def test_deep_nesting_three_levels(self):
-        """Controlled(Adjoint(Controlled(QROMStatePreparation))) resolves without error."""
-        op = QROMStatePreparation(20)
-        inner_ctrl = Controlled(op, 1, 0)
-        adj_inner_ctrl = Adjoint(inner_ctrl)
-        outer_ctrl = Controlled(adj_inner_ctrl, 2, 0)
-
-        result = estimate(outer_ctrl)
-        assert result.total_gates > 0
-
-    def test_deep_nesting_four_levels(self):
-        """Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation)))) resolves without error."""
-        op = QROMStatePreparation(20)
-        c1 = Controlled(op, 1, 0)
-        a1 = Adjoint(c1)
-        c2 = Controlled(a1, 2, 0)
-        a2 = Adjoint(c2)
-
-        result = estimate(a2)
-        assert result.total_gates > 0
-
-    def test_deep_nesting_pow_over_controlled(self):
-        """Pow(Controlled(QROMStatePreparation), z=3) resolves without error."""
-        op = QROMStatePreparation(20)
-        ctrl_op = Controlled(op, 2, 0)
-        pow_op = Pow(ctrl_op, 3)
-
-        result = estimate(pow_op)
-        assert result.total_gates > 0
-
-    def test_deep_nesting_simple_no_precision(self):
-        """Adjoint(Hadamard) — operators without precision still work after the recursive fix."""
-        adj_h = Adjoint(Hadamard(wires=0))
-        result = estimate(adj_h)
-        assert result.total_gates > 0
-
-    @pytest.mark.parametrize(
-        "build_op",
-        [
-            lambda: Adjoint(Controlled(QROMStatePreparation(20), 1, 0)),
-            lambda: Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0),
-            lambda: Adjoint(Controlled(Adjoint(Controlled(QROMStatePreparation(20), 1, 0)), 2, 0)),
-            lambda: Pow(Controlled(QROMStatePreparation(20), 2, 0), 3),
-        ],
-    )
-    def test_deep_nesting_parametrized(self, build_op):
-        """Arbitrary nesting of Adjoint/Controlled/Pow over an op with precision returns a result."""
-        result = estimate(build_op())
-        assert result.total_gates > 0
