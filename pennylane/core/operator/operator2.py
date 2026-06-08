@@ -28,6 +28,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,7 +45,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, classproperty
+from .base import _UNSET_BATCH_SIZE
 
 
 class Operator2(ABC):
