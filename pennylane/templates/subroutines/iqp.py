@@ -19,6 +19,7 @@ from collections import defaultdict
 from functools import reduce
 
 import numpy as np
+from pennylane.wires import Wires
 
 from pennylane import math
 from pennylane.core.operator import Operation
@@ -98,6 +99,7 @@ class IQP(Operation):
                 f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
             )
 
+        wires = Wires(wires)
         num_wires = len(wires)
 
         if num_wires == 0:
