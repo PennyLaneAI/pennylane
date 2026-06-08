@@ -2,6 +2,8 @@ import pennylane as qp
 import catalyst
 from jax import numpy as jnp
 
+
+
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
     _measurement_qrom_count_TemporaryAnd,
@@ -18,11 +20,24 @@ gate_set = {
     qp.Z,
     qp.CNOT,
     qp.PauliX,
+    qp.T,
+    qp.S,
+    'Adjoint(T)',
+    'Adjoint(S)',
     qp.PauliY,
     qp.PauliZ,
     qp.Hadamard,
     qp.GlobalPhase,
     PauliMeasure,
+    qp.PauliRot,
+    "Cond",
+    "WhileLoop",
+    "ForLoop",
+    "Switch",
+    "HybridAdjoint",
+    "Snapshot",
+    "HybridCtrl"
+    "Measure"
 }
 
 p = [("my_pipe", ["quantum-compilation-stage"])]
@@ -68,11 +83,11 @@ def _adj_tempAND_rule(base, wires):
     m = qp.measure(wires[2])
     qp.cond(m, qp.CZ)(wires[:2])
 
-rango = range(2, 8)
+rango = range(2, 7)
 for j in rango:
     L = 2**j
     rng = np.random.default_rng(42 + L)
-    n_target = 3
+    n_target = 20
     n_input = math.ceil(math.log2(L))
     n_work = n_input
 
@@ -90,20 +105,19 @@ for j in rango:
 
     qp.decomposition.enable_graph()
 
-    @qp.qjit(pipelines=p, target="mlir", capture = False, autograph=True)
+    @qp.qjit(pipelines=p, target="mlir", capture = False, autograph=False)
     #@catalyst.passes.ppm_compilation
     @qp.transforms.ppr_to_ppm
     @qp.transforms.to_ppr
-    @qp.decompose(gate_set=gate_set, fixed_decomps={
-    qp.TemporaryAND: _tempAND_rule,
-    "Adjoint(TemporaryAND)": _adj_tempAND_rule
-}) #, fixed_decomps={qp.QROM: _qrom_measurement_decomposition})
+    @catalyst.device.decomposition.catalyst_decompose(target_gates=gate_set, capabilities=None, fixed_decomps={
+        qp.QROM: _qrom_measurement_decomposition
+    }) #, })
     @qp.qnode(dev)
     def circuit():
 
-        #qp.QROM(
+        qp.QROM(
         #_qrom_decomposition(
-        _qrom_measurement_decomposition(
+        #_qrom_measurement_decomposition(
             data=bitstrings,
             control_wires=control_wires,
             target_wires=target_wires,
@@ -113,13 +127,13 @@ for j in rango:
 
         return qp.probs(wires=control_wires)
 
-    #print(circuit())
-    ppm_specs = catalyst.passes.ppm_specs(circuit)
-    results.append(ppm_specs['circuit_0']['num_of_ppm'])
+    #print(circuit.mlir)
+    print(qp.specs(circuit, level='all-mlir')())
+    # results.append(ppm_specs['circuit_0']['num_of_ppm'])
     #print(qp.draw(circuit)())
     #print(circuit.mlir_opt)
 
 import matplotlib.pyplot as plt
 
-plt.plot(rango, results)
-plt.show()
+# plt.plot(results)
+# plt.show()

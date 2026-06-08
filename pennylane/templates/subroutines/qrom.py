@@ -611,7 +611,7 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
             if cv == 0:
                 X(wires=wire)
 
-    cond(m1 == 1, CZ)(wires=ctrl_wires)
+    cond(m1, CZ)(wires=ctrl_wires)
 
     if control_values is not None:
         for wire, cv in zip(ctrl_wires, control_values):
@@ -619,10 +619,10 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
                 X(wires=wire)
 
     m2 = pauli_measure("Z", [work_wire])
-    cond(m2 == 1, X)(wires=work_wire)
+    cond(m2, X)(wires=work_wire)
     for wire, bit in zip(targets, product):
         if bit == 1:
-            cond(m2 == 1, X)(wires=wire)
+            cond(m2, X)(wires=wire)
 
 
 def _measurement_qrom_inner(controls, targets, bitstrings, k):
