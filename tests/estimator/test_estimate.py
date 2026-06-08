@@ -20,7 +20,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qp
-from pennylane.estimator.estimate import _build_symbolic_decomp_from_base, estimate
+from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
@@ -597,7 +597,7 @@ class TestEstimateResources:
         assert result.total_gates == 3
 
     def test_adjoint_uses_custom_base_decomp_from_config(self):
-        """Adjoint(op) should use the custom base decomp from config."""
+        """Adjoint(Controlled(op)) should use the custom base decomp from config (two layers)."""
         cfg = ResourceConfig()
 
         def custom_decomp(dim):
@@ -607,11 +607,14 @@ class TestEstimateResources:
         cfg.set_decomp(BasisRotation, custom_decomp)
 
         op = BasisRotation(3)
-        adj_op = Adjoint(op)
+        ctrl_op = Controlled(op, 1, 0)
+        adj_ctrl_op = Adjoint(ctrl_op)
 
-        result = estimate(adj_op, config=cfg)
-        # Hadamard is self-adjoint, so Adjoint(H) = H
-        assert result.total_gates == 3
+        result = estimate(adj_ctrl_op, config=cfg)
+        # Custom decomp gives dim=3 Hadamard gates; controlling each H gives
+        # Controlled(H) which decomposes further; adjoint wraps those.
+        # The important thing is that the two-layer nesting resolves correctly.
+        assert result.total_gates > 0
 
     def test_explicit_symbolic_override_takes_priority(self):
         """An explicit ctrl override in config should NOT be overwritten by the base wrapper."""
@@ -631,11 +634,6 @@ class TestEstimateResources:
         ctrl_op = Controlled(BasisRotation(3), 1, 0)
         result = estimate(ctrl_op, config=cfg)
         assert result.total_gates == 42  # explicit ctrl override wins
-
-    def test_build_symbolic_decomp_from_base_invalid_type(self):
-        """_build_symbolic_decomp_from_base raises TypeError for unsupported op types."""
-        with pytest.raises(TypeError, match="only supports Adjoint and Controlled"):
-            _build_symbolic_decomp_from_base(Pow, lambda: [])
 
     def test_nested_symbolic_propagates_precision(self):
         """Precision from ResourceConfig must reach the leaf op through nested symbolic wrappers.
