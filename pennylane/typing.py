@@ -139,17 +139,22 @@ class AbstractArray:
     Args:
         shape (tuple(int | types.EllipsisType)): the dimensions of the array.
             ``()`` corresponds to a scalar, and ``...`` corresponds to an unknown dimension.
-        dtype (type): the data type of the array
+        dtype (type): the data type of the array. Can either be a ``builtin`` like
+            ``float`` or ``int``, or a numpy dtype like ``np.complex64``.
 
+    >>> from pennylane.typing import AbstractArray
+    >>> AbstractArray((4, 2), float)
+    AbstractArray(shape=(4, 2), dtype=dtype('float64'))
 
     Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
 
-    >>> Int32[..., 2]
+    >>> aa = AbstractArray((..., 2), np.int32)
+    >>> aa
     AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
 
     ``AbstractArray``'s can be used together with ``isinstance`` checks:
 
-    >>> isinstance(np.ones((4,2), np.int32), Int32[..., 2])
+    >>> isinstance(np.ones((4,2), np.int32), aa)
     True
 
     """
