@@ -769,6 +769,37 @@ class TestUnaryIterator:
 
         assert len(q) == 0
 
+    def test_with_few_ops(self, partial):
+        """Test that the unary iterator is correct when there are only a few operators compared to
+        the maximal capacity of the iterator."""
+
+        control = list(range(5))
+        work = list(range(5, 9))
+        ops = [qp.RY(0.1 * 2**i, 9) for i in range(4)]
+        if partial:
+            state = np.random.random(2**3) + 1j * np.random.random(2**3)
+            state /= np.linalg.norm(state)
+            state_prep_wires = [3, 4, 9]
+        else:
+            state = np.random.random(2**6) + 1j * np.random.random(2**6)
+            state /= np.linalg.norm(state)
+            state_prep_wires = control + [9]
+
+        @qp.qnode(qp.device("lightning.qubit"))
+        def node():
+            qp.StatePrep(state, wires=state_prep_wires)
+            _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
+            for i, op in enumerate(ops):
+                cvals = (i >> np.arange(4, -1, -1)) & 1
+                qp.ctrl(qp.adjoint(op), control=control, control_values=cvals)
+            qp.adjoint(qp.StatePrep)(state, wires=state_prep_wires)
+            return qp.probs(list(range(10)))
+
+        probs = node()
+        exp_probs = np.zeros(2**10)
+        exp_probs[0] = 1.0
+        assert np.allclose(exp_probs, probs)
+
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops, partial):
         """Test that the unary iterator is correct by asserting that the identity

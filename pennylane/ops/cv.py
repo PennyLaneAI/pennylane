@@ -41,7 +41,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane import math
-from pennylane.operation import CVObservable, CVOperation
+from pennylane.core.operator import CVObservable, CVOperation
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 

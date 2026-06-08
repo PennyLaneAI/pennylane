@@ -23,7 +23,7 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane import math, ops
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Conditional, MidMeasure
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3

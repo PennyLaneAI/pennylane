@@ -24,7 +24,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qp
-from pennylane.operation import Operation, Operator
+from pennylane.core.operator import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 

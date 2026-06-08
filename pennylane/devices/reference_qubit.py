@@ -19,7 +19,7 @@ and plugin development purposes.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.tape import QuantumScript
 from pennylane.transforms import (
     broadcast_expand,
