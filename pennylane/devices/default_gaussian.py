@@ -637,7 +637,7 @@ class DefaultGaussian(Device):
     r"""Default Gaussian device for PennyLane.
 
     .. warning::
-    
+
         This device may not work as expected with recent versions of PennyLane.
 
     Args:
