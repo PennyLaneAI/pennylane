@@ -35,7 +35,7 @@ from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
 class SignedOutSquare(Operation):
     r"""Performs out-of-place squaring of a signed integer.
 
-    This operator performs the squaring of a signed integer :math:`x` in two's complement
+    This operator performs the squaring of a signed integer :math:`x` in 2s complement
     convention into an unsigned register. The computation is modulo :math:`2^m`,
     where ``m=len(output_wires)``:
 
@@ -43,6 +43,20 @@ class SignedOutSquare(Operation):
         \text{SignedOutSquare} |x \rangle |b \rangle = |x \rangle |(b + x^2) \; \text{mod} \; 2^m \rangle,
 
     .. seealso:: :class:`~.OutSquare` and :class:`~.OutMultiplier`.
+
+    The input is given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__.
+    Specifically, the value :math:`x` is encoded in big-endian 2s complement. Wire
+    :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
+    for a register of length :math:`n`. For example, the value :math:`x=-5` encoded by a bitstring
+    of length six is given by
+
+    .. math::
+
+        -5 = -32 + 16 + 8 + 2 + 1 = -2^{n-1} + 2^{n-2} + 2^{n-3} + 2^{n-5} + 2^{n-6} = (111011)_{\text{2s compl}}.
+
+    The first bit of each encoded bitstring gives the sign of the encoded number.
+    :math:`1 \mapsto -`, :math:`0 \mapsto +`. This is however not a sign-magnitude encoding. Iff
+    the encoded number is negative, the rest of the bits do not give the magnitude.
 
     Args:
         x_wires (WiresLike): wires that store the integer :math:`x`.
@@ -58,7 +72,7 @@ class SignedOutSquare(Operation):
 
     **Example**
 
-    Let's compute the square of :math:`x=-5` and :math:`x=7` in superposition, added to :math`b=5`
+    Let's compute the square of :math:`x=-5` and :math:`x=7` in superposition, added to :math:`b=5`
     modulo :math:`2^n=2^6=64`.
 
     .. code-block:: python
@@ -74,11 +88,11 @@ class SignedOutSquare(Operation):
         @qp.qnode(dev, shots=1_000)
         def circuit(output_wires):
             # Create a uniform superposition between integers -5 and 7:
-            # - Create superposition between -8 and 0
+            # - Create superposition between -8=(1000)_{2s compl} and 0=(0000)_{2s compl}
             qp.H(x_wires[0])
             # - Flip 4's bit if sign bit=0 (=> superposition of -8 and 4)
             qp.ctrl(qp.X(x_wires[1]), x_wires[0], control_values=[0])
-            # - Add 3 (=> superposition of -5 and 7)
+            # - Add 3 (x_wires[2:] are zeroed, can just do bit flips) => superposition of -5 and 7
             qp.BasisEmbedding(3, wires=x_wires[2:])
             # Prepare initial state on output wires
             qp.BasisEmbedding(5, wires=output_wires)
@@ -116,8 +130,8 @@ class SignedOutSquare(Operation):
 
         We compute the square of the signed input register in three steps. First, note that
         :math:`x=x_u-2^{n-1}x_s`, where :math:`x_u` is the unsigned part of :math:`x`
-        and :math:`x_s` is the sign bit. As example, consider the bit string
-        :math:`(1101)_{\text{2's compl}}=(101)_2 - 2^3 = 5-8=-3`. We have :math:`x_u=5`
+        and :math:`x_s` is the sign bit. As an example, consider the bit string
+        :math:`(1101)_{\text{2s compl}}=(101)_2 - 2^3 = 5-8=-3`. We have :math:`x_u=5`
         and :math:`x_s=1`.
 
         Consider the binomial expansion of :math:`x^2`:
@@ -134,11 +148,71 @@ class SignedOutSquare(Operation):
             x^2 = x_u^2 + x_s 2^n (2^{n-1}-x_u) - x_s 2^{2n-2}
 
         The three steps in our calculation directly correspond to these three terms. That is,
-        we first compute the square of :math:`x_u` into the output register, then we add
-        :math:`2^n(2^{n-1}-x_u)`, controlled on the sign bit :math:`x_s`. For this, we simply
-        combine some simple bit flips with a controlled :class:`~.SemiAdder`. Finally, we subtract
-        :math:`x_s 2^{2n-2}` from the output, by wrapping an
+        we first compute the square of :math:`x_u` into the output register, shown here for
+        three input and 7 output wires.
+
+        .. code-block:: pycon
+
+                ╭ 0: ────────────
+              x ┤ 1: ─╭OutSquare─
+                ╰ 2: ─├OutSquare─
+                ╭ 3: ─├OutSquare─
+                │ 4: ─├OutSquare─
+                │ 5: ─├OutSquare─
+              y ┤ 6: ─├OutSquare─
+                │ 7: ─├OutSquare─
+                │ 8: ─├OutSquare─
+                │ 9: ─├OutSquare─
+                ╰10: ─├OutSquare─
+                ╭11: ─├OutSquare─
+                │12: ─├OutSquare─
+            aux ┤13: ─├OutSquare─
+                │14: ─├OutSquare─
+                ╰15: ─╰OutSquare─
+
+        Then we add :math:`2^n(2^{n-1}-x_u)`, controlled on the sign bit :math:`x_s`. For this,
+        we simply combine some simple bit flips with a controlled :class:`~.SemiAdder`. In our
+        example from above we obtain:
+
+        .. code-block:: pycon
+
+                ╭ 0: ───────────────────────╭●────────╭●──────────────╭●──────
+              x ┤ 1: ─|Ψ⟩───────╭X────╭●────│──────●╮─├●────╭X────────│───|Ψ⟩─
+                ╰ 2: ─────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────
+                ╭ 3: ─────│─────│─────│─────│───────│─│─────│───────│─│───────
+                │ 4: ─────│─────│─────│─────├X──────│─│─────│───────│─│───X───
+                │ 5: ─────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│───X───
+              y ┤ 6: ─X───├●────│──│──│─────│───────│────│──│──────●┤─╰X──X───
+                │ 7: ─────│─────│──│──│─────│───────│────│──│───────│─────────
+                │ 8: ─────│─────│──│──│─────│───────│────│──│───────│─────────
+                │ 9: ─────│─────│──│──│─────│───────│────│──│───────│─────────
+                ╰10: ─────│─────│──│──╰⊕─╭X─╰●─╭X──⊕╯────│──│───────│─────────
+            aux  11: ─────╰⊕──X─╰●─╰●────╰●────╰●────────╰●─╰●──X──⊕╯─────────
+
+        Finally, we subtract :math:`x_s 2^{2n-2}` from the output, by wrapping an
         adder onto the most significant bits in bit flips of the same output subregister.
+
+        Overall, we arrive at the following decomposition:
+
+        >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
+        >>> rule = qp.list_decomps(op)["signed_square_from_unsigned_square"]
+        >>> print(qp.draw(rule)(**op.hyperparameters))
+         0: ───────────────────────────────────╭●────────╭●──────────────╭●──────╭SemiAdder────┤
+         1: ─╭OutSquare──|Ψ⟩───────╭X────╭●────│──────●╮─├●────╭X────────│───|Ψ⟩─│─────────────┤
+         2: ─├OutSquare──────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────│─────────────┤
+         3: ─├OutSquare──────│─────│─────│─────│───────│─│─────│───────│─│───────│─────────────┤
+         4: ─├OutSquare──────│─────│─────│─────├X──────│─│─────│───────│─│───X───├SemiAdder──X─┤
+         5: ─├OutSquare──────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│───X───├SemiAdder──X─┤
+         6: ─├OutSquare──X───├●────│──│──│─────│───────│────│──│──────●┤─╰X──X───│─────────────┤
+         7: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
+         8: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
+         9: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
+        10: ─├OutSquare──────│─────│──│──╰⊕─╭X─╰●─╭X──⊕╯────│──│───────│─────────├SemiAdder────┤
+        11: ─├OutSquare──────╰⊕──X─╰●─╰●────╰●────╰●────────╰●─╰●──X──⊕╯─────────├SemiAdder────┤
+        12: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
+        13: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
+        14: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
+        15: ─╰OutSquare──────────────────────────────────────────────────────────╰SemiAdder────┤
 
     """
 
@@ -295,11 +369,10 @@ def _signed_out_square_resources(
     m = num_output_wires
     resources = defaultdict(int)
 
-    size = min(m, 2 * n - 2) if output_wires_zeroed else m
     square_rep = resource_rep(
         OutSquare,
         num_x_wires=n - 1,
-        num_output_wires=size,
+        num_output_wires=num_output_wires,
         num_work_wires=num_work_wires,
         output_wires_zeroed=output_wires_zeroed,
     )
@@ -324,7 +397,7 @@ def _signed_out_square_resources(
     return dict(resources)
 
 
-@register_resources(_signed_out_square_resources)
+@register_resources(_signed_out_square_resources, name="signed_square_from_unsigned_square")
 def _signed_out_square(
     x_wires: WiresLike,
     output_wires: WiresLike,
