@@ -23,7 +23,7 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator.base2 import Operator2
+from pennylane.core.operatorimport Operator2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
