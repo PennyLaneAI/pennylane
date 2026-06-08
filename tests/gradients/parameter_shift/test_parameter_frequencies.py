@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from pennylane import gradients, math
-from pennylane.core.operator.base2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.exceptions import ParameterFrequenciesUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops import Exp, Hermitian, PauliZ
