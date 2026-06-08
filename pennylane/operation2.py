@@ -205,6 +205,8 @@ class Operator2(ABC):
     def data(self):
         return tuple(self.dynamic_args.values())
 
+    control_wires = ()
+
     @property
     def static_args(self) -> dict[str, Any]:
         """Dictionary mapping static argument names to their values."""

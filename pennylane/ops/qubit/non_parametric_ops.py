@@ -407,7 +407,9 @@ class PauliX(Operator2):
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
@@ -697,7 +699,9 @@ class PauliY(Operator2):
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
@@ -958,7 +962,9 @@ class PauliZ(Operator2):
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
