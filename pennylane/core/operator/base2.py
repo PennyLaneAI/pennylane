@@ -1196,17 +1196,6 @@ class Operator2(ABC):
             self._batch_size = first_dims[0]
 
 
-def _dynamic_property(self: Operator2, name: str) -> Any:
-    """Dynamic property for an argument called ``name``."""
-    # pylint: disable=protected-access
-    if "_bound_args" in vars(self) and name in self._bound_args.arguments:
-        return self._bound_args.arguments[name]
-
-    raise AttributeError(
-        f"'{type(self).__name__}' object has no attribute '{name}'."
-    )  # pragma: no cover
-
-
 # ------------------------------------------------------------------------------
 # ------------------------------ Helper functions ------------------------------
 # ------------------------------------------------------------------------------
@@ -1219,6 +1208,17 @@ def _add_dynamic_properties(cls: type[Operator2]) -> None:
         if not hasattr(cls, name):
             dyn_property = partial(_dynamic_property, name=name)
             setattr(cls, name, property(dyn_property))
+
+
+def _dynamic_property(self: Operator2, name: str) -> Any:
+    """Dynamic property for an argument called ``name``."""
+    # pylint: disable=protected-access
+    if "_bound_args" in vars(self) and name in self._bound_args.arguments:
+        return self._bound_args.arguments[name]
+
+    raise AttributeError(
+        f"'{type(self).__name__}' object has no attribute '{name}'."
+    )  # pragma: no cover
 
 
 def _format_label_arg(x, decimals, cache):
