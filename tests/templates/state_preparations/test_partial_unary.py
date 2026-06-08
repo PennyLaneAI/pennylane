@@ -141,8 +141,9 @@ class TestPartialUnaryStatePreparation:
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
+        needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:
-            num_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
+            num_work_wires = needed_work_wires
         else:
             num_work_wires = 0
 
@@ -156,12 +157,11 @@ class TestPartialUnaryStatePreparation:
             if not applicable:
                 continue
 
-            @qp.qnode(qp.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit", wires=num_wires + needed_work_wires))
             @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
             def func():
                 # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
-                qp.Identity(range(num_wires))
                 rule(coefficients, wires=range(num_wires), indices=indices, work_wires=work_wires)
                 return qp.state()
 
