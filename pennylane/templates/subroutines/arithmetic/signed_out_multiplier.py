@@ -47,10 +47,10 @@ class SignedOutMultiplier(Operator):
     Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + xy) \mod 2^{|z|}\rangle`.
 
     The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. 
-    The values :math:`x`, :math:`y` and :math:`z` are encoded in big-endian 2s complement. Wire :math:`0`
-    stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}` for a register of
-    length :math:`n`. For example, the value :math:`x` encoded by a bitstring :math:`x_0 x_1\dots x_{n-1}`
-    is given by the following.
+    Specifically, the values :math:`x`, :math:`y` and :math:`z` are encoded in big-endian 2s complement.
+    Wire :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
+    for a register of length :math:`n`. For example, the value :math:`x` encoded by a bitstring
+    :math:`x_0 x_1\dots x_{n-1}` is given by the following.
 
     .. math::
         \begin{align}

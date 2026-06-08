@@ -45,90 +45,94 @@ class Incrementer(Operator):
         wires (Wires): The wires that the incrementer acts on.
         work_wires (Wires): The auxiliary wires that the incrementer may use in its decomposition.
 
-    We use a left elbow ladder together with a :class:`~.CNOT` + right :class:`~.TemporaryAND` uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via :class:`~.MultiControlledX` gates if
-    work wires are available.
+    .. details::
+        :title: Decomposition
+        :href: decomposition
 
-    Generic decomposition:
+        We use a left elbow ladder together with a :class:`~.CNOT` + right :class:`~.TemporaryAND` uncompute ladder.
+        This is a manually reduced decomposition of the standard incrementer via :class:`~.MultiControlledX` gates if
+        work wires are available.
 
-    .. code-block::
+        Generic decomposition:
 
-        0: ─╭X────────────────┤
-        1: ─├●─╭X─────────────┤
-        2: ─├●─├●─╭X──────────┤
-        3: ─├●─├●─├●─╭X───────┤
-        4: ─├●─├●─├●─├●─╭X────┤
-        5: ─╰●─╰●─╰●─╰●─╰●──X─┤
+        .. code-block::
 
-    Decompose all MCX gates into elbows and CNOTs:
+            0: ─╭X────────────────┤
+            1: ─├●─╭X─────────────┤
+            2: ─├●─├●─╭X──────────┤
+            3: ─├●─├●─├●─╭X───────┤
+            4: ─├●─├●─├●─├●─╭X────┤
+            5: ─╰●─╰●─╰●─╰●─╰●──X─┤
 
-    .. code-block::
+        Decompose all MCX gates into elbows and CNOTs:
 
-        0   : ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
-        1   : ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
-        2   : ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
-        3   : ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
-        4   : ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
-        5   : ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-        aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-        aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-        aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-        aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
+        .. code-block::
 
-    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
+            0   : ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
+            1   : ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
+            2   : ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
+            3   : ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
+            4   : ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
+            5   : ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
+            aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
+            aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
+            aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
+            aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
 
-    .. code-block::
+        Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
 
-        0   : ─────────────╭X───────────────────────────────┤
-        1   : ──────────╭●─│───●╮─╭X────────────────────────┤
-        2   : ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
-        3   : ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
-        4   : ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
-        5   : ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-        aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-        aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-        aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-        aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
+        .. code-block::
 
-    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
-    This circuit is derived, e.g., in
-    `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
-    see "Incrementer from n-2 Zeroed bits".
+            0   : ─────────────╭X───────────────────────────────┤
+            1   : ──────────╭●─│───●╮─╭X────────────────────────┤
+            2   : ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
+            3   : ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
+            4   : ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
+            5   : ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
+            aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
+            aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
+            aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
+            aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
 
-    The ``Controlled(Incrementer)`` decomposition provided is a similar decomposition to the default,
-    except that there is no ``X`` gate at the end of the circuit, and the ``MultiControlledX`` gates have one
-    additional control. It is therefore 'cut-off', and we can follow the same logic as the default
-    decomposition, excluding only the trivial X which is not decomposed into elbows and CNOTs
-    or cancelled in any case.
+        We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
+        This circuit is derived, e.g., in
+        `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
+        see "Incrementer from n-2 Zeroed bits".
 
-    Generic decomposition:
+        The ``Controlled(Incrementer)`` decomposition provided is a similar decomposition to the default,
+        except that there is no ``X`` gate at the end of the circuit, and the ``MultiControlledX`` gates have one
+        additional control. It is therefore 'cut-off', and we can follow the same logic as the default
+        decomposition, excluding only the trivial X which is not decomposed into elbows and CNOTs
+        or cancelled in any case.
 
-    .. code-block::
+        Generic decomposition:
 
-        0: ─╭X────────────────┤
-        1: ─├●─╭X─────────────┤
-        2: ─├●─├●─╭X──────────┤
-        3: ─├●─├●─├●─╭X───────┤
-        4: ─├●─├●─├●─├●─╭X────┤
-        5: ─├●─├●─├●─├●─├●─╭X─┤
-        6: ─╰●─╰●─╰●─╰●─╰●─╰●─┤
+        .. code-block::
 
-    Optimized controlled decomposition:
+            0: ─╭X────────────────┤
+            1: ─├●─╭X─────────────┤
+            2: ─├●─├●─╭X──────────┤
+            3: ─├●─├●─├●─╭X───────┤
+            4: ─├●─├●─├●─├●─╭X────┤
+            5: ─├●─├●─├●─├●─├●─╭X─┤
+            6: ─╰●─╰●─╰●─╰●─╰●─╰●─┤
 
-    .. code-block::
+        Optimized controlled decomposition (controlled on wire 12):
 
-        0 : ────────────────╭X────────────────────────────────────┤
-        1 : ─────────────╭●─│───●╮─╭X─────────────────────────────┤
-        2 : ──────────╭●─│──│────│─│───●╮─╭X──────────────────────┤
-        3 : ───────╭●─│──│──│────│─│────│─│───●╮─╭X───────────────┤
-        4 : ────╭●─│──│──│──│────│─│────│─│────│─│───●╮─╭X────────┤
-        5 : ─╭●─│──│──│──│──│────│─│────│─│────│─│────│─│───●╮─╭X─┤
-        6 : ─├⊕─├●─│──│──│──│────│─│────│─│────│─│───●┤─╰●──⊕┤─│──┤
-        7 : ─│──╰⊕─├●─│──│──│────│─│────│─│───●┤─╰●──⊕╯──────│─│──┤
-        8 : ─│─────╰⊕─├●─│──│────│─│───●┤─╰●──⊕╯─────────────│─│──┤
-        9 : ─│────────╰⊕─├●─│───●┤─╰●──⊕╯────────────────────│─│──┤
-        10: ─│───────────╰⊕─╰●──⊕╯───────────────────────────│─│──┤
-        12: ─╰●─────────────────────────────────────────────●╯─╰●─┤
+        .. code-block::
+
+            0   : ────────────────╭X────────────────────────────────────┤
+            1   : ─────────────╭●─│───●╮─╭X─────────────────────────────┤
+            2   : ──────────╭●─│──│────│─│───●╮─╭X──────────────────────┤
+            3   : ───────╭●─│──│──│────│─│────│─│───●╮─╭X───────────────┤
+            4   : ────╭●─│──│──│──│────│─│────│─│────│─│───●╮─╭X────────┤
+            5   : ─╭●─│──│──│──│──│────│─│────│─│────│─│────│─│───●╮─╭X─┤
+            aux1: ─├⊕─├●─│──│──│──│────│─│────│─│────│─│───●┤─╰●──⊕┤─│──┤
+            aux2: ─│──╰⊕─├●─│──│──│────│─│────│─│───●┤─╰●──⊕╯──────│─│──┤
+            aux3: ─│─────╰⊕─├●─│──│────│─│───●┤─╰●──⊕╯─────────────│─│──┤
+            aux4: ─│────────╰⊕─├●─│───●┤─╰●──⊕╯────────────────────│─│──┤
+            aux5: ─│───────────╰⊕─╰●──⊕╯───────────────────────────│─│──┤
+            12  : ─╰●─────────────────────────────────────────────●╯─╰●─┤
 
     """
 
