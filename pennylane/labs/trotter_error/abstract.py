@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fragment class"""
+"""The abstract Fragment class that defines the API for Trotter error computations"""
 
 from __future__ import annotations
 
@@ -62,6 +62,7 @@ class Fragment(ABC):
         raise NotImplementedError
 
     def commutator(self, other: Fragment) -> Fragment:
+        """Evaluates the commutator [A, B] = AB - BA of two fragments"""
         return self @ other - other @ self
 
     @abstractmethod

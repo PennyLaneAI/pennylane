@@ -322,7 +322,9 @@ def _separate_by_order(d: Dict[ASTNode, float], max_order: int) -> List[Dict[AST
     return ret
 
 
-def is_mergeable(node1: ASTNode, node2: ASTNode, k: int):
+def is_mergeable(
+    node1: ASTNode, node2: ASTNode, k: int
+):  # pylint: disable=too-many-return-statements
     """
     Check if two nodes are mergeable at index k.
 

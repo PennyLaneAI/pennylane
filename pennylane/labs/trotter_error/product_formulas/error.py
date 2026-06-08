@@ -128,6 +128,7 @@ class ImportanceConfig:
     history: bool = False
 
 
+# pylint: disable=too-many-branches
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],

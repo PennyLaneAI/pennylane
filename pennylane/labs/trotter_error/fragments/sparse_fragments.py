@@ -115,6 +115,8 @@ class SparseFragment(Fragment):
         return complex(result.toarray().flatten()[0])
 
     def norm(self, params: Dict = None) -> float:
+        """Returns the norm computed by SciPy"""
+
         if params is None:
             params = {}
 

@@ -256,8 +256,8 @@ def test_bilinear_expansion_complex():
     }
 
     assert result.keys() == expected_result.keys()
-    for key in expected_result:
-        assert result[key] == expected_result[key]
+    for key, val in expected_result.items():
+        assert result[key] == val
 
 
 def test_bilinear_expansion_nested_structure():
@@ -299,8 +299,8 @@ def test_bilinear_expansion_nested_structure():
     }
 
     assert result.keys() == expected_result.keys()
-    for key in expected_result:
-        assert result[key] == expected_result[key]
+    for key, val in expected_result.items():
+        assert result[key] == val
 
 
 def test_is_tree_isomorphic():

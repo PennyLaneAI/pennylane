@@ -11,6 +11,71 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+This module contains tools for estimating the Trotter
+error of product formulas used in Hamiltonian simulation.
+
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+
+Abstract Base Classes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.trotter_error
+
+.. autosummary::
+    :toctree: api
+
+    ~AbstractState
+    ~Fragment
+
+Fragments
+~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.trotter_error
+
+.. autosummary::
+    :toctree: api
+
+    ~NumpyFragment
+    ~NumpyState
+    ~sparse_fragments
+    ~vibrational_fragments
+    ~vibronic_fragments
+
+Product Formulas
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.trotter_error
+
+.. autosummary::
+    :toctree: api
+
+    ~ProductFormula
+    ~ImportanceConfig
+    ~bch_expansion
+    ~effective_hamiltonian
+    ~perturbation_error
+
+Realspace Representations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.trotter_error
+
+.. autosummary::
+    :toctree: api
+
+    ~HOState
+    ~VibronicHO
+    ~RealspaceCoeffs
+    ~RealspaceMatrix
+    ~RealspaceOperator
+    ~RealspaceSum
+
+"""
 
 from .abstract import AbstractState, Fragment
 from .fragments import (

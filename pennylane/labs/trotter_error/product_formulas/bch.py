@@ -135,7 +135,7 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> Dict[
         Path(__file__).parent / "sbch.csv" if symmetric else Path(__file__).parent / "bch.csv"
     )
 
-    with open(filepath, "r") as csv_file:
+    with open(filepath, "r", encoding="utf-8") as csv_file:
         bch_reader = csv.reader(csv_file)
 
         next(bch_reader)
@@ -207,14 +207,10 @@ def _group_terms(d: Dict[ASTNode, float], max_order: int) -> Dict[ASTNode, float
         for k in range(max_order):
             merged = set()
             for comm1 in unmerged:
-                is_merged = False
-                for comm2 in merged:
-                    if is_mergeable(comm1, comm2, k):
-                        new_comm = merge(comm1, comm2, k)
-                        is_merged = True
-                        break
+                comm2 = next((c for c in merged if is_mergeable(comm1, c, k)), None)
 
-                if is_merged:
+                if comm2 is not None:
+                    new_comm = merge(comm1, comm2, k)
                     merged.add(new_comm)
                     merged.remove(comm2)
                 else:

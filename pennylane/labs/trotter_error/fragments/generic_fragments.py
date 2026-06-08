@@ -21,6 +21,8 @@ from pennylane.labs.trotter_error import AbstractState, Fragment
 
 
 class NumpyFragment(Fragment):
+    """Wrappper class for NumPy arrays"""
+
     def __init__(self, fragment: ArrayLike):
         self.fragment = fragment
 
