@@ -17,10 +17,14 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
-from pennylane.estimator.ops.op_math.symbolic import (
-    Adjoint, Controlled, Pow, apply_adj, apply_controlled,
-)
 from pennylane.estimator.ops import X
+from pennylane.estimator.ops.op_math.symbolic import (
+    Adjoint,
+    Controlled,
+    Pow,
+    apply_adj,
+    apply_controlled,
+)
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -416,42 +420,15 @@ def _resources_from_pl_ops(
     )
 
 
-# def _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs):
-#     """Get resource decomposition for symbolic operators."""
-#     base_cmpr_op = params.pop("base_cmpr_op")
+def _update_params_from_config(comp_res_op, config):
 
-#     target_params = base_cmpr_op.params.copy()
-#     for k, v in filtered_kwargs.items():
-#         if k in target_params and target_params[k] is None:
-#             target_params[k] = v
+    config_params = config.resource_op_precisions.get(comp_res_op.op_type, {})
+    filtered_params = {key: value for key, value in comp_res_op.params.items() if value is not None}
+    replacement_params = {
+        key: value for key, value in config_params.items() if key not in filtered_params
+    }
 
-#     params["target_resource_params"] = target_params
-
-#     return decomp_func(**params)
-
-
-# def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: ResourceConfig):
-#     """Get the resource decomposition for a compressed resource operator.
-
-#     Args:
-#         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
-#         config (ResourceConfig):  A ``ResourceConfig`` object containing the additional
-#         parameters required to estimate the resources for an operator. Defaults to
-#         :class:`pennylane.estimator.resource_config.ResourceConfig`.
-
-#     Returns:
-#         list: The resource decomposition.
-#     """
-#     decomp_func, kwargs = _get_decomposition_function_and_kwargs(comp_res_op, config)
-
-#     params = {key: value for key, value in comp_res_op.params.items() if value is not None}
-#     filtered_kwargs = {key: value for key, value in kwargs.items() if key not in params}
-
-#     op_type = comp_res_op.op_type
-#     if op_type in (Adjoint, Controlled, Pow):
-#         return _get_symbolic_resource_decomposition(decomp_func, params, filtered_kwargs)
-
-#     return decomp_func(**params, **filtered_kwargs)
+    return filtered_params | replacement_params
 
 
 def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: ResourceConfig):
@@ -472,37 +449,41 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
     default_resource_decomp = comp_res_op.op_type.resource_decomp
     decomp_func = config.custom_decomps.get(comp_res_op.op_type, default_resource_decomp)
 
-    config_params = config.resource_op_precisions.get(comp_res_op.op_type, {})
-    filtered_params = {key: value for key, value in comp_res_op.params.items() if value is not None}
-    replacement_params = {key: value for key, value in config_params.items() if key not in filtered_params}
-
-    return decomp_func(**filtered_params, **replacement_params)
+    params = _update_params_from_config(comp_res_op, config)
+    return decomp_func(**params)
 
 
 def _get_symbolic_resource_decomposition(comp_res_op, config):
 
     symbolic_op_type = comp_res_op.op_type
-    symbolic_params = {k: v for k,v in comp_res_op.params.items() if k != "base_cmpr_op"}
+    decomp_attr_name, decomp_method_name = _SYMBOLIC_DECOMP_MAP[symbolic_op_type]
+    custom_symbolic_decomp_dict = getattr(config, decomp_attr_name)
+    symbolic_resource_params = {k: v for k, v in comp_res_op.params.items() if k != "base_cmpr_op"}
+    base_cmpr_op = comp_res_op.params["base_cmpr_op"]
 
-    if (base_cmpr_op := comp_res_op.params["base_cmpr_op"]) not in (Adjoint, Controlled, Pow):
-        decomp_attr_name, decomp_method_name = _SYMBOLIC_DECOMP_MAP[symbolic_op_type]
-        custom_symbolic_decomp_dict = getattr(config, decomp_attr_name)
+    if base_cmpr_op not in (Adjoint, Controlled, Pow):
+        base_op_resource_params = _update_params_from_config(base_cmpr_op, config)
 
-        custom_symbolic_decomp = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
-        if custom_symbolic_decomp:
-            return custom_symbolic_decomp(**comp_res_op.params)
+        custom_symbolic_method = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
+        if custom_symbolic_method:
+            return custom_symbolic_method(
+                target_resource_params=base_op_resource_params,
+                **symbolic_resource_params,
+            )
 
-        default_decomp = getattr(ResourceOperator, "resource_decomp")
-        base_op_decomp = getattr(base_cmpr_op.op_type, "resource_decomp")
+        default_symbolic_method = getattr(ResourceOperator, decomp_method_name)
+        base_op_symbolic_method = getattr(base_cmpr_op.op_type, decomp_method_name)
 
-        default_symbolic_decomp = getattr(ResourceOperator, decomp_method_name)
-        base_op_symbolic_decomp = getattr(base_cmpr_op.op_type, decomp_method_name)
+        if base_op_symbolic_method.__func__ != default_symbolic_method.__func__:
+            return base_op_symbolic_method(
+                target_resource_params=base_op_resource_params,
+                **symbolic_resource_params,
+            )
 
-
-        return
-
-
-    return
+    base_resource_decomp = _get_resource_decomposition(base_cmpr_op, config)
+    return apply_default_symbolic_decomp(
+        base_cmpr_op, base_resource_decomp, symbolic_op_type, **symbolic_resource_params
+    )
 
 
 def _update_counts_from_compressed_res_op(
@@ -591,15 +572,15 @@ def _ops_to_compressed_reps(
     return cmp_rep_ops
 
 
-def default_adjoint_resource_decomp(base_resource_decomp):
+def default_adjoint_decomp(base_resource_decomp):
     gate_lst = []
     for gate in base_resource_decomp[::-1]:  # reverse the order
         gate_lst.append(apply_adj(gate))
-    
+
     return gate_lst
 
 
-def default_controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, base_resource_decomp):
+def default_controlled_decomp(num_ctrl_wires, num_zero_ctrl, base_resource_decomp):
     gate_lst = []
     if num_zero_ctrl != 0:
         x = X.resource_rep()
@@ -611,37 +592,20 @@ def default_controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, base_resou
     return gate_lst
 
 
+def apply_default_symbolic_decomp(
+    base_resource_op,
+    base_resource_decomp,
+    symbolic_type,
+    **target_symbolic_params,
+):
+    if symbolic_type == Pow:
+        return [GateCount(base_resource_op, target_symbolic_params["pow_z"])]
 
-# def _get_decomposition_function_and_kwargs(
-#     comp_res_op: CompressedResourceOp, config: ResourceConfig
-# ) -> tuple[Callable, dict]:
-#     """
-#     Selects the appropriate decomposition function and kwargs from a config object.
+    if symbolic_type == Adjoint:
+        return default_adjoint_decomp(base_resource_decomp)
 
-#     This helper function centralizes the logic for choosing a decomposition,
-#     handling standard, custom, and symbolic operator rules using a mapping.
-
-#     Args:
-#         comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The operator to find the decomposition for.
-#         config (:class:`~.pennylane.estimator.resource_config.ResourceConfig`): The ``ResourceConfig`` containing custom decompositions.
-
-#     Returns:
-#         A tuple containing the decomposition function and its associated kwargs.
-#     """
-#     op_type = comp_res_op.op_type
-#     lookup_op_type = op_type
-#     custom_decomp_dict = config.custom_decomps
-#     decomp_func = op_type.resource_decomp
-
-#     if op_type in _SYMBOLIC_DECOMP_MAP:
-#         decomp_attr_name, decomp_method_name = _SYMBOLIC_DECOMP_MAP[op_type]
-#         custom_decomp_dict = getattr(config, decomp_attr_name)
-#         lookup_op_type = comp_res_op.params["base_cmpr_op"].op_type
-#         decomp_func = custom_decomp_dict.get(
-#             lookup_op_type, getattr(lookup_op_type, decomp_method_name)
-#         )
-
-#     kwargs = config.resource_op_precisions.get(lookup_op_type, {})
-#     decomp_func = custom_decomp_dict.get(lookup_op_type, decomp_func)
-
-#     return decomp_func, kwargs
+    return default_controlled_decomp(
+        target_symbolic_params["num_ctrl_wires"],
+        target_symbolic_params["num_zero_ctrl"],
+        base_resource_decomp,
+    )
