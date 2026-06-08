@@ -336,6 +336,10 @@
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
+* Improved the Trotter error estimation module by introducing a novel algorithm to compute
+  :func:`~pennylane.labs.trotter_error.bch_expansion`.
+  [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
+
 <h3>Breaking changes 💔</h3>
 
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
@@ -578,6 +582,7 @@ Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
