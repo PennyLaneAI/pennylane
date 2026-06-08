@@ -15,7 +15,7 @@
 
 import pytest
 
-from trotter_error.product_formulas.commutator import (
+from pennylane.labs.trotter_error.product_formulas.commutator import (
     CommutatorNode,
     SymbolNode,
     bilinear_expansion,

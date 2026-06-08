@@ -17,7 +17,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
+from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 
 
 def vibrational_fragments(

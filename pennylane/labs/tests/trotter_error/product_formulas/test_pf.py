@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-from trotter_error import NumpyFragment, ProductFormula, effective_hamiltonian
+from pennylane.labs.trotter_error import NumpyFragment, ProductFormula, effective_hamiltonian
 
 
 def _hermitian(mat):

@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-from trotter_error import (
+from pennylane.labs.trotter_error import (
     ImportanceConfig,
     NumpyFragment,
     NumpyState,

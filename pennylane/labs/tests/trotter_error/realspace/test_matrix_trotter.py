@@ -16,13 +16,13 @@
 import numpy as np
 import pytest
 
-from trotter_error.realspace import (
+from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
     RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
 )
-from trotter_error.realspace.matrix import _op_norm
+from pennylane.labs.trotter_error.realspace.matrix import _op_norm
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use

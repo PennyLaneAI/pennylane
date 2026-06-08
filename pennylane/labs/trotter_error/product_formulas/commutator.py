@@ -25,11 +25,11 @@ from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
 
 import numpy as np
 
-from trotter_error.abstract import _AdditiveIdentity
+from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 
 
 if TYPE_CHECKING:
-    from trotter_error import Fragment
+    from pennylane.labs.trotter_error import Fragment
 
 
 class ASTNode:

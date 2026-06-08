@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 import scipy as sp
 
-from trotter_error.fragments import vibronic_fragments
-from trotter_error.realspace import HOState, RealspaceMatrix, VibronicHO
+from pennylane.labs.trotter_error.fragments import vibronic_fragments
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, VibronicHO
 
 
 # pylint: disable=no-self-use

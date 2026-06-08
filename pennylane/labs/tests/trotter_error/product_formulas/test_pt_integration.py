@@ -18,7 +18,7 @@ import pennylane as qml
 import pytest
 from pennylane.qchem import fermionic_observable
 
-from trotter_error import (
+from pennylane.labs.trotter_error import (
     NumpyFragment,
     NumpyState,
     ProductFormula,

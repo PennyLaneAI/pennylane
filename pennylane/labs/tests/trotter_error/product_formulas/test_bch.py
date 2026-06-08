@@ -19,10 +19,10 @@ from itertools import product
 import numpy as np
 import pytest
 
-from trotter_error import NumpyFragment, ProductFormula, effective_hamiltonian
-from trotter_error.abstract import nested_commutator
-from trotter_error.product_formulas.bch import bch_expansion
-from trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
+from pennylane.labs.trotter_error import NumpyFragment, ProductFormula, effective_hamiltonian
+from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
 
 
 deltas = [1, 0.5, 0.1, 0.01]

@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Dict, Sequence
 
 import numpy as np
 
-from trotter_error.product_formulas.commutator import (
+from pennylane.labs.trotter_error.product_formulas.commutator import (
     ASTNode,
     CommutatorNode,
     SymbolNode,
@@ -36,7 +36,7 @@ from trotter_error.product_formulas.commutator import (
 
 
 if TYPE_CHECKING:
-    from trotter_error.product_formulas.product_formula import ProductFormula
+    from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
 def bch_expansion(product_formula: ProductFormula, max_order: int) -> Dict[ASTNode, float]:

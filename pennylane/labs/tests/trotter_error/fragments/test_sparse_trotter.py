@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from trotter_error.fragments import sparse_fragments
-from trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
+from pennylane.labs.trotter_error.fragments import sparse_fragments
+from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
 
 
 identity = SparseFragment(csr_array([[1, 0], [0, 1]]))

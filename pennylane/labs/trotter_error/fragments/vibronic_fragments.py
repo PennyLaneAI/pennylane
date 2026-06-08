@@ -19,13 +19,13 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from trotter_error.realspace import (
+from pennylane.labs.trotter_error.realspace import (
     RealspaceCoeffs,
     RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
 )
-from trotter_error.realspace.realspace_matrix import _next_pow_2
+from pennylane.labs.trotter_error.realspace.realspace_matrix import _next_pow_2
 
 
 def vibronic_fragments(

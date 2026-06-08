@@ -21,8 +21,8 @@ import numpy as np
 import scipy as sp
 from scipy.sparse import csr_array
 
-from trotter_error import Fragment
-from trotter_error.abstract import AbstractState
+from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.abstract import AbstractState
 
 
 def sparse_fragments(fragments: Sequence[csr_array]) -> List[SparseFragment]:

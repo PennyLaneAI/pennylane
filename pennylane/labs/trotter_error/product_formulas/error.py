@@ -22,15 +22,15 @@ from dataclasses import dataclass
 import numpy as np
 from pennylane import concurrency
 
-from trotter_error import AbstractState, Fragment
-from trotter_error.abstract import _AdditiveIdentity
-from trotter_error.product_formulas.bch import bch_expansion
-from trotter_error.product_formulas.commutator import (
+from pennylane.labs.trotter_error import AbstractState, Fragment
+from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
+from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.commutator import (
     ASTNode,
     CommutatorNode,
     SymbolNode,
 )
-from trotter_error.product_formulas.product_formula import ProductFormula
+from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments

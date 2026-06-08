@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from numpy.typing import ArrayLike
 
-from trotter_error import AbstractState, Fragment
+from pennylane.labs.trotter_error import AbstractState, Fragment
 
 
 class NumpyFragment(Fragment):

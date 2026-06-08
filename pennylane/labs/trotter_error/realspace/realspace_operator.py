@@ -22,9 +22,9 @@ from itertools import product
 import numpy as np
 import scipy as sp
 
-from trotter_error import Fragment
-from trotter_error.realspace import HOState
-from trotter_error.realspace.matrix import (
+from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.realspace import HOState
+from pennylane.labs.trotter_error.realspace.matrix import (
     _op_norm,
     _string_to_matrix,
     _tensor_with_identity,
