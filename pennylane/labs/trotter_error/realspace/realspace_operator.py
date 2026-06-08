@@ -51,11 +51,11 @@ class RealspaceOperator:
 
     **Example**
 
-    This example uses :class:`~.trotter_error.RealspaceOperator` to build the
+    This example uses :class:`~.pennylane.labs.trotter_error.RealspaceOperator` to build the
     operator :math:`\sum_{i,j=1}^2 \phi_{i,j}Q_i Q_j`. The operator represents a sum over 2 modes
     for the position operators :math:`Q_iQ_j`.
 
-    >>> from trotter_error import RealspaceOperator, RealspaceCoeffs
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
     >>> import numpy as np
     >>> n_modes = 2
     >>> ops = ("Q", "Q")
@@ -90,11 +90,11 @@ class RealspaceOperator:
 
         Returns:
             Union[ndarray, scipy.sparse.csr_array]: the matrix representation of
-            the :class:`~.trotter_error.RealspaceOperator`
+            the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
-        >>> from trotter_error import RealspaceOperator, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
         >>> import numpy as np
         >>> n_modes = 2
         >>> ops = ("Q", "Q")
@@ -229,7 +229,7 @@ class RealspaceOperator:
 
         **Example**
 
-        >>> from trotter_error import RealspaceOperator, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs
         >>> import numpy as np
         >>> n_modes = 2
         >>> ops = ("Q", "Q")
@@ -241,22 +241,22 @@ class RealspaceOperator:
 
 
 class RealspaceSum(Fragment):
-    r"""Represents a linear combination of :class:`~.trotter_error.RealspaceOperator` objects.
+    r"""Represents a linear combination of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects.
 
-    The :class:`~trotter_error.RealspaceSum` class can be used to represent a
+    The :class:`~pennylane.labs.trotter_error.RealspaceSum` class can be used to represent a
     Hamiltonian that is built from a sum of
-    :class:`~.trotter_error.RealspaceOperator` objects. For example, the vibrational
+    :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects. For example, the vibrational
     hamiltonian, adapted from Eq. 4 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_,
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
     is a sum of terms where each term can be expressed by
-    a :class:`~.trotter_error.RealspaceOperator`.
+    a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
 
     Args:
         modes (int): the number of vibrational modes
         ops (Sequence[RealspaceOperator]): a sequence
-            containing :class:`~.trotter_error.RealspaceOperator` objects
+            containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
 
     **Example**
 
@@ -264,7 +264,7 @@ class RealspaceSum(Fragment):
     :math:`\sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2`, with the following
     code.
 
-    >>> from trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
     >>> import numpy as np
     >>> n_modes = 2
     >>> freqs = np.array([1.23, 3.45]) / 2
@@ -385,7 +385,7 @@ class RealspaceSum(Fragment):
 
     @classmethod
     def zero(cls, modes: int) -> RealspaceSum:
-        """Returns a :class:`~.trotter_error.RealspaceOperator` representing the zero operator
+        """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceOperator` representing the zero operator
 
         Args:
             modes (int): the number of vibrational modes (needed for consistency with
@@ -400,7 +400,7 @@ class RealspaceSum(Fragment):
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
     ) -> np.ndarray | sp.sparse.cs_array:
-        """Return a matrix representation of the :class:`~trotter_error.RealspaceSum`.
+        """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
             gridpoints (int): the number of gridpoints used to discretize the position/momentum
@@ -411,11 +411,11 @@ class RealspaceSum(Fragment):
 
         Returns:
             Union[ndarray, scipy.sparse.csr_array]: the matrix representation of
-                the :class:`~.trotter_error.RealspaceOperator`
+                the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
-        >>> from trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
         >>> import numpy as np
         >>> n_modes = 2
         >>> freqs = np.array([1.23, 3.45])
@@ -454,7 +454,7 @@ class RealspaceSum(Fragment):
 
         **Example**
 
-        >>> from trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
         >>> import numpy as np
         >>> n_modes = 2
         >>> freqs = np.array([1.23, 3.45])
@@ -488,8 +488,8 @@ class RealspaceSum(Fragment):
         return norm
 
     def apply(self, state: HOState) -> HOState:
-        """Apply the :class:`~.trotter_error.RealspaceSum` to an
-        input :class:`~.trotter_error.HOState` object."""
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an
+        input :class:`~.pennylane.labs.trotter_error.HOState` object."""
         if not isinstance(state, HOState):
             raise TypeError
 
@@ -503,7 +503,7 @@ class RealspaceSum(Fragment):
 
     def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
         """Return a dictionary containing the non-zero coefficients of
-        the :class:`~trotter_error.RealspaceSum`.
+        the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
             threshold (float): tolerance to return coefficients whose magnitude is greater
@@ -512,11 +512,11 @@ class RealspaceSum(Fragment):
         Returns:
             Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose
                 values are dictionaries obtained
-                by :func:`~.trotter_error.RealspaceOperator.get_coefficients`
+                by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
 
         **Example**
 
-        >>> from trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceCoeffs, RealspaceSum
         >>> import numpy as np
         >>> n_modes = 2
         >>> freqs = np.array([1.23, 3.45])
