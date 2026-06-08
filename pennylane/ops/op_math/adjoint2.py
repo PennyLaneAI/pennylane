@@ -78,7 +78,7 @@ class Adjoint2(SymbolicOp2):
     @staticmethod
     @override
     def compute_diagonalizing_gates(base):  # pylint: disable=arguments-differ
-        return base.diagonalizing_gates
+        return base.diagonalizing_gates()
 
     @classproperty
     @classmethod
