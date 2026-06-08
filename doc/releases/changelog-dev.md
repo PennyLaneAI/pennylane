@@ -508,6 +508,10 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
+  expected with recent versions of PennyLane.
+  [(#2493)](https://github.com/PennyLaneAI/pennylane/pull/2493)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
