@@ -14,13 +14,14 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
+from functools import partial
+
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
-from functools import partial
 from pennylane.resource.specs import (
     _get_last_tape_transform_level,
     _preprocess_level_input,
@@ -480,7 +481,9 @@ class TestSpecsTransform:
             ],
         }
 
-        assert str(specs_output) == """Device: default.qubit
+        assert (
+            str(specs_output)
+            == """Device: default.qubit
 Device wires: None
 Shots: Shots(total=None)
 Level: 2
@@ -520,6 +523,7 @@ Batched tape c:
     Measurements:
     - expval(Prod(num_wires=2, num_terms=2)): 1
     Depth: 5"""
+        )
 
     @pytest.mark.parametrize(
         "device,num_wires",
@@ -570,6 +574,7 @@ Batched tape c:
         )
 
         assert qp.specs(c, level="my_level")()["resources"] == expected
+
 
 class TestSpecsPartialSupport:
     """Tests that qp.specs handles functools.partial wrappers."""
@@ -750,4 +755,3 @@ class TestSpecsGraphModeExclusive:
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
         assert specs["resources"].num_allocs == 2
-

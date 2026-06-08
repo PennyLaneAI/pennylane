@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
 
+
 def _unwrap_partial(func):
     """Unwrap nested :class:`functools.partial` objects to get the underlying
     callable and all pre-bound arguments.
@@ -55,6 +56,7 @@ def _unwrap_partial(func):
         bound_kwargs = {**(func.keywords or {}), **bound_kwargs}
         func = func.func
     return func, bound_args, bound_kwargs
+
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     """Returns information on the structure and makeup of provided QNode.
@@ -847,16 +849,24 @@ def specs(
     qnode, bound_args, bound_kwargs = _unwrap_partial(qnode)
 
     if isinstance(qnode, qp.QNode):
+
         def wrapper(*args, **kwargs):
-            return _specs_qnode(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+            return _specs_qnode(
+                qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs}
+            )
+
         return wrapper
 
     try:
         from ..qnn.torch import TorchLayer
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
+
             def wrapper_torch(*args, **kwargs):
-                return _specs_qnode(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+                return _specs_qnode(
+                    qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs}
+                )
+
             return wrapper_torch
     except ImportError:  # pragma: no cover
         pass
@@ -865,11 +875,14 @@ def specs(
         import catalyst
 
         if isinstance(qnode, catalyst.jit.QJIT):
+
             def wrapper_qjit(*args, **kwargs):
-                return _specs_qjit(qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs})
+                return _specs_qjit(
+                    qnode, level, compute_depth, *(bound_args + args), **{**bound_kwargs, **kwargs}
+                )
+
             return wrapper_qjit
     except ImportError:  # pragma: no cover
         pass
-
 
     raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")

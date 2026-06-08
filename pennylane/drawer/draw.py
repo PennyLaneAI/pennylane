@@ -17,8 +17,8 @@ Contains the drawing function.
 
 from __future__ import annotations
 
-import warnings
 import functools
+import warnings
 from collections.abc import Callable, Sequence
 from functools import wraps
 from typing import TYPE_CHECKING, Literal
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 def catalyst_qjit(qnode):
     """A method checking whether a qnode is compiled by catalyst.qjit"""
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+
 
 def _unwrap_partial(func):
     """Unwrap nested :class:`functools.partial` objects to retrieve the
