@@ -1773,4 +1773,4 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
             circuit_list = circuit_list + elem.circuit_config + elem.pred_block
 
         # Unmatched gates that are not predecessors of any group of matches.
-        self.unmatched_list = sorted(list(set(range(0, self.circuit_dag.size)) - set(circuit_list)))
+        self.unmatched_list = sorted(set(range(self.circuit_dag.size)) - set(circuit_list))

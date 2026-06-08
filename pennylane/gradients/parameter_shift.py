@@ -502,7 +502,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     variables).
     """
     new_pdA2 = []
-    for i in range(len(tape.measurements)):
+    for i, _ in enumerate(tape.measurements):
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
             item = (
@@ -714,7 +714,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         new_measurements[i] = expval(op=obs)
         if obs.name in ["LinearCombination", "Sum"]:
             first_obs_idx = len(tape.operations)
-            for t_idx in reversed(range(len(tape.trainable_params))):
+            for t_idx in range(len(tape.trainable_params) - 1, -1, -1):
                 op, op_idx, _ = tape.get_operation(t_idx)
                 if op_idx < first_obs_idx:
                     break  # already seen all observables

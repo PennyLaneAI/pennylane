@@ -760,7 +760,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol)
+        assert np.allclose(sorted(set(res.tolist())), sorted(eigvals), atol=tol)
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
         assert np.allclose(np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol)
         # the analytic variance is 0.25*(sin(theta)-4*cos(theta))^2
@@ -790,8 +790,8 @@ class TestSample:
         res_basis = circuit([0]).flatten()
         res_state = circuit([1, 0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
         assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol)
@@ -801,8 +801,8 @@ class TestSample:
         res_basis = circuit([1]).flatten()
         res_state = circuit([0, 1]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
         assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol)
@@ -810,7 +810,7 @@ class TestSample:
 
         expected = 0.5
         res = circuit(np.array([1, 1]) / np.sqrt(2)).flatten()
-        assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res), expected, atol=tol)
         assert np.allclose(np.var(res), expected - (expected) ** 2, atol=tol)
 
@@ -849,7 +849,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A_)
-        assert np.allclose(sorted(list(set(res.tolist()))), sorted(eigvals), atol=tol)
+        assert np.allclose(sorted(set(res.tolist())), sorted(eigvals), atol=tol)
 
         # make sure the mean matches the analytic mean
         expected = (
@@ -889,32 +889,32 @@ class TestSample:
         res_basis = circuit([0, 0]).flatten()
         res_state = circuit([1, 0, 0, 0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.cos(theta / 2) * np.sin(theta)) ** 2
         res_basis = circuit([0, 1]).flatten()
         res_state = circuit([0, 1, 0, 0]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.sin(theta / 2) * np.sin(theta)) ** 2
         res_basis = circuit([1, 0]).flatten()
         res_state = circuit([0, 0, 1, 0]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
 
         expected = (np.sin(theta / 2) * np.cos(theta)) ** 2
         res_basis = circuit([1, 1]).flatten()
         res_state = circuit([0, 0, 0, 1]).flatten()
-        assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol)
-        assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_basis.tolist())), [0, 1], atol=tol)
+        assert np.allclose(sorted(set(res_state.tolist())), [0, 1], atol=tol)
         assert np.allclose(np.mean(res_basis), expected, atol=tol)
         assert np.allclose(np.mean(res_state), expected, atol=tol)
 

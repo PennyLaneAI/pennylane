@@ -104,7 +104,7 @@ def create_random_gates(
 
     for i in range(n_gates):
         weight = rng.integers(min_weight, max_weight + 1)
-        gate = sorted(list(rng.choice(range(n_qubits), size=weight, replace=False)))
+        gate = sorted(rng.choice(range(n_qubits), size=weight, replace=False))
         gates_dict[i] = [[int(q) for q in gate]]
 
     return gates_dict

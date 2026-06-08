@@ -226,18 +226,18 @@ class StronglyEntanglingLayers(Operation):
         op_list = []
 
         for l in range(n_layers):
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+            for i, w in enumerate(wires):
                 op_list.append(
                     Rot(
                         weights[..., l, i, 0],
                         weights[..., l, i, 1],
                         weights[..., l, i, 2],
-                        wires=wires[i],
+                        wires=w,
                     )
                 )
 
             if len(wires) > 1:
-                for i in range(len(wires)):
+                for i, _ in enumerate(wires):
                     act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
                     op_list.append(imprimitive(wires=act_on))
 

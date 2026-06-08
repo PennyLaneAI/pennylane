@@ -208,8 +208,8 @@ class CVNeuralNetLayers(Operation):
                 )
             )
 
-            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(Squeezing(r[m, i], phi_r[m, i], wires=wires[i]))
+            for i, w in enumerate(wires):
+                op_list.append(Squeezing(r[m, i], phi_r[m, i], wires=w))
 
             op_list.append(
                 Interferometer(
@@ -220,11 +220,11 @@ class CVNeuralNetLayers(Operation):
                 )
             )
 
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(Displacement(a[m, i], phi_a[m, i], wires=wires[i]))
+            for i, w in enumerate(wires):
+                op_list.append(Displacement(a[m, i], phi_a[m, i], wires=w))
 
-            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(Kerr(k[m, i], wires=wires[i]))
+            for i, w in enumerate(wires):
+                op_list.append(Kerr(k[m, i], wires=w))
 
         return op_list
 
