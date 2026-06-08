@@ -198,6 +198,14 @@ class Operator2(ABC):
         return {name: self.arguments[name] for name in self.dynamic_argnames}
 
     @property
+    def parameters(self):
+        return list(self.dynamic_args.values())
+
+    @property
+    def data(self):
+        return tuple(self.dynamic_args.values())
+
+    @property
     def static_args(self) -> dict[str, Any]:
         """Dictionary mapping static argument names to their values."""
         return {name: self.arguments[name] for name in self.static_argnames}
