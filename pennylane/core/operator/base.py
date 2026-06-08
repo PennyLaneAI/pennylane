@@ -562,7 +562,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if cls == Operator:
+        if cls is Operator:
             return getattr(subclass, "_operator_version", None) in {1, 2}
         return super().__subclasshook__(subclass)
 
@@ -1661,6 +1661,12 @@ class Operation(Operator):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
     """
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Operation and getattr(subclass, "_operator_version", None) == 2:
+            return True
+        return super().__subclasshook__(subclass)
 
     @property
     def grad_method(self) -> Literal["A", "F", None]:
