@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
@@ -486,7 +487,7 @@ class TestAdjointOperationDiffInfo:
     )
     def test_parameter_frequencies(self, base):
         """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
-        assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
+        assert parameter_frequencies(Adjoint(base)) == parameter_frequencies(base)
 
 
 class TestQueueing:
