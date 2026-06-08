@@ -338,19 +338,23 @@ def _signed_out_square(
     n = len(x_wires)
     m = len(output_wires)
     # Compute (x_u)^2 into output register
-    output_msb = max(0, m - (2 * n - 2)) if output_wires_zeroed else 0
-    OutSquare(
-        x_wires[1:], output_wires[output_msb:], work_wires, output_wires_zeroed=output_wires_zeroed
-    )
+    OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed=output_wires_zeroed)
     if m > n:
         # Add x_s * 2^n (2^(n-1) - x_u)
+        # For output_wires_zeroed=True, note that there are n-1 bits in x_u, so the squaring
+        # above can only have produced numbers smaller than 2^(2n-2). We here add a number that
+        # is at most 2^(2n-1), so that the output is guaranteed to be smaller than 2^(2n) and
+        # we can restrict the subroutine to the 2n LSB of the output.
+        # As the wire ordering is big-endian, slicing off the n LSBs (to multiply by 2^n) is done
+        # by setting the upper limit of the output wires to `m-n`.
         output_msb = max(0, m - 2 * n) if output_wires_zeroed else 0
-        _c_subtract_then_add_one(
-            x_wires[0], x_wires[1:], output_wires[output_msb : m - n], work_wires
-        )
+        output = output_wires[output_msb : m - n]
+        _c_subtract_then_add_one(x_wires[0], x_wires[1:], output, work_wires)
 
         if m >= 2 * n - 1:
-            # Subtract x_s * 2^(2n-2)
+            # Subtract x_s * 2^(2n-2).
+            # As the wire ordering is big-endian, slicing off the n LSBs (to multiply by 2^(2n-2))
+            # is done by setting the upper limit of the output wires to `m-(2n-2)`.
             output = output_wires[output_msb : m - (2 * n - 2)]
             _ = [X(w) for w in output]
             SemiAdder(x_wires[:1], output, work_wires)
