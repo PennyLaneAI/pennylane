@@ -59,29 +59,29 @@ class Adjoint2(SymbolicOp2):
 
     @staticmethod
     @override
-    def compute_matrix(base):
+    def compute_matrix(base):  # pylint: disable=arguments-differ
         base_matrix = base.matrix()
         return math.moveaxis(math.conj(base_matrix), -2, -1)
 
     @staticmethod
     @override
-    def compute_sparse_matrix(base, format="csr"):
+    def compute_sparse_matrix(base, format="csr"):  # pylint: disable=arguments-differ
         base_matrix = base.sparse_matrix()
         return math.transpose(math.conj(base_matrix)).asformat(format=format)
 
     @staticmethod
     @override
-    def compute_eigvals(base):
+    def compute_eigvals(base):  # pylint: disable=arguments-differ
         return math.conj(base.eigvals())
 
     @property
     @override
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(base):
+    def compute_diagonalizing_gates(base):  # pylint: disable=arguments-differ
         return base.diagonalizing_gates
 
     @classproperty
@@ -103,7 +103,7 @@ class Adjoint2(SymbolicOp2):
 
     @property
     @override
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override

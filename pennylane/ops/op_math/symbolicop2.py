@@ -40,11 +40,12 @@ class SymbolicOp2(Operator2, is_baseclass=True):
 
     @property
     @override
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_matrix
 
     @property
     @override
+    # pylint: disable=arguments-differ,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
