@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+  [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)

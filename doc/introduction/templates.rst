@@ -168,6 +168,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
+    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :figure: _static/templates/arithmetic/outsquare.png
+
+.. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
