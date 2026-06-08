@@ -183,7 +183,7 @@ def create_adjoint_op(fn, lazy):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
     if qp.math.is_abstract(fn):
         return _make_adjoint_op(fn)
-    if isinstance(fn, Operator):
+    if isinstance(fn, (Operator, Operator2)):
         return _make_adjoint_op(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
         if qp.capture.enabled():
