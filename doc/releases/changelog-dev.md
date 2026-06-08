@@ -103,47 +103,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* The result objects from running :func:`specs` now have markdown formatting for IPython, improving their readability in JupyterLabs.
-
-  The example below shows a snippet and the Markdown table that would be shown in JupyterLabs when running it.
-
-  ```python
-  from IPython.display import display  # Not necessary if running within Jupyter
-
-  @qp.qjit
-  @qp.qnode(qp.device("lightning.qubit", wires=2))
-  def circ():
-      qp.Hadamard(0)
-      qp.CNOT([0, 1])
-      return qp.probs()
-
-  res = qp.specs(circ)()
-  display(res)
-  ```
-
-  **Circuit Specs:**
-
-  <table border=1>
-    <tr><th align="left"><b>Metric</b></th><th align="right"><b>Value</b></th></tr>
-    <tr><td align="left"><b>Device</b></td><td align="right">lightning.qubit</td></tr>
-    <tr><td align="left"><b>Device wires</b></td><td align="right">2</td></tr>
-    <tr><td align="left"><b>Shots</b></td><td align="right">Shots(total=None)</td></tr>
-    <tr><td align="left"><b>Level</b></td><td align="right">device</td></tr>
-  </table>
-
-  **Resources:**
-
-  <table>
-    <tr><th align="left"><b>Metric</b></th><th align="right"><b>Value</b></th></tr>
-    <tr><td align="left"><b>Wire allocations</b></td><td align="right">2</td></tr>
-    <tr><td align="left"><b>Total gates</b></td><td align="right">2</td></tr>
-    <tr><td align="left"><b>Gate counts:</b></td><td align="right"></td></tr>
-    <tr><td align="left">CNOT</td><td align="right">1</td></tr>
-    <tr><td align="left">Hadamard</td><td align="right">1</td></tr>
-    <tr><td align="left"><b>Measurements:</b></td><td align="right"></td></tr>
-    <tr><td align="left">probs(all wires)</td><td align="right">1</td></tr>
-    <tr><td align="left"><b>Depth</b></td><td align="right">2</td></tr>
-  </table>
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability in JupyterLabs;
+  particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
