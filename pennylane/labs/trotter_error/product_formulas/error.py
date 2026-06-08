@@ -50,9 +50,9 @@ def effective_hamiltonian(
     Args:
         product_formula (ProductFormula): A product formula used to approximate the time-evolution
             operator for a Hamiltonian.
-        fragments (Dict[Hashable, :class:`~.trotter_error.Fragment`): The fragments
+        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`): The fragments
             that sum to the Hamiltonian. The keys in the dictionary must match the labels used to
-            build the :class:`~.trotter_error.ProductFormula` object.
+            build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
         order (int): The order of the approximatation.
         timestep (float): The timestep for simulation.
         num_workers (int): the number of concurrent units used for the computation. Default value is
@@ -64,8 +64,8 @@ def effective_hamiltonian(
     **Example**
 
     >>> import numpy as np
-    >>> from trotter_error.fragments import vibrational_fragments
-    >>> from trotter_error.product_formulas import ProductFormula, effective_hamiltonian
+    >>> from pennylane.labs.trotter_error.fragments import vibrational_fragments
+    >>> from pennylane.labs.trotter_error.product_formulas import ProductFormula, effective_hamiltonian
     >>>
     >>> n_modes = 4
     >>> r_state = np.random.RandomState(42)
@@ -84,7 +84,7 @@ def effective_hamiltonian(
     >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
     >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
     >>> type(effective_hamiltonian(pf, frags, order=5, timestep=delta))
-    <class 'trotter_error.realspace.realspace_operator.RealspaceSum'>
+    <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
     if not product_formula.symbol_set.issubset(fragments.keys()):
@@ -147,9 +147,9 @@ def perturbation_error(
     expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
 
     Args:
-        product_formula (ProductFormula): the :class:`~.trotter_error.ProductFormula` used to obtain
+        product_formula (ProductFormula): the :class:`~.pennylane.labs.trotter_error.ProductFormula` used to obtain
             the effective Hamiltonian
-        fragments (Sequence[Fragments]): the set of :class:`~.trotter_error.Fragment`
+        fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
         states (Sequence[AbstractState]): the states to compute expectation values from
         order (int | Sequence[int]): Compute commutators of orders specified.
@@ -168,7 +168,7 @@ def perturbation_error(
     **Example**
 
     >>> import numpy as np
-    >>> from trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
+    >>> from pennylane.labs.trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
     >>>
     >>> frag_labels = [0, 1, 1, 0]
     >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]

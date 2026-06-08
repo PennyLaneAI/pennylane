@@ -26,20 +26,20 @@ from pennylane.labs.trotter_error.abstract import AbstractState
 
 
 def sparse_fragments(fragments: Sequence[csr_array]) -> List[SparseFragment]:
-    """Instantiates :class:`~.trotter_error.SparseFragment` objects.
+    """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
 
     Args:
         fragments (Sequence[csr_array]): A sequence of sparse matrices to be used as fragments.
 
     Returns:
-        List[SparseFragment]: A list of :class:`~.trotter_error.SparseFragment` objects instantiated
+        List[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated
            from `fragments`.
 
 
     **Example**
     This code example demonstrates building fragments from scipy sparse matrices.
 
-    >>> from trotter_error import sparse_fragments
+    >>> from pennylane.labs.trotter_error import sparse_fragments
     >>> from scipy.sparse import csr_array
     >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> fragments = sparse_fragments(matrices)
@@ -62,14 +62,14 @@ class SparseFragment(Fragment):
     """A wrapper class to allow scipy sparse matrices to be used in the Trotter error functions.
 
     Args:
-        fragment (csr_array): The `csr_array` to be used as a `~.trotter_error.abstract.Fragment`.
+        fragment (csr_array): The `csr_array` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
 
-    .. note:: :class:`~.trotter_error.SparseFragment` objects should be instantated through the
-    ``~.trotter_error.sparse_fragments`` function.
+    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the
+    ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
 
     **Example**
 
-    >>> from trotter_error import sparse_fragments
+    >>> from pennylane.labs.trotter_error import sparse_fragments
     >>> from scipy.sparse import csr_array
     >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> sparse_fragments(matrices)

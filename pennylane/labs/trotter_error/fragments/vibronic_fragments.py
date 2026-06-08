@@ -46,7 +46,7 @@ def vibronic_fragments(
 
     **Example**
 
-    >>> from trotter_error import vibronic_fragments
+    >>> from pennylane.labs.trotter_error import vibronic_fragments
     >>> import numpy as np
     >>> n_modes = 4
     >>> n_states = 2

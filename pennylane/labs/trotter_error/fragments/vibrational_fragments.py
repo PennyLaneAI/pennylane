@@ -39,7 +39,7 @@ def vibrational_fragments(
 
     **Example**
 
-    >>> from trotter_error import vibrational_fragments
+    >>> from pennylane.labs.trotter_error import vibrational_fragments
     >>> import numpy as np
     >>> n_modes = 4
     >>> r_state = np.random.RandomState(42)
