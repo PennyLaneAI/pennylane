@@ -1278,7 +1278,7 @@ def parameter_frequencies(op: Operation | Operator2):
 
     .. code-block:: python
 
-        from pennylane.operation2 import Operator2
+        from pennylane.core.operator import Operator2
         from pennylane.wires import WiresLike
         from pennylane.gradients import parameter_frequencies
 

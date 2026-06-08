@@ -19,7 +19,7 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 
 from .symbolicop2 import SymbolicOp2
 

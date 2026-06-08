@@ -16,7 +16,7 @@
 
 from typing_extensions import override
 
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.queuing import QueuingManager
 
 

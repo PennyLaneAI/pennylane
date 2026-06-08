@@ -17,7 +17,7 @@
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.wires import Wires
 

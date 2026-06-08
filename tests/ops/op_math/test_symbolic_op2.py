@@ -15,7 +15,7 @@
 """Unit tests for the SymbolicOp2 class."""
 
 import pennylane as qp
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.wires import Wires
 
