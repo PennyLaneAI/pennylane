@@ -395,7 +395,7 @@ class PlxprInterpreter:
                 outvals.append(self.interpret_operation(outval))
             else:
                 outvals.append(outval)
-        # self.cleanup()
+        self.cleanup()
         self._env = {}
         return outvals
 
