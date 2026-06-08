@@ -19,11 +19,10 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Sequence
-from functools import wraps
+from functools import partial, wraps
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
-from pennylane._callable_utils import apply_partial_args, unwrap_partial
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 
@@ -32,6 +31,29 @@ from .tape_text import tape_text
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
+
+
+def _unwrap_partial(fn):
+    """Return the base callable and arguments bound by nested ``functools.partial`` wrappers."""
+    args = ()
+    kwargs = {}
+    while isinstance(fn, partial):
+        args = fn.args + args
+        kwargs = {**(fn.keywords or {}), **kwargs}
+        fn = fn.func
+    return fn, args, kwargs
+
+
+def _apply_partial_args(fn, args, kwargs):
+    """Return a callable that prepends partial-bound arguments to call-time arguments."""
+    if not args and not kwargs:
+        return fn
+
+    @wraps(fn)
+    def wrapper(*call_args, **call_kwargs):
+        return fn(*args, *call_args, **{**kwargs, **call_kwargs})
+
+    return wrapper
 
 
 def catalyst_qjit(qnode):
@@ -290,13 +312,13 @@ def draw(
         2: ─╰●─────────────────┤
 
     """
-    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
 
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return apply_partial_args(
+        return _apply_partial_args(
             _draw_qnode(
                 qnode,
                 wire_order=wire_order,
@@ -339,7 +361,7 @@ def draw(
             max_length=max_length,
         )
 
-    return apply_partial_args(wrapper, partial_args, partial_kwargs)
+    return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
 # pylint: disable=too-many-arguments
@@ -789,13 +811,13 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
-    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
 
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return apply_partial_args(
+        return _apply_partial_args(
             _draw_mpl_qnode(
                 qnode,
                 wire_order=wire_order,
@@ -840,7 +862,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    return apply_partial_args(wrapper, partial_args, partial_kwargs)
+    return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
 # pylint: disable=too-many-arguments

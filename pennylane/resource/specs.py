@@ -23,12 +23,11 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial
+from functools import partial, wraps
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pennylane as qp
-from pennylane._callable_utils import apply_partial_args, unwrap_partial
 
 from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
@@ -38,6 +37,29 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
+
+
+def _unwrap_partial(fn):
+    """Return the base callable and arguments bound by nested ``functools.partial`` wrappers."""
+    args = ()
+    kwargs = {}
+    while isinstance(fn, partial):
+        args = fn.args + args
+        kwargs = {**(fn.keywords or {}), **kwargs}
+        fn = fn.func
+    return fn, args, kwargs
+
+
+def _apply_partial_args(fn, args, kwargs):
+    """Return a callable that prepends partial-bound arguments to call-time arguments."""
+    if not args and not kwargs:
+        return fn
+
+    @wraps(fn)
+    def wrapper(*call_args, **call_kwargs):
+        return fn(*args, *call_args, **{**kwargs, **call_kwargs})
+
+    return wrapper
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -61,7 +83,9 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
 
     return CircuitSpecs(
         resources=resources,
-        num_device_wires=len(qnode.device.wires) if qnode.device.wires is not None else None,
+        num_device_wires=len(qnode.device.wires)
+        if qnode.device.wires is not None
+        else None,
         device_name=qnode.device.name,
         level=level,
         shots=qnode.shots,
@@ -83,7 +107,9 @@ def _specs_qjit_device_level_tracking(
     with tempfile.TemporaryDirectory(
         prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"
     ) as tmpdirname:
-        filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
+        filepath = Path(
+            f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json"
+        )
 
         # When running at the device level, execute on null.qubit directly with resource tracking,
         # which will give resource usage information for after all compiler passes have completed
@@ -177,7 +203,9 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     for i, lvl in enumerate(level):
         if isinstance(lvl, str):
             if lvl not in marker_to_level:
-                raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
+                raise ValueError(
+                    f"Marker name '{lvl}' not found in the compile pipeline."
+                )
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
             if lvl < 0 or lvl >= total_levels:
@@ -186,7 +214,9 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
                     f"got {lvl}."
                 )
         else:
-            raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
+            raise ValueError(
+                f"Invalid level '{lvl}' in level list, expected int or str."
+            )
 
     level_sorted = sorted(set(level))
     if level != level_sorted:
@@ -199,8 +229,12 @@ def _preprocess_level_input(  # pylint: disable=too-many-branches
     return level_sorted
 
 
-def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
-    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
+def _specs_qjit_intermediate_passes(
+    qjit, original_qnode, level, *args, **kwargs
+) -> tuple[
+    SpecsResources
+    | list[SpecsResources]
+    | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
     # pylint: disable=too-many-branches,too-many-statements
@@ -230,8 +264,13 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         level_to_markers[lvl].append(marker)
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
-    level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
+    return_single_level = isinstance(level, (int, str)) and level not in (
+        "all",
+        "all-mlir",
+    )
+    level = _preprocess_level_input(
+        level, marker_to_level, len(compile_pipeline), num_tape_levels
+    )
     level_to_name: dict[int, str] = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
@@ -258,7 +297,9 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             else:
                 trans_name = compile_pipeline[tape_level - 1].tape_transform.__name__
 
-            trans_name = make_level_name_unique(trans_name, frozenset(level_to_name.values()))
+            trans_name = make_level_name_unique(
+                trans_name, frozenset(level_to_name.values())
+            )
             resources[trans_name] = res
             level_to_name[tape_level] = trans_name
 
@@ -285,7 +326,9 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     return resources, level_to_name
 
 
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  # pragma: no cover
+def _specs_qjit(
+    qjit, level, compute_depth, *args, **kwargs
+) -> CircuitSpecs:  # pragma: no cover
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
 
     if level is None:
@@ -319,14 +362,18 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
         )
 
     else:
-        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+        raise NotImplementedError(
+            f"Unsupported level argument '{level}' for QJIT'd code."
+        )
 
     return CircuitSpecs(
         resources=resources,
         shots=original_qnode.shots,
         device_name=device.name,
         num_device_wires=(
-            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+            len(original_qnode.device.wires)
+            if original_qnode.device.wires is not None
+            else None
         ),
         level=level,
     )
@@ -830,7 +877,7 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
-    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
 
     specs_fn = _specs_qnode if isinstance(qnode, qp.QNode) else None
 
@@ -854,7 +901,7 @@ def specs(
             pass
 
     if specs_fn is not None:
-        return apply_partial_args(
+        return _apply_partial_args(
             partial(specs_fn, qnode, level, compute_depth), partial_args, partial_kwargs
         )
 
