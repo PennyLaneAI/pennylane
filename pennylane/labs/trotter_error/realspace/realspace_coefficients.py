@@ -25,7 +25,7 @@ from numpy import allclose, isclose, ndarray, zeros
 class RealspaceCoeffs:
     """Lightweight representation of a tensor of coefficients.
 
-    The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with an array
+    The :class:`~.trotter_error.RealspaceCoeffs` object is initialized with an array
     and can be used to represent coefficients of a real space operator. A real space operator
     is constrcuted from position and momentum operators, e.g., Eq. 4
     of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ which represents a vibrational
@@ -38,7 +38,7 @@ class RealspaceCoeffs:
     **Examples**
 
     >>> import numpy as np
-    >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+    >>> from trotter_error import RealspaceCoeffs
     >>> coeffs = np.array([[1, 0], [0, 1]])
     >>> rs_coeffs = RealspaceCoeffs(coeffs, label="alpha")
     >>> rs_coeffs.shape
@@ -47,7 +47,7 @@ class RealspaceCoeffs:
     .. details::
          :title: Usage Details
 
-         The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object allows arithmetic
+         The :class:`~.trotter_error.RealspaceCoeffs` object allows arithmetic
          operations such as addition, subtraction, multiplication and matrix multiplication.
          Printing the resulting objects displays the expression that is used to compute each entry
          of the tensor.
@@ -103,7 +103,7 @@ class RealspaceCoeffs:
 
     @property
     def is_zero(self) -> bool:
-        """Determine if the :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` objects
+        """Determine if the :class:`~.trotter_error.RealspaceCoeffs` objects
         represents the zero tensor.
 
         Returns:
@@ -120,14 +120,15 @@ class RealspaceCoeffs:
         """Return the nonzero coefficients in a dictionary.
 
         Args:
-            threshold (float): tolerance to return coefficients with magnitude greater than ``threshold``
+            threshold (float): tolerance to return coefficients with magnitude greater
+                than ``threshold``
 
         Returns:
             dict: a dictionary representation of the coefficient tensor
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceCoeffs
+        >>> from trotter_error import RealspaceCoeffs
         >>> import numpy as np
         >>> node = RealspaceCoeffs(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
@@ -149,19 +150,23 @@ class _NodeType(Enum):
 
 class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
     """
-     A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
+     A tree representing an expression that computes the coefficients of
+     a :class:`~.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
 
         * ``tensor_node(tensor)``: a leaf node containing the coefficients as a tensor
-        * ``outer_node(l_child, r_child)``: a node representing the outer product of two ``RealspaceCoeffs`` objects
-        * ``sum_node(l_child, r_child)``: a node representing the sum of two ``RealspaceCoeffs`` objects
-        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs`` object by a scalar
+        * ``outer_node(l_child, r_child)``: a node representing the outer product of two
+          ``RealspaceCoeffs`` objects
+        * ``sum_node(l_child, r_child)``: a node representing the sum of two
+          ``RealspaceCoeffs`` objects
+        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs``
+          object by a scalar
 
     **Examples**
 
     Building a node representing a tensor of coefficients
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
+    >>> from trotter_error import _RealspaceTree
     >>> import numpy as np
     >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
     >>> node
@@ -169,7 +174,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing the outer product of its children
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
+    >>> from trotter_error import _RealspaceTree
     >>> import numpy as np
     >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
     >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
@@ -179,7 +184,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing the sum of its children
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
+    >>> from trotter_error import _RealspaceTree
     >>> import numpy as np
     >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
     >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
@@ -189,7 +194,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing the multiplication of its child by a scalar
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
+    >>> from trotter_error import _RealspaceTree
     >>> import numpy as np
     >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
     >>> parent = _RealspaceTree.scalar_node(5, child)
@@ -208,7 +213,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         value: float = None,
         label: str = None,
     ) -> _RealspaceTree:
-
         self.node_type = node_type
         self.l_child = l_child
         self.r_child = r_child
@@ -244,11 +248,12 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             r_child (_RealspaceTree): the right child
 
         Returns:
-            _RealspaceTree: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
+            _RealspaceTree: a `RealspaceCoeff` object representing the sum of `l_child`
+                and `r_child`
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
@@ -260,7 +265,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         if l_child.shape != r_child.shape:
             raise ValueError(
-                f"Cannot add _RealspaceTree of shape {l_child.shape} with _RealspaceTree of shape {r_child.shape}."
+                f"Cannot add _RealspaceTree of shape {l_child.shape} with _RealspaceTree "
+                f"of shape {r_child.shape}."
             )
 
         return cls(
@@ -282,11 +288,12 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             r_child (RealspaceCOeffs): the right child
 
         Returns:
-            _RealspaceTree: a ``_RealspaceTree`` object representing the outer product of ``l_child`` and ``r_child``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the outer product
+                of ``l_child`` and ``r_child``
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
@@ -307,14 +314,15 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the ``_RealspaceTree`` object as an expression
+            label (string): a label for the tensor to be used when displaying the ``_RealspaceTree``
+                object as an expression
 
         Returns:
             _RealspaceTree: a ``_RealspaceTree`` object representing containing the tensor
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> node
@@ -342,11 +350,12 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             child (_RealspaceTree): the ``_RealspaceTree`` object to be multiplied by ``scalar``
 
         Returns:
-            _RealspaceTree: a ``_RealspaceTree`` object representing the coefficients of ``child`` multiplied by ``scalar``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the coefficients of ``child``
+                multiplied by ``scalar``
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> parent = _RealspaceTree.scalar_node(5, child)
@@ -414,7 +423,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     # pylint: disable=protected-access
     def _str(self, indices) -> str:
-
         if self.node_type == _NodeType.TENSOR:
             return f"{self.label}[{','.join(indices)}]"
         if self.node_type == _NodeType.FLOAT:
@@ -441,7 +449,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
@@ -481,7 +489,14 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if len(index) != len(self.shape):
             return False
 
-        return all(0 <= x < y for x, y in zip(index, self.shape, strict=True))
+        for x, y in zip(index, self.shape):
+            if x < 0:
+                return False
+
+            if x >= y:
+                return False
+
+        return True
 
     def nonzero(self, threshold: float = 0.0):
         """Return the nonzero coefficients in a dictionary.
@@ -494,7 +509,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
+        >>> from trotter_error import _RealspaceTree
         >>> import numpy as np
         >>> node = _RealspaceTree.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
@@ -604,7 +619,7 @@ def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
     d = {}
 
-    for index in zip(*nz, strict=True):
+    for index in zip(*nz):
         if abs(arr[index]) > threshold:
             index = tuple(map(int, index))
             d[index] = float(arr[index])

@@ -97,7 +97,8 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
 def _string_to_matrix(
     op: str, gridpoints: int, sparse: bool = False, basis: str = "realspace"
 ) -> np.ndarray | sp.sparse.csr_array:
-    """Transforms a string of P's and Q's into a matrix representing the product of position and momenutm operators"""
+    """Transforms a string of P's and Q's into a matrix representing the product of position and
+    momenutm operators"""
 
     matrix = _identity(gridpoints, sparse=sparse)
     p = _momentum_operator(gridpoints, basis=basis, sparse=sparse)

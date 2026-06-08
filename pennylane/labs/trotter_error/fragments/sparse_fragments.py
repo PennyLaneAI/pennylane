@@ -15,30 +15,31 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import Dict, List, Sequence
 
 import numpy as np
 import scipy as sp
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.abstract import AbstractState
+from trotter_error import Fragment
+from trotter_error.abstract import AbstractState
 
 
-def sparse_fragments(fragments: Sequence[csr_array]) -> list[SparseFragment]:
-    """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
+def sparse_fragments(fragments: Sequence[csr_array]) -> List[SparseFragment]:
+    """Instantiates :class:`~.trotter_error.SparseFragment` objects.
 
     Args:
         fragments (Sequence[csr_array]): A sequence of sparse matrices to be used as fragments.
 
     Returns:
-        List[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated from `fragments`.
+        List[SparseFragment]: A list of :class:`~.trotter_error.SparseFragment` objects instantiated
+           from `fragments`.
 
 
     **Example**
     This code example demonstrates building fragments from scipy sparse matrices.
 
-    >>> from pennylane.labs.trotter_error import sparse_fragments
+    >>> from trotter_error import sparse_fragments
     >>> from scipy.sparse import csr_array
     >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> fragments = sparse_fragments(matrices)
@@ -61,13 +62,14 @@ class SparseFragment(Fragment):
     """A wrapper class to allow scipy sparse matrices to be used in the Trotter error functions.
 
     Args:
-        fragment (csr_array): The `csr_array` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
+        fragment (csr_array): The `csr_array` to be used as a `~.trotter_error.abstract.Fragment`.
 
-    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
+    .. note:: :class:`~.trotter_error.SparseFragment` objects should be instantated through the
+    ``~.trotter_error.sparse_fragments`` function.
 
     **Example**
 
-    >>> from pennylane.labs.trotter_error import sparse_fragments
+    >>> from trotter_error import sparse_fragments
     >>> from scipy.sparse import csr_array
     >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> sparse_fragments(matrices)
@@ -112,7 +114,7 @@ class SparseFragment(Fragment):
         result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))
         return complex(result.toarray().flatten()[0])
 
-    def norm(self, params: dict = None) -> float:
+    def norm(self, params: Dict = None) -> float:
         if params is None:
             params = {}
 
@@ -124,12 +126,12 @@ class SparseFragment(Fragment):
 
 
 class SparseState(AbstractState):
-    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation functions.
-    This class is intended to instantiate states to be used along with the `SparseFragment` class.
+    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation
+    functions. This class is intended to instantiate states to be used along with
+    the `SparseFragment` class.
     """
 
     def __init__(self, state: csr_array):
-
         if not isinstance(state, csr_array):
             raise TypeError(
                 f"SparseState must be instantiated from a csr_array. Got {type(state)}."

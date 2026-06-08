@@ -20,8 +20,9 @@ import pytest
 import scipy as sp
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter_error.fragments import vibrational_fragments
-from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum
+from trotter_error.fragments import vibrational_fragments
+from trotter_error.realspace import HOState, RealspaceSum
+
 
 # pylint: disable=no-self-use
 
