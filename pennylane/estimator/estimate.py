@@ -33,7 +33,7 @@ from pennylane.workflow.qnode import QNode
 
 from .resource_config import ResourceConfig
 from .resource_mapping import _map_to_resource_op
-from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
+from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
