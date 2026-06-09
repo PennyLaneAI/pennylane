@@ -16,6 +16,7 @@ Test base Resource class and its associated methods
 """
 
 # pylint: disable=unnecessary-dunder-call,protected-access
+import textwrap
 from collections import defaultdict
 from dataclasses import FrozenInstanceError
 
@@ -1300,45 +1301,47 @@ class TestCircuitSpecs:
         """Test the tabular string representation of a CircuitSpecs instance."""
 
         r = example_specs_result_multi
-        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
-Device wires: 5
-Shots: Shots(total=1000)
-Levels:
-- 1: l1
-- 2: l2
+        assert str(r) == textwrap.dedent("""\
+        Device: default.qubit
+        Device wires: 5
+        Shots: Shots(total=1000)
+        Levels:
+        - 1: l1
+        - 2: l2
 
-↓Metric   Level→ |    1 |  2-a |  2-b
--------------------------------------
-Wire allocations |    2 |    2 |    2
-Total gates      |    6 |    1 |    1
-Gate counts:     |
-- Hadamard       |    4 |    0 |    0
-- CNOT           |    2 |    1 |    1
-Measurements:    |
-- expval(PauliX) |    1 |    1 |    0
-- expval(PauliZ) |    1 |    0 |    1""".split()]
+        ↓Metric   Level→ |    1 |  2-a |  2-b
+        -------------------------------------
+        Wire allocations |    2 |    2 |    2
+        Total gates      |    6 |    1 |    1
+        Gate counts:     |
+        - Hadamard       |    4 |    0 |    0
+        - CNOT           |    2 |    1 |    1
+        Measurements:    |
+        - expval(PauliX) |    1 |    1 |    0
+        - expval(PauliZ) |    1 |    0 |    1""")
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
         """Test the tabular string representation of a CircuitSpecs instance with symbolic resources."""
 
         r = example_specs_result_multi_symbolic
-        assert [x.strip() for x in str(r).split()] == [x.strip() for x in """Device: default.qubit
-Device wires: 5
-Shots: Shots(total=1000)
-Levels:
-- 1: l1
-- 2: l2
+        assert str(r) == textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+            - 2: l2
 
-↓Metric   Level→ |     1 |   2-a |   2-b
-----------------------------------------
-Wire allocations |     2 |     2 |     2
-Total gates      | 4*x+2 |     x |     x
-Gate counts:     |
-- Hadamard       | 2*x+2 |     0 |     0
-- CNOT           |   2*x |     x |     x
-Measurements:    |
-- expval(PauliX) |     1 |     1 |     0
-- expval(PauliZ) |     1 |     0 |     1""".split()]
+            ↓Metric   Level→ |     1 |   2-a |   2-b
+            ----------------------------------------
+            Wire allocations |     2 |     2 |     2
+            Total gates      | 4*x+2 |     x |     x
+            Gate counts:     |
+            - Hadamard       | 2*x+2 |     0 |     0
+            - CNOT           |   2*x |     x |     x
+            Measurements:    |
+            - expval(PauliX) |     1 |     1 |     0
+            - expval(PauliZ) |     1 |     0 |     1""")
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
         """Test the non-tabular string representation of a CircuitSpecs instance."""
@@ -1403,36 +1406,36 @@ class TestIPythonDisplays:
 
     def test_specs_resources_ipython_display(self, example_specs_resource):
         """Test the IPython display of a SpecsResources instance."""
-        expected = """\
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 2 |
-| **Total gates** | 1.000E+5 |
-| **Gate counts:** | |
-| Hadamard | 1 |
-| CNOT | 1.000E+5 |
-| **Measurements:** | |
-| expval(PauliZ) | 1 |
-| **Depth** | 2 |
-"""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+        """)
         actual = example_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
     def test_symbolic_specs_resources_ipython_display(self, example_symbolic_specs_resource):
         """Test the IPython display of a SymbolicSpecsResources instance."""
-        expected = """\
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 2 |
-| **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
-| **Gate counts:** | |
-| Hadamard | a\\*a\\*b + a\\*a + a |
-| CNOT | 1 |
-| **Measurements:** | |
-| expval(PauliZ) | 1 |
-| **Depth** | 2 |
-"""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 |
+            | **Gate counts:** | |
+            | Hadamard | a\\*a\\*b + a\\*a + a |
+            | CNOT | 1 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+        """)
         actual = example_symbolic_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
@@ -1447,29 +1450,29 @@ class TestIPythonDisplays:
             resources=example_specs_resource,
         )
         actual = s._repr_markdown_()
-        expected = """\
-**Circuit Specs:**
+        expected = textwrap.dedent("""\
+            **Circuit Specs:**
 
-| Metric | Value |
-| :--- | ---: |
-| **Device** | default.qubit |
-| **Device wires** | 5 |
-| **Shots** | Shots(total=1000) |
-| **Level** | 2 |
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Level** | 2 |
 
-**Resources:**
+            **Resources:**
 
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 2 |
-| **Total gates** | 1.000E+5 |
-| **Gate counts:** | |
-| Hadamard | 1 |
-| CNOT | 1.000E+5 |
-| **Measurements:** | |
-| expval(PauliZ) | 1 |
-| **Depth** | 2 |
-"""
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+        """)
 
         assert actual.strip() == expected.strip()
 
@@ -1483,44 +1486,44 @@ class TestIPythonDisplays:
             resources=[example_specs_resource, example_specs_resource],
         )
         actual = s._repr_markdown_()
-        expected = """\
-**Circuit Specs:**
+        expected = textwrap.dedent("""\
+            **Circuit Specs:**
 
-| Metric | Value |
-| :--- | ---: |
-| **Device** | default.qubit |
-| **Device wires** | 5 |
-| **Shots** | Shots(total=1000) |
-| **Level** | 2 |
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Level** | 2 |
 
-**Resources:**
+            **Resources:**
 
-**Batched tape a:**
+            **Batched tape a:**
 
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 2 |
-| **Total gates** | 1.000E+5 |
-| **Gate counts:** | |
-| Hadamard | 1 |
-| CNOT | 1.000E+5 |
-| **Measurements:** | |
-| expval(PauliZ) | 1 |
-| **Depth** | 2 |
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
 
-**Batched tape b:**
+            **Batched tape b:**
 
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 2 |
-| **Total gates** | 1.000E+5 |
-| **Gate counts:** | |
-| Hadamard | 1 |
-| CNOT | 1.000E+5 |
-| **Measurements:** | |
-| expval(PauliZ) | 1 |
-| **Depth** | 2 |
-"""
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+        """)
 
         assert actual.strip() == expected.strip()
 
@@ -1539,30 +1542,30 @@ class TestIPythonDisplays:
             },
         )
         actual = s._repr_markdown_()
-        expected = """\
-**Circuit Specs:**
+        expected = textwrap.dedent("""\
+            **Circuit Specs:**
 
-| Metric | Value |
-| :--- | ---: |
-| **Device** | default.qubit |
-| **Device wires** | 5 |
-| **Shots** | Shots(total=1000) |
-| **Levels** | |
-| 0 | l1 |
-| 1 | l2 |
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 0 | l1 |
+            | 1 | l2 |
 
-**Resources:**
+            **Resources:**
 
-| ↓Metric / Level→ | 0 | 1-a | 1-b |
-| :--- | ---: | ---: | ---: |
-| **Wire allocations** | 2 | 2 | 2 |
-| **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
-| **Gate counts** |  |  |  |
-| Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
-| CNOT | 1 | 1.000E+5 | 1.000E+5 |
-| **Measurements** |  |  |  |
-| expval(PauliZ) | 1 | 1 | 1 |
-"""
+            | ↓Metric / Level→ | 0 | 1-a | 1-b |
+            | :--- | ---: | ---: | ---: |
+            | **Wire allocations** | 2 | 2 | 2 |
+            | **Total gates** | a\\*a\\*b + a\\*a + a + 1 | 1.000E+5 | 1.000E+5 |
+            | **Gate counts** |  |  |  |
+            | Hadamard | a\\*a\\*b + a\\*a + a | 1 | 1 |
+            | CNOT | 1 | 1.000E+5 | 1.000E+5 |
+            | **Measurements** |  |  |  |
+            | expval(PauliZ) | 1 | 1 | 1 |
+        """)
 
         assert actual.strip() == expected.strip()
 
@@ -1575,16 +1578,17 @@ class TestIPythonDisplays:
             num_allocs=1,
         )
         actual = s._repr_markdown_()
-        expected = """\
-| **Metric** | **Value** |
-| :--- | ---: |
-| **Wire allocations** | 1 |
-| **Total gates** | 0 |
-| **Gate counts:** | |
-| *No gates* | |
-| **Measurements:** | |
-| *No measurements* | |
-| **Depth** | Not computed |"""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 1 |
+            | **Total gates** | 0 |
+            | **Gate counts:** | |
+            | *No gates* | |
+            | **Measurements:** | |
+            | *No measurements* | |
+            | **Depth** | Not computed |
+        """)
 
         assert actual.strip() == expected.strip()
 
