@@ -142,6 +142,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.assert_equal` now provides informative error messages when comparing
+  unequal measurement processes.
+  [(#9605)](https://github.com/PennyLaneAI/pennylane/pull/9605)
+
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
   [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
