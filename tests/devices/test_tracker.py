@@ -41,6 +41,48 @@ class TestTrackerCoreBehavior:
 
         assert tracker.active is False
 
+    def test_repr(self):
+        """Tests the string representation contains all relevant fields with correct values."""
+        tracker = Tracker()
+        r = repr(tracker)
+
+        assert r.startswith("Tracker(")
+        assert f"active={tracker.active}" in r
+        assert f"totals={tracker.totals}" in r
+        assert f"history={tracker.history}" in r
+        assert f"latest={tracker.latest}" in r
+        assert f"persistent={tracker.persistent}" in r
+        assert f"callback={tracker.callback!r}" in r
+
+        tracker.update(a=2, b="b2", c=1)
+        r2 = repr(tracker)
+
+        assert f"active={tracker.active}" in r2
+        assert f"totals={tracker.totals}" in r2
+        assert f"history={tracker.history}" in r2
+        assert f"latest={tracker.latest}" in r2
+        assert f"persistent={tracker.persistent}" in r2
+        assert f"callback={tracker.callback!r}" in r2
+
+    def test_repr_with_callback(self):
+        """Tests that the callback is shown correctly in the repr."""
+
+        def my_callback(_totals, _history, _latest):
+            pass
+
+        tracker = Tracker(callback=my_callback)
+        r = repr(tracker)
+        assert f"callback={my_callback!r}" in r
+
+    def test_repr_active(self):
+        """Tests that active state is reflected in the repr."""
+        tracker = Tracker()
+        with tracker:
+            r = repr(tracker)
+            assert "active=True" in r
+        r = repr(tracker)
+        assert "active=False" in r
+
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 

@@ -23,8 +23,8 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.measurements import Shots
-from pennylane.operation import Operation
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
