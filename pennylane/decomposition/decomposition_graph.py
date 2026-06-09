@@ -533,6 +533,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             make_adjoint_decomp(base_decomp, use_reconstructor)
             for base_decomp in self._get_decompositions(base, use_reconstructor)
             if base_decomp.get_work_wire_spec(**base_params).total == 0
+            and not _decomp_contains_mcm(base_decomp, base_params)
         ]
 
     @staticmethod
