@@ -644,8 +644,10 @@ class TestSpecsPartialSupport:
         @catalyst.qjit
         @qp.qnode(dev)
         def circuit(x, n_iter: int):
-            for _ in range(n_iter):
+            @catalyst.for_loop(0, n_iter, 1)
+            def loop(_):
                 qp.RX(x, 0)
+            loop()
             return qp.expval(qp.Z(0))
 
         fixed = partial(circuit, n_iter=3)
