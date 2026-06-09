@@ -532,6 +532,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         return [
             make_adjoint_decomp(base_decomp, use_reconstructor)
             for base_decomp in self._get_decompositions(base, use_reconstructor)
+            if base_decomp.get_work_wire_spec(**base_params).total == 0
         ]
 
     @staticmethod
@@ -581,6 +582,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         rules = [
             make_controlled_decomp(decomp)
             for decomp in self._get_decompositions(base, use_reconstructor)
+            if not _decomp_contains_mcm(decomp, base_params)
         ]
 
         # There's always the option of turning the controlled operator into a controlled
@@ -664,6 +666,13 @@ def _validate_rule(rule):
             "decorated with @qp.register_resources to be used as a decomposition rule."
         )
     return rule
+
+
+def _decomp_contains_mcm(rule, params):
+    resources = rule.compute_resources(**params).gate_counts
+    mcm = resource_rep(qp.ops.MidMeasure)
+    ppm = resource_rep(qp.ops.PauliMeasure)
+    return mcm in resources or ppm in resources
 
 
 class DecompGraphSolution:
