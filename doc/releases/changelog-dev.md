@@ -142,6 +142,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `AbstractArray` has been added to
+  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
+  These will support a new method of having compressed operators for resource estimation
+  and decomposition.
+  [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
+
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
   [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
@@ -349,6 +355,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
+  explicitly, to match the behaviour of all other `Operator` classes.
+  [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
+
+  Instead of the following call: `qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)`,
+  we would now need to provide the wire labels themselves i.e.
+
+  ```python
+  qp.IQP(weights=[0.85, 0.21], wires=[0, 1], pattern=[[[0]], [[1]]], spin_sym=True)
+  ```
+
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
   [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
@@ -444,6 +461,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Added ``SymbolicOp2``, ``Adjoint2`` that inherit from the new ``Operator2``.
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
@@ -523,6 +541,9 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
+  [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
