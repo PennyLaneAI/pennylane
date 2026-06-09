@@ -225,8 +225,6 @@ def _left_quantum_comparator(
 
     if comparator in ("<", ">="):
         x_wires, y_wires = y_wires, x_wires
-    if comparator in ("<=", ">="):
-        X(target_wire)
 
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
 
@@ -250,6 +248,9 @@ def _left_quantum_comparator(
         CNOT(wires=[x_wires[i], y_wires[i]])
 
     _loop()
+
+    if comparator in ("<=", ">="):
+        X(target_wire)
 
 
 add_decomps(LeftQuantumComparator, _left_quantum_comparator)
