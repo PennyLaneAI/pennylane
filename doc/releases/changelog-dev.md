@@ -151,10 +151,10 @@
   >>> tracker.update(a=2, b="b2", c=1)
   >>> print(tracker)
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
-  
+
   ```
 
-* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
+* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
   phases are purely real, i.e. :math:`\pm 1`.
@@ -227,11 +227,16 @@
   now formatted for clearer visual inspection when used in a Jupyter notebook environment.
   [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
+* The Ross-Selinger decomposition method :func:`~.ops.rs_decomposition` when used Catalyst no longer
+  queues a Catalyst conditional operator when the conditional predicate is static. Instead, the
+  static conditional will be evaluated at trace time, and only the correct branch will be queued.
+  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
-  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with 
+  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
@@ -510,7 +515,7 @@
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
-* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
+* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
@@ -562,7 +567,7 @@
   ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
   ``two_qubit_decomp_rule`` are fixed.
   [(#9520)](https://github.com/PennyLaneAI/pennylane/pull/9520)
-  
+
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
