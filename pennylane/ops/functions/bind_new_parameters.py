@@ -26,6 +26,7 @@ from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
+    Evolution,
     Identity,
     Pow,
     Projector,
@@ -232,6 +233,17 @@ def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Sequenc
     _ = new_hyperparameters.pop("base")
 
     return op.__class__(new_base, new_scalar, **new_hyperparameters)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_evolution(op: Evolution, params: Sequence[TensorLike]):
+    # ``Evolution`` only exposes the evolution parameter in ``op.data``; the base
+    # generator is treated as static and its parameters are not part of ``op.data``.
+    # The generic ``ScalarSymbolicOp`` handler assumes ``data == (scalar, *base_params)``
+    # and would mis-assign parameters (or raise an ``IndexError`` for a composite
+    # generator), so ``Evolution`` is handled explicitly here. The static base is
+    # copied so the returned operator does not share the base object with ``op``.
+    return Evolution(copy.deepcopy(op.base), params[0])
 
 
 @bind_new_parameters.register

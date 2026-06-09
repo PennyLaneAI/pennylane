@@ -515,6 +515,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed incorrect default gradients for `qml.evolve` / `~.Evolution` of a static composite
+  generator (e.g. a `Sum`/`Hamiltonian` of Pauli words with scalar coefficients). Under the
+  default autograd/backprop path, the autograd matrix of `~.Exp` queued intermediate operators
+  created while diagonalizing a composite base, silently producing an incorrect matrix and
+  gradient. In addition, `bind_new_parameters` raised an `IndexError` for such generators on the
+  parameter-shift, adjoint and finite-difference paths because `~.Evolution.data` only exposes the
+  evolution parameter. Both are now handled consistently.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
   [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
@@ -584,6 +593,7 @@ Guillermo Alonso,
 Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
+Jerry Chen,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,

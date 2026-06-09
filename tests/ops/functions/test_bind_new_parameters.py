@@ -20,7 +20,12 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qp
+from pennylane.ops import Evolution
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.ops.functions.bind_new_parameters import (
+    bind_new_parameters_evolution,
+    bind_new_parameters_scalar_symbolic_op,
+)
 
 
 @pytest.mark.parametrize(
@@ -114,6 +119,43 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
+
+
+@pytest.mark.parametrize(
+    "base",
+    [
+        0.5 * qp.X(0) + 0.7 * qp.Z(0),
+        qp.sum(qp.s_prod(0.75, qp.Z(0) @ qp.Z(1)), qp.s_prod(0.75, qp.Z(0))),
+        qp.Hamiltonian([0.5, 0.7], [qp.X(0), qp.Z(0)]),
+    ],
+)
+def test_evolution_composite_generator(base):
+    """Test that `bind_new_parameters` for an `Evolution` of a composite generator
+    with scalar coefficients updates only the evolution time and keeps the static
+    generator. `Evolution.data` excludes the base parameters, which previously
+    caused an `IndexError` here (issue #6514)."""
+    op = qp.evolve(base, 0.123)
+
+    # ``op.data`` only contains the evolution parameter, even though the base
+    # carries scalar coefficients.
+    assert op.data == (0.123,)
+
+    # binding with op.data is what convert_to_numpy_parameters does
+    same = bind_new_parameters(op, op.data)
+    qp.assert_equal(same, op)
+    assert same is not op
+    assert same.base is not op.base
+
+    updated = bind_new_parameters(op, (0.456,))
+    qp.assert_equal(updated, qp.evolve(base, 0.456))
+
+
+def test_evolution_dispatch_is_more_specific_than_scalar_symbolic():
+    """`Evolution` subclasses `Exp`/`ScalarSymbolicOp`; its dedicated dispatch must
+    win, otherwise the generic handler mishandles the one-parameter data contract."""
+
+    assert bind_new_parameters.dispatch(Evolution) is bind_new_parameters_evolution
+    assert bind_new_parameters.dispatch(qp.ops.Exp) is bind_new_parameters_scalar_symbolic_op
 
 
 @pytest.mark.parametrize(
