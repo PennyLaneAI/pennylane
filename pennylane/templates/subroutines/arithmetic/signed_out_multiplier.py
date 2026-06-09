@@ -44,25 +44,13 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
 
 class SignedOutMultiplier(Operator):
     r"""
-    Implements signed out-place multiplication :math:`|x,y,z\rangle \mapsto |x,y,(z + xy) \mod 2^{|z|}\rangle`.
+    Implements signed out-place multiplication
 
-    The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__. 
-    Specifically, the values :math:`x`, :math:`y` and :math:`z` are encoded in big-endian 2s complement.
-    Wire :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
-    for a register of length :math:`n`. For example, the value :math:`x` encoded by a bitstring
-    :math:`x_0 x_1\dots x_{n-1}` is given by the following.
+    This operator performs the modular multiplication of integers x and y modulo the two to the size of the output register
+    in the computational basis:
 
     .. math::
-        \begin{align}
-            x &= - 2^{n-1} x_0 + \sum_{j=1}^{n-1} x_j 2^{n-1-j}, \\
-            y &= - 2^{m-1} y_0 + \sum_{j=1}^{m-1} y_j 2^{m-1-j}, \\
-            z &= - 2^{k-1} z_0 + \sum_{j=1}^{k-1} z_j 2^{k-1-j}.
-        \end{align}
-
-    The first bit of each encoded bitstring gives the sign of the encoded number. :math:`1 \mapsto -`, :math:`0 \mapsto +`.
-    This is however not a sign-magnitude encoding. Iff the encoded number is negative, the rest of the bits do not give the
-    magnitude. Instead, the magnitude can be found by calculating e.g. :math:`\bar{x}=(-1)^{x_0}x`. This is done by flipping the bits of
-    :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(1010)_2 \oplus 1 = (0101)_2 \oplus 1 = (0110)_2`.
+        |x,y,z\rangle \mapsto |x,y,(z + xy) \mod 2^{|z|}\rangle
 
     Args:
         x_wires (Sequence[int]): wires that store the signed integer :math:`x`
@@ -137,8 +125,11 @@ class SignedOutMultiplier(Operator):
         :title: Theoretical background
         :href: theory
 
-        We begin with three signed quantum registers, storing :math:`|x\rangle`, :math:`|y\rangle` and :math:`|0\rangle` with register sizes :math:`n`, :math:`m` and :math:`k`, respectively. We will turn to the case of non-zero initial states for the last register later.
-        Here, :math:`x`, :math:`y` and :math:`z` are signed integers in big-endian 2s complement representation:
+        The inputs and output are given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__.
+        Specifically, the values :math:`x`, :math:`y` and :math:`z` are encoded in big-endian 2s complement.
+        Wire :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
+        for a register of length :math:`n`. For example, the value :math:`x` encoded by a bitstring
+        :math:`x_0 x_1\dots x_{n-1}` is given by the following.
 
         .. math::
             \begin{align}
@@ -147,8 +138,13 @@ class SignedOutMultiplier(Operator):
                 z &= - 2^{k-1} z_0 + \sum_{j=1}^{k-1} z_j 2^{k-1-j}.
             \end{align}
 
-        We also have the magnitude of the signed integers, which can be computed by flipping all bits and incrementing by one,
-        both steps controlled on the sign bit (:math:`x_0` for :math:`x` and :math:`y_0` for :math:`y`). For :math:`x`,
+        The first bit of each encoded bitstring gives the sign of the encoded number. :math:`1 \mapsto -`, :math:`0 \mapsto +`.
+        This is however not a sign-magnitude encoding. Iff the encoded number is negative, the rest of the bits do not give the
+        magnitude. Instead, the magnitude can be found by calculating e.g. :math:`\bar{x}=(-1)^{x_0}x`. This is done by flipping the bits of
+        :math:`x` and adding 1. E.g., :math:`6=(0110)_2` but :math:`-6 = (1010)_2` because :math:`-(1010)_2 \oplus 1 = (0101)_2 \oplus 1 = (0110)_2`.
+
+        Therefore, to get the magnitude of the signed integers, we do the following.
+        Both steps controlled on the sign bit (:math:`x_0` for :math:`x` and :math:`y_0` for :math:`y`). For :math:`x`,
 
         .. math::
             \begin{align}
