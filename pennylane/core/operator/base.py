@@ -1642,18 +1642,6 @@ class Operation(Operator):
         )
         return None
 
-    @property
-    def control_wires(self) -> Wires:  # pragma: no cover
-        r"""Control wires of the operator.
-
-        For operations that are not controlled,
-        this is an empty ``Wires`` object of length ``0``.
-
-        Returns:
-            Wires: The control wires of the operation.
-        """
-        return Wires([])
-
     def single_qubit_rot_angles(self) -> tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
