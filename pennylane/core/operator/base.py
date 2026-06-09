@@ -209,7 +209,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         class OldOp(qp.core.Operator):
             pass
 
-        class NewOp(qp.operation2.Operator2):
+        class NewOp(qp.core.Operator2):
 
             dynamic_argnames = ()
 

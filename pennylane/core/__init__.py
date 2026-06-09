@@ -21,6 +21,7 @@ Operator Types
 
     ~Operator
     ~Operator1
+    ~Operator2
     ~Operation
     ~CV
     ~CVObservable
@@ -39,6 +40,7 @@ Operator Types
 from .operator import (
     Operator,
     Operator1,
+    Operator2,
     Operation,
     Channel,
     CV,
@@ -50,6 +52,7 @@ from .operator import (
 __all__ = [
     "Operator",
     "Operator1",
+    "Operator2",
     "Operation",
     "Channel",
     "CV",
