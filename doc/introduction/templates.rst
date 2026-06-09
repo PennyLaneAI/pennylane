@@ -130,6 +130,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
     :figure: _static/templates/state_preparations/sumofslatersprep_template.png
 
+.. gallery-item::
+    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
+    :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
+
 
 .. raw:: html
 

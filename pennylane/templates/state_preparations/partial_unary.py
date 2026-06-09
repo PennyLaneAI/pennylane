@@ -19,9 +19,9 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -165,13 +165,27 @@ class IsometryFinder:
     def pui(self, k, batch_size):
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
+        from pennylane.templates.subroutines.select import _partial_select
+
         k_start = k - batch_size
         self.circuit.append(("PUI", k_start, k))
 
         # Update tableau for PUI effect
-        target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
-        for j, _bits in enumerate(target_bits):
-            self.apply_multi_controlled_x(slice(0, self.n_subspace), _bits, self.n_subspace + j)
+        # target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
+        # for j, _bits in enumerate(target_bits):
+        # self.apply_multi_controlled_x(slice(0, self.n_subspace), _bits, self.n_subspace + j)
+
+        kept_controls = list(_partial_select(k, list(range(self.n_subspace))))
+        for j in range(batch_size):
+            ctrl = kept_controls[k_start + j]
+            if ctrl:
+                ctrl_wires, ctrl_values = ctrl
+                self.apply_multi_controlled_x(
+                    list(ctrl_wires), list(ctrl_values), self.n_subspace + j
+                )
+            else:
+                # All control nodes dropped: the target X fires unconditionally.
+                self.apply_multi_controlled_x([], [], self.n_subspace + j)
 
         # Update subspace status after PUI
         self._in_subspace = np.all(self.tableau[:, self.n_subspace :] == 0, axis=1)
@@ -590,10 +604,13 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            qp.BasisState(k_start, subspace_wires)
+            # qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
-            qp.BasisState(k_start, subspace_wires)
+            # qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
+            # qp.BasisState(k_start, subspace_wires)
+            ops = [qp.I(nonsubspace_wires[0])] * k_start
+            ops += [qp.X(nonsubspace_wires[j]) for j in range(b)]
+            qp.Select(ops, control=subspace_wires, work_wires=work_wires, partial=True)
             continue
         if _type == "Fanout":
             control, bits = data
