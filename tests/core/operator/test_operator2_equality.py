@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.wires import Wires
 
 # ---------------- Operator2 subclasses for testing ----------------

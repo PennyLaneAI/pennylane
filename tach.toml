@@ -362,12 +362,8 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase"]
+expose = ["Operator", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase"]
 from = ["pennylane.core.operator"]
-
-[[modules]]
-path = "pennylane.operation2"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.ops"

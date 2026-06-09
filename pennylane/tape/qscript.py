@@ -28,10 +28,9 @@ from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qp
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation2 import Operator2
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import TensorLike

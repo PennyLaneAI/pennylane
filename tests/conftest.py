@@ -249,6 +249,21 @@ def pytest_generate_tests(metafunc):
         jax.config.update("jax_enable_x64", True)
 
 
+@pytest.fixture
+def preserve_jax_x64():
+    """Save and restore jax_enable_x64 around a test.
+
+    Use this fixture on any test that sets ``jax_enable_x64`` to ``False`` so
+    that subsequent tests in the same xdist worker are not contaminated.
+    """
+    if not jax_available:
+        yield
+        return
+    original = jax.config.jax_enable_x64
+    yield
+    jax.config.update("jax_enable_x64", original)
+
+
 @pytest.fixture(
     params=[
         pytest.param("autograd", marks=pytest.mark.autograd),
