@@ -147,6 +147,7 @@ class IsometryFinder:
         n_r = self.n - self.n_subspace
         # Largest power of 2 less than or equal to n_r, the remainder register size
         self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
+        print(f"{self.m=}")
 
         self.tableau = qp.math.int_to_binary(basis_states, self.n)
         self.circuit = []
@@ -168,6 +169,8 @@ class IsometryFinder:
         from pennylane.templates.subroutines.select import _partial_select
 
         k_start = k - batch_size
+        if batch_size != self.m and batch_size != len(self.tableau):
+            print(f"Applying a PUI over an incomplete batch: {k_start=}, {k=}, {batch_size=}, ({self.m=})")
         self.circuit.append(("PUI", k_start, k))
 
         # Update tableau for PUI effect
@@ -608,8 +611,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             b = k - k_start
             # qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
             # qp.BasisState(k_start, subspace_wires)
-            ops = [qp.I(nonsubspace_wires[0])] * k_start
-            ops += [qp.X(nonsubspace_wires[j]) for j in range(b)]
+            #ops = [qp.I(nonsubspace_wires[0])] * k_start #This was leaking a queued op.
+            ops = [qp.X(nonsubspace_wires[j]) for j in range(b)]
             qp.Select(ops, control=subspace_wires, work_wires=work_wires, partial=True)
             continue
         if _type == "Fanout":
@@ -621,8 +624,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         ids = data[0]
         _wires = [wires[idx] for idx in ids]
         if _type == "SWAP":
+            print("SWAP!")
             qp.SWAP(_wires)
         elif _type == "Toffoli":
+            print("Toffoli!")
             qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
         else:
             raise NotImplementedError
@@ -633,6 +638,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
 def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
+    if num_entries == 1:
+        return True
     return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)
 
 
@@ -649,11 +656,17 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 
 def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
-    return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
+    if num_entries == 1:
+        needed_work_wires = 0
+    else:
+        needed_work_wires = max(math.ceil_log2(num_entries) - 1, 1)
+    return {"zeroed": needed_work_wires}
 
 
 def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
+    if num_entries == 1:
+        return False # Just use _pui_state_prep_provided_work_wires, we don't need work wires
     return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)
 
 
@@ -665,6 +678,8 @@ def _pui_state_prep_dyn_work_wires(coefficients, wires, indices, **__):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This decomposition dynamically allocates work wires. If PartialUnaryStatePreparation
     has work_wires but too few of them, they will **not** be used here."""
+    # The case num_entries=1 is excluded via _pui_state_prep_dyn_work_wires_condition, so
+    # we know that we want to allocate at least one work wire.
     need_to_allocate = max(math.ceil_log2(len(indices)) - 1, 1)
     with allocate(need_to_allocate, state="zero", restored=True) as work_wires:
         _pui_state_prep_core(coefficients, wires, indices, work_wires)
