@@ -21,6 +21,7 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math, pytrees, queuing
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -34,7 +35,6 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint, ctrl, prod
 
 from .composite import CompositeOp, handle_recursion_error
