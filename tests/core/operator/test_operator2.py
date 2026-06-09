@@ -24,6 +24,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.core.operator.operator2 import StatePrepBase2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -1702,3 +1703,38 @@ class TestRepresentations:
 
         op = WithGen(wires=0)
         assert op.generator() == DynOp(0.5, wires=0)
+
+
+class TestStatePrepBase:
+
+    def test_state_prep_base_label(self):
+        """Tests that the label is as expected."""
+
+        class MyStatePrep(StatePrepBase2):
+            wire_argnames = ("wires",)
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
+                super().__init__(wires)
+
+            def state_vector(self, wire_order=None):
+                return np.zeros(5)
+
+        op = MyStatePrep(0)
+        assert op.label() == "|Ψ⟩"
+        assert op.label(base_label="|x⟩") == "|x⟩"
+
+    def test_interface_not_implemented(self):
+        """Tests that an error is raised if an interface isn't implemented."""
+
+        class BadStatePrep(StatePrepBase2):
+            wire_argnames = ("wires",)
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
+                super().__init__(wires)
+
+            # state_vector is not implemented!
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
+            BadStatePrep(0)
