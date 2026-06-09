@@ -29,11 +29,12 @@ class TestFunctoolsPartial:
 
     @staticmethod
     def _example_qjit():
-        @qp.qjit(static_argnums=1)
+        @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def rx_circuit(x, n_iter):
-            for _ in range(n_iter):
-                qp.RX(x, 0)
+            qp.RX(x, 0)
+            qp.RX(x, 0)
+            qp.RX(x, 0)
             return qp.expval(qp.Z(0))
 
         return rx_circuit

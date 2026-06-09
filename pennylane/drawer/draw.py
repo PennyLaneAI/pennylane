@@ -19,11 +19,10 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Sequence
-from functools import wraps
-from typing import TYPE_CHECKING, Literal
+from functools import partial, wraps
+from typing import TYPE_CHECKING, Any, Literal
 
 from pennylane import math
-from pennylane._functools_partial import bind_functools_partial, unwrap_functools_partial
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 
@@ -32,6 +31,33 @@ from .tape_text import tape_text
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
+
+
+def _unwrap_functools_partial(
+    obj: Callable,
+) -> tuple[Callable, tuple[Any, ...], dict[str, Any]]:
+    if not isinstance(obj, partial):
+        return obj, (), {}
+
+    inner, bound_args, bound_kwargs = _unwrap_functools_partial(obj.func)
+    bound_args = bound_args + obj.args
+    bound_kwargs = {**bound_kwargs, **(obj.keywords or {})}
+    return inner, bound_args, bound_kwargs
+
+
+def _bind_functools_partial(
+    callable_: Callable,
+    bound_args: tuple[Any, ...],
+    bound_kwargs: dict[str, Any],
+) -> Callable:
+    if not bound_args and not bound_kwargs:
+        return callable_
+
+    @wraps(callable_)
+    def wrapper(*args, **kwargs):
+        return callable_(*bound_args, *args, **{**bound_kwargs, **kwargs})
+
+    return wrapper
 
 
 def catalyst_qjit(qnode):
@@ -290,13 +316,13 @@ def draw(
         2: ─╰●─────────────────┤
 
     """
-    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+    qnode, bound_args, bound_kwargs = _unwrap_functools_partial(qnode)
 
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return bind_functools_partial(
+        return _bind_functools_partial(
             _draw_qnode(
                 qnode,
                 wire_order=wire_order,
@@ -339,7 +365,7 @@ def draw(
             max_length=max_length,
         )
 
-    return bind_functools_partial(wrapper, bound_args, bound_kwargs)
+    return _bind_functools_partial(wrapper, bound_args, bound_kwargs)
 
 
 # pylint: disable=too-many-arguments
@@ -789,13 +815,13 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
-    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+    qnode, bound_args, bound_kwargs = _unwrap_functools_partial(qnode)
 
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return bind_functools_partial(
+        return _bind_functools_partial(
             _draw_mpl_qnode(
                 qnode,
                 wire_order=wire_order,
@@ -840,7 +866,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    return bind_functools_partial(wrapper, bound_args, bound_kwargs)
+    return _bind_functools_partial(wrapper, bound_args, bound_kwargs)
 
 
 # pylint: disable=too-many-arguments

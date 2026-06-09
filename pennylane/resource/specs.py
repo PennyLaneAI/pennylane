@@ -23,12 +23,11 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial
+from functools import partial, wraps
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pennylane as qp
-from pennylane._functools_partial import bind_functools_partial, unwrap_functools_partial
 
 from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
@@ -38,6 +37,33 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
+
+
+def _unwrap_functools_partial(
+    obj: Callable,
+) -> tuple[Callable, tuple[Any, ...], dict[str, Any]]:
+    if not isinstance(obj, partial):
+        return obj, (), {}
+
+    inner, bound_args, bound_kwargs = _unwrap_functools_partial(obj.func)
+    bound_args = bound_args + obj.args
+    bound_kwargs = {**bound_kwargs, **(obj.keywords or {})}
+    return inner, bound_args, bound_kwargs
+
+
+def _bind_functools_partial(
+    callable_: Callable,
+    bound_args: tuple[Any, ...],
+    bound_kwargs: dict[str, Any],
+) -> Callable:
+    if not bound_args and not bound_kwargs:
+        return callable_
+
+    @wraps(callable_)
+    def wrapper(*args, **kwargs):
+        return callable_(*bound_args, *args, **{**bound_kwargs, **kwargs})
+
+    return wrapper
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -830,10 +856,10 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
-    qnode, bound_args, bound_kwargs = unwrap_functools_partial(qnode)
+    qnode, bound_args, bound_kwargs = _unwrap_functools_partial(qnode)
 
     if isinstance(qnode, qp.QNode):
-        return bind_functools_partial(
+        return _bind_functools_partial(
             partial(_specs_qnode, qnode, level, compute_depth), bound_args, bound_kwargs
         )
 
@@ -841,7 +867,7 @@ def specs(
         from ..qnn.torch import TorchLayer
 
         if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return bind_functools_partial(
+            return _bind_functools_partial(
                 partial(_specs_qnode, qnode, level, compute_depth), bound_args, bound_kwargs
             )
     except ImportError:  # pragma: no cover
@@ -852,7 +878,7 @@ def specs(
         import catalyst
 
         if isinstance(qnode, catalyst.jit.QJIT):
-            return bind_functools_partial(
+            return _bind_functools_partial(
                 partial(_specs_qjit, qnode, level, compute_depth), bound_args, bound_kwargs
             )
     except ImportError:  # pragma: no cover
