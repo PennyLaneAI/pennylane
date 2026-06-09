@@ -20,9 +20,8 @@ with preparing a certain state on the qutrit device.
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import StatePrepBase
+from pennylane.core.operator import Operation, StatePrepBase
 from pennylane.exceptions import WireError
-from pennylane.operation import Operation, StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires
 
@@ -133,6 +132,11 @@ class QutritDensityMatrix(Operation):
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None
+
+    .. note::
+
+        ``QutritDensityMatrix`` operation is a state preparation operation, but it can be used mid-circuit too.
+        If used mid-circuit targeted wires state will be partial-traced out then replaced with ``state``.
 
     .. note::
 
