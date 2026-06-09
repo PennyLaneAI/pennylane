@@ -195,7 +195,7 @@ class TestAbstractArray:
         a = AbstractArray((), int)
 
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
-            len(a)
+            _ = len(a)
 
     # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):
