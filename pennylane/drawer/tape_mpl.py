@@ -41,7 +41,7 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
     from pennylane.tape import QuantumScript
 
 

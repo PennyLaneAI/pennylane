@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
@@ -214,7 +214,9 @@ class SemiAdder(Operation):
 
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
-                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+                raise ValueError(
+                    f"At least {len(y_wires)-1} work_wires should be provided, got {len(work_wires)}"
+                )
             if work_wires.intersection(x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if work_wires.intersection(y_wires):

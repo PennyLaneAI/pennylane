@@ -24,6 +24,7 @@ from copy import copy
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -34,8 +35,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_involutory,
     qjit_compatible_self_adjoint,
 )
-from pennylane.operation import FlatPytree, Operation
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
