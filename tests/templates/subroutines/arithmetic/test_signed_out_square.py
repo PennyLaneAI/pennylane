@@ -214,9 +214,8 @@ class TestSignedOutSquare:
             rule(x_wires, output_wires, work_wires, output_wires_zeroed)
         decomp = q.queue
 
-        square_output = [4, 5, 6, 7] if output_wires_zeroed else output_wires
         expected = [
-            qp.OutSquare([1, 2], square_output, [8, 9, 10, 11, 12], output_wires_zeroed),
+            qp.OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed),
             qp.BasisState([1], [1]),
             qp.X(4),
             qp.TemporaryAND([2, 4, 8]),
