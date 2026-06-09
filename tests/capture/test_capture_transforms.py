@@ -83,7 +83,7 @@ def expval_z_obs_to_x_obs_plxpr(
     return jax.make_jaxpr(wrapper)(*args)
 
 
-@partial(transform, plxpr_transform=expval_z_obs_to_x_obs_plxpr)
+@transform
 def expval_z_obs_to_x_obs(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument

@@ -469,7 +469,7 @@ DeferMeasurementsInterpreter, defer_measurements_plxpr_to_plxpr = _get_plxpr_def
 
 
 # pylint: disable=unused-argument
-@partial(transform, plxpr_transform=defer_measurements_plxpr_to_plxpr)
+@transform
 def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,

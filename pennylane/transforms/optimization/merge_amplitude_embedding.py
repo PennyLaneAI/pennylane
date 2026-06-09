@@ -323,7 +323,7 @@ MergeAmplitudeEmbeddingInterpreter, merge_amplitude_embedding_plxpr_to_plxpr = (
 )
 
 
-@partial(transform, plxpr_transform=merge_amplitude_embedding_plxpr_to_plxpr)
+@transform
 def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 

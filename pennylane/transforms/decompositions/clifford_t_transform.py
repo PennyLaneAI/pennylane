@@ -440,7 +440,7 @@ def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
 
 
 # pylint: disable=too-many-branches,too-many-statements
-@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
+@transform
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,

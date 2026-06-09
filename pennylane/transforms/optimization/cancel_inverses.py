@@ -319,11 +319,7 @@ def _try_to_cancel_with_next(current_gate, list_copy):
     return list_copy, cancelled
 
 
-@partial(
-    transform,
-    plxpr_transform=cancel_inverses_plxpr_to_plxpr,
-    pass_name="cancel-inverses",
-)
+@transform
 def cancel_inverses(
     tape: QuantumScript, recursive: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
