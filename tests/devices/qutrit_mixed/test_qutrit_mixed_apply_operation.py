@@ -25,7 +25,6 @@ from pennylane import math
 from pennylane.core.operator import Channel
 from pennylane.devices.qutrit_mixed import apply_operation, measure
 from pennylane.devices.qutrit_mixed.utils import QUDIT_DIM
-from pennylane.operation import Channel
 
 # Small additive constant to prevent negative sqrt arguments from floating-point errors
 _SQRT_STABILITY_EPS = 1e-14
