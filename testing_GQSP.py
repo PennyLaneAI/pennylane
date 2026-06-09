@@ -22,7 +22,7 @@ CLIFFORD_T_REDUCED = {
     "HybridCtrl": 0,
 }
 
-L = 2; M=2; N=3
+L = 2; M=1; N=2
 hamiltonian = {
     "core_tensors": np.random.rand(L, M, M, N, N),
     "leaf_tensors": np.random.rand(L, M, N, N),
@@ -43,7 +43,7 @@ custom_decomp = make_rz_to_phase_gradient_decomp(
 )
 
 np.random.seed(0)
-n_angles =  651
+n_angles =  51
 n_max = n_angles // 2
 
 thetas = jnp.array(np.random.rand(n_angles))
@@ -52,9 +52,6 @@ lambds = jnp.array(np.random.rand(1))
 
 dev = qml.device("lightning.qubit", wires=3 * prec + 1)
 
-c_ctrl = wires['circuit_wires'][0]
-c_targ = wires['circuit_wires'][1]
-
 
 def U3(theta, phi, lambds, wires):
     qml.X(wires)
@@ -62,12 +59,11 @@ def U3(theta, phi, lambds, wires):
     qml.X(wires)
     qml.Z(wires)
 
-
-
-
-@qml.qjit(target="mlir", capture=False, autograph=False)
-#@qml.transforms.ppr_to_ppm
+p = [("my_pipe", ["quantum-compilation-stage"])]
+@qml.qjit(target='mlir', pipelines=p, capture=False, autograph=False)
+@qml.transforms.ppr_to_ppm
 @qml.transforms.to_ppr
+@qml.transform(pass_name="adjoint-lowering")
 @catalyst_decompose(
     capabilities=None,
     target_gates=CLIFFORD_T_REDUCED,
@@ -77,44 +73,37 @@ def U3(theta, phi, lambds, wires):
 @qml.qnode(dev)
 def circuit():
 
-    U3(thetas[0], phis[0], lambds[0], wires=c_ctrl)
+    U3(thetas[0], phis[0], lambds[0], wires=wires["hadamard"])
+
 
     @qml.for_loop(0, n_max, 1)
     def loop1(ind):
-        qml.X(wires["system"])
+
+        trotter_fragmented(
+                evolution_time=-1., num_trotter_steps=10, hamiltonian=hamiltonian,
+                wires=wires["system"],
+                control_wires=wires["hadamard"],
+        )
+
+
+        U3(thetas[ind + 1], phis[ind + 1], lambds[ind + 1], wires=wires["hadamard"])
+
+    loop1()
+
+    @qml.for_loop(n_max, len(thetas) - 1, 1)
+    def loop2(ind):
+
+        qml.X(wires["hadamard"])
         trotter_fragmented(
             evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
             wires=wires["system"],
             control_wires=wires["hadamard"],
         )
-        qml.X(wires["system"])
-
-        qml.adjoint(
-            trotter_fragmented(
-                evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
-                wires=wires["system"],
-                control_wires=wires["hadamard"],
-            )
-        )
-
-
-        U3(thetas[ind + 1], phis[ind + 1], lambds[ind + 1], wires=c_ctrl)
-
-    loop1()
-    """
-    @qml.for_loop(n_max, len(thetas) - 1, 1)
-    def loop2(ind):
-        # control_values=[0] triggers an infinite recursion in the graph-based
-        # decomposition under catalyst_decompose (PL 0.45 / Catalyst 0.15).
-        # Equivalent rewrite: X-conjugate the control wire and use control_values=[1].
-        qml.X(c_ctrl)
-        qml.ctrl(qml.RZ(input_val, wires=c_targ),
-                 control=c_ctrl, control_values=[1])
-        qml.X(c_ctrl)
-        U3(thetas[ind + 1], phis[ind + 1], lambds[ind + 1], wires=c_ctrl)
+        qml.X(wires["hadamard"])
+        U3(thetas[ind + 1], phis[ind + 1], lambds[ind + 1], wires=wires["hadamard"])
 
     loop2()
-    """
+
     return qml.state()
 
 
