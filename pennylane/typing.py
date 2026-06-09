@@ -217,7 +217,7 @@ class AbstractArray:
         if isinstance(other, AbstractArray):
             return self.shape == other.shape and self.dtype == other.dtype
 
-        raise TypeError("Tried to check equality against an abstract array.")
+        raise TypeError(f"Cannot check equality between AbstractArray and {type(other)}.")
 
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
