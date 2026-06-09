@@ -45,8 +45,7 @@ class SignedOutSquare(Operation):
     .. seealso:: :class:`~.OutSquare` and :class:`~.OutMultiplier`.
 
     The input is given in `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__.
-    Specifically, the value :math:`x` is encoded in big-endian 2s complement. Wire
-    :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
+    Wire :math:`0` stores the sign bit and wire :math:`i` stores the bit with weight :math:`2^{n-1-i}`
     for a register of length :math:`n`. For example, the value :math:`x=-5` encoded by a bitstring
     of length six is given by
 
