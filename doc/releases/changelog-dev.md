@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+  [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
@@ -67,6 +70,42 @@
 
   ```
 
+* A new template for probabilistic state preparation based on the flip-flop QRAM construction is now available, named :class:`~.FFQRAM`. Given real amplitudes and a list of bitstring addresses, the template embeds the corresponding sparse computational-basis state, with the desired state obtained by post-selecting on the register qubit.
+  [(#9498)](https://github.com/PennyLaneAI/pennylane/pull/9498)
+  [(#9598)](https://github.com/PennyLaneAI/pennylane/pull/9598)
+
+  For example, the following circuit creates the state :math:`\sqrt{0.3}|000\rangle + \sqrt{0.7}|001\rangle` in the first three wires when the last wire is measured to be :math:`|1\rangle`.
+
+  ```python
+  import pennylane as qp
+
+  addrs = ["000", "001"]
+  amps = qp.math.array([qp.math.sqrt(0.3), qp.math.sqrt(0.7)])
+  wires = qp.registers({"address": 3, "register": 1})
+  shots = 1000
+
+  @qp.set_shots(shots)
+  @qp.qnode(qp.device("default.qubit", seed=42))
+  def circuit():
+      qp.FFQRAM(
+          amplitudes=amps,
+          wires=wires["address"] + wires["register"],
+          address=addrs,
+      )
+      qp.measure(wires["register"], postselect=1)
+      return qp.probs(wires=wires["address"])
+
+  ```
+
+  ```pycon
+  >>> print(qp.draw(circuit, level=2)())
+  0: ──H──X─╭●─────────X──X─╭●─────────X────┤ ╭Probs
+  1: ──H──X─├●─────────X──X─├●─────────X────┤ ├Probs
+  2: ──H──X─├●─────────X────├●──────────────┤ ╰Probs
+  3: ───────╰RY(1.16)───────╰RY(1.98)──┤↗₁├─┤
+
+  ```
+
 * A new template for Fast Fermionic Fourier Transforms called :class:`~.FFFT` has been added.
   This algorithm is based on [Ferris (2013)](https://arxiv.org/abs/1310.7605) and applies to
   efficient simulation of quantum materials and chemistry systems.
@@ -103,7 +142,19 @@
 
 <h3>Improvements 🛠</h3>
 
-* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
+* `Tracker` now has a readable `__repr__` that displays all relevant internals
+  (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
+  [(#9575)](https://github.com/PennyLaneAI/pennylane/pull/9575)
+
+  ```pycon
+  >>> tracker = qp.Tracker()
+  >>> tracker.update(a=2, b="b2", c=1)
+  >>> print(tracker)
+  Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
+
+  ```
+
+* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
   phases are purely real, i.e. :math:`\pm 1`.
@@ -180,7 +231,7 @@
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
-  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with 
+  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
@@ -365,6 +416,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump `codecov-action` to `v7`.
+  [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
+
 * :func:`~.parameter_frequencies` added that allows a user to retrieve `parameter_frequencies` from an
   :class:`~.Operation` or calculate them for an :class:`~.Operator2`.
   [(#9569)](https://github.com/PennyLaneAI/pennylane/pull/9569)
@@ -374,13 +428,16 @@
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
-  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
   integrated into the PennyLane ecosystem. Supported functionality so far:
-  - :func:`qp.equal` can check equality between two `Operator2` instances.
+  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
+  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
+  [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
+  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -453,12 +510,15 @@
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
+* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
+  [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
   [(#9552)](https://github.com/PennyLaneAI/pennylane/pull/9552)
-  
+
 * Fixed a bug in unary iteration in `Select` where work wires were not restored correctly
   if the number of selected operators is notably smaller than the maximal capacity for the given
   number of control wires. This bug only surfaced for `partial=False`.
@@ -502,7 +562,7 @@
   ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
   ``two_qubit_decomp_rule`` are fixed.
   [(#9520)](https://github.com/PennyLaneAI/pennylane/pull/9520)
-  
+
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 
@@ -521,6 +581,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+Abdullah Al Omar Galib,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
@@ -532,8 +593,10 @@ Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
+David D.W. Ren,
 Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
-Jake Zaia.
+Jake Zaia,
+Zinan Zhou.

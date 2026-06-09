@@ -16,10 +16,7 @@
 
 import numpy as np
 import pytest
-
-import pennylane as qp
-from pennylane import numpy as pnp
-from tests.operation2.operator_utils import (
+from operator2_utils import (
     CompOp,
     DynOp,
     FullOp,
@@ -29,6 +26,9 @@ from tests.operation2.operator_utils import (
     StaticOp,
     TwoDynOp,
 )
+
+import pennylane as qp
+from pennylane import numpy as pnp
 
 # ---------------------- Tests ----------------------
 

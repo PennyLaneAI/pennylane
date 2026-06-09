@@ -10,11 +10,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Shared ``Operator2`` subclasses used across the ``tests/operation2`` suite."""
+"""Shared ``Operator2`` subclasses used across the ``tests/core/`` suite."""
 
 # pylint: disable=too-few-public-methods
 
-from pennylane.operation2 import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.wires import Wires
 
 

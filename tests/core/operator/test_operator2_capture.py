@@ -15,9 +15,7 @@
 # pylint: disable=too-few-public-methods,protected-access
 
 import pytest
-
-import pennylane as qp
-from tests.operation2.operator_utils import (
+from operator2_utils import (
     CompOp,
     DynOp,
     FullOp,
@@ -27,12 +25,14 @@ from tests.operation2.operator_utils import (
     TwoDynOp,
 )
 
+import pennylane as qp
+
 jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from pennylane.operation2 import AbstractOperator, operator_p
+from pennylane.core.operator.operator2 import AbstractOperator, operator_p
 
 # ---------------------- Helpers ----------------------
 

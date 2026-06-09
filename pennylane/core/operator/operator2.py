@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import abc
 from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -29,12 +30,7 @@ from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.base import (  # tach-ignore
-    _UNSET_BATCH_SIZE,
-    _get_abstract_operator,
-    classproperty,
-)
-from pennylane.core.operator.capture import ABCOperatorMeta  # tach-ignore
+from pennylane._class_property import classproperty
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -50,6 +46,9 @@ from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
+
+from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
+from .capture import ABCOperatorMeta
 
 has_jax = find_spec("jax") is not None
 
@@ -426,9 +425,10 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             z (float): exponent for the operator
 
         Returns:
-            list[:class:`~.operation2.Operator2`]
+            list[:class:`~.core.operator.Operator2`]
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -482,7 +482,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         Returns:
             The adjointed operation.
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -1001,10 +1002,15 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
+    def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
+
+        if is_baseclass:
+            return
+
         _add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -1412,3 +1418,27 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+class StatePrepBase2(Operator2, is_baseclass=True):
+    """An interface for state-prep operations."""
+
+    @abc.abstractmethod
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
+
+    # pylint: disable=unused-argument
+    def label(
+        self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
+    ) -> str:
+        """The default label for a state prep operation."""
+        return base_label or "|Ψ⟩"
