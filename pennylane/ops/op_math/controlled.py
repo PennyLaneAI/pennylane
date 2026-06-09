@@ -254,14 +254,15 @@ def create_controlled_op(
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    if qp.capture.enabled():
-        return _capture_ctrl_transform(op, control, control_values, work_wires)
     return _ctrl_transform(op, control, control_values, work_wires)
 
 
 def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
+        if qp.capture.enabled():
+            return _capture_ctrl_transform(op, control, control_values, work_wires)(*args, **kwargs)
+
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
