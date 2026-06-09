@@ -21,6 +21,7 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import is_abstract
-from pennylane.operation import Operation, Operator
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike

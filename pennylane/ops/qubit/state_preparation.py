@@ -27,6 +27,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -34,7 +35,6 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.exceptions import WireError
-from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike

@@ -37,7 +37,7 @@ def _get_plxpr_merge_rotations():
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
-        from pennylane.operation import Operator
+        from pennylane.core.operator import Operator
     except ImportError:  # pragma: no cover
         return None, None
 

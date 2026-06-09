@@ -25,6 +25,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math import Evolution, Exp
 
 
@@ -954,7 +955,7 @@ class TestDifferentiation:
     def test_parameter_frequencies(self):
         """Test parameter_frequencies property"""
         op = Exp(qp.PauliZ(1), 1j)
-        assert op.parameter_frequencies == [(2,)]
+        assert parameter_frequencies(op) == [(2,)]
 
     def test_parameter_frequencies_raises_error(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
@@ -962,7 +963,7 @@ class TestDifferentiation:
         with pytest.raises(GeneratorUndefinedError):
             _ = op.generator()
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            _ = op.parameter_frequencies
+            _ = parameter_frequencies(op)
 
     def test_parameter_frequency_with_parameters_in_base_operator(self):
         """Test that parameter_frequency raises an error for the Exp class, but not the
@@ -973,9 +974,9 @@ class TestDifferentiation:
         op2 = Evolution(base_op, 1)
 
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            _ = op1.parameter_frequencies
+            _ = parameter_frequencies(op1)
 
-        assert op2.parameter_frequencies == [(4.0,)]
+        assert parameter_frequencies(op2) == [(4.0,)]
 
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of an Exp are considered trainable."""

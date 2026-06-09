@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
 
@@ -113,6 +113,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
 
+    @pytest.mark.jax
     def test_decomposition_wires_must_be_mapped(self):
         """Test that an error is raised if the operators in decomposition do not have mapped
         wires after mapping the op."""
@@ -155,6 +156,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    @pytest.mark.jax
     def test_mcms_can_be_compared(self):
         """Tests that decompositions with mid-circuit measurements can be compared correctly."""
 

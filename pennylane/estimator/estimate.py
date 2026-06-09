@@ -25,8 +25,8 @@ from pennylane.estimator.ops.op_math.symbolic import (
     apply_adj,
     apply_controlled,
 )
+from pennylane.core.operator import Operation, Operator
 from pennylane.measurements.measurements import MeasurementProcess
-from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
