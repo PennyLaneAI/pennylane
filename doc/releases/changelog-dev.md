@@ -230,7 +230,7 @@
 * The Ross-Selinger decomposition method :func:`~.ops.rs_decomposition` when used Catalyst no longer
   queues a Catalyst conditional operator when the conditional predicate is static. Instead, the
   static conditional will be evaluated at trace time, and only the correct branch will be queued.
-  [(#????)](https://github.com/PennyLaneAI/pennylane/pull/????)
+  [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
