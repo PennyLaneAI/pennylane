@@ -233,6 +233,11 @@
   trace time, and only the correct branch will be queued.
   [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
 
+* The ``DecompositionGraph`` now skips applying ``adjoint`` or ``ctrl`` to decomposition rules that
+  contain mid-circuit measurements, also skips applying ``adjoint`` to decomposition rules that
+  contain dynamic wire allocations.
+  [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
