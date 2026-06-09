@@ -38,7 +38,7 @@ def _get_plxpr_merge_amplitude_embedding():
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.base_interpreter import jaxpr_to_jaxpr
         from pennylane.capture.primitives import cond_prim, measure_prim
-        from pennylane.operation import Operator
+        from pennylane.core.operator import Operator
     except ImportError:  # pragma: no cover
         return None, None
 
@@ -353,10 +353,10 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ─╭●───┤  State
-    1: ─╰X───┤  State
-    2: ─╭|Ψ⟩─┤  State
-    3: ─╰|Ψ⟩─┤  State
+    0: ─╭●───┤ ╭State
+    1: ─╰X───┤ ├State
+    2: ─╭|Ψ⟩─┤ ├State
+    3: ─╰|Ψ⟩─┤ ╰State
     >>> circuit()
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
            0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])

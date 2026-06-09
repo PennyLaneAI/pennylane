@@ -28,11 +28,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.operation import Operator
 from pennylane.ops import Conditional, PauliMeasure
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,

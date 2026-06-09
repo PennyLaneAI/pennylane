@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.resource.error import (
     AlgorithmicError,
     ErrorOperation,

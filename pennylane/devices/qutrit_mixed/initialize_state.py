@@ -16,7 +16,7 @@
 from collections.abc import Iterable
 
 import pennylane as qp
-from pennylane.operation import StatePrepBase
+from pennylane.core.operator import StatePrepBase
 
 from .utils import QUDIT_DIM
 

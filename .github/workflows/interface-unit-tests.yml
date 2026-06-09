@@ -221,7 +221,7 @@ jobs:
       python-version: ${{ steps.python_versions.outputs.python_versions }}
       jobs-to-skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
 
-  # This job is the source of truth for the default versions of PyTorch, TensorFlow, and JAX.
+  # This job is the source of truth for the default versions of PyTorch, and JAX.
   # Individual jobs can use these values or override at a per job level.
   default-dependency-versions:
     needs:
@@ -739,7 +739,7 @@ jobs:
         uses: actions/download-artifact@v8
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.codecov_token }}
           fail_ci_if_error: true  # upload errors should be caught early

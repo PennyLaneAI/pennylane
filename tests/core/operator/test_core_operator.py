@@ -24,6 +24,7 @@ from gate_data import CNOT, I, Toffoli, X
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -887,7 +888,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies == [(0.4,)]
+        assert parameter_frequencies(op) == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
@@ -905,7 +906,7 @@ class TestOperationConstruction:
         with pytest.raises(
             qp.exceptions.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
-            _ = op.parameter_frequencies
+            _ = parameter_frequencies(op)
 
     @pytest.mark.parametrize("num_param", [1, 2])
     def test_frequencies_parameter_dependent(self, num_param):
@@ -926,7 +927,7 @@ class TestOperationConstruction:
 
         x = [0.654, 2.31][:num_param]
         op = DummyOp(*x, wires=0)
-        f = op.parameter_frequencies
+        f = parameter_frequencies(op)
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
 
@@ -938,7 +939,7 @@ class TestOperationConstruction:
 
         op = DummyOp(0.7, [0, 1, 2, 3])
         assert isinstance(op.generator(), qp.SparseHamiltonian)
-        assert op.parameter_frequencies == [(1.0,)]
+        assert parameter_frequencies(op) == [(1.0,)]
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
@@ -1623,6 +1624,19 @@ class TestCVOperation:
             U_high_order = np.array([np.eye(3)] * 3)
             op.heisenberg_expand(U_high_order, op.wires)
 
+    def test_supports_parameter_shift(self):
+        """Test the supports_parameter_shift property."""
+
+        class DummyOp(qp.operation.CVOperation):
+            num_wires = 1
+            grad_method = "A"
+
+            @staticmethod
+            def _heisenberg_rep(p):
+                return p  # just overwrite it?
+
+        assert DummyOp.supports_parameter_shift
+
 
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
@@ -1838,7 +1852,7 @@ def test_symmetric_matrix_early_return(op, mocker):
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
 
-    spy = mocker.spy(qp.operation, "expand_matrix")
+    spy = mocker.spy(qp.core.operator.base, "expand_matrix")
     actual = op.matrix(wire_order=list(range(len(op.wires))))
 
     spy.assert_not_called()

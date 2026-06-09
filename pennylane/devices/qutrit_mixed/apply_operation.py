@@ -21,7 +21,7 @@ from string import ascii_letters as alphabet
 import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
-from pennylane.operation import Channel
+from pennylane.core.operator import Channel
 
 from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices, get_num_wires
 
