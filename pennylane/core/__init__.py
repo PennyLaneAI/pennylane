@@ -35,10 +35,20 @@ Operator Types
 
 """
 
-from .operator import Operator, Operation, Channel, CV, CVOperation, CVObservable, StatePrepBase
+from .operator import (
+    CV,
+    Channel,
+    CVObservable,
+    CVOperation,
+    Operation,
+    Operator,
+    Operator2,
+    StatePrepBase,
+)
 
 __all__ = [
     "Operator",
+    "Operator2",
     "Operation",
     "Channel",
     "CV",
