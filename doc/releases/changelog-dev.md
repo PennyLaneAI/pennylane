@@ -43,6 +43,9 @@
   by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
 
+* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+  [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
   [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
@@ -466,13 +469,15 @@
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
-  base class, `Operator2`. This is an internal, work-in-progress effort that is being incrementally
+  base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
   integrated into the PennyLane ecosystem. Supported functionality so far:
-  - :func:`qp.equal` can check equality between two `Operator2` instances.
+  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
+  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
+  [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
 
 * Adds a new `pennylane/core` module.

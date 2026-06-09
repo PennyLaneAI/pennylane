@@ -171,6 +171,9 @@ as addition, multiplication and exponentiation.
     :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
     :figure: _static/templates/arithmetic/signedoutmultiplier.png
 
+.. gallery-item::
+    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :figure: _static/templates/arithmetic/outsquare.png
 
 .. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
