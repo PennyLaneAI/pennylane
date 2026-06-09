@@ -2,8 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring 
+  a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+  [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -145,6 +147,12 @@
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability in JupyterLabs;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+
+* `AbstractArray` has been added to
+  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
+  These will support a new method of having compressed operators for resource estimation
+  and decomposition.
+  [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
@@ -459,6 +467,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -535,6 +544,9 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
+  [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
