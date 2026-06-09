@@ -539,6 +539,10 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
+  expected with recent versions of PennyLane.
+  [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
+
 <h3>Bug fixes 🐛</h3>
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
