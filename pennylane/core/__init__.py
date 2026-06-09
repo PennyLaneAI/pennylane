@@ -38,15 +38,16 @@ Operator Types
 """
 
 from .operator import (
+    CV,
+    Channel,
+    CVObservable,
+    CVOperation,
+    Operation,
     Operator,
     Operator1,
     Operator2,
-    Operation,
-    Channel,
-    CV,
-    CVOperation,
-    CVObservable,
     StatePrepBase,
+    StatePrepBase2,
 )
 
 __all__ = [
@@ -59,4 +60,5 @@ __all__ = [
     "CVOperation",
     "CVObservable",
     "StatePrepBase",
+    "StatePrepBase2",
 ]
