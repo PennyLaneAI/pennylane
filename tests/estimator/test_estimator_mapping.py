@@ -174,7 +174,9 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.IQP(weights=[0.1, 0.2], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False),
+                qtemps.IQP(
+                    weights=[0.1, 0.2], wires=range(2), pattern=[[[0]], [[1]]], spin_sym=False
+                ),
                 re_temps.IQP(num_wires=2, pattern=[[[0]], [[1]]], spin_sym=False, wires=[0, 1]),
             ),
             (
