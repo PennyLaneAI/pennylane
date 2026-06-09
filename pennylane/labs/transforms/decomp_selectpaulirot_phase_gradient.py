@@ -47,7 +47,6 @@ def _select_pauli_rot_phase_gradient(
 
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
-    num_add_work_wires = len(angle_wires) - 1
 
     def compute_fn():
         # we can set clean=False because we are doing QROM - something - QROM†
@@ -55,14 +54,14 @@ def _select_pauli_rot_phase_gradient(
             binary_int,
             control_wires,
             angle_wires,
-            work_wires=work_wires[num_add_work_wires:],
+            work_wires=work_wires,
             clean=True,
         )
         for wire in phase_grad_wires:
             qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
 
     def target_fn():
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires[:num_add_work_wires])
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
 
     def inner_cob():
         return change_op_basis(compute_fn, target_fn, compute_fn)
@@ -187,8 +186,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 case "Z":
                     return {resource_rep(qp.RZ): 1}
 
-        num_add_work_wires = len(angle_wires) - 1
-
         # 1. QROM compressed rep
         qrom_rep = resource_rep(
             qp.QROM,
@@ -196,7 +193,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             num_bitstrings=2**num_control_wires,
             num_control_wires=num_control_wires,
             num_target_wires=len(angle_wires),
-            num_work_wires=len(work_wires) - num_add_work_wires,
+            num_work_wires=len(work_wires),
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])
@@ -217,7 +214,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SemiAdder,
             num_x_wires=len(angle_wires),
             num_y_wires=len(phase_grad_wires),
-            num_work_wires=num_add_work_wires,
+            num_work_wires=len(work_wires),
         )
 
         # 5. change_op_basis(compute_op, target_op)
