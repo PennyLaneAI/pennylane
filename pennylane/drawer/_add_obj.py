@@ -242,8 +242,10 @@ def _add_select_pauli_rot(
     for w in obj.hyperparameters["control_wires"]:
         layer_str[config.wire_map[w]] += "◑"
 
-    label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    target_label = label.replace("SelectPauliRot", f"R{obj.hyperparameters['rot_axis']}", 1)
+    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    target_label = obj.label(
+        decimals=config.decimals, base_label=base_label, cache=config.cache
+    ).replace("\n", "")
     for w in obj.hyperparameters["target_wire"]:
         layer_str[config.wire_map[w]] += target_label
 
