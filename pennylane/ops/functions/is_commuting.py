@@ -20,6 +20,7 @@ import numpy as np
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Prod, SProd, Sum
+from pennylane.wires import Wires
 
 SPECIAL_UTILITIES = {
     "Barrier",
@@ -229,12 +230,10 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         bool: True if commutation, False otherwise, None if not two rotations.
     """
 
-    target_wires_1 = qp.wires.Wires(
-        [w for w in operation1.wires if w not in operation1.control_wires]
-    )
-    target_wires_2 = qp.wires.Wires(
-        [w for w in operation2.wires if w not in operation2.control_wires]
-    )
+    op1_control_wires = getattr(operation1, "control_wires", Wires([]))
+    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
+    op2_control_wires = getattr(operation2, "control_wires", Wires([]))
+    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
     if operation1.name == "CRot":
         if intersection(target_wires_1, operation2.wires):
