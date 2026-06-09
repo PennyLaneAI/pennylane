@@ -549,7 +549,7 @@
   coefficients). The autograd matrix of `~.Exp` queued the intermediate operators created while
   diagonalizing a composite base, so the diagonalizing matrix — and therefore the forward value
   and gradient — were incorrect without raising an error, causing optimization to diverge.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9636)](https://github.com/PennyLaneAI/pennylane/pull/9636)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
