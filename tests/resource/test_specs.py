@@ -633,6 +633,8 @@ class TestSpecsPartialSupport:
         ):
             qp.specs(fixed)()
 
+    @pytest.mark.catalyst
+    @pytest.mark.external
     def test_specs_partial_qjit(self):
         """specs works with partial wrapping a qjit\'d QNode."""
         catalyst = pytest.importorskip("catalyst")
