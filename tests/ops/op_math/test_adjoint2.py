@@ -54,6 +54,10 @@ class PauliX2(Operator2):
     def adjoint(self):
         return PauliX2(self.wires)
 
+    @property
+    def pauli_rep(self):
+        return qp.pauli.PauliSentence({qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
+
 
 class RX2(Operator2):
     """A simplified RX operator that inherit from Operator2."""
@@ -128,6 +132,8 @@ def test_attributes():
     op2 = qp.adjoint(PauliX2(0))
     assert op2.has_diagonalizing_gates
     assert op2.has_sparse_matrix
+    assert op2.pauli_rep == qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X"}): 1.0})
+    assert op2.has_adjoint
 
 
 def test_methods():
@@ -149,6 +155,7 @@ def test_methods():
     assert op2.simplify() == PauliX2(0)
     assert op2.diagonalizing_gates() == [qp.H(0)]
     assert qp.math.allclose(op2.eigvals(), [1, -1])
+    assert op2.adjoint() == PauliX2(0)
 
 
 def test_flatten_unflatten():
