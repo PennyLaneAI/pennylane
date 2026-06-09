@@ -499,9 +499,9 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     first_match_qubits = []
 
     # Controlled gate
-    if len(node_c.op.control_wires) >= 1:
-        circuit_control = node_c.op.control_wires
-        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
+    circuit_control = getattr(node_c.op, "control_wires", Wires([]))
+    if len(circuit_control) >= 1:
+        circuit_target = Wires([w for w in node_c.op.wires if w not in circuit_control])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
