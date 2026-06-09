@@ -25,8 +25,8 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
 
 
-class PauliX2(Operator2):
-    """A simplified PauliX operator that inherit Operator2."""
+class SX2(Operator2):
+    """A new SX gate."""
 
     wire_sizes = (1,)
 
@@ -35,28 +35,30 @@ class PauliX2(Operator2):
     def __init__(self, wires):
         super().__init__(wires)
 
+    @property
+    def pauli_rep(self):
+        return qp.pauli.PauliSentence(
+            {
+                qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
+            }
+        )
+
     @staticmethod
     def compute_matrix(wires):
-        return np.array([[0, 1], [1, 0]])
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
     def compute_sparse_matrix(wires, format="csr"):
-        return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
+        return 0.5 * sparse.csr_matrix([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]]).asformat(format=format)
 
     @staticmethod
     def compute_eigvals(wires):
-        return qp.pauli.pauli_eigs(1)
+        return np.array([1, 1j])
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
         return [qp.Hadamard(wires=wires)]
-
-    def adjoint(self):
-        return PauliX2(self.wires)
-
-    @property
-    def pauli_rep(self):
-        return qp.pauli.PauliSentence({qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
 
 class RX2(Operator2):
@@ -128,11 +130,17 @@ def test_attributes():
     assert op.wire_args == {}
     assert op.has_generator
     assert not op.has_diagonalizing_gates
+    assert op.pauli_rep is None
 
-    op2 = qp.adjoint(PauliX2(0))
+    op2 = qp.adjoint(SX2(0))
     assert op2.has_diagonalizing_gates
     assert op2.has_sparse_matrix
-    assert op2.pauli_rep == qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X"}): 1.0})
+    assert op2.pauli_rep == qp.pauli.PauliSentence(
+        {
+            qp.pauli.PauliWord({0: "I"}): (0.5 - 0.5j),
+            qp.pauli.PauliWord({0: "X"}): (0.5 + 0.5j),
+        }
+    )
     assert op2.has_adjoint
 
 
@@ -148,14 +156,13 @@ def test_methods():
     assert op.simplify() == RX2(np.pi * 4 - 0.5, wires=0)
     assert op.adjoint() == RX2(0.5, wires=0)
 
-    op2 = qp.adjoint(PauliX2(0))
-    expected_matrix = np.array([[0, 1], [1, 0]])
+    op2 = qp.adjoint(SX2(0))
+    expected_matrix = 0.5 * np.array([[1 - 1j, 1 + 1j], [1 + 1j, 1 - 1j]])
     assert qp.math.allclose(op2.matrix(), expected_matrix)
     assert qp.math.allclose(op2.sparse_matrix(), expected_matrix)
-    assert op2.simplify() == PauliX2(0)
+    qp.assert_equal(op2.simplify(), Adjoint2(SX2(0)))
     assert op2.diagonalizing_gates() == [qp.H(0)]
-    assert qp.math.allclose(op2.eigvals(), [1, -1])
-    assert op2.adjoint() == PauliX2(0)
+    assert qp.math.allclose(op2.eigvals(), [1, -1j])
 
 
 def test_flatten_unflatten():
