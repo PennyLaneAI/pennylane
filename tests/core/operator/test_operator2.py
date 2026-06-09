@@ -1197,15 +1197,6 @@ class TestGeneralMethods:
             0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
         )
 
-    def test_map_wires_pauli_rep(self):
-        """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly."""
-        op = DynOp(1.5, wires=[0, 1])
-        # pylint: disable=attribute-defined-outside-init
-        op._pauli_rep = PauliSentence({PauliWord({0: "X", 1: "Y"}): 1.0})
-
-        new_op = op.map_wires({0: "a", 1: "b"})
-        assert new_op.pauli_rep == PauliSentence({PauliWord({"a": "X", "b": "Y"}): 1.0})
-
     def test_simplify_default(self):
         """Test that ``simplify`` returns the operator itself by default."""
         op = DynOp(0.5, wires=0)

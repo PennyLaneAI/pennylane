@@ -18,11 +18,11 @@ TODO: [sc-120453] Fill docstring
 
 import abc
 from abc import ABC
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -46,7 +46,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE
+from .base import _UNSET_BATCH_SIZE, Operator
 
 
 class Operator2(ABC):
@@ -55,6 +55,8 @@ class Operator2(ABC):
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
+    _operator_version = 2
 
     # ----------------- Class variables set manually -------------------------
 
@@ -198,6 +200,16 @@ class Operator2(ABC):
         return {name: self.arguments[name] for name in self.dynamic_argnames}
 
     @property
+    def parameters(self):
+        return list(self.dynamic_args.values())
+
+    @property
+    def data(self):
+        return tuple(self.dynamic_args.values())
+
+    control_wires = Wires(())
+
+    @property
     def static_args(self) -> dict[str, Any]:
         """Dictionary mapping static argument names to their values."""
         return {name: self.arguments[name] for name in self.static_argnames}
@@ -329,6 +341,18 @@ class Operator2(ABC):
         """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
         return self._pauli_rep
+
+    @property
+    def hyperparameters(self) -> dict:
+        return {
+            k: v
+            for k, v in self.arguments.items()
+            if k not in self.dynamic_argnames and k != "wires"
+        }
+
+    @property
+    def num_wires(self):
+        return self.wire_sizes[0]
 
     # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
@@ -504,26 +528,23 @@ class Operator2(ABC):
             .Operator2: new operator
         """
         # pylint: disable=protected-access
-        new_op = copy(self)
+        new_args = copy(self.arguments)
 
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
             mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
             new_wires = unflatten(mapped_leaves, tree)
-            new_op._bound_args.arguments[n] = new_wires
-
-        if (p_rep := self.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+            new_args[n] = new_wires
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
-            new_op._bound_args.arguments[n] = unflatten(leaves, tree)
+            new_args[n] = unflatten(leaves, tree)
 
-        return new_op
+        return type(self)(**new_args)
 
     def simplify(self) -> "Operator2":
         """Reduce the depth of nested operators to the minimum.
@@ -1204,6 +1225,64 @@ class Operator2(ABC):
                 )
 
             self._batch_size = first_dims[0]
+
+    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return qp.sum(self, other, lazy=False)
+        if isinstance(other, TensorLike):
+            if qp.math.allequal(other, 0):
+                return self
+            return qp.sum(
+                self,
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+        """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qp.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
+        return NotImplemented
+
+    def __truediv__(self, other: TensorLike):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: "Operator") -> "Operator":
+        """The product operation between Operator objects."""
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+
+    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return self + qp.s_prod(-1, other, lazy=False)
+        if isinstance(other, TensorLike):
+            return self + (qp.math.multiply(-1, other))
+        return NotImplemented
+
+    def __rsub__(self, other: Union["Operator", TensorLike]):
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+    def __pow__(self, other: TensorLike) -> "Operator":
+        r"""The power operation of an Operator object."""
+        if isinstance(other, TensorLike):
+            return qp.pow(self, z=other)
+        return NotImplemented
 
 
 # ------------------------------------------------------------------------------

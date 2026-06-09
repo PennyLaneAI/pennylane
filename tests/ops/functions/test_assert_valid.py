@@ -285,10 +285,18 @@ def test_mismatched_mat_decomp():
 def test_bad_eigenvalues_order():
     """Test that an error is raised if the order of eigenvalues does not match the diagonalizing gates."""
 
-    class BadEigenDecomp(qp.PauliX):
+    class BadEigenDecomp(qp.operation.Operator):
         @staticmethod
         def compute_eigvals():
             return [-1, 1]
+
+        @staticmethod
+        def compute_matrix():
+            return qp.X.compute_matrix()
+
+        @staticmethod
+        def compute_diagonalizing_gates(wires):
+            return qp.X.compute_diagonalizing_gates(wires)
 
     with pytest.raises(
         AssertionError, match=r"eigenvalues and diagonalizing gates must be able to"

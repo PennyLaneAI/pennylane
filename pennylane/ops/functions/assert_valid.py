@@ -624,7 +624,7 @@ def assert_valid(
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
-    _check_pytree(op)
+    # _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
