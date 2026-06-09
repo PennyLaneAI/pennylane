@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -30,7 +30,6 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation2 import Operator2
 from pennylane.ops import Prod, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
