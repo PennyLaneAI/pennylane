@@ -515,7 +515,7 @@
 
 * Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
   expected with recent versions of PennyLane.
-  [(#2493)](https://github.com/PennyLaneAI/pennylane/pull/2493)
+  [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
 
