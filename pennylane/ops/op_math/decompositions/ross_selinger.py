@@ -150,7 +150,8 @@ def _jit_rs_decomposition(wire, decomposition_info):
     # Optional leading T gate
     leading_t_cond = qp.cond(has_leading_t, qp.T)
     leading_t_cond(wire)
-    ops.append(leading_t_cond.operation)
+    if qp.math.is_abstract(has_leading_t):
+        ops.append(leading_t_cond.operation)
 
     active_jit = active_compiler()
     compilers = AvailableCompilers.names_entrypoints
