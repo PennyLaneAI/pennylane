@@ -2,9 +2,42 @@
 
 <h3>New features since last release</h3>
 
-* Added a :class:`~.SignedOutMultiplier` that multiplies numbers encoded in the input registers 
-  using a two's complement.
+* A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
+  input registers using a two's complement.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+  ```python
+  x = -3
+  y = 3
+
+  x_wires = [0, 1, 2]
+  y_wires = [3, 4, 5]
+  output_wires = [6, 7, 8, 9, 10, 11]
+  work_wires = [12, 13, 14, 15]
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev, shots=1)
+  def circuit():
+      qp.BasisEmbedding(x, wires=x_wires)
+      qp.BasisEmbedding(y, wires=y_wires)
+      qp.SignedOutMultiplier(
+          x_wires,
+          y_wires,
+          output_wires,
+          work_wires, 
+          output_wires_zeroed=True,
+      )
+      return qp.sample(wires=output_wires)
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [[1 1 0 1 1 1]]
+
+  ```
+  
+  The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of :math:`-3 \cdot 3 \; = -9` in 2s complement form.
 
 * Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
   by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
