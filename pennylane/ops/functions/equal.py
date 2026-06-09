@@ -24,7 +24,7 @@ from typing import Any
 import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator, Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
