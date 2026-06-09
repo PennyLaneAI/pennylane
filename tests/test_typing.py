@@ -163,7 +163,7 @@ class TestAbstractArray:
         assert a4 != a0
         assert hash(a4) != hash(a0)
 
-        with pytest.raises(TypeError, match="Tried to check equality against an abstract array."):
+        with pytest.raises(TypeError, match="Cannot check equality between AbstractArray"):
             _ = a3 == 2
 
     def test_ellipsis_in_shape(self):
