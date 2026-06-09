@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import abc
 from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -24,15 +25,28 @@ from inspect import BoundArguments, Signature, signature
 from typing import Any, ClassVar
 
 import numpy as np
+from scipy.sparse import spmatrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE, classproperty  # tach-ignore
-from pennylane.exceptions import AdjointUndefinedError, PowUndefinedError
+from pennylane._class_property import classproperty
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
-from pennylane.typing import FlatPytree
-from pennylane.wires import Wires
+from pennylane.typing import FlatPytree, TensorLike
+from pennylane.wires import Wires, WiresLike
+
+from .base import _UNSET_BATCH_SIZE
 
 
 class Operator2(ABC):
@@ -406,9 +420,10 @@ class Operator2(ABC):
             z (float): exponent for the operator
 
         Returns:
-            list[:class:`~.operation2.Operator2`]
+            list[:class:`~.core.operator.Operator2`]
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -441,7 +456,7 @@ class Operator2(ABC):
     @classproperty
     @classmethod
     def has_adjoint(cls) -> bool:
-        r"""Bool: Whether or not the Operator can compute its own adjoint.
+        """Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
@@ -462,7 +477,8 @@ class Operator2(ABC):
         Returns:
             The adjointed operation.
 
-        >>> class MyClass(qp.operation2.Operator2):
+        >>> from pennylane.core.operator import Operator2
+        >>> class MyClass(Operator2):
         ...     dynamic_argnames = ("phi",)
         ...
         ...     def __init__(self, phi, wires):
@@ -516,6 +532,343 @@ class Operator2(ABC):
             .Operator2: simplified operator
         """
         return self
+
+    # ------------------------------------------------------------------------
+    # ----------------------- Operator representations -----------------------
+    # ------------------------------------------------------------------------
+    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
+
+    @staticmethod
+    def compute_matrix(*args, **kwargs) -> TensorLike:
+        """Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`.Operator2.matrix` and :func:`qp.matrix() <pennylane.matrix>`
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        raise MatrixUndefinedError
+
+    @classproperty
+    @classmethod
+    def has_matrix(cls) -> bool:
+        """Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.compute_matrix != Operator2.compute_matrix or cls.matrix != Operator2.matrix
+
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
+        """Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator2.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        canonical_matrix = self.compute_matrix(**self.arguments)
+
+        if (
+            wire_order is None
+            or self.wires == Wires(wire_order)
+            or (
+                self.name in qp.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
+            return canonical_matrix
+
+        return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+
+    @staticmethod
+    def compute_sparse_matrix(*args, format: str = "csr", **kwargs) -> spmatrix:
+        """Representation of the operator as a sparse matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Operator2.sparse_matrix`
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
+        """
+        raise SparseMatrixUndefinedError
+
+    @classproperty
+    @classmethod
+    def has_sparse_matrix(cls) -> bool:
+        """Bool: Whether the Operator returns a defined sparse matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.compute_sparse_matrix != Operator2.compute_sparse_matrix
+            or cls.sparse_matrix != Operator2.sparse_matrix
+        )
+
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
+        """Representation of the operator as a sparse matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator2.compute_sparse_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            format (str): format of the returned scipy sparse matrix, for example 'csr'
+
+        Returns:
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
+
+        """
+        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format="csr")
+        return math.expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        ).asformat(format)
+
+    @staticmethod
+    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator2.decomposition`.
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            list[Operator2]: decomposition of the operator
+        """
+        raise DecompositionUndefinedError
+
+    @classproperty
+    @classmethod
+    def has_decomposition(cls) -> bool:
+        """Bool: Whether or not the Operator returns a defined decomposition."""
+        # TODO: [sc-120519] Update when integrating with graph decompositions
+        # if compute_decomposition or decomposition overwritten and property
+        # not overwritten, set as class property during __init_subclass__
+        # return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
+        return (
+            cls.compute_decomposition != Operator2.compute_decomposition
+            or cls.decomposition != Operator2.decomposition
+        )
+
+    def decomposition(self) -> list["Operator2"]:
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator2.compute_decomposition`.
+
+        Returns:
+            list[Operator2]: decomposition of the operator
+        """
+        if type(self).compute_decomposition != Operator2.compute_decomposition:
+            return self.compute_decomposition(**self.arguments)
+
+        # TODO: [sc-120519] Update when integrating with graph decompositions
+        # for decomp in qp.list_decomps(self):
+        #     if decomp.is_applicable(**self.resource_params):
+        #         with AnnotatedQueue() as q:
+        #             decomp(**self.arguments)
+        #         if QueuingManager.recording():
+        #             # no need for copies if we just use queue method
+        #             _ = [op.queue() for op in q.queue]
+        #         return q.queue
+
+        raise DecompositionUndefinedError
+
+    @staticmethod
+    def compute_eigvals(*args, **kwargs) -> TensorLike:
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`Operator2.eigvals() <.eigvals>` and :func:`qp.eigvals() <pennylane.eigvals>`
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            tensor_like: eigenvalues
+        """
+        raise EigvalsUndefinedError
+
+    def eigvals(self) -> TensorLike:
+        r"""Eigenvalues of the operator in the computational basis.
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`, the operator
+        can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. note::
+            When eigenvalues are not explicitly defined, they are computed automatically from the matrix representation.
+            Currently, this computation is *not* differentiable.
+
+        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
+        inferred from the matrix representation.
+
+        .. seealso:: :meth:`~.Operator2.compute_eigvals` and :func:`qp.eigvals() <pennylane.eigvals>`
+
+        Returns:
+            tensor_like: eigenvalues
+        """
+
+        try:
+            return self.compute_eigvals(**self.arguments)
+        except EigvalsUndefinedError as e:
+            # By default, compute the eigenvalues from the matrix representation if one is defined.
+            if self.has_matrix:  # pylint: disable=using-constant-test
+                return qp.math.linalg.eigvals(self.matrix())
+            raise EigvalsUndefinedError from e
+
+    @staticmethod
+    def compute_diagonalizing_gates(*args, **kwargs) -> list["Operator2"]:
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Operator2.diagonalizing_gates`.
+
+        Args:
+            *args (tuple): Positional arguments of the operator
+            **kwargs (dict): Keyword arguments of the operator
+
+        Returns:
+            list[.Operator2]: list of diagonalizing gates
+        """
+        raise DiagGatesUndefinedError
+
+    @classproperty
+    @classmethod
+    def has_diagonalizing_gates(cls) -> bool:
+        """Bool: Whether or not the Operator returns defined diagonalizing gates.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_diagonalizing_gates != Operator2.compute_diagonalizing_gates
+            or cls.diagonalizing_gates != Operator2.diagonalizing_gates
+        )
+
+    def diagonalizing_gates(self) -> list["Operator2"]:
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator2.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator2] or None: a list of operators
+        """
+        return self.compute_diagonalizing_gates(**self.arguments)
+
+    def terms(self) -> tuple[list[TensorLike], list["Operator2"]]:
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operator2]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+        """
+        raise TermsUndefinedError
+
+    @classproperty
+    @classmethod
+    def has_generator(cls) -> bool:
+        """Bool: Whether or not the Operator returns a defined generator.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.generator != Operator2.generator
+
+    def generator(self) -> "Operator2":
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator() # doctest: +SKIP
+        0.5 * Y(0) + Z(0) @ X(1)
+
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
+
+        """
+        raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     # ------------------------------------------------------------------------
     # ------------------------ General dunder methods ------------------------
@@ -644,10 +997,15 @@ class Operator2(ABC):
 
         self._wires = Wires.all_wires(all_algorithmic_wires)
 
-    def __init_subclass__(cls: type["Operator2"]) -> None:  # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
+    def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         # TODO: [sc-120429] Add processing for overriding has_decomposition
 
         cls._sig = signature(cls)
+
+        if is_baseclass:
+            return
+
         _add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -932,3 +1290,27 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+class StatePrepBase2(Operator2, is_baseclass=True):
+    """An interface for state-prep operations."""
+
+    @abc.abstractmethod
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
+
+    # pylint: disable=unused-argument
+    def label(
+        self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
+    ) -> str:
+        """The default label for a state prep operation."""
+        return base_label or "|Ψ⟩"
