@@ -14,6 +14,71 @@
 r"""
 This module contains all the measurements supported by PennyLane.
 
+
+Overview
+--------
+
+Top-level measurement functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :mod:`~pennylane.measurements` functions for creating standard PennyLane measurement
+processes are top-level imports:
+
+.. autosummary::
+
+    ~pennylane.classical_shadow
+    ~pennylane.counts
+    ~pennylane.density_matrix
+    ~pennylane.expval
+    ~pennylane.measure
+    ~pennylane.mutual_info
+    ~pennylane.probs
+    ~pennylane.purity
+    ~pennylane.sample
+    ~pennylane.shadow_expval
+    ~pennylane.state
+    ~pennylane.var
+    ~pennylane.vn_entropy
+
+
+Core Infrastructure
+^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.core.measurements
+
+.. autosummary::
+
+    :toctree: api
+
+    ~MeasurementProcess
+    ~StateMeasurement
+    ~SampleMeasurement
+    ~MeasurementTransform
+
+
+Measurement Classes
+^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.measurements
+
+.. autosummary::
+
+    :toctree: api
+
+    ~ClassicalShadowMP
+    ~CountsMP
+    ~DensityMatrixMP
+    ~ExpectationMP
+    ~MutualInfoMP
+    ~NullMeasurement
+    ~ProbabilityMP
+    ~PurityMP
+    ~SampleMP
+    ~ShadowExpvalMP
+    ~StateMP
+    ~VarianceMP
+    ~VnEntropyMP
+
 Description
 -----------
 
