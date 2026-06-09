@@ -44,6 +44,7 @@ from .operator import (
     Operator,
     Operator2,
     StatePrepBase,
+    StatePrepBase2,
 )
 
 __all__ = [
@@ -55,4 +56,5 @@ __all__ = [
     "CVOperation",
     "CVObservable",
     "StatePrepBase",
+    "StatePrepBase2",
 ]
