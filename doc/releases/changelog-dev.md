@@ -151,10 +151,10 @@
   >>> tracker.update(a=2, b="b2", c=1)
   >>> print(tracker)
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
-  
+
   ```
 
-* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and 
+* Updated the preprocessing of target state vectors for `MottonenStatePreparation` and
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
   that contain negative signs. This allows the preparation circuits to skip phase gates when the
   phases are purely real, i.e. :math:`\pm 1`.
@@ -227,11 +227,17 @@
   now formatted for clearer visual inspection when used in a Jupyter notebook environment.
   [(#9518)](https://github.com/PennyLaneAI/pennylane/pull/9518)
 
+* The Ross-Selinger decomposition method :func:`~.ops.rs_decomposition` when used with Catalyst
+  no longer queues a Catalyst conditional operator, if the conditional predicate for whether a
+  leading T gate exists is statically known. Instead, the static conditional will be evaluated at
+  trace time, and only the correct branch will be queued.
+  [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
-  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with 
+  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
@@ -343,6 +349,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
+  explicitly, to match the behaviour of all other `Operator` classes.
+  [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
+
+  Instead of the following call: `qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)`,
+  we would now need to provide the wire labels themselves i.e.
+
+  ```python
+  qp.IQP(weights=[0.85, 0.21], wires=[0, 1], pattern=[[[0]], [[1]]], spin_sym=True)
+  ```
+
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
   [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
@@ -438,6 +455,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -513,10 +531,13 @@
 * Added examples to the documentation for the :class:`~.CNOT`, :class:`~.Toffoli`, and :class:`~.CCZ` operators.
   [(#9555)](https://github.com/PennyLaneAI/pennylane/pull/9555)
 
-* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits. 
+* Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
+  [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
@@ -565,7 +586,7 @@
   ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
   ``two_qubit_decomp_rule`` are fixed.
   [(#9520)](https://github.com/PennyLaneAI/pennylane/pull/9520)
-  
+
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
   [(#9522)](https://github.com/PennyLaneAI/pennylane/pull/9522)
 

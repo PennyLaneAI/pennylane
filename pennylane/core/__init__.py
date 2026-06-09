@@ -51,7 +51,17 @@ Other
 
 """
 
-from .operator import Operator, Operation, Channel, CV, CVOperation, CVObservable, StatePrepBase
+from .operator import (
+    CV,
+    Channel,
+    CVObservable,
+    CVOperation,
+    Operation,
+    Operator,
+    Operator2,
+    StatePrepBase,
+    StatePrepBase2,
+)
 from .measurements import (
     MeasurementProcess,
     StateMeasurement,
@@ -62,12 +72,14 @@ from .shots import Shots, ShotCopies, ShotsLike
 
 __all__ = [
     "Operator",
+    "Operator2",
     "Operation",
     "Channel",
     "CV",
     "CVOperation",
     "CVObservable",
     "StatePrepBase",
+    "StatePrepBase2",
     "MeasurementProcess",
     "StateMeasurement",
     "SampleMeasurement",

@@ -683,7 +683,7 @@ class TestModifiedTemplates:
         pattern = tuple(pattern)
 
         kwargs = {
-            "num_wires": 4,
+            "wires": range(4),
             "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
             "pattern": pattern,
             "spin_sym": True,
