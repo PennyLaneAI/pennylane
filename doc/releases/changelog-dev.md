@@ -142,7 +142,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* :func:`~.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
   symbols on the control wires and a Pauli rotation label on the target wire.
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
 
