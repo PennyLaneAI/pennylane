@@ -441,6 +441,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Plxpr transforms have been removed.
+  [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+
 * Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
 
