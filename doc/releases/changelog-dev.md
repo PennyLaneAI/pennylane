@@ -144,6 +144,27 @@
   `qp.devices.DefaultQutritMixed`.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+  ```python
+  import pennylane as qp
+  nr_wires = 1
+  rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
+  rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
+  
+  dev = qp.device("default.qutrit.mixed", wires=1)
+  @qp.qnode(dev)
+  def circuit():
+      qp.QutritDensityMatrix(rho, wires=[0])
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[[0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 1.+0.j]]])
+  
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
