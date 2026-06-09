@@ -198,8 +198,8 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
 
     While inheriting from :class:`~.Operator` provides the old, version 1 interface, using ``Operator``
     with ``isinstance`` and ``issubclass`` checks returns whether an object is *either* ``Operator``
-    *or* the new :class:`~.Operator2`. This has been done to speed integration, as the exposed interfaces
-    are mostly the same. This ``Operator1`` class be used to check if an instance is *specifically*
+    *or* the new :class:`~.Operator2`. This has been done to speed up integration, as the exposed interfaces
+    are mostly the same. This ``Operator1`` class can be used to check if an instance is *specifically*
     the old version of the interface.
 
     Suppose we have an old operator and a new operator:
@@ -210,8 +210,6 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
             pass
 
         class NewOp(qp.core.Operator2):
-
-            dynamic_argnames = ()
 
             def __init__(self, wires):
                 super().__init__(wires)
@@ -234,14 +232,12 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     False
 
     When inheriting from this class, it is switched out for :class:`~.Operator`. The following
-    is equivalent inheriting from ``qp.core.Operator``.
+    is equivalent to inheriting from ``qp.core.Operator``.
 
     .. code-block:: python
 
         class AnotherOldOp(qp.core.Operator1):
             pass
-
-
     """
 
     def __new__(cls, *args, **kwargs):
@@ -1666,7 +1662,7 @@ class Operation(Operator):
     def __subclasshook__(cls, subclass):
         if cls is Operation and getattr(subclass, "_operator_version", None) == 2:
             return True
-        return super().__subclasshook__(subclass)
+        return NotImplemented
 
     @property
     def grad_method(self) -> Literal["A", "F", None]:
