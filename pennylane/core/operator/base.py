@@ -562,9 +562,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if cls == Operator:
+        if cls is Operator:
             return getattr(subclass, "_operator_version", None) in {1, 2}
-        return super().__subclasshook__(subclass)
+        return NotImplemented
 
     def __init_subclass__(cls, **_):
         # turn has_decomposition into a class property if possible
