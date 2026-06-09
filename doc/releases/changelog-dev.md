@@ -349,6 +349,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
+  explicitly, to match the behaviour of all other `Operator` classes.
+  [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
+
+  Instead of the following call: `qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)`,
+  we would now need to provide the wire labels themselves i.e.
+
+  ```python
+  qp.IQP(weights=[0.85, 0.21], wires=[0, 1], pattern=[[[0]], [[1]]], spin_sym=True)
+  ```
+
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
   [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
