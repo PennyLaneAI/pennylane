@@ -49,13 +49,11 @@ def _select_pauli_rot_phase_gradient(
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
 
     def compute_fn():
-        # we can set clean=False because we are doing QROM - something - QROM†
         qp.QROM(
             binary_int,
             control_wires,
             angle_wires,
             work_wires=work_wires,
-            clean=True,
         )
         for wire in phase_grad_wires:
             qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
