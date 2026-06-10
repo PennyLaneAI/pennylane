@@ -21,9 +21,9 @@ from abc import ABCMeta
 from inspect import Signature, signature
 
 from pennylane.capture import enabled
-from pennylane.pytrees import flatten
+from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires
+from pennylane.wires import AbstractWires, Wires
 
 
 def _stop_autograph(f):
@@ -36,10 +36,42 @@ def _stop_autograph(f):
     return new_f
 
 
-def contains_abstract_type(x):
+def contains_abstract_type(val):
     """Check if pytree contains any abstract types."""
-    leaves = flatten(x)[0]
+    leaves = flatten(val)[0]
     return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
+
+
+def _canonicalize_wire_leaf(leaf) -> AbstractWires:
+    if isinstance(leaf, Wires):
+        return AbstractWires(len(leaf))
+
+    if isinstance(leaf, (int, str)):
+        return AbstractWires(1)
+
+    return AbstractWires(len(list(leaf)))
+
+
+def canonicalize_abstract_type(val, is_wires: bool = False):
+    """Check if pytree contains any abstkact types."""
+
+    if is_wires:
+        if isinstance(val, AbstractWires):  # already abstract, return as is
+            return val
+        return _canonicalize_wire_leaf(val)
+
+    leaves, structure = flatten(val)
+    new_leaves = []
+    for leaf in leaves:
+        if isinstance(leaf, (AbstractArray, AbstractWires)):
+            new_leaves.append(leaf)
+        # Process arrays
+        elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+            new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
+        # Process scalars
+        else:
+            new_leaves.append(AbstractArray((), type(leaf)))
+    return unflatten(new_leaves, structure)
 
 
 class OperatorMeta(type):
@@ -68,10 +100,17 @@ class OperatorMeta(type):
             contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
         )
         if has_abstract_arguments:
+            # "Canonicalize" abstract operators
+            # NOTE: Because at least one of the arguments is abstract
+            # all of them need to be "promoted" to abstract
+            for name in arguments_that_can_be_abstract:
+                is_wires_arg = name in cls.wire_argnames
+                arguments[name] = canonicalize_abstract_type(arguments[name], is_wires=is_wires_arg)
+
             obj = cls.__new__(cls)
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
 
-            Operator2.__init__(obj, *args, **kwargs)
+            Operator2.__init__(obj, *bound.args, **bound.kwargs)
             return obj
 
         op = type.__call__(cls, *args, **kwargs)

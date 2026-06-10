@@ -45,7 +45,7 @@ from pennylane.exceptions import (
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .capture import ABCOperatorMeta
@@ -956,7 +956,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     # ------------------ Private utililities for initialization ------------------
     # ----------------------------------------------------------------------------
 
-    def __init_wires(self):
+    def __init_wires(self):  # pylint: disable=too-many-branches
         """Initialize operator wires.
 
         * Union of all wire_argnames into _wires
@@ -967,7 +967,11 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         for wname, wsize in zip(self.wire_argnames, self.wire_sizes, strict=True):
             if wname not in self.hybrid_argnames:
-                canonical_wires = Wires(self._bound_args.arguments[wname])
+                arg_value = self._bound_args.arguments[wname]
+                if isinstance(arg_value, AbstractWires):
+                    canonical_wires = arg_value
+                else:
+                    canonical_wires = Wires(arg_value)
                 self._bound_args.arguments[wname] = canonical_wires
 
                 if wsize is not None and len(canonical_wires) != wsize:
@@ -1000,7 +1004,11 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             ops = filter(_is_op, leaves)
             all_algorithmic_wires.extend(op.wires for op in ops)
 
-        self._wires = Wires.all_wires(all_algorithmic_wires)
+        if any(isinstance(w, AbstractWires) for w in all_algorithmic_wires):
+            total_wires = sum(getattr(w, "num_wires", len(w)) for w in all_algorithmic_wires)
+            self._wires = AbstractWires(total_wires)
+        else:
+            self._wires = Wires.all_wires(all_algorithmic_wires)
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:

@@ -100,15 +100,16 @@ class TestConcreteInputs:
 
 
 class TestAbstractInputs:
-    """Tests that the Operator2 constructor is run if abstract inputs are detected."""
+    """Tests that the metaclass canonicalizes abstract operators."""
 
     def test_child_init_is_skipped(self):
         """Tests that the child constructor is skipped."""
 
         aa = AbstractArray((1,), float)
-        op = DynCanonOp(phi=aa, wires=0)
+        op = DynCanonOp(phi=aa, wires=[0])
         assert op.phi is aa
-        assert op.wires == Wires(0)
+        # The 0 got replaced with a AbstractWires
+        assert op.wires == AbstractWires(1)
 
     def test_bind_isnt_trigger_for_abstract_array(self):
         """Tests that no operator equation enters the jaxpr for abstract inputs."""
@@ -123,20 +124,19 @@ class TestAbstractInputs:
     def test_some_inputs_are_abstract(self):
         """Tests that it takes at least one abstract argument to skip the init."""
 
-        aa = AbstractArray((1,), float)
+        aa = AbstractArray((1,), int)
         op = TwoDynOp(phi=aa, theta=1.0, wires=0)
         # __init__ is hit so phi is doubled
         assert op.phi is aa
-        assert op.theta == 1.0
-        assert op.wires == Wires(0)
+        assert op.theta == AbstractArray((), float)
+        assert op.wires == AbstractWires(1)
 
     def test_abstract_wires_skips_init(self):
         """Tests that the presence of abstract wires also skips init."""
 
         aw = Wires[1]
         op = MultiWireOp(wires=aw, ctrl_wires=0)
-        assert op.wires[0] is aw
-        assert op.wires[1] == 0
+        assert op.wires == AbstractWires(2)
 
     def test_bind_isnt_trigger_for_abstract_wires(self):
         """Tests that no operator equation enters the jaxpr for abstract wires."""
