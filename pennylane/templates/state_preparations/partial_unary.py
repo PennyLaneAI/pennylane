@@ -73,19 +73,22 @@ class IsometryFinder:
              If none is found move to the next stage, else continue with step 3.
 
            - **Swap** remainder qubit :math:`j` with a higher-index remainder qubit that is
-             set to one in at least one bitstring. If none is found, move to the next stage, else
-             continue with step 3, knowing that we now found a desired :math:`\ell'`.
+             set to one in at least one bitstring. If none is found and :math:`j>0`, move to
+             the next stage. If none is found and :math:`j=0`, move to step 4. If a possible swap
+             move was found, continue with step 3, knowing that we now found a desired :math:`\ell'`.
 
-           - Find a bitstring that has a one in one of the first :math:`j` remainder qubits and identify
-             a bit in which this bit string differs from the :math:`j`\ th bitstring in :math:`\mathcal{B}`.
+           - Find a bitstring that has a one in one of the first :math:`j` (note we asserted
+             :math:`j>0` above) remainder qubits
+             (at least one such bitstring must exist) and identify a bit in which this bit string
+             differs from the :math:`j`\ th bitstring in :math:`\mathcal{B}` (there is at least
+             one such qubit because the bitstrings are unique).
              **Controlled** on the found remainder qubit and the differing qubit, **flip** the
-             :math:`j`\ th remainder qubit. If we found the described bitstring, we now have
+             :math:`j`\ th remainder qubit. We then have
              our desired :math:`\ell'` with a one on that qubit, and continue with step 3.
 
-           If none of the stages above was able to find a :math:`\ell'` but there is at least one
-           entry in :math:`\mathcal{B}`, go to step 4. If there is no :math:`\ell'` but
+           If the above stages did not find an :math:`\ell'` and
            :math:`\mathcal{B}=\{\}`, we know that all remaining bit strings lie in the subspace
-           register exclusively, and can go to step 5.
+           register exclusively, and go to step 5.
 
         3. **Controlled** on qubit :math:`j`, **flip** all other remainder qubits of the
            found :math:`\ell` and set the subspace qubits to the bit string of :math:`k`.
@@ -147,7 +150,6 @@ class IsometryFinder:
         n_r = self.n - self.n_subspace
         # Largest power of 2 less than or equal to n_r, the remainder register size
         self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
-        print(f"{self.m=}")
 
         self.tableau = qp.math.int_to_binary(basis_states, self.n)
         self.circuit = []
@@ -166,29 +168,13 @@ class IsometryFinder:
     def pui(self, k, batch_size):
         """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
-        from pennylane.templates.subroutines.select import _partial_select
-
         k_start = k - batch_size
-        if batch_size != self.m and batch_size != len(self.tableau):
-            print(f"Applying a PUI over an incomplete batch: {k_start=}, {k=}, {batch_size=}, ({self.m=})")
         self.circuit.append(("PUI", k_start, k))
 
         # Update tableau for PUI effect
-        # target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
-        # for j, _bits in enumerate(target_bits):
-        # self.apply_multi_controlled_x(slice(0, self.n_subspace), _bits, self.n_subspace + j)
-
-        kept_controls = list(_partial_select(k, list(range(self.n_subspace))))
-        for j in range(batch_size):
-            ctrl = kept_controls[k_start + j]
-            if ctrl:
-                ctrl_wires, ctrl_values = ctrl
-                self.apply_multi_controlled_x(
-                    list(ctrl_wires), list(ctrl_values), self.n_subspace + j
-                )
-            else:
-                # All control nodes dropped: the target X fires unconditionally.
-                self.apply_multi_controlled_x([], [], self.n_subspace + j)
+        target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
+        for j, _bits in enumerate(target_bits):
+            self.apply_multi_controlled_x(slice(0, self.n_subspace), _bits, self.n_subspace + j)
 
         # Update subspace status after PUI
         self._in_subspace = np.all(self.tableau[:, self.n_subspace :] == 0, axis=1)
@@ -231,28 +217,24 @@ class IsometryFinder:
         ``target_qubit``."""
         # Translate from remainder index to total index
         actual_qubit = self.n_subspace + target_qubit
-        ns_cols = self.tableau[np.array(remaining), actual_qubit + 1 : self.n]
+        # We know that no bit string has the actual_qubit set to 1 because
+        # _next_state_with_target_set failed to find it. We look for a one on a higher-index
+        # qubit in the remainder register
+        ns_cols = self.tableau[np.array(remaining), actual_qubit + 1 :]
         if ns_cols.size > 0:
             # Find first (row, col) with a 1
             row_idx, col_idx = np.where(ns_cols)
             if len(row_idx):
+                # Find absolute qubit index from relative index within ns_cols and apply swap.
                 swap_from = actual_qubit + 1 + int(col_idx[0])
                 self.swap(actual_qubit, swap_from)
+                # Return the index of the bitstring that had the qubit set to 1, and now has
+                # actual_qubit set to one due to the swap.
                 return int(remaining[row_idx[0]])
 
         return None
 
-    def _get_diff_qubit(self, idx0, idx1, actual_qubit):
-        """Find a qubit on which the bitstrings in rows idx0 and idx1 of the tableau differ.
-        Used in _toffoli_trick exclusively."""
-        mismatches = np.where(self.tableau[idx0] != self.tableau[idx1])[0]
-        if len(mismatches) and mismatches[0] != actual_qubit:
-            return int(mismatches[0])
-        if len(mismatches) > 1:
-            return int(mismatches[1] if mismatches[0] == actual_qubit else mismatches[0])
-        return None
-
-    def _toffoli_trick(self, remaining, target_qubit, batch):
+    def _try_toffoli(self, remaining, target_qubit, batch):
         """Stage 3 of step 2.
         Find a bitstring that has one of the remainder qubits set to one that are already
         used in ``batch`` but differs on a different qubit. Then apply the Toffoli trick
@@ -261,19 +243,29 @@ class IsometryFinder:
         candidate in stage 1 of this step already."""
         actual_qubit = self.n_subspace + target_qubit
 
+        # Iterate over the bit strings we still need to map
         for idx in remaining:
-            ns = self.tableau[idx, self.n_subspace :]
-            for j in range(target_qubit):
-                if ns[j] == 1:
-                    diff_qubit = self._get_diff_qubit(idx, batch[j], actual_qubit)
+            # Find a remainder qubit lower than actual_qubit that is set to one (we know that
+            # there is no bit string that has actual_qubit or any remainder qubit with higher index
+            # set to one, because they would have been found by _next_state_with_target_set or
+            # _try_swap, respectively).
+            active_remainder_bit = np.where(self.tableau[idx, self.n_subspace : actual_qubit])[0]
+            if len(active_remainder_bit) == 0:
+                continue
+            active_remainder_bit = active_remainder_bit[0]
+            # Find a qubit at which the bitstrings A at position batch[active_remainder_bit] and
+            # B at position `idx` differ. Note that we know that there is a differing qubit because
+            # the bitstrings are unique. Also, note that actual_qubit can't be a differing qubit,
+            # because A only has ones in the subspace and at position
+            # active_remainder_bit < actual_qubit, and B does not have actual_qubit set because
+            # in that case, _next_state_with_target_set would have found it already.
+            A, B = self.tableau[idx], self.tableau[batch[active_remainder_bit]]
+            diff_qubit = int(np.where(A != B)[0][0])
 
-                    if diff_qubit is None:
-                        continue
-
-                    controls = [self.n_subspace + j, diff_qubit]
-                    control_values = [1, int(self.tableau[idx, diff_qubit])]
-                    self.toffoli(controls, control_values, actual_qubit)
-                    return idx
+            controls = [self.n_subspace + active_remainder_bit, diff_qubit]
+            control_values = [1, int(self.tableau[idx, diff_qubit])]
+            self.toffoli(controls, control_values, actual_qubit)
+            return idx
 
         return None
 
@@ -325,17 +317,12 @@ class IsometryFinder:
                 # non-subspace qubit set to 1
                 found_state = self._try_swap(remaining, target_qubit)
 
-            if found_state is None and b > 0:
-                # Stage 3: Use Toffoli trick to fabricate a suitable state instead
-                found_state = self._toffoli_trick(remaining, target_qubit, batch)
-
             if found_state is None:
-                # Step 4
-                # If really no state could be found, flush the PUI and start a new batch.
                 if b > 0:
-                    self.pui(k, len(batch))
-                    batch = []
-                continue
+                    # Stage 3: Use Toffoli trick to fabricate a suitable state instead
+                    found_state = self._try_toffoli(remaining, target_qubit, batch)
+                else:
+                    continue
 
             # Step 3
             #  - Transform found_state: zero out other non-subspace bits using CX
@@ -563,7 +550,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     ] += num_entries
 
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
-    resources[embed_rep] += 2 * num_entries // main_pui_batch_size
+    resources[embed_rep] += 2 * max(num_entries // main_pui_batch_size, 1)
 
     swap_rep = qp.resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
@@ -607,13 +594,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            # qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            # qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
-            # qp.BasisState(k_start, subspace_wires)
-            #ops = [qp.I(nonsubspace_wires[0])] * k_start #This was leaking a queued op.
-            ops = [qp.X(nonsubspace_wires[j]) for j in range(b)]
-            qp.Select(ops, control=subspace_wires, work_wires=work_wires, partial=True)
+            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
+            qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
             control, bits = data
@@ -624,10 +608,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         ids = data[0]
         _wires = [wires[idx] for idx in ids]
         if _type == "SWAP":
-            print("SWAP!")
             qp.SWAP(_wires)
         elif _type == "Toffoli":
-            print("Toffoli!")
             qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
         else:
             raise NotImplementedError
@@ -666,7 +648,7 @@ def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
 def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
     if num_entries == 1:
-        return False # Just use _pui_state_prep_provided_work_wires, we don't need work wires
+        return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
     return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)
 
 

@@ -160,12 +160,14 @@ class TestPartialUnaryStatePreparation:
             num_work_wires = 0
 
         work_wires = list(range(num_wires, num_wires + num_work_wires))
+        # If provide_work_wires=False/True (=> cast to 0/1), we expect the decomposition
+        # rule with index 0/1 to be applicable. Exception: For num_entries=1, the rule with
+        # index 1 should be applicable
+        applicable_rule = int(provide_work_wires) if num_entries > 1 else 1
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
             applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
-            # If provide_work_wires=False/True (=> cast to 0/1), we expect the decomposition
-            # rule with index 0/1 to be applicable.
-            assert applicable is (j == int(provide_work_wires))
+            assert applicable is (j == applicable_rule)
             if not applicable:
                 continue
 
