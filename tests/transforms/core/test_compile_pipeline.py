@@ -21,7 +21,6 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qp
-from pennylane.decomposition import gate_sets
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
@@ -38,7 +37,6 @@ from pennylane.transforms.core.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
-from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 
 def first_valid_transform(

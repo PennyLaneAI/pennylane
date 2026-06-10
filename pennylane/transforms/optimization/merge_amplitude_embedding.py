@@ -13,14 +13,10 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
-from collections.abc import Sequence
-from copy import copy
-from functools import lru_cache, partial
-
 import pennylane as qp
 from pennylane import AmplitudeEmbedding
-from pennylane.exceptions import DeviceError, TransformError
-from pennylane.math import flatten, is_abstract, reshape
+from pennylane.exceptions import DeviceError
+from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform

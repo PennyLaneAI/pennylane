@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
-from functools import lru_cache, partial
+from functools import partial
 
 from pennylane.core.operator import Operator
 from pennylane.math import is_abstract

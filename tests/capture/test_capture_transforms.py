@@ -16,8 +16,6 @@ This submodule tests transforms with program capture
 """
 
 # pylint: disable=protected-access
-from functools import partial
-
 import pytest
 
 jax = pytest.importorskip("jax")

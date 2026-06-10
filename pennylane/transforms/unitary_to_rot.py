@@ -15,9 +15,7 @@
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
 
-from functools import lru_cache, partial
-
-from pennylane import capture, math
+from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary

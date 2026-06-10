@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 
-from functools import lru_cache, partial
+from functools import partial
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
