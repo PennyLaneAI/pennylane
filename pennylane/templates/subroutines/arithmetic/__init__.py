@@ -27,3 +27,4 @@ from .out_poly import OutPoly
 from .phase_adder import PhaseAdder
 from .incrementer import Incrementer
 from .out_square import OutSquare
+from .signed_out_square import SignedOutSquare

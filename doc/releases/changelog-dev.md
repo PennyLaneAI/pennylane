@@ -73,8 +73,10 @@
 
   The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
 
-* Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
+* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
+  a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
+  [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -212,6 +214,16 @@
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
+  symbols on the control wires and a Pauli rotation label on the target wire.
+  [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
+
+* `AbstractArray` has been added to
+  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
+  These will support a new method of having compressed operators for resource estimation
+  and decomposition.
+  [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
@@ -420,6 +432,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
+  explicitly, to match the behaviour of all other `Operator` classes.
+  [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
+
+  Instead of the following call: `qp.IQP(weights=[0.85, 0.21], num_wires=2, pattern=[[[0]], [[1]]], spin_sym=True)`,
+  we would now need to provide the wire labels themselves i.e.
+
+  ```python
+  qp.IQP(weights=[0.85, 0.21], wires=[0, 1], pattern=[[[0]], [[1]]], spin_sym=True)
+  ```
+
 * `qp.queuing.process_queue` has been moved to `qp.tape.qscript.process_queue`.
   [(#9542)](https://github.com/PennyLaneAI/pennylane/pull/9542)
 
@@ -515,6 +538,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -590,7 +614,14 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
+  expected with recent versions of PennyLane.
+  [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
+
 <h3>Bug fixes 🐛</h3>
+
+* Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
+  [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
