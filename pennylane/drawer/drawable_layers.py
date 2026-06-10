@@ -202,6 +202,20 @@ class _LayersData:
         )
         # if not enough space, bump op_layer
         op_layer = max(op_layer, len(inner_layers))
+        # if any barrier/ global phase/ etc we need to shift forward where
+        # we add things even more
+        # bit of complicated logic for a rare edge case, but might as well support it
+        #
+        # qp.Barrier()
+        # with qp.allocate(1, state="any") as wires: # cant add this to layer 0 that has a barrier
+        # .    qp.CNOT((0, wires[0]))
+        for offset in range(1, len(inner_layers) + 1):
+            check_layer = op_layer - offset
+            if check_layer <= self.max_layer and any(
+                not op.wires for op in self.ops_in_layer[check_layer]
+            ):
+                op_layer = check_layer + len(inner_layers)
+                break
         for i, layer in enumerate(inner_layers):
             insert_layer = op_layer - len(inner_layers) + i
             for op in layer:
@@ -303,7 +317,10 @@ def drawable_layers(operations, wire_map=None, bit_map=None, _dynamic_wires=True
                 ) from e
             op_occupied_cwires = set()
 
-            if _dynamic_wires and any(w in data.waiting_dynamic_wires for w in op.wires):
+            # barrier should also trigger insertion of waitin gops
+            if _dynamic_wires and (
+                any(w in data.waiting_dynamic_wires for w in op.wires) or not op.wires
+            ):
                 op_layer = data.insert_waiting_ops(op_layer, wire_map, bit_map)
 
             data.add_to_layer(op, op_layer, op_occupied_wires, op_occupied_cwires)

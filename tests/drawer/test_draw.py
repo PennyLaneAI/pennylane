@@ -1364,11 +1364,71 @@ class TestWireAllocation:
 
             qp.X(1)
 
+            qp.probs()
+
         out = qp.draw(f)()
         expected = (
             "0: ────╭●──H──H─╭●────┤ ╭Probs\n"
             "1: ────│────────│───X─┤ ╰Probs\n"
             "     ├─╰X──┤  ├─╰X──┤         "
+        )
+        assert out == expected
+
+    def test_barrier_before_allocation(self):
+        """Test placing a barrier between wire allocations."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.Barrier()
+            with qp.allocate(1, state="any") as wires:
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ────╭●─────||─────╭●────┤  \n"
+            "     ├─╰X──┤  ||├──X─╰X──┤    "
+        )
+        assert out == expected
+
+    def test_barrier_in_allocation_waiting_wires(self):
+        """Test that a barrier can occur when there are waiting wires. It should trigger the insertion
+        of layers, and still get its own layer."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+            with qp.allocate(1, state="any") as wires:
+                qp.Barrier()
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ────╭●─────||────╭●────┤  \n"
+            "     ├─╰X──┤  ||    │        \n"
+            "           ├──||──X─╰X──┤    "
+        )
+        assert out == expected
+
+    def test_barrier_middle_of_allocation_region(self):
+        """Test barrier placed in the middle of an allocation region."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+                qp.Barrier()
+                qp.X(wires[0])
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ───────╭●──||───────┤  \n"
+            "     ├──X─╰X──||──X──┤    "
         )
         assert out == expected
 
