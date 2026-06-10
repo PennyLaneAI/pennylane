@@ -190,12 +190,8 @@ class QFT(Operation):
                 op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        # pylint: disable=no-value-for-parameter
-        @for_loop(num_wires // 2)
-        def swaps(i):
+        for i in range(num_wires // 2):
             decomp_ops.append(SWAP(wires=[wires[i], wires[num_wires - i - 1]]))
-
-        swaps()
 
         return decomp_ops
 
