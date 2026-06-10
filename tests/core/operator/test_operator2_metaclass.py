@@ -77,7 +77,6 @@ class DynCanonOp(Operator2):
     dynamic_argnames = ("phi",)
 
     def __init__(self, phi, wires):
-        # Canonicalize phi to an array
         super().__init__(2 * phi, wires)
 
 
