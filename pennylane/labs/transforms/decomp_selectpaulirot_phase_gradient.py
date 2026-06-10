@@ -144,19 +144,19 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     >>> specs
     {'QROM': 1, 'MultiControlledX': 6, 'SemiAdder': 1, 'Adjoint(QROM)': 1}
-    >>> print(qp.draw(circuit, wire_order=[0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires)(angles))
+    >>> print(qp.draw(circuit, wire_order=[0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires, show_matrices=False)(angles))
          0: ─╭QROM(M0)──────────────────────────────╭QROM(M0)†─┤ ╭State
          1: ─├QROM(M0)──────────────────────────────├QROM(M0)†─┤ ├State
          2: ─├QROM(M0)──────────────────────────────├QROM(M0)†─┤ ├State
          3: ─│─────────╭○─╭○─╭○────────────╭○─╭○─╭○─│──────────┤ ├State
      aux_0: ─├QROM(M0)─│──│──│──╭SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
      aux_1: ─├QROM(M0)─│──│──│──├SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
-     aux_2: ─├QROM(M0)─│──│──│──├SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
-     qft_0: ─│─────────╰X─│──│──├SemiAdder─│──│──╰X─│──────────┤ ├State
-     qft_1: ─│────────────╰X─│──├SemiAdder─│──╰X────│──────────┤ ├State
-     qft_2: ─│───────────────╰X─├SemiAdder─╰X───────│──────────┤ ├State
-    work_0: ─├QROM(M0)──────────├SemiAdder──────────├QROM(M0)†─┤ ├State
-    work_1: ─╰QROM(M0)──────────╰SemiAdder──────────╰QROM(M0)†─┤ ╰State
+     aux_2: ─╰QROM(M0)─│──│──│──├SemiAdder─│──│──│──╰QROM(M0)†─┤ ├State
+     qft_0: ───────────╰X─│──│──├SemiAdder─│──│──╰X────────────┤ ├State
+     qft_1: ──────────────╰X─│──├SemiAdder─│──╰X───────────────┤ ├State
+     qft_2: ─────────────────╰X─├SemiAdder─╰X──────────────────┤ ├State
+    work_0: ────────────────────├SemiAdder─────────────────────┤ ├State
+    work_1: ────────────────────╰SemiAdder─────────────────────┤ ╰State
 
     """
     # Sanitize wires

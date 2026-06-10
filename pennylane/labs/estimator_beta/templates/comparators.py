@@ -281,11 +281,10 @@ class RegisterEquality(ResourceOperator):
        allocated wires: 1
          zero state: 1
          any state: 0
-     Total gates : 12
-       'Toffoli': 2,
-       'CNOT': 4,
-       'X': 3,
-       'Hadamard': 3
+     Total gates : 9
+       'Toffoli': 3,
+       'CNOT': 3,
+       'X': 3
 
     """
 

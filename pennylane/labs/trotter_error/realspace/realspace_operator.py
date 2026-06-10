@@ -60,7 +60,7 @@ class RealspaceOperator:
     >>> ops = ("Q", "Q")
     >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
     >>> RealspaceOperator(n_modes, ops, coeffs)
-    RealspaceOperator(5, ('Q', 'Q'), phi[idx0,idx1])
+    RealspaceOperator(2, ('Q', 'Q'), phi[idx0,idx1])
     """
 
     def __init__(
@@ -97,10 +97,10 @@ class RealspaceOperator:
         >>> ops = ("Q", "Q")
         >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
         >>> RealspaceOperator(n_modes, ops, coeffs).matrix(2)
-        [[6.28318531 0.         0.         0.        ]
-         [0.         3.14159265 0.         0.        ]
-         [0.         0.         3.14159265 0.        ]
-         [0.         0.         0.         0.        ]]
+        array([[6.28318531, 0.        , 0.        , 0.        ],
+           [0.        , 3.14159265, 0.        , 0.        ],
+           [0.        , 0.        , 3.14159265, 0.        ],
+           [0.        , 0.        , 0.        , 0.        ]])
         """
 
         matrices = [
@@ -226,7 +226,7 @@ class RealspaceOperator:
         >>> ops = ("Q", "Q")
         >>> coeffs = RealspaceCoeffs(np.array([[1, 0], [0, 1]]), label="phi")
         >>> RealspaceOperator(n_modes, ops, coeffs).get_coefficients()
-        {(0, 0): 1, (1, 1): 1}
+        {(0, 0): 1.0, (1, 1): 1.0}
         """
         return self.coeffs.nonzero(threshold)
 
@@ -405,14 +405,14 @@ class RealspaceSum(Fragment):
         >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
         >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
         >>> RealspaceSum(n_modes, [rs_op1, rs_op2]).matrix(2)
-        [[22.05398043+0.00000000e+00j -5.41924733+6.63666389e-16j
-          -1.93207948+2.36611495e-16j  0.        +0.00000000e+00j]
-         [-5.41924733-6.63666389e-16j 11.21548577+0.00000000e+00j
-           0.        +0.00000000e+00j -1.93207948+2.36611495e-16j]
-         [-1.93207948-2.36611495e-16j  0.        +0.00000000e+00j
-          18.18982146+0.00000000e+00j -5.41924733+6.63666389e-16j]
-         [ 0.        +0.00000000e+00j -1.93207948-2.36611495e-16j
-          -5.41924733-6.63666389e-16j  7.35132681+0.00000000e+00j]]
+        array([[22.05398043+0.00000000e+00j, -5.41924733+6.63666389e-16j,
+            -1.93207948+2.36611495e-16j,  0.        +0.00000000e+00j],
+           [-5.41924733-6.63666389e-16j, 11.21548577+0.00000000e+00j,
+             0.        +0.00000000e+00j, -1.93207948+2.36611495e-16j],
+           [-1.93207948-2.36611495e-16j,  0.        +0.00000000e+00j,
+            18.18982146+0.00000000e+00j, -5.41924733+6.63666389e-16j],
+           [ 0.        +0.00000000e+00j, -1.93207948-2.36611495e-16j,
+            -5.41924733-6.63666389e-16j,  7.35132681+0.00000000e+00j]])
         """
 
         final_matrix = _zeros(shape=(gridpoints**self.modes, gridpoints**self.modes), sparse=sparse)
@@ -443,7 +443,7 @@ class RealspaceSum(Fragment):
         >>> rs_op1 = RealspaceOperator(n_modes, ("PP",), coeffs)
         >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
         >>> params = {"gridpoints": 2, "sparse": True}
-        >>> RealspaceSum(n_modes, [rs_op1, rs_op2]).norm(params)
+        >>> print(RealspaceSum(n_modes, [rs_op1, rs_op2]).norm(params))
         29.405307237600457
         """
 

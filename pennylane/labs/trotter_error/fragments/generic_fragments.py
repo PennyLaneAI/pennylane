@@ -42,7 +42,7 @@ def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> lis
     >>> fragments = generic_fragments(matrices, norm_fn=np.linalg.norm)
     >>> fragments
     [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
-    >>> fragments[0].norm()
+    >>> print(fragments[0].norm())
     1.4142135623730951
     """
 

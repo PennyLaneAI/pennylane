@@ -128,6 +128,16 @@ class TestCheckFunctions:
 
         assert check_cartan_decomp(k0_m, m0_m)
 
+    def test_check_commutation_relation_empty_iterables(self):
+        """Test that check_commutation_relation returns True correctly if at least one of the
+        input iterables is empty."""
+        assert check_commutation_relation(k0, [], k0)
+        assert check_commutation_relation([], m0, m0)
+        assert check_commutation_relation(k0, [], [])
+        assert check_commutation_relation([], m0, [])
+        assert check_commutation_relation([], [], k0)
+        assert check_commutation_relation([], [], [])
+
     def test_check_commutation_relation(self):
         """Test that check_commutation_relation returns false correctly"""
 

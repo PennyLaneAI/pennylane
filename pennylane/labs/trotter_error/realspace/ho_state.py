@@ -99,7 +99,7 @@ class HOState:
         >>> n_modes = 3
         >>> gridpoints = 5
         >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
-        >>> HOState.from_dict(n_modes, gridpoints, state_dict)
+        >>> HOState(n_modes, gridpoints, state_dict)
         HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
             with 2 stored elements and shape (125, 1)>
           Coords	Values
@@ -169,7 +169,7 @@ class HOState:
         >>> gridpoints = 5
         >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
         >>> state1 = HOState(n_modes, gridpoints, state_dict)
-        >>> state1.dot(state1)
+        >>> print(state1.dot(state1))
         2
         """
         if self.dim != other.dim:
@@ -316,7 +316,7 @@ class VibronicHO:
         >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
         >>> state = HOState(n_modes, gridpoints, state_dict)
         >>> vo_state = VibronicHO(n_states, n_modes, gridpoints, [state, state])
-        >>> vo_state.dot(vo_state)
+        >>> print(vo_state.dot(vo_state))
         4
         """
 

@@ -27,9 +27,33 @@ jobs:
       default_runner: ubuntu-latest
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
+  # This workflow is `required` if the PR has updated any files within `pennylane/labs/*`
+  # However, if we use the file filtering feature of GitHub Actions, then we cannot have this workflow marked as required.
+  # Instead, this workflow will run on all pull requests, but if `pennylane/labs/*` was not touched within the PR, it will
+  # exit early with a successful status (no tests will get run).
+  determine_if_workflow_should_run:
+    name: Determine if QP Labs documentation tests need to run
+    runs-on: ubuntu-24.04
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v6
+
+      - name: Assess changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: pennylane/labs/**
+
+    outputs:
+      run_labs_tests: ${{ steps.changed-files.outputs.all_changed_files_count != '0' }}
+
   documentation-tests:
     if: github.event.pull_request.draft == false
-    needs: [determine_runner]
+    needs: [determine_runner, determine_if_workflow_should_run]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
     name: Documentation Tests on Python 3.11
@@ -106,6 +130,11 @@ jobs:
           "
 
           pytest pennylane $IGNORE --ignore-glob='*tests*'
+
+      - name: Test 'pennylane/labs' folder
+        if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+        run: |
+          pytest pennylane/labs --ignore-glob='*tests*'
 
       - name: Test 'doc' folder
         if: always()

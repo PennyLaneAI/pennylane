@@ -53,7 +53,7 @@ def vibronic_fragments(
     >>> taylor_coeffs = [r_state.random(size=(n_states, n_states, )), r_state.random(size=(n_states, n_states, n_modes))]
     >>> fragments = vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
     >>> for fragment in fragments:
-    >>>     fragment
+    ...     print(fragment)
     RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.15601864044243652), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.8661761457749352), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))})
     RealspaceMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.15599452033620265), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.05808361216819946), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))})
     RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})

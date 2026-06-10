@@ -131,7 +131,7 @@ class RealspaceCoeffs:
         >>> import numpy as np
         >>> node = RealspaceCoeffs(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
-        {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
+        {(0, 0): 1.0, (0, 3): 1.0, (1, 2): 1.0, (1, 3): 1.0}
         """
 
         return self._tree.nonzero(threshold)
@@ -161,16 +161,12 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing a tensor of coefficients
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
-    >>> import numpy as np
     >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
     >>> node
     alpha[idx0,idx1]
 
     Building a node representing the outer product of its children
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
-    >>> import numpy as np
     >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
     >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
     >>> parent = _RealspaceTree.outer_node(left_child, right_child)
@@ -179,8 +175,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing the sum of its children
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
-    >>> import numpy as np
     >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
     >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
     >>> parent = _RealspaceTree.sum_node(left_child, right_child)
@@ -189,8 +183,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     Building a node representing the multiplication of its child by a scalar
 
-    >>> from pennylane.labs.trotter_error import _RealspaceTree
-    >>> import numpy as np
     >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
     >>> parent = _RealspaceTree.scalar_node(5, child)
     >>> parent
@@ -248,13 +240,11 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([4, 5, 6]), label="beta")
         >>> parent = _RealspaceTree.sum_node(left_child, right_child)
         >>> parent
-        >>> (alpha[idx0]) + (beta[idx0])
+        (alpha[idx0]) + (beta[idx0])
 
         """
 
@@ -286,8 +276,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
         >>> parent = _RealspaceTree.outer_node(left_child, right_child)
@@ -314,8 +302,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> node = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> node
         alpha[idx0,idx1]
@@ -346,8 +332,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> child = _RealspaceTree.tensor_node(np.array([[1, 2, 3], [4, 5, 6]]), label="alpha")
         >>> parent = _RealspaceTree.scalar_node(5, child)
         >>> parent
@@ -441,12 +425,10 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> left_child = _RealspaceTree.tensor_node(np.array([1, 2, 3]), label="alpha")
         >>> right_child = _RealspaceTree.tensor_node(np.array([[1, 3, 4], [4, 5, 6]]), label="beta")
         >>> parent = _RealspaceTree.outer_node(left_child, right_child)
-        >>> parent.compute((1, 1, 2))
+        >>> print(parent.compute((1, 1, 2)))
         12
         """
 
@@ -494,11 +476,9 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import _RealspaceTree
-        >>> import numpy as np
         >>> node = _RealspaceTree.tensor_node(np.array([[1, 0, 0, 1], [0, 0, 1, 1]]), label="alpha")
         >>> node.nonzero()
-        {(0, 0): 1, (0, 3): 1, (1, 2): 1, (1, 3): 1}
+        {(0, 0): 1.0, (0, 3): 1.0, (1, 2): 1.0, (1, 3): 1.0}
         """
 
         if self.node_type == _NodeType.TENSOR:

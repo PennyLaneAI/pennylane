@@ -155,8 +155,8 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     >>> from pennylane.liealg import AI, DIII
     >>> chain = [AI, DIII]
     >>> decompositions = recursive_cartan_decomp(g, chain)
-    Iteration 0:   15 -----AI---->    6,   9
-    Iteration 1:    6 ----DIII--->    4,   2
+    Iteration 0:   15 ----AI--->    6,   9
+    Iteration 1:    6 ---DIII-->    4,   2
 
     The function prints the progress of the decompositions by default, which can be deactivated by
     setting ``verbose=False``. Here we see how the initial :math:`\mathfrak{g}=\mathfrak{su(4)}`
@@ -216,18 +216,18 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         >>> g = [qp.matrix(op, wire_order=range(2)) for op in qp.pauli.pauli_group(2)] # u(4)
         >>> chain = [AI, DIII, AII]
         >>> decompositions = recursive_cartan_decomp(g, chain)
-        Iteration 0:   16 -----AI---->    6,  10
-        Iteration 1:    6 ----DIII--->    4,   2
-        Iteration 2:    4 ----AII---->    4,   0
+        Iteration 0:   16 ----AI--->    6,  10
+        Iteration 1:    6 ---DIII-->    4,   2
+        Iteration 2:    4 ---AII--->    4,   0
 
         We see that the ``AII`` decomposition did not further decompose :math:`\mathfrak{u}(2)`.
         It works if we provide the correct ``wire`` argument:
 
         >>> chain = [AI, DIII, partial(AII, wire=1)]
         >>> decompositions = recursive_cartan_decomp(g, chain)
-        Iteration 0:   16 -----AI---->    6,  10
-        Iteration 1:    6 ----DIII--->    4,   2
-        Iteration 2:    4 ----AII---->    3,   1
+        Iteration 0:   16 ----AI--->    6,  10
+        Iteration 1:    6 ---DIII-->    4,   2
+        Iteration 2:    4 ---AII--->    3,   1
 
         We obtain :math:`\mathfrak{sp}(1)` as expected from the decomposition of type AII.
 

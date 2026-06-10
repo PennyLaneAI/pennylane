@@ -445,6 +445,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `labs` module to our documentation testing workflow.
+  [(#9560)](https://github.com/PennyLaneAI/pennylane/pull/9560)
+  
 * Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
 
