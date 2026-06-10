@@ -23,13 +23,11 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
-    Operation,
-    Operator,
-    StatePrepBase,
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum
@@ -52,6 +50,79 @@ def test_basis_deprecation():
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
         assert MyOp(0).basis is None
+
+
+def test_operator2_isinstance_operator_operation():
+    """Test that anything that inherits from Operator2 is an Operator."""
+
+    class NewOp(Operator2):
+        """dummy operator2"""
+
+        dynamic_argnames = ()
+
+        def __init__(self, wires):
+            super().__init__(wires=wires)
+
+    new_op = NewOp(wires=0)
+    assert isinstance(new_op, Operator)
+    assert issubclass(NewOp, Operator)
+
+    assert isinstance(new_op, Operation)
+    assert issubclass(NewOp, Operation)
+
+
+class TestOperator1:
+    """Test for the Operator1 class."""
+
+    def test_operator1_against_new_op(self):
+        """Test that Operator1 checks reject new operator interface."""
+
+        class NewOp(Operator2):
+            """dummy operator2"""
+
+            dynamic_argnames = ()
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        new_op = NewOp(wires=0)
+        assert not isinstance(new_op, Operator1)
+        assert not issubclass(NewOp, Operator1)
+
+    def test_operator1_against_old_op(self):
+        """Test that Operator1 checks accept old interface."""
+
+        class OldOp(Operator):
+            pass
+
+        old_op = OldOp(wires=0)
+        assert isinstance(old_op, Operator1)
+        assert issubclass(OldOp, Operator1)
+
+    def test_operator1_against_random_obj(self):
+        """Test that operator1 checks reject random objects."""
+
+        assert not isinstance(1, Operator1)
+        assert not issubclass(list, Operator1)
+
+    def test_inheritance_switch_for_Operator(self):
+        """Test that inheriting from Operator1 switches it out for Operator."""
+
+        class OldOp(Operator1):
+            """op inheriting from Operator1"""
+
+        assert OldOp.__bases__ == (Operator,)
+
+        op = OldOp(wires=0)
+        assert isinstance(op, Operator)
+        assert isinstance(op, Operator1)
+        assert not op.has_matrix  # check it has an Operator thing
+
+    def test_instantiating_Opeartor1_on_its_own(self):
+        """Test that an error is raised if someone tries to instantiate Operator1."""
+
+        with pytest.raises(ValueError, match="Operator1 cannot be instantiated on its own."):
+            Operator1()
 
 
 class TestOperatorConstruction:
