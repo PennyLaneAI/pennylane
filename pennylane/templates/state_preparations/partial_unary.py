@@ -589,9 +589,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
     # Step 1: Dense state preparation
     dense_state = np.zeros(2**n_subspace, dtype=complex)
-    for i, amp in enumerate(coefficients):
-        dense_state[bijection[i]] = amp
-
+    ids = np.array([bijection[i] for i in range(len(coefficients))])
+    dense_state[ids] = coefficients
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
     wires = Wires(wires)

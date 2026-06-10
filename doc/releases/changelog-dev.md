@@ -3,8 +3,7 @@
 <h3>New features since last release</h3>
 
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
-  using partial [unary iteration](https://pennylane.ai/compilation/unary-iteration).
-  It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
+  using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
