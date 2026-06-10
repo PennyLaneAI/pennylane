@@ -42,31 +42,7 @@ def contains_abstract_type(x):
     return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
 
 
-class CaptureMeta(type):
-    """A metatype that overrides class construction for operators for program capture
-    and graph-based decompositions integration.
-    TODO: [sc-120453] Fill docstring
-    """
-
-    @property
-    def __signature__(cls):
-        sig = signature(cls.__init__)
-        without_self = tuple(sig.parameters.values())[1:]
-        return Signature(without_self)
-
-    @_stop_autograph
-    def __call__(cls, *args, **kwargs):
-        # this method is called everytime we want to create an instance of the class.
-        # default behavior uses __new__ then __init__
-        op = type.__call__(cls, *args, **kwargs)
-        if enabled():
-            # when tracing is enabled, we want to use bind to construct the class
-            # if we want class construction to add it to the jaxpr
-            op._bind_primitive()
-        return op
-
-
-class SkipChildInitMeta(type):
+class OperatorMeta(type):
     """A metaclass that allows skipping the childs constructor and instead
     directly calling the Operator2 constructor."""
 
@@ -96,9 +72,14 @@ class SkipChildInitMeta(type):
             Operator2.__init__(obj, *args, **kwargs)
             return obj
 
-        return CaptureMeta.__call__(cls, *args, **kwargs)
+        op = type.__call__(cls, *args, **kwargs)
+        if enabled():
+            # when tracing is enabled, we want to use bind to construct the class
+            # if we want class construction to add it to the jaxpr
+            op._bind_primitive()
+        return op
 
 
 # pylint: disable=abstract-method
-class ABCOperatorMeta(SkipChildInitMeta, CaptureMeta, ABCMeta):
+class ABCOperatorMeta(OperatorMeta, ABCMeta):
     """A combination of the operator metaclass and ABCMeta."""
