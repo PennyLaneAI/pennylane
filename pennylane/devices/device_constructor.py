@@ -165,6 +165,7 @@ def device(name, *args, **kwargs):
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([ 1., -1.,  1.]), array([1., 1., 1., 1.]), array([1., 1., 1., 1.]))
     """
+
     if name not in plugin_devices:
         # Device does not exist in the loaded device list.
         # Attempt to refresh the devices, in case the user

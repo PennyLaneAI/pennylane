@@ -22,6 +22,7 @@ from flaky import flaky
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.shots import Shots
 from pennylane.devices.qutrit_mixed import (
     apply_operation,
     create_initial_state,
@@ -33,7 +34,6 @@ from pennylane.devices.qutrit_mixed.sampling import (
     _sample_state_jax,
     sample_probs,
 )
-from pennylane.measurements import Shots
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
