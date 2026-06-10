@@ -505,6 +505,7 @@ class Operator2(ABC):
         Returns:
             .Operator2: new operator
         """
+        # pylint: disable=protected-access
         new_op = deepcopy(self)
 
         for n, wires in self.wire_args.items():
@@ -523,7 +524,7 @@ class Operator2(ABC):
             leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
             new_op._bound_args.arguments[n] = unflatten(leaves, tree)
 
-        new_op.__init_wires()  # pylint: disable=protected-access
+        new_op.__init_wires()
 
         return new_op
 
