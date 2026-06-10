@@ -168,52 +168,43 @@ class TestDecomposeInterpreterGraphEnabled:
             qp.CNOT(wires=[2, 1]),
         ]
 
-        decomposed_f = DecomposeInterpreter(gate_set={"RY", "RZ", "CZ", "GlobalPhase"})(f)
+        decomposed_f = DecomposeInterpreter(gate_set={"Z", "RY", "RZ", "CZ", "GlobalPhase"})(f)
         jaxpr = jax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
             # The H decomposes to RZ and RY
-            qp.RZ(np.pi, wires=[0]),
+            qp.Z(wires=[0]),
             qp.RY(np.pi / 2, wires=[0]),
-            qp.GlobalPhase(-np.pi / 2),
             # Rot decomposes to ZYZ
             qp.RZ(0.1, wires=[0]),
             qp.RY(0.2, wires=[0]),
             qp.RZ(0.3, wires=[0]),
             # CNOT decomposes to H and CZ, where H decomposes to RZ and RY
-            qp.RZ(np.pi, wires=[1]),
+            qp.Z(wires=[1]),
             qp.RY(np.pi / 2, wires=[1]),
-            qp.GlobalPhase(-np.pi / 2),
             qp.CZ(wires=[2, 1]),
-            qp.RZ(np.pi, wires=[1]),
+            qp.Z(wires=[1]),
             qp.RY(np.pi / 2, wires=[1]),
-            qp.GlobalPhase(-np.pi / 2),
             # second CNOT
-            qp.RZ(np.pi, wires=[0]),
+            qp.Z(wires=[0]),
             qp.RY(np.pi / 2, wires=[0]),
-            qp.GlobalPhase(-np.pi / 2),
             qp.CZ(wires=[1, 0]),
-            qp.RZ(np.pi, wires=[0]),
+            qp.Z(wires=[0]),
             qp.RY(np.pi / 2, wires=[0]),
-            qp.GlobalPhase(-np.pi / 2),
             # The middle RZ
             qp.RZ(0.1, wires=[0]),
             # The last two CNOTs
-            qp.RZ(np.pi, wires=[0]),
+            qp.Z(wires=[0]),
             qp.RY(np.pi / 2, wires=[0]),
-            qp.GlobalPhase(-np.pi / 2),
             qp.CZ(wires=[1, 0]),
-            qp.RZ(np.pi, wires=[0]),
+            qp.Z(wires=[0]),
             qp.RY(np.pi / 2, wires=[0]),
-            qp.GlobalPhase(-np.pi / 2),
-            qp.RZ(np.pi, wires=[1]),
+            qp.Z(wires=[1]),
             qp.RY(np.pi / 2, wires=[1]),
-            qp.GlobalPhase(-np.pi / 2),
             qp.CZ(wires=[2, 1]),
-            qp.RZ(np.pi, wires=[1]),
+            qp.Z(wires=[1]),
             qp.RY(np.pi / 2, wires=[1]),
-            qp.GlobalPhase(-np.pi / 2),
         ]
 
     @pytest.mark.integration
