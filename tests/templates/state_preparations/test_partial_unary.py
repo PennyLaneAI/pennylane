@@ -31,7 +31,6 @@ def _is_binary(x: np.ndarray) -> bool:
 
 
 def random_distinct_integers(high, size, rng):
-
     if high < 2**25:
         return rng.choice(high, size=size, replace=False)
 
@@ -189,3 +188,20 @@ class TestPartialUnaryStatePreparation:
                 assert np.allclose(out_state[1::2], 0.0)
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    def test_input_validation(self):
+        """Test that validation errors are raise for invalid inputs."""
+        non_unique_indices = (0, 4, 1, 2, 0, 6, 4)
+        coeffs = np.ones(len(non_unique_indices))
+        wires = [0, 1, 2, 3]
+        with pytest.raises(ValueError, match="must be unique"):
+            PartialUnaryStatePreparation(coeffs, wires, non_unique_indices, [])
+
+        unique_indices = (0, 4, 1, 2, 3, 6, 8)
+        too_many_coeffs = np.ones(len(unique_indices) + 1)
+        with pytest.raises(ValueError, match="number of coefficients and the number of state"):
+            PartialUnaryStatePreparation(too_many_coeffs, wires, unique_indices, [])
+
+        unique_indices = (0, 4, 1, 2, 3, 6, 63)
+        with pytest.raises(ValueError, match=r"must be smaller than 2\*\*len\(wires\)=16"):
+            PartialUnaryStatePreparation(coeffs, wires, unique_indices, [])

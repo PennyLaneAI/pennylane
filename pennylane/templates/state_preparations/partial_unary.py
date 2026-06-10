@@ -145,8 +145,9 @@ class IsometryFinder:
     """
 
     def __init__(self, basis_states: list, n_qubits: int):
+        s = len(basis_states)
         self.n = n_qubits
-        self.n_subspace = max(math.ceil_log2(len(basis_states)), 1)
+        self.n_subspace = max(math.ceil_log2(s), 1)
         n_r = self.n - self.n_subspace
         # Largest power of 2 less than or equal to n_r, the remainder register size
         self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
@@ -192,7 +193,7 @@ class IsometryFinder:
     def toffoli(self, controls, control_values, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
         self.circuit.append(("Toffoli", controls + [target], control_values))
-        self.apply_multi_controlled_x(controls, control_values, target)
+        self.apply_multi_controlled_x(controls, np.array(control_values), target)
 
     def swap(self, w0, w1):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
@@ -262,7 +263,7 @@ class IsometryFinder:
             diff_qubit = int(np.where(A != B)[0][0])
 
             controls = [self.n_subspace + active_remainder_bit, diff_qubit]
-            control_values = np.array([1, int(self.tableau[idx, diff_qubit])])
+            control_values = [1, int(self.tableau[idx, diff_qubit])]
             self.toffoli(controls, control_values, actual_qubit)
             return idx
 
@@ -480,6 +481,18 @@ class PartialUnaryStatePreparation(Operation):
         }
 
     def __init__(self, coefficients, wires, indices, work_wires):
+        s = len(indices)
+        if len(set(indices)) != s:
+            raise ValueError("The state indices must be unique.")
+        if len(coefficients) != s:
+            raise ValueError(
+                "The number of coefficients and the number of state indices must match."
+            )
+        if max(indices) > 2 ** len(wires) - 1:
+            raise ValueError(
+                f"The state indices must be smaller than {2**len(wires)=}. Largest index is {max(indices)}"
+            )
+
         work_wires = Wires([] if work_wires is None else work_wires)
         super().__init__(coefficients, wires=wires)
         self.hyperparameters["indices"] = indices
@@ -573,10 +586,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         qp.BasisState(indices[0], wires)
         return
 
-    n_subspace = max(math.ceil_log2(s), 1)
     iso_finder = IsometryFinder(np.array(indices), len(wires))
     circuit, bijection = iso_finder.find_isometry()
 
+    n_subspace = max(math.ceil_log2(s), 1)
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
 
