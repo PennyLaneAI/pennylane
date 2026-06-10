@@ -20,13 +20,13 @@ from functools import reduce
 
 import pennylane as qp
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 
 
 def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:

@@ -230,6 +230,7 @@ unmodified_templates_cases = [
     ),
     (qp.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
     (qp.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (qp.FFQRAM, (jnp.array([0.3, 0.7]),), {"wires": (0, 1, 2), "address": ((0, 0), (1, 1))}),
     (
         qp.SumOfSlatersPrep,
         (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
@@ -319,6 +320,8 @@ tested_modified_templates = [
     qp.SemiAdder,
     qp.Multiplier,
     qp.OutMultiplier,
+    qp.OutSquare,
+    qp.SignedOutSquare,
     qp.OutAdder,
     qp.ModExp,
     qp.OutPoly,
@@ -681,7 +684,7 @@ class TestModifiedTemplates:
         pattern = tuple(pattern)
 
         kwargs = {
-            "num_wires": 4,
+            "wires": range(4),
             "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
             "pattern": pattern,
             "spin_sym": True,
@@ -1414,6 +1417,42 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.OutAdder(**kwargs))
+
+    @pytest.mark.parametrize("cls", [qp.OutSquare, qp.SignedOutSquare])
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_out_square(self, cls, output_wires_zeroed):
+        """Test the primitive bind call of OutSquare and SignedOutSquare."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "output_wires": [3, 4, 5],
+            "work_wires": [6, 7, 8],
+            "output_wires_zeroed": output_wires_zeroed,
+        }
+
+        def qfunc():
+            cls(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == cls._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qp.assert_equal(q.queue[0], cls(**kwargs))
 
     def test_mod_exp(self):
         """Test the primitive bind call of ModExp."""

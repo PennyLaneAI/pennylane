@@ -18,13 +18,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     pow_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires

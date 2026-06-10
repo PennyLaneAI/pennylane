@@ -22,6 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
@@ -1011,7 +1011,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
             for val, triple in zip(
-                closing_ctrl_bits[2:], reversed(unary_triples[1 : c - 1]), strict=True
+                reversed(closing_ctrl_bits[2:]), reversed(unary_triples[1 : c - 1]), strict=True
             )
         ]
     )

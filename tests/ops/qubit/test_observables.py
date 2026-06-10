@@ -537,6 +537,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
 class TestProjector:
     """Tests for the projector observable."""
 
+    @pytest.mark.jax
     def test_basisstate_projector(self):
         """Tests that we obtain a _BasisStateProjector when input is a basis state."""
         basis_state = [0, 1, 1, 0]
@@ -549,6 +550,7 @@ class TestProjector:
 
         qp.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
 
+    @pytest.mark.jax
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
         state_vector = np.array([1, 1, 1, 1]) / 2

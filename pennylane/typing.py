@@ -17,11 +17,17 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
-from collections.abc import Callable, Sequence
-from typing import Optional, TypeVar, Union
+import types
+from collections.abc import Callable, Hashable, Sequence
+from dataclasses import dataclass
+from math import prod
+from numbers import Number
+from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+
+FlatPytree = tuple[Sequence[Any], Hashable]
 
 
 class InterfaceTensorMeta(type):
@@ -123,3 +129,95 @@ PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    Args:
+        shape (tuple(int | types.EllipsisType)): the dimensions of the array.
+            ``()`` corresponds to a scalar, and ``...`` corresponds to an unknown dimension.
+        dtype (type): the data type of the array. Can either be a ``builtin`` like
+            ``float`` or ``int``, or a numpy dtype like ``np.complex64``.
+
+    >>> from pennylane.typing import AbstractArray
+    >>> AbstractArray((4, 2), float)
+    AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+
+    Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
+
+    >>> aa = AbstractArray((..., 2), np.int32)
+    >>> aa
+    AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
+
+    ``AbstractArray``'s can be used together with ``isinstance`` checks:
+
+    >>> isinstance(np.ones((4,2), np.int32), aa)
+    True
+
+    """
+
+    shape: tuple[int | types.EllipsisType, ...]
+    dtype: np.dtype | type[Number]
+
+    def __post_init__(self):
+        object.__setattr__(self, "shape", tuple(self.shape))
+        if self.dtype.__class__.__module__.split(".")[0] == "torch":
+            import torch  # pylint: disable=import-outside-toplevel
+
+            dummy = torch.tensor((), dtype=self.dtype)
+            object.__setattr__(self, "dtype", dummy.numpy().dtype)
+        object.__setattr__(self, "dtype", np.dtype(self.dtype))
+
+    def __instancecheck__(self, instance):
+        if not getattr(instance, "dtype", None) == self.dtype:
+            return False
+        shape = getattr(instance, "shape", None)
+        if shape is None or len(shape) != len(self.shape):
+            return False
+        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
+
+    @property
+    def size(self) -> int:
+        """Total number of elements."""
+        try:
+            return prod(self.shape)
+        except TypeError as e:
+            if any(s == ... for s in self.shape):
+                raise TypeError(
+                    f"size is undefined for {self} with unknown shape dimension specified by Ellipsis."
+                ) from e
+            raise e  # pragma: no cover
+
+    @property
+    def T(self) -> "AbstractArray":
+        """Transpose view of the array."""
+        return AbstractArray(self.shape[::-1], self.dtype)
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions."""
+        return len(self.shape)
+
+    def __getitem__(self, item):
+        raise IndexError("Cannot index into an AbstractArray.")
+
+    def __setitem__(self, *_, **__):
+        raise IndexError("Cannot index into an AbstractArray.")
+
+    def __len__(self) -> int:
+        if not self.shape:
+            raise TypeError("len() of unsized object.")
+        return self.shape[0]
+
+    def __eq__(self, other) -> bool:
+        # This should probably just raise an error
+        if isinstance(other, AbstractArray):
+            return self.shape == other.shape and self.dtype == other.dtype
+
+        raise TypeError(f"Cannot check equality between AbstractArray and {type(other)}.")
+
+    def __hash__(self) -> int:
+        return hash(("AbstractArray", self.shape, self.dtype))

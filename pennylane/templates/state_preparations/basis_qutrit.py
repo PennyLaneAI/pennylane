@@ -18,7 +18,7 @@ Contains the QutritBasisStatePreparation template.
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 
 
 class QutritBasisStatePreparation(Operation):

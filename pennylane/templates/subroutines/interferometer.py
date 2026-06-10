@@ -18,7 +18,7 @@ Contains the ``Interferometer`` template.
 from itertools import product
 
 from pennylane import math
-from pennylane.operation import CVOperation
+from pennylane.core.operator import CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments
 from pennylane.ops import Beamsplitter, Rotation

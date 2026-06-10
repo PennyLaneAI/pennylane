@@ -19,6 +19,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 from pennylane import math, ops
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -27,7 +28,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
 from pennylane.ops import pow as qp_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
