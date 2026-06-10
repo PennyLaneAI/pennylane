@@ -96,7 +96,7 @@ class SkipChildInitMeta(type):
             Operator2.__init__(obj, *args, **kwargs)
             return obj
 
-        return type.__call__(cls, *args, **kwargs)
+        return CaptureMeta.__call__(cls, *args, **kwargs)
 
 
 # pylint: disable=abstract-method
