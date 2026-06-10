@@ -523,7 +523,7 @@ class Operator2(ABC):
             leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
             new_op._bound_args.arguments[n] = unflatten(leaves, tree)
 
-        new_op.__init_wires()
+        new_op.__init_wires()  # pylint: disable=protected-access
 
         return new_op
 

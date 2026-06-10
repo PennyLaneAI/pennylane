@@ -554,7 +554,7 @@
   original operator's arguments to be mutated and the new operator's `wires`
   property to remain stale after mapping. The method now deep-copies the operator
   and recomputes the cached wires.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
