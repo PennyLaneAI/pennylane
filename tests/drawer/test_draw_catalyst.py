@@ -56,8 +56,14 @@ class TestCatalystDraw:
             qp.RZ(z, wires=1.234)
             return qp.expval(qp.PauliZ(0))
 
-        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
-        assert qp.draw(partial(circuit, 1.234, z=3.456), decimals=None)(2.345) == expected
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert qp.draw(partial(circuit, 1.234, z=3.456))(2.345) == expected
 
     @pytest.mark.parametrize("c", [0, 1])
     def test_cond_circuit(self, c):
@@ -163,7 +169,7 @@ class TestCatalystDrawMpl:
         assert isinstance(fig, mpl.figure.Figure)
         assert isinstance(ax, mpl.axes._axes.Axes)
 
-    def test_partial_circuit(self):
+    def test_partial_circuit_draw_mpl(self):
         """Test a partial-wrapped Catalyst jitted QNode."""
 
         @qp.qjit
