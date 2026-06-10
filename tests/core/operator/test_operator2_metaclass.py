@@ -71,7 +71,7 @@ class TestContainsAbstractTypeHelper:
         assert captured["is_abstract"] is False
 
 
-class DynCanonOp(Operator2):
+class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
     """Operator with a dynamic parameter and wires that performs canonicalization."""
 
     dynamic_argnames = ("phi",)
