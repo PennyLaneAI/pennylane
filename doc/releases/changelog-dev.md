@@ -25,18 +25,18 @@
           x_wires,
           y_wires,
           output_wires,
-          work_wires, 
+          work_wires,
           output_wires_zeroed=True,
       )
       return qp.sample(wires=output_wires)
   ```
-  
+
   ```pycon
   >>> print(circuit())
   [[1 1 0 1 1 1]]
 
   ```
-  
+
   The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of :math:`-3 \cdot 3 \; = -9` in 2s complement form.
 
 * Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
@@ -64,11 +64,11 @@
   result = increment(wires, init_state, work_wires)[0]
 
   ```
-  
+
   ```pycon
   >>> result[:len(wires)]
   array([0, 1, 1])
-  
+
   ```
 
   The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
@@ -532,6 +532,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - Integration with :mod:`pennylane.capture`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -540,6 +541,7 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
