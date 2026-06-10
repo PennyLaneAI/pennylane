@@ -407,7 +407,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         qp.decomposition.enable_graph()
 
-        @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT", "S", "SX"}, num_work_wires=2)
+        @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -432,13 +432,13 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     First-Level Expansion Gates: {PauliZ: 1, RY: 1}
     Missing Ops: {PauliZ}
     <BLANKLINE>
-    Decomposition 1 (name: _hadamard_to_s_sx)
-    0: ──S──SX──S──GlobalPhase(0.79)─┤
-    First-Level Expansion Gates: {S: 2, SX: 1, GlobalPhase: 1}
-    Missing Ops: {GlobalPhase}
+    Decomposition 1 (name: _hadamard_to_s_rx)
+    0: ──S──RX(1.57)──S─┤
+    First-Level Expansion Gates: {S: 2, RX: 1}
+    Missing Ops: {S}
 
     Now it's finally clear that the reason why ``PauliRot`` could not be decomposed was that
-    ``Z``, or alternatively ``GlobalPhase``, is missing from the target gate set.
+    ``Z``, or alternatively ``S``, is missing from the target gate set.
 
     .. details::
         :title: Working with a dynamic work wire allocation budget
@@ -486,7 +486,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                     1: ──────────────╰MultiRZ(0.50)────────────────┤
         First-Level Expansion Gates: {MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {RZ: 96, CNOT: 60, GlobalPhase: 102, RY: 22, RX: 12, MidMeasure: 2}
+        Full Expansion Gates: {RZ: 94, CNOT: 58, GlobalPhase: 104, RY: 26, RX: 12, MidMeasure: 2}
         Weighted Cost: 192.0
         <BLANKLINE>
         Decomposition 1 (name: to_controlled_qubit_unitary)
@@ -500,7 +500,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
         First-Level Expansion Gates: {Controlled(RZ, num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1, MultiControlledX(num_control_wires=5, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2}
-        Full Expansion Gates: {GlobalPhase: 194, RX: 32, MidMeasure: 6, RY: 42, RZ: 176, CNOT: 102}
+        Full Expansion Gates: {GlobalPhase: 200, RX: 32, MidMeasure: 6, RY: 54, RZ: 170, CNOT: 96}
         Weighted Cost: 358.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
@@ -532,7 +532,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                     6: ────────────────────╰X───────────────────────┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 42, RX: 6, MidMeasure: 1, RY: 9, RZ: 38, CNOT: 23}
+        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
@@ -569,7 +569,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                     6: ─────────────────╰X─────────────────────┤
         First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
-        Full Expansion Gates: {MidMeasure: 2, GlobalPhase: 35, RX: 8, RY: 8, RZ: 31, CNOT: 16}
+        Full Expansion Gates: {MidMeasure: 2, GlobalPhase: 37, RX: 8, RY: 12, RZ: 29, CNOT: 14}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
@@ -626,7 +626,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
                     6: ────────────────────╰X───────────────────────┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {GlobalPhase: 42, RX: 6, MidMeasure: 1, RY: 9, RZ: 38, CNOT: 23}
+        Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)

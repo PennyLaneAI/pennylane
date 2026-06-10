@@ -238,15 +238,14 @@ Args:
 
 
 def _hadamard_s_sx_resources():
-    return {qp.S: 2, qp.SX: 1, qp.GlobalPhase: 1}
+    return {qp.S: 2, qp.RX: 1}
 
 
 @register_resources(_hadamard_s_sx_resources)
-def _hadamard_to_s_sx(wires: WiresLike, **__):
+def _hadamard_to_s_rx(wires: WiresLike, **__):
     qp.S(wires=wires)
-    qp.SX(wires=wires)
+    qp.RX(np.pi / 2, wires=wires)
     qp.S(wires=wires)
-    qp.GlobalPhase(np.pi / 4, wires=wires)
 
 
 def _hadamard_z_ry_resources():
@@ -259,7 +258,7 @@ def _hadamard_to_z_ry(wires: WiresLike, **__):
     qp.RY(np.pi / 2, wires=wires)
 
 
-add_decomps(Hadamard, _hadamard_to_s_sx, _hadamard_to_z_ry)
+add_decomps(Hadamard, _hadamard_to_s_rx, _hadamard_to_z_ry)
 add_decomps("Adjoint(Hadamard)", qjit_compatible_self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
