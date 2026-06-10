@@ -128,6 +128,7 @@ def test_alias_XYZI(wire):
 
 class TestOperations:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_assert_valid(self, op_cls, _):
         """Test that the operation is valid, using standard assert_valid test."""
