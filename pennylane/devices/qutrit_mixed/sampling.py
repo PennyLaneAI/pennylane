@@ -22,12 +22,12 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.measurements import SampleMeasurement
+from pennylane.core.shots import Shots
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    SampleMeasurement,
     SampleMP,
-    Shots,
     VarianceMP,
 )
 from pennylane.ops import Sum

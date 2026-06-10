@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.exceptions import DeviceError
-from pennylane.measurements import MeasurementProcess
 
 
 def _get_all_shots(shot_vector):
