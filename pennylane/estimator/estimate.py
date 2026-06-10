@@ -17,6 +17,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator
 from pennylane.estimator.ops import X
 from pennylane.estimator.ops.op_math.symbolic import (
@@ -26,7 +27,6 @@ from pennylane.estimator.ops.op_math.symbolic import (
     apply_adj,
     apply_controlled,
 )
-from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
