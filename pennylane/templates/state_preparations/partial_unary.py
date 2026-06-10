@@ -243,31 +243,27 @@ class IsometryFinder:
         candidate in stage 1 of this step already."""
         actual_qubit = self.n_subspace + target_qubit
 
-        # Iterate over the bit strings we still need to map
-        for idx in remaining:
-            # Find a remainder qubit lower than actual_qubit that is set to one (we know that
-            # there is no bit string that has actual_qubit or any remainder qubit with higher index
-            # set to one, because they would have been found by _next_state_with_target_set or
-            # _try_swap, respectively).
-            active_remainder_bit = np.where(self.tableau[idx, self.n_subspace : actual_qubit])[0]
-            if len(active_remainder_bit) == 0:
-                continue
-            active_remainder_bit = active_remainder_bit[0]
-            # Find a qubit at which the bitstrings A at position batch[active_remainder_bit] and
-            # B at position `idx` differ. Note that we know that there is a differing qubit because
-            # the bitstrings are unique. Also, note that actual_qubit can't be a differing qubit,
-            # because A only has ones in the subspace and at position
-            # active_remainder_bit < actual_qubit, and B does not have actual_qubit set because
-            # in that case, _next_state_with_target_set would have found it already.
-            A, B = self.tableau[idx], self.tableau[batch[active_remainder_bit]]
-            diff_qubit = int(np.where(A != B)[0][0])
+        # Take the next-best bitstring that we still need to map
+        idx = remaining[0]
+        # Find a remainder qubit lower than actual_qubit that is set to one. We know that
+        # idx must have such a qubit because
+        # - it must have at least one remainder qubit set to one because it is in `remaining`
+        # - it can't have any qubits at or above the index `actual_qubit` set, because if it did,
+        #   _next_state_with_target_set or _try_swap would have been successful.
+        active_remainder_bit = np.where(self.tableau[idx, self.n_subspace : actual_qubit])[0][0]
+        # Find a qubit at which the bitstrings A at position batch[active_remainder_bit] and
+        # B at position `idx` differ. Note that we know that there is a differing qubit because
+        # the bitstrings are unique. Also, note that actual_qubit can't be a differing qubit,
+        # because A only has ones in the subspace and at position
+        # active_remainder_bit < actual_qubit, and B does not have actual_qubit set because
+        # in that case, _next_state_with_target_set would have found it already.
+        A, B = self.tableau[idx], self.tableau[batch[active_remainder_bit]]
+        diff_qubit = int(np.where(A != B)[0][0])
 
-            controls = [self.n_subspace + active_remainder_bit, diff_qubit]
-            control_values = [1, int(self.tableau[idx, diff_qubit])]
-            self.toffoli(controls, control_values, actual_qubit)
-            return idx
-
-        return None
+        controls = [self.n_subspace + active_remainder_bit, diff_qubit]
+        control_values = [1, int(self.tableau[idx, diff_qubit])]
+        self.toffoli(controls, control_values, actual_qubit)
+        return idx
 
     def _map_full_state(self, found_state, k, target_qubit):
         """Execute step 3 of the algorithm, zeroing all remainder qubits controlled on
@@ -318,11 +314,16 @@ class IsometryFinder:
                 found_state = self._try_swap(remaining, target_qubit)
 
             if found_state is None:
-                if b > 0:
-                    # Stage 3: Use Toffoli trick to fabricate a suitable state instead
-                    found_state = self._try_toffoli(remaining, target_qubit, batch)
-                else:
-                    continue
+                # If we still have to map at least one bit string, the batch is currently empty,
+                # and neither _next_state_with_target_set nor _try_swap were successful, we know
+                # that _try_toffoli can't work (because it needs a reference batch state to
+                # discriminate against). Thus, we would be stuck in an infinite loop of trying the
+                # three stages of step 2.
+                assert (
+                    b > 0
+                ), "This scenario should never happen because it would lead to infinite recursion."
+                # Stage 3: Use Toffoli trick to fabricate a suitable state instead
+                found_state = self._try_toffoli(remaining, target_qubit, batch)
 
             # Step 3
             #  - Transform found_state: zero out other non-subspace bits using CX
@@ -619,7 +620,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         elif _type == "Toffoli":
             qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
         else:
-            raise NotImplementedError
+            raise NotImplementedError  # pragma: no cover
 
 
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
@@ -645,11 +646,7 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 
 def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
     # pylint: disable=unused-argument
-    if num_entries == 1:
-        needed_work_wires = 0
-    else:
-        needed_work_wires = max(math.ceil_log2(num_entries) - 1, 1)
-    return {"zeroed": needed_work_wires}
+    return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
 
 
 def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
