@@ -312,9 +312,11 @@
 
 * The Ross-Selinger decomposition method :func:`~.ops.rs_decomposition` when used with Catalyst
   no longer queues a Catalyst conditional operator, if the conditional predicate for whether a
-  leading T gate exists is statically known. Instead, the static conditional will be evaluated at
-  trace time, and only the correct branch will be queued.
+  leading T gate exists is statically known, and the `compile_without_static_conditionals` flag
+  in Catalyst is set. Instead, the static conditional will be evaluated at trace time, and only
+  the correct branch will be queued.
   [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
+  [(#9648)](https://github.com/PennyLaneAI/pennylane/pull/9648)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
