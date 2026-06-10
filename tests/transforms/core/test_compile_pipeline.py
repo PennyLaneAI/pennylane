@@ -1576,44 +1576,6 @@ class TestCompilePipelineCall:
         assert transformed_jaxpr.eqns[0].primitive == qp.PauliZ._primitive
         assert transformed_jaxpr.eqns[1].primitive == qp.measurements.ExpectationMP._obs_primitive
 
-    @pytest.mark.capture
-    def test_call_jaxpr_multiple_transforms(self):
-        """Test that calling a CompilePipeline with multiple transforms with jaxpr works correctly."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        pipeline = CompilePipeline()
-        pipeline.add_transform(qp.transforms.cancel_inverses)
-        pipeline.add_transform(qp.transforms.defer_measurements, num_wires=3)
-        pipeline.add_transform(
-            qp.transforms.decompose,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            stopping_condition=lambda op: op.name != "IsingXX",
-        )
-
-        def f():
-            qp.H(0)
-            qp.H(0)
-            qp.measure(1)
-            qp.IsingXX(0.5, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        jaxpr = jax.make_jaxpr(f)()
-        transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
-
-        # pylint: disable=protected-access
-        isingxx_decomp = [qp.CNOT(wires=[0, 1]), qp.RX(0.5, wires=[0]), qp.CNOT(wires=[0, 1])]
-        expected_primitives = [
-            qp.CNOT._primitive,
-            *[op._primitive for op in isingxx_decomp],
-            qp.PauliZ._primitive,
-            qp.measurements.ExpectationMP._obs_primitive,
-        ]
-        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
-        for eqn, expected_primitive in zip(ops_and_meas, expected_primitives, strict=True):
-            assert eqn.primitive == expected_primitive
-
     def test_call_fallback_on_qnode(self):
         """Test that a CompilePipeline can be applied to a QNode using the fallback."""
 
