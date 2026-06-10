@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
+from pennylane.exceptions import PostselectionImpossibleError
 from pennylane.ops import MidMeasure
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
@@ -78,6 +79,41 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
             assert len(r1) == len(r2)
         assert np.all(np.isnan(r1))
         assert np.all(np.isnan(r2))
+
+
+@pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred", "tree-traversal"])
+@pytest.mark.parametrize("shots", [10, [10, 10]])
+def test_impossible_postselected_sample_raises(mcm_method, shots):
+    """Test that impossible postselection raises instead of returning invalid samples."""
+    dev = qp.device("default.qubit")
+
+    @qp.qnode(dev, mcm_method=mcm_method)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        m0 = qp.measure(0, postselect=1)
+        qp.cond(m0, qp.X)(wires=1)
+        return qp.sample(wires=1)
+
+    with pytest.raises(PostselectionImpossibleError, match="probability of the postselected"):
+        qp.set_shots(circuit, shots=shots)(0.0)
+
+
+def test_hw_like_postselected_sample_all_invalid_shots():
+    """Test hw-like postselection returns empty samples when a nonzero-probability
+    postselection draws no valid shots."""
+    dev = qp.device("default.qubit", seed=123)
+
+    @qp.set_shots(1)
+    @qp.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
+    def circuit(x):
+        qp.RX(x, wires=0)
+        m0 = qp.measure(0, postselect=1)
+        qp.cond(m0, qp.X)(wires=1)
+        return qp.sample(wires=1)
+
+    res = circuit(0.01)
+
+    assert res.shape == (0, 1)
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])

@@ -565,6 +565,10 @@
   exists from an operator to a controlled/adjoint version of itself.
   [(#9457)](https://github.com/PennyLaneAI/pennylane/pull/9457)
 
+* Fixed a bug where finite-shot circuits returning :func:`~.sample` could produce invalid results
+  when postselecting on a zero-probability mid-circuit measurement outcome.
+  [(#9536)](https://github.com/PennyLaneAI/pennylane/pull/9536)
+
 * Fixed a bug in `MPSPrep` where passing `work_wires` as a NumPy array or an integer caused initialization errors.
   [(#9448)](https://github.com/PennyLaneAI/pennylane/pull/9448)
 

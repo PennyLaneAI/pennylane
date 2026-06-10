@@ -340,7 +340,8 @@ def measure(
         >>> func(0.0)
         array([nan, nan])
 
-        In the case of ``qp.sample`` and `mcm_method="deferred"`, an empty array will be returned:
+        In the case of ``qp.sample`` and `mcm_method="deferred"`, an error is raised if the
+        postselected outcome has zero probability:
 
         .. code-block:: python
 
@@ -354,7 +355,9 @@ def measure(
                 return qp.sample(wires=[0, 1])
 
         >>> qp.set_shots(func, shots=[10, 10])(0.0)
-        (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
+        Traceback (most recent call last):
+        ...
+        pennylane.exceptions.PostselectionImpossibleError: The probability of the postselected mid-circuit measurement outcome is 0. This leads to invalid sample results.
 
         .. note::
 
