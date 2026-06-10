@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring 
+* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
   [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
@@ -143,6 +143,10 @@
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
+  symbols on the control wires and a Pauli rotation label on the target wire.
+  [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
