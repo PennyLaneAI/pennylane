@@ -1206,6 +1206,21 @@ class TestGeneralMethods:
         new_op = op.map_wires({0: "a", 1: "b"})
         assert new_op.pauli_rep == PauliSentence({PauliWord({"a": "X", "b": "Y"}): 1.0})
 
+    def test_map_wires_does_not_mutate_and_updates_wires(self):
+        """Test that ``map_wires`` does not mutate the original operator's arguments
+        and correctly updates the ``wires`` property on the new operator."""
+        op = DynOp(0.5, wires=0)
+        original_wires = op.arguments["wires"]
+        new_op = op.map_wires({0: 2})
+
+        # Original operator is unchanged
+        assert op.arguments["wires"] is original_wires
+        assert op.arguments["wires"] == Wires([0])
+
+        # New operator has correctly mapped wires
+        assert new_op.wires == Wires([2])
+        assert new_op.arguments["wires"] == Wires([2])
+
     def test_simplify_default(self):
         """Test that ``simplify`` returns the operator itself by default."""
         op = DynOp(0.5, wires=0)

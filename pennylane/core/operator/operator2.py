@@ -496,7 +496,7 @@ class Operator2(ABC):
         raise AdjointUndefinedError
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
-        """Returns a shallow copy of the current operator with its wires changed according
+        """Returns a copy of the current operator with its wires changed according
         to the given wire map.
 
         Args:
@@ -505,15 +505,13 @@ class Operator2(ABC):
         Returns:
             .Operator2: new operator
         """
-        # pylint: disable=protected-access
-        new_op = copy(self)
+        new_op = deepcopy(self)
 
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
             mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
-            new_wires = unflatten(mapped_leaves, tree)
-            new_op._bound_args.arguments[n] = new_wires
+            new_op._bound_args.arguments[n] = unflatten(mapped_leaves, tree)
 
         if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
@@ -524,6 +522,8 @@ class Operator2(ABC):
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
             new_op._bound_args.arguments[n] = unflatten(leaves, tree)
+
+        new_op.__init_wires()
 
         return new_op
 
