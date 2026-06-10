@@ -25,8 +25,6 @@ from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires
 
-from .operator2 import Operator2
-
 
 def _stop_autograph(f):
     """Stop the autograph interpretation of operators by making it so that ``f`` always
@@ -80,7 +78,6 @@ class SkipChildInitMeta(type):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
-
         bound = cls.__signature__.bind(*args, **kwargs)
         bound.apply_defaults()
         arguments: dict = bound.arguments
@@ -94,6 +91,8 @@ class SkipChildInitMeta(type):
             if name in arguments
         ):
             obj = cls.__new__(cls)
+            from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
+
             Operator2.__init__(obj, *args, **kwargs)
             return obj
 
