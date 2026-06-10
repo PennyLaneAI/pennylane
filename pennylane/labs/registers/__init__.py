@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains subroutines for arithmetic.
+r"""
+This subpackage contains experimental registers
+
+.. currentmodule:: pennylane.labs.registers
+
+Registers
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~registers
+
 """
 
-from .adder import Adder
-from .mod_exp import ModExp
-from .multiplier import Multiplier
-from .out_adder import OutAdder
-from .semi_adder import SemiAdder
-from .temporary_and import TemporaryAND, Elbow
-from .out_multiplier import OutMultiplier
-from .out_poly import OutPoly
-from .phase_adder import PhaseAdder
-from .out_square import OutSquare
-from .signed_out_square import SignedOutSquare
+from .registers import registers

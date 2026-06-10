@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, TensorLike
 
 
 class TestTensorLike:
@@ -103,3 +103,112 @@ class TestTensorLike:
 
         assert issubclass(tf.Tensor, TensorLike)
         assert issubclass(tf.Variable, TensorLike)
+
+
+class TestAbstractArray:
+    """Tests for the AbstractArray class."""
+
+    def test_basic_instance(self):
+        """Test a normal instance of AbstractArray."""
+
+        a = AbstractArray([2, 3], dtype=float)
+        assert a.shape == (2, 3)  # converted to tuple
+        assert a.dtype == np.float64  # converted to numpy dtype
+
+        assert a.size == 6
+        assert a.ndim == 2
+        assert a.T.shape == (3, 2)
+        assert a.T.dtype == np.float64
+
+        assert len(a) == 2
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
+            a[1] = 2
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
+            _ = a[1]
+
+    @pytest.mark.torch
+    def test_provide_torch_dtype(self):
+        """Test that a torch dtype is converted to a numpy dtype."""
+
+        import torch
+
+        a = AbstractArray((2,), torch.int32)
+
+        assert a.dtype == np.int32
+
+    def test_hash_and_equality(self):
+        """Test hash and equality for AbstractArray"""
+
+        a0 = AbstractArray((2,), int)
+        a0_1 = AbstractArray((2,), int)
+
+        assert a0 == a0_1
+        assert hash(a0) == hash(a0_1)
+
+        a1 = AbstractArray((2, 3), int)
+        assert a1 != a0
+        assert hash(a1) != hash(a0)
+
+        a2 = AbstractArray((3,), int)
+        assert a2 != a0
+        assert hash(a2) != hash(a0)
+
+        a3 = AbstractArray((2,), float)
+        assert a3 != a0
+        assert hash(a3) != hash(a0)
+
+        a4 = AbstractArray((...,), int)
+        assert a4 != a0
+        assert hash(a4) != hash(a0)
+
+        with pytest.raises(TypeError, match="Cannot check equality between AbstractArray"):
+            _ = a3 == 2
+
+    def test_ellipsis_in_shape(self):
+        """Test that an Ellipsis can be used in the shape tuple."""
+
+        a = AbstractArray((..., 2), int)
+
+        assert a.shape == (..., 2)
+        assert a.T.shape == (2, ...)
+
+        with pytest.raises(TypeError, match="size is undefined for"):
+            _ = a.size
+
+        assert a.ndim == 2
+
+    def test_error_indexing(self):
+        """Test an error is raised when indexing into a non-scalar AbstractArray."""
+
+        a = AbstractArray((2,), int)
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
+            _ = a[1]
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
+            a[1] = 2
+
+    def test_error_len_on_scalar(self):
+        """Test that requesting the len of a scalar results in an error."""
+        a = AbstractArray((), int)
+
+        with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
+            _ = len(a)
+
+    # pylint: disable=isinstance-second-argument-not-valid-type
+    def test_instance_check(self):
+        """Test that things can be checked to be instances of a AbstractArray instance."""
+
+        a = AbstractArray((4, 2), bool)
+        b = AbstractArray((..., 2), bool)
+
+        for variant in (a, b):
+            assert isinstance(np.zeros((4, 2), bool), variant)
+
+            assert not isinstance(np.array([0, 0], dtype=bool), variant)
+
+            assert not isinstance(np.ones((4, 2), float), variant)
+
+            assert not isinstance("a", variant)
