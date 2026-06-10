@@ -147,7 +147,7 @@
 * Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
   `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
   :class:`~.SelectPauliRot`.
-  [(#7585)](https://github.com/PennyLaneAI/pennylane/issues/7585)
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
