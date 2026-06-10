@@ -416,11 +416,7 @@ class PartialUnaryStatePreparation(Operation):
 
     We can check that the correct basis states are populated with the correct amplitudes:
 
-    >>> where = np.where(prepared_state)[0]
-    >>> print(prepared_state[where], coefficients)
-    "hurz"
-    >>> print(where, indices)
-    "hurz"
+    >>> where = np.where(np.round(prepared_state, 3))[0]
     >>> print(tuple(where)==indices)
     True
     >>> print(np.allclose(prepared_state[where], coefficients))
