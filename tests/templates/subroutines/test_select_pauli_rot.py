@@ -43,9 +43,7 @@ def get_tape(angles, wires):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "alias_name", ["MultiplexedRotation", "UniformlyControlledRotation"]
-)
+@pytest.mark.parametrize("alias_name", ["MultiplexedRotation", "UniformlyControlledRotation"])
 def test_aliases(alias_name):
     """Test that SelectPauliRot aliases are public and instantiate SelectPauliRot."""
     alias = getattr(qp, alias_name)
