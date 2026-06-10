@@ -56,6 +56,8 @@ class Operator2(ABC):
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
+    _operator_version = 2
+
     # ----------------- Class variables set manually -------------------------
 
     wire_argnames: ClassVar[tuple[str, ...]] = ("wires",)
