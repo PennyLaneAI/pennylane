@@ -636,6 +636,10 @@ def identity(*_, **__):
 class DefaultGaussian(Device):
     r"""Default Gaussian device for PennyLane.
 
+    .. warning::
+
+        This device may not work as expected with recent versions of PennyLane.
+
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)

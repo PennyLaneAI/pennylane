@@ -30,15 +30,17 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane._class_property import classproperty
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator, classproperty
 from pennylane.wires import Wires, WiresLike
 
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
@@ -253,14 +255,15 @@ def create_controlled_op(
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    if qp.capture.enabled():
-        return _capture_ctrl_transform(op, control, control_values, work_wires)
     return _ctrl_transform(op, control, control_values, work_wires)
 
 
 def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
+        if qp.capture.enabled():
+            return _capture_ctrl_transform(op, control, control_values, work_wires)(*args, **kwargs)
+
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
@@ -273,7 +276,11 @@ def _ctrl_transform(op, control, control_values, work_wires):
             _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         _ = [
-            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+            (
+                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                if not isinstance(op, (Allocate, Deallocate))
+                else qp.apply(op)
+            )
             for op in qscript.operations
         ]
 

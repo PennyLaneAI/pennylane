@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
@@ -214,7 +214,9 @@ class SemiAdder(Operation):
 
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
-                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+                raise ValueError(
+                    f"At least {len(y_wires)-1} work_wires should be provided, got {len(work_wires)}"
+                )
             if work_wires.intersection(x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if work_wires.intersection(y_wires):
@@ -350,9 +352,12 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     """
     # pylint: disable=unused-argument
-    num_x_wires = base_params["num_x_wires"]
     num_y_wires = base_params["num_y_wires"]
     ctrl_kwargs["num_work_wires"] += base_params["num_work_wires"] - (num_y_wires - 1)
+    if num_y_wires == 1:
+        return {controlled_resource_rep(CNOT, {}, **ctrl_kwargs): 1}
+
+    num_x_wires = base_params["num_x_wires"]
     crossover = min(num_y_wires - 1, num_x_wires)
 
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs

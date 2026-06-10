@@ -145,9 +145,12 @@ def shadow_state(
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
-        dev = qp.device("default.qubit", wires=2)
+        import numpy as onp
+        from pennylane import numpy as np
+
+        dev = qp.device("default.qubit", wires=2, seed=42)
 
         @qp.set_shots(shots=10000)
         @qp.shadows.shadow_state(wires=[0, 1], diffable=True)
@@ -156,19 +159,26 @@ def shadow_state(
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
             qp.RX(x, wires=0)
-            return qp.classical_shadow(wires=[0, 1])
+            return qp.classical_shadow(wires=[0, 1], seed=99)
 
-    >>> x = np.array(1.2)
+    >>> x = np.array(1.2, requires_grad=True)
+    >>> onp.random.seed(123)
     >>> circuit(x)
-    array([[ 0.33835   +0.j     , -0.01215   +0.2241j , -0.00465   +0.237j  ,  0.35504997-0.01755j],
-       [-0.01215   -0.2241j ,  0.1528    +0.j     ,  0.16919999-0.0036j , -0.00285   -0.22065j],
-       [-0.00465   -0.237j  ,  0.16919999+0.0036j ,  0.17529999+0.j     ,  0.0099    -0.2358j ],
-       [ 0.35504997+0.01755j, -0.00285   +0.22065j,  0.0099    +0.2358j ,  0.33355   +0.j     ]], dtype=complex64)
+    array([[ 3.2582501e-01+0.j      , -8.2500000e-03+0.238425j,
+             2.9999996e-04+0.230925j,  3.3142501e-01+0.009j   ],
+           [-8.2500000e-03-0.238425j,  1.6337499e-01+0.j      ,
+             1.5997499e-01-0.0099j  , -5.5499999e-03-0.251475j],
+           [ 2.9999996e-04-0.230925j,  1.5997499e-01+0.0099j  ,
+             1.5797499e-01+0.j      ,  2.9999996e-04-0.241275j],
+           [ 3.3142501e-01-0.009j   , -5.5499999e-03+0.251475j,
+             2.9999996e-04+0.241275j,  3.5282502e-01+0.j      ]],
+          dtype=complex64)
+    >>> onp.random.seed(123)
     >>> qp.jacobian(lambda x: np.real(circuit(x)))(x)
-    array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
-           [-0.005325,  0.235275,  0.2358  , -0.004275],
-           [ 0.004275,  0.2358  ,  0.244875, -0.002175],
-           [-0.2358  , -0.004275, -0.002175, -0.235125]])
+    array([[-2.30550e-01,  5.62500e-03,  2.25000e-04, -2.29725e-01],
+           [ 5.62500e-03,  2.30550e-01,  2.29725e-01, -1.57500e-03],
+           [ 2.25000e-04,  2.29725e-01,  2.37900e-01,  2.47500e-03],
+           [-2.29725e-01, -1.57500e-03,  2.47500e-03, -2.37900e-01]])
     """
     tapes, fn = (
         _shadow_state_diffable(tape, wires) if diffable else _shadow_state_undiffable(tape, wires)

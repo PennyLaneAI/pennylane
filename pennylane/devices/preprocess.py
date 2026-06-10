@@ -22,6 +22,8 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.operator import Operator, StatePrepBase
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
@@ -32,12 +34,9 @@ from pennylane.exceptions import (
 )
 from pennylane.math import is_abstract, requires_grad
 from pennylane.measurements import (
-    SampleMeasurement,
-    StateMeasurement,
     counts,
     sample,
 )
-from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (

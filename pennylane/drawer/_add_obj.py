@@ -27,17 +27,17 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 
 from functools import singledispatch
 
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     Conditional,
@@ -51,7 +51,7 @@ from pennylane.ops import (
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import TemporaryAND
+from pennylane.templates.subroutines import SelectPauliRot, TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
@@ -229,6 +229,27 @@ def _add_right_elbow(obj: TemporaryAND, layer_str, config):
         if w not in mapped_wires:
             layer_str[w] += "─"
     return _add_grouping_symbols(obj.wires, layer_str, config, closing=True)
+
+
+@_add_obj.register
+def _add_select_pauli_rot(
+    obj: SelectPauliRot, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``SelectPauliRot``."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.hyperparameters["control_wires"]:
+        layer_str[config.wire_map[w]] += "◑"
+
+    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    target_label = obj.label(
+        decimals=config.decimals, base_label=base_label, cache=config.cache
+    ).replace("\n", "")
+    for w in obj.hyperparameters["target_wire"]:
+        layer_str[config.wire_map[w]] += target_label
+
+    return layer_str
 
 
 @_add_obj.register

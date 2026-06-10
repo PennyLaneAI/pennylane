@@ -18,7 +18,7 @@ and lists all operators satisfying those criteria.
 
 from inspect import isclass
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 
 class Attribute(set):

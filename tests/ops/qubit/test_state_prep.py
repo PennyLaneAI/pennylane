@@ -37,6 +37,7 @@ def test_basis_state_input_cast_to_int():
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
+    @pytest.mark.jax
     def test_assert_valid(self):
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel

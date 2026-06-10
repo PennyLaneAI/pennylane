@@ -453,8 +453,12 @@ def _check_capture(op):
         return
     try:
         import jax
-    except ImportError:
-        return
+    except ImportError as e:  # pragma: no cover
+        raise ImportError(
+            "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
+            "To skip the capture test, set skip_capture=True. "
+            "To remove this error, install JAX (for local testing) or mark the test with @pytest.mark.jax (for CI)."
+        ) from e
 
     if not all(isinstance(w, int) for w in op.wires):
         return

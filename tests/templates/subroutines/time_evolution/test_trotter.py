@@ -1318,6 +1318,7 @@ class TestTrotterizedQfuncInitialization:
                 kwargs = {special_key: 1}
                 qp.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 

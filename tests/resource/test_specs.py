@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
 from pennylane.resource.specs import (
     _get_last_tape_transform_level,
-    _make_level_name_unique,
     _preprocess_level_input,
 )
 
@@ -82,14 +81,6 @@ def test_preprocess_levels(level, output, expect_warnings):
             assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
     else:
         assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
-
-
-def test_make_level_name_unique():
-    existing_levels = {"foo", "foo-2", "bar"}
-
-    assert _make_level_name_unique("foo", existing_levels) == "foo-3"
-    assert _make_level_name_unique("bar", existing_levels) == "bar-2"
-    assert _make_level_name_unique("baz", existing_levels) == "baz"
 
 
 @pytest.mark.parametrize(
