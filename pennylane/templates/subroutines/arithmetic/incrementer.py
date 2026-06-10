@@ -56,7 +56,7 @@ class Incrementer(Operator):
 
         wires = [0, 1, 2]
         work_wires = [3, 4]
-        init_state = [0, 1, 0]
+        init_state = [0, 1, 0]  # binary representation of 2
 
         dev = device("default.qubit", wires=wires + work_wires)
 
