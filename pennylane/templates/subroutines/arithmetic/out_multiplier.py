@@ -680,6 +680,7 @@ def _increment(wires, work_wires):
     see "Incrementer from n-2 Zeroed bits".
     """
     wires = wires[::-1]
+    work_wires = work_wires[: len(wires) - 1]
     if len(wires) > 1:
         # Construct the wires on which the ladder will act.
         all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires, strict=True), start=tuple()))
