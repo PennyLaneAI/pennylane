@@ -75,7 +75,7 @@ def _partial_select(K, control):
 
 
 class Select(Operation):
-    r"""The ``Select`` operator, also known as multiplexer or multiplexed operation,
+    r"""The ``Select`` operator, also available as ``Multiplexer`` and ``Multiplexor``,
     applies different operations depending on the state of designated control wires.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
@@ -1176,3 +1176,16 @@ if Select._primitive is not None:
     def _(*args, n_wires, **kwargs):
         ops, control = args[:-n_wires], args[-n_wires:]
         return type.__call__(Select, ops, control=control, **kwargs)
+
+
+Multiplexer = Select
+r"""Multiplexer(ops, control, work_wires=None, partial=False)
+
+Alias for :class:`~.Select`.
+"""
+
+Multiplexor = Select
+r"""Multiplexor(ops, control, work_wires=None, partial=False)
+
+Alias for :class:`~.Select`.
+"""

@@ -144,6 +144,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
+  `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
+  :class:`~.SelectPauliRot`.
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
+
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
   These will support a new method of having compressed operators for resource estimation

@@ -72,6 +72,22 @@ def test_repr():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("alias_name", ["Multiplexer", "Multiplexor"])
+def test_aliases(alias_name):
+    """Test that Select aliases are public and instantiate Select."""
+    alias = getattr(qp, alias_name)
+
+    assert alias is qp.Select
+    assert getattr(qp.templates, alias_name) is qp.Select
+    assert alias_name in qp.__all__
+
+    op = alias([qp.X(0), qp.Y(0)], control=[1])
+    expected = qp.Select([qp.X(0), qp.Y(0)], control=[1])
+
+    qp.assert_equal(op, expected)
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "K, control, expected",
     [
