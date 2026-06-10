@@ -21,11 +21,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import CircuitGraph
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
 )
 from pennylane.tape import QuantumScript, QuantumTape

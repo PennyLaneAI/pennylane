@@ -22,8 +22,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import MeasurementProcess, ProbabilityMP
+from pennylane.measurements import ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
 

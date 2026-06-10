@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
