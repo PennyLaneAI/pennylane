@@ -36,7 +36,7 @@ def _stop_autograph(f):
     return new_f
 
 
-def contains_abstract_type(val):
+def _contains_abstract_type(val):
     """Check if pytree contains any abstract types."""
     leaves = flatten(val)[0]
     return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
@@ -52,7 +52,7 @@ def _canonicalize_wire_leaf(leaf) -> AbstractWires:
     return AbstractWires(len(list(leaf)))
 
 
-def canonicalize_abstract_type(val, is_wires: bool = False):
+def _canonicalize_abstract_type(val, is_wires: bool = False):
     """Check if pytree contains any abstkact types."""
 
     if is_wires:
@@ -97,7 +97,7 @@ class OperatorMeta(type):
             cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
         )
         has_abstract_arguments = any(
-            contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
+            _contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
         )
         if has_abstract_arguments:
             # "Canonicalize" abstract operators
@@ -105,7 +105,9 @@ class OperatorMeta(type):
             # all of them need to be "promoted" to abstract
             for name in arguments_that_can_be_abstract:
                 is_wires_arg = name in cls.wire_argnames
-                arguments[name] = canonicalize_abstract_type(arguments[name], is_wires=is_wires_arg)
+                arguments[name] = _canonicalize_abstract_type(
+                    arguments[name], is_wires=is_wires_arg
+                )
 
             obj = cls.__new__(cls)
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel

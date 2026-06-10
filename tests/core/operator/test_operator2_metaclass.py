@@ -16,7 +16,7 @@ import pytest
 from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.capture import contains_abstract_type
+from pennylane.core.operator.capture import _contains_abstract_type
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestContainsAbstractTypeHelper:
-    """Tests the 'contains_abstract_type' helper."""
+    """Tests the '_contains_abstract_type' helper."""
 
     @pytest.mark.parametrize(
         "val",
@@ -42,7 +42,7 @@ class TestContainsAbstractTypeHelper:
     def test_abstract_leaves_are_flagged(self, val):
         """Tests that pytrees with at least one abstract value return True."""
 
-        assert contains_abstract_type(val)
+        assert _contains_abstract_type(val)
 
     @pytest.mark.parametrize(
         "val",
@@ -57,7 +57,7 @@ class TestContainsAbstractTypeHelper:
     def test_concrete_leaves_are_not_flagged(self, val):
         """Tests that pytrees containing purely concrete values are not falgged."""
 
-        assert not contains_abstract_type(val)
+        assert not _contains_abstract_type(val)
 
     def test_jax_tracer_is_not_flagged(self):
         """Tests that JAX tracers are not considered 'abstract'."""
@@ -65,7 +65,7 @@ class TestContainsAbstractTypeHelper:
         captured = {}
 
         def f(x):
-            captured["is_abstract"] = contains_abstract_type(x)
+            captured["is_abstract"] = _contains_abstract_type(x)
 
         _ = jax.make_jaxpr(f)(0.5)
         assert captured["is_abstract"] is False
