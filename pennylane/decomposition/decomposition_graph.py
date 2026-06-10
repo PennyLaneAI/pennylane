@@ -825,7 +825,7 @@ class DecompGraphSolution:
             op = qp.CRY(0.2, wires=[0, 2])
             graph = DecompositionGraph(
                 operations=[op],
-                gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+                gate_set={"RZ", "RX", "Z", "CNOT", "GlobalPhase"},
             )
             solution = graph.solve()
             rule = solution.decomposition(op)

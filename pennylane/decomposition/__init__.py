@@ -175,7 +175,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qp.Z(wires[1])
 
     @qp.decompose(
-        gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
+        gate_set={"RX", "RY", "RZ", "CZ", "GlobalPhase"},
         alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qp.IsingXX: isingxx_decomp},
     )
@@ -186,7 +186,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         return qp.state()
 
 >>> qp.specs(circuit)()["resources"].gate_types
-{'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
+{'RZ': 6, 'GlobalPhase': 6, 'RY': 6, 'CZ': 3, 'RX': 1}
 
 To register alternative decomposition rules under an operator to be used globally, use
 :func:`~pennylane.add_decomps`. See :ref:`Inspecting and Managing Decomposition Rules <decomps_management>`

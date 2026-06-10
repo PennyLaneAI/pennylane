@@ -237,30 +237,28 @@ Args:
 """
 
 
-def _hadamard_rz_rx_resources():
-    return {qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1}
+def _hadamard_s_sx_resources():
+    return {qp.S: 2, qp.RX: 1}
 
 
-@register_resources(_hadamard_rz_rx_resources)
-def _hadamard_to_rz_rx(wires: WiresLike, **__):
-    qp.RZ(np.pi / 2, wires=wires)
+@register_resources(_hadamard_s_sx_resources)
+def _hadamard_to_s_rx(wires: WiresLike, **__):
+    qp.S(wires=wires)
     qp.RX(np.pi / 2, wires=wires)
-    qp.RZ(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.S(wires=wires)
 
 
-def _hadamard_rz_ry_resources():
-    return {qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1}
+def _hadamard_z_ry_resources():
+    return {qp.Z: 1, qp.RY: 1}
 
 
-@register_resources(_hadamard_rz_ry_resources)
-def _hadamard_to_rz_ry(wires: WiresLike, **__):
-    qp.RZ(np.pi, wires=wires)
+@register_resources(_hadamard_z_ry_resources)
+def _hadamard_to_z_ry(wires: WiresLike, **__):
+    qp.Z(wires)
     qp.RY(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
+add_decomps(Hadamard, _hadamard_to_s_rx, _hadamard_to_z_ry)
 add_decomps("Adjoint(Hadamard)", qjit_compatible_self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 

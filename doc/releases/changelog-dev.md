@@ -144,6 +144,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Updated the decompositions of :class:`~.Hadamard` to take advantage of the used 
+  angles that are multiples of :math:`\pi/2`.
+  [(#9645)](https://github.com/PennyLaneAI/pennylane/pull/9645)
+
 * :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
   symbols on the control wires and a Pauli rotation label on the target wire.
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
