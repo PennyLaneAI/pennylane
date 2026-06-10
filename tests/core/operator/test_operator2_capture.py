@@ -132,10 +132,6 @@ class TestCaptureBasics:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["wire_lens"] == (2, 1)
 
-
-class TestStaticAndCompilable:
-    """Tests for static and compilable arguments during capture."""
-
     def test_static_arg_in_params(self):
         """Test that static arguments are stored as equation parameters."""
         jaxpr = jax.make_jaxpr(lambda: StaticOp("a", wires=0))()
