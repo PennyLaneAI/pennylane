@@ -17,6 +17,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.core.operator import Operation, Operator
 from pennylane.estimator.ops import X
 from pennylane.estimator.ops.op_math.symbolic import (
     Adjoint,
@@ -25,7 +26,6 @@ from pennylane.estimator.ops.op_math.symbolic import (
     apply_adj,
     apply_controlled,
 )
-from pennylane.core.operator import Operation, Operator
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
@@ -433,7 +433,12 @@ def _update_params_from_config(comp_res_op: CompressedResourceOp, config: Resour
         dict: updated parameters of the resource operator, with `None` values replaced with defaults
     """
     config_params = config.resource_op_precisions.get(comp_res_op.op_type, {})
-    filtered_params = {key: value for key, value in comp_res_op.params.items() if value is not None}
+    filtered_params = {}
+
+    for key, value in comp_res_op.params.items():
+        if value is not None or key not in config_params:
+            filtered_params[key] = value
+
     replacement_params = {
         key: value for key, value in config_params.items() if key not in filtered_params
     }

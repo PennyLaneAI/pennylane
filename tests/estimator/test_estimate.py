@@ -684,7 +684,6 @@ class TestEstimateResources:
 
     def test_custom_pow_decomposition(self):
         """Test that a custom pow decomposition can be set and used."""
-        from pennylane.estimator.ops.op_math.symbolic import Pow
 
         def custom_pow_RZ(pow_z, target_resource_params):  # pylint: disable=unused-argument
             return [GateCount(resource_rep(Hadamard), count=2)]
@@ -705,7 +704,6 @@ class TestEstimateResources:
 
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
-        from pennylane.estimator.ops.op_math.symbolic import Controlled
 
         def custom_ctrl_RZ(
             num_ctrl_wires, num_zero_ctrl, target_resource_params
