@@ -16,8 +16,6 @@
 Unit tests for the extended ``registers`` class.
 """
 
-# pylint: disable=use-implicit-booleaness-not-comparison
-
 import pytest
 
 from pennylane.labs.registers import registers
@@ -50,7 +48,7 @@ class TestConstruction:
 
     def test_none_is_empty(self):
         """Constructing with ``None`` yields an empty register set."""
-        assert registers(None) == {}
+        assert not registers(None)  # same as asserting = {}
 
     def test_non_dict_raises(self):
         """A non-dict argument raises ``ValueError``."""
