@@ -70,6 +70,8 @@ from .arithmetic import (
     SemiAdder,
     Elbow,
     TemporaryAND,
+    Incrementer,
+    SignedOutMultiplier,
 )
 
 __all__ = [
@@ -81,6 +83,7 @@ __all__ = [
     "TrotterizedQfunc",
     "TrotterProduct",
     "trotterize",
+    "Incrementer",
     "Interferometer",
     "IQP",
     "Permute",
@@ -119,6 +122,8 @@ __all__ = [
     "PhaseAdder",
     "Adder",
     "Multiplier",
+    "OutMultiplier",
+    "SignedOutMultiplier",
     "OutAdder",
     "OutMultiplier",
     "OutSquare",

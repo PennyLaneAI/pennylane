@@ -2,6 +2,77 @@
 
 <h3>New features since last release</h3>
 
+* A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
+  input registers using a two's complement.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+  ```python
+  x = -3
+  y = 3
+
+  x_wires = [0, 1, 2]
+  y_wires = [3, 4, 5]
+  output_wires = [6, 7, 8, 9, 10, 11]
+  work_wires = [12, 13, 14, 15]
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev, shots=1)
+  def circuit():
+      qp.BasisEmbedding(x, wires=x_wires)
+      qp.BasisEmbedding(y, wires=y_wires)
+      qp.SignedOutMultiplier(
+          x_wires,
+          y_wires,
+          output_wires,
+          work_wires, 
+          output_wires_zeroed=True,
+      )
+      return qp.sample(wires=output_wires)
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [[1 1 0 1 1 1]]
+
+  ```
+  
+  The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of :math:`-3 \cdot 3 \; = -9` in 2s complement form.
+
+* Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
+  by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+  In this example, we add :math:`2 + 1` to get :math:`3`, using the `Incrementer`.
+
+  ```python
+  from pennylane import qnode, device, sample, BasisEmbedding, Incrementer
+  import numpy as np
+
+  wires = [0, 1, 2]
+  work_wires = [3, 4]
+  init_state = [0, 1, 0]  # binary representation of 2
+
+  dev = device("default.qubit", wires=wires + work_wires)
+
+  @qnode(dev, shots=1)
+  def increment(wires, init_state, work_wires=None):
+      BasisEmbedding(init_state, wires)
+      Incrementer(wires, work_wires)
+      return sample()
+
+  result = increment(wires, init_state, work_wires)[0]
+
+  ```
+  
+  ```pycon
+  >>> result[:len(wires)]
+  array([0, 1, 1])
+  
+  ```
+
+  The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
 * Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
@@ -477,7 +548,10 @@
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  Moves `MeasurementProcess`, `StateMeasurement`, `SampleMeasurement`, `MeasurementTransform`,
+  `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+  [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
@@ -617,6 +691,10 @@
 
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
+
+* ``qp.ctrl`` no longer produces ``Controlled(Allocate)`` when applied to quantum functions that
+  contain dynamic wire allocation instructions.
+  [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
 <h3>Contributors ✍️</h3>
 

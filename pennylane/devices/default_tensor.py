@@ -27,6 +27,7 @@ from typing import Union
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.measurements import MeasurementProcess, StateMeasurement
 from pennylane.core.operator import Operation, Operator
 from pennylane.devices import Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
@@ -39,8 +40,6 @@ from pennylane.devices.preprocess import (
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
-    StateMeasurement,
     StateMP,
     VarianceMP,
 )

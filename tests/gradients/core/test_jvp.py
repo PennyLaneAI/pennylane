@@ -17,8 +17,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.gradients import param_shift
-from pennylane.measurements.shots import Shots
 
 _x = np.arange(12).reshape((2, 3, 2))
 
