@@ -160,9 +160,8 @@ class IsometryFinder:
     def apply_multi_controlled_x(self, controls, control_values, target: int):
         """Apply multi-controlled X to the tableau."""
         ctrl_cols = self.tableau[:, controls]
-        cv = np.asarray(control_values)
         # A row is flipped iff all control bits match control_values
-        match = np.all(ctrl_cols == cv, axis=1)
+        match = np.all(ctrl_cols == control_values, axis=1)
         self.tableau[:, target] ^= match.astype(np.int8)
 
     def pui(self, k, batch_size):
@@ -263,7 +262,7 @@ class IsometryFinder:
             diff_qubit = int(np.where(A != B)[0][0])
 
             controls = [self.n_subspace + active_remainder_bit, diff_qubit]
-            control_values = [1, int(self.tableau[idx, diff_qubit])]
+            control_values = np.array([1, int(self.tableau[idx, diff_qubit])])
             self.toffoli(controls, control_values, actual_qubit)
             return idx
 
