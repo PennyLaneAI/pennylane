@@ -32,6 +32,19 @@ from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 class TestAdjointQfunc:
     """Tests for the adjoint transform."""
 
+    def test_lazy_dispatch(self):
+        """Test that the dispatch to capture happens at call time."""
+
+        qp.capture.disable()
+
+        adj_qfunc = qp.adjoint(qp.S)
+
+        qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(adj_qfunc)(0)
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == qp.S._primitive
+
     def test_adjoint_qfunc(self):
         """Test that the adjoint qfunc transform can be captured."""
 
@@ -284,6 +297,20 @@ class TestAdjointDynamicShapes:
 
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
+
+    def test_lazy_dispatch_ctrl(self):
+        """Test that the dispatch to capture happens at call time."""
+
+        qp.capture.disable()
+
+        adj_qfunc = qp.ctrl(qp.S, 1)
+
+        qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(adj_qfunc)(0)
+        assert jaxpr.eqns[0].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[0].invars[1].val == 1
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == qp.S._primitive
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
