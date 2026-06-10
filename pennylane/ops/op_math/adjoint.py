@@ -34,7 +34,7 @@ from .symbolicop import SymbolicOp
 
 
 @overload
-def adjoint(fn: Operator | Operator2, lazy: bool = True) -> Operator | Operator2: ...
+def adjoint(fn: Operator, lazy: bool = True) -> Operator: ...
 @overload
 def adjoint(fn: Callable, lazy: bool = True) -> Callable: ...
 def adjoint(fn, lazy=True):
@@ -182,7 +182,7 @@ def create_adjoint_op(fn, lazy):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
     if qp.math.is_abstract(fn):
         return _make_adjoint_op(fn)
-    if isinstance(fn, (Operator, Operator2)):
+    if isinstance(fn, Operator):
         return _make_adjoint_op(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
         return _adjoint_transform(fn, lazy=lazy)
@@ -275,7 +275,7 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     return wrapper
 
 
-def _single_op_eager(op: Operator | Operator2, update_queue: bool = False) -> Operator | Operator2:
+def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
@@ -493,12 +493,12 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-def _make_adjoint_op(op: Operator | Operator2) -> Adjoint | Adjoint2:
+def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
     return Adjoint2(op) if isinstance(op, Operator2) else Adjoint(op)
 
 
 def _is_operator(op):
-    return isinstance(op, (Operator, Operator2))
+    return isinstance(op, Operator)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
