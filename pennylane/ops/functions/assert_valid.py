@@ -551,7 +551,7 @@ def _check_wires(op, skip_wire_mapping):
 
 # pylint: disable=too-many-arguments
 def assert_valid(
-    op: qp.operation.Operator,
+    op: qp.operation.Operator | qp.core.Operator2,
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -561,7 +561,7 @@ def assert_valid(
     skip_wire_mapping=False,
     skip_capture=False,
 ) -> None:
-    """Runs basic validation checks on an :class:`~.operation.Operator` to make
+    """Runs basic validation checks on an :class:`~.operation.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
 
     Args:
@@ -615,19 +615,30 @@ def assert_valid(
 
     """
 
-    assert isinstance(op.data, tuple), "op.data must be a tuple"
-    assert isinstance(op.parameters, list), "op.parameters must be a list"
-    for d, p in zip(op.data, op.parameters, strict=True):
-        assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
-        assert qp.math.allclose(d, p), "data and parameters must match."
+    if isinstance(op, qp.core.Operator2):
+        # Temporary, as we will be integrating Operator2 with program capture soon.
+        skip_capture = True
+        # Temporary, as we will be integrating Operator2 with graph decomps soon.
+        skip_new_decomp = True
+        # Temporary, as there is a bug in map_wires for Operator2
+        skip_wire_mapping = True
+    else:
+        # Temporary, as we are adding these attributes for backwards compatiblility.
+        assert isinstance(op.data, tuple), "op.data must be a tuple"
+        assert isinstance(op.parameters, list), "op.parameters must be a list"
+
+        for d, p in zip(op.data, op.parameters, strict=True):
+            assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
+            assert qp.math.allclose(d, p), "data and parameters must match."
+
+        _check_pytree(op)
+        _check_bind_new_parameters(op)
 
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
-    _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
-    _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
