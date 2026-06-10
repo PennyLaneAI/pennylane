@@ -33,6 +33,7 @@ from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.gradients import parameter_frequencies
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qp.SingleExcitation(0.14, wires=[0, 1]),
@@ -66,7 +67,7 @@ class TestParameterFrequencies:
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
         freqs_from_gen = qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
-        freqs = op.parameter_frequencies
+        freqs = parameter_frequencies(op)
         assert np.allclose(freqs, np.sort(freqs_from_gen), atol=tol)
 
 

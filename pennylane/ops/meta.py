@@ -23,7 +23,7 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.wires import Wires, WiresLike
 
 

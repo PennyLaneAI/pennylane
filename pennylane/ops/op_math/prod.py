@@ -28,13 +28,13 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum

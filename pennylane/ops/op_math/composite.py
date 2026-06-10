@@ -24,8 +24,9 @@ from warnings import warn
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
