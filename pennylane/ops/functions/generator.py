@@ -182,7 +182,7 @@ def generator(op: qp.operation.Operator, format="prefactor"):
         else:
             gen_op = op
 
-        if gen_op.num_params != 1:
+        if len(gen_op.ndim_params) != 1:
             raise ValueError(
                 f"Operation {gen_op.name} is not written in terms of a single parameter"
             )
