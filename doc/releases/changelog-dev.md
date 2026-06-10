@@ -44,6 +44,7 @@
   True
   >>> print(np.allclose(prepared_state[where], coefficients))
   True
+
   ```
 
 * Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
