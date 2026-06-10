@@ -471,6 +471,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Adds a new `pennylane/core` module.
@@ -615,6 +616,10 @@
 
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
+
+* ``qp.ctrl`` no longer produces ``Controlled(Allocate)`` when applied to quantum functions that
+  contain dynamic wire allocation instructions.
+  [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
 <h3>Contributors ✍️</h3>
 
