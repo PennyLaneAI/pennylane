@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
-import pennylane as qp
 from pennylane import AmplitudeEmbedding
 from pennylane.exceptions import DeviceError
 from pennylane.math import flatten, reshape
