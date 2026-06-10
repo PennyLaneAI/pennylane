@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring 
+* Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
   [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
@@ -143,6 +143,10 @@
   (two-site Fermionic Fourier transforms).
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
+  symbols on the control wires and a Pauli rotation label on the target wire.
+  [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
@@ -466,6 +470,7 @@
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * Adds a new `pennylane/core` module.
@@ -542,6 +547,10 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
+  expected with recent versions of PennyLane.
+  [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
+
 <h3>Bug fixes 🐛</h3>
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
@@ -606,6 +615,10 @@
 
 * Fixed a bug where gate types are overwritten in ``qp.specs`` on the MLIR level.
   [(#9574)](https://github.com/PennyLaneAI/pennylane/pull/9574)
+
+* ``qp.ctrl`` no longer produces ``Controlled(Allocate)`` when applied to quantum functions that
+  contain dynamic wire allocation instructions.
+  [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
 <h3>Contributors ✍️</h3>
 
