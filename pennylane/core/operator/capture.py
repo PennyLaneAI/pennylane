@@ -64,10 +64,10 @@ class OperatorMeta(type):
         arguments_that_can_be_abstract = (
             cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
         )
-        if any(
-            contains_abstract_type(arguments[name])
-            for name in arguments_that_can_be_abstract
-        ):
+        has_abstract_arguments = any(
+            contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
+        )
+        if has_abstract_arguments:
             obj = cls.__new__(cls)
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
 
