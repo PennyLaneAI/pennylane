@@ -617,6 +617,9 @@
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
+* Fixed a bug where resource decompositions were not properly resolved for nested symbolic operators.
+  [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
