@@ -21,6 +21,11 @@ from abc import ABCMeta
 from inspect import Signature, signature
 
 from pennylane.capture import enabled
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires
+
+from .operator2 import Operator2
 
 
 def _stop_autograph(f):
@@ -33,7 +38,13 @@ def _stop_autograph(f):
     return new_f
 
 
-class OperatorMeta(type):
+def contains_abstract_type(x):
+    """Check if pytree contains any abstract types."""
+    leaves = flatten(x)[0]
+    return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
+
+
+class CaptureMeta(type):
     """A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
     TODO: [sc-120453] Fill docstring
@@ -57,6 +68,38 @@ class OperatorMeta(type):
         return op
 
 
+class SkipChildInitMeta(type):
+    """A metaclass that allows skipping the childs constructor and instead
+    directly calling the Operator2 constructor."""
+
+    @property
+    def __signature__(cls):
+        sig = signature(cls.__init__)
+        without_self = tuple(sig.parameters.values())[1:]
+        return Signature(without_self)
+
+    @_stop_autograph
+    def __call__(cls, *args, **kwargs):
+
+        bound = cls.__signature__.bind(*args, **kwargs)
+        bound.apply_defaults()
+        arguments: dict = bound.arguments
+
+        arguments_that_can_be_abstract = (
+            cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+        )
+        if any(
+            contains_abstract_type(arguments[name])
+            for name in arguments_that_can_be_abstract
+            if name in arguments
+        ):
+            obj = cls.__new__(cls)
+            Operator2.__init__(obj, *args, **kwargs)
+            return obj
+
+        return type.__call__(cls, *args, **kwargs)
+
+
 # pylint: disable=abstract-method
-class ABCOperatorMeta(OperatorMeta, ABCMeta):
+class ABCOperatorMeta(SkipChildInitMeta, CaptureMeta, ABCMeta):
     """A combination of the operator metaclass and ABCMeta."""
