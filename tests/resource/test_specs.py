@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
 from pennylane.resource.specs import (
     _get_last_tape_transform_level,

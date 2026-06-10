@@ -17,21 +17,23 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
+from pennylane.core.shots import Shots
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
@@ -410,6 +412,21 @@ class TestDiagonalizingGates:
         expected_classes = [qp.PauliZ, qp.S, qp.Hadamard]
         for op, c in zip(res, expected_classes):
             assert isinstance(op, c)
+
+    def test_has_decomposition(self):
+        """Test with an observable with no diagonalizing gates."""
+
+        mp0 = qp.expval(qp.X(0))
+        assert mp0.has_decomposition
+
+        class _NoDiagonalizingGates(qp.core.operator.Operator):
+            pass
+
+        mp1 = qp.expval(_NoDiagonalizingGates(wires=0))
+        assert not mp1.has_decomposition
+
+        mp2 = qp.sample(wires=0)
+        assert not mp2.has_decomposition
 
 
 class TestSampleMeasurement:
