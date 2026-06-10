@@ -27,7 +27,7 @@ from pennylane.typing import PostprocessingFn
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
-@transform
+@partial(transform, pass_name="merge-rotations")
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
