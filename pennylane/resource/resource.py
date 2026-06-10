@@ -26,8 +26,9 @@ from functools import lru_cache
 from string import ascii_lowercase
 from typing import Any
 
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation
-from pennylane.measurements import MeasurementProcess, Shots, add_shots
+from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
@@ -149,7 +150,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 r1 = Resources(
@@ -201,7 +202,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 resources = Resources(
@@ -903,7 +904,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -941,7 +942,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = r1.depth + r2.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -970,7 +971,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -1008,7 +1009,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = max(r1.depth, r2.depth)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -1038,7 +1039,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -1096,7 +1097,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -1151,7 +1152,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             initial_resources = Resources(
