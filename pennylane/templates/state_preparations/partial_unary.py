@@ -447,12 +447,12 @@ class PartialUnaryStatePreparation(Operation):
     .. code-block:: python
 
         np.random.seed(31)
-        K = 2553
-        coefficients = np.random.random(K)
+        L = 2553
+        coefficients = np.random.random(L)
         coefficients /= np.linalg.norm(coefficients)
-        indices = np.random.choice(2**15, K, replace=False)
+        indices = np.random.choice(2**15, L, replace=False)
         wires = list(range(15))
-        num_work_wires = qp.math.ceil_log2(K) - 1
+        num_work_wires = qp.math.ceil_log2(L) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
