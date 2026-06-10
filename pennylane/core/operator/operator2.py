@@ -23,7 +23,7 @@ from copy import copy, deepcopy
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -31,6 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
+from pennylane.capture import enabled
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -43,12 +44,15 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .capture import ABCOperatorMeta
+
+if TYPE_CHECKING:
+    from pennylane.pauli import PauliSentence
 
 has_jax = find_spec("jax") is not None
 
@@ -59,6 +63,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
+    _operator_version = 2
 
     # ----------------- Class variables set manually -------------------------
 
@@ -174,7 +180,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     def __init__(self, *args, **kwargs):
         # Union[PauliSentence, None]: Representation of the operator as a
         # pauli sentence, if applicable
-        self._pauli_rep: qp.pauli.PauliSentence | None = None
+        self._pauli_rep: PauliSentence | None = None
 
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
@@ -186,7 +192,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.tracer = None
-        self.queue()
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -330,7 +335,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         return False
 
     @property
-    def pauli_rep(self) -> "qp.pauli.PauliSentence | None":
+    def pauli_rep(self) -> "PauliSentence | None":
         """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
         return self._pauli_rep
@@ -447,7 +452,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             return []
         if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qp.apply(self) for _ in range(z)]
+                return [apply(self) for _ in range(z)]
             return [copy(self) for _ in range(z)]
         raise PowUndefinedError
 
@@ -775,7 +780,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
-                return qp.math.linalg.eigvals(self.matrix())
+                return math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
     @staticmethod
@@ -1173,7 +1178,9 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        return cls(**args)
+        # We use type.__call__ instead of instantiating the operator normally so that
+        # the operator isn't queued and the operator primitive isn't bound.
+        return type.__call__(cls, **args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1220,7 +1227,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
-        if not qp.capture.enabled():
+        if not enabled():
             return
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
@@ -1370,12 +1377,12 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
 def _format_label_arg(x, decimals, cache):
     """Format a scalar parameter or retrieve/store a matrix-valued parameter
     from/to cache, formatting its position in the cache as parameter string."""
-    if len(qp.math.shape(x)) == 0:
+    if len(math.shape(x)) == 0:
         # Scalar case
         if decimals is None:
             return ""
         try:
-            return format(qp.math.toarray(x), f".{decimals}f")
+            return format(math.toarray(x), f".{decimals}f")
         except ValueError:  # pragma: no cover
             # If the parameter can't be displayed as a float
             return format(x)
@@ -1386,7 +1393,7 @@ def _format_label_arg(x, decimals, cache):
 
     # Retrieve matrix location in cache, or write the matrix to cache as new entry
     for i, mat in enumerate(mat_cache):
-        if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
+        if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
             return f"M{i}"
     mat_num = len(mat_cache)
     mat_cache.append(x)
@@ -1407,8 +1414,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
-        x = x if mod_val is None else qp.math.real(x) % mod_val
-        return qp.math.round(x, 10)
+        x = x if mod_val is None else math.real(x) % mod_val
+        return math.round(x, 10)
 
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex

@@ -113,11 +113,16 @@ class OperatorMeta(type):
             Operator2.__init__(obj, *bound.args, **bound.kwargs)
             return obj
 
+        # This method is called everytime we want to create an instance of the class.
+        # default behavior uses __new__ then __init__
         op = type.__call__(cls, *args, **kwargs)
+        op.queue()
+
         if enabled():
-            # when tracing is enabled, we want to use bind to construct the class
+            # When tracing is enabled, we want to use bind to construct the class
             # if we want class construction to add it to the jaxpr
             op._bind_primitive()
+
         return op
 
 
