@@ -314,6 +314,18 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qp.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
             (qp.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
             (qp.ctrl(qp.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 3, rot_axis="Y"),
+                ["╭◑", "├◑", "│", "╰RY"],
+            ),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 3, rot_axis="X"),
+                ["╭◑", "├◑", "│", "╰RX"],
+            ),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [2, 0], 1, rot_axis="Z"),
+                ["╭◑", "├RZ", "╰◑", "─"],
+            ),
         ],
     )
     def test_add_obj(self, op, out):
@@ -652,6 +664,18 @@ single_op_tests_data = [
     ),
     (qp.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
     (qp.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="Y"),
+        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RY(M0)─┤  ",
+    ),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="X"),
+        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RX(M0)─┤  ",
+    ),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [2, 0], 1, rot_axis="Z"),
+        "2: ─╭◑──────┤  \n0: ─├◑──────┤  \n1: ─╰RZ(M0)─┤  ",
+    ),
     (qp.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
     (qp.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
     (
