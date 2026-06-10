@@ -67,7 +67,6 @@ class OperatorMeta(type):
         if any(
             contains_abstract_type(arguments[name])
             for name in arguments_that_can_be_abstract
-            if name in arguments
         ):
             obj = cls.__new__(cls)
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
