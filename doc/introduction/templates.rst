@@ -168,6 +168,14 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
+    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :figure: _static/templates/arithmetic/outsquare.png
+
+.. gallery-item::
+    :description: :doc:`SignedOutSquare <../code/api/pennylane.SignedOutSquare>`
+    :figure: _static/templates/arithmetic/signedoutsquare.png
+
+.. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
@@ -386,6 +394,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
     :figure: _static/templates/qram/hybrid_qram_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`Flip Flop QRAM <../code/api/pennylane.FFQRAM>`
+    :figure: _static/templates/qram/ffqram_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
