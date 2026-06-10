@@ -57,7 +57,7 @@ class OperatorMeta(type):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
-        bound = cls.__signature__.bind(*args, **kwargs)
+        bound = cls._sig.bind(*args, **kwargs)
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
