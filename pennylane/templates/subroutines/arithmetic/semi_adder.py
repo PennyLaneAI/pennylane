@@ -352,9 +352,12 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     """
     # pylint: disable=unused-argument
-    num_x_wires = base_params["num_x_wires"]
     num_y_wires = base_params["num_y_wires"]
     ctrl_kwargs["num_work_wires"] += base_params["num_work_wires"] - (num_y_wires - 1)
+    if num_y_wires == 1:
+        return {controlled_resource_rep(CNOT, {}, **ctrl_kwargs): 1}
+
+    num_x_wires = base_params["num_x_wires"]
     crossover = min(num_y_wires - 1, num_x_wires)
 
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
