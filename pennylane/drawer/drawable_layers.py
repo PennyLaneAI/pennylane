@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from functools import singledispatch
 
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import (
     Conditional,
     GlobalPhase,

@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,38 +22,49 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
+from functools import lru_cache
 from string import ascii_lowercase
 from typing import Any
 
-from pennylane.measurements import MeasurementProcess, Shots, add_shots
-from pennylane.operation import Operation
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operation
+from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
+from .expression import Expression, convert_int_vals_to_expression
 
 
-def _count_to_str(count: int) -> str:
+def _count_to_str(count: int | Expression) -> str:
     """Helper for printing counts, converts large counts to scientific notation."""
+    if isinstance(count, Expression):
+        return str(count).replace(" ", "")
     return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
 
 
-def _batch_num_to_letters(num: int) -> str:
-    """Helper for printing batch numbers, converts 0 to 'a', 1 to 'b', etc.
+@lru_cache
+def num_to_letters(num: int) -> str:
+    """Helper for assigning labels to numbered data, such as batches for circuit resources.
+
+    Converts 0 to 'a', 1 to 'b', etc.
 
     Example:
-    >>> _batch_num_to_letters(0)
+    >>> num_to_letters(0)
     'a'
 
-    >>> _batch_num_to_letters(25)
+    >>> num_to_letters(25)
     'z'
 
-    >>> _batch_num_to_letters(27)
+    >>> num_to_letters(26)
+    'aa'
+
+    >>> num_to_letters(27)
     'ab'
     """
     if num < 26:
         return ascii_lowercase[num]
-    return _batch_num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
+    return num_to_letters(num // 26 - 1) + ascii_lowercase[num % 26]
 
 
 @dataclass(frozen=True)
@@ -139,7 +150,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 r1 = Resources(
@@ -191,7 +202,7 @@ class Resources:
 
             .. code-block:: python
 
-                from pennylane.measurements import Shots
+                from pennylane.core.shots import Shots
                 from pennylane.resource import Resources
 
                 resources = Resources(
@@ -251,6 +262,9 @@ class SpecsResources:
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
     key resources such as gate counts, number of wire allocations, measurements, and circuit depth.
+
+    Note that this class is intended to be immutable. Modifying the attributes after creation may
+    lead to unexpected behavior.
 
     Args:
         gate_types (dict[str, int]): A dictionary mapping gate names to their counts.
@@ -396,6 +410,151 @@ class SpecsResources:
 
 
 @dataclass(frozen=True)
+class SymbolicSpecsResources(SpecsResources):
+    """
+    Class for storing symbolic resource information for a quantum circuit. Contains attributes
+    which store expressions representing the resources, allowing for symbolic manipulation and
+    substitution of variables.
+
+    .. warning::
+
+        This class is intended to be immutable. Modifying the attributes after creation may
+        lead to unexpected behavior.
+
+    .. note::
+
+        Some of the attributes from the parent class, :class:`SpecsResources`, are overridden
+        here to be of type :class:`Expression` instead of `int`.
+    """
+
+    # gate_types: dict[str, Expression]
+    # gate_sizes: dict[int, Expression]
+    # measurements: dict[str, Expression]
+    # num_allocs: Expression
+    # depth: Expression | None = None
+    vars: set[str] = field(init=False)
+
+    def __post_init__(self):
+        # Make sure that all fields use expressions, (converting ints to constant expressions where necessary)
+        if self.depth is not None and isinstance(self.depth, int):
+            object.__setattr__(
+                self,
+                "depth",
+                Expression(self.depth),
+            )
+        if isinstance(self.num_allocs, int):
+            object.__setattr__(
+                self,
+                "num_allocs",
+                Expression(self.num_allocs),
+            )
+
+        convert_int_vals_to_expression(self.gate_types)
+        convert_int_vals_to_expression(self.gate_sizes)
+        convert_int_vals_to_expression(self.measurements)
+
+        vars = set()
+
+        # Need to disable this since the type checker still thinks that many of these members are
+        # `int` and therefore do not contain a `var` member
+        # pylint: disable=no-member
+
+        # Need to take a union over all variables across the different expressions to
+        # ensure the top-level objects has the full set of variables
+        if self.depth is not None:
+            vars |= self.depth.vars
+        vars |= self.num_allocs.vars
+
+        # Union over all expressions
+        for expr in self.gate_types.values():
+            vars |= expr.vars
+        for expr in self.gate_sizes.values():
+            vars |= expr.vars
+        for expr in self.measurements.values():
+            vars |= expr.vars
+
+        object.__setattr__(self, "vars", vars)
+
+    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> SpecsResources:
+        """
+        Substitute variables in the symbolic resources with concrete integer values.
+        If all variables are substituted, this will return a :class:`SpecsResources` object with
+        integer values instead of another :class:`SymbolicSpecsResources` object.
+        """
+        if substitutions is None:
+            substitutions = {}
+        substitutions.update(kwargs)
+
+        subs_vars = set(substitutions.keys())
+        if subs_vars - self.vars:  # If substitutions contain variables not in the expression
+            raise ValueError(
+                f"Substitutions contain variables {subs_vars - self.vars} which are not in the expression's variables {self.vars}."
+            )
+
+        # Need to disable this since the type checker still thinks that many of these members are
+        # `int` and therefore do not contain a `var` member
+        # pylint: disable=no-member
+
+        num_allocs = self.num_allocs.subs(substitutions)
+        depth = self.depth.subs(substitutions) if self.depth is not None else None
+
+        gate_types = {k: v.subs(substitutions) for k, v in self.gate_types.items()}
+        gate_sizes = {k: v.subs(substitutions) for k, v in self.gate_sizes.items()}
+        measurements = {k: v.subs(substitutions) for k, v in self.measurements.items()}
+
+        if len(self.vars - subs_vars) == 0:
+            # There are no variables remaining, so this can be resolved down to a `SpecsResources`
+            return SpecsResources(
+                gate_types={k: int(v) for k, v in gate_types.items()},
+                gate_sizes={k: int(v) for k, v in gate_sizes.items()},
+                measurements={k: int(v) for k, v in measurements.items()},
+                num_allocs=int(num_allocs),
+                depth=int(depth) if depth is not None else None,
+            )
+
+        return SymbolicSpecsResources(
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements=measurements,
+            num_allocs=num_allocs,
+            depth=depth,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, (SpecsResources, SymbolicSpecsResources)):
+            return NotImplemented
+        if not isinstance(other, SymbolicSpecsResources):
+            if self.vars:
+                return False
+            return self.subs() == other
+
+        return (
+            self.vars == other.vars
+            and self.num_allocs == other.num_allocs
+            and self.depth == other.depth
+            and self.gate_types == other.gate_types
+            and self.gate_sizes == other.gate_sizes
+            and self.measurements == other.measurements
+        )
+
+    def __call__(self, **kwargs):
+        return self.subs(kwargs)
+
+    def to_pretty_str(self, preindent: int = 0) -> str:
+        prefix = " " * preindent
+        return (
+            f"{prefix}Symbolic Variables: {', '.join(sorted(self.vars)) if self.vars else 'None'}\n"
+            + super().to_pretty_str(preindent)
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SymbolicSpecsResources to a dictionary, including the variables."""
+        d = super().to_dict()
+        d["vars"] = sorted(self.vars)
+        return d
+
+
+@dataclass(frozen=True)
 class CircuitSpecs:
     """
     Class for storing specifications of a qnode. Contains resource information as well as additional
@@ -535,7 +694,7 @@ class CircuitSpecs:
         elif isinstance(res, list):
             prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"{prefix}Batched tape {_batch_num_to_letters(i)}:")
+                lines.append(f"{prefix}Batched tape {num_to_letters(i)}:")
                 lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
@@ -554,7 +713,7 @@ class CircuitSpecs:
                 flat_resources[str(level)] = res
             elif isinstance(res, list):
                 for i, r in enumerate(res):
-                    flat_resources[f"{level}-{_batch_num_to_letters(i)}"] = r
+                    flat_resources[f"{level}-{num_to_letters(i)}"] = r
             else:
                 raise ValueError(
                     "Resources must be either a SpecsResources object or a list of SpecsResources objects."
@@ -745,7 +904,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -783,7 +942,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = r1.depth + r2.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -812,7 +971,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             r1 = Resources(
@@ -850,7 +1009,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = add_shots(r1.shots, r2.shots)
+    new_shots = r1.shots + r2.shots
     new_depth = max(r1.depth, r2.depth)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -880,7 +1039,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -938,7 +1097,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             resources = Resources(
@@ -993,7 +1152,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         .. code-block:: python
 
-            from pennylane.measurements import Shots
+            from pennylane.core.shots import Shots
             from pennylane.resource import Resources
 
             initial_resources = Resources(

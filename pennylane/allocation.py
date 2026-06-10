@@ -20,8 +20,8 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True

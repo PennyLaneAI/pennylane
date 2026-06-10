@@ -22,6 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,12 +31,11 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .arithmetic import TemporaryAND
+from .arithmetic.temporary_and import TemporaryAND
 
 
 def _partial_select(K, control):
