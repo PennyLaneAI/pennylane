@@ -43,8 +43,11 @@ def contains_abstract_type(x):
 
 
 class OperatorMeta(type):
-    """A metaclass that allows skipping the childs constructor and instead
-    directly calling the Operator2 constructor."""
+    """
+    A metatype that overrides class construction for operators for program capture
+    and graph-based decompositions integration.
+    TODO: [sc-120453] Fill docstring
+    """
 
     @property
     def __signature__(cls):
