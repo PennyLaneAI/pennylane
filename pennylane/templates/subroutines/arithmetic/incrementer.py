@@ -45,6 +45,34 @@ class Incrementer(Operator):
         wires (Wires): The wires that the incrementer acts on.
         work_wires (Wires): The auxiliary wires that the incrementer may use in its decomposition.
 
+    **Example**
+
+    Here we add :math:`2 + 1` to get :math:`3`, using the `Incrementer`.
+
+    .. code-block:: python
+
+        from pennylane import qnode, device, sample, BasisEmbedding, Incrementer
+        import numpy as np
+
+        wires = [0, 1, 2]
+        work_wires = [3, 4]
+        init_state = [0, 1, 0]
+
+        dev = device("default.qubit", wires=wires + work_wires)
+
+        @qnode(dev, shots=1)
+        def increment(wires, init_state, work_wires=None):
+            BasisEmbedding(init_state, wires)
+            Incrementer(wires, work_wires)
+            return sample()
+
+        result = increment(wires, init_state, work_wires)[0]
+
+    >>> result[:len(wires)]
+    array([0, 1, 1])
+
+    The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
     .. details::
         :title: Decomposition
         :href: decomposition

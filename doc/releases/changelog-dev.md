@@ -43,6 +43,36 @@
   by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
 
+  In this example, we add :math:`2 + 1` to get :math:`3`, using the `Incrementer`.
+
+  ```python
+  from pennylane import qnode, device, sample, BasisEmbedding, Incrementer
+  import numpy as np
+
+  wires = [0, 1, 2]
+  work_wires = [3, 4]
+  init_state = [0, 1, 0]
+
+  dev = device("default.qubit", wires=wires + work_wires)
+
+  @qnode(dev, shots=1)
+  def increment(wires, init_state, work_wires=None):
+      BasisEmbedding(init_state, wires)
+      Incrementer(wires, work_wires)
+      return sample()
+
+  result = increment(wires, init_state, work_wires)[0]
+
+  ```
+  
+  ```pycon
+  >>> result[:len(wires)]
+  array([0, 1, 1])
+  
+  ```
+
+  The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
 * Added a new template :class:`~.OutSquare` for outplace squaring a register into another register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
 
