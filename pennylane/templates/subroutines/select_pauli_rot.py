@@ -38,7 +38,8 @@ class SelectPauliRot(Operation):
     designated control qubits.
 
     This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
-    applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
+    and available as ``MultiplexedRotation`` and ``UniformlyControlledRotation``, applies a
+    sequence of multi-controlled rotations about the same axis to a single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
 
@@ -250,3 +251,16 @@ if SelectPauliRot._primitive is not None:
     def _(*args, n_wires, **kwargs):
         (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
         return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)
+
+
+MultiplexedRotation = SelectPauliRot
+r"""MultiplexedRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""
+
+UniformlyControlledRotation = SelectPauliRot
+r"""UniformlyControlledRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""

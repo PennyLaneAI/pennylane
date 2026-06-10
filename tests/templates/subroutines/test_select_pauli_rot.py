@@ -42,6 +42,25 @@ def get_tape(angles, wires):
     )
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "alias_name", ["MultiplexedRotation", "UniformlyControlledRotation"]
+)
+def test_aliases(alias_name):
+    """Test that SelectPauliRot aliases are public and instantiate SelectPauliRot."""
+    alias = getattr(qp, alias_name)
+
+    assert alias is qp.SelectPauliRot
+    assert getattr(qp.templates, alias_name) is qp.SelectPauliRot
+    assert alias_name in qp.__all__
+
+    angles = np.array([1.0, 2.0, 3.0, 4.0])
+    op = alias(angles, control_wires=[0, 1], target_wire=2, rot_axis="Y")
+    expected = qp.SelectPauliRot(angles, control_wires=[0, 1], target_wire=2, rot_axis="Y")
+
+    qp.assert_equal(op, expected)
+
+
 class TestSelectPauliRot:
 
     @pytest.mark.jax
