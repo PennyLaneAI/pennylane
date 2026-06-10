@@ -108,7 +108,6 @@ class TestAbstractInputs:
 
         aa = AbstractArray((1,), float)
         op = DynCanonOp(phi=aa, wires=0)
-        # __init__ is hit so phi is doubled
         assert op.phi is aa
         assert op.wires == Wires(0)
 
