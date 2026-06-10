@@ -416,6 +416,8 @@ class PartialUnaryStatePreparation(Operation):
     We can check that the correct basis states are populated with the correct amplitudes:
 
     >>> where = np.where(prepared_state)[0]
+    >>> print(where)
+    "hurz"
     >>> print(tuple(where)==indices)
     True
     >>> print(np.allclose(prepared_state[where], coefficients))
@@ -533,32 +535,25 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     R = num_wires - n_subspace
     main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
-    rest_pui_batch_size = num_entries % main_pui_batch_size or main_pui_batch_size
 
-    qrom_rep = qp.resource_rep(
-        qp.QROM,
-        num_bitstrings=main_pui_batch_size,
-        num_control_wires=n_subspace,
-        num_target_wires=main_pui_batch_size,
-        num_work_wires=num_work_wires,
-        clean=True,
-    )
-    resources[qrom_rep] += max(num_entries // main_pui_batch_size, 1)
+    qrom_reps = {
+        p: qp.resource_rep(
+            qp.QROM,
+            num_bitstrings=p,
+            num_control_wires=n_subspace,
+            num_target_wires=p,
+            num_work_wires=num_work_wires,
+            clean=True,
+        )
+        for p in range(1, main_pui_batch_size + 1)
+    }
 
-    last_qrom_rep = qp.resource_rep(
-        qp.QROM,
-        num_bitstrings=rest_pui_batch_size,
-        num_control_wires=n_subspace,
-        num_target_wires=rest_pui_batch_size,
-        num_work_wires=num_work_wires,
-        clean=True,
-    )
-    resources[last_qrom_rep] += 1
+    resources[qrom_reps[main_pui_batch_size]] += max(num_entries // main_pui_batch_size, 1)
+    for p in range(1, main_pui_batch_size):
+        resources[qrom_reps[p]] += 1
 
     resources[
-        controlled_resource_rep(
-            qp.BasisState, base_params={"num_wires": num_wires - 1}, num_control_wires=1
-        )
+        controlled_resource_rep(qp.BasisState, {"num_wires": num_wires - 1}, num_control_wires=1)
     ] += num_entries
 
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
