@@ -184,8 +184,6 @@ def create_adjoint_op(fn, lazy):
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
-        if qp.capture.enabled():
-            return _capture_adjoint_transform(fn, lazy=lazy)
         return _adjoint_transform(fn, lazy=lazy)
     if fn is None:
         raise ValueError(
@@ -259,6 +257,9 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
+        if qp.capture.enabled():
+            return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
+
         qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
 
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))

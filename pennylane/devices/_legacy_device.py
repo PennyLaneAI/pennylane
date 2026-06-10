@@ -25,16 +25,16 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.boolean_fn import BooleanFn
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, StatePrepBase
+from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
-    Shots,
     StateMP,
     VarianceMP,
 )
