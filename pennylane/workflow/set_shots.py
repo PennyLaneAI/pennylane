@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, overload
 from .qnode import QNode
 
 if TYPE_CHECKING:
-    from pennylane.measurements import ShotsLike
+    from pennylane.core.shots import ShotsLike
 
 
 # Sentinel value to detect when shots parameter is not provided

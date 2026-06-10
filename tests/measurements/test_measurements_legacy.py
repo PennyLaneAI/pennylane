@@ -17,13 +17,15 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane.measurements import (
-    ClassicalShadowMP,
+from pennylane.core.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     SampleMeasurement,
-    SampleMP,
     StateMeasurement,
+)
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    SampleMP,
     StateMP,
 )
 from pennylane.wires import Wires
