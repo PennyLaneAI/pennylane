@@ -17,7 +17,6 @@
 from functools import partial
 
 import pytest
-from pennylane.transforms import transform
 
 import pennylane as qp
 
@@ -45,7 +44,7 @@ def _dummy_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):  # pylint: dis
     return jax.make_jaxpr(wrapper)(*args)
 
 
-@transform
+@partial(qp.transform, plxpr_transform=_dummy_plxpr_transform)
 def dummy_tape_and_plxpr_transform(tape):
     return [tape], lambda res: res[0]
 
