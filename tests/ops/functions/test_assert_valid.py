@@ -24,7 +24,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
@@ -37,22 +36,6 @@ class TestDecompositionErrors:
         """Test that an error is raised if decomposition output is not a list."""
 
         class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                qp.RX(1.2, wires=0)
-
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
-    def test_bad_decomposition_output_op2(self):
-        """Test that an error is raised if decomposition output is not a list."""
-
-        class BadDecomp(Operator2):
-            wires_argnames = ("wires",)
-
-            def __init__(self, wires):
-                super().__init__(wires)
-
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
