@@ -66,6 +66,25 @@ class TestCaptureBasics:
             op = DynOp(0.5, wires=0)
             assert op.tracer is None
 
+    def test_queued_during_capture(self):
+        """Test that constructing an operator during capture still queues it."""
+        with qp.queuing.AnnotatedQueue() as q:
+            jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
+
+        assert len(q) == 1
+        assert isinstance(list(q.keys())[0].obj, DynOp)
+
+    def test_unflatten_does_not_bind(self):
+        """Test that reconstructing an operator via ``_unflatten`` while capture is
+        enabled does not bind the operator primitive."""
+        data, metadata = DynOp(0.5, wires=0)._flatten()
+
+        def fn():
+            _ = DynOp._unflatten(data, metadata)
+
+        jaxpr = jax.make_jaxpr(fn)()
+        assert len(jaxpr.eqns) == 0
+
     def test_simple_op_eqn(self):
         """Test that capturing an operator produces a single operator equation."""
         jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
