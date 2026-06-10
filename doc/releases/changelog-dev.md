@@ -552,8 +552,9 @@
 
 * Fixed `Operator2.map_wires` which was shallow-copying the operator, causing the
   original operator's arguments to be mutated and the new operator's `wires`
-  property to remain stale after mapping. The method now deep-copies the operator
-  and recomputes the cached wires.
+  property to remain stale after mapping. The method now re-instantiates the operator
+  from its original arguments with only the wires remapped, leaving parameter data
+  shared rather than copied.
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.

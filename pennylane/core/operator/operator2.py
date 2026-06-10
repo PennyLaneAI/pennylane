@@ -496,8 +496,8 @@ class Operator2(ABC):
         raise AdjointUndefinedError
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
-        """Returns a copy of the current operator with its wires changed according
-        to the given wire map.
+        """Returns a new operator with its wires changed according to the given
+        wire map.
 
         Args:
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
@@ -506,25 +506,29 @@ class Operator2(ABC):
             .Operator2: new operator
         """
         # pylint: disable=protected-access
-        new_op = deepcopy(self)
+        new_args = dict(self.arguments)
 
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
             mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
-            new_op._bound_args.arguments[n] = unflatten(mapped_leaves, tree)
-
-        if (p_rep := self.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+            new_args[n] = unflatten(mapped_leaves, tree)
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
-            new_op._bound_args.arguments[n] = unflatten(leaves, tree)
+            new_args[n] = unflatten(leaves, tree)
 
-        new_op.__init_wires()
+        # Re-instantiate with only the wires remapped, sharing the original parameter data,
+        # rather than copying the operator. Construction is non-recording to match the
+        # previous copy-based behaviour, where the mapped operator was not queued.
+        with QueuingManager.stop_recording():
+            new_op = type(self)(**new_args)
+
+        if (p_rep := self.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op
 
