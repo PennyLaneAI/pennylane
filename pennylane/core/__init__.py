@@ -20,6 +20,8 @@ Operator Types
     :toctree: api
 
     ~Operator
+    ~Operator1
+    ~Operator2
     ~Operation
     ~CV
     ~CVObservable
@@ -35,14 +37,28 @@ Operator Types
 
 """
 
-from .operator import Operator, Operation, Channel, CV, CVOperation, CVObservable, StatePrepBase
+from .operator import (
+    CV,
+    Channel,
+    CVObservable,
+    CVOperation,
+    Operation,
+    Operator,
+    Operator1,
+    Operator2,
+    StatePrepBase,
+    StatePrepBase2,
+)
 
 __all__ = [
     "Operator",
+    "Operator1",
+    "Operator2",
     "Operation",
     "Channel",
     "CV",
     "CVOperation",
     "CVObservable",
     "StatePrepBase",
+    "StatePrepBase2",
 ]
