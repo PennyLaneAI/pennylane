@@ -50,6 +50,7 @@ import pennylane as qp
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
+    assert_valid,
 )
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -126,6 +127,13 @@ def test_alias_XYZI(wire):
 
 
 class TestOperations:
+
+    @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
+    def test_assert_valid(self, op_cls, _):
+        """Test that the operation is valid, using standard assert_valid test."""
+        op = op_cls(wires=0 if op_cls.num_wires is None else range(op_cls.num_wires))
+        assert_valid(op)
+
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
