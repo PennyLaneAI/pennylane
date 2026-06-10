@@ -258,7 +258,7 @@ class QubitDevice(Device):
             # and hence we update `self.shots` temporarily for this loop
             shots_copy = self.shots
             self.shots = 1
-            for _ in circuit.shots:
+            for _ in range(circuit.shots.total_shots):
                 kwargs["mid_measurements"] = {}
                 self.reset()
                 results.append(self.execute(aux_circ, **kwargs))
