@@ -22,8 +22,8 @@ from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.gradients import param_shift
-from pennylane.measurements import Shots
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5

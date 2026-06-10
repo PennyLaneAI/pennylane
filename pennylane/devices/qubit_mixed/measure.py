@@ -22,11 +22,10 @@ from collections.abc import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess, StateMeasurement
 from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
-    MeasurementProcess,
-    StateMeasurement,
     StateMP,
 )
 from pennylane.ops import LinearCombination, MeasurementValue, Sum

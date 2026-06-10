@@ -19,11 +19,10 @@ from collections.abc import Callable
 from string import ascii_letters as alphabet
 
 from pennylane import math, queuing
+from pennylane.core.measurements import MeasurementProcess, StateMeasurement
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
 )
