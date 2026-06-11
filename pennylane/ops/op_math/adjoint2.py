@@ -35,8 +35,10 @@ class Adjoint2(SymbolicOp2):
     def pauli_rep(self):
         if not self.base.pauli_rep:
             return None
-        rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
-        return qp.pauli.PauliSentence(rep)
+        if not self._pauli_rep:
+            rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
+            self._pauli_rep = qp.pauli.PauliSentence(rep)
+        return self._pauli_rep
 
     def __repr__(self) -> str:
         return f"Adjoint({self.base})"
