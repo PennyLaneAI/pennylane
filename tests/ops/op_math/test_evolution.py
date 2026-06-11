@@ -188,7 +188,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         ref_res = ref(t)
         ref_grad = (ref(t + eps) - ref(t - eps)) / (2 * eps)
 
-        assert qp.math.allclose(circuit(t), ref_res)
+        assert qp.math.allclose(res, ref_res)
         assert qp.math.allclose(grad_res, ref_grad, atol=1e-5)
 
     @pytest.mark.autograd
