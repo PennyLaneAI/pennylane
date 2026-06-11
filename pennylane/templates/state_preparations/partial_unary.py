@@ -541,7 +541,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
             num_bitstrings=p,
             num_control_wires=n_subspace,
             num_target_wires=p,
-            num_work_wires=num_work_wires,
+            num_work_wires=n_subspace - 1,
             clean=True,
         )
         for p in range(1, main_pui_batch_size + 1)
@@ -601,7 +601,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             k_start, k = data
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires)
+            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
             qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
