@@ -25,18 +25,18 @@
           x_wires,
           y_wires,
           output_wires,
-          work_wires, 
+          work_wires,
           output_wires_zeroed=True,
       )
       return qp.sample(wires=output_wires)
   ```
-  
+
   ```pycon
   >>> print(circuit())
   [[1 1 0 1 1 1]]
 
   ```
-  
+
   The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of :math:`-3 \cdot 3 \; = -9` in 2s complement form.
 
 * Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
@@ -64,11 +64,11 @@
   result = increment(wires, init_state, work_wires)[0]
 
   ```
-  
+
   ```pycon
   >>> result[:len(wires)]
   array([0, 1, 1])
-  
+
   ```
 
   The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
@@ -218,6 +218,11 @@
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+
+* Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
+  `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
+  decomposition when using phase-gradient based decompositions of multiplexers.
+  [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
 * :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
   symbols on the control wires and a Pauli rotation label on the target wire.
@@ -526,9 +531,11 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
-  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improve language server support for `qp.capture`.
+  [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 
 * Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
