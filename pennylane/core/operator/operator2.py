@@ -518,7 +518,9 @@ class Operator2(ABC):
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
-            leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
+            leaves = [
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+            ]
             new_args[n] = unflatten(leaves, tree)
 
         # Re-instantiate with only the wires remapped, sharing the original parameter data,
