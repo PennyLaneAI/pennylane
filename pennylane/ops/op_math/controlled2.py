@@ -68,15 +68,15 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
         control_values = [bool(v) for v in control_values]
 
-        if override_init_args:
-            super().__init__(**override_init_args)
-            return
-
         self._base = base
         self._control_wires = control_wires
         self._control_values = control_values
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
+
+        if override_init_args:
+            super().__init__(**override_init_args)
+            return
 
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
 
