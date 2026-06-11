@@ -153,22 +153,22 @@ def test_givens_decomposition(shape, seed):
         pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
     ],
 )
-@pytest.mark.jax
-@pytest.mark.external
 def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
-    import jax
-    from jax import numpy as jnp
-
-    matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
     if compiler == "jit":
+        import jax
+        from jax import numpy as flex_np
+
         func = jax.jit(givens_decomposition)
     elif compiler == "qjit":
-        catalyst = pytest.importorskip("catalyst")
-        func = catalyst.qjit(givens_decomposition)
+        from jax import numpy as flex_np
+
+        func = qp.qjit(givens_decomposition)
     else:
+        flex_np = onp
         func = givens_decomposition
 
+    matrix = flex_np.array(unitary_group.rvs(shape, random_state=seed))
     copied_matrix = matrix.copy()
     phase_mat, ordered_rotations = func(matrix)
     assert qp.math.allclose(copied_matrix, matrix)
@@ -348,29 +348,32 @@ def test_givens_matrix_jaxpr():
 )
 @pytest.mark.parametrize(
     "compiler",
-    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
 )
-@pytest.mark.jax
 def test_set_unitary_matrix_real(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
     """Test the _set_unitary function on different interfaces with real-valued matrices."""
     if like == "numpy" and compiler is not None:
         pytest.skip(reason="Can't use numpy interface with jit compilation.")
-    import jax
-    import jax.numpy as jnp
-
     if use_jax:
+        import jax.numpy as jnp
+
         unitary_matrix = jnp.array(unitary_matrix)
         value = jnp.array(value)
     else:
         value = onp.array(value)
 
     if compiler == "jit":
+        import jax
+
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
-        catalyst = pytest.importorskip("catalyst")
-        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+        fn = qp.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     else:
         fn = _set_unitary_matrix
     copied_matrix = unitary_matrix.copy()
@@ -446,9 +449,12 @@ def test_set_unitary_matrix_real(
 )
 @pytest.mark.parametrize(
     "compiler",
-    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+    [
+        None,
+        pytest.param("jit", marks=[pytest.mark.jax]),
+        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+    ],
 )
-@pytest.mark.jax
 def test_set_unitary_matrix_complex(
     use_jax, unitary_matrix, index, value, like, expected_matrix, compiler
 ):
@@ -456,20 +462,20 @@ def test_set_unitary_matrix_complex(
     if like == "numpy" and compiler is not None:
         pytest.skip(reason="Can't use numpy interface with jit compilation.")
 
-    import jax
-    import jax.numpy as jnp
-
     if use_jax:
+        import jax.numpy as jnp
+
         unitary_matrix = jnp.array(unitary_matrix)
         value = jnp.array(value)
     else:
         value = onp.array(value)
 
     if compiler == "jit":
+        import jax
+
         fn = jax.jit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     elif compiler == "qjit":
-        catalyst = pytest.importorskip("catalyst")
-        fn = catalyst.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
+        fn = qp.qjit(_set_unitary_matrix, static_argnums=[1, 3, 4])
     else:
         fn = _set_unitary_matrix
     copied_matrix = unitary_matrix.copy()

@@ -75,7 +75,6 @@ def test_ross_selinger(op, epsilon):
 
 
 @pytest.mark.catalyst
-@pytest.mark.jax
 @pytest.mark.external
 @pytest.mark.parametrize(
     ("op", "epsilon", "wires"),
@@ -93,7 +92,6 @@ def test_ross_selinger(op, epsilon):
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_ross_selinger_qjit(op, epsilon, wires):
     """Test Ross-Selinger decomposition method with specified max-depth"""
-    pytest.importorskip("catalyst")
     dev = qp.device("lightning.qubit", wires=wires)
 
     @qp.qjit(static_argnums=0)
@@ -135,7 +133,6 @@ def test_exception():
 
 
 @pytest.mark.catalyst
-@pytest.mark.jax
 @pytest.mark.external
 @pytest.mark.parametrize(
     ("decomposition_info"),
@@ -151,9 +148,8 @@ def test_exception():
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_jit_rs_decomposition(decomposition_info):
     """Test that the qjit rs decomposition is working."""
-    pytest.importorskip("catalyst")
-    jax = pytest.importorskip("jax")
-    jnp = jax.numpy
+    import catalyst
+    from jax import numpy as jnp
 
     # Create decomposition info using jnp
     has_leading_t = jnp.int32(decomposition_info[0])  # First element
@@ -189,8 +185,12 @@ def test_jit_rs_decomposition(decomposition_info):
 
         return qp.state()
 
-    qjit_result = qp.qjit(qjit_circuit)()
     # Do not jit the reference circuit; it uses standard Python control flow
     non_qjit_result = non_qjit_circuit()
 
-    assert qp.math.allclose(qjit_result, non_qjit_result)
+    for flatten_static_cond in [True, False]:
+        with catalyst.utils.patching.Patcher(
+            (catalyst, "compile_without_static_conditionals", flatten_static_cond)
+        ):
+            qjit_result = qp.qjit(qjit_circuit)()
+            assert qp.math.allclose(qjit_result, non_qjit_result)

@@ -30,7 +30,8 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
-from .out_multiplier import _add_plus_one, _c_add_sub, _increment
+from .incrementer import Incrementer
+from .out_multiplier import _add_plus_one, _c_add_sub
 from .semi_adder import SemiAdder, _semiadder_resources
 from .temporary_and import TemporaryAND
 
@@ -435,13 +436,13 @@ def _out_square_with_caddsub_resources(
             resources[key] += value
 
     # Subtract 2^(2n)
-    size = m - 2 * n
-    if size > 0:
-        if size > 1:
-            resources[resource_rep(TemporaryAND)] += size - 2
-            resources[adjoint_resource_rep(TemporaryAND)] += size - 2
-        resources[resource_rep(CNOT)] += size - 1
-        resources[x_rep] += 1
+    if num_output_wires + 1 > 2 * n:
+        resources[
+            adjoint_resource_rep(
+                Incrementer,
+                base_params={"num_wires": m - 2 * n, "num_work_wires": num_work_wires - 1},
+            )
+        ] = 1
 
     # Add (2^n-1-x) + 1
     resources[x_rep] += 6 + 2 * n
@@ -509,7 +510,7 @@ def _out_square_with_caddsub(
     # Subtract 2^(2n)
     if len(output_wires) > 2 * n:
         _output = output_wires[: m - 2 * n]
-        adjoint(_increment, lazy=False)(_output, work_wires)
+        adjoint(Incrementer, lazy=False)(_output, work_wires)
 
     # Add (2^n-1-x) + 1. This is done by flipping the x_wires (transforming x-> 2^n-1-x), performing
     # addition plus one (so we transform the output with +(2^n-1-x)+1), and flipping the x_wires
