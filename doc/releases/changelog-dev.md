@@ -525,7 +525,6 @@
 * Improve language server support for `qp.capture`.
   [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 
-
 * Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
 
