@@ -215,6 +215,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
+  particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
   `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
   decomposition when using phase-gradient based decompositions of multiplexers.
