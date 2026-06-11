@@ -15,13 +15,8 @@
 This module contains the qp.generator function.
 """
 
-import inspect
-import warnings
-
-import numpy as np
-
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
@@ -86,28 +81,6 @@ def _generator_prefactor(gen):
         return gen.base, gen.scalar
 
     return gen, prefactor
-
-
-def _generator_backcompatibility(op):
-    r"""Preserve backwards compatibility behaviour for PennyLane
-    versions <=0.22, where generators returned List[type or ndarray, float].
-    This function raises a deprecation warning, and converts to the new
-    format where an instantiated Operator is returned."""
-    warnings.warn(
-        "The Operator.generator property is deprecated. Please update the operator so that "
-        "\n\t1. Operator.generator() is a method, and"
-        "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        PennyLaneDeprecationWarning,
-    )
-    gen = op.generator
-
-    if inspect.isclass(gen[0]):
-        return gen[1] * gen[0](wires=op.wires)
-
-    if isinstance(gen[0], np.ndarray) and len(gen[0].shape) == 2:
-        return gen[1] * qp.Hermitian(gen[0], wires=op.wires)
-
-    raise qp.operation.GeneratorUndefinedError
 
 
 def generator(op: qp.operation.Operator, format="prefactor"):
@@ -182,12 +155,7 @@ def generator(op: qp.operation.Operator, format="prefactor"):
         else:
             gen_op = op
 
-        try:
-            gen = gen_op.generator()
-        except TypeError:
-            # For backwards compatibility with PennyLane
-            # versions <=0.22, assume gen_op.generator is a property
-            gen = _generator_backcompatibility(gen_op)
+        gen = gen_op.generator()
 
         if not gen.is_verified_hermitian:
             raise QuantumFunctionError(
