@@ -215,6 +215,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
+  `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
+  decomposition when using phase-gradient based decompositions of multiplexers.
+  [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
+
 * :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
   symbols on the control wires and a Pauli rotation label on the target wire.
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
