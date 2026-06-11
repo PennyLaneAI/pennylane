@@ -30,6 +30,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
+from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
@@ -798,6 +799,22 @@ class TestControlledDecompositions:
             {controlled_resource_rep(qp.X, {}, num_control_wires=3): 2, qp.CRot: 1}
         )
 
+    def test_base_decomp_contains_mcms(self, _):
+        """Tests that the graph does not apply ctrl to rules that contain MCMs."""
+
+        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        def _custom_rule(wires):
+            raise NotImplementedError
+
+        op = qp.ctrl(CustomOp(0), control=1)
+        graph = DecompositionGraph(
+            operations=[op],
+            alt_decomps={CustomOp: [_custom_rule]},
+            gate_set={"PauliX", "MidMeasure"},
+        )
+        rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
+        assert all("_custom_rule" not in rule.name for rule in rules)
+
 
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
@@ -1033,3 +1050,24 @@ class TestSymbolicDecompositions:
             CustomOp(0),
             qp.adjoint(qp.pow(CustomOp(1), 2)),
         ]
+
+    def test_base_decomp_contains_mcms_or_dynamic_wires(self, _):
+        """Tests that the graph skips adjoint of rules that contain MCMs or dynamic wires."""
+
+        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        def _custom_rule(wires):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _another_rule(wires):
+            raise NotImplementedError
+
+        op = qp.adjoint(CustomOp(0))
+        graph = DecompositionGraph(
+            operations=[op],
+            alt_decomps={CustomOp: [_custom_rule, _another_rule]},
+            gate_set={"PauliX", "MidMeasure"},
+        )
+        rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
+        assert all("_custom_rule" not in rule.name for rule in rules)
+        assert all("_another_rule" not in rule.name for rule in rules)

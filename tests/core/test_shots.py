@@ -19,7 +19,8 @@ import copy
 
 import pytest
 
-from pennylane.measurements import ShotCopies, Shots, add_shots
+from pennylane.core.shots import ShotCopies, Shots
+from pennylane.measurements import add_shots
 
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
 

@@ -115,7 +115,7 @@ class QutritBasisStatePreparation(Operation):
         op_list = []
 
         if qp.math.is_abstract(basis_state):
-            for wire, state in zip(wires, basis_state):
+            for wire, state in zip(wires, basis_state, strict=True):
                 op_list.extend(
                     [
                         qp.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
@@ -128,7 +128,7 @@ class QutritBasisStatePreparation(Operation):
                 )
             return op_list
 
-        for wire, state in zip(wires, basis_state):
+        for wire, state in zip(wires, basis_state, strict=True):
             for _ in range(state):
                 op_list.append(qp.TShift(wire))
 

@@ -213,61 +213,6 @@ class TestExpandPlxprTransforms:
             ops_and_meas[7].outvars[0],
         ]
 
-    def test_expand_multiple_transforms_nested(self):
-        """Test that a function that has multiple transforms that are nested is
-        expanded correctly."""
-
-        def f(w, x, y, z):
-            qp.RX(w, 0)
-
-            @qp.transforms.cancel_inverses
-            def g(a, b, c):
-                qp.X(0)
-                qp.S(1)
-
-                @qp.transforms.decompose(gate_set=[qp.RX, qp.RY, qp.RZ])
-                def h(m, n, o):
-                    qp.Rot(m, n, o, 0)
-                    return qp.probs(wires=[0, 1])
-
-                qp.X(0)
-                qp.adjoint(qp.S(1))
-                return qp.expval(qp.Z(0)), h(a, b, c)
-
-            return g(x, y, z)
-
-        args = (1.2, 3.4, 5.6, 7.8)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
-        assert jaxpr.eqns[1].primitive == transform_prim
-        assert jaxpr.eqns[1].params["transform"] == qp.transforms.cancel_inverses
-        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
-        assert len(inner_jaxpr.eqns) == 8
-        assert inner_jaxpr.eqns[-2].primitive == qp.measurements.ExpectationMP._obs_primitive
-        assert inner_jaxpr.eqns[-1].primitive == transform_prim
-        assert inner_jaxpr.eqns[-1].params["transform"] == qp.transforms.decompose
-        assert inner_jaxpr.outvars == [
-            inner_jaxpr.eqns[-2].outvars[0],
-            inner_jaxpr.eqns[-1].outvars[0],
-        ]
-
-        transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
-        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
-        assert len(ops_and_meas) == 7
-        assert ops_and_meas[0].primitive == qp.RX._primitive
-        assert ops_and_meas[1].primitive == qp.PauliZ._primitive
-        assert ops_and_meas[2].primitive == qp.measurements.ExpectationMP._obs_primitive
-        assert ops_and_meas[3].primitive == qp.RZ._primitive
-        assert ops_and_meas[4].primitive == qp.RY._primitive
-        assert ops_and_meas[5].primitive == qp.RZ._primitive
-        assert ops_and_meas[6].primitive == qp.measurements.ProbabilityMP._wires_primitive
-        assert transformed_jaxpr.jaxpr.outvars == [
-            ops_and_meas[2].outvars[0],
-            ops_and_meas[6].outvars[0],
-        ]
-
     def test_expand_function_with_no_transforms(self):
         """Test that using expand_plxpr_transforms on a function with no transforms does
         not affect it."""

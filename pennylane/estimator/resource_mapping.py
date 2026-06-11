@@ -320,7 +320,7 @@ def _(op: qtemps.AQFT):
 def _(op: qtemps.IQP):
     h = op.hyperparameters
     return re_temps.IQP(
-        num_wires=h["num_wires"],
+        num_wires=len(op.wires),
         pattern=h["pattern"],
         spin_sym=h["spin_sym"],
         wires=op.wires,

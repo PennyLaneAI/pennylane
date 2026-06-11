@@ -23,13 +23,12 @@ from typing import Any
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator, Operator2
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.operation2 import Operator2
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -386,24 +385,30 @@ def _equal_operator2(
         return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
 
     # Check static arguments
-    for (sname, sval1), (_, sval2) in zip(op1.static_args.items(), op2.static_args.items()):
+    for (sname, sval1), (_, sval2) in zip(
+        op1.static_args.items(), op2.static_args.items(), strict=True
+    ):
         if sval1 != sval2:
             return f"op1 and op2 have different values for '{sname}'.\nGot {sval1} and {sval2}."
 
     # Check static compilable arguments
-    for (cname, cval1), (_, cval2) in zip(op1.compilable_args.items(), op2.compilable_args.items()):
+    for (cname, cval1), (_, cval2) in zip(
+        op1.compilable_args.items(), op2.compilable_args.items(), strict=True
+    ):
         if cval1 != cval2:
             return f"op1 and op2 have different values for '{cname}'.\nGot {cval1} and {cval2}."
 
     # Check wire arguments
-    for (wname, wval1), (_, wval2) in zip(op1.wire_args.items(), op2.wire_args.items()):
+    for (wname, wval1), (_, wval2) in zip(
+        op1.wire_args.items(), op2.wire_args.items(), strict=True
+    ):
         if wname in op1.hybrid_argnames:
             leaves1, tree1 = flatten(wval1, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
             leaves2, tree2 = flatten(wval2, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
 
             if len(leaves1) != len(leaves2) or tree1 != tree2:
                 return f"op1 and op2 have different wires for '{wname}'.\nGot {wval1} and {wval2}."
-            for l1, l2 in zip(leaves1, leaves2):
+            for l1, l2 in zip(leaves1, leaves2, strict=True):
                 res = _check_wire_value(wname, l1, l2)
                 if isinstance(res, str):
                     return res
@@ -415,7 +420,9 @@ def _equal_operator2(
 
     # Check dynamic arguments
     # Expensive: array comparison via math.allclose.
-    for (dname, dval1), (_, dval2) in zip(op1.dynamic_args.items(), op2.dynamic_args.items()):
+    for (dname, dval1), (_, dval2) in zip(
+        op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
+    ):
         res = _check_dynamic_value(
             dname,
             dval1,
@@ -430,7 +437,9 @@ def _equal_operator2(
 
     # Check hybrid arguments
     # Most expensive: pytree flatten + recursive _equal.
-    for (hname, hval1), (_, hval2) in zip(op1.hybrid_args.items(), op2.hybrid_args.items()):
+    for (hname, hval1), (_, hval2) in zip(
+        op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
+    ):
         if hname in op1.wire_argnames:
             continue
         res = _check_pytree_value(
@@ -457,7 +466,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
         unequal_wires = True
 
     else:
-        for w1, w2 in zip(wval1, wval2):
+        for w1, w2 in zip(wval1, wval2, strict=True):
             if math.is_abstract(w1) or math.is_abstract(w2):
                 unequal_wires = True
                 abstract_wires = True
@@ -538,7 +547,7 @@ def _check_pytree_value(
     if len(leaves1) != len(leaves2) or tree1 != tree2:
         return unequal_str
 
-    for l1, l2 in zip(leaves1, leaves2):
+    for l1, l2 in zip(leaves1, leaves2, strict=True):
         # Case 1: Both leaf values are operators
         if isinstance(l1, Operator2) and isinstance(l2, Operator2):
             ops_equal = _equal(
