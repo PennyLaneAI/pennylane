@@ -140,7 +140,7 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
-* New operation `qp.QutritDensityMatix` added used to initialize density matrix states for the device
+* A new operation :class:`~.QutritDensityMatrix` has been added to initialize density matrix states for the device
   `qp.devices.DefaultQutritMixed`.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
@@ -258,7 +258,7 @@
   trace time, and only the correct branch will be queued.
   [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
 
-* Changed function `qp.math.partial_trace()` to include `qudit_dim` keyword argument to allow for partial traces of 
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
   any qudit density matrices with constant qudit dimension.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
