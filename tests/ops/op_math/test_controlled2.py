@@ -121,4 +121,4 @@ def test_parametric_custom_controlled_op():
         [0, 0, np.exp(0.1j) * np.sin(0.1), np.exp(0.2j) * np.cos(0.1)],
     ]
     assert qp.math.allclose(op.matrix(), expected)
-    assert qp.math.allclose(op.sparse_matrix(), expected)
+    assert qp.math.allclose(op.sparse_matrix().todense(), expected)
