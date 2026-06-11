@@ -81,7 +81,7 @@ def test_non_parametrized_custom_controlled_op():
 def test_parametric_custom_controlled_op():
     """Tests parametric op that inherits from Controlled2."""
 
-    class CRot2(Controlled2):
+    class CRot2(Controlled2):  # pylint: disable=too-few-public-methods
         """A new CRot."""
 
         dynamic_argnames = ("phi", "theta", "omega")
