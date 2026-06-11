@@ -19,6 +19,7 @@ import string
 from pickle import PicklingError
 
 import numpy as np
+import scipy.sparse
 
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
@@ -37,22 +38,6 @@ class TestDecompositionErrors:
         """Test that an error is raised if decomposition output is not a list."""
 
         class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                qp.RX(1.2, wires=0)
-
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
-    def test_bad_decomposition_output_op2(self):
-        """Test that an error is raised if decomposition output is not a list."""
-
-        class BadDecomp(Operator2):
-            wires_argnames = ("wires",)
-
-            def __init__(self, wires):
-                super().__init__(wires)
-
             @staticmethod
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
@@ -472,6 +457,187 @@ def test_data_is_tuple():
 
     with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
         assert_valid(BadData(2.0, wires=0))
+
+
+class SingleRZ(Operator2):
+    """A fully-featured ``Operator2`` defining a matrix, a decomposition,
+    eigenvalues, diagonalizing gates, and a generator.
+    """
+
+    dynamic_argnames = ("phi",)
+
+    def __init__(self, phi, wires):
+        assert isinstance(wires, int) or len(wires) == 1
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi, wires):
+        return qp.math.array(
+            [
+                [qp.math.exp(-0.5j * phi), 0],
+                [0, qp.math.exp(0.5j * phi)],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        return [qp.RZ(phi, wires=wires[0])]
+
+    @staticmethod
+    def compute_eigvals(phi, wires=None):
+        return qp.math.array([qp.math.exp(-0.5j * phi), qp.math.exp(0.5j * phi)])
+
+    def generator(self):
+        return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
+
+
+class TestOperator2AssertValid:
+    """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
+    the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
+
+    The first test validates a fully-featured ``Operator2``. The remaining tests each violate the
+    criteria of a single internal ``assert_valid`` check and confirm the corresponding failure.
+    """
+
+    def test_full_featured_operator_is_valid(self):
+        """A fully-featured, self-consistent ``Operator2`` passes ``assert_valid``."""
+        op = SingleRZ(0.5, wires=0)
+
+        # differentiation is skipped: the Operator2 pytree leaves include its wires
+        assert_valid(op, skip_differentiation=True)
+
+    def test_check_decomposition(self):
+        """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""
+
+        class BadDecomp(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @staticmethod
+            def compute_decomposition(wires):
+                qp.RX(1.2, wires=wires[0])  # queues but returns ``None``
+
+        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+    def test_check_matrix(self):
+        """``_check_matrix`` fails if the matrix does not have the expected shape."""
+
+        class BadMatrix(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @staticmethod
+            def compute_matrix(wires):
+                return np.eye(2)  # should be (4, 4) for two wires
+
+        with pytest.raises(
+            AssertionError, match=r"matrix must be two dimensional with shape \(4, 4\)"
+        ):
+            assert_valid(BadMatrix(wires=[0, 1]), skip_pickle=True)
+
+    def test_check_matrix_matches_decomposition(self):
+        """``_check_matrix_matches_decomp`` fails if the matrix and decomposition disagree."""
+
+        class MatDecompMismatch(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @staticmethod
+            def compute_matrix(wires):
+                return np.eye(2)
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.X(wires[0])]
+
+        with pytest.raises(
+            AssertionError, match=r"matrix and matrix from decomposition must match"
+        ):
+            assert_valid(MatDecompMismatch(wires=0), skip_pickle=True)
+
+    def test_check_sparse_matrix(self):
+        """``_check_sparse_matrix`` fails if the sparse matrix does not have the expected shape."""
+
+        class BadSparse(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @staticmethod
+            def compute_sparse_matrix(wires, format="csr"):
+                return scipy.sparse.eye(2, format=format)  # should be (4, 4) for two wires
+
+        with pytest.raises(
+            AssertionError, match=r"matrix must be two dimensional with shape \(4, 4\)"
+        ):
+            assert_valid(BadSparse(wires=[0, 1]), skip_pickle=True)
+
+    def test_check_eigendecomposition(self):
+        """``_check_eigendecomposition`` fails if the eigenvalues and diagonalizing gates cannot
+        reproduce the operator."""
+
+        class BadEigen(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @staticmethod
+            def compute_matrix(wires):
+                return qp.X.compute_matrix()
+
+            @staticmethod
+            def compute_eigvals(wires=None):
+                return np.array([1, 1])  # PauliX has eigenvalues [1, -1]
+
+            @staticmethod
+            def compute_diagonalizing_gates(wires):
+                return []
+
+        with pytest.raises(
+            AssertionError, match=r"eigenvalues and diagonalizing gates must be able to reproduce"
+        ):
+            assert_valid(BadEigen(wires=0), skip_pickle=True)
+
+    def test_check_generator(self):
+        """``_check_generator`` fails if the generator does not reproduce the operator."""
+
+        class BadGen(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_matrix(phi, wires):
+                return qp.RZ.compute_matrix(phi)
+
+            def generator(self):
+                return qp.X(self.wires[0])  # the generator of RZ is ``-0.5 * Z``
+
+        with pytest.raises(AssertionError):
+            assert_valid(BadGen(0.5, wires=0), skip_pickle=True, skip_differentiation=True)
+
+    def test_check_pickle(self):
+        """``_check_pickle`` fails if the operator cannot be pickled (e.g. a local class)."""
+
+        class LocalOp(Operator2):
+            wire_argnames = ("wires",)
+            
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        with pytest.raises((AttributeError, PicklingError)):
+            assert_valid(LocalOp(wires=0))
 
 
 def create_op_instance(c, str_wires=False):
