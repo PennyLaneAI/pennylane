@@ -17,7 +17,7 @@ Unit tests for the available built-in parametric qubit operations.
 
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import copy
-from functools import partial, reduce
+from functools import reduce
 
 import numpy as np
 import pytest
@@ -3321,6 +3321,7 @@ class TestMultiRZ:
         op = qp.MultiRZ(0.123, wires=[0, 1, 2, 3])
         qp.ops.functions.assert_valid(op)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_old(self, n):
@@ -3333,6 +3334,7 @@ class TestMultiRZ:
         exp_mat = qp.MultiRZ.compute_matrix(theta, n)
         assert np.allclose(mat, exp_mat)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
@@ -3343,7 +3345,7 @@ class TestMultiRZ:
         exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, n)) / 2 ** (n / 2)
         for rule in qp.list_decomps(qp.MultiRZ):
 
-            @partial(qp.qjit, static_argnums=[1])
+            @qp.qjit(static_argnums=[1])
             @qp.qnode(qp.device("lightning.qubit", wires=n))
             def node(theta, rule):
                 _ = [qp.H(w) for w in range(n)]

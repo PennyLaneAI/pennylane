@@ -13,15 +13,15 @@
 # limitations under the License.
 """Test the pennylane drawer with Catalyst."""
 
-# pylint: disable=import-outside-toplevel,protected-access
+# pylint: disable=protected-access,wrong-import-position
 import pytest
 
+pytestmark = [pytest.mark.external, pytest.mark.catalyst]
+
+import catalyst
+import matplotlib as mpl
+
 import pennylane as qp
-
-catalyst = pytest.importorskip("catalyst")
-mpl = pytest.importorskip("matplotlib")
-
-pytestmark = pytest.mark.external
 
 
 class TestCatalystDraw:
@@ -45,8 +45,6 @@ class TestCatalystDraw:
     @pytest.mark.parametrize("c", [0, 1])
     def test_cond_circuit(self, c):
         """Test a circuit with a Catalyst conditional."""
-
-        import catalyst  # pylint: disable=redefined-outer-name
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=(0, "a", 1.234)))
@@ -73,8 +71,6 @@ class TestCatalystDraw:
     def test_for_loop_circuit(self, c):
         """Test a circuit with a Catalyst for_loop"""
 
-        import catalyst  # pylint: disable=redefined-outer-name
-
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
@@ -99,8 +95,6 @@ class TestCatalystDraw:
     @pytest.mark.parametrize("c", [0, 1])
     def test_while_loop_circuit(self, c):
         """Test a circuit with a Catalyst while_loop"""
-
-        import catalyst  # pylint: disable=redefined-outer-name
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=3))
@@ -150,8 +144,6 @@ class TestCatalystDrawMpl:
     def test_cond_circuit(self, c):
         """Test a circuit with a Catalyst conditional."""
 
-        import catalyst  # pylint: disable=redefined-outer-name
-
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=(0, "a", 1.234)))
         def circuit(x, y, z, c):
@@ -175,8 +167,6 @@ class TestCatalystDrawMpl:
     def test_for_loop_circuit(self, c):
         """Test a circuit with a Catalyst for_loop"""
 
-        import catalyst  # pylint: disable=redefined-outer-name
-
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
@@ -199,8 +189,6 @@ class TestCatalystDrawMpl:
     @pytest.mark.parametrize("c", [0, 1])
     def test_while_loop_circuit(self, c):
         """Test a circuit with a Catalyst while_loop"""
-
-        import catalyst  # pylint: disable=redefined-outer-name
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=3))

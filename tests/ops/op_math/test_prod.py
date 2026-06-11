@@ -1744,11 +1744,13 @@ class TestDecomposition:
         for rule in qp.list_decomps("C(Prod)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(3, 1), (3, 2), (4, 1), (5, 3)],
     )
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.
@@ -1765,8 +1767,6 @@ class TestDecomposition:
         """
 
         from catalyst.device.decomposition import catalyst_decompose
-
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X": 1,

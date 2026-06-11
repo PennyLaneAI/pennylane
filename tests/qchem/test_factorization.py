@@ -149,7 +149,7 @@ def test_factorize_reproduce(two_tensor):
 @pytest.mark.parametrize("regularization", [None, "L1", "L2"])
 def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
-    optax = pytest.importorskip("optax")
+    import optax
 
     factors, cores, leaves = qp.qchem.factorize(
         two_tensor,
@@ -193,8 +193,6 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
 )
 def test_regularization_error(two_tensor):
     r"""Test that the factorize function raises an error when incorrect regularization is provided."""
-    _ = pytest.importorskip("optax")
-
     with pytest.raises(ValueError, match="Supported regularization types include"):
         qp.qchem.factorize(two_tensor, compressed=True, regularization=True)
 

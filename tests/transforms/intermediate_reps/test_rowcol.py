@@ -173,7 +173,6 @@ def assert_respects_connectivity(cnots, connectivity):
     assert unique_undirected_cnots.issubset(edges)
 
 
-@pytest.mark.external
 class TestRowCol:
     """Tests for rowcol."""
 

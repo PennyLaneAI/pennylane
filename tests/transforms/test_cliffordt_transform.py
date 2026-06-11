@@ -220,15 +220,10 @@ class TestCliffordCompile:
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     @pytest.mark.catalyst
-    @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
-
-        pytest.importorskip("jax")
-        pytest.importorskip("catalyst")
-
         dev = qp.device("lightning.qubit", wires=4)
         qnode_cir = qp.qnode(dev)(circuit)
         decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
@@ -238,14 +233,10 @@ class TestCliffordCompile:
         assert qp.math.isclose(res1, res2, atol=1e-2)
 
     @pytest.mark.catalyst
-    @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
     def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
         """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
-
-        pytest.importorskip("jax")
-        pytest.importorskip("catalyst")
 
         dev = qp.device("lightning.qubit", wires=4)
         qnode_cir = qp.qnode(dev)(circuit)
@@ -742,13 +733,9 @@ class TestCatalyst:
         assert results[0] and not results[1]
 
     @pytest.mark.catalyst
-    @pytest.mark.jax
     @pytest.mark.external
     def test_decomposition_with_rs_qjit_dynamic_param(self):
         """Test clifford T decomposition with qjit and dynamic parameters."""
-
-        pytest.importorskip("jax")
-        pytest.importorskip("catalyst")
 
         def circuit(angle, qb):
             qp.H(qb)
