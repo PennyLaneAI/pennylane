@@ -835,6 +835,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, decomp_mat)
         assert qp.math.allclose(orig_mat, decomp_mat2)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match_jit(self, n, seed):
@@ -903,6 +904,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
@@ -953,6 +955,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases_qjit(self, op):

@@ -15,25 +15,24 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=wrong-import-position
 from unittest.mock import patch
 
 import mcm_utils
 import numpy as np
 import pytest
 
+pytestmark = [pytest.mark.external, pytest.mark.catalyst]
+
+import catalyst
+import jax
+from jax import numpy as jnp
+from jax.core import ShapedArray
+
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
-
-catalyst = pytest.importorskip("catalyst")
-jax = pytest.importorskip("jax")
-
-pytestmark = pytest.mark.external
-
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 

@@ -611,6 +611,7 @@ class TestSumOfSlatersPrep:
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
 
+    @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit_on_subroutine(self, seed):
         """Test that the subroutine of the SumOfSlatersPrep decomposition
