@@ -309,7 +309,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         phi = np.array(0.123, requires_grad=requires_grad)
         base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
         op = Exp(base, -1j * phi)
-
+        # op.matrix() triggers the autograd eigendecomposition → diagonalizing_gates() path
         expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
         assert qp.math.allclose(op.matrix(), expected)
 
