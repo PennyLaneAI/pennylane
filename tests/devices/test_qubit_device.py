@@ -24,11 +24,11 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,

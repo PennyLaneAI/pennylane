@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -142,6 +142,13 @@ def test_attributes():
         }
     )
     assert op2.has_adjoint
+
+
+def test_parameter_frequencies():
+    """Tests that adjoint2 ops have the correct parameter frequencies."""
+
+    op = qp.adjoint(RX2(-0.5, wires=0))
+    assert qp.gradients.parameter_frequencies(op) == [(1,)]
 
 
 def test_methods():

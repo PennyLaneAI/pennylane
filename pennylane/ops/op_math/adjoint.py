@@ -264,8 +264,8 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
             return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
 
         qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
-        leaves, _ = qp.pytrees.flatten((args, kwargs), _is_operator)
-        _ = [qp.QueuingManager.remove(l) for l in leaves if _is_operator(l)]
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda op: isinstance(op, Operator))
+        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         adjoint_fn = _make_adjoint_op if lazy else _single_op_eager
         adjoint_ops = [adjoint_fn(op) for op in reversed(qscript.operations)]
@@ -495,10 +495,6 @@ class AdjointOperation(Adjoint, Operation):
 
 def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
     return Adjoint2(op) if isinstance(op, Operator2) else Adjoint(op)
-
-
-def _is_operator(op):
-    return isinstance(op, Operator)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
