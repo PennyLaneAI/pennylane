@@ -29,6 +29,12 @@ import numpy as np
 
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
 from pennylane.core.operator import Operation, Operator
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
 from pennylane.math import multiply as qpmul
@@ -37,14 +43,10 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
