@@ -165,11 +165,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     if len(angle_wires) != len(phase_grad_wires):
         raise WireError(
-            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires-1)}"
+            f"angle_wires and phase_grad wires must be of same size, received "
+            f"{len(angle_wires)=} and {len(phase_grad_wires)=}"
         )
-    if len(phase_grad_wires) - 1 > len(work_wires):
+    # Validate length of work wires for SemiAdder
+    if len(work_wires) < len(phase_grad_wires) - 1:
         raise WireError(
-            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires-1)}"
+            "work_wires need to be at least of size len(phase_grad_wires) - 1, "
+            "received {len(work_wires)} but require {len(phase_grad_wires) - 1}"
         )
 
     def _resource_fn(num_wires, rot_axis):
@@ -269,6 +272,13 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 case "Z":
                     qp.RZ(angles[0], target_wire)
             return
+
+        # Validate length of work wires for QROM
+        if len(work_wires) < len(control_wires) - 1:
+            raise WireError(
+                "work_wires need to be at least of size len(control_wires) - 1, "
+                "received {len(work_wires)} but require {len(control_wires) - 1}"
+            )
 
         _select_pauli_rot_phase_gradient(
             angles,
