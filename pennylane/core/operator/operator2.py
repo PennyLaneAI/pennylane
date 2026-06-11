@@ -505,7 +505,6 @@ class Operator2(ABC):
         Returns:
             .Operator2: new operator
         """
-        # pylint: disable=protected-access
         new_args = dict(self.arguments)
 
         for n, wires in self.wire_args.items():
@@ -528,9 +527,6 @@ class Operator2(ABC):
         # previous copy-based behaviour, where the mapped operator was not queued.
         with QueuingManager.stop_recording():
             new_op = type(self)(**new_args)
-
-        if (p_rep := self.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op
 
