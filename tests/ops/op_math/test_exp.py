@@ -323,10 +323,14 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
         expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
 
-        with qp.queuing.AnnotatedQueue():
+        with qp.queuing.AnnotatedQueue() as q:
             mat = Exp(base, -1j * phi).matrix()
 
         assert qp.math.allclose(mat, expected)
+        # Only the Exp op itself is queued; the intermediate Sum/QubitUnitary operators
+        # created during diagonalization must not appear.
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], Exp)
 
     @pytest.mark.autograd
     def test_matrix_autograd_composite_diagonal_base(self):
