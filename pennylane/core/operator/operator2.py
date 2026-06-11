@@ -522,9 +522,7 @@ class Operator2(ABC):
             ]
             new_args[n] = unflatten(leaves, tree)
 
-        new_op = type(self)(**new_args)
-
-        return new_op
+        return type(self)(**new_args)
 
     def simplify(self) -> "Operator2":
         """Reduce the depth of nested operators to the minimum.
