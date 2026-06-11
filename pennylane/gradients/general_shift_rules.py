@@ -24,7 +24,7 @@ import numpy as np
 from scipy.linalg import solve as linalg_solve
 
 from pennylane import math
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 

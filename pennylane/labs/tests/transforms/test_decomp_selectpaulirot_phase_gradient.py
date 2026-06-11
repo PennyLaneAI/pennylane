@@ -107,7 +107,6 @@ def test_as_fixed_decomps(prec, num_controls):
         @qp.transforms.decompose(
             gate_set={
                 "QROM",
-                "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
                 "X",
@@ -123,8 +122,7 @@ def test_as_fixed_decomps(prec, num_controls):
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
         expected_specs = {
-            "QROM": 1,
-            "Adjoint(QROM)": 1,
+            "QROM": 2,
             "CNOT": 2 * prec,
             "PauliX": 2 * prec,
             "SemiAdder": 1,
@@ -166,7 +164,6 @@ def test_integration_multi_wire(seed):
         @qp.transforms.decompose(
             gate_set={
                 "QROM",
-                "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
                 "X",
@@ -242,7 +239,6 @@ def test_capture_compatibility():
 
             gate_set = {
                 "QROM",
-                "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
                 "PauliX",

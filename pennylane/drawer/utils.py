@@ -19,7 +19,7 @@ from functools import singledispatch
 
 import numpy as np
 
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
