@@ -1161,6 +1161,7 @@ class TestGeneralMethods:
         new_op = op.map_wires({0: "a", 2: "c"})
 
         assert op.wires == Wires([0, 1, 2])
+        assert op.arguments['wires'] = Wires([0, 1, 2])
         assert new_op == DynOp(0.5, wires=["a", 1, "c"])
         assert new_op.wires == Wires(["a", 1, "c"])
 
