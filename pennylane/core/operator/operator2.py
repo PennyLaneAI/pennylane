@@ -228,22 +228,22 @@ class Operator2(ABC):
     # ``data``/``parameters``/``hyperparameters``/``num_params`` interface.
 
     @property
-    def data(self) -> tuple[TensorLike, ...]:
+    def data(self):
         """Trainable parameters of the operator, i.e. the values of its dynamic arguments."""
         return tuple(self.dynamic_args.values())
 
     @property
-    def parameters(self) -> list[TensorLike]:
+    def parameters(self):
         """Trainable parameters of the operator as a list. See :attr:`~.Operator2.data`."""
         return list(self.dynamic_args.values())
 
     @property
-    def num_params(self) -> int:
+    def num_params(self):
         """Number of trainable parameters of the operator."""
         return len(self.dynamic_argnames)
 
     @property
-    def hyperparameters(self) -> dict[str, Any]:
+    def hyperparameters(self):
         """Dictionary of the operator's non-trainable, non-wire arguments.
 
         This corresponds to the static, compilable, and (non-wire) hybrid arguments.
