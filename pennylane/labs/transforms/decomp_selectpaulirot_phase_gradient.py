@@ -94,8 +94,13 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
-        phase_grad_wires (Wires): wires that carry a phase gradient state
-        work_wires (Wires): additional work wires for :class:`~SemiAdder` decomposition
+        phase_grad_wires (Wires): wires that carry a phase gradient state. Should have the same
+            length as ``angle_wires``.
+        work_wires (Wires): additional work wires for :class:`~.SemiAdder` and :class:`~.QROM`
+            decomposition. For the former, at least ``len(angle_wires)-1`` work wires are required.
+            For the latter, at least ``len(control_wires)-1`` work wires are required for an
+            efficient decomposition, where ``control_wires`` are the control wires of the (largest)
+            ``SelectPauliRot`` to be decomposed with the produced decomposition rule.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -104,8 +109,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     **Example**
 
-    In this example we decompose a circuit containing only a single :class:`~.SelectPauliRot` gate using the custom decomposition rule
-    that we generate from within the context of the example, where all auxiliary wires exist.
+    In this example we decompose a circuit containing only a single :class:`~.SelectPauliRot`
+    gate using the custom decomposition rule that we generate from within the context of the
+    example, where all auxiliary wires exist.
 
     .. code-block:: python
 
@@ -138,24 +144,27 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
 
-    The resulting circuit corresponds to the `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__ of ``SelectPauliRot``,
-    containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
+    The resulting circuit corresponds to the
+    `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
+    of ``SelectPauliRot``, containing two CNOT fanouts corresponding to the binary representation
+    of the angle (111 in this case), the :class:`~.SemiAdder`, and a :class:`~.GlobalPhase`.
 
     >>> specs
-    {'QROM': 1, 'MultiControlledX': 6, 'SemiAdder': 1, 'Adjoint(QROM)': 1}
-    >>> print(qp.draw(circuit, wire_order=[0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires)(angles))
-         0: ─╭QROM(M0)──────────────────────────────╭QROM(M0)†─┤ ╭State
-         1: ─├QROM(M0)──────────────────────────────├QROM(M0)†─┤ ├State
-         2: ─├QROM(M0)──────────────────────────────├QROM(M0)†─┤ ├State
-         3: ─│─────────╭○─╭○─╭○────────────╭○─╭○─╭○─│──────────┤ ├State
-     aux_0: ─├QROM(M0)─│──│──│──╭SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
-     aux_1: ─├QROM(M0)─│──│──│──├SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
-     aux_2: ─├QROM(M0)─│──│──│──├SemiAdder─│──│──│──├QROM(M0)†─┤ ├State
-     qft_0: ─│─────────╰X─│──│──├SemiAdder─│──│──╰X─│──────────┤ ├State
-     qft_1: ─│────────────╰X─│──├SemiAdder─│──╰X────│──────────┤ ├State
-     qft_2: ─│───────────────╰X─├SemiAdder─╰X───────│──────────┤ ├State
-    work_0: ─├QROM(M0)──────────├SemiAdder──────────├QROM(M0)†─┤ ├State
-    work_1: ─╰QROM(M0)──────────╰SemiAdder──────────╰QROM(M0)†─┤ ╰State
+    {'QROM': 2, 'MultiControlledX': 6, 'SemiAdder': 1}
+    >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
+    >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
+         0: ─╭QROM(M0)─────────────────────╭QROM(M0)──────────┤ ╭State
+         1: ─├QROM(M0)─────────────────────├QROM(M0)──────────┤ ├State
+         2: ─├QROM(M0)─────────────────────├QROM(M0)──────────┤ ├State
+         3: ─│─────────╭○─╭○─╭○────────────│─────────╭○─╭○─╭○─┤ ├State
+     aux_0: ─├QROM(M0)─│──│──│──╭SemiAdder─├QROM(M0)─│──│──│──┤ ├State
+     aux_1: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
+     aux_2: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
+     qft_0: ─│─────────╰X─│──│──├SemiAdder─│─────────╰X─│──│──┤ ├State
+     qft_1: ─│────────────╰X─│──├SemiAdder─│────────────╰X─│──┤ ├State
+     qft_2: ─│───────────────╰X─├SemiAdder─│───────────────╰X─┤ ├State
+    work_0: ─├QROM(M0)──────────├SemiAdder─├QROM(M0)──────────┤ ├State
+    work_1: ─╰QROM(M0)──────────╰SemiAdder─╰QROM(M0)──────────┤ ╰State
 
     """
     # Sanitize wires
