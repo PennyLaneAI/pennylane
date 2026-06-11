@@ -522,11 +522,7 @@ class Operator2(ABC):
             ]
             new_args[n] = unflatten(leaves, tree)
 
-        # Re-instantiate with only the wires remapped, sharing the original parameter data,
-        # rather than copying the operator. Construction is non-recording to match the
-        # previous copy-based behaviour, where the mapped operator was not queued.
-        with QueuingManager.stop_recording():
-            new_op = type(self)(**new_args)
+        new_op = type(self)(**new_args)
 
         return new_op
 
