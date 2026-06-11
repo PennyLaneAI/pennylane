@@ -202,14 +202,11 @@ class TestOptimize:
         assert np.allclose(state2, state2_jit)
         assert np.allclose(cost, cost_jit)
 
-    @pytest.mark.jax
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit(self):
         """Test optimizer compatibility with qp.qjit compilation."""
         import jax.numpy as jnp
-
-        pytest.importorskip("catalyst")
 
         device = qp.device("lightning.qubit", wires=2)
         qnode = qp.QNode(circuit, device=device)
