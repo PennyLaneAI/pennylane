@@ -510,6 +510,7 @@
   [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+  [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
 <h3>Deprecations 👋</h3>
 
