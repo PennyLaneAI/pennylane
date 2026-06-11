@@ -537,9 +537,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Upgrade Sphinx to version 9.1.
+* Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
-  
+
 * Improve language server support for `qp.capture`.
   [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 

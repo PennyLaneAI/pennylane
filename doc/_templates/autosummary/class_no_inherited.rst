@@ -34,7 +34,7 @@
 
    {% for item in attributes %}
    {%- if item not in inherited_members %}
-   .. autoattribute:: {{ item }}
+   .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endif %}
    {%- endfor %}
 
@@ -70,7 +70,7 @@
 
    {% for item in methods %}
    {%- if item not in inherited_members %}
-   .. automethod:: {{ item }}
+   .. automethod:: {{ fullname }}.{{ item }}
    {%- endif %}
    {%- endfor %}
 
