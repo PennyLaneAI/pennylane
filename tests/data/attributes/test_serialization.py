@@ -22,8 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.shots import Shots
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
-from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
