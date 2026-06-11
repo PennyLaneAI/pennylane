@@ -13,7 +13,7 @@
 # limitations under the License.
 """Test the pennylane drawer with Catalyst."""
 
-# pylint: disable=protected-access,wrong-import-position,wrong-import-order
+# pylint: disable=protected-access,wrong-import-position
 import pytest
 
 pytestmark = [pytest.mark.external, pytest.mark.catalyst]
