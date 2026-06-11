@@ -215,7 +215,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability in JupyterLabs;
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
