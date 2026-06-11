@@ -1231,11 +1231,13 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
+    @pytest.mark.jax
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_two_qubit_decomposition_2_cnots_qjit(self):
         """Test that two_qubit_decomposition does not raise TracerArrayConversionError
         under qjit. Regression test for #9016."""
+        pytest.importorskip("catalyst")
         import jax.numpy as jnp
         from catalyst import grad as catalyst_grad
         from catalyst.utils.exceptions import DifferentiableCompileError
