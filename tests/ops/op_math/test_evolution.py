@@ -189,11 +189,11 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.autograd
     def test_qaoa_evolve_matches_approx_time_evolution(self):
-        """Reproduces the originally reported QAOA workflow: a multi-layer circuit
+        """Reproduces the originally reported QAOA workflow at [sc-119491]: a multi-layer QAOA circuit
         built from ``qp.evolve`` of ``Sum`` cost/mixer Hamiltonians silently gave
         wrong forward values and gradients under the default differentiation path,
-        diverging during optimization. ``ApproxTimeEvolution(H, t, n=1)`` (the user's
-        workaround) is exact here because the terms within each cost/mixer block
+        diverging during optimization. ``ApproxTimeEvolution(H, t, n=1)`` (the 
+        workaround at [sc-119491]) is exact here because the terms within each cost/mixer block
         commute, so it is used as the reference for both value and gradient."""
         edges = [[0, 1], [1, 2], [0, 2], [2, 3]]
         wires = sorted({w for edge in edges for w in edge})
