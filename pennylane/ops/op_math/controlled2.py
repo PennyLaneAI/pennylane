@@ -18,20 +18,22 @@ from collections.abc import Sequence
 from typing import Literal
 
 from scipy import sparse
+from scipy.sparse import spmatrix
 from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.exceptions import EigvalsUndefinedError, SparseMatrixUndefinedError
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import Controlled
 from .symbolicop2 import SymbolicOp2
 
 
-class Controlled2(SymbolicOp2, is_baseclass=True):
+class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
     """The base class for controlled operators."""
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -143,10 +145,22 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
 
         return math.block_diag([left_pad, base_matrix, right_pad])
 
+    @override
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
+
+        # If the subclass does not define compute_matrix, explicitly fall back to
+        # the general implementation, which has a different signature.
+        canonical_matrix = (
+            self.compute_matrix(self.base, self.control_wires, self.control_values)
+            if self.compute_matrix is Controlled2.compute_matrix
+            else self.compute_matrix(**self.arguments)
+        )
+        return self._expand_canonical_matrix(canonical_matrix, wire_order)
+
     @staticmethod
     @override
     # pylint: disable=arguments-differ
-    def compute_sparse_matrix(base, control_wires, control_values, **_):
+    def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
 
         target_matrix = _get_sparse_matrix(base)
 
@@ -161,6 +175,15 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
         m[start_idx:end_idx, start_idx:end_idx] = target_matrix
         return m.asformat(format=format)
 
+    @override
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
+        canonical_sparse_matrix = (
+            self.compute_sparse_matrix(self.base, self.control_wires, self.control_values, format)
+            if self.compute_sparse_matrix is Controlled2.compute_sparse_matrix
+            else self.compute_sparse_matrix(**self.arguments, format=format)
+        )
+        return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
+
     @staticmethod
     @override
     # pylint: disable=arguments-differ
@@ -171,6 +194,20 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
         total = 2 ** (num_target_wires + num_control_wires)
         ones = math.ones(total - len(base_eigvals))
         return math.concatenate([ones, base_eigvals])
+
+    @override
+    def eigvals(self) -> TensorLike:
+        try:
+            return (
+                self.compute_eigvals(self.base, self.control_wires)
+                if self.compute_eigvals is Controlled2.compute_eigvals
+                else self.compute_eigvals(**self.arguments)
+            )
+        except EigvalsUndefinedError as e:
+            # By default, compute the eigenvalues from the matrix representation if one is defined.
+            if self.has_matrix:  # pylint: disable=using-constant-test
+                return math.linalg.eigvals(self.matrix())
+            raise EigvalsUndefinedError from e
 
     @property
     @override
@@ -199,6 +236,14 @@ class Controlled2(SymbolicOp2, is_baseclass=True):
     # pylint: disable=arguments-differ
     def compute_diagonalizing_gates(base, **_):
         return base.diagonalizing_gates()
+
+    @override
+    def diagonalizing_gates(self):
+        return (
+            self.compute_diagonalizing_gates(self.base)
+            if self.compute_diagonalizing_gates is Controlled2.compute_diagonalizing_gates
+            else self.compute_diagonalizing_gates(**self.arguments)
+        )
 
     @property
     @override
