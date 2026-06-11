@@ -219,6 +219,46 @@ class Operator2(ABC):
         """Dictionary mapping compilable argument names to their values."""
         return {name: self.arguments[name] for name in self.compilable_argnames}
 
+    # ------------------------------------------------------------------------
+    # ----------------------- Backwards compatibility ------------------------
+    # ------------------------------------------------------------------------
+    # The following properties mirror the legacy :class:`~.operation.Operator`
+    # interface by exposing the appropriate classified arguments. They allow
+    # ``Operator2`` instances to be consumed by code that still relies on the v1
+    # ``data``/``parameters``/``hyperparameters``/``num_params`` interface.
+
+    @property
+    def data(self) -> tuple[TensorLike, ...]:
+        """Trainable parameters of the operator, i.e. the values of its dynamic arguments."""
+        return tuple(self.dynamic_args.values())
+
+    @property
+    def parameters(self) -> list[TensorLike]:
+        """Trainable parameters of the operator as a list. See :attr:`~.Operator2.data`."""
+        return list(self.dynamic_args.values())
+
+    @property
+    def num_params(self) -> int:
+        """Number of trainable parameters of the operator."""
+        return len(self.dynamic_argnames)
+
+    @property
+    def hyperparameters(self) -> dict[str, Any]:
+        """Dictionary of the operator's non-trainable, non-wire arguments.
+
+        This corresponds to the static, compilable, and (non-wire) hybrid arguments.
+        """
+        return {
+            k: v
+            for k, v in self.arguments.items()
+            if k not in self.dynamic_argnames and k != "wires"
+        }
+    
+    @property
+    def num_wires(self):
+        """Number of wires the operator acts on."""
+        return self.wire_sizes[0]
+
     @property
     def name(self) -> str:
         """Operator name."""

@@ -639,6 +639,26 @@ class TestOperator2AssertValid:
         with pytest.raises((AttributeError, PicklingError)):
             assert_valid(LocalOp(wires=0))
 
+    def test_check_bind_new_parameters(self):
+        """``_check_bind_new_parameters`` fails if ``bind_new_parameters`` cannot update the data.
+
+        Here the constructor ignores its dynamic ``phi`` argument and always stores ``1.0``, so
+        binding new parameters has no effect.
+        """
+
+        class IgnoresParams(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi, wires):
+                super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
+
+        op = IgnoresParams(0.5, wires=0)
+        with pytest.raises(
+            AssertionError, match=r"bind_new_parameters must be able to update"
+        ):
+            assert_valid(op, skip_pickle=True, skip_differentiation=True)
+
 
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
