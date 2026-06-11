@@ -20,6 +20,7 @@ from operator2_utils import (
     DynOp,
     FullOp,
     HybridOp,
+    MixedHybridOp,
     MultiWireOp,
     StaticOp,
     TwoDynOp,
@@ -187,6 +188,32 @@ class TestHybridCapture:
         jaxpr = jax.make_jaxpr(f)(0.5)
         eqn = _single_op_eqn(jaxpr)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
+
+    def test_hybrid_wire_arg_processed_before_other_hybrid(self):
+        """Test that hybrid wire arguments are flattened before other hybrid args."""
+        jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.0], [[0], [1]], wires=2))(0.5)
+        eqn = _single_op_eqn(jaxpr)
+
+        assert eqn.params["wire_lens"] == (1,)
+        assert eqn.params["hybrid_lens"] == (2, 2)
+        assert jaxpr.jaxpr.invars[0] == eqn.invars[0]
+        assert eqn.invars[1].val == 2
+        assert eqn.invars[2].val == 0
+        assert eqn.invars[3].val == 1
+        assert jaxpr.jaxpr.invars[0] == eqn.invars[4]
+        assert eqn.invars[5].val == 1.0
+
+        wire_tree, ops_tree = eqn.params["hybrid_trees"]
+        assert "Wires" in repr(wire_tree)
+        assert "list" in repr(ops_tree)
+
+    def test_mixed_hybrid_wire_roundtrip(self):
+        """Test round-trip when hybrid wire args are reshuffled ahead of other hybrid args."""
+        jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.0], [[0], [1]], wires=2).tracer)(
+            0.5
+        )
+        [op] = _eval(jaxpr, 0.7)
+        qp.assert_equal(op, MixedHybridOp(0.7, [0.7, 1.0], [[0], [1]], wires=2))
 
 
 class TestReconstruction:

@@ -1226,14 +1226,12 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         hybrid_wire_argnames = []
         wire_lens = []
-        # FIXME: Think about how casting wires to jax arrays might work
         for name, value in self.wire_args.items():
             if name in self.hybrid_argnames:
                 hybrid_wire_argnames.append(name)
-                continue
-
-            pos_args.extend(value)
-            wire_lens.append(len(value))
+            else:
+                pos_args.extend(value)
+                wire_lens.append(len(value))
 
         # Reorder hybrid args such that hybrid wire args are first
         hybrid_argnames = hybrid_wire_argnames + [
@@ -1262,10 +1260,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         res = operator_p.bind(
             *pos_args,
             op_cls=type(self),
-            dynamic_argnames=self.dynamic_argnames,
-            wire_argnames=self.wire_argnames,
             wire_lens=wire_lens,
-            hybrid_argnames=hybrid_argnames,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
             **static_args,
@@ -1283,8 +1278,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
 if has_jax:
     # pylint: disable=import-outside-toplevel,ungrouped-imports
-    import jax.numpy as jnp
-
     from pennylane.capture.custom_primitives import QpPrimitive
 
     operator_p = QpPrimitive("operator")
@@ -1293,27 +1286,30 @@ if has_jax:
 
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
-    def _op_impl(
-        *all_args,
-        op_cls,
-        dynamic_argnames,
-        wire_argnames,
-        wire_lens,
-        hybrid_argnames,
-        hybrid_lens,
-        hybrid_trees,
-        **static_args,
-    ):
+    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
-        for name in dynamic_argnames:
+        for name in op_cls.dynamic_argnames:
             args[name] = all_args[i]
             i += 1
-        for name, len_ in zip(wire_argnames, wire_lens, strict=True):
-            if name not in hybrid_argnames:
-                args[name] = jnp.array(all_args[i : i + len_] if len_ > 1 else all_args[i])
+
+        hybrid_wire_argnames = []
+        wire_lens_iter = iter(wire_lens)
+        for name in op_cls.wire_argnames:
+            if name in op_cls.hybrid_argnames:
+                hybrid_wire_argnames.append(name)
+            else:
+                len_ = next(wire_lens_iter)
+                # We can safely cast to `int` inside the concrete impl because there
+                # there should not be any abstract values when calling the concrete.
+                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
                 i += len_
+
+        # Reorder hybrid args such that hybrid wire args are first
+        hybrid_argnames = hybrid_wire_argnames + [
+            name for name in op_cls.hybrid_argnames if name not in op_cls.wire_argnames
+        ]
         for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
             leaves = all_args[i : i + len_]
             args[name] = unflatten(leaves, tree)
