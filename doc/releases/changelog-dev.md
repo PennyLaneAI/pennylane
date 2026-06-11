@@ -215,6 +215,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
+  particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
   `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
   decomposition when using phase-gradient based decompositions of multiplexers.
@@ -508,6 +512,9 @@
   to avoid processing the operator into the circuit is now removed.
   Instead, `Operator.queue` can be overwritten if needed.
   [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
+
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+  [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
 <h3>Deprecations 👋</h3>
 
