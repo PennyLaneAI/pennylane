@@ -225,7 +225,8 @@ class Operator2(ABC):
     # The following properties mirror the legacy :class:`~.operation.Operator`
     # interface by exposing the appropriate classified arguments. They allow
     # ``Operator2`` instances to be consumed by code that still relies on the v1
-    # ``data``/``parameters``/``hyperparameters``/``num_params`` interface.
+    # ``data``/``parameters``/``hyperparameters``/``num_params``/``num_wires`` 
+    # interface.
 
     @property
     def data(self):
