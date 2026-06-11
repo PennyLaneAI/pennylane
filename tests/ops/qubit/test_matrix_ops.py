@@ -908,9 +908,21 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            fn = qp.qjit(qp.matrix(rule, wire_order=op.wires), static_argnums=[1])
+            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
+            all_wires = work_wires + list(op.wires)
+            fn = qp.qjit(
+                qp.matrix(
+                    qp.transforms.resolve_dynamic_wires(rule, zeroed=work_wires),
+                    wire_order=all_wires,
+                ),
+                static_argnums=[1],
+            )
             mat = fn(*op.data, op.wires, **op.hyperparameters)
-            assert qp.math.allclose(mat, np.diag(op.data[0]))
+            dim = 2 ** len(op.wires)
+            assert qp.math.allclose(mat[dim:, :dim], 0.0)
+            assert qp.math.allclose(mat[:dim, dim:], 0.0)
+            assert qp.math.allclose(mat[:dim, :dim], np.diag(op.data[0]))
 
     edge_case_ops = [
         pytest.param(qp.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), id="Identity-2Q"),
@@ -958,9 +970,21 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_decomposition_rule_edge_cases_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            fn = qp.qjit(qp.matrix(rule, wire_order=op.wires), static_argnums=[1])
+            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
+            all_wires = work_wires + list(op.wires)
+            fn = qp.qjit(
+                qp.matrix(
+                    qp.transforms.resolve_dynamic_wires(rule, zeroed=work_wires),
+                    wire_order=all_wires,
+                ),
+                static_argnums=[1],
+            )
             mat = fn(*op.data, op.wires, **op.hyperparameters)
-            assert qp.math.allclose(mat, np.diag(op.data[0]))
+            dim = 2 ** len(op.wires)
+            assert qp.math.allclose(mat[dim:, :dim], 0.0)
+            assert qp.math.allclose(mat[:dim, dim:], 0.0)
+            assert qp.math.allclose(mat[:dim, :dim], np.diag(op.data[0]))
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qp.DiagonalQubitUnitary."""

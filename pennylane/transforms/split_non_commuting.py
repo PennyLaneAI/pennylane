@@ -28,7 +28,8 @@ import numpy as np
 from scipy.stats import multinomial
 
 import pennylane as qp
-from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.measurements import ExpectationMP, StateMP
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
