@@ -586,8 +586,12 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     if len(work_wires) > needed_work_wires:
         # There is an easy way to use more work wires: Pretend they are part of the system wires,
         # which gives the isometry circuit more space to move states around. Adding the excess
-        # work wires to the beginning of the `wires` register allows us to keep `indices` unchanged
-        wires = Wires(work_wires[needed_work_wires:]) + wires
+        # work wires to the beginning of the `wires` register would allow us to keep `indices`
+        # unchanged, but it requires the isometry to move more states around. So we add them to
+        # the end of the `wires` register and update `indices`.
+        wires += Wires(work_wires[needed_work_wires:])
+        aux_dim = 2 ** (len(work_wires) - needed_work_wires)
+        indices = tuple(idx * aux_dim for idx in indices)
 
     iso_finder = IsometryFinder(np.array(indices), len(wires))
     circuit, bijection = iso_finder.find_isometry()
@@ -607,7 +611,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             k_start, k = data
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
+            qp.QROM(
+                np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[:needed_work_wires]
+            )
             qp.BasisState(k_start, subspace_wires)
             continue
         if _type == "Fanout":
