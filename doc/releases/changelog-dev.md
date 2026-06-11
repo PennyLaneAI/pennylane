@@ -513,6 +513,9 @@
   Instead, `Operator.queue` can be overwritten if needed.
   [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+  [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
