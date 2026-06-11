@@ -409,13 +409,13 @@ class TestPreprocessing:
             (qp.GroverOperator(wires=range(14)), False),
             (
                 qp.IQP(
-                    np.zeros(5, dtype=np.float64), num_wires=5, pattern=[[[i]] for i in range(5)]
+                    np.zeros(5, dtype=np.float64), wires=range(5), pattern=[[[i]] for i in range(5)]
                 ),
                 True,
             ),
             (
                 qp.IQP(
-                    np.zeros(6, dtype=np.float64), num_wires=6, pattern=[[[i]] for i in range(6)]
+                    np.zeros(6, dtype=np.float64), wires=range(6), pattern=[[[i]] for i in range(6)]
                 ),
                 False,
             ),

@@ -23,13 +23,12 @@ from typing import Any
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator, Operator2
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.operation2 import Operator2
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
