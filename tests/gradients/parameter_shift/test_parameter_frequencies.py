@@ -34,7 +34,6 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies raises an error if there are too many dynamic arguments."""
 
         class MultiArgOpWithGen(Operator2):
-            num_wires = 1
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -53,7 +52,6 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies raises an error if the op.generator() is undefined."""
 
         class SingleArgOpNoGen(Operator2):
-            num_wires = 1
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -71,7 +69,6 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies are accessible when provided explicitly, even if the op.generator() is undefined."""
 
         class MultiArgOpNoGenParamFreqs(Operator2):
-            num_wires = 1
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -99,7 +96,6 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies relate to the eigenvalues of the generator if the op.generator() is defined."""
 
         class OpWithGen(Operator2):
-            num_wires = 1
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
