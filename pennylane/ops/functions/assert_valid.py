@@ -86,23 +86,23 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )(*op.data, wires=op.wires, **op.hyperparameters)
-
-        with qp.queuing.AnnotatedQueue() as queued_decomp:
-            decomp = op.decomposition()
-        processed_queue = qp.tape.QuantumTape.from_queue(queued_decomp)
-
-        try:
-            compute_decomp = type(op).compute_decomposition(
-                *op.data, wires=op.wires, **op.hyperparameters
-            )
-        except (qp.exceptions.DecompositionUndefinedError, TypeError):
-            # sometimes decomposition is defined but not compute_decomposition
-            # Also  sometimes compute_decomposition can have a different signature
-            compute_decomp = decomp
-
-        assert isinstance(decomp, list), "decomposition must be a list"
-        assert isinstance(compute_decomp, list), "decomposition must be a list"
         return
+
+    with qp.queuing.AnnotatedQueue() as queued_decomp:
+        decomp = op.decomposition()
+    processed_queue = qp.tape.QuantumTape.from_queue(queued_decomp)
+
+    try:
+        compute_decomp = type(op).compute_decomposition(
+            *op.data, wires=op.wires, **op.hyperparameters
+        )
+    except (qp.exceptions.DecompositionUndefinedError, TypeError):
+        # sometimes decomposition is defined but not compute_decomposition
+        # Also  sometimes compute_decomposition can have a different signature
+        compute_decomp = decomp
+
+    assert isinstance(decomp, list), "decomposition must be a list"
+    assert isinstance(compute_decomp, list), "decomposition must be a list"
 
     allocations = [op for op in decomp if isinstance(op, qp.allocation.Allocate)]
     if allocations:
