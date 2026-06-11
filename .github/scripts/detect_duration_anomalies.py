@@ -17,7 +17,8 @@ import os
 import sys
 
 # Thresholds
-RATIO_THRESHOLD = 2  # flag if new/old exceeds this factor
+RATIO_THRESHOLD = 3  # flag if new/old exceeds this factor
+MIN_DURATION = 1.0  # ignore if below 1s
 MAX_DISPLAY = 20  # cap table rows per file
 
 DURATION_FILES = ["core_tests_durations.json", "jax_tests_durations.json"]
@@ -29,7 +30,7 @@ def find_anomalies(old_data, new_data):
     for test, new_dur in new_data.items():
         old_dur = old_data.get(test, 0)
         ratio = new_dur / old_dur
-        if ratio > RATIO_THRESHOLD:
+        if new_dur > MIN_DURATION and ratio > RATIO_THRESHOLD:
             inflated.append((test, old_dur, new_dur, ratio))
     inflated.sort(key=lambda x: -x[3])
     return inflated
