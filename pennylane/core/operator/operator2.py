@@ -50,7 +50,110 @@ from .base import _UNSET_BATCH_SIZE
 
 
 class Operator2(ABC):
-    r"""Base class representing quantum operators.
+    r"""Base class representing quantum operators that are designed for compatibility with
+    :func:`~.qjit`.
+
+    Child classes of `Operator2` are defined by their name and argument types, of which there are
+    five categories that correspond to class variables that must be defined for new operators. These
+    arguments dictate how `Operator2` child classes are handled when compiling with :func:`~.qjit`.
+
+    * :attr:`wire_argnames <~.Operator2.wire_argnames>`: The names of arguments corresponding to
+    wires. Values for these arguments are automatically wrapped in :class:`~.Wires` objects by the
+    `Operator2` constructor.
+
+    * :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`: The names of arguments that are
+    treated as dynamic. Inputs for these arguments must be scalars, arrays, or castable to arrays.
+
+    * :attr:`static_argnames <~.Operator2.static_argnames>`: The names of arguments that are
+    treated as static.
+
+    * :attr:`compilable_argnames <~.Operator2.compilable_argnames>`: The names of arguments that are
+    treated as **compilable** static arguments. Compilable static arguments include numeric values,
+    strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
+    not guaranteed to be compilable, it is safer to place them in
+    :attr:`static_argnames <~.Operator2.static_argnames>`.
+
+    .. note::
+
+        An operator can only specify :attr:`static_argnames <~.Operator2.static_argnames>` or
+        :attr:`compilable_argnames <~.Operator2.compilable_argnames>`, but not both; if **any**
+        static arguments cannot be lowered to the IR, then all static arguments must be treated as
+        not lowerable.
+
+    * :attr:`hybrid_argnames <~.Operator2.hybrid_argnames>`: The names of arguments that represent
+    dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
+    overlap with ``wire_argnames`` when those arguments contain nested structures of wires.
+
+    Args:
+        *params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+
+    .. details::
+        :title: Defining Custom Operators
+
+        TODO
+
+        .. code-block python
+
+            import pennylane as qp
+
+            class MyOp(qp.operation2.Operator2):
+                wire_argnames = ("wires", "other_wire")
+                dynamic_argnames = ("angle_array")
+                static_argnames = ("pauli_string")
+
+                def __init__(self, pauli_string, angle_array, wires, other_wire=None):
+                    assert len(other_wire) <= 1, f"other_wire can be 0 or 1. Got {len(other_wire)}."
+                    assert len(pauli_string) == len(wires), f"pauli_string length must be equal to number of wires ({len(wires)}). Got {len(pauli_string)}."
+
+                    super().__init__(pauli_string, angle_array, wires, other_wire)
+
+            from jax import numpy as jnp
+
+            angle_array = jnp.array([0.1, 0.2, 0.3])
+
+            op = MyOp("XYZ", angle_array, wires=(0, 1, 2), other_wire=(3,))
+
+            **`static_argnames` vs. `compilable_argnames`**
+
+            TODO
+
+            **Decomposing Operators**
+
+            from collections import defaultdict
+
+            pauli_map = {"X": qp.X, "Y": qp.Y, "Z": qp.Z}
+
+            def my_op_resources(pauli_string, angle_array, wires, other_wire=None):
+
+                resources = defaultdict(int)
+
+                for char in pauli_string:
+                    resources[pauli_map[char]] += 1
+
+                # work_wires can only be 1
+                if other_wire:
+                    resources[qp.CNOT] += len(angle_array)
+
+                resources[qp.MultiRZ(float, wires=qp.wires.Wires[len(wires)])] += len(angle_array)
+
+                return resources
+
+            @qp.register_resources(my_op_resources)
+            def _my_op_decomp(pauli_string, angle_array, wires, other_wire):
+                for i, pauli in enumerate(pauli_string):
+                    qp.apply(pauli_map[pauli])(wires[i])
+
+                for i, angle in enumerate(angle_array):
+                    qp.MultiRZ(angle, wires=wires)
+
+                    if other_wire:
+                        qp.CNOT((wires[0], other_wire))
+
+            qp.add_decomps(MyOp, _my_op_decomp)
+            print(qp.inspect_decomps(MyOp, _my_op_decomp))
+
     TODO: [sc-120453] Fill docstring
     """
 
