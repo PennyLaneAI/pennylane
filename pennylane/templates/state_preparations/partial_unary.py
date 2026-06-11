@@ -25,7 +25,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
 
-class IsometryFinder:
+class PUIIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell in L}` to the first consecutive
@@ -365,6 +365,11 @@ class PartialUnaryStatePreparation(Operation):
     :class:`~.MultiplexerStatePreparation` for less sparse states, effectively providing an
     interpolation between sparse and dense state preparation.
 
+    .. seealso::
+
+        :class:`~.templates.state_preparations.PUIIsometryFinder` for the class implementing
+        the classical algorithm that finds the isometry for the circuit.
+
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
@@ -468,6 +473,28 @@ class PartialUnaryStatePreparation(Operation):
     Measurements:
     - state(all wires): 1
     Depth: Not computed
+
+    Note that passing more work wires than the needed :math:`\max(\lceil \log_2(L)\rceil-1, 1)`
+    makes the isometry circuit of the state preparation cheaper:
+
+    >>> new_num_work_wires = 3*num_work_wires
+    >>> work_wires = list(range(15, 15 + new_num_work_wires))
+    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
+    Wire allocations: 48
+    Total gates: 3056
+    Gate counts:
+    - MultiplexerStatePreparation: 1
+    - BasisState: 320
+    - QROM: 160
+    - C(BasisState): 2553
+    - MultiControlledX: 6
+    - SWAP: 16
+    Measurements:
+    - state(all wires): 1
+    Depth: Not computed
+
+    We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
+    number of indices :math:`L`, it is the same between the two decompositions.
 
     """
 
@@ -591,7 +618,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    iso_finder = IsometryFinder(np.array(indices), len(wires))
+    iso_finder = PUIIsometryFinder(np.array(indices), len(wires))
     circuit, bijection = iso_finder.find_isometry()
 
     subspace_wires = Wires(wires[:n_subspace])
