@@ -580,10 +580,18 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         qp.BasisState(indices[0], wires)
         return
 
+    n_subspace = max(math.ceil_log2(s), 1)
+    needed_work_wires = max(n_subspace - 1, 1)  # Need n_subspace-1 for QROM, 1 for Toffoli
+    wires = Wires(wires)
+    if len(work_wires) > needed_work_wires:
+        # There is an easy way to use more work wires: Pretend they are part of the system wires,
+        # which gives the isometry circuit more space to move states around. Adding the excess
+        # work wires to the beginning of the `wires` register allows us to keep `indices` unchanged
+        wires = Wires(work_wires[needed_work_wires:]) + wires
+
     iso_finder = IsometryFinder(np.array(indices), len(wires))
     circuit, bijection = iso_finder.find_isometry()
 
-    n_subspace = max(math.ceil_log2(s), 1)
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
 
@@ -592,8 +600,6 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     ids = np.array([bijection[i] for i in range(len(coefficients))])
     dense_state[ids] = coefficients
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
-
-    wires = Wires(wires)
 
     # Step 2: Apply the inverse of the isometry circuit
     for _type, *data in reversed(circuit):
@@ -606,8 +612,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             continue
         if _type == "Fanout":
             control, bits = data
-            _wires = wires[:control] + wires[control + 1 :]
-            qp.ctrl(qp.BasisState(bits, _wires), control)
+            qp.ctrl(qp.BasisState(bits, wires[:control] + wires[control + 1 :]), wires[control])
             continue
 
         ids = data[0]

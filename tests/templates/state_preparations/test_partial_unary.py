@@ -88,14 +88,18 @@ def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
 
 
 def assert_pui_correctness(rule, coefficients, indices, wire_specs):
-    num_wires, needed_work_wires, num_work_wires, work_wires = wire_specs
+    """Run a correctness test for PartialUnaryStatePreparation that checks that the correct
+    state is being prepared."""
+    wires, work_wires, num_device_wires = wire_specs
+    num_wires = len(wires)
+    num_work_wires = len(work_wires)
 
-    @qp.qnode(qp.device("lightning.qubit", wires=num_wires + needed_work_wires))
+    @qp.qnode(qp.device("lightning.qubit", wires=num_wires + num_device_wires))
     @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
     def func():
         # pylint: disable=cell-var-from-loop
         # Make sure that the output state length is at least 2**num_wires
-        rule(coefficients, wires=range(num_wires), indices=indices, work_wires=work_wires)
+        rule(coefficients, wires=wires, indices=indices, work_wires=work_wires)
         return qp.state()
 
     out_state = func()
@@ -107,6 +111,8 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
     for _ in range(num_aux_wires):
         assert np.allclose(out_state[1::2], 0.0)
         out_state = out_state[::2]
+    # Arrange state vector for the custom randomized target wire ordering
+    out_state = qp.math.expand_vector(out_state, range(num_wires), wires)
     assert np.allclose([out_state[key] for key in indices], coefficients)
 
 
@@ -181,7 +187,12 @@ class TestPartialUnaryStatePreparation:
         else:
             num_work_wires = 0
 
+        wires = list(range(num_wires))
+        rng = np.random.default_rng(seed)
+        rng.shuffle(wires)
+
         work_wires = list(range(num_wires, num_wires + num_work_wires))
+        rng.shuffle(work_wires)
         # If provide_work_wires=False/True (=> cast to 0/1), we expect the decomposition
         # rule with index 0/1 to be applicable. Exception: For num_entries=1, the rule with
         # index 1 should be applicable
@@ -193,19 +204,24 @@ class TestPartialUnaryStatePreparation:
             if not applicable:
                 continue
 
-            wire_specs = num_wires, needed_work_wires, num_work_wires, work_wires
+            wire_specs = wires, work_wires, num_wires + needed_work_wires
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
-        "num_wires, num_entries, num_work_wires", [(8, 5, 20), (3, 2, 6), (4, 14, 8)]
+        "num_wires, num_entries, num_work_wires", [(7, 5, 15), (3, 2, 6), (4, 14, 8)]
     )
     def test_decomposition_correct_many_work(self, num_wires, num_entries, num_work_wires, seed):
         """Test that the decomposition of PartialUnaryStatePreparation actually
         prepares the desired state, also for too many work wires."""
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
+        wires = list(range(num_wires))
+        rng = np.random.default_rng(seed)
+        rng.shuffle(wires)
+
         work_wires = list(range(num_wires, num_wires + num_work_wires))
+        rng.shuffle(work_wires)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
             applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
@@ -213,7 +229,7 @@ class TestPartialUnaryStatePreparation:
             if not applicable:
                 continue
 
-            wire_specs = num_wires, num_work_wires, num_work_wires, work_wires
+            wire_specs = wires, work_wires, num_wires + num_work_wires
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     def test_input_validation(self):
