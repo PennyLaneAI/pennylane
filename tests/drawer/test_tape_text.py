@@ -495,7 +495,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
         expected = [f"╭{label}"] + [f"├{label}"] * (n_wires - 2) + [f"╰{label}"]
-        config = _Config(wire_map=wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1)
+        config = _Config(
+            wire_map=wire_map,
+            bit_map=default_bit_map,
+            num_op_layers=4,
+            cur_layer=1,
+            wire_layers=default_wire_layers,
+        )
         out = _add_obj(op, ["─"] * n_wires, config)
         assert expected == out
 
