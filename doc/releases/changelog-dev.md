@@ -547,6 +547,7 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -630,13 +631,6 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed `Operator2.map_wires` which was shallow-copying the operator, causing the
-  original operator's arguments to be mutated and the new operator's `wires`
-  property to remain stale after mapping. The method now re-instantiates the operator
-  from its original arguments with only the wires remapped, leaving parameter data
-  shared rather than copied.
-  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
