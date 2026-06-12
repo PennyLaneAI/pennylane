@@ -242,7 +242,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
     def _increment():
         # Construct the wires on which the ladder will act.
-        zipped = sum(zip(wires[1:], work_wires), start=tuple(), strict=True)
+        zipped = sum(zip(wires[1:], work_wires, strict=True), start=tuple())
         if enabled():
             zipped = array(zipped, like="jax")
             all_wires = jnp.concatenate([wires[:1], zipped])
