@@ -34,6 +34,7 @@ from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource
 from pennylane.exceptions import EigvalsUndefinedError
 
 from .equal import assert_equal
+from ...core import Operator2, Operator
 
 
 def _assert_error_raised(func, error, failure_comment):
@@ -53,9 +54,12 @@ def _check_decomposition(op, skip_wire_mapping):
     if op.has_decomposition:
         decomp = op.decomposition()
         try:
-            compute_decomp = type(op).compute_decomposition(
-                *op.data, wires=op.wires, **op.hyperparameters
-            )
+            if isinstance(op, Operator2):
+                compute_decomp = type(op).compute_decomposition(**op.arguments)
+            else:
+                compute_decomp = type(op).compute_decomposition(
+                    *op.data, wires=op.wires, **op.hyperparameters
+                )
         except (qp.exceptions.DecompositionUndefinedError, TypeError):
             # sometimes decomposition is defined but not compute_decomposition
             # Also  sometimes compute_decomposition can have a different signature
@@ -361,7 +365,7 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        compute_eg = type(op).compute_eigvals(*op.data, **op.hyperparameters)
+        compute_eg = type(op).compute_eigvals(**op.arguments) if isinstance(op, Operator2) else type(op).compute_eigvals(*op.data, **op.hyperparameters)
     except EigvalsUndefinedError:
         compute_eg = eg
         has_eigvals = False
@@ -385,7 +389,7 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = qp.exp(gen, 1j * op.data[0])
+        new_op = qp.exp(gen, 1j * list(op.dynamic_args.values())[0]) if isinstance(op, Operator2) else qp.exp(gen, 1j * op.data[0])
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -627,9 +631,27 @@ def _assert_valid_operator2(
                 assert op.wire_sizes[wire_index] is None
             wire_index += 1
 
+    if not skip_pytree:
+        _check_pytree(op)
     _check_bind_new_parameters_op2(op)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
+    _check_copy(op, skip_deepcopy=skip_deepcopy)
+    if not skip_pickle:
+        _check_pickle(op)
+    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+    if not skip_new_decomp:
+        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+        _check_reconstructor(op)
+    _check_matrix(op)
+    _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
+    _check_eigendecomposition(op)
+    _check_generator(op)
+    if not skip_differentiation:
+        _check_differentiation(op)
+    if not skip_capture:
+        _check_capture(op)
 
 # pylint: disable=too-many-arguments
 def assert_valid(
