@@ -18,9 +18,22 @@ See ``explanations.md`` for technical explanations of how this works.
 """
 
 from abc import ABCMeta
+from enum import Enum, auto
 from inspect import Signature, signature
 
+from pennylane import math
 from pennylane.capture import enabled
+from pennylane.pytrees import flatten, unflatten
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires, Wires
+
+
+class ArgType(Enum):
+    """Enum to keep track of an arguments type."""
+
+    WIRES = auto()
+    DYN = auto()
+    HYBRID = auto()
 
 
 def _stop_autograph(f):
@@ -33,8 +46,54 @@ def _stop_autograph(f):
     return new_f
 
 
+def _contains_abstract_type(val):
+    """Check if pytree contains any abstract types."""
+    leaves = flatten(val)[0]
+    return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
+
+
+def _canonicalize_wire_leaf(leaf) -> AbstractWires:
+    if isinstance(leaf, Wires):
+        return AbstractWires(len(leaf))
+
+    if isinstance(leaf, (int, str)):
+        return AbstractWires(1)
+
+    return AbstractWires(len(list(leaf)))
+
+
+def _canonicalize_abstract_type(val, kind: ArgType):
+    """Check if pytree contains any abstkact types."""
+
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val
+
+    if kind == ArgType.WIRES:
+        return _canonicalize_wire_leaf(val)
+
+    if kind == ArgType.DYN:
+        # NOTE: Convert to array so we can extra shape and dtype
+        # e.g., [0, 1] -> AbstractArray((2,), int)
+        canonical_arr = math.asarray(val)
+        return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
+
+    leaves, structure = flatten(val)
+    new_leaves = []
+    for leaf in leaves:
+        if isinstance(leaf, (AbstractArray)):
+            new_leaves.append(leaf)
+        # Process arrays
+        elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+            new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
+        # Process scalars
+        else:
+            new_leaves.append(AbstractArray((), type(leaf)))
+    return unflatten(new_leaves, structure)
+
+
 class OperatorMeta(type):
-    """A metatype that overrides class construction for operators for program capture
+    """
+    A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
     TODO: [sc-120453] Fill docstring
     """
@@ -47,6 +106,34 @@ class OperatorMeta(type):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
+        bound = cls._sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        arguments: dict = bound.arguments
+
+        arguments_that_can_be_abstract = (
+            cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+        )
+        has_abstract_arguments = any(
+            _contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
+        )
+        if has_abstract_arguments:
+            # "Canonicalize" abstract operators
+            # NOTE: Because at least one of the arguments is abstract
+            # all of them need to be "promoted" to abstract
+            for name in arguments_that_can_be_abstract:
+                kind = ArgType.HYBRID
+                if name in cls.wire_argnames:
+                    kind = ArgType.WIRES
+                if name in cls.dynamic_argnames:
+                    kind = ArgType.DYN
+                arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
+
+            obj = cls.__new__(cls)
+            from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
+
+            Operator2.__init__(obj, *bound.args, **bound.kwargs)
+            return obj
+
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         op = type.__call__(cls, *args, **kwargs)
