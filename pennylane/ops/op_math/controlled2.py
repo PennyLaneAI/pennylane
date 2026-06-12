@@ -191,6 +191,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return math.block_diag([left_pad, base_matrix, right_pad])
 
+    @property
+    @override
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix or self.base.has_matrix
+
     @staticmethod
     @override
     # pylint: disable=arguments-differ

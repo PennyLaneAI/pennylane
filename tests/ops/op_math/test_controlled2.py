@@ -56,18 +56,9 @@ class TestControlled2:
         assert op.dynamic_args == {}
         assert op.wire_args == {"wires": Wires([0, 1])}
         assert op.hybrid_args == {}
-
-        # operator methods
-        expected = np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
-                [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
-            ]
-        )
-        assert qp.math.allclose(op.matrix(), expected)
-        assert qp.math.allclose(op.sparse_matrix(), expected)
+        assert op.has_matrix
+        assert op.has_sparse_matrix
+        assert op.has_diagonalizing_gates
 
     def test_parametric_custom_controlled_op(self):
         """Tests parametric op that inherits from Controlled2."""
@@ -103,6 +94,8 @@ class TestControlled2:
         assert op.dynamic_args == {"phi": 0.1, "theta": 0.2, "omega": 0.3}
         assert op.wire_args == {"wires": Wires([0, 1])}
         assert op.hybrid_args == {}
+        assert op.has_matrix
+        assert op.has_sparse_matrix
 
     def test_custom_controlled_op_default_controlled_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
