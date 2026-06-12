@@ -25,6 +25,7 @@ import pytest
 import scipy.sparse
 
 import pennylane as qp
+from pennylane.wires import Wires
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
@@ -261,9 +262,6 @@ class TestBadCopyComparison:
         """Test an operator that cannot be compared with standard qp.equal."""
 
         class BadComparison(Operator):
-            def __init__(self, wires):
-                super().__init__(wires)
-
             def __copy__(self):
                 return self
 
@@ -334,16 +332,15 @@ def test_bad_wire_mapping():
     """Test that an error is raised if the wires cant be mapped with map_wires."""
 
     class BadWireMap(Operator):
-        def __init__(self, op1):
-            self.hyperparameters["op1"] = op1
-            super().__init__(wires=op1.wires)
+        def __init__(self, wires):
+            super().__init__(wires=wires)
 
         @property
         def wires(self):
-            return self.hyperparameters["op1"].wires
+            return Wires(0)
 
     with pytest.raises(AssertionError, match=r"wires must be mappable"):
-        assert_valid(BadWireMap(qp.PauliX(0)), skip_pickle=True)
+        assert_valid(BadWireMap(1), skip_pickle=True)
 
 
 class TestPytree:
