@@ -377,6 +377,16 @@ class TestBoseWordArithmetic:
         assert f1 * f2 == result_bw_right
         assert f2 * f1 == result_bw_left
 
+    def test_mul_with_non_sorted_dict_factor(self):
+        """Test that multiplying by a BoseWord built from a non-sorted dict matches the
+        equivalent sorted word, since the two are equal operators (#9650)."""
+        # same operator as bw1, but with a non-sorted insertion order
+        unsorted = BoseWord({(1, 1): "-", (0, 0): "+"})
+        assert unsorted == bw1
+        assert bw1 * unsorted == bw1 * bw1
+        assert unsorted * bw1 == bw1 * bw1
+        assert unsorted * bw3 == bw1 * bw3
+
     WORDS_AND_SENTENCES_MUL = (
         (
             bw1,

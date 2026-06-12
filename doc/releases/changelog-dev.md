@@ -649,6 +649,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `BoseWord.__mul__` where multiplying by a `BoseWord` built from a non-sorted
+  dictionary returned the wrong operator, because the right factor's sorted keys were paired with
+  its insertion-order values.
+  [(#9660)](https://github.com/PennyLaneAI/pennylane/pull/9660)
+
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
@@ -723,6 +728,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Booyaka101,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
