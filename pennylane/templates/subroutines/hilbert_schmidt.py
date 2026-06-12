@@ -239,7 +239,7 @@ class HilbertSchmidt(Operation):
         decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range, strict=True)
         )
 
         # Unitary U
@@ -260,7 +260,7 @@ class HilbertSchmidt(Operation):
         # CNOT second layer
         decomp_ops.extend(
             CNOT(wires=[wires[i], wires[j]])
-            for i, j in zip(reversed(first_range), reversed(second_range))
+            for i, j in zip(reversed(first_range), reversed(second_range), strict=True)
         )
         # Hadamard second layer
         decomp_ops.extend(Hadamard(wires[i]) for i in first_range)
@@ -370,7 +370,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range, strict=True)
         )
 
         # Unitary U

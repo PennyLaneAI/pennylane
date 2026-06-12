@@ -24,12 +24,12 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,

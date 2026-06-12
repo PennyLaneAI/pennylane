@@ -163,7 +163,7 @@ class GQSP(Operation):
         op_list.append(ops.X(control))
         op_list.append(ops.Z(control))
 
-        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
 
             op_list.append(ops.ctrl(unitary, control=control, control_values=0))
 
@@ -215,7 +215,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     ops.X(control)
     ops.Z(control)
 
-    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
 
         ops.ctrl(unitary, control=control, control_values=[0])
 
