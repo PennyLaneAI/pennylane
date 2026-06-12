@@ -27,6 +27,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -34,11 +36,7 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
 )
 from pennylane.ops import MidMeasure
@@ -81,7 +79,7 @@ if TYPE_CHECKING:
 
     from jax.extend.core import Jaxpr
 
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 # Base gate set for DefaultQubit

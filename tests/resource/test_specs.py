@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
 """Unit tests for the specs transform"""
 
 # pylint: disable=invalid-sequence-index
+from functools import partial
+
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
 from pennylane.resource.specs import (
     _get_last_tape_transform_level,
-    _make_level_name_unique,
     _preprocess_level_input,
 )
 
@@ -82,14 +83,6 @@ def test_preprocess_levels(level, output, expect_warnings):
             assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
     else:
         assert _preprocess_level_input(level, marker_to_level, 5, 4) == output
-
-
-def test_make_level_name_unique():
-    existing_levels = {"foo", "foo-2", "bar"}
-
-    assert _make_level_name_unique("foo", existing_levels) == "foo-3"
-    assert _make_level_name_unique("bar", existing_levels) == "bar-2"
-    assert _make_level_name_unique("baz", existing_levels) == "baz"
 
 
 @pytest.mark.parametrize(
@@ -254,6 +247,96 @@ class TestSpecsTransform:
         assert info["device_name"] == dev.name
         assert info["level"] == "gradient"
         assert info["shots"] == Shots(None)
+
+    def test_qnode_positional_partial(self):
+        """Test specs for a QNode with a positional argument bound by partial."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(n_layers, x):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            qp.RY(x, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, 3))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.num_gates == 4
+        assert resources.depth == 4
+
+    def test_qnode_keyword_partial(self):
+        """Test specs for a QNode with keyword arguments bound by partial."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(x, n_layers=1, add_ry=True):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            if add_ry:
+                qp.RY(x, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, n_layers=3, add_ry=False))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3}
+        assert resources.num_gates == 3
+        assert resources.depth == 3
+
+    def test_nested_qnode_partial(self):
+        """Test specs for a QNode wrapped by nested partials."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit(n_layers, x, y):
+            for _ in range(n_layers):
+                qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(partial(circuit, 3), y=0.25))(0.5)["resources"]
+
+        assert resources.gate_types == {"RX": 3, "RY": 1}
+        assert resources.num_gates == 4
+        assert resources.depth == 4
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("level", [0, "device"])
+    def test_qjit_partial(self, level):
+        """Test specs for a partial-wrapped Catalyst jitted QNode."""
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.specs(partial(circuit, 0.1, z=0.3), level=level)(0.2)["resources"]
+
+        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.num_gates == 3
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_qjit_partial_all_levels(self):
+        """Test all-level specs for a partial-wrapped Catalyst jitted QNode."""
+        pytest.importorskip("catalyst")
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z, wires=0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.specs(partial(circuit, 0.1, z=0.3), level="all")(0.2)
+
+        assert specs["level"] == {0: "Before MLIR Passes"}
+        resources = specs["resources"]["Before MLIR Passes"]
+        assert resources.gate_types == {"RX": 1, "RY": 1, "RZ": 1}
+        assert resources.num_gates == 3
 
     @pytest.mark.parametrize("compute_depth", [True, False])
     def test_specs_compute_depth(self, compute_depth):

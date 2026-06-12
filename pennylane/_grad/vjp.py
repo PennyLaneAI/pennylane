@@ -70,7 +70,7 @@ def _validate_cotangents(cotangents, out_avals):
             "The length of cotangents must match the number of"
             " outputs of the function with qp.vjp."
         )
-    for p, t in zip(cotangents, out_avals):
+    for p, t in zip(cotangents, out_avals, strict=True):
         if _dtype(p) != _dtype(t):
             raise TypeError(
                 "function output params and cotangents arguments to qp.vjp do not match; "

@@ -23,10 +23,10 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     StateMP,
     VarianceMP,

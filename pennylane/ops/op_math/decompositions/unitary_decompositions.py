@@ -219,7 +219,7 @@ def two_qubit_decomposition(U, wires):
             # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
             # with abstract tracers when capture is enabled. In that case, we fall back
             # to the 3-CNOT decomposition.
-            if not capture.enabled():
+            if not capture.enabled() and not compiler.active():
                 elifs.append((num_cnots == 2, _decompose_2_cnots))
 
             phase += ops.cond(
@@ -407,7 +407,7 @@ def two_qubit_decomp_rule(U, wires, **__):
     # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
     # with abstract tracers when capture is enabled. In that case, we fall back
     # to the 3-CNOT decomposition.
-    if not capture.enabled():
+    if not capture.enabled() and not compiler.active():
         elifs.append((num_cnots == 2, _decompose_2_cnots))
 
     additional_phase = ops.cond(
