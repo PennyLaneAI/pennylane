@@ -553,12 +553,10 @@
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
-* Fixed silently incorrect default (autograd/backprop) gradients for :func:`~.evolve` /
-  :class:`~.ops.op_math.Evolution` of a static composite generator (e.g. a :class:`~.Sum` /
-  :class:`~.Hamiltonian` of Pauli words with scalar coefficients). The autograd matrix of
-  :class:`~.Exp` queued the intermediate operators created while diagonalizing a composite base,
-  so the diagonalizing matrix — and therefore the forward value and gradient — were incorrect
-  without raising an error, causing optimization to diverge.
+* Fixed a bug where :func:`~.evolve` / :class:`~.ops.op_math.Evolution` silently produced
+  incorrect results and wrong gradients under the default autograd/backprop differentiation path
+  when the generator was a linear combination of overlapping Pauli words (e.g. a :class:`~.Sum`
+  or :class:`~.Hamiltonian`).
   [(#9636)](https://github.com/PennyLaneAI/pennylane/pull/9636)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
