@@ -41,13 +41,21 @@ def _rz_phase_gradient(
 
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
-    # NOTE: To be capture compatible, must wrap in function
-    # so operators are only constructed when called
-    compute_fn = partial(qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires)
-    target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
+    if qp.capture.enabled():
+        # NOTE: To be capture compatible, must wrap in function
+        # so operators are only constructed when called
+        compute_fn = partial(
+            qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires
+        )
+        target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
-    # NOTE: Compute function is self-inverse, pass it for the uncompute function
-    return change_op_basis(compute_fn, target_fn, compute_fn)
+        # NOTE: Compute function is self-inverse, pass it for the uncompute function
+        return change_op_basis(compute_fn, target_fn, compute_fn)
+
+    compute_op = qp.ctrl(qp.BasisState(state=binary_int, wires=angle_wires), control=wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+
+    return qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 @transform
