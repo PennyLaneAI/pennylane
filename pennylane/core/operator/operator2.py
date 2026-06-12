@@ -49,7 +49,7 @@ from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
-from .capture import ABCOperatorMeta
+from .meta import ABCOperatorMeta
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
