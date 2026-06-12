@@ -18,15 +18,13 @@ from collections.abc import Sequence
 from typing import Literal
 
 from scipy import sparse
-from scipy.sparse import spmatrix
 from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.exceptions import EigvalsUndefinedError, SparseMatrixUndefinedError
-from pennylane.typing import TensorLike
+from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import Controlled
@@ -38,7 +36,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base: Operator2,
+        base: Operator,
         control_wires: WiresLike,
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
@@ -81,6 +79,54 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             return
 
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+
+    def __init_subclass__(cls, is_baseclass=False, override_signature=False) -> None:
+
+        super().__init_subclass__(is_baseclass)
+
+        if not override_signature:
+            return
+
+        if cls.compute_matrix is Controlled2.compute_matrix:
+
+            @staticmethod
+            def _compute_matrix(*args, **kwargs):
+                op = cls(*args, **kwargs)
+                return Controlled2.compute_matrix(op.base, op.control_wires, op.control_values)
+
+            cls.compute_matrix = _compute_matrix
+
+        if cls.compute_sparse_matrix is Controlled2.compute_sparse_matrix:
+
+            @staticmethod
+            def _compute_sparse_matrix(*args, format="csr", **kwargs):
+                op = cls(*args, **kwargs)
+                return Controlled2.compute_sparse_matrix(
+                    op.base,
+                    op.control_wires,
+                    op.control_values,
+                    format=format,
+                )
+
+            cls.compute_sparse_matrix = _compute_sparse_matrix
+
+        if cls.compute_eigvals is Controlled2.compute_eigvals:
+
+            @staticmethod
+            def _compute_eigvals(*args, **kwargs):
+                op = cls(*args, **kwargs)
+                return Controlled2.compute_eigvals(op.base, op.control_wires)
+
+            cls.compute_eigvals = _compute_eigvals
+
+        if cls.compute_diagonalizing_gates is Controlled2.compute_diagonalizing_gates:
+
+            @staticmethod
+            def _compute_diagonalizing_gates(*args, **kwargs):
+                op = cls(*args, **kwargs)
+                return Controlled2.compute_diagonalizing_gates(op.base)
+
+            cls.compute_diagonalizing_gates = _compute_diagonalizing_gates
 
     @property
     @override
@@ -145,18 +191,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return math.block_diag([left_pad, base_matrix, right_pad])
 
-    @override
-    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
-
-        # If the subclass does not define compute_matrix, explicitly fall back to
-        # the general implementation, which has a different signature.
-        canonical_matrix = (
-            self.compute_matrix(self.base, self.control_wires, self.control_values)
-            if self.compute_matrix is Controlled2.compute_matrix
-            else self.compute_matrix(**self.arguments)
-        )
-        return self._expand_canonical_matrix(canonical_matrix, wire_order)
-
     @staticmethod
     @override
     # pylint: disable=arguments-differ
@@ -175,15 +209,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         m[start_idx:end_idx, start_idx:end_idx] = target_matrix
         return m.asformat(format=format)
 
-    @override
-    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
-        canonical_sparse_matrix = (
-            self.compute_sparse_matrix(self.base, self.control_wires, self.control_values, format)
-            if self.compute_sparse_matrix is Controlled2.compute_sparse_matrix
-            else self.compute_sparse_matrix(**self.arguments, format=format)
-        )
-        return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
-
     @staticmethod
     @override
     # pylint: disable=arguments-differ
@@ -194,20 +219,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         total = 2 ** (num_target_wires + num_control_wires)
         ones = math.ones(total - len(base_eigvals))
         return math.concatenate([ones, base_eigvals])
-
-    @override
-    def eigvals(self) -> TensorLike:
-        try:
-            return (
-                self.compute_eigvals(self.base, self.control_wires)
-                if self.compute_eigvals is Controlled2.compute_eigvals
-                else self.compute_eigvals(**self.arguments)
-            )
-        except EigvalsUndefinedError as e:
-            # By default, compute the eigenvalues from the matrix representation if one is defined.
-            if self.has_matrix:  # pylint: disable=using-constant-test
-                return math.linalg.eigvals(self.matrix())
-            raise EigvalsUndefinedError from e
 
     @property
     @override
@@ -236,14 +247,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     # pylint: disable=arguments-differ
     def compute_diagonalizing_gates(base, **_):
         return base.diagonalizing_gates()
-
-    @override
-    def diagonalizing_gates(self):
-        return (
-            self.compute_diagonalizing_gates(self.base)
-            if self.compute_diagonalizing_gates is Controlled2.compute_diagonalizing_gates
-            else self.compute_diagonalizing_gates(**self.arguments)
-        )
 
     @property
     @override
@@ -320,7 +323,7 @@ class ControlledOp2(Controlled2):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base: Operator2,
+        base: Operator,
         control_wires: WiresLike,
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,

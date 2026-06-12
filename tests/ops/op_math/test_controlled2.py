@@ -27,7 +27,7 @@ from pennylane.wires import Wires
 def test_non_parametrized_custom_controlled_op():
     """Tests non-parametrized custom controlled op that directly inherits Controlled2"""
 
-    class CH2(Controlled2):
+    class CH2(Controlled2, override_signature=True):
         """A new CH."""
 
         wire_argnames = ("wires",)
@@ -82,7 +82,7 @@ def test_non_parametrized_custom_controlled_op():
 def test_parametric_custom_controlled_op():
     """Tests parametric op that inherits from Controlled2."""
 
-    class CRot2(Controlled2):  # pylint: disable=too-few-public-methods
+    class CRot2(Controlled2, override_signature=True):  # pylint: disable=too-few-public-methods
         """A new CRot."""
 
         dynamic_argnames = ("phi", "theta", "omega")
@@ -93,7 +93,7 @@ def test_parametric_custom_controlled_op():
 
         def __init__(self, phi, theta, omega, wires):
             super().__init__(
-                qp.Rot(phi, theta, omega, wires[1]),
+                qp.Rot(phi, theta, omega, wires=wires[1]),
                 control_wires=wires[0],
                 override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
             )
