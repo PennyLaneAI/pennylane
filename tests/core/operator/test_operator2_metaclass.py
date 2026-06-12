@@ -77,6 +77,19 @@ class TestCanonicalizeAbstractTypeHelper:
     # Unit tests when 'kind=ArgType.DYN'
     # =========================================================================
 
+    @pytest.mark.parametrize(
+        "val, expected",
+        [
+            (0, AbstractArray((), int)),
+            ([0.0, 1.0], AbstractArray((2,), float)),
+            ([[0], [1], [2]], AbstractArray((3, 1), int)),
+        ],
+    )
+    def test_concrete_inputs_are_promoted(self, val, expected):
+        """Tests that inputs are properly canonicalized."""
+
+        assert _canonicalize_abstract_type(val, kind=ArgType.DYN) == expected
+
     # =========================================================================
     # Unit tests when 'kind=ArgType.HYBRID'
     # =========================================================================

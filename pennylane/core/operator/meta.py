@@ -102,16 +102,6 @@ class OperatorMeta(type):
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
 
-    @classmethod
-    def _get_arg_kind(mcs, name: str) -> ArgType:
-        if name in mcs.wire_argnames:
-            return ArgType.WIRES
-        if name in mcs.dynamic_argnames:
-            return ArgType.DYN
-        if name in mcs.hybrid_argnames:
-            return ArgType.HYBRID
-        raise ValueError(f"Argument '{name}' is not recognized.")
-
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
         bound = cls._sig.bind(*args, **kwargs)
@@ -129,9 +119,12 @@ class OperatorMeta(type):
             # NOTE: Because at least one of the arguments is abstract
             # all of them need to be "promoted" to abstract
             for name in arguments_that_can_be_abstract:
-                arguments[name] = _canonicalize_abstract_type(
-                    arguments[name], kind=cls._get_arg_kind(name)
-                )
+                kind = ArgType.HYBRID
+                if name in cls.wire_argnames:
+                    kind = ArgType.WIRES
+                if name in cls.dynamic_argnames:
+                    kind = ArgType.DYN
+                arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
             obj = cls.__new__(cls)
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
