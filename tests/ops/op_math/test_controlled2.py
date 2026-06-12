@@ -41,19 +41,6 @@ def test_non_parametrized_custom_controlled_op():
         def adjoint(self):
             return CH2(self.wires)
 
-        @staticmethod
-        @override
-        def compute_matrix(wires):
-            INV_SQRT2 = 1 / np.sqrt(2)
-            return np.array(
-                [
-                    [1, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, INV_SQRT2, INV_SQRT2],
-                    [0, 0, INV_SQRT2, -INV_SQRT2],
-                ]
-            )
-
     op = CH2([0, 1])
     assert op.wires == Wires([0, 1])
     assert op.base == qp.H(1)
@@ -114,11 +101,88 @@ def test_parametric_custom_controlled_op():
     assert op.wire_args == {"wires": Wires([0, 1])}
     assert op.hybrid_args == {}
 
-    expected = [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, np.exp(-0.2j) * np.cos(0.1), -np.exp(-0.1j) * np.sin(0.1)],
-        [0, 0, np.exp(0.1j) * np.sin(0.1), np.exp(0.2j) * np.cos(0.1)],
-    ]
-    assert qp.math.allclose(op.matrix(), expected)
-    assert qp.math.allclose(op.sparse_matrix().todense(), expected)
+
+def test_custom_controlled_op_default_controlled_methods():
+    """Tests that custom controlled ops can use the default compute_xxx methods."""
+
+    class CRot2(Controlled2, override_signature=True):  # pylint: disable=too-few-public-methods
+        """A new CRot."""
+
+        dynamic_argnames = ("phi", "theta", "omega")
+
+        wires_argnames = ("wires",)
+
+        wire_sizes = (2,)
+
+        def __init__(self, phi, theta, omega, wires):
+            super().__init__(
+                qp.Rot(phi, theta, omega, wires=wires[1]),
+                control_wires=wires[0],
+                override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
+            )
+
+        @override
+        def adjoint(self):
+            return CRot2(-self.omega, -self.theta, -self.phi, wires=self.wires)
+
+    op = CRot2(0.1, 0.2, 0.3, wires=[0, 1])
+
+    matrix = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, np.exp(-0.2j) * np.cos(0.1), -np.exp(-0.1j) * np.sin(0.1)],
+            [0, 0, np.exp(0.1j) * np.sin(0.1), np.exp(0.2j) * np.cos(0.1)],
+        ]
+    )
+    assert qp.math.allclose(op.matrix(), matrix)
+    assert qp.math.allclose(CRot2.compute_matrix(**op.arguments), matrix)
+    assert qp.math.allclose(op.sparse_matrix(), matrix)
+    assert qp.math.allclose(CRot2.compute_sparse_matrix(**op.arguments), matrix)
+
+    eigvals = np.linalg.eigvals(matrix)
+    assert qp.math.allclose(sorted(op.eigvals()), sorted(eigvals))
+    assert qp.math.allclose(sorted(CRot2.compute_eigvals(**op.arguments)), sorted(eigvals))
+
+
+def test_custom_controlled_op_own_compute_methods():
+    """Tests when a custom controlled op override its own compute_xxx methods."""
+
+    class CH2(Controlled2, override_signature=True):
+        """A new CH."""
+
+        wire_argnames = ("wires",)
+
+        wire_sizes = (2,)
+
+        def __init__(self, wires):
+            super().__init__(qp.H(wires[1]), wires[0], override_init_args={"wires": wires})
+
+        @override
+        def adjoint(self):
+            return CH2(self.wires)
+
+        @staticmethod
+        @override
+        def compute_matrix(wires):
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+                    [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+                ]
+            )
+
+    op = CH2([0, 1])
+
+    matrix = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+            [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+        ]
+    )
+    assert qp.math.allclose(op.matrix(), matrix)
+    assert qp.math.allclose(CH2.compute_matrix(**op.arguments), matrix)
