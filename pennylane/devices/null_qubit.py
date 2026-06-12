@@ -25,15 +25,15 @@ from numbers import Number
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.shots import Shots
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     DensityMatrixMP,
-    MeasurementProcess,
     ProbabilityMP,
-    Shots,
     StateMP,
 )
 from pennylane.ops import MeasurementValue
@@ -196,10 +196,10 @@ class NullQubit(Device):
 
     >>> print(tracker.history["resources"][0])
     Wire allocations: 100
-    Total gates: 10000
+    Total gates: 10,000
     Gate counts:
-    - Rot: 5000
-    - CNOT: 5000
+    - Rot: 5,000
+    - CNOT: 5,000
     Measurements:
     - expval(PauliZ): 100
     Depth: 502

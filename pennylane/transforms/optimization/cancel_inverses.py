@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
-from functools import lru_cache, partial
+from functools import partial
 
 from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
@@ -74,203 +74,6 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     return False
 
 
-@lru_cache
-def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
-    try:
-        # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
-
-        from pennylane.capture import PlxprInterpreter
-        from pennylane.capture.primitives import measure_prim
-
-    except ImportError:  # pragma: no cover
-        return None, None
-
-    # pylint: disable=redefined-outer-name
-
-    class CancelInversesInterpreter(PlxprInterpreter):
-        """Plxpr Interpreter for applying the ``cancel_inverses`` transform to callables or jaxpr
-        when program capture is enabled.
-
-        .. note::
-
-            In the process of transforming plxpr, this interpreter may reorder operations that do
-            not share any wires. This will not impact the correctness of the circuit.
-        """
-
-        def __init__(self):
-            super().__init__()
-            self.previous_ops = {}
-
-        def setup(self) -> None:
-            """Initialize the instance before interpreting equations."""
-            self.previous_ops = {}
-
-        def interpret_operation(self, op: Operator):
-            """Interpret a PennyLane operation instance.
-
-            This method cancels operations that are the adjoint of the previous
-            operation on the same wires, and otherwise, applies it.
-
-            Args:
-                op (Operator): a pennylane operator instance
-
-            Returns:
-                Any
-
-            This method is only called when the operator's output is a dropped variable,
-            so the output will not affect later equations in the circuit.
-
-            See also: :meth:`~.interpret_operation_eqn`.
-
-            """
-            if len(op.wires) == 0:
-                return super().interpret_operation(op)
-
-            # Throughout we will use that any pair of operators we want to cancel must act on the
-            # same set of wires. We use the marker (1) to indicate that we used this fact.
-
-            # previous operator that last acted on first wire of ``op``.
-            # Only need to look at one wire for this (1).
-            prev_op = self.previous_ops.get(op.wires[0], None)
-            dyn_wires = {w for w in op.wires if is_abstract(w)}
-            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
-
-            if prev_op is None or (dyn_wires and other_saved_wires):
-                # If there are dynamic wires, we need to make sure that there are no
-                # other wires in `self.previous_ops`, otherwise we can't cancel. If
-                # there are other wires but no other op on the same dynamic wire(s),
-                # there isn't anything to cancel, so we just add the current op to
-                # `self.previous_ops` and return.
-                if dyn_wires and (prev_op is None or other_saved_wires):
-                    self.interpret_all_previous_ops()
-                for w in op.wires:
-                    self.previous_ops[w] = op
-                return []
-
-            if _can_cancel(prev_op, op):
-                # If we can cancel the previous op with the current op, we simply don't interpret
-                # either and remove the previous op from `self.previous_ops`. We do not need to
-                # remove ops on any other wires (1).
-                for w in op.wires:
-                    self.previous_ops.pop(w)
-                return []
-
-            # If we can't cancel, get all previous ops with wire overlap with `op`, interpret them,
-            # and pop them. They won't cancel with any other operator as `op` blocks them (1).
-            previous_ops_on_wires = list(
-                dict.fromkeys(o for w in op.wires if (o := self.previous_ops.get(w)) is not None)
-            )
-            # pylint: disable=super-with-arguments
-            res = [
-                super(CancelInversesInterpreter, self).interpret_operation(o)
-                for o in previous_ops_on_wires
-            ]
-            for o in previous_ops_on_wires:
-                for w in o.wires:
-                    self.previous_ops.pop(w)
-
-            # Record `op` as last op that acted on its wires.
-            for w in op.wires:
-                self.previous_ops[w] = op
-
-            return res
-
-        def interpret_all_previous_ops(self) -> None:
-            """Interpret all operators in ``previous_ops``. This is done when any previously
-            uninterpreted operators, saved for cancellation, no longer need to be stored."""
-
-            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
-
-            for op in ops_remaining:
-                super().interpret_operation(op)
-
-            self.previous_ops.clear()
-
-        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
-            """Evaluate a jaxpr.
-
-            Args:
-                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
-                consts (list[TensorLike]): the constant variables for the jaxpr
-                *args (tuple[TensorLike]): The arguments for the jaxpr.
-
-            Returns:
-                list[TensorLike]: the results of the execution.
-
-            """
-            # pylint: disable=attribute-defined-outside-init
-            self._env = {}
-            self.setup()
-
-            for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self._env[invar] = arg
-            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self._env[constvar] = const
-
-            for eqn in jaxpr.eqns:
-
-                custom_handler = self._primitive_registrations.get(eqn.primitive, None)
-                if custom_handler:
-                    # Interpret any stored ops so that they are applied before the custom
-                    # primitive is handled
-                    self.interpret_all_previous_ops()
-                    invals = [self.read(invar) for invar in eqn.invars]
-                    outvals = custom_handler(self, *invals, **eqn.params)
-                elif getattr(eqn.primitive, "prim_type", "") == "operator":
-                    outvals = self.interpret_operation_eqn(eqn)
-                elif getattr(eqn.primitive, "prim_type", "") == "measurement":
-                    self.interpret_all_previous_ops()
-                    outvals = self.interpret_measurement_eqn(eqn)
-                else:
-                    invals = [self.read(invar) for invar in eqn.invars]
-                    subfuns, params = eqn.primitive.get_bind_params(eqn.params)
-                    outvals = eqn.primitive.bind(*subfuns, *invals, **params)
-
-                if not eqn.primitive.multiple_results:
-                    outvals = [outvals]
-                for outvar, outval in zip(eqn.outvars, outvals, strict=True):
-                    self._env[outvar] = outval
-
-            # The following is needed because any operations inside self.previous_ops have not yet
-            # been applied. At this point, we **know** that any operations that should be cancelled
-            # have been cancelled, and operations left inside self.previous_ops should be applied
-            self.interpret_all_previous_ops()
-
-            # Read the final result of the Jaxpr from the environment
-            outvals = []
-            for var in jaxpr.outvars:
-                outval = self.read(var)
-                if isinstance(outval, Operator):
-                    outvals.append(super().interpret_operation(outval))
-                else:
-                    outvals.append(outval)
-            self.cleanup()
-            self._env = {}
-            return outvals
-
-    @CancelInversesInterpreter.register_primitive(measure_prim)
-    def _(_, *invals, **params):
-        subfuns, params = measure_prim.get_bind_params(params)
-        return measure_prim.bind(*subfuns, *invals, **params)
-
-    def cancel_inverses_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
-        """Function for applying the ``cancel_inverses`` transform on plxpr."""
-        tkwargs = dict(tkwargs)
-
-        interpreter = CancelInversesInterpreter(*targs, **tkwargs)
-
-        def wrapper(*inner_args):
-            return interpreter.eval(jaxpr, consts, *inner_args)
-
-        return make_jaxpr(wrapper)(*args)
-
-    return CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr
-
-
-CancelInversesInterpreter, cancel_inverses_plxpr_to_plxpr = _get_plxpr_cancel_inverses()
-
-
 def _num_shared_wires(wires1, wires2):
     if any(is_abstract(w) for w in [*wires1, *wires2]):
         # Rely on `id`s to check object equality instead of value equality for abstract wires
@@ -319,11 +122,7 @@ def _try_to_cancel_with_next(current_gate, list_copy):
     return list_copy, cancelled
 
 
-@partial(
-    transform,
-    plxpr_transform=cancel_inverses_plxpr_to_plxpr,
-    pass_name="cancel-inverses",
-)
+@partial(transform, pass_name="cancel-inverses")
 def cancel_inverses(
     tape: QuantumScript, recursive: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
