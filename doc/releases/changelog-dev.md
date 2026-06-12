@@ -573,6 +573,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
+  producing more balanced test groups across parallel CI jobs.
+  [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
+
 * Improve language server support for `qp.capture`.
   [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 
