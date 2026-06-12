@@ -213,6 +213,31 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
+* A new operation :class:`~.QutritDensityMatrix` has been added to initialize density matrix states for the device
+  `qp.devices.DefaultQutritMixed`.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+  ```python
+  import pennylane as qp
+  nr_wires = 1
+  rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
+  rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
+  
+  dev = qp.device("default.qutrit.mixed", wires=1)
+  @qp.qnode(dev)
+  def circuit():
+      qp.QutritDensityMatrix(rho, wires=[0])
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[[0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 1.+0.j]]])
+  
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
@@ -245,6 +270,10 @@
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
 
   ```
+
+* :func:`~pennylane.draw`, :func:`~pennylane.draw_mpl`, and :func:`~.specs` now support
+  ``functools.partial`` wrappers around supported circuit callables.
+  [(#9595)](https://github.com/PennyLaneAI/pennylane/pull/9595)
 
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
@@ -331,6 +360,13 @@
   contain mid-circuit measurements, also skips applying `adjoint` to decomposition rules that
   contain dynamic wire allocations.
   [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
+
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
+  any qudit density matrices with constant qudit dimension.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+* Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -565,6 +601,7 @@
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
+  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -723,8 +760,10 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Gabriel Bottrill,
 Astral Cai,
 Daniel Casota,
+Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
