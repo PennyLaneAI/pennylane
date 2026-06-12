@@ -15,8 +15,14 @@
 import pytest
 from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.capture import _contains_abstract_type
+from pennylane.core.operator.meta import (
+    ArgType,
+    _canonicalize_abstract_type,
+    _canonicalize_wire_leaf,
+    _contains_abstract_type,
+)
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
@@ -24,6 +30,52 @@ from pennylane.wires import AbstractWires, Wires
 jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+
+@pytest.mark.parametrize(
+    "leaf, expected",
+    [
+        (0, AbstractWires(1)),
+        ("a", AbstractWires(1)),
+        (Wires([0, 1, 2]), AbstractWires(3)),
+        ([0, 1], AbstractWires(2)),
+        ((0, 1, 2, 3), AbstractWires(4)),
+        (range(5), AbstractWires(5)),
+    ],
+)
+def test_wire_leaf_maps_to_abstract_wires(leaf, expected):
+    """Direct tests for '_canonicalize_wire_leaf'."""
+
+    assert _canonicalize_wire_leaf(leaf) == expected
+
+
+class TestCanonicalizeAbstractTypeHelper:
+    """Tests '_canonicalize_abstract_type' helper."""
+
+    # =========================================================================
+    # Unit tests when 'is_wires=True'
+    # =========================================================================
+
+    @pytest.mark.parametrize(
+        "val, expected",
+        [
+            (0, AbstractWires(1)),
+            ([0, 1], AbstractWires(2)),
+            (Wires([0, 1, 2]), AbstractWires(3)),
+        ],
+    )
+    def test_concrete_wires_are_promoted(self, val, expected):
+        """Tests that concrete wires are promoted to abstract."""
+        assert _canonicalize_abstract_type(val, kind=ArgType.WIRES) == expected
+
+    def test_abstract_wires_pass_through(self):
+        """Tests that already abstract wires are passed through unchanged."""
+
+        assert _canonicalize_abstract_type(AbstractWires(5), kind=ArgType.WIRES)
+
+    # =========================================================================
+    # Unit tests when 'is_wires=False'
+    # =========================================================================
 
 
 class TestContainsAbstractTypeHelper:
@@ -121,15 +173,29 @@ class TestAbstractInputs:
         relevant_eqns = [e for e in cjaxpr.eqns if e.primitive is operator_p]
         assert len(relevant_eqns) == 0
 
-    def test_some_inputs_are_abstract(self):
-        """Tests that it takes at least one abstract argument to skip the init."""
+    @pytest.mark.parametrize(
+        "concrete_theta, abstract_theta",
+        [
+            (1.0, AbstractArray((), float)),
+            (qp.numpy.ones((2, 3)), AbstractArray((2, 3), float)),
+            ([0, 1], AbstractArray((2,), int)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "concrete_wires, abstract_wires",
+        [(0, AbstractWires(1)), ([0], AbstractWires(1)), ([0, 1], AbstractWires(2))],
+    )
+    def test_canonicalize_all_inputs_when_some_are_abstract(
+        self, concrete_theta, abstract_theta, concrete_wires, abstract_wires
+    ):
+        """Tests that it takes at least one abstract argument to skip the init and canonicalize inputs."""
 
         aa = AbstractArray((1,), int)
-        op = TwoDynOp(phi=aa, theta=1.0, wires=0)
+        op = TwoDynOp(phi=aa, theta=concrete_theta, wires=concrete_wires)
         # __init__ is hit so phi is doubled
         assert op.phi is aa
-        assert op.theta == AbstractArray((), float)
-        assert op.wires == AbstractWires(1)
+        assert op.theta == abstract_theta
+        assert op.wires == abstract_wires
 
     def test_abstract_wires_skips_init(self):
         """Tests that the presence of abstract wires also skips init."""

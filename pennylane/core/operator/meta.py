@@ -18,12 +18,22 @@ See ``explanations.md`` for technical explanations of how this works.
 """
 
 from abc import ABCMeta
+from enum import Enum, auto
 from inspect import Signature, signature
 
+from pennylane import math
 from pennylane.capture import enabled
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
+
+
+class ArgType(Enum):
+    """Enum to keep track of an arguments type."""
+
+    WIRES = auto()
+    DYN = auto()
+    HYBRID = auto()
 
 
 def _stop_autograph(f):
@@ -52,13 +62,18 @@ def _canonicalize_wire_leaf(leaf) -> AbstractWires:
     return AbstractWires(len(list(leaf)))
 
 
-def _canonicalize_abstract_type(val, is_wires: bool = False):
+def _canonicalize_abstract_type(val, kind: ArgType):
     """Check if pytree contains any abstkact types."""
 
-    if is_wires:
-        if isinstance(val, AbstractWires):  # already abstract, return as is
-            return val
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val
+
+    if kind == ArgType.WIRES:
         return _canonicalize_wire_leaf(val)
+
+    if kind == ArgType.DYN:
+        canonical_arr = math.asarray(val)
+        return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
     leaves, structure = flatten(val)
     new_leaves = []
@@ -87,6 +102,16 @@ class OperatorMeta(type):
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
 
+    @classmethod
+    def _get_arg_kind(mcs, name: str) -> ArgType:
+        if name in mcs.wire_argnames:
+            return ArgType.WIRES
+        if name in mcs.dynamic_argnames:
+            return ArgType.DYN
+        if name in mcs.hybrid_argnames:
+            return ArgType.HYBRID
+        raise ValueError(f"Argument '{name}' is not recognized.")
+
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
         bound = cls._sig.bind(*args, **kwargs)
@@ -104,9 +129,8 @@ class OperatorMeta(type):
             # NOTE: Because at least one of the arguments is abstract
             # all of them need to be "promoted" to abstract
             for name in arguments_that_can_be_abstract:
-                is_wires_arg = name in cls.wire_argnames
                 arguments[name] = _canonicalize_abstract_type(
-                    arguments[name], is_wires=is_wires_arg
+                    arguments[name], kind=cls._get_arg_kind(name)
                 )
 
             obj = cls.__new__(cls)
