@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,too-few-public-methods
 
 
 def test_non_parametrized_custom_controlled_op():
@@ -69,7 +69,7 @@ def test_non_parametrized_custom_controlled_op():
 def test_parametric_custom_controlled_op():
     """Tests parametric op that inherits from Controlled2."""
 
-    class CRot2(Controlled2, override_signature=True):  # pylint: disable=too-few-public-methods
+    class CRot2(Controlled2, override_signature=True):
         """A new CRot."""
 
         dynamic_argnames = ("phi", "theta", "omega")
@@ -105,7 +105,7 @@ def test_parametric_custom_controlled_op():
 def test_custom_controlled_op_default_controlled_methods():
     """Tests that custom controlled ops can use the default compute_xxx methods."""
 
-    class CRot2(Controlled2, override_signature=True):  # pylint: disable=too-few-public-methods
+    class CRot2(Controlled2, override_signature=True):
         """A new CRot."""
 
         dynamic_argnames = ("phi", "theta", "omega")
