@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import inspect
 import itertools
 import pickle
 from collections import defaultdict
@@ -26,10 +27,12 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.wires import Wires
 
 from .equal import assert_equal
 
@@ -46,14 +49,18 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
+# pylint: disable=too-many-branches
 def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if op.has_decomposition:
         decomp = op.decomposition()
         try:
-            compute_decomp = type(op).compute_decomposition(
-                *op.data, wires=op.wires, **op.hyperparameters
-            )
+            if isinstance(op, Operator2):
+                compute_decomp = type(op).compute_decomposition(**op.arguments)
+            else:
+                compute_decomp = type(op).compute_decomposition(
+                    *op.data, wires=op.wires, **op.hyperparameters
+                )
         except (qp.exceptions.DecompositionUndefinedError, TypeError):
             # sometimes decomposition is defined but not compute_decomposition
             # Also  sometimes compute_decomposition can have a different signature
@@ -109,11 +116,20 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )()
-        _assert_error_raised(
-            op.compute_decomposition,
-            qp.operation.DecompositionUndefinedError,
-            failure_comment=failure_comment,
-        )(*op.data, wires=op.wires, **op.hyperparameters)
+        # pylint: disable=expression-not-assigned
+        (
+            _assert_error_raised(
+                op.compute_decomposition,
+                qp.operation.DecompositionUndefinedError,
+                failure_comment=failure_comment,
+            )(**op.arguments)
+            if isinstance(op, Operator2)
+            else _assert_error_raised(
+                op.compute_decomposition,
+                qp.operation.DecompositionUndefinedError,
+                failure_comment=failure_comment,
+            )(*op.data, wires=op.wires, **op.hyperparameters)
+        )
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
@@ -336,9 +352,12 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            compute_dg = type(op).compute_diagonalizing_gates(
-                *op.data, wires=op.wires, **op.hyperparameters
-            )
+            if isinstance(op, Operator2):
+                compute_dg = type(op).compute_diagonalizing_gates(**op.arguments)
+            else:
+                compute_dg = type(op).compute_diagonalizing_gates(
+                    *op.data, wires=op.wires, **op.hyperparameters
+                )
         except (qp.operation.DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
             # compute_diagonalizing_gates might also have a different call signature
@@ -359,7 +378,11 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        compute_eg = type(op).compute_eigvals(*op.data, **op.hyperparameters)
+        compute_eg = (
+            type(op).compute_eigvals(**op.arguments)
+            if isinstance(op, Operator2)
+            else type(op).compute_eigvals(*op.data, **op.hyperparameters)
+        )
     except EigvalsUndefinedError:
         compute_eg = eg
         has_eigvals = False
@@ -383,7 +406,11 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = qp.exp(gen, 1j * op.data[0])
+        new_op = (
+            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
+            if isinstance(op, Operator2)
+            else qp.exp(gen, 1j * op.data[0])
+        )
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -401,7 +428,7 @@ def _check_copy(op, skip_deepcopy):
     copied_op = copy.copy(op)
     assert qp.equal(copied_op, op), "copied op must be equal with qp.equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
-    assert copied_op is not op, "copied op must be a separate instance from original operaiton"
+    assert copied_op is not op, "copied op must be a separate instance from original operation"
     if not skip_deepcopy:
         try:
             assert_equal(copy.deepcopy(op), op)
@@ -505,6 +532,15 @@ def _check_bind_new_parameters(op):
         assert qp.math.allclose(d1, d2), failure_comment
 
 
+def _check_bind_new_parameters_op2(op):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    new_dyn_args = {k: v * 0.0 for k, v in op.arguments.items() if k in op.dynamic_argnames}
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args)
+    failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
+    for name, val in new_dyn_args.items():
+        assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
+
+
 def _check_differentiation(op):
     """Checks that the operator can be executed and differentiated correctly."""
 
@@ -550,8 +586,77 @@ def _check_wires(op, skip_wire_mapping):
 
 
 # pylint: disable=too-many-arguments
+def _assert_valid_operator2(
+    op: qp.core.Operator2,
+) -> None:
+    """
+    Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
+
+    Args:
+        op: The operator to validate.
+        skip_deepcopy: If ``True``, the deepcopy test will be skipped.
+        skip_differentiation: If ``True``, the differentiation test will be skipped.
+        skip_new_decomp: If ``True``, the new decomposition test will be skipped.
+        skip_decomp_matrix_check: If ``True``, the decomposition matrix check will be skipped.
+        skip_pickle: If ``True``, the pickle test will be skipped.
+        skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
+        skip_capture: If ``True``, the program capture test will be skipped.
+        skip_pytree: If ``True``, the pytree test will be skipped.
+    """
+
+    # Note: these attributes are in the spec but not the implementation yet.
+    # assert isinstance(op.data, tuple), "op.data must be a tuple"
+    # assert isinstance(op.num_wires, int), "op.num_wires must be a int"
+
+    assert isinstance(op.wires, Wires), "op.wires must be a Wires instance"
+    assert isinstance(op.ndim_params, tuple), "ndim_params must be a tuple"
+    assert isinstance(op.compilable_argnames, tuple), "compilable_argnames must be a tuple"
+    assert isinstance(op.hybrid_argnames, tuple), "hybrid_argnames must be a tuple"
+    assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
+    assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
+    assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
+
+    assert len(op.static_argnames) or len(
+        op.dynamic_argnames
+    ), "at least one of static_argnames and dynamic_argnames must be set"
+    assert len(op.ndim_params) == len(
+        op.dynamic_argnames
+    ), "ndim_params must have the same length as dynamic_argnames"
+    assert len(op.wire_argnames) >= 1, "wire_argnames must have at least one element"
+
+    assert isinstance(
+        op._bound_args, inspect.BoundArguments
+    ), "bound_args must be a BoundArguments instance"
+    assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
+
+    dyn_index = 0
+    wire_index = 0
+    for name, val in op.arguments.items():
+        # make sure that the bound args matches the signature
+        assert name in list(op._sig.parameters)
+
+        # make sure that the bound args are not outside the allowed dimensions
+        if hasattr(val, "shape") and name in op.dynamic_argnames:
+            assert (
+                val.shape == op.ndim_params[dyn_index]
+            ), f"shape of {name} is not equal to dimension in ndim_params"
+            dyn_index += 1
+        elif name in op.dynamic_argnames:
+            assert op.ndim_params[dyn_index] == 0
+
+        # make sure wires have the right sizes
+        if name in op.wire_argnames and op.wire_sizes:
+            assert (op.wire_sizes[wire_index] is None) or (len(val) == op.wire_sizes[wire_index])
+            if name in op.hybrid_argnames:
+                assert op.wire_sizes[wire_index] is None
+            wire_index += 1
+
+    _check_bind_new_parameters_op2(op)
+
+
+# pylint: disable=too-many-arguments
 def assert_valid(
-    op: qp.operation.Operator,
+    op: qp.operation.Operator | qp.core.Operator2,
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -560,8 +665,9 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
+    skip_pytree=False,
 ) -> None:
-    """Runs basic validation checks on an :class:`~.operation.Operator` to make
+    """Runs basic validation checks on an :class:`~.operation.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
 
     Args:
@@ -579,6 +685,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_pytree: If ``True``, the pytree tests will be skipped.
 
     **Examples:**
 
@@ -615,19 +722,32 @@ def assert_valid(
 
     """
 
-    assert isinstance(op.data, tuple), "op.data must be a tuple"
-    assert isinstance(op.parameters, list), "op.parameters must be a list"
-    for d, p in zip(op.data, op.parameters, strict=True):
-        assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
-        assert qp.math.allclose(d, p), "data and parameters must match."
+    if isinstance(op, qp.core.Operator2):
+        # Temporary, as we will be integrating Operator2 with program capture soon
+        skip_capture = True
+        # Temporary, as we will be integrating Operator2 with graph decomps soon
+        skip_new_decomp = True
+        # The pytree leaves of an Operator2 include its wires
+        skip_pytree = True
 
+        _assert_valid_operator2(op)
+    else:
+        assert isinstance(op.data, tuple), "op.data must be a tuple"
+        assert isinstance(op.parameters, list), "op.parameters must be a list"
+
+        for d, p in zip(op.data, op.parameters, strict=True):
+            assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
+            assert qp.math.allclose(d, p), "data and parameters must match."
+
+        _check_bind_new_parameters(op)
+
+    if not skip_pytree:
+        _check_pytree(op)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
-    _check_pytree(op)
     if not skip_pickle:
         _check_pickle(op)
-    _check_bind_new_parameters(op)
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
