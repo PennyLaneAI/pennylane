@@ -63,7 +63,7 @@ def _canonicalize_abstract_type(val, is_wires: bool = False):
     leaves, structure = flatten(val)
     new_leaves = []
     for leaf in leaves:
-        if isinstance(leaf, (AbstractArray, AbstractWires)):
+        if isinstance(leaf, (AbstractArray)):
             new_leaves.append(leaf)
         # Process arrays
         elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
