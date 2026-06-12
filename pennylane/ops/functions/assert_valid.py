@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import inspect
 import itertools
 import pickle
 from collections import defaultdict
@@ -26,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
+from pennylane.wires import Wires
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
@@ -550,6 +552,71 @@ def _check_wires(op, skip_wire_mapping):
 
 
 # pylint: disable=too-many-arguments
+def _assert_valid_operator2(
+    op: qp.core.Operator2, 
+    *,
+    skip_deepcopy=False,
+    skip_differentiation=False,
+    skip_new_decomp=False,
+    skip_decomp_matrix_check=False,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_capture=False,
+    skip_pytree=False,
+) -> None:
+    """
+    Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
+    
+    Args:
+        op: The operator to validate.
+        skip_deepcopy: If ``True``, the deepcopy test will be skipped.
+        skip_differentiation: If ``True``, the differentiation test will be skipped.
+        skip_new_decomp: If ``True``, the new decomposition test will be skipped.
+        skip_decomp_matrix_check: If ``True``, the decomposition matrix check will be skipped.
+        skip_pickle: If ``True``, the pickle test will be skipped.
+        skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
+        skip_capture: If ``True``, the program capture test will be skipped.
+        skip_pytree: If ``True``, the pytree test will be skipped.
+    """
+
+    # Note: these attributes are in the spec but not the implementation yet.
+    # assert isinstance(op.data, tuple), "op.data must be a tuple"
+    # assert isinstance(op.num_wires, int), "op.num_wires must be a int"
+
+    assert isinstance(op.wires, Wires), "op.wires must be a Wires instance"
+    assert isinstance(op.ndim_params, tuple), "ndim_params must be a tuple"
+    assert isinstance(op.compilable_argnames, tuple), "compilable_argnames must be a tuple"
+    assert isinstance(op.hybrid_argnames, tuple), "hybrid_argnames must be a tuple"
+    assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
+    assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
+    assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
+
+    assert len(op.static_argnames) or len(op.dynamic_argnames), "at least one of static_argnames and dynamic_argnames must be set"
+    assert len(op.ndim_params) == len(op.dynamic_argnames), "ndim_params must have the same length as dynamic_argnames"
+    assert len(op.wire_argnames) >= 1, "wire_argnames must have at least one element"
+
+    assert isinstance(op._bound_args, inspect.BoundArguments), "bound_args must be a BoundArguments instance"
+    assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
+
+    dyn_index = 0
+    wire_index = 0
+    for name, val in op._bound_args.arguments.items():
+        # make sure that the bound args matches the signature
+        assert name in list(op._sig.parameters)
+
+        # make sure that the bound args are not outside the allowed dimensions
+        if hasattr(val, "shape") and name in op.dynamic_argnames:
+            assert val.shape == op.ndim_params[dyn_index], f"shape of {name} is not equal to dimension in ndim_params"
+            dyn_index += 1
+
+        # make sure wires have the right sizes
+        if name in op.wire_argnames and op.wire_sizes:
+            assert ((val.shape[0] == op.wire_sizes[wire_index])
+                    or (op.wire_sizes[wire_index] is None and name in op.hybrid_argnames))
+            wire_index += 1
+
+
+# pylint: disable=too-many-arguments
 def assert_valid(
     op: qp.operation.Operator | qp.core.Operator2,
     *,
@@ -627,31 +694,43 @@ def assert_valid(
         # The pytree leaves of an Operator2 include its wires
         skip_pytree = True
 
-    assert isinstance(op.data, tuple), "op.data must be a tuple"
-    assert isinstance(op.parameters, list), "op.parameters must be a list"
+        _assert_valid_operator2(
+            op, 
+            skip_deepcopy=skip_deepcopy, 
+            skip_differentiation=skip_differentiation, 
+            skip_new_decomp=skip_new_decomp, 
+            skip_decomp_matrix_check=skip_decomp_matrix_check, 
+            skip_pickle=skip_pickle,
+            skip_wire_mapping=skip_wire_mapping, 
+            skip_capture=skip_capture, 
+            skip_pytree=skip_pytree
+        )
+    else:
+        assert isinstance(op.data, tuple), "op.data must be a tuple"
+        assert isinstance(op.parameters, list), "op.parameters must be a list"
 
-    for d, p in zip(op.data, op.parameters, strict=True):
-        assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
-        assert qp.math.allclose(d, p), "data and parameters must match."
+        for d, p in zip(op.data, op.parameters, strict=True):
+            assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
+            assert qp.math.allclose(d, p), "data and parameters must match."
 
-    if not skip_pytree:
-        _check_pytree(op)
-    _check_bind_new_parameters(op)
-    if len(op.wires) <= 26:
-        _check_wires(op, skip_wire_mapping=skip_wire_mapping)
-    _check_copy(op, skip_deepcopy=skip_deepcopy)
-    if not skip_pickle:
-        _check_pickle(op)
-    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
-    if not skip_new_decomp:
-        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
-        _check_reconstructor(op)
-    _check_matrix(op)
-    _check_matrix_matches_decomp(op)
-    _check_sparse_matrix(op)
-    _check_eigendecomposition(op)
-    _check_generator(op)
-    if not skip_differentiation:
-        _check_differentiation(op)
-    if not skip_capture:
-        _check_capture(op)
+        if not skip_pytree:
+            _check_pytree(op)
+        _check_bind_new_parameters(op)
+        if len(op.wires) <= 26:
+            _check_wires(op, skip_wire_mapping=skip_wire_mapping)
+        _check_copy(op, skip_deepcopy=skip_deepcopy)
+        if not skip_pickle:
+            _check_pickle(op)
+        _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+        if not skip_new_decomp:
+            _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+            _check_reconstructor(op)
+        _check_matrix(op)
+        _check_matrix_matches_decomp(op)
+        _check_sparse_matrix(op)
+        _check_eigendecomposition(op)
+        _check_generator(op)
+        if not skip_differentiation:
+            _check_differentiation(op)
+        if not skip_capture:
+            _check_capture(op)
