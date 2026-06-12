@@ -228,7 +228,6 @@ class CommutationDAG:
             control_wires = operation.control_wires
         else:
             control_wires = Wires([])
-        control_wires = getattr(operation, "control_wires", Wires([]))
         target_wires = [w for w in operation.wires if w not in control_wires]
 
         new_node = CommutationDAGNode(
