@@ -21,8 +21,9 @@ from abc import ABC
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
+from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -30,6 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
+from pennylane.capture import enabled
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -42,14 +44,20 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE
+from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
+from .meta import ABCOperatorMeta
+
+if TYPE_CHECKING:
+    from pennylane.pauli import PauliSentence
+
+has_jax = find_spec("jax") is not None
 
 
-class Operator2(ABC):
+class Operator2(ABC, metaclass=ABCOperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
@@ -172,7 +180,7 @@ class Operator2(ABC):
     def __init__(self, *args, **kwargs):
         # Union[PauliSentence, None]: Representation of the operator as a
         # pauli sentence, if applicable
-        self._pauli_rep: qp.pauli.PauliSentence | None = None
+        self._pauli_rep: PauliSentence | None = None
 
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
@@ -183,7 +191,7 @@ class Operator2(ABC):
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
-        self.queue()
+        self.tracer = None
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -327,7 +335,7 @@ class Operator2(ABC):
         return False
 
     @property
-    def pauli_rep(self) -> "qp.pauli.PauliSentence | None":
+    def pauli_rep(self) -> "PauliSentence | None":
         """A :class:`~.PauliSentence` representation of the Operator, or ``None``
         if it doesn't have one."""
         return self._pauli_rep
@@ -444,7 +452,7 @@ class Operator2(ABC):
             return []
         if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qp.apply(self) for _ in range(z)]
+                return [apply(self) for _ in range(z)]
             return [copy(self) for _ in range(z)]
         raise PowUndefinedError
 
@@ -769,7 +777,7 @@ class Operator2(ABC):
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
             if self.has_matrix:  # pylint: disable=using-constant-test
-                return qp.math.linalg.eigvals(self.matrix())
+                return math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
     @staticmethod
@@ -1159,7 +1167,9 @@ class Operator2(ABC):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        return cls(**args)
+        # We use type.__call__ instead of instantiating the operator normally so that
+        # the operator isn't queued and the operator primitive isn't bound.
+        return type.__call__(cls, **args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1204,10 +1214,129 @@ class Operator2(ABC):
 
             self._batch_size = first_dims[0]
 
+    def _bind_primitive(self):
+        """Bind the operator plxpr primitive."""
+        if not enabled():
+            return  # pragma: no cover
+
+        pos_args = [self.arguments[d] for d in self.dynamic_argnames]
+
+        hybrid_wire_argnames = []
+        wire_lens = []
+        for name, value in self.wire_args.items():
+            if name in self.hybrid_argnames:
+                hybrid_wire_argnames.append(name)
+            else:
+                pos_args.extend(value)
+                wire_lens.append(len(value))
+
+        # Reorder hybrid args such that hybrid wire args are first
+        hybrid_argnames = hybrid_wire_argnames + [
+            h for h in self.hybrid_argnames if h not in self.wire_argnames
+        ]
+        hybrid_lens, hybrid_trees = [], []
+        for name in hybrid_argnames:
+            # Partial flattening to extract operators used as data so their
+            # equations can be deleted from the jaxpr.
+            op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
+            _delete_op_eqns(filter(_is_op, op_leaves))
+
+            # Full flattening to feed the operator's dynamic data to the primitive.
+            leaves, tree = flatten(self.arguments[name])
+            pos_args.extend(leaves)
+            hybrid_lens.append(len(leaves))
+            hybrid_trees.append(tree)
+
+        static_args = {}
+        for name in self.static_argnames + self.compilable_argnames:
+            # Pytree flattening is a simple way to make static arguments hashable
+            value = self.arguments[name]
+            leaves, tree = flatten(value)
+            static_args[name] = (tuple(leaves), tree)
+
+        res = operator_p.bind(
+            *pos_args,
+            op_cls=type(self),
+            wire_lens=wire_lens,
+            hybrid_lens=hybrid_lens,
+            hybrid_trees=hybrid_trees,
+            **static_args,
+        )
+        # If we bind the primitive outside a tracing context, `res`` will be an operator,
+        # not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res
+
 
 # ------------------------------------------------------------------------------
 # ------------------------------ Helper functions ------------------------------
 # ------------------------------------------------------------------------------
+
+
+if has_jax:
+    # pylint: disable=import-outside-toplevel,ungrouped-imports
+    from pennylane.capture.custom_primitives import QpPrimitive
+
+    operator_p = QpPrimitive("operator")
+    operator_p.prim_type = "operator"
+    AbstractOperator = _get_abstract_operator()
+
+    # pylint: disable=too-many-arguments
+    @operator_p.def_impl
+    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
+        args = {name: unflatten(*value) for name, value in static_args.items()}
+        i = 0
+
+        for name in op_cls.dynamic_argnames:
+            args[name] = all_args[i]
+            i += 1
+
+        hybrid_wire_argnames = []
+        wire_lens_iter = iter(wire_lens)
+        for name in op_cls.wire_argnames:
+            if name in op_cls.hybrid_argnames:
+                hybrid_wire_argnames.append(name)
+            else:
+                len_ = next(wire_lens_iter)
+                # We can safely cast to `int` inside the concrete impl because there
+                # there should not be any abstract values when calling the concrete.
+                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                i += len_
+
+        # Reorder hybrid args such that hybrid wire args are first
+        hybrid_argnames = hybrid_wire_argnames + [
+            name for name in op_cls.hybrid_argnames if name not in op_cls.wire_argnames
+        ]
+        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+            leaves = all_args[i : i + len_]
+            args[name] = unflatten(leaves, tree)
+            i += len_
+
+        return type.__call__(op_cls, **args)
+
+    @operator_p.def_abstract_eval
+    def _op_aval(*_, **__):
+        return AbstractOperator()
+
+else:  # pragma: no cover
+    operator_p = None
+    AbstractOperator = None
+
+
+def _delete_op_eqns(ops: Iterable) -> None:
+    """Delete the jaxpr equations for operators that have been used as data."""
+    for op in ops:
+        if op.tracer is not None:
+            # pylint: disable=protected-access
+            frame = op.tracer._trace.frame
+            assert frame.auto_dce is False  # eqns are stored differently if this is enabled
+
+            # for some reason the frame now wraps equations in lambdas
+            eqn = op.tracer.parent
+            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
+
+            # delete reference to tracer after its equation has been deleted
+            op.tracer = None
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
@@ -1233,12 +1362,12 @@ def _dynamic_property(self: Operator2, name: str) -> Any:
 def _format_label_arg(x, decimals, cache):
     """Format a scalar parameter or retrieve/store a matrix-valued parameter
     from/to cache, formatting its position in the cache as parameter string."""
-    if len(qp.math.shape(x)) == 0:
+    if len(math.shape(x)) == 0:
         # Scalar case
         if decimals is None:
             return ""
         try:
-            return format(qp.math.toarray(x), f".{decimals}f")
+            return format(math.toarray(x), f".{decimals}f")
         except ValueError:  # pragma: no cover
             # If the parameter can't be displayed as a float
             return format(x)
@@ -1249,7 +1378,7 @@ def _format_label_arg(x, decimals, cache):
 
     # Retrieve matrix location in cache, or write the matrix to cache as new entry
     for i, mat in enumerate(mat_cache):
-        if qp.math.shape(x) == qp.math.shape(mat) and qp.math.allclose(x, mat):
+        if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
             return f"M{i}"
     mat_num = len(mat_cache)
     mat_cache.append(x)
@@ -1270,8 +1399,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
-        x = x if mod_val is None else qp.math.real(x) % mod_val
-        return qp.math.round(x, 10)
+        x = x if mod_val is None else math.real(x) % mod_val
+        return math.round(x, 10)
 
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex

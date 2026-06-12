@@ -20,6 +20,7 @@ import copy
 
 import numpy as np
 import pytest
+from operator2_utils import DynOp, FullOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -232,26 +233,6 @@ class TestInitSubclass:
 
                 def __init__(self, wires):
                     super().__init__(wires=wires)
-
-
-class DynOp(Operator2):
-    """A simple operator with one dynamic param and wires."""
-
-    dynamic_argnames = ("phi",)
-
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
-
-
-class FullOp(Operator2):
-    """An operator using all argname groups."""
-
-    dynamic_argnames = ("phi",)
-    static_argnames = ("static",)
-    hybrid_argnames = ("hybrid",)
-
-    def __init__(self, phi, static, hybrid, wires):
-        super().__init__(phi, static, hybrid, wires=wires)
 
 
 class TestOperatorInit:
@@ -812,6 +793,16 @@ class TestPytreeMethods:
         new_op = Op._unflatten(data, metadata)
         assert new_op.arguments == op.arguments
         assert new_op.wires == op.wires
+
+    def test_unflatten_does_not_queue(self):
+        """Test that reconstructing an operator via ``_unflatten`` does not queue it."""
+        op = DynOp(0.5, wires=0)
+        data, metadata = op._flatten()
+
+        with AnnotatedQueue() as q:
+            _ = DynOp._unflatten(data, metadata)
+
+        assert len(q) == 0
 
 
 class TestDynamicProperties:
