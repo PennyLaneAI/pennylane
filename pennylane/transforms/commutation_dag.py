@@ -20,6 +20,7 @@ from collections import OrderedDict
 from functools import partial
 
 import pennylane as qp
+from pennylane.ops.op_math import Controlled
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -223,6 +224,10 @@ class CommutationDAG:
         Args:
             operation (qp.operation): PennyLane quantum operation to add to the DAG.
         """
+        if isinstance(operation, Controlled):
+            control_wires = operation.control_wires
+        else:
+            control_wires = Wires([])
         control_wires = getattr(operation, "control_wires", Wires([]))
         target_wires = [w for w in operation.wires if w not in control_wires]
 
