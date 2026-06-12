@@ -662,31 +662,6 @@ class Wires(Sequence):
         """
         return Wires(set(self.labels) - set(_process(other)))
 
-    def __sub__(self, other):
-        """Return the difference of the current Wires object and either another Wires object or
-        an iterable that can be interpreted like a Wires object e.g., List.
-
-        Args:
-            other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with
-
-        Returns:
-            Wires: A new Wires object representing the difference of the two Wires objects.
-
-        **Example**
-
-        >>> from pennylane.wires import Wires
-        >>> wires1 = Wires([1, 2, 3])
-        >>> wires2 = Wires([2, 3, 4])
-        >>> wires1 - wires2
-        Wires([1])
-        """
-        return self.difference(other)
-
-    def __rsub__(self, other):
-        """Right-hand version of __sub__."""
-        return Wires(set(_process(other)) - set(self.labels))
-
     def symmetric_difference(self, other):
         """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
         object or an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
