@@ -16,6 +16,8 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -30,6 +32,59 @@ def circuit(x, y, z):
     qp.RY(y, wires="a")
     qp.RZ(z, wires=1.234)
     return qp.expval(qp.PauliZ(0))
+
+
+class TestPartial:
+    """Test partial-wrapped callables."""
+
+    def test_qnode_positional_partial(self):
+        """Test drawing a QNode with a positional argument bound by partial."""
+        fixed = partial(circuit, 1.234)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(2.345, 3.456) == expected
+
+    def test_qnode_keyword_partial(self):
+        """Test drawing a QNode with keyword arguments bound by partial."""
+        fixed = partial(circuit, y=2.345, z=3.456)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(1.234) == expected
+
+    def test_nested_qnode_partial(self):
+        """Test drawing a QNode wrapped by nested partials."""
+        fixed = partial(partial(circuit, 1.234), z=3.456)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(2.345) == expected
+
+    def test_qfunc_partial(self):
+        """Test drawing a quantum function wrapped by partial."""
+
+        def qfunc(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+
+        expected = "0: ──RX(1.23)─┤  \n1: ──RY(2.35)─┤  "
+        assert draw(partial(qfunc, x=1.234))(y=2.345) == expected
 
 
 class TestLabelling:

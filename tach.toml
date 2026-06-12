@@ -75,6 +75,26 @@ layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.core.measurements"
+layer = "core"
+depends_on = ["pennylane.capture",  "pennylane.math", "pennylane.wires", "pennylane.exceptions",  "pennylane.operation2", "pennylane.core.operator", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["MeasurementProcess", "StateMeasurement", "SampleMeasurement", "MeasurementTransform"]
+from = ["pennylane.core.measurements"]
+
+[[modules]]
+path = "pennylane.core.shots"
+layer = "core"
+depends_on = ["pennylane.math"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["Shots", "ShotCopies", "ShotsLike"]
+from = ["pennylane.core.shots"]
+
+[[modules]]
 path = "pennylane.math"
 depends_on = ["pennylane._grad", "pennylane.numpy"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -164,7 +184,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.measurements"
 layer = "core"
-depends_on = ["pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.operation2", "pennylane.core.operator", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+depends_on = ["pennylane.core.measurements", "pennylane.core.shots", "pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.operation2", "pennylane.core.operator", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## AUXILIARY module(s)
@@ -342,7 +362,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2"]
 from = ["pennylane.core.operator"]
 
 [[modules]]

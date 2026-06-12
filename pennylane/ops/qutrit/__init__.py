@@ -31,7 +31,7 @@ from .matrix_ops import QutritUnitary, ControlledQutritUnitary
 from .non_parametric_ops import TShift, TClock, TAdd, TSWAP, THadamard
 from .parametric_ops import TRX, TRY, TRZ, validate_subspace
 from .observables import THermitian, GellMann
-from .state_preparation import QutritBasisState
+from .state_preparation import QutritBasisState, QutritDensityMatrix
 
 # TODO: Change `qp.Identity` for qutrit support or add `qp.TIdentity` for qutrits
 __ops__ = {
@@ -47,6 +47,7 @@ __ops__ = {
     "TRY",
     "TRZ",
     "QutritBasisState",
+    "QutritDensityMatrix",
 }
 
 __obs__ = {
