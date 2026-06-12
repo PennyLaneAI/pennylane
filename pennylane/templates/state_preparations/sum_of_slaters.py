@@ -27,7 +27,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.exceptions import DecompositionUndefinedError
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -898,22 +897,6 @@ class SumOfSlatersPrep(Operation):
     def __init__(self, coefficients, wires, indices):
         super().__init__(coefficients, wires)
         self.hyperparameters["indices"] = indices
-
-    @property
-    def has_decomposition(self):
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivate the fallback
-        of ``compute_decomposition`` to the new decomp system that is implemented in
-        ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
-        return False
-
-    @staticmethod
-    def compute_decomposition(*_, **__):  # pylint: disable=arguments-differ
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivate the fallback
-        of ``compute_decomposition`` to the new decomp system that is implemented in
-        ``Operator.compute_decomposition``."""
-        raise DecompositionUndefinedError
 
     @staticmethod
     def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
