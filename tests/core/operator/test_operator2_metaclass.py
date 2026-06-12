@@ -52,6 +52,14 @@ def test_wire_leaf_maps_to_abstract_wires(leaf, expected):
 class TestCanonicalizeAbstractTypeHelper:
     """Tests '_canonicalize_abstract_type' helper."""
 
+    def test_abstract_pass_through(self):
+        """Tests that already abstract inputs are passed through unchanged."""
+
+        aw = AbstractWires(5)
+        assert _canonicalize_abstract_type(aw, kind=ArgType.WIRES) is aw
+        aa = AbstractArray((), float)
+        assert _canonicalize_abstract_type(aa, kind=ArgType.WIRES) is aa
+
     # =========================================================================
     # Unit tests when 'kind=ArgType.WIRES'
     # =========================================================================
@@ -67,11 +75,6 @@ class TestCanonicalizeAbstractTypeHelper:
     def test_concrete_wires_are_promoted(self, val, expected):
         """Tests that concrete wires are promoted to abstract."""
         assert _canonicalize_abstract_type(val, kind=ArgType.WIRES) == expected
-
-    def test_abstract_wires_pass_through(self):
-        """Tests that already abstract wires are passed through unchanged."""
-
-        assert _canonicalize_abstract_type(AbstractWires(5), kind=ArgType.WIRES) == AbstractWires(5)
 
     # =========================================================================
     # Unit tests when 'kind=ArgType.DYN'
