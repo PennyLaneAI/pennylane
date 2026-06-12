@@ -28,11 +28,14 @@ def vibrational_fragments(
     Args:
         modes (int): the number of vibrational modes
         freqs (ndarray): the harmonic frequences
-        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
-        frag_method (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
+        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
+            Taylor expansion
+        frag_method (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``,
+            and ``position``
 
     Returns:
-        List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
+        List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the
+            vibrational Hamiltonian
 
     **Example**
 
@@ -47,7 +50,7 @@ def vibrational_fragments(
     >>>     print(fragment)
     RealspaceSum((RealspaceOperator(4, ('PP',), omega[idx0]), RealspaceOperator(4, ('QQ',), omega[idx0])))
     RealspaceSum((RealspaceOperator(4, ('Q',), phi[1][idx0]), RealspaceOperator(4, ('Q', 'Q'), phi[2][idx0,idx1])))
-    """
+    """  # noqa: E501
 
     if frag_method == "harmonic":
         return [_harmonic_fragment(modes, freqs), _anharmonic_fragment(modes, taylor_coeffs)]

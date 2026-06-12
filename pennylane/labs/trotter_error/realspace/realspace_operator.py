@@ -46,7 +46,8 @@ class RealspaceOperator:
     Args:
         modes (int): the number of vibrational modes
         ops (Sequence[str]): a sequence representation of the position and momentum operators
-        coeffs (``RealspaceCoeffs``): an expression tree which evaluates the entries of the coefficient tensor
+        coeffs (``RealspaceCoeffs``): an expression tree which evaluates the entries of the
+            coefficient tensor
 
     **Example**
 
@@ -66,7 +67,6 @@ class RealspaceOperator:
     def __init__(
         self, modes: int, ops: Sequence[str], coeffs: RealspaceCoeffs | np.ndarray | float
     ) -> RealspaceOperator:
-
         if coeffs.shape != (modes,) * len(ops):
             raise ValueError(
                 f"coeffs has shape {coeffs.shape}, but shape {(modes, ) * len(ops)} was expected."
@@ -82,12 +82,15 @@ class RealspaceOperator:
         """Return a matrix representation of the operator.
 
         Args:
-            gridpoints (int): the number of gridpoints used to discretize the position or momentum operators
-            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            gridpoints (int): the number of gridpoints used to discretize the position or momentum
+                operators
+            basis (str): the basis of the matrix, available options are ``realspace`` and
+                ``harmonic``
             sparse (bool): if ``True`` returns a sparse matrix, otherwise returns a dense matrix
 
         Returns:
-            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of
+            the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
@@ -133,7 +136,8 @@ class RealspaceOperator:
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+                f"Cannot add RealspaceOperator on {self.modes} modes with RealspaceOperator "
+                f"on {other.modes} modes."
             )
 
         return RealspaceOperator(self.modes, self.ops, self.coeffs + other.coeffs)
@@ -150,7 +154,8 @@ class RealspaceOperator:
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+                f"Cannot subtract RealspaceOperator on {self.modes} modes with RealspaceOperator "
+                f"on {other.modes} modes."
             )
 
         return RealspaceOperator(self.modes, self.ops, self.coeffs - other.coeffs)
@@ -173,7 +178,8 @@ class RealspaceOperator:
     def __matmul__(self, other: RealspaceOperator) -> RealspaceOperator:
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator on {other.modes} modes."
+                f"Cannot multiply RealspaceOperator on {self.modes} modes with RealspaceOperator "
+                f"on {other.modes} modes."
             )
 
         return RealspaceOperator(self.modes, self.ops + other.ops, self.coeffs @ other.coeffs)
@@ -192,7 +198,8 @@ class RealspaceOperator:
         """Always returns true when the operator is zero, but with false positives
 
         Returns:
-            bool: if False, the operator is guarnateed to be non-zero, if True the operator is likely non-zero, but with some edge cases
+            bool: if False, the operator is guarnateed to be non-zero, if True the operator is
+                likely non-zero, but with some edge cases
         """
         return self.coeffs.is_zero
 
@@ -213,10 +220,12 @@ class RealspaceOperator:
         """Return the non-zero coefficients in a dictionary.
 
         Args:
-            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater than
+                ``threshold``
 
         Returns:
-            Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are the coefficients
+            Dict[Tuple[int], float]: a dictionary whose keys are the nonzero indices, and values are
+                the coefficients
 
         **Example**
 
@@ -241,11 +250,13 @@ class RealspaceSum(Fragment):
 
     .. math:: \sum_i \frac{\omega_i}{2} P_i^2 + \sum_i \frac{\omega_i}{2} Q_i^2 + \sum_i \phi^{(1)}_i Q_i + \sum_{i,j} \phi^{(2)}_{ij} Q_i Q_j + \dots,
 
-    is a sum of terms where each term can be expressed by a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
+    is a sum of terms where each term can be expressed by
+    a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
 
     Args:
         modes (int): the number of vibrational modes
-        ops (Sequence[RealspaceOperator]): a sequence containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
+        ops (Sequence[RealspaceOperator]): a sequence
+            containing :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects
 
     **Example**
 
@@ -262,14 +273,15 @@ class RealspaceSum(Fragment):
     >>> rs_op2 = RealspaceOperator(n_modes, ("QQ",), coeffs)
     >>> RealspaceSum(n_modes, [rs_op1, rs_op2])
     RealspaceSum((RealspaceOperator(2, ('PP',), omega[idx0]), RealspaceOperator(2, ('QQ',), omega[idx0])))
-    """
+    """  # noqa: E501
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
         # pylint: disable=protected-access
         for op in ops:
             if op.modes != modes:
                 raise ValueError(
-                    f"RealspaceSum on {modes} modes can only contain RealspaceOperators on {modes}. Found a RealspaceOperator on {op.modes} modes."
+                    f"RealspaceSum on {modes} modes can only contain RealspaceOperators "
+                    f"on {modes}. Found a RealspaceOperator on {op.modes} modes."
                 )
 
         for op in ops:
@@ -312,7 +324,8 @@ class RealspaceSum(Fragment):
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot add RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes."
+                f"Cannot add RealspaceSum on {self.modes} modes with RealspaceSum "
+                f"on {other.modes} modes."
             )
 
         l_ops = {term.ops for term in self.ops}
@@ -328,7 +341,8 @@ class RealspaceSum(Fragment):
     def __sub__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot subtract RealspaceSum on {self.modes} modes with RealspaceSum on {other.modes} modes."
+                f"Cannot subtract RealspaceSum on {self.modes} modes with RealspaceSum "
+                f"on {other.modes} modes."
             )
 
         l_ops = {term.ops for term in self.ops}
@@ -374,7 +388,8 @@ class RealspaceSum(Fragment):
         """Returns a :class:`~.pennylane.labs.trotter_error.RealspaceOperator` representing the zero operator
 
         Args:
-            modes (int): the number of vibrational modes (needed for consistency with arithmetic operations)
+            modes (int): the number of vibrational modes (needed for consistency with
+                arithmetic operations)
 
         Returns:
             RealspaceOperator: a representation of the zero operator
@@ -388,12 +403,15 @@ class RealspaceSum(Fragment):
         """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
-            gridpoints (int): the number of gridpoints used to discretize the position/momentum operators
-            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            gridpoints (int): the number of gridpoints used to discretize the position/momentum
+                operators
+            basis (str): the basis of the matrix, available options are ``realspace``
+                and ``harmonic``
             sparse (bool): if ``True`` returns a sparse matrix, otherwise a dense matrix
 
         Returns:
-            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of
+                the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
@@ -428,7 +446,8 @@ class RealspaceSum(Fragment):
             params (Dict): The dictionary of parameters. The supported parameters are
 
                 * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
-                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults to ``False``.
+                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults
+                   to ``False``.
 
         Returns:
             float: an upper bound on the spectral norm of the operator
@@ -469,7 +488,8 @@ class RealspaceSum(Fragment):
         return norm
 
     def apply(self, state: HOState) -> HOState:
-        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an
+        input :class:`~.pennylane.labs.trotter_error.HOState` object."""
         if not isinstance(state, HOState):
             raise TypeError
 
@@ -482,14 +502,17 @@ class RealspaceSum(Fragment):
         )
 
     def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
-        """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
+        """Return a dictionary containing the non-zero coefficients of
+        the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
-            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater
+                than ``threshold``
 
         Returns:
             Dict: a dictionary whose keys correspond to the RealspaceOperators in the sum, and whose
-                values are dictionaries obtained by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
+                values are dictionaries obtained
+                by :func:`~.pennylane.labs.trotter_error.RealspaceOperator.get_coefficients`
 
         **Example**
 
