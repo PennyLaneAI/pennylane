@@ -99,6 +99,13 @@ class TestCanonicalizeAbstractTypeHelper:
         [
             (0, AbstractArray((), int)),
             ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
+            (
+                {"a": [0, 1], "b": 1.5},
+                {
+                    "a": [AbstractArray((), int), AbstractArray((), int)],
+                    "b": AbstractArray((), float),
+                },
+            ),
         ],
     )
     def test_concrete_inputs_are_promoted_when_kind_is_hybrid(self, val, expected):
