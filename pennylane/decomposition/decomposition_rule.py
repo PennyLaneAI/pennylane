@@ -107,7 +107,7 @@ def register_condition(
         @qp.register_resources({qp.RZ: 2, qp.RY: 1, qp.GlobalPhase: 1})
         def zyz_decomposition(U, wires, **__):
             # Assumes that U is a 2x2 unitary matrix
-            phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+            phi, theta, omega, phase = zyz_rotation_angles(U)
             qp.RZ(phi, wires=wires[0])
             qp.RY(theta, wires=wires[0])
             qp.RZ(omega, wires=wires[0])
