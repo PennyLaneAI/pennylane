@@ -628,6 +628,8 @@ def _assert_valid_operator2(
             wire_index += 1
 
     _check_bind_new_parameters_op2(op)
+    if len(op.wires) <= 26:
+        _check_wires(op, skip_wire_mapping=skip_wire_mapping)
 
 # pylint: disable=too-many-arguments
 def assert_valid(
@@ -702,8 +704,6 @@ def assert_valid(
         skip_capture = True
         # Temporary, as we will be integrating Operator2 with graph decomps soon
         skip_new_decomp = True
-        # Temporary, as there is a bug in map_wires for Operator2
-        skip_wire_mapping = True
         # The pytree leaves of an Operator2 include its wires
         skip_pytree = True
 
