@@ -89,7 +89,7 @@ docs = [
     "pyzx",
     "docutils==0.20",
     "sphinx==9.0",
-    "sphinx-automodapi==0.20",
+    "sphinx-automodapi==0.21",
     "sphinx-copybutton",
     "sphinxcontrib-bibtex==2.6.3",
     "sphinxcontrib-applehelp==2.0.0",
