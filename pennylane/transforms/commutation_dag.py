@@ -20,6 +20,7 @@ from collections import OrderedDict
 from functools import partial
 
 import pennylane as qp
+from pennylane.ops.op_math import Controlled
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -223,13 +224,17 @@ class CommutationDAG:
         Args:
             operation (qp.operation): PennyLane quantum operation to add to the DAG.
         """
-        target_wires = [w for w in operation.wires if w not in operation.control_wires]
+        if isinstance(operation, Controlled):
+            control_wires = operation.control_wires
+        else:
+            control_wires = Wires([])
+        target_wires = [w for w in operation.wires if w not in control_wires]
 
         new_node = CommutationDAGNode(
             op=operation,
             wires=operation.wires.tolist(),
             target_wires=target_wires,
-            control_wires=operation.control_wires.tolist(),
+            control_wires=control_wires.tolist(),
             successors=[],
             predecessors=[],
         )
