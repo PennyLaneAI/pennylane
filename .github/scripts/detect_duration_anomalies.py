@@ -29,6 +29,9 @@ def find_anomalies(old_data, new_data):
     inflated = []
     for test, new_dur in new_data.items():
         old_dur = old_data.get(test, 0)
+        if old_dur <= 0:
+            # Test absent from the baseline (e.g. newly added) — no ratio to compute.
+            continue
         ratio = new_dur / old_dur
         if new_dur > MIN_DURATION and ratio > RATIO_THRESHOLD:
             inflated.append((test, old_dur, new_dur, ratio))
@@ -44,7 +47,7 @@ def build_report(anomalies_by_file):
             continue
         lines.append(f"### {fname}")
         lines.append(
-            f"**{len(inflated)} tests with >{RATIO_THRESHOLD}x duration increase "
+            f"**{len(inflated)} test(s)** with a >{RATIO_THRESHOLD}x duration increase:"
         )
         lines.append("| Test | Old | New | Ratio |")
         lines.append("|------|-----|-----|-------|")
