@@ -25,7 +25,6 @@ import pennylane as qp
 from pennylane import math, ops
 from pennylane.core.operator import Operator
 from pennylane.ops import Conditional, MidMeasure
-from pennylane.wires import Wires
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
@@ -792,7 +791,7 @@ def apply_multicontrolledx(
     composing transpositions, rolling of control axes and the CNOT logic above."""
     if len(op.wires) < 9:
         return _apply_operation_default(op, state, is_state_batched, debugger)
-    ctrl_wires = [w + is_state_batched for w in getattr(op, "control_wires", Wires([]))]
+    ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
     roll_axes = [w for val, w in zip(op.control_values, ctrl_wires, strict=True) if val is False]
     for ax in roll_axes:
