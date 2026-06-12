@@ -119,6 +119,11 @@ def _check_decomposition(op, skip_wire_mapping):
             op.compute_decomposition,
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
+        )(**op.arguments) if isinstance(op, Operator2) \
+        else _assert_error_raised(
+            op.compute_decomposition,
+            qp.operation.DecompositionUndefinedError,
+            failure_comment=failure_comment,
         )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
@@ -342,9 +347,12 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            compute_dg = type(op).compute_diagonalizing_gates(
-                *op.data, wires=op.wires, **op.hyperparameters
-            )
+            if isinstance(op, Operator2):
+                compute_dg = type(op).compute_diagonalizing_gates(**op.arguments)
+            else:
+                compute_dg = type(op).compute_diagonalizing_gates(
+                    *op.data, wires=op.wires, **op.hyperparameters
+                )
         except (qp.operation.DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
             # compute_diagonalizing_gates might also have a different call signature
@@ -567,15 +575,6 @@ def _check_wires(op, skip_wire_mapping):
 # pylint: disable=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2, 
-    *,
-    skip_deepcopy=False,
-    skip_differentiation=False,
-    skip_new_decomp=False,
-    skip_decomp_matrix_check=False,
-    skip_pickle=False,
-    skip_wire_mapping=False,
-    skip_capture=False,
-    skip_pytree=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -631,27 +630,7 @@ def _assert_valid_operator2(
                 assert op.wire_sizes[wire_index] is None
             wire_index += 1
 
-    if not skip_pytree:
-        _check_pytree(op)
     _check_bind_new_parameters_op2(op)
-    if len(op.wires) <= 26:
-        _check_wires(op, skip_wire_mapping=skip_wire_mapping)
-    _check_copy(op, skip_deepcopy=skip_deepcopy)
-    if not skip_pickle:
-        _check_pickle(op)
-    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
-    if not skip_new_decomp:
-        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
-        _check_reconstructor(op)
-    _check_matrix(op)
-    _check_matrix_matches_decomp(op)
-    _check_sparse_matrix(op)
-    _check_eigendecomposition(op)
-    _check_generator(op)
-    if not skip_differentiation:
-        _check_differentiation(op)
-    if not skip_capture:
-        _check_capture(op)
 
 # pylint: disable=too-many-arguments
 def assert_valid(
@@ -729,17 +708,7 @@ def assert_valid(
         # The pytree leaves of an Operator2 include its wires
         skip_pytree = True
 
-        _assert_valid_operator2(
-            op, 
-            skip_deepcopy=skip_deepcopy, 
-            skip_differentiation=skip_differentiation, 
-            skip_new_decomp=skip_new_decomp, 
-            skip_decomp_matrix_check=skip_decomp_matrix_check, 
-            skip_pickle=skip_pickle,
-            skip_wire_mapping=skip_wire_mapping, 
-            skip_capture=skip_capture, 
-            skip_pytree=skip_pytree
-        )
+        _assert_valid_operator2(op)
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
         assert isinstance(op.parameters, list), "op.parameters must be a list"
@@ -748,24 +717,25 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        if not skip_pytree:
-            _check_pytree(op)
         _check_bind_new_parameters(op)
-        if len(op.wires) <= 26:
-            _check_wires(op, skip_wire_mapping=skip_wire_mapping)
-        _check_copy(op, skip_deepcopy=skip_deepcopy)
-        if not skip_pickle:
-            _check_pickle(op)
-        _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
-        if not skip_new_decomp:
-            _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
-            _check_reconstructor(op)
-        _check_matrix(op)
-        _check_matrix_matches_decomp(op)
-        _check_sparse_matrix(op)
-        _check_eigendecomposition(op)
-        _check_generator(op)
-        if not skip_differentiation:
-            _check_differentiation(op)
-        if not skip_capture:
-            _check_capture(op)
+
+    if not skip_pytree:
+        _check_pytree(op)
+    if len(op.wires) <= 26:
+        _check_wires(op, skip_wire_mapping=skip_wire_mapping)
+    _check_copy(op, skip_deepcopy=skip_deepcopy)
+    if not skip_pickle:
+        _check_pickle(op)
+    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+    if not skip_new_decomp:
+        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+        _check_reconstructor(op)
+    _check_matrix(op)
+    _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
+    _check_eigendecomposition(op)
+    _check_generator(op)
+    if not skip_differentiation:
+        _check_differentiation(op)
+    if not skip_capture:
+        _check_capture(op)
