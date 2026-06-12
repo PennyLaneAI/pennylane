@@ -161,7 +161,7 @@ class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
         super().__init__(2 * phi, wires)
 
 
-class TestConcreteInputs:
+class TestOperatorConcreteInputs:
     """Tests that the child constructor is run and the primitive is bound if inputs are concrete."""
 
     def test_child_constructor_runs_when_concrete(self):
@@ -180,7 +180,7 @@ class TestConcreteInputs:
         assert len(relevant_eqns) == 1
 
 
-class TestAbstractInputs:
+class TestOperatorAbstractInputs:
     """Tests that the metaclass canonicalizes abstract operators."""
 
     def test_child_init_is_skipped(self):

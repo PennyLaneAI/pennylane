@@ -72,6 +72,8 @@ def _canonicalize_abstract_type(val, kind: ArgType):
         return _canonicalize_wire_leaf(val)
 
     if kind == ArgType.DYN:
+        # NOTE: Convert to array so we can extra shape and dtype
+        # e.g., [0, 1] -> AbstractArray((2,), int)
         canonical_arr = math.asarray(val)
         return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
