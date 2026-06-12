@@ -71,7 +71,7 @@ class TestCanonicalizeAbstractTypeHelper:
     def test_abstract_wires_pass_through(self):
         """Tests that already abstract wires are passed through unchanged."""
 
-        assert _canonicalize_abstract_type(AbstractWires(5), kind=ArgType.WIRES)
+        assert _canonicalize_abstract_type(AbstractWires(5), kind=ArgType.WIRES) == AbstractWires(5)
 
     # =========================================================================
     # Unit tests when 'kind=ArgType.DYN'
