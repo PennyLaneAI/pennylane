@@ -53,7 +53,7 @@ class TestCanonicalizeAbstractTypeHelper:
     """Tests '_canonicalize_abstract_type' helper."""
 
     # =========================================================================
-    # Unit tests when 'is_wires=True'
+    # Unit tests when 'kind=ArgType.WIRES'
     # =========================================================================
 
     @pytest.mark.parametrize(
@@ -74,7 +74,11 @@ class TestCanonicalizeAbstractTypeHelper:
         assert _canonicalize_abstract_type(AbstractWires(5), kind=ArgType.WIRES)
 
     # =========================================================================
-    # Unit tests when 'is_wires=False'
+    # Unit tests when 'kind=ArgType.DYN'
+    # =========================================================================
+
+    # =========================================================================
+    # Unit tests when 'kind=ArgType.HYBRID'
     # =========================================================================
 
 
