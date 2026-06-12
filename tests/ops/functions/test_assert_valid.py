@@ -19,10 +19,10 @@ import string
 from pickle import PicklingError
 
 import numpy as np
-import scipy.sparse
 
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
+import scipy.sparse
 
 import pennylane as qp
 from pennylane.core import Operator2
@@ -641,7 +641,7 @@ class TestOperator2AssertValid:
         class LocalOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
-            
+
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
@@ -663,9 +663,7 @@ class TestOperator2AssertValid:
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)
-        with pytest.raises(
-            AssertionError, match=r"bind_new_parameters must be able to update"
-        ):
+        with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
             assert_valid(op, skip_pickle=True, skip_differentiation=True)
 
 

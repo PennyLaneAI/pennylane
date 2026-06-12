@@ -27,14 +27,14 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.wires import Wires
+from pennylane.core import Operator2
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.wires import Wires
 
 from .equal import assert_equal
-from ...core import Operator2, Operator
 
 
 def _assert_error_raised(func, error, failure_comment):
@@ -49,6 +49,7 @@ def _assert_error_raised(func, error, failure_comment):
     return inner_func
 
 
+# pylint: disable=too-many-branches
 def _check_decomposition(op, skip_wire_mapping):
     """Checks involving the decomposition."""
     if op.has_decomposition:
@@ -115,16 +116,20 @@ def _check_decomposition(op, skip_wire_mapping):
             qp.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
         )()
-        _assert_error_raised(
-            op.compute_decomposition,
-            qp.operation.DecompositionUndefinedError,
-            failure_comment=failure_comment,
-        )(**op.arguments) if isinstance(op, Operator2) \
-        else _assert_error_raised(
-            op.compute_decomposition,
-            qp.operation.DecompositionUndefinedError,
-            failure_comment=failure_comment,
-        )(*op.data, wires=op.wires, **op.hyperparameters)
+        # pylint: disable=expression-not-assigned
+        (
+            _assert_error_raised(
+                op.compute_decomposition,
+                qp.operation.DecompositionUndefinedError,
+                failure_comment=failure_comment,
+            )(**op.arguments)
+            if isinstance(op, Operator2)
+            else _assert_error_raised(
+                op.compute_decomposition,
+                qp.operation.DecompositionUndefinedError,
+                failure_comment=failure_comment,
+            )(*op.data, wires=op.wires, **op.hyperparameters)
+        )
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
@@ -373,7 +378,11 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        compute_eg = type(op).compute_eigvals(**op.arguments) if isinstance(op, Operator2) else type(op).compute_eigvals(*op.data, **op.hyperparameters)
+        compute_eg = (
+            type(op).compute_eigvals(**op.arguments)
+            if isinstance(op, Operator2)
+            else type(op).compute_eigvals(*op.data, **op.hyperparameters)
+        )
     except EigvalsUndefinedError:
         compute_eg = eg
         has_eigvals = False
@@ -397,7 +406,11 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = qp.exp(gen, 1j * list(op.dynamic_args.values())[0]) if isinstance(op, Operator2) else qp.exp(gen, 1j * op.data[0])
+        new_op = (
+            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
+            if isinstance(op, Operator2)
+            else qp.exp(gen, 1j * op.data[0])
+        )
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -574,11 +587,11 @@ def _check_wires(op, skip_wire_mapping):
 
 # pylint: disable=too-many-arguments
 def _assert_valid_operator2(
-    op: qp.core.Operator2, 
+    op: qp.core.Operator2,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
-    
+
     Args:
         op: The operator to validate.
         skip_deepcopy: If ``True``, the deepcopy test will be skipped.
@@ -603,11 +616,17 @@ def _assert_valid_operator2(
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
 
-    assert len(op.static_argnames) or len(op.dynamic_argnames), "at least one of static_argnames and dynamic_argnames must be set"
-    assert len(op.ndim_params) == len(op.dynamic_argnames), "ndim_params must have the same length as dynamic_argnames"
+    assert len(op.static_argnames) or len(
+        op.dynamic_argnames
+    ), "at least one of static_argnames and dynamic_argnames must be set"
+    assert len(op.ndim_params) == len(
+        op.dynamic_argnames
+    ), "ndim_params must have the same length as dynamic_argnames"
     assert len(op.wire_argnames) >= 1, "wire_argnames must have at least one element"
 
-    assert isinstance(op._bound_args, inspect.BoundArguments), "bound_args must be a BoundArguments instance"
+    assert isinstance(
+        op._bound_args, inspect.BoundArguments
+    ), "bound_args must be a BoundArguments instance"
     assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
 
     dyn_index = 0
@@ -618,7 +637,9 @@ def _assert_valid_operator2(
 
         # make sure that the bound args are not outside the allowed dimensions
         if hasattr(val, "shape") and name in op.dynamic_argnames:
-            assert val.shape == op.ndim_params[dyn_index], f"shape of {name} is not equal to dimension in ndim_params"
+            assert (
+                val.shape == op.ndim_params[dyn_index]
+            ), f"shape of {name} is not equal to dimension in ndim_params"
             dyn_index += 1
         elif name in op.dynamic_argnames:
             assert op.ndim_params[dyn_index] == 0
@@ -631,6 +652,7 @@ def _assert_valid_operator2(
             wire_index += 1
 
     _check_bind_new_parameters_op2(op)
+
 
 # pylint: disable=too-many-arguments
 def assert_valid(
