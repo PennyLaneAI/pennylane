@@ -608,11 +608,14 @@ def _assert_valid_operator2(
         if hasattr(val, "shape") and name in op.dynamic_argnames:
             assert val.shape == op.ndim_params[dyn_index], f"shape of {name} is not equal to dimension in ndim_params"
             dyn_index += 1
+        elif name in op.dynamic_argnames:
+            assert op.ndim_params[dyn_index] == 0
 
         # make sure wires have the right sizes
         if name in op.wire_argnames and op.wire_sizes:
-            assert ((val.shape[0] == op.wire_sizes[wire_index])
-                    or (op.wire_sizes[wire_index] is None and name in op.hybrid_argnames))
+            assert (op.wire_sizes[wire_index] is None) or (len(val) == op.wire_sizes[wire_index])
+            if name in op.hybrid_argnames:
+                assert op.wire_sizes[wire_index] is None
             wire_index += 1
 
 
