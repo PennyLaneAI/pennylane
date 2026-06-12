@@ -23,7 +23,7 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
-from functools import partial
+from functools import partial, wraps
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -37,6 +37,29 @@ if TYPE_CHECKING:
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
+
+
+def _unwrap_partial(fn):
+    """Return the base callable and arguments bound by nested ``functools.partial`` wrappers."""
+    args = ()
+    kwargs = {}
+    while isinstance(fn, partial):
+        args = fn.args + args
+        kwargs = {**(fn.keywords or {}), **kwargs}
+        fn = fn.func
+    return fn, args, kwargs
+
+
+def _apply_partial_args(fn, args, kwargs):
+    """Return a callable that prepends partial-bound arguments to call-time arguments."""
+    if not args and not kwargs:
+        return fn
+
+    @wraps(fn)
+    def wrapper(*call_args, **call_kwargs):
+        return fn(*args, *call_args, **{**kwargs, **call_kwargs})
+
+    return wrapper
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -229,7 +252,10 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         level_to_markers[lvl].append(marker)
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
+    return_single_level = isinstance(level, (int, str)) and level not in (
+        "all",
+        "all-mlir",
+    )
     level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
     level_to_name: dict[int, str] = {}  # This will be a map of level to its name
 
@@ -343,6 +369,7 @@ def specs(
 
     Args:
         qnode (:class:`~pennylane.QNode` | :class:`~catalyst.jit.QJIT`): the QNode to calculate the specifications for.
+            ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
         level (str | int | slice | iter[int | str] | None): An indication of which transforms, expansions, and passes to apply before
@@ -828,24 +855,32 @@ def specs(
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
 
-    if isinstance(qnode, qp.QNode):
-        return partial(_specs_qnode, qnode, level, compute_depth)
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
 
-    try:
-        from ..qnn.torch import TorchLayer
+    specs_fn = _specs_qnode if isinstance(qnode, qp.QNode) else None
 
-        if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-            return partial(_specs_qnode, qnode, level, compute_depth)
-    except ImportError:  # pragma: no cover
-        pass
+    if specs_fn is None:
+        try:
+            from ..qnn.torch import TorchLayer
 
-    try:  # pragma: no cover
-        # This is tested by integration tests within the Catalyst frontend
-        import catalyst
+            if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
+                specs_fn = _specs_qnode
+        except ImportError:  # pragma: no cover
+            pass
 
-        if isinstance(qnode, catalyst.jit.QJIT):
-            return partial(_specs_qjit, qnode, level, compute_depth)
-    except ImportError:  # pragma: no cover
-        pass
+    if specs_fn is None:
+        try:  # pragma: no cover
+            # This is tested by integration tests within the Catalyst frontend
+            import catalyst
+
+            if isinstance(qnode, catalyst.jit.QJIT):
+                specs_fn = _specs_qjit
+        except ImportError:  # pragma: no cover
+            pass
+
+    if specs_fn is not None:
+        return _apply_partial_args(
+            partial(specs_fn, qnode, level, compute_depth), partial_args, partial_kwargs
+        )
 
     raise ValueError("qp.specs can only be applied to a QNode or qjit'd QNode")
