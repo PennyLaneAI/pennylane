@@ -261,12 +261,14 @@ class TestBadCopyComparison:
         """Test an operator that cannot be compared with standard qp.equal."""
 
         class BadComparison(Operator):
-            def __init__(self, wires, val):
-                self.hyperparameters["val"] = val
+            def __init__(self, wires):
                 super().__init__(wires)
 
-        with pytest.raises(ValueError, match=r"The truth value of an array with more than one"):
-            assert_valid(BadComparison(0, val=np.eye(2)))
+            def __copy__(self):
+                return self
+
+        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
+            assert_valid(BadComparison(0), skip_pickle=True)
 
 
 def test_mismatched_mat_decomp():

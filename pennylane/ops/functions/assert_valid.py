@@ -415,7 +415,7 @@ def _check_copy(op, skip_deepcopy):
     copied_op = copy.copy(op)
     assert qp.equal(copied_op, op), "copied op must be equal with qp.equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
-    assert copied_op is not op, "copied op must be a separate instance from original operaiton"
+    assert copied_op is not op, "copied op must be a separate instance from original operation"
     if not skip_deepcopy:
         try:
             assert_equal(copy.deepcopy(op), op)
