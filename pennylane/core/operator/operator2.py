@@ -1217,7 +1217,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
         if not enabled():
-            return
+            return  # pragma: no cover
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
@@ -1318,7 +1318,7 @@ if has_jax:
     def _op_aval(*_, **__):
         return AbstractOperator()
 
-else:
+else:  # pragma: no cover
     operator_p = None
     AbstractOperator = None
 
