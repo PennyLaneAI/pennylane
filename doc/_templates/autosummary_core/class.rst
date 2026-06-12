@@ -4,9 +4,9 @@
 
 {% if module.split(".")[1:] | length >= 1 %}
 	{% set mod = module.split(".")[1:] | join(".") %}
-	{% set mod = "qp." + mod %}
+	{% set mod = "qml." + mod %}
 {% else %}
-	{% set mod = "qp" %}
+	{% set mod = "qml" %}
 {% endif %}
 
 {{ mod }}.{{ objname }}
@@ -46,7 +46,7 @@
    {% endblock %}
 
    {% for item in attributes %}
-   .. autoattribute:: {{ item }}
+   .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
@@ -80,7 +80,7 @@
    {% endblock %}
 
    {% for item in methods %}
-   .. automethod:: {{ item }}
+   .. automethod:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html

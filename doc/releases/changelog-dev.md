@@ -573,6 +573,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Upgrade Sphinx to version 9.0.
+  [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
+  
 * The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
   producing more balanced test groups across parallel CI jobs.
   [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
