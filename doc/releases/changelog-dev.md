@@ -213,7 +213,36 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
+* A new operation :class:`~.QutritDensityMatrix` has been added to initialize density matrix states for the device
+  `qp.devices.DefaultQutritMixed`.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+  ```python
+  import pennylane as qp
+  nr_wires = 1
+  rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
+  rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
+  
+  dev = qp.device("default.qutrit.mixed", wires=1)
+  @qp.qnode(dev)
+  def circuit():
+      qp.QutritDensityMatrix(rho, wires=[0])
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[[0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 1.+0.j]]])
+  
+  ```
+
 <h3>Improvements 🛠</h3>
+
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
+  particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
   `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
@@ -327,6 +356,13 @@
   contain mid-circuit measurements, also skips applying `adjoint` to decomposition rules that
   contain dynamic wire allocations.
   [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
+
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
+  any qudit density matrices with constant qudit dimension.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+* Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -509,6 +545,9 @@
   Instead, `Operator.queue` can be overwritten if needed.
   [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+  [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -558,6 +597,7 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
 
 * Adds a new `pennylane/core` module.
@@ -717,6 +757,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Gabriel Bottrill,
 Astral Cai,
 Daniel Casota,
 Yushao Chen,
