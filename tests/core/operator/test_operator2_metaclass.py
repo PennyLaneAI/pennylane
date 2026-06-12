@@ -249,3 +249,24 @@ class TestOperatorAbstractInputs:
         cjaxpr = jax.make_jaxpr(f)()
         relevant_eqns = [e for e in cjaxpr.eqns if e.primitive is operator_p]
         assert len(relevant_eqns) == 0
+
+    def test_mixed_arg_op_correctly_abstractifies_arguments(self):
+        """Tests that different types of arguments canonicalize differently."""
+
+        class MixedArgOp(Operator2):
+            """Operator with static, dynamic and hybrid argnames."""
+
+            static_argnames = ("static_arg",)
+            dynamic_argnames = ("dynamic_arg",)
+            hybrid_argnames = ("hybrid_arg",)
+
+            def __init__(self, static_arg, dynamic_arg, hybrid_arg, wires):
+                super().__init__(static_arg, dynamic_arg, hybrid_arg, wires)
+
+        op = MixedArgOp(
+            static_arg="blah", dynamic_arg=[0, 1], hybrid_arg=[0, 1], wires=AbstractWires(1)
+        )
+        assert op.static_arg == "blah"
+        assert op.dynamic_arg == AbstractArray((2,), int)
+        assert op.hybrid_arg == [AbstractArray((), int), AbstractArray((), int)]
+        assert op.wires == AbstractWires(1)
