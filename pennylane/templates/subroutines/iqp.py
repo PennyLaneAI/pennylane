@@ -122,7 +122,7 @@ class IQP(Operation):
             pauli_mat = PauliRot.compute_matrix(2 * np.pi / 4, "Y" + "X" * (num_wires - 1))
             layers.append(pauli_mat)
 
-        for par, gate in zip(weights, pattern):
+        for par, gate in zip(weights, pattern, strict=True):
             for gen in gate:
                 x_mat = reduce(math.kron, [PauliX.compute_matrix() for _ in gen])
                 rx_mat = math.expm(-1j * par * expand_matrix(x_mat, gen, list(range(num_wires))))
@@ -174,7 +174,7 @@ def _instantaneous_quantum_polynomial_decomposition(
     for i in range(num_wires):
         Hadamard(wires[i])
 
-    for par, gate in zip(weights, pattern):
+    for par, gate in zip(weights, pattern, strict=True):
         for gen in gate:
             MultiRZ(2 * par, wires=[wires[g] for g in gen])
 

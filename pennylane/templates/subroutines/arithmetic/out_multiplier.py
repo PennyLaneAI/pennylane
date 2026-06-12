@@ -260,7 +260,7 @@ class OutMultiplier(Operation):
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
 
-        for name, wires in zip(wires_name, wires_list):
+        for name, wires in zip(wires_name, wires_list, strict=True):
             self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
         self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
@@ -482,6 +482,8 @@ def _out_multiplier_with_adder(
 
     # If the output wires are zeroed, the first controlled adder is just a controlled copy.
     if output_wires_zeroed:
+        # We use strict=False here because we only need to copy for as long as both
+        # more y_wires and more output_wires exist. zip(strict=False) produces exactly this bound
         for y_wire, out_wire in zip(
             y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=False
         ):

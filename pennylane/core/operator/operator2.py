@@ -49,7 +49,7 @@ from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
-from .capture import ABCOperatorMeta
+from .meta import ABCOperatorMeta
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -504,8 +504,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         raise AdjointUndefinedError
 
     def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator2":
-        """Returns a shallow copy of the current operator with its wires changed according
-        to the given wire map.
+        """Returns a new operator with its wires changed according to the given
+        wire map.
 
         Args:
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
@@ -513,27 +513,24 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         Returns:
             .Operator2: new operator
         """
-        # pylint: disable=protected-access
-        new_op = copy(self)
+        new_args = dict(self.arguments)
 
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
             mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
-            new_wires = unflatten(mapped_leaves, tree)
-            new_op._bound_args.arguments[n] = new_wires
-
-        if (p_rep := self.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+            new_args[n] = unflatten(mapped_leaves, tree)
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
-            leaves = [l.map_wires(wire_map) if isinstance(l, Operator2) else l for l in leaves]
-            new_op._bound_args.arguments[n] = unflatten(leaves, tree)
+            leaves = [
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+            ]
+            new_args[n] = unflatten(leaves, tree)
 
-        return new_op
+        return type(self)(**new_args)
 
     def simplify(self) -> "Operator2":
         """Reduce the depth of nested operators to the minimum.
@@ -1228,20 +1225,18 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
         if not enabled():
-            return
+            return  # pragma: no cover
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
         hybrid_wire_argnames = []
         wire_lens = []
-        # FIXME: Think about how casting wires to jax arrays might work
         for name, value in self.wire_args.items():
             if name in self.hybrid_argnames:
                 hybrid_wire_argnames.append(name)
-                continue
-
-            pos_args.extend(value)
-            wire_lens.append(len(value))
+            else:
+                pos_args.extend(value)
+                wire_lens.append(len(value))
 
         # Reorder hybrid args such that hybrid wire args are first
         hybrid_argnames = hybrid_wire_argnames + [
@@ -1270,10 +1265,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         res = operator_p.bind(
             *pos_args,
             op_cls=type(self),
-            dynamic_argnames=self.dynamic_argnames,
-            wire_argnames=self.wire_argnames,
             wire_lens=wire_lens,
-            hybrid_argnames=hybrid_argnames,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
             **static_args,
@@ -1291,8 +1283,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
 if has_jax:
     # pylint: disable=import-outside-toplevel,ungrouped-imports
-    import jax.numpy as jnp
-
     from pennylane.capture.custom_primitives import QpPrimitive
 
     operator_p = QpPrimitive("operator")
@@ -1301,27 +1291,30 @@ if has_jax:
 
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
-    def _op_impl(
-        *all_args,
-        op_cls,
-        dynamic_argnames,
-        wire_argnames,
-        wire_lens,
-        hybrid_argnames,
-        hybrid_lens,
-        hybrid_trees,
-        **static_args,
-    ):
+    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
-        for name in dynamic_argnames:
+        for name in op_cls.dynamic_argnames:
             args[name] = all_args[i]
             i += 1
-        for name, len_ in zip(wire_argnames, wire_lens, strict=True):
-            if name not in hybrid_argnames:
-                args[name] = jnp.array(all_args[i : i + len_] if len_ > 1 else all_args[i])
+
+        hybrid_wire_argnames = []
+        wire_lens_iter = iter(wire_lens)
+        for name in op_cls.wire_argnames:
+            if name in op_cls.hybrid_argnames:
+                hybrid_wire_argnames.append(name)
+            else:
+                len_ = next(wire_lens_iter)
+                # We can safely cast to `int` inside the concrete impl because there
+                # there should not be any abstract values when calling the concrete.
+                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
                 i += len_
+
+        # Reorder hybrid args such that hybrid wire args are first
+        hybrid_argnames = hybrid_wire_argnames + [
+            name for name in op_cls.hybrid_argnames if name not in op_cls.wire_argnames
+        ]
         for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
             leaves = all_args[i : i + len_]
             args[name] = unflatten(leaves, tree)
@@ -1333,7 +1326,7 @@ if has_jax:
     def _op_aval(*_, **__):
         return AbstractOperator()
 
-else:
+else:  # pragma: no cover
     operator_p = None
     AbstractOperator = None
 

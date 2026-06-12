@@ -82,6 +82,21 @@ class HybridWireOp(Operator2):
         super().__init__([Wires(w) for w in pytree_wires])
 
 
+class MixedHybridOp(Operator2):
+    """Operator with dynamic, non-hybrid wires, hybrid wires, and hybrid ops.
+
+    ``hybrid_argnames`` lists ``ops`` before ``pytree_wires``, but capture must
+    process the hybrid wire argument first.
+    """
+
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires", "pytree_wires")
+    hybrid_argnames = ("ops", "pytree_wires")
+
+    def __init__(self, phi, ops, pytree_wires, wires):
+        super().__init__(phi, ops, [Wires(w) for w in pytree_wires], wires=wires)
+
+
 class FullOp(Operator2):
     """Operator using dynamic, static, and hybrid argument groups."""
 
