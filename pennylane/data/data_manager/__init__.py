@@ -421,7 +421,7 @@ def list_datasets() -> dict:
         if not isinstance(value, Mapping):
             return sorted(foldermap.keys())
 
-        return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
+        return {param: remove_paths(foldermap[param]) for param in foldermap}
 
     return remove_paths(_get_foldermap())
 

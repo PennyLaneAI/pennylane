@@ -345,7 +345,7 @@ def _remove_redundancies(
 def _antisymmetry(terms, less_than):
     """Apply the identity [A, B] = -[B, A]"""
     swap = []
-    for commutator in terms.keys():
+    for commutator in terms:
         if less_than(commutator[-1], commutator[-2]):
             swap.append(commutator)
 
@@ -362,7 +362,7 @@ def _antisymmetry(terms, less_than):
 def _commute_with_self(terms):
     """Apply the identity [A, A] = 0"""
     delete = []
-    for commutator in terms.keys():
+    for commutator in terms:
         if commutator[-1] == commutator[-2]:
             delete.append(commutator)
 
@@ -373,7 +373,7 @@ def _commute_with_self(terms):
 def _fourth_order_simplification(terms):
     """Apply the identity [A, B, B, A] = [B, A, B, A]"""
     swap = []
-    for commutator in terms.keys():
+    for commutator in terms:
         if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
             swap.append(commutator)
 
