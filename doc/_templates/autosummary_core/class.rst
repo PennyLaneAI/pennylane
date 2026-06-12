@@ -46,7 +46,7 @@
    {% endblock %}
 
    {% for item in attributes %}
-   .. autoattribute:: {{ item }}
+   .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
@@ -80,7 +80,7 @@
    {% endblock %}
 
    {% for item in methods %}
-   .. automethod:: {{ item }}
+   .. automethod:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
