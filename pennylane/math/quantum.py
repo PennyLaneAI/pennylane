@@ -348,26 +348,29 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
 
     kraus = math.convert_like(kraus, matrix)
     kraus_dagger = math.convert_like(kraus_dagger, matrix)
-    # For loop over wires
+    # Tensor indices of density matrix (tracked across iterations)
+    state_indices = ascii_letters[1 : rho_dim + 1]
+    # For loop over wires, with increasing offset for unique new index letters
+    offset = 0
     for target_wire in indices:
-        # Tensor indices of density matrix
-        state_indices = ascii_letters[1 : rho_dim + 1]
         # row indices of the quantum state affected by this operation
         row_wires_list = [target_wire + 1]
         row_indices = "".join(ascii_letter_arr[row_wires_list].tolist())
         # column indices are shifted by the number of wires
         col_wires_list = [w + num_indices for w in row_wires_list]
         col_indices = "".join(ascii_letter_arr[col_wires_list].tolist())
-        # indices in einsum must be replaced with new ones
+        # indices in einsum must be replaced with new ones (unique per iteration)
         num_partial_trace_wires = 1
-        new_row_indices = ascii_letters[rho_dim + 1 : rho_dim + num_partial_trace_wires + 1]
+        base = rho_dim + 1 + offset
+        new_row_indices = ascii_letters[base : base + num_partial_trace_wires]
         new_col_indices = ascii_letters[
-            rho_dim + num_partial_trace_wires + 1 : rho_dim + 2 * num_partial_trace_wires + 1
+            base + num_partial_trace_wires : base + 2 * num_partial_trace_wires
         ]
         # index for summation over Kraus operators
         kraus_index = ascii_letters[
-            rho_dim + 2 * num_partial_trace_wires + 1 : rho_dim + 2 * num_partial_trace_wires + 2
+            base + 2 * num_partial_trace_wires : base + 2 * num_partial_trace_wires + 1
         ]
+        offset += 3 * num_partial_trace_wires
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
@@ -380,6 +383,7 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
             f"{kraus_index}{col_indices}{new_col_indices}->a{new_state_indices}"
         )
         matrix = math.einsum(einsum_indices, kraus, matrix, kraus_dagger)
+        state_indices = new_state_indices
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
