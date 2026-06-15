@@ -490,24 +490,23 @@ def _get_symbolic_resource_decomposition(
     symbolic_resource_params = {k: v for k, v in comp_res_op.params.items() if k != "base_cmpr_op"}
     base_cmpr_op = comp_res_op.params["base_cmpr_op"]
 
-    if base_cmpr_op not in (Adjoint, Controlled, Pow):
-        base_op_resource_params = _update_params_from_config(base_cmpr_op, config)
+    base_op_resource_params = _update_params_from_config(base_cmpr_op, config)
 
-        custom_symbolic_method = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
-        if custom_symbolic_method:
-            return custom_symbolic_method(
-                target_resource_params=base_op_resource_params,
-                **symbolic_resource_params,
-            )
+    custom_symbolic_method = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
+    if custom_symbolic_method is not None:
+        return custom_symbolic_method(
+            target_resource_params=base_op_resource_params,
+            **symbolic_resource_params,
+        )
 
-        default_symbolic_method = getattr(ResourceOperator, decomp_method_name)
-        base_op_symbolic_method = getattr(base_cmpr_op.op_type, decomp_method_name)
+    default_symbolic_method = getattr(ResourceOperator, decomp_method_name)
+    base_op_symbolic_method = getattr(base_cmpr_op.op_type, decomp_method_name)
 
-        if base_op_symbolic_method.__func__ != default_symbolic_method.__func__:
-            return base_op_symbolic_method(
-                target_resource_params=base_op_resource_params,
-                **symbolic_resource_params,
-            )
+    if base_op_symbolic_method.__func__ != default_symbolic_method.__func__:
+        return base_op_symbolic_method(
+            target_resource_params=base_op_resource_params,
+            **symbolic_resource_params,
+        )
 
     base_resource_decomp = _get_resource_decomposition(base_cmpr_op, config)
     return apply_default_symbolic_decomp(
@@ -601,7 +600,7 @@ def _ops_to_compressed_reps(
     return cmp_rep_ops
 
 
-def default_adjoint_decomp(
+def _default_adjoint_decomp(
     base_resource_decomp: list[GateCount | Allocate | Deallocate],
 ) -> list[GateCount | Allocate | Deallocate]:
     """Apply the adjoint to an operator by modifying its resource decomposition.
@@ -614,14 +613,10 @@ def default_adjoint_decomp(
         list[GateCount | Allocate | Deallocate]: The adjoint of the
             base operator's resource decomposition.
     """
-    gate_lst = []
-    for gate in base_resource_decomp[::-1]:  # reverse the order
-        gate_lst.append(apply_adj(gate))
-
-    return gate_lst
+    return [apply_adj(gate) for gate in reversed(base_resource_decomp)]
 
 
-def default_controlled_decomp(
+def _default_controlled_decomp(
     num_ctrl_wires: int,
     num_zero_ctrl: int,
     base_resource_decomp: list[GateCount | Allocate | Deallocate],
@@ -651,34 +646,44 @@ def default_controlled_decomp(
 
 
 def apply_default_symbolic_decomp(
-    base_resource_op: CompressedResourceOp,
+    base_compr_resource_op: CompressedResourceOp,
     base_resource_decomp: list[GateCount | Allocate | Deallocate],
     symbolic_type: type[ResourceOperator],
-    **target_symbolic_params: dict,
+    **target_symbolic_params,
 ) -> list[GateCount | Allocate | Deallocate]:
     """Apply the default decomposition for a given symbolic operator (Adjoint, Control, Pow).
 
     Args:
-        base_resource_op (CompressedResourceOp): _description_
-        base_resource_decomp (list[GateCount  |  Allocate  |  Deallocate]): _description_
+        base_compr_resource_op (CompressedResourceOp): The operator, in compressed representation,
+            to extract resources from.
+        base_resource_decomp (list[GateCount  |  Allocate  |  Deallocate]): The resource
+            decomposition for the base operator.
         symbolic_type (type[ResourceOperator]): The type of the symbolic operator decomposition
             to be applied. Acceptable values include :class:`~.estimator.Adjoint`,
             :class:`~.estimator.Controlled` and :class:`~.estimator.Pow`.
+        target_symbolic_params (dict): A dictionary containing parameters specific to the symbolic
+            decomposition to be applied (e.g number of control wires ``num_ctrl_wires``).
 
     Returns:
         list[GateCount | Allocate | Deallocate]: the modified resource decomposition
 
     Raises:
         ValueError: Unexpected 'symbolic_type'
+        NotImplementedError: No decomposition for fractional or negative powers in :class:`~.estimator.Pow`.
     """
-    if symbolic_type == Pow:
-        return [GateCount(base_resource_op, target_symbolic_params["pow_z"])]
+    if symbolic_type is Pow:
+        if (pow_z := target_symbolic_params["pow_z"]) < 0 or not isinstance(pow_z, int):
+            raise NotImplementedError(
+                f"No default decomposition for fractional or negative powers, got {pow_z}"
+            )
 
-    if symbolic_type == Adjoint:
-        return default_adjoint_decomp(base_resource_decomp)
+        return [GateCount(base_compr_resource_op, target_symbolic_params["pow_z"])]
 
-    if symbolic_type == Controlled:
-        return default_controlled_decomp(
+    if symbolic_type is Adjoint:
+        return _default_adjoint_decomp(base_resource_decomp)
+
+    if symbolic_type is Controlled:
+        return _default_controlled_decomp(
             target_symbolic_params["num_ctrl_wires"],
             target_symbolic_params["num_zero_ctrl"],
             base_resource_decomp,
