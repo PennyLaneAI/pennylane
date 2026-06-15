@@ -31,7 +31,7 @@ from pennylane.estimator.estimate import (
     apply_default_symbolic_decomp,
     estimate,
 )
-from pennylane.estimator.ops.op_math.controlled_ops import CNOT
+from pennylane.estimator.ops.op_math.controlled_ops import CNOT, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
@@ -578,6 +578,65 @@ class TestEstimateResources:
         )
 
         assert actual_resources == expected_resources
+
+    @pytest.mark.parametrize(
+        "resource_op, expected_resources",
+        (
+            (  # (nested) default symbolic decomp + custom symbolic decomp + default params
+                Controlled(Pow(RX(), 5), 3, 0),
+                Resources(
+                    zeroed_wires=1,
+                    any_state_wires=0,
+                    algo_wires=4,
+                    gate_types={
+                        Hadamard.resource_rep(): 40,
+                        Toffoli.resource_rep("left"): 12,
+                        Toffoli.resource_rep(): 12,
+                        CNOT.resource_rep(): 12,
+                        T.resource_rep(): 346,
+                    },
+                ),
+            ),
+            (  # (multi-nested) default symbolic decomp + default symbolic decomp + custom resource decomp
+                Controlled(Adjoint(QFT(4)), 3, 2),
+                Resources(
+                    zeroed_wires=2,
+                    any_state_wires=0,
+                    algo_wires=7,
+                    gate_types={
+                        X.resource_rep(): 4,
+                        Toffoli.resource_rep("left"): 8,
+                        Toffoli.resource_rep(): 6,
+                        CNOT.resource_rep(): 8,
+                        Hadamard.resource_rep(): 32,
+                        T.resource_rep(): 352,
+                    },
+                ),
+            ),
+        ),
+    )
+    def test_estimate_resources_from_nested_symbolic_ops(self, resource_op, expected_resources):
+        """Test that various edge cases of nested symbolic ops are resolved correctly"""
+
+        def custom_RX_pow(pow_z, target_resource_params):
+            precision = target_resource_params["precision"]
+            return [
+                GateCount(Hadamard.resource_rep(), 2),
+                GateCount(RZ.resource_rep(precision), pow_z),
+            ]
+
+        def custom_QFT(num_wires):
+            return [
+                GateCount(Hadamard.resource_rep(), num_wires),
+                GateCount(CNOT.resource_rep(), num_wires // 2),
+            ]
+
+        cfg = ResourceConfig()
+        cfg.set_decomp(RX, custom_RX_pow, "pow")
+        cfg.set_decomp(QFT, custom_QFT)
+        cfg.set_precision(RX, 1e-2)
+
+        assert estimate(resource_op, config=cfg) == expected_resources
 
     @pytest.mark.parametrize(
         "gate_set, expected_resources",

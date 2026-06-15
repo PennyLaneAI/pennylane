@@ -673,7 +673,7 @@ def apply_default_symbolic_decomp(
         NotImplementedError: No decomposition for fractional or negative powers in :class:`~.estimator.Pow`.
     """
     if symbolic_type is Pow:
-        if (pow_z := target_symbolic_params["pow_z"]) < 0 or not (isinstance(pow_z, int)):
+        if (pow_z := target_symbolic_params["pow_z"]) < 0 or not isinstance(pow_z, int):
             raise NotImplementedError(
                 f"No default decomposition for fractional or negative powers, got {pow_z}"
             )
