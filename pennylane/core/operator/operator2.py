@@ -360,8 +360,6 @@ class Operator2(ABC):
             if name not in self.dynamic_argnames and name not in self.wire_argnames
         }
 
-    control_wires = Wires(())
-
     # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
     # ------------------------------------------------------------------------

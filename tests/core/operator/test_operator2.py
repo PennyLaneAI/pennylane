@@ -1778,7 +1778,6 @@ class TestLegacyCompatibilityViews:
 
         assert op.data == ()
         assert op.parameters == []
-        assert op.control_wires == Wires(())
         assert op.hyperparameters == {}
 
     def test_dynamic_op_data_preserves_order(self):
@@ -1840,18 +1839,3 @@ class TestLegacyCompatibilityViews:
         assert "phi" not in op.hyperparameters
         assert "wires" not in op.hyperparameters
         assert "aux_wires" not in op.hyperparameters
-
-    def test_control_wires_subclass_override(self):
-        """Test that a subclass property shadows the base default."""
-
-        class ControlledLike(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
-            @property
-            def control_wires(self):
-                return Wires([1])
-
-        op = ControlledLike(wires=0)
-
-        assert op.control_wires == Wires([1])
