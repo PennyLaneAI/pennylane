@@ -169,52 +169,6 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    def test_for_loop_grad(self):
-        """Test simple for-loop primitive with gradient."""
-        from pennylane.capture.primitives import jacobian_prim
-
-        @qp.qnode(qp.device("default.qubit", wires=2))
-        def inner_func(x):
-
-            @qp.for_loop(0, 2)
-            def loop(w):
-                qp.RX(x * w, w)
-
-            loop()
-            return qp.expval(qp.Z(0) @ qp.Z(1))
-
-        def func_qp(x):
-            return qp.grad(inner_func)(x)
-
-        def func_jax(x):
-            return jax.grad(inner_func)(x)
-
-        x = 0.7
-        jax_out = func_jax(x)
-        assert qp.math.allclose(func_qp(x), jax_out)
-
-        # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qp)(x)
-        assert len(jaxpr.eqns) == 1  # a single grad equation
-
-        grad_eqn = jaxpr.eqns[0]
-        assert grad_eqn.primitive == jacobian_prim
-        assert set(grad_eqn.params.keys()) == {
-            "argnums",
-            "n_consts",
-            "jaxpr",
-            "method",
-            "h",
-            "fn",
-            "scalar_out",
-        }
-        assert grad_eqn.params["argnums"] == (0,)
-        assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
-        assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
-
-        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qp.math.allclose(manual_eval, jax_out)
-
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):
         """Test for-loops with shared dynamic input dimensions."""

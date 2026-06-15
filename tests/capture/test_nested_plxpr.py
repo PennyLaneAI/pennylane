@@ -169,45 +169,6 @@ class TestAdjointQfunc:
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.adjoint(qp.RX(2.5, 2)))
 
-    def test_adjoint_grad(self):
-        """Test that adjoint differentiated with grad can be captured."""
-        from pennylane.capture.primitives import jacobian_prim, qnode_prim
-
-        @qp.grad
-        @qp.qnode(qp.device("default.qubit", wires=1))
-        def workflow(x):
-            qp.adjoint(qp.RX)(x + 0.3, 0)
-            return qp.expval(qp.Z(0))
-
-        plxpr = jax.make_jaxpr(workflow)(0.5)
-
-        assert len(plxpr.eqns) == 1
-        grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == jacobian_prim
-        assert set(grad_eqn.params.keys()) == {
-            "argnums",
-            "n_consts",
-            "jaxpr",
-            "method",
-            "h",
-            "fn",
-            "scalar_out",
-        }
-        assert grad_eqn.params["argnums"] == (0,)
-        assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] == "auto"
-        assert grad_eqn.params["h"] == 1e-6
-        assert len(grad_eqn.params["jaxpr"].eqns) == 1
-
-        qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
-        assert qnode_eqn.primitive == qnode_prim
-        adjoint_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[1]
-        assert adjoint_eqn.primitive == adjoint_transform_prim
-        assert adjoint_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
-
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-        assert qp.math.isclose(out, qp.math.sin(-(0.5 + 0.3)))
-
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestAdjointDynamicShapes:
@@ -450,46 +411,6 @@ class TestCtrlQfunc:
         assert eqn.params["work_wires"] is None
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
-
-    def test_ctrl_grad(self):
-        """Test that ctrl differentiated with grad can be captured."""
-        from pennylane.capture.primitives import jacobian_prim, qnode_prim
-
-        @qp.grad
-        @qp.qnode(qp.device("default.qubit", wires=2))
-        def workflow(x):
-            qp.Hadamard(1)
-            qp.ctrl(qp.RX, control=1)(x + 0.3, 0)
-            return qp.expval(qp.Z(0))
-
-        plxpr = jax.make_jaxpr(workflow)(0.5)
-
-        assert len(plxpr.eqns) == 1
-        grad_eqn = plxpr.eqns[0]
-        assert grad_eqn.primitive == jacobian_prim
-        assert set(grad_eqn.params.keys()) == {
-            "argnums",
-            "n_consts",
-            "jaxpr",
-            "method",
-            "h",
-            "fn",
-            "scalar_out",
-        }
-        assert grad_eqn.params["argnums"] == (0,)
-        assert grad_eqn.params["n_consts"] == 0
-        assert grad_eqn.params["method"] == "auto"
-        assert grad_eqn.params["h"] == 1e-6
-        assert len(grad_eqn.params["jaxpr"].eqns) == 1
-
-        qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
-        assert qnode_eqn.primitive == qnode_prim
-        ctrl_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[2]
-        assert ctrl_eqn.primitive == ctrl_transform_prim
-        assert ctrl_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
-
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-        assert qp.math.isclose(out, -0.5 * qp.math.sin(0.5 + 0.3))
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

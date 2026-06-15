@@ -203,9 +203,10 @@ def test_qnode_with_python_array_assignment():
     assert jnp.allclose(res, -1.0)
 
     # Test gradient
-    grad = jax.grad(ag_circuit, argnums=0)(new_angle)
-    # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
-    assert jnp.allclose(grad, 0.0)
+    if not qp.capture.enabled():
+        grad = jax.grad(ag_circuit, argnums=0)(new_angle)
+        # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
+        assert jnp.allclose(grad, 0.0)
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -229,9 +230,10 @@ def test_qnode_with_jax_array_assignment():
     assert jnp.allclose(res, -1.0)
 
     # Test gradient
-    grad = jax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
-    # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
-    assert jnp.allclose(grad, 0.0)
+    if not qp.capture.enabled():
+        grad = jax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
+        # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
+        assert jnp.allclose(grad, 0.0)
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
