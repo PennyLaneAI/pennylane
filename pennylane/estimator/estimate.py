@@ -668,7 +668,7 @@ def apply_default_symbolic_decomp(
         list[GateCount | Allocate | Deallocate]: the modified resource decomposition
 
     Raises:
-        ValueError: Unexpected 'symbolic_type'
+        TypeError: Unexpected 'symbolic_type'
         NotImplementedError: No decomposition for fractional or negative powers in :class:`~.estimator.Pow`.
     """
     if symbolic_type is Pow:
@@ -689,6 +689,6 @@ def apply_default_symbolic_decomp(
             base_resource_decomp,
         )
 
-    raise ValueError(
+    raise TypeError(
         f"Unexpected symbolic type {symbolic_type}, expected one of `Adjoint`, `Pow`, `Controlled`"
     )

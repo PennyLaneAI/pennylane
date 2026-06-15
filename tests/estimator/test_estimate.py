@@ -997,7 +997,7 @@ def test_apply_default_symbolic_decomp(res_op, res_decomp, sym_type, params, exp
                 "symbolic_type": ResourceOperator,
                 "target_symbolic_params": {},
             },
-            ValueError,
+            TypeError,
             "Unexpected symbolic type",
         ),
         (
