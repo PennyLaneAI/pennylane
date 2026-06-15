@@ -42,11 +42,35 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE
+
+
+class _HasDecomposition:
+    """Descriptor backing :attr:`Operator2.has_decomposition`.
+
+    Accessed on a class, it reports whether the operator *type* defines a decomposition:
+    either ``compute_decomposition`` or ``decomposition`` is overridden, or graph-based
+    decomposition rules are registered for it. Accessed on an instance, it additionally
+    requires that at least one registered rule is applicable to the instance's
+    :attr:`~.Operator2.resource_params`, mirroring the instance-aware behaviour of the
+    legacy ``Operator.has_decomposition``.
+    """
+
+    def __get__(self, obj: "Operator2 | None", cls: "type[Operator2] | None" = None) -> bool:
+        if cls is None:
+            cls = type(obj)
+        if (
+            cls.compute_decomposition != Operator2.compute_decomposition
+            or cls.decomposition != Operator2.decomposition
+        ):
+            return True
+        if obj is None:
+            return len(qp.list_decomps(cls)) > 0
+        return any(rule.is_applicable(**obj.resource_params) for rule in qp.list_decomps(obj))
 
 
 class Operator2(ABC):
@@ -149,6 +173,14 @@ class Operator2(ABC):
     * the number of wires is fixed,
     * there are no static (compilable or non-compilable) arguments, and,
     * there are no hybrid arguments.
+    """
+
+    resource_keys: ClassVar[set] = set()
+    """The set of parameters that affect the resource requirement of the operator's
+    decomposition. Graph-based decomposition rules registered for this operator class are
+    expected to accept keyword arguments matching these keys exactly (see
+    :attr:`~.Operator2.resource_params`). The default is an empty set, suitable for operators
+    whose decompositions have static resource requirements.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -675,18 +707,16 @@ class Operator2(ABC):
         """
         raise DecompositionUndefinedError
 
-    @classproperty
-    @classmethod
-    def has_decomposition(cls) -> bool:
-        """Bool: Whether or not the Operator returns a defined decomposition."""
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # if compute_decomposition or decomposition overwritten and property
-        # not overwritten, set as class property during __init_subclass__
-        # return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
-        return (
-            cls.compute_decomposition != Operator2.compute_decomposition
-            or cls.decomposition != Operator2.decomposition
-        )
+    has_decomposition: ClassVar[_HasDecomposition] = _HasDecomposition()
+    """Bool: Whether or not the Operator returns a defined decomposition.
+
+    When accessed on a class, this reports whether the operator type defines a decomposition
+    at all: either ``compute_decomposition`` or ``decomposition`` is overridden, or graph-based
+    decomposition rules are registered for it. When accessed on an instance, it additionally
+    requires that at least one registered rule is applicable to the instance's
+    :attr:`~.Operator2.resource_params` (mirroring the instance-aware legacy
+    ``Operator.has_decomposition``).
+    """
 
     def decomposition(self) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators.
@@ -703,17 +733,31 @@ class Operator2(ABC):
         if type(self).compute_decomposition != Operator2.compute_decomposition:
             return self.compute_decomposition(**self.arguments)
 
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # for decomp in qp.list_decomps(self):
-        #     if decomp.is_applicable(**self.resource_params):
-        #         with AnnotatedQueue() as q:
-        #             decomp(**self.arguments)
-        #         if QueuingManager.recording():
-        #             # no need for copies if we just use queue method
-        #             _ = [op.queue() for op in q.queue]
-        #         return q.queue
+        for decomp in qp.list_decomps(self):
+            if decomp.is_applicable(**self.resource_params):
+                with AnnotatedQueue() as q:
+                    decomp(**self.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
 
         raise DecompositionUndefinedError
+
+    @property
+    def resource_params(self) -> dict[str, Any]:
+        """A dictionary containing the minimal information needed to compute a resource
+        estimate of the operator's decomposition.
+
+        The keys of this dictionary should match the :attr:`~.Operator2.resource_keys`
+        attribute of the operator class. Two instances of the same operator type should have
+        identical ``resource_params`` iff their decompositions exhibit the same counts for each
+        gate type, even if the individual gate parameters differ.
+
+        The default implementation returns an empty dictionary, matching the default empty
+        :attr:`~.Operator2.resource_keys`.
+        """
+        return {}
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:

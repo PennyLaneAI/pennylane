@@ -1727,6 +1727,418 @@ class TestRepresentations:
         assert op.generator() == DynOp(0.5, wires=0)
 
 
+class TestGraphDecomposition:
+    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``
+    (SC-120519): when ``compute_decomposition`` is not overridden, ``decomposition`` falls
+    back to registered graph decomposition rules instead of immediately raising."""
+
+    def test_resource_defaults(self):
+        """Test the default empty ``resource_keys`` and ``resource_params``."""
+        op = DynOp(0.5, wires=0)
+        assert Operator2.resource_keys == set()
+        assert DynOp.resource_keys == set()
+        assert op.resource_params == {}
+
+    def test_compute_decomposition_takes_precedence(self):
+        """An overridden ``compute_decomposition`` is used over registered graph rules."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [qp.RZ(phi, wires=wires[0])]
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
+
+    def test_registered_rule_used_as_fallback(self):
+        """Without an overridden ``compute_decomposition``, a registered rule is used."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_is_applicable_selects_rule_by_resource_params(self):
+        """Only the rule applicable to the instance's ``resource_params`` is used, with two
+        registered rules where exactly one applies depending on the number of wires."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            resource_keys = {"num_wires"}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_condition(lambda num_wires, **__: num_wires == 1)
+            @qp.register_resources({qp.RX: 1})
+            def one_wire(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            @qp.register_condition(lambda num_wires, **__: num_wires == 2)
+            @qp.register_resources({qp.RY: 1})
+            def two_wire(phi, wires, **__):
+                qp.RY(phi, wires=wires[1])
+
+            qp.add_decomps(Op, one_wire, two_wire)
+
+            d1 = Op(0.3, wires=[0]).decomposition()
+            assert len(d1) == 1
+            assert qp.equal(d1[0], qp.RX(0.3, wires=0))
+
+            d2 = Op(0.4, wires=[0, 1]).decomposition()
+            assert len(d2) == 1
+            assert qp.equal(d2[0], qp.RY(0.4, wires=1))
+
+    def test_rule_receives_full_argument_model(self):
+        """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
+        captured = {}
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            static_argnames = ("label",)
+
+            def __init__(self, phi, label, wires):
+                super().__init__(phi, label, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, label, wires, **__):
+                captured["phi"] = phi
+                captured["label"] = label
+                captured["wires"] = wires
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            decomp = Op(0.6, "spin", wires=2).decomposition()
+
+        assert captured["phi"] == 0.6
+        assert captured["label"] == "spin"
+        assert captured["wires"] == Wires([2])
+        assert [type(o).__name__ for o in decomp] == ["RX", "RY"]
+        assert qp.equal(decomp[0], qp.RX(0.6, wires=2))
+        assert qp.equal(decomp[1], qp.RY(0.6, wires=2))
+
+    def test_no_rule_raises(self):
+        """Without any registered rule, ``decomposition`` raises ``DecompositionUndefinedError``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=0)
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_no_applicable_rule_raises(self):
+        """When rules exist but none are applicable, ``decomposition`` raises
+        ``DecompositionUndefinedError`` and ``has_decomposition`` is ``False``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            resource_keys = {"num_wires"}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_condition(lambda num_wires, **__: num_wires == 5)
+            @qp.register_resources({qp.RX: 1})
+            def five_wire(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, five_wire)
+
+            op = Op(0.5, wires=[0])
+            assert op.has_decomposition is False
+            with pytest.raises(DecompositionUndefinedError):
+                op.decomposition()
+
+    def test_decomposition_queued_during_recording(self):
+        """Produced ops are queued when decomposition happens during active recording."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            with AnnotatedQueue() as q:
+                decomp = op.decomposition()
+
+        assert q.queue == decomp
+        assert [type(o).__name__ for o in q.queue] == ["RX", "RY"]
+
+    def test_decomposition_not_queued_outside_recording(self):
+        """Outside an active recording context, decomposition returns ops without queuing."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            decomp = op.decomposition()
+
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_has_decomposition_reflects_registered_rules(self):
+        """``has_decomposition`` is consistent with rule availability and applicability."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        # No rules registered globally: both class and instance report False.
+        assert Op.has_decomposition is False
+        assert Op(0.5, wires=0).has_decomposition is False
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            assert Op.has_decomposition is True
+            assert Op(0.5, wires=0).has_decomposition is True
+
+
+class TestDecompositionTransformSurfaces:
+    """Characterization tests pinning *which* decomposition surfaces work for ``Operator2``
+    (SC-120519). This ticket implements the direct ``Operator2.decomposition()`` instance
+    method and the surfaces that route through it (non-graph ``decompose``, graph
+    construction/solving). Those are asserted as normal passing tests.
+
+    The graph-enabled transform, decomposition introspection, capture/plxpr, and Catalyst
+    paths invoke decomposition rules (or read parameters) through the *legacy* operator
+    interface (``op.parameters`` / ``op.data`` / ``op.hyperparameters``), which ``Operator2``
+    deliberately does not provide. Those surfaces remain unsupported; the tests for them attempt
+    the *desired* end-state and are marked ``xfail(strict=True)`` so that landing the follow-up
+    integration converts them into loud failures prompting removal of the marker. See
+    ``.benchmarks/operator2_decomp_sc120519/followup_risks.md`` for the scope boundary."""
+
+    @staticmethod
+    def _make_op_cls():
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            static_argnames = ("label",)
+            resource_keys = set()
+
+            def __init__(self, phi, label, wires):
+                super().__init__(phi, label, wires=wires)
+
+            @property
+            def resource_params(self):
+                return {}
+
+        return Op
+
+    # --- Surface B: non-graph transform routes through ``op.decomposition()`` (supported) ---
+
+    def test_non_graph_transform_uses_compute_decomposition(self, disable_graph_decomposition):
+        """Without the graph enabled, ``qp.transforms.decompose`` on a tape routes through
+        ``op.decomposition()``, so an overridden ``compute_decomposition`` is honored."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [qp.RX(phi, wires=wires[0]), qp.RZ(phi, wires=wires[0])]
+
+        tape = qp.tape.QuantumScript([Op(0.5, wires=0)], [qp.state()])
+        (new_tape,), _ = qp.transforms.decompose([tape], gate_set={"RX", "RZ"})
+        assert [type(o).__name__ for o in new_tape.operations] == ["RX", "RZ"]
+        assert qp.equal(new_tape.operations[0], qp.RX(0.5, wires=0))
+
+    def test_non_graph_transform_uses_registered_rule_fallback(self, disable_graph_decomposition):
+        """Without the graph enabled, a registered rule fallback is reached through
+        ``op.decomposition()`` (no ``compute_decomposition`` override required)."""
+        Op = self._make_op_cls()
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
+            def rule(phi, label, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RZ(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            tape = qp.tape.QuantumScript([Op(0.5, "spin", wires=0)], [qp.state()])
+            (new_tape,), _ = qp.transforms.decompose([tape], gate_set={"RX", "RZ"})
+
+        assert [type(o).__name__ for o in new_tape.operations] == ["RX", "RZ"]
+        assert qp.equal(new_tape.operations[0], qp.RX(0.5, wires=0))
+
+    # --- Surface 5: graph construction + solving (supported via resource_params) ---
+
+    def test_graph_solver_supports_operator2(self, enable_graph_decomposition):
+        """The decomposition graph can be built and solved for an ``Operator2`` because
+        ``resource_keys``/``resource_params`` are defined; ``resource_estimate`` works."""
+        Op = self._make_op_cls()
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
+            def rule(phi, label, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RZ(phi, wires=wires[0])
+
+            op = Op(0.5, "spin", wires=0)
+            graph = qp.decomposition.DecompositionGraph(
+                [op], gate_set={"RX", "RZ"}, fixed_decomps={Op: rule}
+            )
+            solution = graph.solve()
+
+            assert solution.is_solved_for(op)
+            assert solution.resource_estimate(op).gate_counts == {
+                qp.resource_rep(qp.RX): 1,
+                qp.resource_rep(qp.RZ): 1,
+            }
+
+    # --- Surfaces 3/4/0: rule invocation / param extraction through the legacy interface ---
+    #
+    # These surfaces invoke decomposition rules (or read operator parameters) via the *legacy*
+    # operator interface (``op.parameters`` / ``op.data``), which ``Operator2`` deliberately
+    # does not provide. They are NOT supported by this ticket. Each test below attempts the
+    # *desired* end-state and is marked ``xfail(strict=True)``: it currently xfails on the
+    # ``AttributeError``, and if a follow-up wires ``Operator2`` into the tape/graph pipeline it
+    # will xpass, turning the strict marker into a loud failure that signals "remove the xfail".
+    # See ``.benchmarks/operator2_decomp_sc120519/followup_risks.md`` for the scope boundary.
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="Graph-enabled decompose invokes the solved rule as "
+        "op_rule(*op.parameters, wires=op.wires, **kwargs); Operator2 has no 'parameters'. "
+        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+    )
+    def test_graph_enabled_transform_with_operator2(self, enable_graph_decomposition):
+        """DESIRED (not yet supported): the graph-enabled transform decomposes an
+        ``Operator2`` to its registered rule's gates."""
+        Op = self._make_op_cls()
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
+            def rule(phi, label, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RZ(phi, wires=wires[0])
+
+            tape = qp.tape.QuantumScript([Op(0.5, "spin", wires=0)], [qp.state()])
+            (new_tape,), _ = qp.transforms.decompose(
+                [tape], gate_set={"RX", "RZ"}, fixed_decomps={Op: rule}
+            )
+
+        assert [type(o).__name__ for o in new_tape.operations] == ["RX", "RZ"]
+        assert qp.equal(new_tape.operations[0], qp.RX(0.5, wires=0))
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="inspect_decomps renders/counts a rule via op.data; Operator2 has no 'data'. "
+        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+    )
+    def test_inspect_decomps_with_operator2(self, enable_graph_decomposition):
+        """DESIRED (not yet supported): ``inspect_decomps`` renders the registered rule for an
+        ``Operator2`` instance."""
+        Op = self._make_op_cls()
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
+            def rule(phi, label, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RZ(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+            op = Op(0.5, "spin", wires=0)
+            rendered = str(qp.inspect_decomps(op))
+
+        assert "RX" in rendered and "RZ" in rendered
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="QuantumScript.get_parameters reads op.data; Operator2 has no 'data'. This is "
+        "the upstream blocker for end-to-end QNode/draw/execute/capture/Catalyst workflows. "
+        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+    )
+    def test_tape_get_parameters_with_operator2(self):
+        """DESIRED (not yet supported): an ``Operator2`` in a tape exposes its parameters via
+        ``QuantumScript.get_parameters`` (the root-cause blocker for QNode/capture/Catalyst)."""
+        Op = self._make_op_cls()
+        tape = qp.tape.QuantumScript([Op(0.5, "spin", wires=0)], [qp.state()])
+        assert tape.get_parameters(trainable_only=False) == [0.5]
+
+
 class TestStatePrepBase:
 
     def test_state_prep_base_label(self):
