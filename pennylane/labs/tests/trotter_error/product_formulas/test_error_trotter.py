@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from pennylane.labs.trotter_error import (
+    generic_fragments,
     HOState,
     ProductFormula,
     perturbation_error,
@@ -65,6 +66,23 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
 
     assert isinstance(errors, list)
     assert len(errors) == 2
+
+
+def test_perturbation_error_serial_accumulates_each_order_independently():
+    """Test that serial execution stores independent scalar expectation values by order."""
+
+    x_mat = np.array([[0, 1], [1, 0]], dtype=complex)
+    z_mat = np.array([[1, 0], [0, -1]], dtype=complex)
+    frags = dict(enumerate(generic_fragments([x_mat, z_mat])))
+    pf = ProductFormula([0, 1, 1, 0], coeffs=[0.5, 0.5, 0.5, 0.5])
+    state = np.array([1, 0], dtype=complex)
+
+    errors = perturbation_error(pf, frags, [state], max_order=5, backend="serial")
+
+    assert len(errors) == 1
+    assert set(errors[0]) == {3, 5}
+    assert np.allclose(errors[0][3], 1j / 6)
+    assert np.allclose(errors[0][5], -0.025j)
 
 
 def test_perturbation_error_invalid_parallel_mode():

@@ -211,16 +211,19 @@ def perturbation_error(
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
-            expectation = 0
+            state_expectations = {}
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
 
                 order = len(commutators[0])
-                for commutator in commutators:
-                    expectation += _compute_expectation(commutator, fragments, state)
+                expectation = sum(
+                    _compute_expectation(commutator, fragments, state)
+                    for commutator in commutators
+                )
+                state_expectations[order] = (1j * timestep) ** order * expectation
 
-                expectations.append({order: (1j * timestep) ** order * expectation})
+            expectations.append(state_expectations)
 
         return expectations
 
