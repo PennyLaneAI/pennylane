@@ -641,8 +641,6 @@ def _assert_valid_operator2(
             ), f"Wires argument {name} has an invalid dimension."
             wire_index += 1
 
-    _check_bind_new_parameters_op2(op)
-
 
 # pylint: disable=too-many-arguments
 def assert_valid(

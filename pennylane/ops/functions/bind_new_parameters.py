@@ -72,41 +72,6 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         return new_op
 
 
-# pylint: disable=too-many-arguments
-@bind_new_parameters.register
-def bind_new_arguments(
-    op: Operator2,
-    dynamic_args: dict[str, Any] = None,
-    static_args: dict[str, Any] = None,
-    wire_args: dict[str, Any] = None,
-    hybrid_args: dict[str, Any] = None,
-    compilable_args: dict[str, Any] = None,
-) -> Operator2:
-    new_args = {
-        "dynamic_args": dynamic_args,
-        "static_args": static_args,
-        "wire_args": wire_args,
-        "hybrid_args": hybrid_args,
-        "compilable_args": compilable_args,
-    }
-
-    def _get_most_recent_args(args_name):
-        return (
-            new_args[args_name]
-            if new_args[args_name] != getattr(op, args_name) and new_args[args_name] is not None
-            else getattr(op, args_name)
-        )
-
-    final_args = (
-        _get_most_recent_args("dynamic_args")
-        | _get_most_recent_args("wire_args")
-        | _get_most_recent_args("static_args")
-        | _get_most_recent_args("hybrid_args")
-        | _get_most_recent_args("compilable_args")
-    )
-    return op.__class__(**final_args)
-
-
 @bind_new_parameters.register
 def bind_new_parameters_approx_time_evolution(
     op: ApproxTimeEvolution, params: Sequence[TensorLike]
