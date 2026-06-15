@@ -34,7 +34,7 @@ from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.wires import Wires
 
-from ...pytrees import flatten
+from pennylane.pytrees import flatten
 from .equal import assert_equal
 
 
