@@ -650,7 +650,7 @@ def apply_default_symbolic_decomp(
     base_compr_resource_op: CompressedResourceOp,
     base_resource_decomp: list[GateCount | Allocate | Deallocate],
     symbolic_type: type[ResourceOperator],
-    **target_symbolic_params: dict,
+    **target_symbolic_params,
 ) -> list[GateCount | Allocate | Deallocate]:
     """Apply the default decomposition for a given symbolic operator (Adjoint, Control, Pow).
 
