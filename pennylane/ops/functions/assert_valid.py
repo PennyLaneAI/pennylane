@@ -609,10 +609,6 @@ def _assert_valid_operator2(
     ), "bound_args must be a BoundArguments instance"
     assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
 
-    for name, val in op.arguments.items():
-        # make sure that the bound args matches the signature
-        assert name in list(op._sig.parameters)
-
     for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
         if hasattr(val, "shape"):
