@@ -53,6 +53,7 @@ def _contains_abstract_type(val):
 
 
 def _canonicalize_wire_leaf(leaf) -> AbstractWires:
+    """Abstractifies a leaf that represents a wires object."""
     if isinstance(leaf, Wires):
         return AbstractWires(len(leaf))
 
@@ -68,28 +69,30 @@ def _canonicalize_abstract_type(val, kind: ArgType):
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
 
-    if kind == ArgType.WIRES:
-        return _canonicalize_wire_leaf(val)
+    match kind:
+        case ArgType.WIRES:
+            return _canonicalize_wire_leaf(val)
 
-    if kind == ArgType.DYN:
-        # NOTE: Convert to array so we can extra shape and dtype
-        # e.g., [0, 1] -> AbstractArray((2,), int)
-        canonical_arr = math.asarray(val)
-        return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
+        case ArgType.DYN:
+            canonical_arr = math.asarray(val)
+            return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
-    # NOTE: Only flatten ArgType.HYBRID arguments
-    leaves, structure = flatten(val)
-    new_leaves = []
-    for leaf in leaves:
-        if isinstance(leaf, (AbstractArray)):
-            new_leaves.append(leaf)
-        # Process arrays
-        elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
-            new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
-        # Process scalars
-        else:
-            new_leaves.append(AbstractArray((), type(leaf)))
-    return unflatten(new_leaves, structure)
+        case ArgType.HYBRID:
+            leaves, structure = flatten(val)
+            new_leaves = []
+            for leaf in leaves:
+                if isinstance(leaf, (AbstractArray, AbstractWires)):
+                    new_leaves.append(leaf)
+                # Process arrays
+                elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+                    new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
+                # Process scalars
+                else:
+                    new_leaves.append(AbstractArray((), type(leaf)))
+            return unflatten(new_leaves, structure)
+
+        case _:  # pragma: no cover
+            raise ValueError(f"Unknown kind: '{kind}'")
 
 
 class OperatorMeta(type):
@@ -111,22 +114,19 @@ class OperatorMeta(type):
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
-        arguments_that_can_be_abstract = (
-            cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
-        )
-        has_abstract_arguments = any(
-            _contains_abstract_type(arguments[name]) for name in arguments_that_can_be_abstract
-        )
-        if has_abstract_arguments:
-            # "Canonicalize" abstract operators
-            # NOTE: Because at least one of the arguments is abstract
-            # all of them need to be "promoted" to abstract
-            for name in arguments_that_can_be_abstract:
-                kind = ArgType.HYBRID
-                if name in cls.wire_argnames:
+        target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+        if any(_contains_abstract_type(arguments[name]) for name in target_args):
+            for name in target_args:
+                kind = ArgType.DYN
+
+                # NOTE: Check hybrid first as hybrid args can
+                # appear in both hybrid and wires args; these must be
+                # treated as hybrid.
+                if name in cls.hybrid_argnames:
+                    kind = ArgType.HYBRID
+                elif name in cls.wire_argnames:
                     kind = ArgType.WIRES
-                if name in cls.dynamic_argnames:
-                    kind = ArgType.DYN
+
                 arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
             obj = cls.__new__(cls)
