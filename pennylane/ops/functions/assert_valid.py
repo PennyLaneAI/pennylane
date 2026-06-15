@@ -17,7 +17,6 @@ Operator class is correctly defined.
 """
 
 import copy
-import inspect
 import itertools
 import pickle
 from collections import defaultdict
@@ -32,9 +31,9 @@ from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
-from pennylane.pytrees import flatten
 from .equal import assert_equal
 
 
