@@ -64,7 +64,7 @@ def _canonicalize_wire_leaf(leaf) -> AbstractWires:
 
 
 def _canonicalize_abstract_type(val, kind: ArgType):
-    """Check if pytree contains any abstkact types."""
+    """Check if pytree contains any abstract types."""
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
