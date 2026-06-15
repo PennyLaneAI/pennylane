@@ -52,13 +52,18 @@ def test_wire_leaf_maps_to_abstract_wires(leaf, expected):
 class TestCanonicalizeAbstractTypeHelper:
     """Tests '_canonicalize_abstract_type' helper."""
 
-    def test_abstract_pass_through(self):
-        """Tests that already abstract inputs are passed through unchanged."""
+    def test_abstract_wires_pass_through(self):
+        """Tests that already abstract wires are returned early."""
 
         aw = AbstractWires(5)
         assert _canonicalize_abstract_type(aw, kind=ArgType.WIRES) is aw
+
+    @pytest.mark.parametrize("kind", [ArgType.DYN, ArgType.HYBRID])
+    def test_abstract_arrays_pass_through(self, kind):
+        """Tests that already abstract arrays are returned early."""
+
         aa = AbstractArray((), float)
-        assert _canonicalize_abstract_type(aa, kind=ArgType.WIRES) is aa
+        assert _canonicalize_abstract_type(aa, kind) is aa
 
     # =========================================================================
     # Unit tests when 'kind=ArgType.WIRES'
@@ -186,8 +191,8 @@ class TestOperatorConcreteInputs:
         """Tests that a concrete construction under capture will bind the primitive."""
 
         cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
-        relevant_eqns = [e for e in cjaxpr.eqns if e.primitive is operator_p]
-        assert len(relevant_eqns) == 1
+        # Make sure the operator primitive is in thie JAXPR
+        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
 
 
 class TestOperatorAbstractInputs:
@@ -199,18 +204,7 @@ class TestOperatorAbstractInputs:
         aa = AbstractArray((1,), float)
         op = DynCanonOp(phi=aa, wires=[0])
         assert op.phi is aa
-        # The 0 got replaced with a AbstractWires
         assert op.wires == AbstractWires(1)
-
-    def test_bind_isnt_trigger_for_abstract_array(self):
-        """Tests that no operator equation enters the jaxpr for abstract inputs."""
-
-        def f():
-            DynCanonOp(phi=AbstractArray((1,), float), wires=0)
-
-        cjaxpr = jax.make_jaxpr(f)()
-        relevant_eqns = [e for e in cjaxpr.eqns if e.primitive is operator_p]
-        assert len(relevant_eqns) == 0
 
     @pytest.mark.parametrize(
         "concrete_theta, abstract_theta",
@@ -231,7 +225,7 @@ class TestOperatorAbstractInputs:
 
         aa = AbstractArray((1,), int)
         op = TwoDynOp(phi=aa, theta=concrete_theta, wires=concrete_wires)
-        # __init__ is hit so phi is doubled
+        # Phi stays the same, theta and wires are abstractified
         assert op.phi is aa
         assert op.theta == abstract_theta
         assert op.wires == abstract_wires
@@ -242,16 +236,6 @@ class TestOperatorAbstractInputs:
         aw = Wires[1]
         op = MultiWireOp(wires=aw, ctrl_wires=0)
         assert op.wires == AbstractWires(2)
-
-    def test_bind_isnt_trigger_for_abstract_wires(self):
-        """Tests that no operator equation enters the jaxpr for abstract wires."""
-
-        def f():
-            MultiWireOp(Wires[1], 0)
-
-        cjaxpr = jax.make_jaxpr(f)()
-        relevant_eqns = [e for e in cjaxpr.eqns if e.primitive is operator_p]
-        assert len(relevant_eqns) == 0
 
     def test_mixed_arg_op_correctly_abstractifies_arguments(self):
         """Tests that different types of arguments canonicalize differently."""
@@ -273,3 +257,26 @@ class TestOperatorAbstractInputs:
         assert op.dynamic_arg == AbstractArray((2,), int)
         assert op.hybrid_arg == [AbstractArray((), int), AbstractArray((), int)]
         assert op.wires == AbstractWires(1)
+
+
+class TestOperatorAbstractInputsCapture:
+    """Tests the capture of operators with abstract inputs."""
+
+    def test_bind_isnt_trigger_for_abstract_wires(self):
+        """Tests that no operator equation enters the jaxpr for abstract wires."""
+
+        def f():
+            MultiWireOp(Wires[1], 0)
+
+        cjaxpr = jax.make_jaxpr(f)()
+        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
+
+    def test_bind_isnt_trigger_for_abstract_array(self):
+        """Tests that no operator equation enters the jaxpr for abstract inputs."""
+
+        def f():
+            DynCanonOp(phi=AbstractArray((1,), float), wires=0)
+
+        cjaxpr = jax.make_jaxpr(f)()
+        # Empty JAXPR
+        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0

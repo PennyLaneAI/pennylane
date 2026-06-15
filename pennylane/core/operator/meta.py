@@ -77,6 +77,7 @@ def _canonicalize_abstract_type(val, kind: ArgType):
         canonical_arr = math.asarray(val)
         return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
+    # NOTE: Only flatten ArgType.HYBRID arguments
     leaves, structure = flatten(val)
     new_leaves = []
     for leaf in leaves:
