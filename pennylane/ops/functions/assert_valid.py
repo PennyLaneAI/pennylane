@@ -27,13 +27,14 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator2
+from pennylane.core import Operator, Operator2
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.wires import Wires
 
+from ...pytrees import flatten
 from .equal import assert_equal
 
 
@@ -569,6 +570,14 @@ def _get_signature(op):
 # pylint: disable=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2,
+    skip_deepcopy=False,
+    skip_differentiation=False,
+    skip_new_decomp=False,
+    skip_decomp_matrix_check=False,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_capture=False,
+    skip_pytree=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -622,6 +631,21 @@ def _assert_valid_operator2(
             assert (dim is None) or (
                 len(val) == dim
             ), f"Wires argument {name} has an invalid dimension."
+
+    for name, val in op.hybrid_args.items():
+        leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))
+        for leaf in leaves:
+            assert_valid(
+                leaf,
+                skip_deepcopy=skip_deepcopy,
+                skip_differentiation=skip_differentiation,
+                skip_new_decomp=skip_new_decomp,
+                skip_decomp_matrix_check=skip_decomp_matrix_check,
+                skip_pickle=skip_pickle,
+                skip_wire_mapping=skip_wire_mapping,
+                skip_capture=skip_capture,
+                skip_pytree=skip_pytree,
+            )
 
 
 # pylint: disable=too-many-arguments
@@ -699,8 +723,20 @@ def assert_valid(
         skip_new_decomp = True
         # The pytree leaves of an Operator2 include its wires
         skip_pytree = True
+        # Temporary, as we will integrate with differentiation soon
+        skip_differentiation = True
 
-        _assert_valid_operator2(op)
+        _assert_valid_operator2(
+            op,
+            skip_deepcopy,
+            skip_differentiation,
+            skip_new_decomp,
+            skip_decomp_matrix_check,
+            skip_pickle,
+            skip_wire_mapping,
+            skip_capture,
+            skip_pytree,
+        )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
         assert isinstance(op.parameters, list), "op.parameters must be a list"
