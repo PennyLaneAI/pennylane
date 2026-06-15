@@ -175,11 +175,8 @@ def ctrl_decomp_zyz(
     control_wires = Wires(control_wires)
     target_wire = target_operation.wires
 
-    if isinstance(target_operation, Operation):
-        try:
-            *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
-        except NotImplementedError:
-            *rot_angles, global_phase = zyz_rotation_angles(ops.functions.matrix(target_operation))
+    if isinstance(target_operation, Operator):
+        *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
     else:
         *rot_angles, global_phase = zyz_rotation_angles(ops.functions.matrix(target_operation))
 
