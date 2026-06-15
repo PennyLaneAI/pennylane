@@ -970,9 +970,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for wname, wsize in zip(self.wire_argnames, self.wire_sizes, strict=True):
             if wname not in self.hybrid_argnames:
                 warg = self._bound_args.arguments[wname]
-                canonical_wires = (
-                    warg if isinstance(warg, AbstractWires) else Wires(warg)
-                )
+                canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
                 self._bound_args.arguments[wname] = canonical_wires
 
                 if wsize is not None and len(canonical_wires) != wsize:
