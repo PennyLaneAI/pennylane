@@ -964,6 +964,9 @@ class CircuitSpecs:
 
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
+        #pylint: disable=too-many-branches
+        # Ignore pylint on this one, this is not better served by splitting into even
+        # smaller functions than it already has
         lines = []
         if collapsible:
             lines.append("<details open>")
