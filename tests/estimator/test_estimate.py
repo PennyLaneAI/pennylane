@@ -336,9 +336,33 @@ class TestEstimateResources:
         """Test that a ResourcesUndefinedError is raised when obtaining resources for
         a resource operator which has no resource_decomp defined"""
         with pytest.raises(
-            ResourcesUndefinedError, match=".* does not have a resource decomposition defined"
+            ResourcesUndefinedError,
+            match=(
+                "Resources for DummyT cannot be expressed in the requested gate_set "
+                ".*add 'DummyT' to gate_set.*ResourceConfig.set_decomp"
+            ),
         ):
             estimate(workflow=DummyT(), gate_set={DummyCNOT})
+
+    def test_estimate_resources_from_qfunc_with_untargetable_gate_set(self):
+        """Test that qfunc resource estimation explains how to fix an untargetable gate set."""
+
+        def circuit(num_wires):
+            qp.estimator.Hadamard()
+            qp.estimator.BasisRotation(num_wires)
+            mrx = qp.estimator.MultiRZ(2)
+            qp.estimator.Controlled(mrx, num_ctrl_wires=1, num_zero_ctrl=1)
+            qp.estimator.PhaseShift()
+
+        with pytest.raises(ResourcesUndefinedError) as exc_info:
+            estimate(circuit, gate_set={"RZ", "CNOT"})(3)
+
+        message = str(exc_info.value)
+        assert "Resources for Hadamard cannot be expressed in the requested gate_set" in message
+        assert "'CNOT'" in message
+        assert "'RZ'" in message
+        assert "add 'Hadamard' to gate_set" in message
+        assert "ResourceConfig.set_decomp" in message
 
     def test_estimate_resources_from_scaled_resource_operator(self):
         """Test that we can accurately obtain resources from resource operator"""
