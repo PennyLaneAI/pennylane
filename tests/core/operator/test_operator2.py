@@ -1827,19 +1827,19 @@ class TestLegacyCompatibilityViews:
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
         """Test that non-``wires`` wire argument names are excluded."""
 
-        class ControlledOp(Operator2):
+        class AuxWiresOp(Operator2):
             dynamic_argnames = ("phi",)
-            wire_argnames = ("wires", "control_wires")
+            wire_argnames = ("wires", "aux_wires")
             wire_sizes = (1, None)
 
-            def __init__(self, phi, wires, control_wires):
-                super().__init__(phi, wires=wires, control_wires=control_wires)
+            def __init__(self, phi, wires, aux_wires):
+                super().__init__(phi, wires=wires, aux_wires=aux_wires)
 
-        op = ControlledOp(0.5, wires=0, control_wires=[1, 2])
+        op = AuxWiresOp(0.5, wires=0, aux_wires=[1, 2])
 
         assert "phi" not in op.hyperparameters
         assert "wires" not in op.hyperparameters
-        assert "control_wires" not in op.hyperparameters
+        assert "aux_wires" not in op.hyperparameters
 
     def test_control_wires_subclass_override(self):
         """Test that a subclass property shadows the base default."""
