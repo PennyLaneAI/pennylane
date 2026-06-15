@@ -240,6 +240,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
+  [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
+
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
@@ -572,6 +575,10 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
+  producing more balanced test groups across parallel CI jobs.
+  [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
 
 * Improve language server support for `qp.capture`.
   [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)

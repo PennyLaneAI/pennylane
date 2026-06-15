@@ -16,13 +16,90 @@ This module contains some useful utility functions for circuit drawing.
 """
 
 from functools import singledispatch
+from itertools import chain
 
 import numpy as np
 
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
+
+
+def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, dict]:
+    """Determine the start and end points of quantum wires and reuse lines
+    for dynamic wires when possible.
+
+    Args:
+        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+            into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
+        wire_map (dict): map from the wires to the horizontal line
+
+    Returns:
+        dict, dict: The first dictionary is an updated wire_map that may have collapsed
+            dynamic wires into one line. The second is a map from horizontal line to
+            a list of wire extents.
+
+    >>> from pennylane.drawer.utils import dynamic_wire_connections
+    >>> from pennylane.drawer.drawable_layers import drawable_layers
+    >>> wire_map = {0:0}
+    >>> with qp.queuing.AnnotatedQueue() as q:
+    ...     with qp.allocate(1) as wires:
+    ...         wire_map[wires[0]] = 1
+    ...         qp.CNOT((0, wires[0]))
+    ...     qp.Barrier()
+    ...     with qp.allocate(1) as wires:
+    ...         wire_map[wires[0]] = 2
+    ...         qp.CZ((0, wires[0]))
+    CNOT(wires=[0, <DynamicWire>])
+    Barrier(wires=[])
+    CZ(wires=[0, <DynamicWire>])
+    >>> layers = drawable_layers(q.queue, wire_map)
+    >>> layers
+    [[Allocate(wires=[<DynamicWire>])],
+    [CNOT(wires=[0, <DynamicWire>])],
+    [Deallocate(wires=[<DynamicWire>])],
+    [Barrier(wires=[]), Allocate(wires=[<DynamicWire>])],
+    [CZ(wires=[0, <DynamicWire>])],
+    [Deallocate(wires=[<DynamicWire>])]]
+    >>> wire_map, wire_layers = dynamic_wire_connections(layers, wire_map)
+    >>> wire_map
+    {<DynamicWire>: 1, <DynamicWire>: 1, 0: 0}
+    >>> wire_layers
+    {1: [[0, 2], [3, 5]], 0: [[-1, 6]]}
+
+    Both ``<DynamicWire>``'s now occur in the same line.  The first one goes from layer
+    ``0`` to layer ``2``, and the second one goes from ``3`` to layer ``5``.
+
+    """
+    dynamic_wire_extent = {}
+    dynamic_wire_map = {}
+    num_encountered = 0
+    for layer_idx, layer in enumerate(layers):
+        for op in layer:
+            if isinstance(op, Allocate):
+                for w in op.wires:
+                    dynamic_wire_map[w] = num_encountered
+                    num_encountered += 1
+                    dynamic_wire_extent[dynamic_wire_map[w]] = [layer_idx]
+            if isinstance(op, Deallocate):
+                for w in op.wires:
+                    dynamic_wire_extent[dynamic_wire_map[w]].append(layer_idx)
+
+    new_wire_map, connected_layers, _ = _try_line_reuse(dynamic_wire_map, dynamic_wire_extent, None)
+
+    # shift to occur after all the normal wires
+    num_normal_wires = sum(1 for w in wire_map if not isinstance(w, DynamicWire))
+    new_wire_map = {w: l + num_normal_wires for w, l in new_wire_map.items()}
+    new_connected_layers = {l + num_normal_wires: val for l, val in connected_layers.items()}
+    # add normal wires into connected_layers
+    for w in wire_map:
+        if not isinstance(w, DynamicWire):
+            new_wire_map[w] = wire_map[w]
+            new_connected_layers[wire_map[w]] = [[-1, len(layers)]]
+
+    return new_wire_map, new_connected_layers
 
 
 def _get_subroutine_mvs(op: SubroutineOp) -> list[MeasurementValue]:
@@ -42,12 +119,19 @@ def default_wire_map(tape):
     """
 
     # Use dictionary to preserve ordering, sets break order
-    used_wires = {wire: None for op in tape for wire in op.wires}
-    used_wire_map = {wire: ind for ind, wire in enumerate(used_wires)}
-    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
-    used_and_work_wires = used_wires | {
-        wire: None for op in tape for wire in getattr(op, "work_wires", [])
+    used_wires = {
+        wire: None for op in tape for wire in op.wires if not isinstance(wire, DynamicWire)
     }
+    dynamic_wires = {
+        wire: None for op in tape for wire in op.wires if isinstance(wire, DynamicWire)
+    }
+    used_wire_map = {wire: ind for ind, wire in enumerate(chain(used_wires, dynamic_wires))}
+    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
+    used_and_work_wires = (
+        used_wires
+        | dynamic_wires
+        | {wire: None for op in tape for wire in getattr(op, "work_wires", [])}
+    )
     full_wire_map = {wire: ind for ind, wire in enumerate(used_and_work_wires)}
     return full_wire_map, used_wire_map
 
@@ -177,34 +261,34 @@ def unwrap_controls(op):
 
 # pylint: disable=unused-argument
 @singledispatch
-def _get_meas(op, bit_map):
+def _get_meas(op, bit_map, wire_map):
     return [], None
 
 
 @_get_meas.register
-def _get_subroutine_mcms(op: SubroutineOp, bit_map):
+def _get_subroutine_mcms(op: SubroutineOp, bit_map, wire_map):
     _meas = []
     for mcm in (mcm for mv in _get_subroutine_mvs(op) for mcm in mv.measurements):
         if mcm in bit_map:
             _meas.append(mcm)
-    return _meas, max(op.wires)
+    return _meas, max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register(MidMeasure)
 @_get_meas.register(PauliMeasure)
-def _get_mm(op: MidMeasure | PauliMeasure, bit_map):
+def _get_mm(op: MidMeasure | PauliMeasure, bit_map, wire_map):
     if op not in bit_map:
         return [], None
-    return [op], op.wires[0]
+    return [op], max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register
-def _get_c(op: Conditional, bit_map):
-    return op.meas_val.measurements, max(op.wires)
+def _get_c(op: Conditional, bit_map, wire_map):
+    return op.meas_val.measurements, max({wire_map[w] for w in op.wires})
 
 
 @_get_meas.register
-def _get_mp(op: MeasurementProcess, bit_map):
+def _get_mp(op: MeasurementProcess, bit_map, wire_map):
     if op.mv is None:
         return [], None
     if isinstance(op.mv, MeasurementValue):
@@ -212,7 +296,7 @@ def _get_mp(op: MeasurementProcess, bit_map):
     return [m.measurements[0] for m in op.mv], None
 
 
-def cwire_connections(layers, bit_map):
+def cwire_connections(layers, bit_map, wire_map):
     """Extract the information required for classical control wires.
 
     Args:
@@ -220,6 +304,7 @@ def cwire_connections(layers, bit_map):
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
         bit_map (Dict): Dictionary containing mid-circuit measurements that are used for
             classical conditions or measurement statistics as keys.
+        wire_map (Dict): Dictionary mapping wire labels to their vertical drawing indices.
 
     Returns:
         dict, dict, dict: The first dictionary is the updated ``bit_map``, potentially with
@@ -239,8 +324,9 @@ def cwire_connections(layers, bit_map):
     ...     qp.cond(m0, qp.S)(3)
     >>> tape = qp.tape.QuantumScript.from_queue(q)
     >>> bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
-    >>> layers = drawable_layers(tape, bit_map=bit_map)
-    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    >>> wire_map = {wire: wire for wire in tape.wires}
+    >>> layers = drawable_layers(tape, wire_map=wire_map, bit_map=bit_map)
+    >>> new_bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map, wire_map)
     >>> new_bit_map == bit_map # No reusage happening
     True
     >>> cwire_layers
@@ -262,7 +348,7 @@ def cwire_connections(layers, bit_map):
 
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            _meas, con_wire = _get_meas(op, bit_map)
+            _meas, con_wire = _get_meas(op, bit_map, wire_map)
 
             for m in _meas:
                 cwire = bit_map[m]
@@ -270,49 +356,50 @@ def cwire_connections(layers, bit_map):
                 if con_wire is not None:
                     connected_wires[cwire].append(con_wire)
 
-    bit_map, connected_layers, connected_wires = _try_reusing_cwires(
+    bit_map, connected_layers, connected_wires = _try_line_reuse(
         bit_map, connected_layers, connected_wires
     )
 
     return bit_map, connected_layers, connected_wires
 
 
-def _try_reusing_cwires(bit_map, connected_layers, connected_wires):
+def _try_line_reuse(order_map, connected_layers, connected_wires: None | dict):
     # Extract (start, end) tuples (incl end) where each cwire is occupied with old bit map
     occupation = {
-        cwire: (min(con_layer), max(con_layer)) for cwire, con_layer in connected_layers.items()
+        line: (min(con_layer), max(con_layer)) for line, con_layer in connected_layers.items()
     }
-    # Mark until where each cwire is currently occupied during the following loop.
-    # Start with -1 for each cwire
-    occ_ends = -np.ones(len(bit_map))
-    # Write a map from old cwires to new cwires
-    cwire_map = {}
-    for cwire, occ in occupation.items():
-        # Find the first cwire that is currently not occupied, i.e. that has its occupation end
+    # Mark until where each line is currently occupied during the following loop.
+    # Start with -1 for each line
+    occ_ends = -np.ones(len(order_map))
+    # Write a map from old lines to new lines
+    squash_map = {}
+    for line, occ in occupation.items():
+        # Find the first line that is currently not occupied, i.e. that has its occupation end
         # before the current occ starts (first entry of occ)
-        new_cwire = int(np.where(occ_ends < occ[0])[0][0])
-        # allocate a new (or the old) cwire based on the first one that was free above
-        cwire_map[cwire] = new_cwire
+        new_line = int(np.where(occ_ends < occ[0])[0][0])
+        # allocate a new (or the old) line based on the first one that was free above
+        squash_map[line] = new_line
         # Update the occupation end of the newly allocated cwire
-        occ_ends[new_cwire] = occ[1]
-    # Create an inverted cwire map that maps new cwires to all old cwires that are mapped to it
-    inv_cwire_map = {new_cwire: [] for new_cwire in cwire_map.values()}
-    for old_cwire in bit_map.values():
-        inv_cwire_map[cwire_map[old_cwire]].append(old_cwire)
+        occ_ends[new_line] = occ[1]
+    # Create an inverted map that maps new lines to all old lines that are mapped to it
+    inv_squash_map = {new_line: [] for new_line in squash_map.values()}
+    for old_line in order_map.values():
+        inv_squash_map[squash_map[old_line]].append(old_line)
 
-    # Collect the connected layers from all old cwires that are being mapped to the same new cwire
+    # Collect the connected layers from all old lines that are being mapped to the same new line
     connected_layers = {
-        new_cwire: [connected_layers[w] for w in old_cwires]
-        for new_cwire, old_cwires in inv_cwire_map.items()
+        new_line: [connected_layers[w] for w in old_line]
+        for new_line, old_line in inv_squash_map.items()
     }
-    # Collect the connected wires from all old cwires that are being mapped to the same new cwire
-    connected_wires = {
-        new_cwire: [connected_wires[w] for w in old_cwires]
-        for new_cwire, old_cwires in inv_cwire_map.items()
-    }
-    # Update bit map according to the condensed/reused cwires
-    bit_map = {op: cwire_map[cwire] for op, cwire in bit_map.items()}
-    return bit_map, connected_layers, connected_wires
+    # Collect the connected wires from all old lines that are being mapped to the same new cwire
+    if connected_wires:
+        connected_wires = {
+            new_line: [connected_wires[w] for w in old_lines]
+            for new_line, old_lines in inv_squash_map.items()
+        }
+    # Update order map according to the condensed/reused cwires
+    new_order_map = {op: squash_map[line] for op, line in order_map.items()}
+    return new_order_map, connected_layers, connected_wires
 
 
 def transform_deferred_measurements_tape(tape):
