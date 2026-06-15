@@ -380,7 +380,7 @@ diff_method_map = {"finite-diff": _finite_diff}
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
     execution_config = device.setup_execution_config(execution_config)
     if execution_config.use_device_gradient:
-        return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
+        raise NotImplementedError  # pragma: no cover
 
     if execution_config.gradient_method not in diff_method_map:
         raise NotImplementedError(
