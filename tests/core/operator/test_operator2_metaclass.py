@@ -188,6 +188,15 @@ class TestCanonicalizeAbstractTypeHelper:
                 {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
                 {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
             ),
+            # Ensures wires as hybrid args are handled
+            (
+                {"reg1": Wires([0, 1]), "reg2": Wires([2, 3])},
+                {"reg1": AbstractWires(2), "reg2": AbstractWires(2)},
+            ),
+            (
+                qp.registers({"a": 2, "b": 3}),
+                {"a": AbstractWires(2), "b": AbstractWires(3)},
+            ),
         ],
     )
     def test_concrete_hybrid_arg_inputs_are_abstractified(self, val, expected):
@@ -280,13 +289,19 @@ class TestOperatorAbstractInputs:
                 super().__init__(static_arg, dynamic_arg, hybrid_arg, wires=wires)
 
         op = MixedArgOp(
-            static_arg="blah", dynamic_arg=[0, 1], hybrid_arg=[0, 1], wires=AbstractWires(1)
+            static_arg="blah",
+            dynamic_arg=[0, 1],
+            hybrid_arg={"random_list": [0.5, 1.5], "register1": Wires([0, 1, 2])},
+            wires=AbstractWires(1),
         )
         assert op.static_arg == "blah"
         # Cast to abstract array
         assert op.dynamic_arg == AbstractArray((2,), int)
-        # Pytree still holds up
-        assert op.hybrid_arg == [AbstractArray((), int), AbstractArray((), int)]
+        # Pytree still holds up and nested wires are processed properly
+        assert op.hybrid_arg == {
+            "random_list": [AbstractArray((), float), AbstractArray((), float)],
+            "register1": AbstractWires(3),
+        }
         assert op.wires == AbstractWires(1)
 
 

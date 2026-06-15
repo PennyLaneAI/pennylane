@@ -78,11 +78,13 @@ def _canonicalize_abstract_type(val, kind: ArgType):
             return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
         case ArgType.HYBRID:
-            leaves, structure = flatten(val)
+            leaves, structure = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
             new_leaves = []
             for leaf in leaves:
                 if isinstance(leaf, (AbstractArray, AbstractWires)):
                     new_leaves.append(leaf)
+                elif isinstance(leaf, Wires):
+                    new_leaves.append(_canonicalize_wire_leaf(leaf))
                 # Process arrays
                 elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
                     new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
