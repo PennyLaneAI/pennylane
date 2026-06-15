@@ -152,7 +152,7 @@ class PUIIsometryFinder:
         # Largest power of 2 less than or equal to n_r, the remainder register size
         self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
 
-        self.tableau = qp.math.int_to_binary(basis_states, self.n)
+        self.tableau = qp.math.int_to_binary(basis_states, self.n).astype(np.int8)
         self.circuit = []
 
         # Pre-compute subspace membership (will track incrementally)
@@ -173,22 +173,25 @@ class PUIIsometryFinder:
 
         # Update tableau for PUI effect
         target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
-        for j, _bits in enumerate(target_bits):
-            self.apply_multi_controlled_x(slice(0, self.n_subspace), _bits, self.n_subspace + j)
+
+        # Broadcasted version of `apply_multi_controlled_x`.
+        ctrl_cols = self.tableau[None, :, : self.n_subspace]
+        # A row is flipped iff all control bits match control_values
+        match = np.all(ctrl_cols == target_bits[:, None, :], axis=2)
+        self.tableau[
+            :, np.arange(self.n_subspace, len(target_bits) + self.n_subspace)
+        ] ^= match.astype(np.int8).T
 
         # Update subspace status after PUI
         self._in_subspace = np.all(self.tableau[:, self.n_subspace :] == 0, axis=1)
 
     def fanout(self, control: int, bits: np.ndarray):
         """Add a Fanout operation to the circuit ops and apply corresponding CNOTs to the tableau."""
-        self.circuit.append(("Fanout", control, bits))
-        ctrl_bits = self.tableau[:, control]
-        for i, bit in enumerate(bits[:control]):
-            if bit:
-                self.tableau[:, i] ^= ctrl_bits
-        for i, bit in enumerate(bits[control:], start=control + 1):
-            if bit:
-                self.tableau[:, i] ^= ctrl_bits
+        self.circuit.append(("Fanout", control, np.delete(bits, control)))
+        ctrl_bits = self.tableau[:, control].copy()
+        target_bits = np.where(bits)[0]
+        self.tableau[:, target_bits] ^= ctrl_bits[:, None]
+        self.tableau[:, control] = ctrl_bits
 
     def toffoli(self, controls, control_values, target):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
@@ -273,7 +276,7 @@ class PUIIsometryFinder:
         k_bits = qp.math.int_to_binary(k, self.n_subspace)
         target_state = qp.math.concatenate([k_bits, np.zeros(self.n - self.n_subspace, dtype=int)])
         current_state = self.tableau[found_state]
-        diff = np.delete(np.bitwise_xor(target_state, current_state), actual_qubit)
+        diff = np.bitwise_xor(target_state, current_state)
         self.fanout(actual_qubit, diff)
 
     def find_isometry(self):
@@ -583,7 +586,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     ] += num_entries
 
     embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
-    resources[embed_rep] += 2 * max(num_entries // main_pui_batch_size, 1)
+    resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     swap_rep = qp.resource_rep(qp.SWAP)
     resources[swap_rep] += num_wires
