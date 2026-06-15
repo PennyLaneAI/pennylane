@@ -284,7 +284,7 @@ class TestOperatorAbstractInputs:
             static_argnames = ("static_arg",)
             dynamic_argnames = ("dynamic_arg",)
             hybrid_argnames = ("hybrid_arg",)
-           # Hybrid arg holds a 'Wires' object in one of it's key value pairs
+            # Hybrid arg holds a 'Wires' object in one of it's key value pairs
             wire_argnames = ("hybrid_arg", "wires")
 
             def __init__(self, static_arg, dynamic_arg, hybrid_arg, wires):
