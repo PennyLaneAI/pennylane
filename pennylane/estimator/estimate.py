@@ -20,6 +20,7 @@ from functools import singledispatch, wraps
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
@@ -37,6 +38,33 @@ _SYMBOLIC_DECOMP_MAP = {
     Controlled: ("ctrl_custom_decomps", "controlled_resource_decomp"),
     Pow: ("pow_custom_decomps", "pow_resource_decomp"),
 }
+
+
+def _gate_set_to_str(gate_set: Iterable) -> str:
+    """Return a deterministic display string for a requested gate set."""
+    gate_names = [
+        gate if isinstance(gate, str) else getattr(gate, "__name__", str(gate))
+        for gate in gate_set
+    ]
+    return "{" + ", ".join(repr(gate_name) for gate_name in sorted(gate_names)) + "}"
+
+
+def _resources_undefined_error_message(
+    comp_res_op: CompressedResourceOp, gate_set: Iterable, original_error: ResourcesUndefinedError
+) -> str:
+    """Return an actionable error for operators that cannot target a requested gate set."""
+    message = (
+        f"Resources for {comp_res_op.name} cannot be expressed in the requested gate_set "
+        f"{_gate_set_to_str(gate_set)}. {comp_res_op.name} is not in the gate_set and does "
+        "not define a resource decomposition to continue decomposing it. To estimate this "
+        f"workflow, add {comp_res_op.name!r} to gate_set or provide a custom resource "
+        "decomposition with ResourceConfig.set_decomp."
+    )
+
+    if str(original_error):
+        message += f" Original error: {original_error}"
+
+    return message
 
 
 def estimate(
@@ -481,7 +509,13 @@ def _update_counts_from_compressed_res_op(
         gate_counts_dict[comp_res_op] += scalar
         return
 
-    resource_decomp = _get_resource_decomposition(comp_res_op, config)
+    try:
+        resource_decomp = _get_resource_decomposition(comp_res_op, config)
+    except ResourcesUndefinedError as exc:
+        raise ResourcesUndefinedError(
+            _resources_undefined_error_message(comp_res_op, gate_set, exc)
+        ) from exc
+
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     for action in resource_decomp:
