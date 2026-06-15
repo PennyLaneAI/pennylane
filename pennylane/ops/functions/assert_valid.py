@@ -606,9 +606,6 @@ def _assert_valid_operator2(
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
 
-    assert len(op.static_argnames) or len(
-        op.dynamic_argnames
-    ), "at least one of static_argnames and dynamic_argnames must be set"
     assert len(op.ndim_params) == len(
         op.dynamic_argnames
     ), "ndim_params must have the same length as dynamic_argnames"
