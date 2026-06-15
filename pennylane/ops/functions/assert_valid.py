@@ -55,12 +55,8 @@ def _check_decomposition(op, skip_wire_mapping):
     if op.has_decomposition:
         decomp = op.decomposition()
         try:
-            if isinstance(op, Operator2):
-                compute_decomp = type(op).compute_decomposition(**op.arguments)
-            else:
-                compute_decomp = type(op).compute_decomposition(
-                    *op.data, wires=op.wires, **op.hyperparameters
-                )
+            args, kwargs = _get_signature(op)
+            compute_decomp = type(op).compute_decomposition(*args, **kwargs)
         except (qp.exceptions.DecompositionUndefinedError, TypeError):
             # sometimes decomposition is defined but not compute_decomposition
             # Also  sometimes compute_decomposition can have a different signature
@@ -117,19 +113,12 @@ def _check_decomposition(op, skip_wire_mapping):
             failure_comment=failure_comment,
         )()
         # pylint: disable=expression-not-assigned
-        (
-            _assert_error_raised(
-                op.compute_decomposition,
-                qp.operation.DecompositionUndefinedError,
-                failure_comment=failure_comment,
-            )(**op.arguments)
-            if isinstance(op, Operator2)
-            else _assert_error_raised(
-                op.compute_decomposition,
-                qp.operation.DecompositionUndefinedError,
-                failure_comment=failure_comment,
-            )(*op.data, wires=op.wires, **op.hyperparameters)
-        )
+        args, kwargs = _get_signature(op)
+        _assert_error_raised(
+            op.compute_decomposition,
+            qp.operation.DecompositionUndefinedError,
+            failure_comment=failure_comment,
+        )(*args, **kwargs)
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
@@ -352,12 +341,8 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            if isinstance(op, Operator2):
-                compute_dg = type(op).compute_diagonalizing_gates(**op.arguments)
-            else:
-                compute_dg = type(op).compute_diagonalizing_gates(
-                    *op.data, wires=op.wires, **op.hyperparameters
-                )
+            args, kwargs = _get_signature(op)
+            compute_dg = type(op).compute_diagonalizing_gates(*args, **kwargs)
         except (qp.operation.DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
             # compute_diagonalizing_gates might also have a different call signature
@@ -378,11 +363,10 @@ def _check_eigendecomposition(op):
 
     has_eigvals = True
     try:
-        compute_eg = (
-            type(op).compute_eigvals(**op.arguments)
-            if isinstance(op, Operator2)
-            else type(op).compute_eigvals(*op.data, **op.hyperparameters)
-        )
+        args, kwargs = _get_signature(op)
+        if not isinstance(op, qp.operation.Operator2):
+            kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
+        compute_eg = type(op).compute_eigvals(*args, **kwargs)
     except EigvalsUndefinedError:
         compute_eg = eg
         has_eigvals = False
@@ -583,6 +567,12 @@ def _check_wires(op, skip_wire_mapping):
     mapped_op = op.map_wires(wire_map)
     new_wires = qp.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
+
+
+def _get_signature(op):
+    if isinstance(op, Operator2):
+        return (), op.arguments
+    return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
 # pylint: disable=too-many-arguments
