@@ -256,7 +256,7 @@ class TestOperatorAbstractInputs:
     def test_mixed_arg_op_correctly_abstractifies_arguments(self):
         """Tests that different types of arguments canonicalize differently."""
 
-        class MixedArgOp(Operator2):
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
             """Operator with static, dynamic and hybrid argnames."""
 
             static_argnames = ("static_arg",)
@@ -264,7 +264,7 @@ class TestOperatorAbstractInputs:
             hybrid_argnames = ("hybrid_arg",)
 
             def __init__(self, static_arg, dynamic_arg, hybrid_arg, wires):
-                super().__init__(static_arg, dynamic_arg, hybrid_arg, wires)
+                super().__init__(static_arg, dynamic_arg, hybrid_arg, wires=wires)
 
         op = MixedArgOp(
             static_arg="blah", dynamic_arg=[0, 1], hybrid_arg=[0, 1], wires=AbstractWires(1)
