@@ -180,12 +180,12 @@ class TestInspectDecompGraph:
         result = inspector.inspect_decomps(op, num_work_wires=2)
         assert str(result) == dedent("""
             CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-            <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤  
-                        3: ───────────├●─│──────────────├●─────────────┤  
-                        4: ───────────├●─│──────────────├●─────────────┤  
-                        5: ───────────╰●─│──────────────╰●─────────────┤  
-                        0: ──────────────├MultiRZ(0.50)────────────────┤  
-                        1: ──────────────╰MultiRZ(0.50)────────────────┤  
+            0: ──────────╭MultiRZ(0.50)───────┤  
+            1: ──────────├MultiRZ(0.50)───────┤  
+            3: ───────╭●─│──────────────╭●────┤  
+            4: ───────├●─│──────────────├●────┤  
+            5: ───────├●─│──────────────├●────┤  
+                 |0>├─╰X─╰●─────────────╰X──┤    
             First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
@@ -209,12 +209,12 @@ class TestInspectDecompGraph:
             #### **CHOSEN:** Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
 
             ```
-            <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤  
-                        3: ───────────├●─│──────────────├●─────────────┤  
-                        4: ───────────├●─│──────────────├●─────────────┤  
-                        5: ───────────╰●─│──────────────╰●─────────────┤  
-                        0: ──────────────├MultiRZ(0.50)────────────────┤  
-                        1: ──────────────╰MultiRZ(0.50)────────────────┤  
+            0: ──────────╭MultiRZ(0.50)───────┤  
+            1: ──────────├MultiRZ(0.50)───────┤  
+            3: ───────╭●─│──────────────╭●────┤  
+            4: ───────├●─│──────────────├●────┤  
+            5: ───────├●─│──────────────├●────┤  
+                 |0>├─╰X─╰●─────────────╰X──┤    
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -292,22 +292,22 @@ class TestInspectDecompGraph:
             Weighted Cost: 69.0
 
             CHOSEN: Decomposition 2 (name: one_zeroed_worker)
-            <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤  
-                        0: ───────────├●─│───●┤─────────────┤  
-                        1: ───────────╰●─│───●╯─────────────┤  
-                        2: ──────────────├●─────────────────┤  
-                        3: ──────────────╰X─────────────────┤  
+            0: ───────╭●─────●╮────┤  
+            1: ───────├●─────●┤────┤  
+            2: ───────│──╭●───│────┤  
+            3: ───────│──├X───│────┤  
+                 |0>├─╰⊕─╰●──⊕╯──┤    
             First-Level Expansion Gates: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {GlobalPhase: 23, RX: 4, MidMeasure: 1, RY: 7, RZ: 19, CNOT: 10}
             Weighted Cost: 41.0
 
             Decomposition 3 (name: one_borrowed_worker)
-            <DynamicWire>: ──Allocate─╭X─╭●─╭X─╭●──Deallocate─┤  
-                        0: ───────────├●─│──├●─│──────────────┤  
-                        1: ───────────╰●─│──╰●─│──────────────┤  
-                        2: ──────────────├●────├●─────────────┤  
-                        3: ──────────────╰X────╰X─────────────┤  
+            0: ────╭●────╭●───────┤  
+            1: ────├●────├●───────┤  
+            2: ────│──╭●─│──╭●────┤  
+            3: ────│──├X─│──├X────┤  
+                 ├─╰X─╰●─╰X─╰●──┤    
             First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RZ: 36, RY: 8}

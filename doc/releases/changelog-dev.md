@@ -240,6 +240,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
+  [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
+
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
@@ -573,6 +576,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
+  [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
+
 * The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
   producing more balanced test groups across parallel CI jobs.
   [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
@@ -604,6 +610,7 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Adds a new `pennylane/core` module.
