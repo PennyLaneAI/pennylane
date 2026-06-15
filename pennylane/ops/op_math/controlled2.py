@@ -15,6 +15,7 @@
 """Defines the base class for controlled operators."""
 
 from collections.abc import Sequence
+from inspect import signature
 from typing import Literal
 
 from scipy import sparse
@@ -80,11 +81,12 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
 
-    def __init_subclass__(cls, is_baseclass=False, override_signature=False) -> None:
+    def __init_subclass__(cls, is_baseclass=False) -> None:
 
         super().__init_subclass__(is_baseclass)
 
-        if not override_signature:
+        base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
+        if set(signature(cls).parameters.keys()) == base_argnames:
             return
 
         if cls.compute_matrix is Controlled2.compute_matrix:

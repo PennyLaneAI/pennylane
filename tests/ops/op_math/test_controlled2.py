@@ -32,7 +32,7 @@ class TestControlled2:
     def test_non_parametrized_custom_controlled_op(self):
         """Tests non-parametrized custom controlled op that directly inherits Controlled2"""
 
-        class CH2(Controlled2, override_signature=True):
+        class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)
@@ -65,7 +65,7 @@ class TestControlled2:
     def test_parametric_custom_controlled_op(self):
         """Tests parametric op that inherits from Controlled2."""
 
-        class CRot2(Controlled2, override_signature=True):
+        class CRot2(Controlled2):
             """A new CRot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -103,7 +103,7 @@ class TestControlled2:
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
 
-        class CRot2(Controlled2, override_signature=True):
+        class CRot2(Controlled2):
             """A new CRot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -142,7 +142,7 @@ class TestControlled2:
         assert qp.math.allclose(sorted(op.eigvals()), sorted(eigvals))
         assert qp.math.allclose(sorted(CRot2.compute_eigvals(**op.arguments)), sorted(eigvals))
 
-        class CRX2(Controlled2, override_signature=True):
+        class CRX2(Controlled2):
             """A new CRX2."""
 
             dynamic_argnames = ("theta",)
@@ -163,7 +163,7 @@ class TestControlled2:
         assert qp.math.allclose(op.sparse_matrix(), expected)
         assert qp.math.allclose(CRX2.compute_sparse_matrix(**op.arguments), expected)
 
-        class CH2(Controlled2, override_signature=True):
+        class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)
@@ -181,7 +181,7 @@ class TestControlled2:
     def test_custom_controlled_op_own_compute_methods(self):
         """Tests when a custom controlled op override its own compute_xxx methods."""
 
-        class CH2(Controlled2, override_signature=True):
+        class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)
