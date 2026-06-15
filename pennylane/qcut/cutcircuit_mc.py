@@ -258,9 +258,9 @@ def cut_circuit_mc(
         ...     cut_strategy=qp.qcut.CutStrategy(max_free_wires=2),
         ... )
         >>> print(qp.qcut.graph_to_tape(cut_graph).draw())
-         0: ──H─╭●───────────┤  Sample[|1⟩⟨1|]
-         1: ────╰X──//──X─╭●─┤  Sample[|1⟩⟨1|]
-         2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
+         0: ──H─╭●───────────┤ ╭Sample[|1⟩⟨1|]
+         1: ────╰X──//──X─╭●─┤ ├Sample[|1⟩⟨1|]
+         2: ──────────────╰X─┤ ╰Sample[|1⟩⟨1|]
 
         Our next step, using the original manual cut placement, is to remove the :class:`~.WireCut`
         nodes in the graph and replace with :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
@@ -287,8 +287,8 @@ def cut_circuit_mc(
         1: ────╰X──X──MeasureNode─┤
 
         >>> print(fragment_tapes[1].draw())
-        1: ──PrepareNode─╭●─┤  Sample[|1⟩⟨1|]
-        2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
+        1: ──PrepareNode─╭●─┤ ╭Sample[|1⟩⟨1|]
+        2: ──────────────╰X─┤ ╰Sample[|1⟩⟨1|]
 
         Additionally, we must remap the tape wires to match those available on our device.
 
@@ -336,14 +336,14 @@ def cut_circuit_mc(
             0: ──H─╭●────┤  Sample[|1⟩⟨1|]
             1: ────╰X──X─┤  Sample[Y]
 
-            0: ──I─╭●─┤  Sample[|1⟩⟨1|]
-            1: ────╰X─┤  Sample[|1⟩⟨1|]
+            0: ──I─╭●─┤ ╭Sample[|1⟩⟨1|]
+            1: ────╰X─┤ ╰Sample[|1⟩⟨1|]
 
-            0: ──X──S─╭●─┤  Sample[|1⟩⟨1|]
-            1: ───────╰X─┤  Sample[|1⟩⟨1|]
+            0: ──X──S─╭●─┤ ╭Sample[|1⟩⟨1|]
+            1: ───────╰X─┤ ╰Sample[|1⟩⟨1|]
 
-            0: ──H─╭●─┤  Sample[|1⟩⟨1|]
-            1: ────╰X─┤  Sample[|1⟩⟨1|]
+            0: ──H─╭●─┤ ╭Sample[|1⟩⟨1|]
+            1: ────╰X─┤ ╰Sample[|1⟩⟨1|]
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn_sample`, which processes the results to approximate the original full circuit
@@ -620,22 +620,22 @@ def expand_fragment_tapes_mc(
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Z]
     <BLANKLINE>
-    1: ──I─╭●─┤  Sample[|1⟩⟨1|]
-    2: ────╰X─┤  Sample[|1⟩⟨1|]
+    1: ──I─╭●─┤ ╭Sample[|1⟩⟨1|]
+    2: ────╰X─┤ ╰Sample[|1⟩⟨1|]
     <BLANKLINE>
     config 1:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Y]
     <BLANKLINE>
-    1: ──H──S─╭●─┤  Sample[|1⟩⟨1|]
-    2: ───────╰X─┤  Sample[|1⟩⟨1|]
+    1: ──H──S─╭●─┤ ╭Sample[|1⟩⟨1|]
+    2: ───────╰X─┤ ╰Sample[|1⟩⟨1|]
     <BLANKLINE>
     config 2:
     0: ──H─╭●─┤  Sample[|1⟩⟨1|]
     1: ────╰X─┤  Sample[Y]
     <BLANKLINE>
-    1: ──X──H──S─╭●─┤  Sample[|1⟩⟨1|]
-    2: ──────────╰X─┤  Sample[|1⟩⟨1|]
+    1: ──X──H──S─╭●─┤ ╭Sample[|1⟩⟨1|]
+    2: ──────────╰X─┤ ╰Sample[|1⟩⟨1|]
 
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]

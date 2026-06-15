@@ -21,8 +21,8 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 try:

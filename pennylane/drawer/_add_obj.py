@@ -27,17 +27,17 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 
 from functools import singledispatch
 
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     Conditional,
@@ -51,7 +51,7 @@ from pennylane.ops import (
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import TemporaryAND
+from pennylane.templates.subroutines import SelectPauliRot, TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
@@ -232,6 +232,27 @@ def _add_right_elbow(obj: TemporaryAND, layer_str, config):
 
 
 @_add_obj.register
+def _add_select_pauli_rot(
+    obj: SelectPauliRot, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``SelectPauliRot``."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.hyperparameters["control_wires"]:
+        layer_str[config.wire_map[w]] += "◑"
+
+    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    target_label = obj.label(
+        decimals=config.decimals, base_label=base_label, cache=config.cache
+    ).replace("\n", "")
+    for w in obj.hyperparameters["target_wire"]:
+        layer_str[config.wire_map[w]] += target_label
+
+    return layer_str
+
+
+@_add_obj.register
 def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
     only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
@@ -383,8 +404,10 @@ def _add_measurement(
     else:
         meas_label = str(m)
 
-    if len(m.wires) == 0:  # state or probability across all wires
+    if len(m.wires) == 0:
+        # add grouping symbols for measurements that span all device wires.
         n_wires = len(config.wire_map)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
         for i, s in enumerate(layer_str[:n_wires]):
             layer_str[i] = s + meas_label
 

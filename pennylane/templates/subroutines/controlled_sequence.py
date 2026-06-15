@@ -18,13 +18,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     pow_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
@@ -177,10 +177,10 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qp.state()
 
         >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●────────────────────────────┤  State
-        1: ─│─────────╭●──────────────────┤  State
-        2: ─│─────────│─────────╭●────────┤  State
-        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤  State
+        0: ─╭●────────────────────────────┤ ╭State
+        1: ─│─────────╭●──────────────────┤ ├State
+        2: ─│─────────│─────────╭●────────┤ ├State
+        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
 
         To display the operators as powers of the base operator without further simplification,
         the `compute_decomposition` method can be used with `lazy=True`.
@@ -196,17 +196,17 @@ class ControlledSequence(SymbolicOp, Operation):
                 return qp.state()
 
         >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭(RX(0.25))⁴───────────────────────────┤  State
-        1: ─│────────────╭(RX(0.25))²──────────────┤  State
-        2: ─│────────────│────────────╭(RX(0.25))¹─┤  State
-        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
+        0: ─╭(RX(0.25))⁴───────────────────────────┤ ╭State
+        1: ─│────────────╭(RX(0.25))²──────────────┤ ├State
+        2: ─│────────────│────────────╭(RX(0.25))¹─┤ ├State
+        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤ ╰State
 
         """
 
         powers_of_two = [2**i for i in range(len(control_wires))]
         ops = []
 
-        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
+        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires, strict=True):
             ops.append(qp_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
