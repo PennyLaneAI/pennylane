@@ -626,7 +626,7 @@ def _assert_valid_operator2(
 
 # pylint: disable=too-many-arguments
 def assert_valid(
-    op: qp.operation.Operator | qp.core.Operator2,
+    op: qp.core.Operator
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
