@@ -13,6 +13,7 @@
 """Utilities for operators."""
 
 from functools import singledispatch
+from numbers import Number
 
 from pennylane import math
 from pennylane.pytrees import flatten, leaf, unflatten
@@ -23,10 +24,13 @@ from pennylane.wires import AbstractWires, Wires
 @singledispatch
 def abstractify(val) -> AbstractArray:
     """Convert the provided value into an abstract type."""
-    leaves, tree = flatten(val)
+    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
     if tree != leaf:
         abstract_leaves = tuple(abstractify(l) for l in leaves)
         return unflatten(abstract_leaves, tree)
+
+    if isinstance(val, Number):
+        return AbstractArray((), type(val))
 
     shape = math.shape(val)
     dtype = math.get_dtype_name(val)
@@ -34,6 +38,14 @@ def abstractify(val) -> AbstractArray:
 
 
 @abstractify.register(Wires)
-def _abstractify_wires(val) -> AbstractWires:
+def _abstractify_wires(val: Wires) -> AbstractWires:
     """Abstractify wires."""
     return AbstractWires(len(val))
+
+
+@abstractify.register(AbstractArray | AbstractWires)
+def _abstractify_abstract_type(
+    val: AbstractArray | AbstractWires,
+) -> AbstractArray | AbstractWires:
+    """Abstractify an abstract type, i.e., do nothing."""
+    return val

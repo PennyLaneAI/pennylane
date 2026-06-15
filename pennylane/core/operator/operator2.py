@@ -45,8 +45,8 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager, apply
-from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import AbstractArray, FlatPytree, TensorLike
+from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .meta import ABCOperatorMeta
@@ -1016,18 +1016,17 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         for p, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
             argval = self.arguments[p.name]
-            argtype = abstractify(argval)
-            if not expected_type.checkval(argtype):
+            if not expected_type.issubtype(argval):
+                # Dynamic argument
                 if p.name in self.dynamic_argnames:
-                    # Dynamic argument
                     raise TypeError(
                         f"Expected '{p.name}' to have shape {expected_type.shape} and "
-                        f"datatype {expected_type.dtype}, but got {argval}."
+                        f"datatype {str(expected_type.dtype)}, but got {argval}."
                     )
                 # Wire argument
                 raise TypeError(
                     f"Expected '{p.name}' to have length {expected_type.num_wires}, "
-                    f"but got {len(argval)}."
+                    f"but got {argval}."
                 )
 
     # pylint: disable=too-many-branches
@@ -1075,13 +1074,20 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                 seen[name] = group_name
 
         # fixed_sig can only be defined if there are no hybrid, static, or compilable arguments
-        if cls.fixed_sig is not None and (
-            cls.hybrid_argnames or cls.compilable_argnames or cls.static_argnames
-        ):
-            raise TypeError(
-                "The 'fixed_sig' class variable can only be defined if there are no "
-                "hybrid, static, or compilable arguments."
-            )
+        if cls.fixed_sig is not None:
+            if cls.hybrid_argnames or cls.compilable_argnames or cls.static_argnames:
+                raise TypeError(
+                    f"'{cls.__name__}.fixed_sig' can only be defined if there are no "
+                    "hybrid, static, or compilable arguments."
+                )
+            for at in cls.fixed_sig:
+                if (isinstance(at, AbstractArray) and any(s is Ellipsis for s in at.shape)) or (
+                    isinstance(at, AbstractWires) and at.num_wires is Ellipsis
+                ):
+                    raise TypeError(
+                        f"'{cls.__name__}.fixed_sig' can only specify types with static sizes, "
+                        f"but got {at} that allows the argument to have arbitrary shape."
+                    )
 
         # hybrid_argnames may overlap with wire_argnames, but not with the others.
         hybrid = set(cls.hybrid_argnames)
