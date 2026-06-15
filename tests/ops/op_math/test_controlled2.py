@@ -228,6 +228,36 @@ class TestControlled2:
         assert issubclass(ControlledOp2, Controlled)
         assert isinstance(op, Controlled)
 
+    def test_simplify(self):
+        """Tests the simplify method."""
+
+        base = qp.MultiRZ(0.0, wires=[0, 1, 2])
+        op = ControlledOp2(base, control_wires=[3, 4])
+
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, qp.Identity)
+
+        base = qp.MultiRZ(0.5 + np.pi * 4, wires=[0, 1, 2])
+        op = ControlledOp2(base, control_wires=[3, 4])
+
+        simplified_op = op.simplify()
+        qp.assert_equal(simplified_op, qp.ctrl(qp.MultiRZ(0.5, [0, 1, 2]), control=[3, 4]))
+
+    def test_simplify_nested_controlled(self):
+        """Tests the simplify method with nested controlled operators."""
+
+        base = ControlledOp2(qp.MultiRZ(0.0, wires=[0, 1, 2]), control_wires=[5])
+        op = ControlledOp2(base, control_wires=[3, 4])
+
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, qp.Identity)
+
+        base = ControlledOp2(qp.MultiRZ(0.5 + np.pi * 4, wires=[0, 1, 2]), control_wires=[5])
+        op = ControlledOp2(base, control_wires=[3, 4])
+
+        simplified_op = op.simplify()
+        qp.assert_equal(simplified_op, qp.ctrl(qp.MultiRZ(0.5, [0, 1, 2]), control=[3, 4, 5]))
+
 
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
