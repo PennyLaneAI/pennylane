@@ -183,6 +183,11 @@ class TestCanonicalizeAbstractTypeHelper:
                 {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
                 {"my_array": AbstractArray((2, 2), int)},
             ),
+            # Ensures nested abstract arrays / wires are handled
+            (
+                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
+                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
+            ),
         ],
     )
     def test_concrete_hybrid_arg_inputs_are_abstractified(self, val, expected):
@@ -278,7 +283,9 @@ class TestOperatorAbstractInputs:
             static_arg="blah", dynamic_arg=[0, 1], hybrid_arg=[0, 1], wires=AbstractWires(1)
         )
         assert op.static_arg == "blah"
+        # Cast to abstract array
         assert op.dynamic_arg == AbstractArray((2,), int)
+        # Pytree still holds up
         assert op.hybrid_arg == [AbstractArray((), int), AbstractArray((), int)]
         assert op.wires == AbstractWires(1)
 
