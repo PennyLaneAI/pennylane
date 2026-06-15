@@ -115,13 +115,14 @@ class OperatorMeta(type):
         arguments: dict = bound.arguments
 
         target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+
         if any(_contains_abstract_type(arguments[name]) for name in target_args):
             for name in target_args:
                 kind = ArgType.DYN
 
                 # NOTE: Check hybrid first as hybrid args can
-                # appear in both hybrid and wires args; these must be
-                # treated as hybrid.
+                # appear in both hybrid and wires args; these arguments
+                # must be treated as hybrid.
                 if name in cls.hybrid_argnames:
                     kind = ArgType.HYBRID
                 elif name in cls.wire_argnames:
