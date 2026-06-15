@@ -665,7 +665,18 @@ def _diagonal_qu_decomp(D, wires, **_):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
+def _diagonal_mux_on_aux_resources(num_wires):
+    return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
+
+
+@register_resources(_diagonal_mux_on_aux_resources, work_wires={"zeroed": 1})
+def _diagonal_mux_on_aux_decomp(D, wires, **_):
+    angles = -2 * qp.math.angle(D)
+    with qp.allocate(1, "zero", restored=True) as aux_wire:
+        qp.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
 def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
