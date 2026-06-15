@@ -1042,7 +1042,10 @@ class Operator2(ABC):
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
-        # TODO: [sc-120429] Add processing for overriding has_decomposition
+        # TODO: [sc-120429] Add processing for overriding has_decomposition.
+        # Note: the override case (subclass defines compute_decomposition/decomposition) is
+        # already handled dynamically by the `_HasDecomposition` descriptor, so sc-120429 should
+        # reconcile with it rather than re-promote `has_decomposition` to a plain class attribute.
 
         cls._sig = signature(cls)
 

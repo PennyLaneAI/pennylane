@@ -602,6 +602,8 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
+    when ``compute_decomposition`` is not overridden.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -612,6 +614,7 @@
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
