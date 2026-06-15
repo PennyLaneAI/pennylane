@@ -1795,6 +1795,13 @@ class TestLegacyCompatibilityViews:
         assert op.parameters == [1.1, 2.2]
         assert op.parameters == list(op.data)
 
+    def test_static_args_excluded_from_data_and_parameters(self):
+        """Test that static args are not exposed through ``data`` or ``parameters``."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert op.data == (0.5,)
+        assert op.parameters == [0.5]
+
     def test_hyperparameters_include_static_and_hybrid_args(self):
         """Test that static and hybrid args appear in the legacy hyperparameter view."""
         nested = [DynOp(0.1, wires=0)]
@@ -1822,6 +1829,7 @@ class TestLegacyCompatibilityViews:
         op = CompOp(0.5, order=3, wires=0)
 
         assert op.hyperparameters == {"order": 3}
+        assert op.data == (0.5,)
 
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
         """Test that non-``wires`` wire argument names are excluded."""
