@@ -23,12 +23,12 @@ import pytest
 import pennylane as qp
 from pennylane.estimator.compact_hamiltonian import VibrationalHamiltonian
 from pennylane.estimator.estimate import (
+    _default_adjoint_decomp,
+    _default_controlled_decomp,
     _get_resource_decomposition,
     _get_symbolic_resource_decomposition,
     _update_params_from_config,
     apply_default_symbolic_decomp,
-    default_adjoint_decomp,
-    default_controlled_decomp,
     estimate,
 )
 from pennylane.estimator.ops.op_math.controlled_ops import CNOT
@@ -794,7 +794,7 @@ def test_default_adjoint_decomp():
         GateCount(Adjoint.resource_rep(RX.resource_rep()), 5),
     ]
 
-    assert default_adjoint_decomp(base_resource_decomp) == expected_resource_decomp
+    assert _default_adjoint_decomp(base_resource_decomp) == expected_resource_decomp
 
 
 @pytest.mark.parametrize(
@@ -823,7 +823,7 @@ def test_default_controlled_decomp(num_ctrl, num_zero):
     expected_resource_decomp = x_gates + expected_resource_decomp
 
     assert (
-        default_controlled_decomp(num_ctrl, num_zero, base_resource_decomp)
+        _default_controlled_decomp(num_ctrl, num_zero, base_resource_decomp)
         == expected_resource_decomp
     )
 
@@ -916,15 +916,45 @@ def test_apply_default_symbolic_decomp(res_op, res_decomp, sym_type, params, exp
     assert apply_default_symbolic_decomp(res_op, res_decomp, sym_type, **params) == expected_decomp
 
 
-def test_apply_default_symbolic_decomp_raises_error():
+@pytest.mark.parametrize(
+    "params, error, error_message",
+    (
+        (
+            {
+                "base_compr_resource_op": X.resource_rep(),
+                "base_resource_decomp": [GateCount(X.resource_rep())],
+                "symbolic_type": ResourceOperator,
+                "target_symbolic_params": {},
+            },
+            ValueError,
+            "Unexpected symbolic type",
+        ),
+        (
+            {
+                "base_compr_resource_op": X.resource_rep(),
+                "base_resource_decomp": [GateCount(X.resource_rep())],
+                "symbolic_type": Pow,
+                "pow_z": 1.23,
+            },
+            NotImplementedError,
+            "No default decomposition for fractional or negative powers",
+        ),
+        (
+            {
+                "base_compr_resource_op": X.resource_rep(),
+                "base_resource_decomp": [GateCount(X.resource_rep())],
+                "symbolic_type": Pow,
+                "pow_z": -2,
+            },
+            NotImplementedError,
+            "No default decomposition for fractional or negative powers",
+        ),
+    ),
+)
+def test_apply_default_symbolic_decomp_raises_error(params, error, error_message):
     """Test that an error is raised if `symbolic_type` is not one of `Adjoint`, `Pow`, `Controlled`"""
-    with pytest.raises(ValueError, match="Unexpected symbolic type"):
-        apply_default_symbolic_decomp(
-            base_resource_op=X.resource_rep(),
-            base_resource_decomp=[GateCount(X.resource_rep())],
-            symbolic_type=ResourceOperator,
-            target_symbolic_params={},
-        )
+    with pytest.raises(error, match=error_message):
+        apply_default_symbolic_decomp(**params)
 
 
 @pytest.mark.parametrize("res_op, expected_decomp", symbolic_decomp_data)
