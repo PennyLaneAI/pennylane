@@ -958,7 +958,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     # ------------------ Private utililities for initialization ------------------
     # ----------------------------------------------------------------------------
 
-    def __init_wires(self):  # pylint: disable=too-many-branches
+    def __init_wires(self):
         """Initialize operator wires.
 
         * Union of all wire_argnames into _wires
