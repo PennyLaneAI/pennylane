@@ -56,6 +56,7 @@ class TestControlled2:
         assert op.dynamic_args == {}
         assert op.wire_args == {"wires": Wires([0, 1])}
         assert op.hybrid_args == {}
+        assert op.has_adjoint
         assert op.has_matrix
         assert op.has_sparse_matrix
         assert op.has_diagonalizing_gates
@@ -94,10 +95,11 @@ class TestControlled2:
         assert op.dynamic_args == {"phi": 0.1, "theta": 0.2, "omega": 0.3}
         assert op.wire_args == {"wires": Wires([0, 1])}
         assert op.hybrid_args == {}
+        assert op.has_adjoint
         assert op.has_matrix
         assert op.has_sparse_matrix
 
-    def test_custom_controlled_op_default_controlled_methods(self):
+    def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
 
         class CRot2(Controlled2, override_signature=True):
@@ -213,6 +215,13 @@ class TestControlledOp2:
         assert op.control_values == [True, True]
         assert op.work_wires == Wires([])
 
+    def test_single_control_value(self):
+        """Tests that a single control value is wrapped."""
+
+        base = qp.H(0)
+        op = ControlledOp2(base, control_wires=[1], control_values=0)
+        assert op.control_values == [False]
+
     def test_invalid_arguments(self):
         """Tests that the correct error is raised from invalid init arguments."""
 
@@ -229,3 +238,62 @@ class TestControlledOp2:
 
         with pytest.raises(ValueError, match="control_values should be the same length"):
             _ = ControlledOp2(base, control_wires=[2, 1], control_values=[True])
+
+    def test_default_compute_methods(self):
+        """Tests the default implementation of compute methods."""
+
+        base = qp.H(0)
+        op = ControlledOp2(base, control_wires=[1])
+
+        matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+                [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+            ]
+        )
+        assert qp.math.allclose(op.matrix(), matrix)
+        assert qp.math.allclose(ControlledOp2.compute_matrix(**op.arguments), matrix)
+
+        assert qp.math.allclose(op.eigvals(), [1, 1, 1, -1])
+        assert qp.math.allclose(ControlledOp2.compute_eigvals(**op.arguments), [1, 1, 1, -1])
+
+        gates = [qp.RY(-np.pi / 4, wires=0)]
+        assert op.diagonalizing_gates() == gates
+        assert ControlledOp2.compute_diagonalizing_gates(**op.arguments) == gates
+
+    def test_batching(self):
+        """Tests parameter batching."""
+
+        base = qp.Rot([0.1, 0.1], [0.2, 0.2], [0.3, 0.3], wires=1)
+        op = ControlledOp2(base, control_wires=[0])
+
+        single_matrix = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, np.exp(-0.2j) * np.cos(0.1), -np.exp(-0.1j) * np.sin(0.1)],
+                [0, 0, np.exp(0.1j) * np.sin(0.1), np.exp(0.2j) * np.cos(0.1)],
+            ]
+        )
+        matrix = np.stack([single_matrix, single_matrix])
+        assert qp.math.allclose(op.matrix(), matrix)
+        assert qp.math.allclose(ControlledOp2.compute_matrix(**op.arguments), matrix)
+
+    def test_other_methods(self):
+        """Tests other operator methods for ControlledOp2."""
+
+        base = qp.H(0)
+        op = ControlledOp2(base, control_wires=[1])
+
+        assert op.adjoint() == qp.CH([1, 0])
+
+        base = qp.RX(0.5, wires=0)
+        op = ControlledOp2(base, control_wires=[1])
+
+        assert op.adjoint() == qp.CRX(-0.5, wires=[1, 0])
+        assert op.has_generator
+
+        generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
+        qp.assert_equal(op.generator(), generator)
