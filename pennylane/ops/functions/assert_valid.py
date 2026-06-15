@@ -637,7 +637,7 @@ def assert_valid(
     skip_capture=False,
     skip_pytree=False,
 ) -> None:
-    """Runs basic validation checks on an :class:`~.operation.Operator` or :class:`~.core.Operator2` to make
+    """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
 
     Args:
