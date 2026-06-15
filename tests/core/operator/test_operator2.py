@@ -1760,3 +1760,150 @@ class TestStatePrepBase:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
             BadStatePrep(0)
+
+
+class TestLegacyCompatibilityViews:
+    """Tests for the legacy Operator backwards-compatibility attributes on Operator2."""
+
+    # ---- No-parameter single-wire op (PauliX-like) ----
+
+    def test_no_param_op_data_empty(self):
+        """A no-parameter op has data == ()."""
+
+        class NoParamOp(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = NoParamOp(wires=0)
+        assert op.data == ()
+
+    def test_no_param_op_parameters_empty(self):
+        """A no-parameter op has parameters == []."""
+
+        class NoParamOp(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = NoParamOp(wires=0)
+        assert op.parameters == []
+
+    def test_no_param_op_control_wires_empty(self):
+        """Default control_wires is empty."""
+
+        class NoParamOp(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = NoParamOp(wires=0)
+        assert op.control_wires == Wires(())
+
+    def test_no_param_op_hyperparameters_empty(self):
+        """A no-parameter, no-static op has hyperparameters == {}."""
+
+        class NoParamOp(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = NoParamOp(wires=0)
+        assert op.hyperparameters == {}
+
+    # ---- Dynamic single-parameter op ----
+
+    def test_dynamic_op_data_preserves_order(self):
+        """data preserves constructor/dynamic argument order."""
+
+        class TwoParamOp(Operator2):
+            dynamic_argnames = ("alpha", "beta")
+
+            def __init__(self, alpha, beta, wires):
+                super().__init__(alpha, beta, wires=wires)
+
+        op = TwoParamOp(1.1, 2.2, wires=0)
+        assert op.data == (1.1, 2.2)
+
+    def test_dynamic_op_parameters_is_list_of_data(self):
+        """parameters == list(data)."""
+        op = DynOp(0.5, wires=0)
+        assert op.parameters == [0.5]
+        assert op.parameters == list(op.data)
+
+    # ---- Op with static/compilable args ----
+
+    def test_static_args_in_hyperparameters(self):
+        """Static args appear in hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[DynOp(0.1, wires=0)], wires=0)
+        hp = op.hyperparameters
+        assert "static" in hp
+        assert hp["static"] == "XY"
+
+    def test_hybrid_args_in_hyperparameters(self):
+        """Hybrid args appear in hyperparameters (nested structures historically live there)."""
+        nested = [DynOp(0.1, wires=0)]
+        op = FullOp(0.5, static="XY", hybrid=nested, wires=0)
+        hp = op.hyperparameters
+        assert "hybrid" in hp
+        assert hp["hybrid"] is nested
+
+    def test_dynamic_args_not_in_hyperparameters(self):
+        """Dynamic args do NOT appear in hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+        hp = op.hyperparameters
+        assert "phi" not in hp
+
+    def test_wire_args_not_in_hyperparameters(self):
+        """Wire args do NOT appear in hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+        hp = op.hyperparameters
+        assert "wires" not in hp
+
+    def test_compilable_args_in_hyperparameters(self):
+        """Compilable args appear in hyperparameters."""
+
+        class CompOp(Operator2):
+            dynamic_argnames = ("phi",)
+            compilable_argnames = ("order",)
+
+            def __init__(self, phi, order, wires):
+                super().__init__(phi, order, wires=wires)
+
+        op = CompOp(0.5, order=3, wires=0)
+        hp = op.hyperparameters
+        assert "order" in hp
+        assert hp["order"] == 3
+        assert "phi" not in hp
+        assert "wires" not in hp
+
+    # ---- Op with non-standard wire argument name ----
+
+    def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
+        """Non-'wires' wire argument names are excluded from hyperparameters."""
+
+        class ControlledOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "control_wires")
+            wire_sizes = (1, None)
+
+            def __init__(self, phi, wires, control_wires):
+                super().__init__(phi, wires=wires, control_wires=control_wires)
+
+        op = ControlledOp(0.5, wires=0, control_wires=[1, 2])
+        hp = op.hyperparameters
+        assert "phi" not in hp
+        assert "wires" not in hp
+        assert "control_wires" not in hp
+
+    # ---- control_wires subclass override ----
+
+    def test_control_wires_subclass_override(self):
+        """Subclass @property control_wires correctly shadows base class attribute."""
+
+        class ControlledLike(Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+            @property
+            def control_wires(self):
+                return Wires([1])
+
+        op = ControlledLike(wires=0)
+        assert op.control_wires == Wires([1])
