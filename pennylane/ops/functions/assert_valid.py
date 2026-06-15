@@ -611,10 +611,7 @@ def _assert_valid_operator2(
         op.dynamic_argnames
     ), "ndim_params must have the same length as dynamic_argnames"
 
-    assert isinstance(
-        op._bound_args, inspect.BoundArguments
-    ), "bound_args must be a BoundArguments instance"
-    assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
+    assert_equal(type(op)(**op.arguments), op)
 
     for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
