@@ -16,6 +16,7 @@ This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
 import string
+from copy import deepcopy
 from pickle import PicklingError
 
 import numpy as np
@@ -25,11 +26,11 @@ import pytest
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.wires import Wires
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.wires import Wires
 
 
 class TestDecompositionErrors:
@@ -258,8 +259,8 @@ class TestBadMatrix:
 class TestBadCopyComparison:
     """Check errors invovling copy, deepcopy, and comparison."""
 
-    def test_bad_comparison(self):
-        """Test an operator that cannot be compared with standard qp.equal."""
+    def test_bad_copy(self):
+        """Test an operator that cannot be compared with its copy."""
 
         class BadComparison(Operator):
             def __copy__(self):
@@ -267,6 +268,16 @@ class TestBadCopyComparison:
 
         with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
             assert_valid(BadComparison(0), skip_pickle=True)
+
+    def test_bad_deepcopy(self):
+        """Test an operator that cannot be compared with its deepcopy."""
+
+        class BadDeepComparison(Operator):
+            def __deepcopy__(self, memo):
+                return BadDeepComparison(1)
+
+        with pytest.raises(AssertionError, match=r"deep copied op must also be equal"):
+            assert_valid(BadDeepComparison(0), skip_pickle=True)
 
 
 def test_mismatched_mat_decomp():
@@ -464,6 +475,8 @@ class SingleRZ(Operator2):
     """
 
     dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    ndim_params = ((),)
 
     def __init__(self, phi, wires):
         assert isinstance(wires, int) or len(wires) == 1
@@ -500,10 +513,24 @@ class TestOperator2AssertValid:
 
     def test_full_featured_operator_is_valid(self):
         """A fully-featured, self-consistent ``Operator2`` passes ``assert_valid``."""
-        op = SingleRZ(0.5, wires=0)
+        op = SingleRZ(np.array(0.5), wires=0)
 
         # differentiation is skipped: the Operator2 pytree leaves include its wires
         assert_valid(op, skip_differentiation=True)
+
+    def test_invalid_dyn_arg_dimension(self):
+        """``_assert_valid_operator2`` fails if a dynamic argument has the wrong shape."""
+
+        class BadDims(Operator2):
+            dynamic_argnames = ("angles",)
+            wire_argnames = ("wires",)
+            ndim_params = (2,)
+
+            def __init__(self, angles, wires):
+                super().__init__(angles, wires=wires)
+
+        with pytest.raises(AssertionError, match=r"is not equal to dimension in ndim_params"):
+            assert_valid(BadDims(np.array([0.1, 0.2, 0.3]), wires=[0, 1]), skip_pickle=True)
 
     def test_check_decomposition(self):
         """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""

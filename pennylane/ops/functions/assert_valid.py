@@ -646,9 +646,9 @@ def _assert_valid_operator2(
 
         # make sure wires have the right sizes
         if name in op.wire_argnames and op.wire_sizes:
-            assert (op.wire_sizes[wire_index] is None) or (len(val) == op.wire_sizes[wire_index])
-            if name in op.hybrid_argnames:
-                assert op.wire_sizes[wire_index] is None
+            assert (op.wire_sizes[wire_index] is None) or (
+                len(val) == op.wire_sizes[wire_index]
+            ), f"Wires argument {name} has an invalid dimension."
             wire_index += 1
 
     _check_bind_new_parameters_op2(op)
