@@ -516,6 +516,15 @@ def _check_bind_new_parameters(op):
         assert qp.math.allclose(d1, d2), failure_comment
 
 
+def _check_bind_new_parameters_op2(op):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    new_dyn_args = {k: v * 0.0 for k, v in op.arguments.items() if k in op.dynamic_argnames}
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args)
+    failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
+    for name, val in new_dyn_args.items():
+        assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
+
+
 def _check_differentiation(op):
     """Checks that the operator can be executed and differentiated correctly."""
 
@@ -631,6 +640,8 @@ def _assert_valid_operator2(
                 len(val) == op.wire_sizes[wire_index]
             ), f"Wires argument {name} has an invalid dimension."
             wire_index += 1
+
+    _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
