@@ -454,10 +454,11 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    for d1, d2 in zip(op.data, leaves, strict=True):
-        assert qp.math.allclose(
-            d1, d2
-        ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+    if not isinstance(op, Operator2):
+        for d1, d2 in zip(op.data, leaves, strict=True):
+            assert qp.math.allclose(
+                d1, d2
+            ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
 def _check_capture(op):
@@ -718,8 +719,6 @@ def assert_valid(
         skip_capture = True
         # Temporary, as we will be integrating Operator2 with graph decomps soon
         skip_new_decomp = True
-        # The pytree leaves of an Operator2 include its wires
-        skip_pytree = True
         # Temporary, as we will integrate with differentiation soon
         skip_differentiation = True
 
