@@ -1762,55 +1762,27 @@ class TestStatePrepBase:
             BadStatePrep(0)
 
 
+class NoParamOp(Operator2):
+    """A simple operator with wires and no dynamic parameters."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
 class TestLegacyCompatibilityViews:
-    """Tests for the legacy Operator backwards-compatibility attributes on Operator2."""
+    """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
 
-    # ---- No-parameter single-wire op (PauliX-like) ----
-
-    def test_no_param_op_data_empty(self):
-        """A no-parameter op has data == ()."""
-
-        class NoParamOp(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
+    def test_no_param_op_legacy_views(self):
+        """Test legacy views for an operator with no dynamic parameters."""
         op = NoParamOp(wires=0)
+
         assert op.data == ()
-
-    def test_no_param_op_parameters_empty(self):
-        """A no-parameter op has parameters == []."""
-
-        class NoParamOp(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
-        op = NoParamOp(wires=0)
         assert op.parameters == []
-
-    def test_no_param_op_control_wires_empty(self):
-        """Default control_wires is empty."""
-
-        class NoParamOp(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
-        op = NoParamOp(wires=0)
         assert op.control_wires == Wires(())
-
-    def test_no_param_op_hyperparameters_empty(self):
-        """A no-parameter, no-static op has hyperparameters == {}."""
-
-        class NoParamOp(Operator2):
-            def __init__(self, wires):
-                super().__init__(wires=wires)
-
-        op = NoParamOp(wires=0)
         assert op.hyperparameters == {}
 
-    # ---- Dynamic single-parameter op ----
-
     def test_dynamic_op_data_preserves_order(self):
-        """data preserves constructor/dynamic argument order."""
+        """Test that ``data`` preserves dynamic argument order."""
 
         class TwoParamOp(Operator2):
             dynamic_argnames = ("alpha", "beta")
@@ -1819,45 +1791,27 @@ class TestLegacyCompatibilityViews:
                 super().__init__(alpha, beta, wires=wires)
 
         op = TwoParamOp(1.1, 2.2, wires=0)
-        assert op.data == (1.1, 2.2)
 
-    def test_dynamic_op_parameters_is_list_of_data(self):
-        """parameters == list(data)."""
-        op = DynOp(0.5, wires=0)
-        assert op.parameters == [0.5]
+        assert op.data == (1.1, 2.2)
+        assert op.parameters == [1.1, 2.2]
         assert op.parameters == list(op.data)
 
-    # ---- Op with static/compilable args ----
-
-    def test_static_args_in_hyperparameters(self):
-        """Static args appear in hyperparameters."""
-        op = FullOp(0.5, static="XY", hybrid=[DynOp(0.1, wires=0)], wires=0)
-        hp = op.hyperparameters
-        assert "static" in hp
-        assert hp["static"] == "XY"
-
-    def test_hybrid_args_in_hyperparameters(self):
-        """Hybrid args appear in hyperparameters (nested structures historically live there)."""
+    def test_hyperparameters_include_static_and_hybrid_args(self):
+        """Test that static and hybrid args appear in the legacy hyperparameter view."""
         nested = [DynOp(0.1, wires=0)]
         op = FullOp(0.5, static="XY", hybrid=nested, wires=0)
-        hp = op.hyperparameters
-        assert "hybrid" in hp
-        assert hp["hybrid"] is nested
 
-    def test_dynamic_args_not_in_hyperparameters(self):
-        """Dynamic args do NOT appear in hyperparameters."""
-        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
-        hp = op.hyperparameters
-        assert "phi" not in hp
+        assert op.hyperparameters == {"static": "XY", "hybrid": nested}
 
-    def test_wire_args_not_in_hyperparameters(self):
-        """Wire args do NOT appear in hyperparameters."""
+    def test_hyperparameters_exclude_dynamic_and_wire_args(self):
+        """Test that dynamic and wire args are excluded from hyperparameters."""
         op = FullOp(0.5, static="XY", hybrid=[], wires=0)
-        hp = op.hyperparameters
-        assert "wires" not in hp
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
 
     def test_compilable_args_in_hyperparameters(self):
-        """Compilable args appear in hyperparameters."""
+        """Test that compilable args appear in the legacy hyperparameter view."""
 
         class CompOp(Operator2):
             dynamic_argnames = ("phi",)
@@ -1867,16 +1821,11 @@ class TestLegacyCompatibilityViews:
                 super().__init__(phi, order, wires=wires)
 
         op = CompOp(0.5, order=3, wires=0)
-        hp = op.hyperparameters
-        assert "order" in hp
-        assert hp["order"] == 3
-        assert "phi" not in hp
-        assert "wires" not in hp
 
-    # ---- Op with non-standard wire argument name ----
+        assert op.hyperparameters == {"order": 3}
 
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
-        """Non-'wires' wire argument names are excluded from hyperparameters."""
+        """Test that non-``wires`` wire argument names are excluded."""
 
         class ControlledOp(Operator2):
             dynamic_argnames = ("phi",)
@@ -1887,15 +1836,13 @@ class TestLegacyCompatibilityViews:
                 super().__init__(phi, wires=wires, control_wires=control_wires)
 
         op = ControlledOp(0.5, wires=0, control_wires=[1, 2])
-        hp = op.hyperparameters
-        assert "phi" not in hp
-        assert "wires" not in hp
-        assert "control_wires" not in hp
 
-    # ---- control_wires subclass override ----
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+        assert "control_wires" not in op.hyperparameters
 
     def test_control_wires_subclass_override(self):
-        """Subclass @property control_wires correctly shadows base class attribute."""
+        """Test that a subclass property shadows the base default."""
 
         class ControlledLike(Operator2):
             def __init__(self, wires):
@@ -1906,4 +1853,5 @@ class TestLegacyCompatibilityViews:
                 return Wires([1])
 
         op = ControlledLike(wires=0)
+
         assert op.control_wires == Wires([1])

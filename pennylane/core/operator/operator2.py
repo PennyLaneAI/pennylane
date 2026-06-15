@@ -353,13 +353,11 @@ class Operator2(ABC):
 
     @property
     def hyperparameters(self) -> dict:
-        """Legacy Operator compatibility view of non-dynamic, non-wire constructor arguments.
-        """
+        """Legacy Operator compatibility view of non-dynamic, non-wire constructor arguments."""
         return {
             name: value
             for name, value in self.arguments.items()
-            if name not in self.dynamic_argnames
-            and name not in self.wire_argnames
+            if name not in self.dynamic_argnames and name not in self.wire_argnames
         }
 
     control_wires = Wires(())
