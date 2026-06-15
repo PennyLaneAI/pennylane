@@ -308,7 +308,7 @@ def _get_sparse_matrix(base):
         return base.sparse_matrix()
     if base.has_matrix:
         return sparse.lil_matrix(base.matrix())
-    raise SparseMatrixUndefinedError()
+    raise SparseMatrixUndefinedError()  # pragma: no cover
 
 
 def _bool_array_to_int(arr: list[bool]):

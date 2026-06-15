@@ -19,6 +19,7 @@ import pytest
 from typing_extensions import override
 
 import pennylane as qp
+from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.wires import Wires
 
@@ -141,6 +142,42 @@ class TestControlled2:
         assert qp.math.allclose(sorted(op.eigvals()), sorted(eigvals))
         assert qp.math.allclose(sorted(CRot2.compute_eigvals(**op.arguments)), sorted(eigvals))
 
+        class CRX2(Controlled2, override_signature=True):
+            """A new CRX2."""
+
+            dynamic_argnames = ("theta",)
+
+            wire_argnames = ("wires",)
+
+            wire_sizes = (2,)
+
+            def __init__(self, theta, wires):
+                super().__init__(
+                    qp.RX(theta, wires[1]),
+                    control_wires=wires[0],
+                    override_init_args={"theta": theta, "wires": wires},
+                )
+
+        op = CRX2(0.5, wires=[0, 1])
+        expected = qp.CRX.compute_matrix(0.5)
+        assert qp.math.allclose(op.sparse_matrix(), expected)
+        assert qp.math.allclose(CRX2.compute_sparse_matrix(**op.arguments), expected)
+
+        class CH2(Controlled2, override_signature=True):
+            """A new CH."""
+
+            wire_argnames = ("wires",)
+
+            wire_sizes = (2,)
+
+            def __init__(self, wires):
+                super().__init__(qp.H(wires[1]), wires[0], override_init_args={"wires": wires})
+
+        op = CH2([0, 1])
+        gates = [qp.RY(-np.pi / 4, wires=1)]
+        assert op.diagonalizing_gates() == gates
+        assert CH2.compute_diagonalizing_gates(**op.arguments) == gates
+
     def test_custom_controlled_op_own_compute_methods(self):
         """Tests when a custom controlled op override its own compute_xxx methods."""
 
@@ -183,6 +220,14 @@ class TestControlled2:
         assert qp.math.allclose(op.matrix(), matrix)
         assert qp.math.allclose(CH2.compute_matrix(**op.arguments), matrix)
 
+    def test_subclass_hook(self):
+        """Tests that Controlled2 operators are also considered instances of Controlled."""
+
+        base = qp.H(0)
+        op = ControlledOp2(base, control_wires=[1, 2])
+        assert issubclass(ControlledOp2, Controlled)
+        assert isinstance(op, Controlled)
+
 
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
@@ -206,6 +251,24 @@ class TestControlledOp2:
         assert op.target_wires == Wires([0])
         assert op.work_wires == Wires([3])
         assert op.work_wire_type == "zeroed"
+
+    def test_representations(self):
+        """Tests the representation methods."""
+
+        base = qp.H(0)
+        op = ControlledOp2(
+            base,
+            control_wires=[1, 2],
+            control_values=[0, 1],
+            work_wires=[3],
+            work_wire_type="zeroed",
+        )
+        assert op.name == "C(Hadamard)"
+        assert (
+            repr(op)
+            == "Controlled(H(0), control_wires=[1, 2], work_wires=[3], control_values=[False, True])"
+        )
+        assert op.label() == "H"
 
     def test_default_arguments(self):
         """Tests default values of the arguments."""
