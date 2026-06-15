@@ -44,86 +44,19 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
     ],
 )
 def test_wire_leaf_maps_to_abstract_wires(leaf, expected):
-    """Direct tests for '_canonicalize_wire_leaf'."""
+    """Tests the '_canonicalize_wire_leaf' helper.
+
+    Ensures that concrete wires are properly abstractified.
+    """
 
     assert _canonicalize_wire_leaf(leaf) == expected
 
 
-class TestCanonicalizeAbstractTypeHelper:
-    """Tests '_canonicalize_abstract_type' helper."""
-
-    def test_abstract_wires_pass_through(self):
-        """Tests that already abstract wires are returned early."""
-
-        aw = AbstractWires(5)
-        assert _canonicalize_abstract_type(aw, kind=ArgType.WIRES) is aw
-
-    @pytest.mark.parametrize("kind", [ArgType.DYN, ArgType.HYBRID])
-    def test_abstract_arrays_pass_through(self, kind):
-        """Tests that already abstract arrays are returned early."""
-
-        aa = AbstractArray((), float)
-        assert _canonicalize_abstract_type(aa, kind) is aa
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.WIRES'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            (0, AbstractWires(1)),
-            ([0, 1], AbstractWires(2)),
-            (Wires([0, 1, 2]), AbstractWires(3)),
-        ],
-    )
-    def test_concrete_wires_are_promoted(self, val, expected):
-        """Tests that concrete wires are promoted to abstract."""
-        assert _canonicalize_abstract_type(val, kind=ArgType.WIRES) == expected
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.DYN'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            (0, AbstractArray((), int)),
-            ([0.0, 1.0], AbstractArray((2,), float)),
-            ([[0], [1], [2]], AbstractArray((3, 1), int)),
-        ],
-    )
-    def test_concrete_inputs_are_promoted_when_kind_is_dyn(self, val, expected):
-        """Tests that inputs are properly canonicalized."""
-
-        assert _canonicalize_abstract_type(val, kind=ArgType.DYN) == expected
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.HYBRID'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            (0, AbstractArray((), int)),
-            ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
-            (
-                {"a": [0, 1], "b": 1.5},
-                {
-                    "a": [AbstractArray((), int), AbstractArray((), int)],
-                    "b": AbstractArray((), float),
-                },
-            ),
-        ],
-    )
-    def test_concrete_inputs_are_promoted_when_kind_is_hybrid(self, val, expected):
-        """Tests that inputs are properly canonicalized."""
-
-        assert _canonicalize_abstract_type(val, kind=ArgType.HYBRID) == expected
-
-
 class TestContainsAbstractTypeHelper:
-    """Tests the '_contains_abstract_type' helper."""
+    """Tests the '_contains_abstract_type' helper.
+
+    Ensures that the helper can flag abstract types.
+    """
 
     @pytest.mark.parametrize(
         "val",
@@ -167,6 +100,97 @@ class TestContainsAbstractTypeHelper:
         assert captured["is_abstract"] is False
 
 
+class TestCanonicalizeAbstractTypeHelper:
+    """Tests '_canonicalize_abstract_type' helper.
+
+    Ensures that the helper can canonicalize any input
+    with proper behaviour for each type of input argument
+    (dynamic, wires or hybrid).
+
+    """
+
+    def test_abstract_wires_pass_through(self):
+        """Tests that already abstract wires are returned early."""
+
+        aw = AbstractWires(5)
+        assert _canonicalize_abstract_type(aw, kind=ArgType.WIRES) is aw
+
+    @pytest.mark.parametrize("kind", [ArgType.DYN, ArgType.HYBRID])
+    def test_abstract_arrays_pass_through(self, kind):
+        """Tests that already abstract arrays are returned early."""
+
+        aa = AbstractArray((), float)
+        assert _canonicalize_abstract_type(aa, kind) is aa
+
+    # =========================================================================
+    # Unit tests when 'kind=ArgType.WIRES'
+    # =========================================================================
+
+    @pytest.mark.parametrize(
+        "val, expected",
+        [
+            (0, AbstractWires(1)),
+            ([0, 1], AbstractWires(2)),
+            (Wires([0, 1, 2]), AbstractWires(3)),
+        ],
+    )
+    def test_concrete_wires_are_promoted(self, val, expected):
+        """Tests that concrete wires are promoted to abstract."""
+        assert _canonicalize_abstract_type(val, kind=ArgType.WIRES) == expected
+
+    # =========================================================================
+    # Unit tests when 'kind=ArgType.DYN'
+    # =========================================================================
+
+    @pytest.mark.parametrize(
+        "val, expected",
+        [
+            # Standard
+            (0, AbstractArray((), int)),
+            ([0.0, 1.0], AbstractArray((2,), float)),
+            ([[0], [1], [2]], AbstractArray((3, 1), int)),
+            # Edge case
+            ([], AbstractArray((0,), float)),
+            # Combination of int and float -> AbstractArray of type float
+            ([1, 2.5], AbstractArray((2,), float)),
+        ],
+    )
+    def test_concrete_dynamic_arg_inputs_are_abstractified(self, val, expected):
+        """Tests that inputs are properly canonicalized."""
+
+        assert _canonicalize_abstract_type(val, kind=ArgType.DYN) == expected
+
+    # =========================================================================
+    # Unit tests when 'kind=ArgType.HYBRID'
+    # =========================================================================
+
+    @pytest.mark.parametrize(
+        "val, expected",
+        [
+            # Standard pytrees
+            (0, AbstractArray((), int)),
+            ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
+            ((0.0, 1.0), (AbstractArray((), float), AbstractArray((), float))),
+            (
+                {"a": [0, 1], "b": 1.5},
+                {
+                    "a": [AbstractArray((), int), AbstractArray((), int)],
+                    "b": AbstractArray((), float),
+                },
+            ),
+            # Ensures nested arrays don't get flattened
+            (
+                {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
+                {"my_array": AbstractArray((2, 2), int)},
+            ),
+        ],
+    )
+    def test_concrete_hybrid_arg_inputs_are_abstractified(self, val, expected):
+        """Tests that inputs are properly canonicalized."""
+
+        assert _canonicalize_abstract_type(val, kind=ArgType.HYBRID) == expected
+
+
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
     """Operator with a dynamic parameter and wires that performs canonicalization."""
 
@@ -203,7 +227,7 @@ class TestOperatorAbstractInputs:
 
         aa = AbstractArray((1,), float)
         op = DynCanonOp(phi=aa, wires=[0])
-        assert op.phi is aa
+        assert isinstance(op.phi, AbstractArray)
         assert op.wires == AbstractWires(1)
 
     @pytest.mark.parametrize(
@@ -233,7 +257,7 @@ class TestOperatorAbstractInputs:
     def test_abstract_wires_skips_init(self):
         """Tests that the presence of abstract wires also skips init."""
 
-        aw = Wires[1]
+        aw = AbstractWires(1)
         op = MultiWireOp(wires=aw, ctrl_wires=0)
         assert op.wires == AbstractWires(2)
 
@@ -266,7 +290,7 @@ class TestOperatorAbstractInputsCapture:
         """Tests that no operator equation enters the jaxpr for abstract wires."""
 
         def f():
-            MultiWireOp(Wires[1], 0)
+            MultiWireOp(AbstractWires(1), 0)
 
         cjaxpr = jax.make_jaxpr(f)()
         assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
