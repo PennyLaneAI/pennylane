@@ -490,24 +490,23 @@ def _get_symbolic_resource_decomposition(
     symbolic_resource_params = {k: v for k, v in comp_res_op.params.items() if k != "base_cmpr_op"}
     base_cmpr_op = comp_res_op.params["base_cmpr_op"]
 
-    if base_cmpr_op.op_type not in (Adjoint, Controlled, Pow):
-        base_op_resource_params = _update_params_from_config(base_cmpr_op, config)
+    base_op_resource_params = _update_params_from_config(base_cmpr_op, config)
 
-        custom_symbolic_method = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
-        if custom_symbolic_method is not None:
-            return custom_symbolic_method(
-                target_resource_params=base_op_resource_params,
-                **symbolic_resource_params,
-            )
+    custom_symbolic_method = custom_symbolic_decomp_dict.get(base_cmpr_op.op_type)
+    if custom_symbolic_method is not None:
+        return custom_symbolic_method(
+            target_resource_params=base_op_resource_params,
+            **symbolic_resource_params,
+        )
 
-        default_symbolic_method = getattr(ResourceOperator, decomp_method_name)
-        base_op_symbolic_method = getattr(base_cmpr_op.op_type, decomp_method_name)
+    default_symbolic_method = getattr(ResourceOperator, decomp_method_name)
+    base_op_symbolic_method = getattr(base_cmpr_op.op_type, decomp_method_name)
 
-        if base_op_symbolic_method.__func__ != default_symbolic_method.__func__:
-            return base_op_symbolic_method(
-                target_resource_params=base_op_resource_params,
-                **symbolic_resource_params,
-            )
+    if base_op_symbolic_method.__func__ != default_symbolic_method.__func__:
+        return base_op_symbolic_method(
+            target_resource_params=base_op_resource_params,
+            **symbolic_resource_params,
+        )
 
     base_resource_decomp = _get_resource_decomposition(base_cmpr_op, config)
     return apply_default_symbolic_decomp(

@@ -31,7 +31,7 @@ from pennylane.estimator.estimate import (
     apply_default_symbolic_decomp,
     estimate,
 )
-from pennylane.estimator.ops.op_math.controlled_ops import CNOT, Toffoli
+from pennylane.estimator.ops.op_math.controlled_ops import CNOT, TemporaryAND, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
@@ -357,6 +357,18 @@ symbolic_decomp_data = [
                 Controlled.resource_rep(Adjoint.resource_rep(Hadamard.resource_rep()), 3, 0), 4
             ),
         ],
+    ),
+    (  # (nested) repeated Adjoints
+        Adjoint(Adjoint(TemporaryAND())),
+        [GateCount(TemporaryAND.resource_rep())],
+    ),
+    (  # (nested) repeated Controlled
+        Controlled(Controlled(X(), 1, 0), 2, 1),
+        [GateCount(Controlled.resource_rep(X.resource_rep(), 3, 1))],
+    ),
+    (  # (nested) repeated Pow
+        Pow(Pow(CNOT(), 2), 4),
+        [GateCount(Pow.resource_rep(CNOT.resource_rep(), 8))],
     ),
 ]
 
