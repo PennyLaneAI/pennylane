@@ -954,6 +954,12 @@ class CircuitSpecs:
         """
         Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
 
+        Args:
+            collapsible (bool): Whether to display the resources in collapsible sections.
+
+        Returns:
+            str: A Markdown representation of this object for Jupyter notebooks.
+
         .. seealso::
 
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
