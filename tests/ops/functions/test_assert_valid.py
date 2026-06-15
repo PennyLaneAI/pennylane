@@ -694,7 +694,7 @@ class TestOperator2AssertValid:
 
         with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
             assert_valid(
-                HybridOp(np.pi, wires=0, ops=[NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
+                HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
             )
 

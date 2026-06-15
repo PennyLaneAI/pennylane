@@ -629,17 +629,18 @@ def _assert_valid_operator2(
     for name, val in op.hybrid_args.items():
         leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))
         for leaf in leaves:
-            assert_valid(
-                leaf,
-                skip_deepcopy=skip_deepcopy,
-                skip_differentiation=skip_differentiation,
-                skip_new_decomp=skip_new_decomp,
-                skip_decomp_matrix_check=skip_decomp_matrix_check,
-                skip_pickle=skip_pickle,
-                skip_wire_mapping=skip_wire_mapping,
-                skip_capture=skip_capture,
-                skip_pytree=skip_pytree,
-            )
+            if isinstance(leaf, Operator):
+                assert_valid(
+                    leaf,
+                    skip_deepcopy=skip_deepcopy,
+                    skip_differentiation=skip_differentiation,
+                    skip_new_decomp=skip_new_decomp,
+                    skip_decomp_matrix_check=skip_decomp_matrix_check,
+                    skip_pickle=skip_pickle,
+                    skip_wire_mapping=skip_wire_mapping,
+                    skip_capture=skip_capture,
+                    skip_pytree=skip_pytree,
+                )
 
 
 # pylint: disable=too-many-arguments
