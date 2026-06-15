@@ -603,34 +603,29 @@ def _assert_valid_operator2(
     assert len(op.ndim_params) == len(
         op.dynamic_argnames
     ), "ndim_params must have the same length as dynamic_argnames"
-    assert len(op.wire_argnames) >= 1, "wire_argnames must have at least one element"
 
     assert isinstance(
         op._bound_args, inspect.BoundArguments
     ), "bound_args must be a BoundArguments instance"
     assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
 
-    dyn_index = 0
-    wire_index = 0
     for name, val in op.arguments.items():
         # make sure that the bound args matches the signature
         assert name in list(op._sig.parameters)
 
+    for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
-        if hasattr(val, "shape") and name in op.dynamic_argnames:
-            assert (
-                val.shape == op.ndim_params[dyn_index]
-            ), f"shape of {name} is not equal to dimension in ndim_params"
-            dyn_index += 1
-        elif name in op.dynamic_argnames:
-            assert op.ndim_params[dyn_index] == 0
+        if hasattr(val, "shape"):
+            assert val.shape == dim, f"shape of {name} is not equal to dimension in ndim_params"
+        else:
+            assert dim == 0
 
+    for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
-        if name in op.wire_argnames and op.wire_sizes:
-            assert (op.wire_sizes[wire_index] is None) or (
-                len(val) == op.wire_sizes[wire_index]
+        if op.wire_sizes:
+            assert (dim is None) or (
+                len(val) == dim
             ), f"Wires argument {name} has an invalid dimension."
-            wire_index += 1
 
 
 # pylint: disable=too-many-arguments
