@@ -16,7 +16,6 @@ This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
 import string
-from copy import deepcopy
 from pickle import PicklingError
 
 import numpy as np
