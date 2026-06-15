@@ -589,7 +589,7 @@
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
   base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
-  integrated into the PennyLane ecosystem.   Supported functionality so far:
+  integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
