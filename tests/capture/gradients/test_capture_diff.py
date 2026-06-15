@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position,unused-import
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     jacobian_prim,
     qnode_prim,
 )
