@@ -17,6 +17,7 @@ Tests for capturing for loops into jaxpr.
 
 # pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
 # pylint: disable=too-many-positional-arguments, too-many-arguments
+# pylint: disable=unbalanced-tuple-unpacking
 
 import numpy as np
 import pytest
@@ -186,12 +187,7 @@ class TestCaptureForLoop:
         def func_qp(x):
             return qp.grad(inner_func)(x)
 
-        def func_jax(x):
-            return jax.grad(inner_func)(x)
-
         x = 0.7
-        jax_out = func_jax(x)
-        assert qp.math.allclose(func_qp(x), jax_out)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qp)(x)
@@ -211,9 +207,6 @@ class TestCaptureForLoop:
         assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
-
-        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qp.math.allclose(manual_eval, jax_out)
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):

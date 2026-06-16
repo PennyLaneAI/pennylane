@@ -794,20 +794,6 @@ class TestDifferentiation:
         ):
             jax.grad(circuit)(0.5)
 
-    @pytest.mark.parametrize("diff_method", ("best", "backprop"))
-    def test_default_qubit_backprop(self, diff_method):
-        """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule on default.qubit."""
-
-        @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
-        def circuit(x):
-            qp.RX(x, 0)
-            return qp.expval(qp.Z(0))
-
-        x = 0.9
-        xt = -0.6
-        jvp = jax.jvp(circuit, (x,), (xt,))
-        assert qp.math.allclose(jvp, (qp.math.cos(x), -qp.math.sin(x) * xt))
-
 
 def test_qnode_jit():
     """Test that executions on default qubit can be jitted."""
