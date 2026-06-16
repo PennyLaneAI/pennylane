@@ -157,24 +157,13 @@ class MultiRot(Operator2):
     [
         (
             MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
-            {
-                "dynamic_args": {
-                    "angles": [np.pi / 4, np.pi / 8],
-                },
-                "wire_args": {
-                    "wires": [1, 0],
-                },
-                "static_args": {
-                    "string": "YZ",
-                },
-            },
-            MultiRot([np.pi / 4, np.pi / 8], [1, 0], "YZ"),
-        ),
-        # traditional interface
-        (
-            MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
             ([np.pi / 4, np.pi / 8],),
             MultiRot([np.pi / 4, np.pi / 8], [0, 1], "XY"),
+        ),
+        (
+            MultiRot([np.pi, np.pi / 2], [1, 2], "ZX"),
+            ([np.pi / 3, np.pi / 6],),
+            MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX"),
         ),
     ],
 )

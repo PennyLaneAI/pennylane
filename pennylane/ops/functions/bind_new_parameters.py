@@ -74,47 +74,19 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
 # pylint: disable=too-many-arguments
 @bind_new_parameters.register
-def bind_new_arguments(
+def bind_new_dynamic_arguments(
     op: Operator2,
-    dynamic_args: dict[str, Any] | TensorLike = None,
-    static_args: dict[str, Any] = None,
-    wire_args: dict[str, Any] = None,
-    hybrid_args: dict[str, Any] = None,
-    compilable_args: dict[str, Any] = None,
+    dynamic_args: Sequence[TensorLike],
 ) -> Operator2:
-    new_args = {
-        "dynamic_args": dynamic_args,
-        "static_args": static_args,
-        "wire_args": wire_args,
-        "hybrid_args": hybrid_args,
-        "compilable_args": compilable_args,
-    }
-
-    def _get_most_recent_args(args_name):
-        return (
-            new_args[args_name]
-            if new_args[args_name] != getattr(op, args_name) and new_args[args_name] is not None
-            else getattr(op, args_name)
-        )
-
-    dyn_args = _get_most_recent_args("dynamic_args")
-
-    if isinstance(dyn_args, dict):
-        final_args = (
-            dyn_args
-            | _get_most_recent_args("wire_args")
-            | _get_most_recent_args("static_args")
-            | _get_most_recent_args("hybrid_args")
-            | _get_most_recent_args("compilable_args")
-        )
-        return op.__class__(**final_args)
-    final_kwargs = (
-        _get_most_recent_args("wire_args")
-        | _get_most_recent_args("static_args")
-        | _get_most_recent_args("hybrid_args")
-        | _get_most_recent_args("compilable_args")
+    dyn_args = (
+        dynamic_args
+        if dynamic_args != getattr(op, "dynamic_args") and dynamic_args is not None
+        else getattr(op, "dynamic_args")
     )
-    return op.__class__(*dyn_args, **final_kwargs)
+
+    kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
+
+    return op.__class__(*dyn_args, **kwargs)
 
 
 @bind_new_parameters.register
