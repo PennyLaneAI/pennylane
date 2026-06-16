@@ -204,7 +204,7 @@ def test_qnode_with_python_array_assignment():
 
     # Test gradient
     jaxpr = jax.make_jaxpr(ag_circuit)(jnp.pi)
-    qfunc_jaxpr = jaxpr.eqns[0].params['qfunc_jaxpr']
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
     assert qfunc_jaxpr.eqns[0].invars[0] is qfunc_jaxpr.invars[0]
 
 
@@ -230,7 +230,7 @@ def test_qnode_with_jax_array_assignment():
 
     # Test gradient
     jaxpr = jax.make_jaxpr(ag_circuit)(angles_in, jnp.pi)
-    qfunc_jaxpr = jaxpr.eqns[0].params['qfunc_jaxpr']
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
     assert qfunc_jaxpr.eqns[3].primitive.name == "scatter"
     assert qfunc_jaxpr.eqns[4].primitive.name == "slice"
 
