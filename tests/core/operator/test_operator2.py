@@ -1728,8 +1728,8 @@ class TestRepresentations:
 
 
 class TestGraphDecomposition:
-    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``
-    (SC-120519): when ``compute_decomposition`` is not overridden, ``decomposition`` falls
+    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``:
+    when ``compute_decomposition`` is not overridden, ``decomposition`` falls
     back to registered graph decomposition rules instead of immediately raising."""
 
     def test_resource_defaults(self):
@@ -1974,10 +1974,11 @@ class TestGraphDecomposition:
 
 
 class TestDecompositionTransformSurfaces:
-    """Characterization tests pinning *which* decomposition surfaces work for ``Operator2``
-    (SC-120519). This ticket implements the direct ``Operator2.decomposition()`` instance
-    method and the surfaces that route through it (non-graph ``decompose``, graph
-    construction/solving). Those are asserted as normal passing tests.
+    """Characterization tests pinning *which* decomposition surfaces work for ``Operator2``.
+
+    The direct ``Operator2.decomposition()`` instance method and the surfaces that route
+    through it (non-graph ``decompose``, graph construction/solving) are asserted as normal
+    passing tests.
 
     The graph-enabled transform, decomposition introspection, capture/plxpr, and Catalyst
     paths invoke decomposition rules (or read parameters) through the *legacy* operator
