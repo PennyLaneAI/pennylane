@@ -83,3 +83,8 @@ jobs:
             && pip3 install --group docs
             && pip3 install .
           build-command: "sphinx-build -b html . _build -W --keep-going"
+
+      - name: Check for deprecated graph attribute references
+        run: |
+          grep -rn "~\.graph\|\`\.graph\`\|:attr:\`graph" pennylane/ --include="*.py" || true
+          grep -rn "~\.graph\|\`\.graph\`\|:attr:\`graph" doc/ --include="*.rst" || true
