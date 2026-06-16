@@ -108,14 +108,13 @@ def bind_new_arguments(
             | _get_most_recent_args("compilable_args")
         )
         return op.__class__(**final_args)
-    else:
-        final_kwargs = (
-            _get_most_recent_args("wire_args")
-            | _get_most_recent_args("static_args")
-            | _get_most_recent_args("hybrid_args")
-            | _get_most_recent_args("compilable_args")
-        )
-        return op.__class__(*dyn_args, **final_kwargs)
+    final_kwargs = (
+        _get_most_recent_args("wire_args")
+        | _get_most_recent_args("static_args")
+        | _get_most_recent_args("hybrid_args")
+        | _get_most_recent_args("compilable_args")
+    )
+    return op.__class__(*dyn_args, **final_kwargs)
 
 
 @bind_new_parameters.register
