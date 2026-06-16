@@ -342,9 +342,18 @@ class Operator2(ABC):
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
     @property
+    def num_params(self):
+        return len(self.dynamic_argnames)
+
+    @property
     def data(self) -> tuple:
         """Legacy Operator compatibility view of dynamic numerical arguments."""
         return tuple(self.arguments[name] for name in self.dynamic_argnames)
+
+    @data.setter
+    def data(self, new_data):
+        for name, d in zip(self.dynamic_argnames, new_data):
+            self.arguments[name] = d
 
     @property
     def parameters(self) -> list:
