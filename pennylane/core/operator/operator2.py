@@ -1003,8 +1003,10 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             ops = filter(_is_op, leaves)
             all_algorithmic_wires.extend(op.wires for op in ops)
 
-        if any(isinstance(w, AbstractWires) for w in all_algorithmic_wires):
-            total_wires = sum(getattr(w, "num_wires", len(w)) for w in all_algorithmic_wires)
+        # NOTE: Metaclass canonicalization guarantees
+        # 'all_algorithmic_wires' is either fully abstract or fully concrete
+        if all_algorithmic_wires and isinstance(all_algorithmic_wires[0], AbstractWires):
+            total_wires = sum(w.num_wires for w in all_algorithmic_wires)
             self._wires = AbstractWires(total_wires)
         else:
             self._wires = Wires.all_wires(all_algorithmic_wires)

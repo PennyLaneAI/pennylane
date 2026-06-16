@@ -122,10 +122,39 @@ class TestOperatorAbstractInputs:
                 {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
                 {"my_array": AbstractArray((2, 2), int)},
             ),
-            # Ensures nested abstract arrays / wires are handled
+        ],
+    )
+    def test_mixed_arg_op_with_hybrid_args(self, hybrid_in, hybrid_out):
+        """Tests that different types of arguments canonicalize differently."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            static_argnames = ("static_arg",)
+            dynamic_argnames = ("dynamic_arg",)
+            hybrid_argnames = ("hybrid_arg",)
+
+            def __init__(self, static_arg, dynamic_arg, hybrid_arg, wires):
+                super().__init__(static_arg, dynamic_arg, hybrid_arg, wires=wires)
+
+        op = MixedArgOp(
+            static_arg="blah",
+            dynamic_arg=[0, 1],
+            hybrid_arg=hybrid_in,
+            wires=AbstractWires(1),
+        )
+        assert op.static_arg == "blah"
+        # Cast to abstract array
+        assert op.dynamic_arg == AbstractArray((2,), int)
+        assert op.hybrid_arg == hybrid_out
+
+    @pytest.mark.parametrize(
+        "hybrid_in, hybrid_out",
+        [
+            # Ensures nested abstract wires are handled
             (
-                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
-                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
+                {"aw1": AbstractWires(2), "aw2": AbstractWires(1)},
+                {"aw1": AbstractWires(2), "aw2": AbstractWires(1)},
             ),
             # Ensures wires as hybrid args are handled
             (
@@ -138,7 +167,7 @@ class TestOperatorAbstractInputs:
             ),
         ],
     )
-    def test_mixed_arg_op_correctly_abstractifies_arguments(self, hybrid_in, hybrid_out):
+    def test_mixed_arg_op_with_hybrid_wires(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
