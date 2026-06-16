@@ -29,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.math.decomposition import zyz_rotation_angles
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 
@@ -175,11 +174,7 @@ def ctrl_decomp_zyz(
     control_wires = Wires(control_wires)
     target_wire = target_operation.wires
 
-    if isinstance(target_operation, Operator):
-        *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
-    else:
-        *rot_angles, global_phase = zyz_rotation_angles(ops.functions.matrix(target_operation))
-
+    *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
     with queuing.AnnotatedQueue() as q:
         all_wires = control_wires + target_wire
         if len(control_wires) > 1:
