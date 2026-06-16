@@ -65,35 +65,22 @@ def _select_pauli_rot_phase_gradient(
         # uncompute=compute is only valid for Λ=1, because QROM creates complex phases otherwise.
         return change_op_basis(compute_fn, target_fn, compute_fn)
 
-    if not qp.capture.enabled():
-        compute_op = qp.prod(compute_fn)()
-        target_op = qp.prod(target_fn)()
-        inner_cob = change_op_basis(compute_op, target_op, compute_op)
-
     match rot_axis:
         case "X":
 
-            if qp.capture.enabled():
+            def x_basis_comp():
+                qp.Hadamard(target_wire)
 
-                def x_basis_comp():
-                    qp.Hadamard(target_wire)
+            return qp.change_op_basis(x_basis_comp, inner_cob)
 
-                return qp.change_op_basis(x_basis_comp, inner_cob)
-            return qp.change_op_basis(qp.Hadamard(target_wire), inner_cob, qp.Hadamard(target_wire))
         case "Y":
 
             def y_basis_comp():
                 qp.adjoint(qp.S(target_wire))
                 qp.Hadamard(target_wire)
 
-            if qp.capture.enabled():
+            return qp.change_op_basis(y_basis_comp, inner_cob)
 
-                return qp.change_op_basis(y_basis_comp, inner_cob)
-            y_basis_comp_op = qp.prod(y_basis_comp)()
-            return qp.change_op_basis(y_basis_comp_op, inner_cob)
-
-    if not qp.capture.enabled():
-        return inner_cob
     return inner_cob()
 
 
