@@ -120,11 +120,20 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
 
 
 class MultiRot(Operator2):
+    """MultiRot class used for testing purposes."""
     dynamic_argnames = ("angles",)
     wire_argnames = ("wires",)
     static_argnames = ("string",)
 
     def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        """
+        A simple MultiRot operator based on Operator2.
+
+        Args:
+            angles: The angles of each rotation.
+            wires: The wires each rotation applies to.
+            string: The type ("X", "Y", "Z") of each rotation.
+        """
         assert len(angles) == len(string) == len(wires)
         for letter in string:
             assert letter in ("X", "Y", "Z")
