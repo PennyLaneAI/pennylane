@@ -223,7 +223,7 @@ class TestOperatorAbstractInputs:
     ):
         """Tests that the final op.wires is the sum of all abstract wires."""
 
-        class WireTrackingOp(Operator2):
+        class WireTrackingOp(Operator2):  # pylint: disable=too-few-public-methods
             hybrid_argnames = ("hybrid_wires",)
             wire_argnames = ("wires", "hybrid_wires")
 
