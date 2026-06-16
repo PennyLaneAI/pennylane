@@ -520,7 +520,7 @@ def _check_bind_new_parameters(op):
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
     new_dyn_args = {k: v * 0.0 for k, v in op.arguments.items() if k in op.dynamic_argnames}
-    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args)
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
         assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
