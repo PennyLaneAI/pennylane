@@ -245,6 +245,7 @@
 
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
@@ -575,6 +576,9 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
+  [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
 
 * The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
   producing more balanced test groups across parallel CI jobs.
