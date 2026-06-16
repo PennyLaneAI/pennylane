@@ -35,8 +35,7 @@ def my_func(x):
 # Higher Order Primitives and nested jaxpr
 
 Higher order primitives are essentially function transforms. They are functions that accept other
-functions. Our higher order primitives will include `adjoint`, `ctrl`, `for_loop`, `while_loop`, `cond`, `grad`,
-and `jacobian`.
+functions. Our higher order primitives will include `adjoint`, `ctrl`, `for_loop`, `while_loop`, and `cond`.
 
 Jax describes two separate ways of defining higher order derivatives:
 

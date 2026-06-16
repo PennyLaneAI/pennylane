@@ -16,10 +16,9 @@ This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 
 import inspect
-import numbers
 import warnings
 from collections.abc import Sequence
-from functools import lru_cache, wraps
+from functools import wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -27,70 +26,9 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane import capture
 from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
-
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
-
-# pylint: disable=unused-argument, too-many-arguments
-@lru_cache
-def _get_jacobian_prim():
-    """Create a primitive for gradient computations.
-    This primitive is used when capturing ``qp.grad``.
-    """
-    if not has_jax:  # pragma: no cover
-        return None
-
-    jacobian_prim = capture.QpPrimitive("jacobian")
-    jacobian_prim.multiple_results = True
-    jacobian_prim.prim_type = "higher_order"
-
-    @jacobian_prim.def_impl
-    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if method != "auto":  # pragma: no cover
-            raise ValueError(f"Invalid value '{method=}' without QJIT.")
-        consts = args[:n_consts]
-        args = args[n_consts:]
-
-        def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
-            return res[0] if scalar_out else res
-
-        if scalar_out:
-            res = jax.grad(func, argnums=argnums)(*args)
-        else:
-            res = jax.jacobian(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(res)
-
-    # pylint: disable=unused-argument
-    @jacobian_prim.def_abstract_eval
-    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
-            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i + n_consts] for i in argnums)
-        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
-        return [
-            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
-            for out_shape in out_shapes
-            for in_aval in in_avals
-        ]
-
-    return jacobian_prim
-
-
-def _ShapedArray(shape, dtype, weak_type=False):
-    if jax.config.jax_dynamic_shapes and any(
-        not isinstance(s, int) for s in shape
-    ):  # pragma: no cover
-        return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
-    return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
 
 def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...], bool]:
@@ -160,71 +98,6 @@ def _args_and_argnums(args, argnums):
     flat_argnums = tuple(sum(flat_argnums_gen, start=[]))
     flat_args = sum(flat_args, start=[])
     return flat_args, flat_argnums, full_in_tree, trainable_in_tree
-
-
-def _setup_h(h):
-    if h is None:
-        return 1e-6
-    if not isinstance(h, numbers.Number):
-        raise ValueError(f"Invalid h value ({h}). number was expected.")
-    return h
-
-
-def _setup_method(method):
-    method = method or "auto"
-    if method not in {"auto", "fd"}:
-        raise ValueError(f"Got unrecognized method {method}. Options are 'auto' and 'fd'.")
-    return method
-
-
-def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
-    """Capture-compatible gradient computation."""
-    # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
-
-    h = _setup_h(h)
-    method = _setup_method(method)
-    _argnums = argnums  # somehow renaming stops it from being unbound?
-
-    @wraps(func)
-    def new_func(*args, **kwargs):
-        flat_args, flat_argnums, full_in_tree, trainable_in_tree = _args_and_argnums(args, _argnums)
-
-        # Create fully flattened function (flat inputs & outputs)
-        flat_fn = capture.FlatFn(func, full_in_tree)
-
-        abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
-        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
-
-        num_abstract_shapes = len(abstract_shapes)
-        shift = num_abstract_shapes
-        shifted_argnums = tuple(a + shift for a in flat_argnums)
-
-        flat_inputs, _ = tree_flatten((args, kwargs))
-        prim_kwargs = {
-            "argnums": shifted_argnums,
-            "jaxpr": jaxpr.jaxpr,
-            "n_consts": len(jaxpr.consts),
-            "fn": func,
-            "method": method,
-            "h": h,
-            "scalar_out": scalar_out,
-        }
-        out_flat = _get_jacobian_prim().bind(
-            *jaxpr.consts,
-            *abstract_shapes,
-            *flat_inputs,
-            **prim_kwargs,
-        )
-
-        # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
-        out_flat = tree_leaves(out_flat)
-        assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        # The derivative output tree is the composition of output tree and trainable input trees
-        combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
-        return tree_unflatten(combined_tree, out_flat)
-
-    return new_func
 
 
 # pylint: disable=too-many-instance-attributes
@@ -354,11 +227,6 @@ class grad:
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(
                 self._func, method=self._method, h=self._h, argnums=self._argnums
-            )(*args, **kwargs)
-
-        if capture.enabled():
-            return _capture_diff(
-                self._func, argnums=self._argnums, scalar_out=True, method=self._method, h=self._h
             )(*args, **kwargs)
 
         if self._method:
@@ -679,12 +547,6 @@ class jacobian:
             return ops_loader.jacobian(
                 self._func, method=self._method, h=self._h, argnums=self._argnums
             )(*args, **kwargs)
-
-        if capture.enabled():
-            g = _capture_diff(
-                self._func, argnums=self._argnums, scalar_out=False, method=self._method, h=self._h
-            )
-            return g(*args, **kwargs)
 
         if self._method:
             raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")

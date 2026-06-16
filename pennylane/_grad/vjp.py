@@ -15,111 +15,8 @@
 Defines qp.vjp
 """
 
-from functools import lru_cache
-from importlib.util import find_spec
-
-from pennylane import capture
 from pennylane.compiler import compiler
 from pennylane.exceptions import CompileError
-
-from .grad import _args_and_argnums, _setup_h, _setup_method
-
-has_jax = find_spec("jax") is not None
-
-
-# pylint: disable=unused-argument
-@lru_cache
-def _get_vjp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    vjp_prim = capture.QpPrimitive("vjp")
-    vjp_prim.multiple_results = True
-    vjp_prim.prim_type = "higher_order"
-
-    @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
-        dy = list(args[len(jaxpr.invars) :])
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-
-        res, vjp_fn = jax.vjp(func, *params)
-        dparams = vjp_fn(dy)
-        return res + [dparams[i] for i in argnums]
-
-    @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
-
-    return vjp_prim
-
-
-def _validate_cotangents(cotangents, out_avals):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
-
-    def get_shape(x):
-        return getattr(x, "shape", jax.numpy.shape(x))
-
-    if len(cotangents) != len(out_avals):
-        raise ValueError(
-            "The length of cotangents must match the number of"
-            " outputs of the function with qp.vjp."
-        )
-    for p, t in zip(cotangents, out_avals, strict=True):
-        if _dtype(p) != _dtype(t):
-            raise TypeError(
-                "function output params and cotangents arguments to qp.vjp do not match; "
-                "dtypes must be equal. "
-                f"Got function output params dtype {_dtype(p)} and expected matching cotangent dtype, "
-                f"but got cotangent dtype {_dtype(t)} instead."
-            )
-
-        if get_shape(p) != get_shape(t):
-            raise ValueError(
-                "qp.vjp called with different function output params and cotangent "
-                f"shapes; got function output params shape {get_shape(p)} and cotangent shape "
-                f"{get_shape(t)}"
-            )
-
-
-# pylint: disable=too-many-arguments
-def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
-
-    h = _setup_h(h)
-    method = _setup_method(method)
-    flat_args, flat_argnums, _, trainable_in_tree = _args_and_argnums(params, argnums)
-    flat_cotangents = tree_leaves(cotangents)
-    flat_fn = capture.FlatFn(func)
-    jaxpr = jax.make_jaxpr(flat_fn)(*params)
-    j = jaxpr.jaxpr
-    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
-    shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
-
-    _validate_cotangents(flat_cotangents, jaxpr.out_avals)
-
-    prim_kwargs = {
-        "fn": func,
-        "method": method,
-        "h": h,
-        "argnums": shifted_argnums,
-        "jaxpr": no_consts_jaxpr,
-    }
-    out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
-    assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-    num_outputs = len(no_consts_jaxpr.outvars)
-    flat_results = out_flat[:num_outputs]
-    flat_dparams = out_flat[num_outputs:]
-
-    results = tree_unflatten(flat_fn.out_tree, flat_results)
-    dparams = tree_unflatten(trainable_in_tree, flat_dparams)
-    return results, dparams
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -190,10 +87,6 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
 
     """
-
-    if capture.enabled():
-        return _capture_vjp(f, params, cotangents, argnums=argnums, method=method, h=h)
-
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
