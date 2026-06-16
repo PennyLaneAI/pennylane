@@ -54,37 +54,38 @@ class Operator2(ABC):
     :func:`~.qjit`.
 
     Child classes of `Operator2` are defined by their name and argument types, of which there are
-    five categories that designated as class variables. These arguments dictate how `Operator2`
+    five categories that designated as class variables. These arguments dictate how ``Operator2``
     child classes are handled when compiling with :func:`~.qjit`.
 
-    * :attr:`wire_argnames <~.Operator2.wire_argnames>` : The names of arguments corresponding to
-    wires. This **must** be defined. Values for these arguments are automatically wrapped in
-    :class:`~.Wires` objects by the `Operator2` constructor.
+    * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
+      wires. This **must** be defined. Values for these arguments are automatically wrapped in
+      :class:`~.Wires` objects by the ``Operator2`` constructor.
 
-    * :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>` : The names of arguments that are
-    treated as dynamic. This **must** be defined. Inputs for these arguments must be scalars,
-    arrays, or castable to arrays.
+    * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
+      treated as dynamic. This **must** be defined. Inputs for these arguments must be scalars,
+      arrays, or castable to arrays.
 
-    * :attr:`static_argnames <~.Operator2.static_argnames>` : The names of arguments that are
-    treated as static. This must be defined if
-    :attr:`compilable_argnames <~.Operator2.compilable_argnames>` is undefined.
+    * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
+     treated as static. This must be defined if
+     :attr:`compilable_argnames <Operator2.compilable_argnames>` is undefined.
 
-    * :attr:`compilable_argnames <~.Operator2.compilable_argnames>` : The names of arguments that are
-    treated as **compilable** static arguments. Compilable static arguments include numeric values,
-    strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
-    not guaranteed to be compilable, it is safer to place them in
-    :attr:`static_argnames <~.Operator2.static_argnames>`.
+    * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
+      treated as **compilable** static arguments. Compilable static arguments include numeric values,
+      strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
+      not guaranteed to be compilable, it is safer to place them in
+      :attr:`static_argnames <Operator2.static_argnames>`.
 
     .. note::
 
-        An operator can only specify :attr:`static_argnames <~.Operator2.static_argnames>` or
-        :attr:`compilable_argnames <~.Operator2.compilable_argnames>`, but not both; if **any**
+        An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
+        :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
         static arguments cannot be lowered to the IR, then all static arguments must be treated as
         not lowerable.
 
-    * :attr:`hybrid_argnames <~.Operator2.hybrid_argnames>` : The names of arguments that represent
-    dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
-    overlap with ``wire_argnames`` when those arguments contain nested structures of wires.
+    * :attr:`hybrid_argnames <Operator2.hybrid_argnames>` : The names of arguments that represent
+      dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
+      overlap with :attr:`wire_argnames <Operator2.wire_argnames>` when those arguments contain
+      nested structures of wires.
 
     Args:
         *params (tuple[tensor_like]): trainable parameters
@@ -94,16 +95,16 @@ class Operator2(ABC):
     .. details::
         :title: Defining Custom Operators
 
-        Custom `Operator2` instances **require** specifying
-        :attr:`wire_argnames <~.Operator2.wire_argnames>`, one of
-        :attr:`static_argnames <~.Operator2.static_argnames>` or
-        :attr:`compilable_argnames <~.Operator2.compilable_argnames>`, and
-        :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`, if any. As an example, consider the
-        following custom operator: `MyOp(pauli_string, angle_array, wires, other_wires)`.
-        The `wires` and `other_wires` arguments will be a part of
-        :attr:`wire_argnames <~.Operator2.wire_argnames>`, and `pauli_string` and `angle_array`
-        will belong to :attr:`static_argnames <~.Operator2.static_argnames>` and
-        :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`, respectively.
+        Custom ``Operator2`` instances **require** specifying
+        :attr:`wire_argnames <Operator2.wire_argnames>`, one of
+        :attr:`static_argnames <Operator2.static_argnames>` or
+        :attr:`compilable_argnames <Operator2.compilable_argnames>`, and
+        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, if any. As an example, consider the
+        following custom operator: ``MyOp(pauli_string, angle_array, wires, rot_wire)``.
+        The ``wires`` and ``rot_wire`` arguments will be a part of
+        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
+        will belong to :attr:`static_argnames <Operator2.static_argnames>` and
+        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
 
         .. code-block python
 
@@ -131,8 +132,8 @@ class Operator2(ABC):
         >>> op
         MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
 
-        For `MyOp` to be a usable quantum operator, it must define a decomposition with
-        :func:`~.add_decomps` or a `compute_matrix` method (for state-vector simulation).
+        For ``MyOp`` to be a usable quantum operator, it must define a decomposition with
+        :func:`~.add_decomps` or a ``compute_matrix`` method (for state-vector simulation).
 
         **Decomposing Operators**
 
@@ -161,11 +162,11 @@ class Operator2(ABC):
 
             qp.add_decomps(MyOp, _my_op_decomp)
 
-        **`static_argnames` vs. `compilable_argnames`**
+        **static_argnames vs. compilable_argnames**
 
         TODO
 
-        **`hybrid_argnames`**
+        **hybrid_argnames**
 
         TODO: [sc-120453] Fill docstring
     """
