@@ -14,6 +14,7 @@
 import os
 import re
 import sys
+import warnings
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
@@ -65,7 +66,9 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
-suppress_warnings = ["ref.python"]
+# suppress_warnings = ["ref.python"]
+warnings.filterwarnings("error", message=".*Explicit markup ends without a blank line.*")
+
 
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "https://docs.pennylane.ai/")

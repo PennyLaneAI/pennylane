@@ -85,6 +85,8 @@ jobs:
           build-command: "sphinx-build -b html . _build -W --keep-going"
 
       - name: Check for deprecated graph attribute references
+        if: always()
         run: |
           grep -rn "~\.graph\|\`\.graph\`\|:attr:\`graph" pennylane/ --include="*.py" || true
           grep -rn "~\.graph\|\`\.graph\`\|:attr:\`graph" doc/ --include="*.rst" || true
+          grep -rn "Returns.*graph\|:.*graph" pennylane/transforms/commutation_dag.py pennylane/circuit_graph.py pennylane/ftqc/ --include="*.py" | grep -i "attr\|class\|meth\|func\|~\."
