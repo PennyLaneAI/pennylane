@@ -15,6 +15,8 @@
 Tests for capturing for while loops into jaxpr.
 """
 
+# pylint: disable=unbalanced-tuple-unpacking
+
 import numpy as np
 import pytest
 
@@ -267,6 +269,46 @@ class TestCaptureCircuitsWhileLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
+
+    def test_while_loop_grad(self):
+        """Test simple while-loop primitive with gradient."""
+        from pennylane.capture.primitives import jacobian_prim
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def inner_func(x):
+
+            @qp.while_loop(lambda i: i < 3)
+            def loop_fn(i):
+                qp.RX(i * x, wires=0)
+                return i + 1
+
+            _ = loop_fn(0)
+
+            return qp.expval(qp.Z(0))
+
+        def func_qp(x):
+            return qp.grad(inner_func)(x)
+
+        x = 0.7
+
+        # Check overall jaxpr properties
+        jaxpr = jax.make_jaxpr(func_qp)(x)
+        assert len(jaxpr.eqns) == 1  # a single grad equation
+
+        grad_eqn = jaxpr.eqns[0]
+        assert grad_eqn.primitive == jacobian_prim
+        assert set(grad_eqn.params.keys()) == {
+            "argnums",
+            "n_consts",
+            "jaxpr",
+            "method",
+            "h",
+            "fn",
+            "scalar_out",
+        }
+        assert grad_eqn.params["argnums"] == (0,)
+        assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
+        assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
 
 def test_pytree_input_output():
