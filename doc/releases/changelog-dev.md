@@ -769,6 +769,12 @@
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 
+* Fixed a bug where string PyTree leaves (such as string wire labels) were restored as ``bytes``
+  instead of ``str`` after being serialized with ``DatasetPyTree``. They were stored as an array,
+  which HDF5 reads back as ``bytes``; such leaves are now stored as a list so that they round-trip
+  as ``str``.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

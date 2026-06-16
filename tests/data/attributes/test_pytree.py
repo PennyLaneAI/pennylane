@@ -107,6 +107,20 @@ class TestDatasetPyTree:
 
         assert attr == value
 
+    def test_string_leaves_preserved(self):
+        """Test that string leaves are restored as strings rather than bytes.
+
+        Homogeneous string leaves (e.g. string wire labels) were stored as an
+        array, which HDF5 reads back as ``bytes``. They must be stored as a list
+        so that they round-trip as ``str``.
+        """
+        value = CustomNode(["a", "b"], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert list(result.data) == ["a", "b"]
+        assert all(isinstance(leaf, str) for leaf in result.data)
+
 
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
 def test_quantum_scripts(shots):

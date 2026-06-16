@@ -50,7 +50,13 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
 
         try:
             # Attempt to store leaves as an array, which will be more efficient
-            # but will fail if the leaves are not homogenous
+            # but only works for homogeneous numeric leaves. Non-numeric leaves
+            # (e.g. string wire labels) must use a list, since HDF5 would
+            # otherwise read them back as bytes.
+            # "biufc" are the numpy dtype ``kind`` codes for numeric data:
+            # boolean, signed integer, unsigned integer, float, and complex.
+            if np.asarray(leaves).dtype.kind not in "biufc":
+                raise TypeError
             DatasetArray(leaves, parent_and_key=(bind, "leaves"))
         except (ValueError, TypeError):
             DatasetList(leaves, parent_and_key=(bind, "leaves"))
