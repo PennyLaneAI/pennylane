@@ -64,7 +64,16 @@ def _canonicalize_wire_leaf(leaf) -> AbstractWires:
 
 
 def _canonicalize_abstract_type(val, kind: _ArgType):
-    """Check if pytree contains any abstract types."""
+    """Canonicalizes the input into its abstract equivalent.
+
+    Args:
+        val (Any): The input value.
+        kind (_ArgType): The argument's classification.
+            - WIRES: Coerce the value to be an AbstractWires instance.
+            - DYN: Flatten into a single, unified AbstractArray
+            - HYBRID: Preserve the PyTree structure, mapping internal leaves
+                to either AbstractWires or AbstractArray.
+    """
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
