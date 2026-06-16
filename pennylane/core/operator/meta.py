@@ -28,7 +28,7 @@ from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
 
 
-class ArgType(Enum):
+class _ArgType(Enum):
     """Enum to keep track of an arguments type."""
 
     WIRES = auto()
@@ -63,21 +63,21 @@ def _canonicalize_wire_leaf(leaf) -> AbstractWires:
     return AbstractWires(len(list(leaf)))
 
 
-def _canonicalize_abstract_type(val, kind: ArgType):
+def _canonicalize_abstract_type(val, kind: _ArgType):
     """Check if pytree contains any abstract types."""
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
 
     match kind:
-        case ArgType.WIRES:
+        case _ArgType.WIRES:
             return _canonicalize_wire_leaf(val)
 
-        case ArgType.DYN:
+        case _ArgType.DYN:
             canonical_arr = math.asarray(val)
             return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
-        case ArgType.HYBRID:
+        case _ArgType.HYBRID:
             leaves, structure = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
             new_leaves = []
             for leaf in leaves:
@@ -120,15 +120,15 @@ class OperatorMeta(type):
 
         if any(_contains_abstract_type(arguments[name]) for name in target_args):
             for name in target_args:
-                kind = ArgType.DYN
+                kind = _ArgType.DYN
 
                 # NOTE: Check hybrid first as hybrid args can
                 # appear in both hybrid and wires args; these arguments
                 # must be treated as hybrid.
                 if name in cls.hybrid_argnames:
-                    kind = ArgType.HYBRID
+                    kind = _ArgType.HYBRID
                 elif name in cls.wire_argnames:
-                    kind = ArgType.WIRES
+                    kind = _ArgType.WIRES
 
                 arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 

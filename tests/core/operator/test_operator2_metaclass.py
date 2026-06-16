@@ -17,12 +17,6 @@ from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.meta import (
-    ArgType,
-    _canonicalize_abstract_type,
-    _canonicalize_wire_leaf,
-    _contains_abstract_type,
-)
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
@@ -30,166 +24,6 @@ from pennylane.wires import AbstractWires, Wires
 jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-
-@pytest.mark.parametrize(
-    "leaf, expected",
-    [
-        (0, AbstractWires(1)),
-        ("a", AbstractWires(1)),
-        (Wires([0, 1, 2]), AbstractWires(3)),
-        ([0, 1], AbstractWires(2)),
-        ((0, 1, 2, 3), AbstractWires(4)),
-        (range(5), AbstractWires(5)),
-    ],
-)
-def test_wire_leaf_maps_to_abstract_wires(leaf, expected):
-    """Tests the '_canonicalize_wire_leaf' helper.
-
-    Ensures that concrete wires are properly abstractified.
-    """
-
-    assert _canonicalize_wire_leaf(leaf) == expected
-
-
-class TestContainsAbstractTypeHelper:
-    """Tests the '_contains_abstract_type' helper.
-
-    Ensures that the helper can flag abstract types.
-    """
-
-    @pytest.mark.parametrize(
-        "val",
-        [
-            AbstractArray((1,), float),
-            AbstractWires(2),
-            [0.5, AbstractArray((1,), int)],
-            {"a": AbstractWires(1)},
-            (1.0, [AbstractArray((1,), float)]),
-        ],
-    )
-    def test_abstract_leaves_are_flagged(self, val):
-        """Tests that pytrees with at least one abstract value return True."""
-
-        assert _contains_abstract_type(val)
-
-    @pytest.mark.parametrize(
-        "val",
-        [
-            0.5,
-            [0.5, 1.0],
-            {"a": 1, "b": 2},
-            Wires([0, 1, 2]),
-            (1.0, 2.0),
-        ],
-    )
-    def test_concrete_leaves_are_not_flagged(self, val):
-        """Tests that pytrees containing purely concrete values are not falgged."""
-
-        assert not _contains_abstract_type(val)
-
-    def test_jax_tracer_is_not_flagged(self):
-        """Tests that JAX tracers are not considered 'abstract'."""
-
-        captured = {}
-
-        def f(x):
-            captured["is_abstract"] = _contains_abstract_type(x)
-
-        _ = jax.make_jaxpr(f)(0.5)
-        assert captured["is_abstract"] is False
-
-
-class TestCanonicalizeAbstractTypeHelper:
-    """Tests '_canonicalize_abstract_type' helper.
-
-    Ensures that the helper can canonicalize any input
-    with proper behaviour for each type of input argument
-    (dynamic, wires or hybrid).
-
-    """
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.WIRES'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            (0, AbstractWires(1)),
-            ([0, 1], AbstractWires(2)),
-            (Wires([0, 1, 2]), AbstractWires(3)),
-        ],
-    )
-    def test_concrete_wires_are_promoted(self, val, expected):
-        """Tests that concrete wires are promoted to abstract."""
-        assert _canonicalize_abstract_type(val, kind=ArgType.WIRES) == expected
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.DYN'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            # Standard
-            (0, AbstractArray((), int)),
-            ([0.0, 1.0], AbstractArray((2,), float)),
-            ([[0], [1], [2]], AbstractArray((3, 1), int)),
-            # Edge case
-            ([], AbstractArray((0,), float)),
-            # Combination of int and float -> AbstractArray of type float
-            ([1, 2.5], AbstractArray((2,), float)),
-        ],
-    )
-    def test_concrete_dynamic_arg_inputs_are_abstractified(self, val, expected):
-        """Tests that inputs are properly canonicalized."""
-
-        assert _canonicalize_abstract_type(val, kind=ArgType.DYN) == expected
-
-    # =========================================================================
-    # Unit tests when 'kind=ArgType.HYBRID'
-    # =========================================================================
-
-    @pytest.mark.parametrize(
-        "val, expected",
-        [
-            # Standard pytrees
-            (0, AbstractArray((), int)),
-            ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
-            ((0.0, 1.0), (AbstractArray((), float), AbstractArray((), float))),
-            (
-                {"a": [0, 1], "b": 1.5},
-                {
-                    "a": [AbstractArray((), int), AbstractArray((), int)],
-                    "b": AbstractArray((), float),
-                },
-            ),
-            # Ensures nested arrays don't get flattened
-            (
-                {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
-                {"my_array": AbstractArray((2, 2), int)},
-            ),
-            # Ensures nested abstract arrays / wires are handled
-            (
-                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
-                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
-            ),
-            # Ensures wires as hybrid args are handled
-            (
-                {"reg1": Wires([0, 1]), "reg2": Wires([2, 3])},
-                {"reg1": AbstractWires(2), "reg2": AbstractWires(2)},
-            ),
-            (
-                qp.registers({"a": 2, "b": 3}),
-                {"a": AbstractWires(2), "b": AbstractWires(3)},
-            ),
-        ],
-    )
-    def test_concrete_hybrid_arg_inputs_are_abstractified(self, val, expected):
-        """Tests that inputs are properly canonicalized."""
-
-        assert _canonicalize_abstract_type(val, kind=ArgType.HYBRID) == expected
 
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
@@ -249,7 +83,13 @@ class TestOperatorAbstractInputs:
     )
     @pytest.mark.parametrize(
         "concrete_wires, abstract_wires",
-        [(0, AbstractWires(1)), ([0], AbstractWires(1)), ([0, 1], AbstractWires(2))],
+        [
+            (0, AbstractWires(1)),
+            ([0], AbstractWires(1)),
+            ([0, 1], AbstractWires(2)),
+            ("a", AbstractWires(1)),
+            (Wires([0, 1, 2]), AbstractWires(3)),
+        ],
     )
     def test_canonicalize_all_inputs_when_some_are_abstract(
         self, concrete_theta, abstract_theta, concrete_wires, abstract_wires
@@ -263,7 +103,42 @@ class TestOperatorAbstractInputs:
         assert op.theta == abstract_theta
         assert op.wires == abstract_wires
 
-    def test_mixed_arg_op_correctly_abstractifies_arguments(self):
+    @pytest.mark.parametrize(
+        "hybrid_in, hybrid_out",
+        [
+            # Standard pytrees
+            (0, AbstractArray((), int)),
+            ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
+            ((0.0, 1.0), (AbstractArray((), float), AbstractArray((), float))),
+            (
+                {"a": [0, 1], "b": 1.5},
+                {
+                    "a": [AbstractArray((), int), AbstractArray((), int)],
+                    "b": AbstractArray((), float),
+                },
+            ),
+            # Ensures nested arrays don't get flattened
+            (
+                {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
+                {"my_array": AbstractArray((2, 2), int)},
+            ),
+            # Ensures nested abstract arrays / wires are handled
+            (
+                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
+                {"my_aa": AbstractArray((2, 2), int), "my_aw": AbstractWires(1)},
+            ),
+            # Ensures wires as hybrid args are handled
+            (
+                {"reg1": Wires([0, 1]), "reg2": Wires([2, 3])},
+                {"reg1": AbstractWires(2), "reg2": AbstractWires(2)},
+            ),
+            (
+                qp.registers({"a": 2, "b": 3}),
+                {"a": AbstractWires(2), "b": AbstractWires(3)},
+            ),
+        ],
+    )
+    def test_mixed_arg_op_correctly_abstractifies_arguments(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
@@ -281,18 +156,53 @@ class TestOperatorAbstractInputs:
         op = MixedArgOp(
             static_arg="blah",
             dynamic_arg=[0, 1],
-            hybrid_arg={"reg1": Wires([0, 1]), "reg2": Wires([2, 3, 4])},
+            hybrid_arg=hybrid_in,
             wires=AbstractWires(1),
         )
         assert op.static_arg == "blah"
         # Cast to abstract array
         assert op.dynamic_arg == AbstractArray((2,), int)
-        # Pytree still holds up and nested wires are processed properly
-        assert op.hybrid_arg == {
-            "reg1": AbstractWires(2),
-            "reg2": AbstractWires(3),
-        }
-        assert op.wires == AbstractWires(6)  # 1 + reg1 + reg2
+        assert op.hybrid_arg == hybrid_out
+
+    @pytest.mark.parametrize(
+        "hybrid_wires, base_wires, expected_wires",
+        (
+            (
+                {"reg1": Wires([0, 1]), "reg2": Wires([2, 3, 4])},
+                AbstractWires(1),
+                AbstractWires(6),  # 2 + 3 + 1
+            ),
+            (
+                {"areg1": AbstractWires(2), "areg2": AbstractWires(3)},
+                AbstractWires(1),
+                AbstractWires(6),  # 2 + 3 + 1
+            ),
+            (
+                Wires([0, 1]),
+                AbstractWires(3),
+                AbstractWires(5),  # 3 + 2
+            ),
+            (
+                qp.registers({"alice": 2, "bob": 4}),
+                AbstractWires(5),
+                AbstractWires(11),  # 5 + 2 + 4
+            ),
+        ),
+    )
+    def test_operator_correctly_calculates_total_abstract_wires(
+        self, hybrid_wires, base_wires, expected_wires
+    ):
+        """Tests that the final op.wires is the sum of all abstract wires."""
+
+        class WireTrackingOp(Operator2):
+            hybrid_argnames = ("hybrid_wires",)
+            wire_argnames = ("wires", "hybrid_wires")
+
+            def __init__(self, hybrid_wires, wires):
+                super().__init__(hybrid_wires, wires=wires)
+
+        op = WireTrackingOp(hybrid_wires, base_wires)
+        assert op.wires == expected_wires
 
 
 class TestOperatorAbstractInputsCapture:
