@@ -2,6 +2,77 @@
 
 <h3>New features since last release</h3>
 
+* A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
+  input registers using a two's complement.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+  ```python
+  x = -3
+  y = 3
+
+  x_wires = [0, 1, 2]
+  y_wires = [3, 4, 5]
+  output_wires = [6, 7, 8, 9, 10, 11]
+  work_wires = [12, 13, 14, 15]
+
+  dev = qp.device("default.qubit")
+
+  @qp.qnode(dev, shots=1)
+  def circuit():
+      qp.BasisEmbedding(x, wires=x_wires)
+      qp.BasisEmbedding(y, wires=y_wires)
+      qp.SignedOutMultiplier(
+          x_wires,
+          y_wires,
+          output_wires,
+          work_wires,
+          output_wires_zeroed=True,
+      )
+      return qp.sample(wires=output_wires)
+  ```
+
+  ```pycon
+  >>> print(circuit())
+  [[1 1 0 1 1 1]]
+
+  ```
+
+  The result :math:`[[1 1 0 1 1 1]]`, is the binary representation of :math:`-3 \cdot 3 \; = -9` in 2s complement form.
+
+* Added an :class:`~.Incrementer` template that increments a bitstring encoded in a quantum state
+  by 1, in twos complement. Based on `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__.
+  [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
+
+  In this example, we add :math:`2 + 1` to get :math:`3`, using the `Incrementer`.
+
+  ```python
+  from pennylane import qnode, device, sample, BasisEmbedding, Incrementer
+  import numpy as np
+
+  wires = [0, 1, 2]
+  work_wires = [3, 4]
+  init_state = [0, 1, 0]  # binary representation of 2
+
+  dev = device("default.qubit", wires=wires + work_wires)
+
+  @qnode(dev, shots=1)
+  def increment(wires, init_state, work_wires=None):
+      BasisEmbedding(init_state, wires)
+      Incrementer(wires, work_wires)
+      return sample()
+
+  result = increment(wires, init_state, work_wires)[0]
+
+  ```
+
+  ```pycon
+  >>> result[:len(wires)]
+  array([0, 1, 1])
+
+  ```
+
+  The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
 * Added new templates :class:`~.OutSquare` and :class:`SignedOutSquare` for out-place squaring
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
@@ -142,7 +213,45 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
+* A new operation :class:`~.QutritDensityMatrix` has been added to initialize density matrix states for the device
+  `qp.devices.DefaultQutritMixed`.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+  ```python
+  import pennylane as qp
+  nr_wires = 1
+  rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
+  rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
+  
+  dev = qp.device("default.qutrit.mixed", wires=1)
+  @qp.qnode(dev)
+  def circuit():
+      qp.QutritDensityMatrix(rho, wires=[0])
+      return qp.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([[[0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 0.+0.j],
+          [0.+0.j, 0.+0.j, 1.+0.j]]])
+  
+  ```
+
 <h3>Improvements 🛠</h3>
+
+* `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
+  [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
+
+* Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
+  particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
+  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+
+* Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
+  `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable
+  decomposition when using phase-gradient based decompositions of multiplexers.
+  [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
 * :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
   symbols on the control wires and a Pauli rotation label on the target wire.
@@ -165,6 +274,10 @@
   Tracker(active=False, totals={'a': 2, 'c': 1}, history={'a': [2], 'b': ['b2'], 'c': [1]}, latest={'a': 2, 'b': 'b2', 'c': 1}, persistent=False, callback=None)
 
   ```
+
+* :func:`~pennylane.draw`, :func:`~pennylane.draw_mpl`, and :func:`~.specs` now support
+  ``functools.partial`` wrappers around supported circuit callables.
+  [(#9595)](https://github.com/PennyLaneAI/pennylane/pull/9595)
 
 * Updated the preprocessing of target state vectors for `MottonenStatePreparation` and
   `MultiplexerStatePreparation` to produce only `RY` rotation angles for real target state vectors
@@ -241,9 +354,23 @@
 
 * The Ross-Selinger decomposition method :func:`~.ops.rs_decomposition` when used with Catalyst
   no longer queues a Catalyst conditional operator, if the conditional predicate for whether a
-  leading T gate exists is statically known. Instead, the static conditional will be evaluated at
-  trace time, and only the correct branch will be queued.
+  leading T gate exists is statically known, and the `compile_without_static_conditionals` flag
+  in Catalyst is set. Instead, the static conditional will be evaluated at trace time, and only
+  the correct branch will be queued.
   [(#9630)](https://github.com/PennyLaneAI/pennylane/pull/9630)
+  [(#9648)](https://github.com/PennyLaneAI/pennylane/pull/9648)
+
+* The `DecompositionGraph` now skips applying `adjoint` or `ctrl` to decomposition rules that
+  contain mid-circuit measurements, also skips applying `adjoint` to decomposition rules that
+  contain dynamic wire allocations.
+  [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
+
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
+  any qudit density matrices with constant qudit dimension.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
+
+* Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
+  [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -361,6 +488,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Plxpr transforms have been removed.
+  [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+
+* PLxPR execution support have been removed for `default.qubit`.
+  [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
   [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
@@ -423,6 +556,9 @@
   Instead, `Operator.queue` can be overwritten if needed.
   [(#9470)](https://github.com/PennyLaneAI/pennylane/pull/9470)
 
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+  [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -441,9 +577,18 @@
   [(#9483)](https://github.com/PennyLaneAI/pennylane/pull/9483)
 
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
-  [(#9502)](https://github.com/PennyLaneAI/pennylane/pull/9502)
 
 <h3>Internal changes ⚙️</h3>
+
+* The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
+  [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
+
+* The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
+  producing more balanced test groups across parallel CI jobs.
+  [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
+
+* Improve language server support for `qp.capture`.
+  [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 
 * Bump `codecov-action` to `v7`.
   [(#9615)](https://github.com/PennyLaneAI/pennylane/pull/9615)
@@ -469,10 +614,16 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+  [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
+  Moves `MeasurementProcess`, `StateMeasurement`, `SampleMeasurement`, `MeasurementTransform`,
+  `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
+  [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
@@ -617,6 +768,10 @@
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
+* Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
+  symbolic operators.
+  [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -624,8 +779,10 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Gabriel Bottrill,
 Astral Cai,
 Daniel Casota,
+Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
