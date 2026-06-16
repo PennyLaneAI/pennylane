@@ -1868,8 +1868,11 @@ class TestGraphDecomposition:
             op.decomposition()
 
     def test_no_applicable_rule_raises(self):
-        """When rules exist but none are applicable, ``decomposition`` raises
-        ``DecompositionUndefinedError`` and ``has_decomposition`` is ``False``."""
+        """When rules exist for the type but none are applicable to a given instance,
+        ``decomposition`` raises ``DecompositionUndefinedError``. ``has_decomposition`` is a
+        class-level check, so it stays ``True`` (a rule is registered for the type) even though
+        this instance has no applicable rule — the per-instance selection happens in
+        ``decomposition``."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -1892,7 +1895,7 @@ class TestGraphDecomposition:
             qp.add_decomps(Op, five_wire)
 
             op = Op(0.5, wires=[0])
-            assert op.has_decomposition is False
+            assert op.has_decomposition is True  # class-level: a rule is registered for the type
             with pytest.raises(DecompositionUndefinedError):
                 op.decomposition()
 
@@ -1945,7 +1948,8 @@ class TestGraphDecomposition:
         assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
 
     def test_has_decomposition_reflects_registered_rules(self):
-        """``has_decomposition`` is consistent with rule availability and applicability."""
+        """``has_decomposition`` (a class-level check) reports ``True`` once decomposition rules
+        are registered for the operator type, for both class and instance access."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
