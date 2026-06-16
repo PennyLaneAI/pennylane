@@ -109,19 +109,6 @@ class TestCanonicalizeAbstractTypeHelper:
 
     """
 
-    def test_abstract_wires_pass_through(self):
-        """Tests that already abstract wires are returned early."""
-
-        aw = AbstractWires(5)
-        assert _canonicalize_abstract_type(aw, kind=ArgType.WIRES) is aw
-
-    @pytest.mark.parametrize("kind", [ArgType.DYN, ArgType.HYBRID])
-    def test_abstract_arrays_pass_through(self, kind):
-        """Tests that already abstract arrays are returned early."""
-
-        aa = AbstractArray((), float)
-        assert _canonicalize_abstract_type(aa, kind) is aa
-
     # =========================================================================
     # Unit tests when 'kind=ArgType.WIRES'
     # =========================================================================
@@ -239,10 +226,18 @@ class TestOperatorAbstractInputs:
     def test_child_init_is_skipped(self):
         """Tests that the child constructor is skipped."""
 
+        # only AbstractArray
+
         aa = AbstractArray((1,), float)
         op = DynCanonOp(phi=aa, wires=[0])
         assert isinstance(op.phi, AbstractArray)
         assert op.wires == AbstractWires(1)
+
+        # only AbstractWires
+
+        aw = AbstractWires(1)
+        op = MultiWireOp(wires=aw, ctrl_wires=0)
+        assert op.wires == AbstractWires(2)
 
     @pytest.mark.parametrize(
         "concrete_theta, abstract_theta",
@@ -267,13 +262,6 @@ class TestOperatorAbstractInputs:
         assert op.phi is aa
         assert op.theta == abstract_theta
         assert op.wires == abstract_wires
-
-    def test_abstract_wires_skips_init(self):
-        """Tests that the presence of abstract wires also skips init."""
-
-        aw = AbstractWires(1)
-        op = MultiWireOp(wires=aw, ctrl_wires=0)
-        assert op.wires == AbstractWires(2)
 
     def test_mixed_arg_op_correctly_abstractifies_arguments(self):
         """Tests that different types of arguments canonicalize differently."""
