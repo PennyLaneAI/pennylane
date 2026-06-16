@@ -293,7 +293,7 @@ class TestOperatorAbstractInputs:
         op = MixedArgOp(
             static_arg="blah",
             dynamic_arg=[0, 1],
-            hybrid_arg={"random_list": [0.5, 1.5], "register1": Wires([0, 1, 2])},
+            hybrid_arg={"reg1": Wires([0, 1]), "reg2": Wires([2, 3, 4])},
             wires=AbstractWires(1),
         )
         assert op.static_arg == "blah"
@@ -301,10 +301,10 @@ class TestOperatorAbstractInputs:
         assert op.dynamic_arg == AbstractArray((2,), int)
         # Pytree still holds up and nested wires are processed properly
         assert op.hybrid_arg == {
-            "random_list": [AbstractArray((), float), AbstractArray((), float)],
-            "register1": AbstractWires(3),
+            "reg1": AbstractWires(2),
+            "reg2": AbstractWires(3),
         }
-        assert op.wires == AbstractWires(1)
+        assert op.wires == AbstractWires(6)  # 1 + reg1 + reg2
 
 
 class TestOperatorAbstractInputsCapture:

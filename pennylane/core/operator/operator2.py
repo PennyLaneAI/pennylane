@@ -986,7 +986,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             # Pytree wires handling
             else:
                 leaves, _ = flatten(self._bound_args.arguments[wname], is_leaf=_is_wires)
-                if not all(isinstance(l, Wires) for l in leaves):
+                if not all(isinstance(l, (Wires, AbstractWires)) for l in leaves):
                     raise ValueError(
                         f"Hybrid wires argument '{wname}' is invalid. All leaf values must be "
                         "cast to 'qp.wires.Wires'."
