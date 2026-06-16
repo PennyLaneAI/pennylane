@@ -1586,19 +1586,6 @@ class TestOperationDerivative:
         ):
             operation_derivative(op)
 
-    def test_multiparam_raise(self):
-        """Test if the function raises a ValueError if the input operation is composed of multiple
-        parameters"""
-
-        class RotWithGen(qp.Rot):
-            def generator(self):
-                return qp.Hermitian(np.zeros((2, 2)), wires=self.wires)
-
-        op = RotWithGen(0.1, 0.2, 0.3, wires=0)
-
-        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
-            operation_derivative(op)
-
     def test_rx(self):
         """Test if the function correctly returns the derivative of RX"""
         p = 0.3

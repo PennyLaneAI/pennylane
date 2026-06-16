@@ -240,8 +240,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
+  [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
+
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
@@ -487,6 +491,9 @@
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
+* PLxPR execution support have been removed for `default.qubit`.
+  [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
   [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
@@ -573,6 +580,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
+  [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
+
+* The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
+  producing more balanced test groups across parallel CI jobs.
+  [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
+
 * Improve language server support for `qp.capture`.
   [(#9657)](https://github.com/PennyLaneAI/pennylane/pull/9657)
 
@@ -601,8 +615,10 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
+  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -753,6 +769,10 @@
 * ``qp.ctrl`` no longer produces ``Controlled(Allocate)`` when applied to quantum functions that
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
+
+* Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
+  symbolic operators.
+  [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 
 <h3>Contributors ✍️</h3>
 
