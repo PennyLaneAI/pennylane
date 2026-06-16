@@ -352,12 +352,12 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
     CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-    <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
-                3: ───────────├●─│──────────────├●─────────────┤
-                4: ───────────├●─│──────────────├●─────────────┤
-                5: ───────────╰●─│──────────────╰●─────────────┤
-                0: ──────────────├MultiRZ(0.50)────────────────┤
-                1: ──────────────╰MultiRZ(0.50)────────────────┤
+    0: ──────────╭MultiRZ(0.50)───────┤
+    1: ──────────├MultiRZ(0.50)───────┤
+    3: ───────╭●─│──────────────╭●────┤
+    4: ───────├●─│──────────────├●────┤
+    5: ───────├●─│──────────────├●────┤
+         |0>├─╰X─╰●─────────────╰X──┤
     First-Level Expansion Gates: {MultiControlledX(num_control_wires=3, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
     Wire Allocations: {'zero': 1}
     Full Expansion Gates: {RZ: 58, CNOT: 34, GlobalPhase: 64, RY: 18, RX: 8, MidMeasure: 2}
@@ -447,11 +447,11 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker")
         Decomposition 0 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕─╭●──⊕╮──Deallocate─┤
-                    0: ───────────├●─│───●┤─────────────┤
-                    1: ───────────╰●─│───●╯─────────────┤
-                    2: ──────────────├●─────────────────┤
-                    3: ──────────────╰X─────────────────┤
+        0: ───────╭●─────●╮────┤
+        1: ───────├●─────●┤────┤
+        2: ───────│──╭●───│────┤
+        3: ───────│──├X───│────┤
+             |0>├─╰⊕─╰●──⊕╯──┤
         Gate Count: {Toffoli: 1, TemporaryAND: 1, Adjoint(TemporaryAND): 1}
         Wire Allocations: {'zero': 1}
 
@@ -477,13 +477,13 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         >>> op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
         CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_ctrl_single_work_wire))
-        <DynamicWire>: ──Allocate─╭X─╭●─────────────╭X──Deallocate─┤
-                    3: ───────────├●─│──────────────├●─────────────┤
-                    4: ───────────├●─│──────────────├●─────────────┤
-                    5: ───────────├●─│──────────────├●─────────────┤
-                    6: ───────────╰●─│──────────────╰●─────────────┤
-                    0: ──────────────├MultiRZ(0.50)────────────────┤
-                    1: ──────────────╰MultiRZ(0.50)────────────────┤
+        0: ──────────╭MultiRZ(0.50)───────┤
+        1: ──────────├MultiRZ(0.50)───────┤
+        3: ───────╭●─│──────────────╭●────┤
+        4: ───────├●─│──────────────├●────┤
+        5: ───────├●─│──────────────├●────┤
+        6: ───────├●─│──────────────├●────┤
+             |0>├─╰X─╰●─────────────╰X──┤
         First-Level Expansion Gates: {MultiControlledX(num_control_wires=4, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 2, Controlled(MultiRZ(num_wires=2), num_control_wires=1, num_work_wires=0, num_zero_control_values=0, work_wire_type=borrowed): 1}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {RZ: 94, CNOT: 58, GlobalPhase: 104, RY: 26, RX: 12, MidMeasure: 2}
@@ -524,24 +524,24 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Weighted Cost: 133.0
         <BLANKLINE>
         Decomposition 2 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕───────╭●────────⊕╮──Deallocate─┤
-                    2: ───────────├●───────│─────────●┤─────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X──●╯─────────────┤
-                    4: ──────────────├●────│─────├●─────────────────┤
-                    5: ──────────────╰●────│─────╰●─────────────────┤
-                    6: ────────────────────╰X───────────────────────┤
+        2: ───────╭●─────────────────●╮────┤
+        3: ───────├●─╭X──X─╭●──X─╭X──●┤────┤
+        4: ───────│──├●────│─────├●───│────┤
+        5: ───────│──╰●────│─────╰●───│────┤
+        6: ───────│────────├X─────────│────┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
-        <DynamicWire>: ──Allocate─╭X───────╭●───────╭X───────╭●──Deallocate────┤
-                    2: ───────────├●───────│────────├●───────│─────────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X─╰●─╭X──X─├●──X──────────╭X─┤
-                    4: ──────────────├●────│─────├●────├●────│──────────────├●─┤
-                    5: ──────────────╰●────│─────╰●────╰●────│──────────────╰●─┤
-                    6: ────────────────────╰X────────────────╰X────────────────┤
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
         First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
@@ -560,26 +560,26 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>
         CHOSEN: Decomposition 8 (name: many_zeroed_workers)
-        <DynamicWire>: ─╭Allocate────╭⊕─╭●──⊕╮─────╭Deallocate─┤
-        <DynamicWire>: ─╰Allocate─╭⊕─├●─│───●┤──⊕╮─╰Deallocate─┤
-                    5: ───────────├●─│──│────│──●┤─────────────┤
-                    4: ───────────╰●─│──│────│──●╯─────────────┤
-                    3: ──────────────╰●─│───●╯─────────────────┤
-                    2: ─────────────────├●─────────────────────┤
-                    6: ─────────────────╰X─────────────────────┤
+        2: ─────────────╭●────────────┤
+        3: ──────────╭●─│───●╮────────┤
+        4: ───────╭●─│──│────│──●╮────┤
+        5: ───────├●─│──│────│──●┤────┤
+        6: ───────│──│──├X───│───│────┤
+             |0>├─│──├⊕─╰●──⊕┤───│──┤
+             |0>├─╰⊕─╰●─────●╯──⊕╯──┤
         First-Level Expansion Gates: {TemporaryAND: 2, Adjoint(TemporaryAND): 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
         Full Expansion Gates: {GlobalPhase: 37, RX: 8, MidMeasure: 2, RY: 12, RZ: 29, CNOT: 14}
         Weighted Cost: 65.0
         <BLANKLINE>
         Decomposition 9 (name: many_borrowed_workers)
-        <DynamicWire>: ─╭Allocate─╭●─╭X────╭X─╭●─╭X────╭X─╭Deallocate─┤
-        <DynamicWire>: ─╰Allocate─│──├●─╭X─├●─│──├●─╭X─├●─╰Deallocate─┤
-                    2: ───────────├●─│──│──│──├●─│──│──│──────────────┤
-                    6: ───────────╰X─│──│──│──╰X─│──│──│──────────────┤
-                    3: ──────────────╰●─│──╰●────╰●─│──╰●─────────────┤
-                    5: ─────────────────├●──────────├●────────────────┤
-                    4: ─────────────────╰●──────────╰●────────────────┤
+        2: ────╭●──────────╭●─────────────┤
+        3: ────│──╭●────╭●─│──╭●────╭●────┤
+        4: ────│──│──╭●─│──│──│──╭●─│─────┤
+        5: ────│──│──├●─│──│──│──├●─│─────┤
+        6: ────├X─│──│──│──├X─│──│──│─────┤
+             ├─╰●─├X─│──├X─╰●─├X─│──├X──┤
+             ├────╰●─╰X─╰●────╰●─╰X─╰●──┤
         First-Level Expansion Gates: {Toffoli: 8}
         Wire Allocations: {'any': 2}
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RZ: 72, RY: 16}
@@ -618,24 +618,24 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Weighted Cost: 133.0
         <BLANKLINE>
         CHOSEN: Decomposition 2 (name: one_zeroed_worker)
-        <DynamicWire>: ──Allocate─╭⊕───────╭●────────⊕╮──Deallocate─┤
-                    2: ───────────├●───────│─────────●┤─────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X──●╯─────────────┤
-                    4: ──────────────├●────│─────├●─────────────────┤
-                    5: ──────────────╰●────│─────╰●─────────────────┤
-                    6: ────────────────────╰X───────────────────────┤
+        2: ───────╭●─────────────────●╮────┤
+        3: ───────├●─╭X──X─╭●──X─╭X──●┤────┤
+        4: ───────│──├●────│─────├●───│────┤
+        5: ───────│──╰●────│─────╰●───│────┤
+        6: ───────│────────├X─────────│────┤
+             |0>├─╰⊕───────╰●────────⊕╯──┤
         First-Level Expansion Gates: {Toffoli: 3, TemporaryAND: 1, Adjoint(TemporaryAND): 1, PauliX: 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {GlobalPhase: 43, RX: 6, MidMeasure: 1, RY: 11, RZ: 37, CNOT: 22}
         Weighted Cost: 77.0
         <BLANKLINE>
         Decomposition 3 (name: one_borrowed_worker)
-        <DynamicWire>: ──Allocate─╭X───────╭●───────╭X───────╭●──Deallocate────┤
-                    2: ───────────├●───────│────────├●───────│─────────────────┤
-                    3: ───────────╰●─╭X──X─├●──X─╭X─╰●─╭X──X─├●──X──────────╭X─┤
-                    4: ──────────────├●────│─────├●────├●────│──────────────├●─┤
-                    5: ──────────────╰●────│─────╰●────╰●────│──────────────╰●─┤
-                    6: ────────────────────╰X────────────────╰X────────────────┤
+        2: ────╭●────────────────╭●────────────────┤
+        3: ────├●─╭X──X─╭●──X─╭X─├●─╭X──X─╭●──X─╭X─┤
+        4: ────│──├●────│─────├●─│──├●────│─────├●─┤
+        5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
+        6: ────│────────├X───────│────────├X───────┤
+             ├─╰X───────╰●───────╰X───────╰●──┤
         First-Level Expansion Gates: {Toffoli: 8, PauliX: 4}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {GlobalPhase: 76, RX: 4, CNOT: 48, RZ: 72, RY: 16}
