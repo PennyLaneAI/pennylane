@@ -202,7 +202,6 @@ def test_qnode_with_python_array_assignment():
     res = ag_circuit(new_angle)
     assert jnp.allclose(res, -1.0)
 
-    # Test gradient
     jaxpr = jax.make_jaxpr(ag_circuit)(jnp.pi)
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
     assert qfunc_jaxpr.eqns[0].invars[0] is qfunc_jaxpr.invars[0]
@@ -228,11 +227,10 @@ def test_qnode_with_jax_array_assignment():
     res = ag_circuit(angles_in, new_angle)
     assert jnp.allclose(res, -1.0)
 
-    # Test gradient
     jaxpr = jax.make_jaxpr(ag_circuit)(angles_in, jnp.pi)
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    assert qfunc_jaxpr.eqns[3].primitive.name == "scatter"
-    assert qfunc_jaxpr.eqns[4].primitive.name == "slice"
+    assert qfunc_jaxpr.eqns[2].primitive.name == "scatter"
+    assert qfunc_jaxpr.eqns[3].primitive.name == "slice"
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
