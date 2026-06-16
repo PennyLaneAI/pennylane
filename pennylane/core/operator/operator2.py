@@ -66,8 +66,8 @@ class Operator2(ABC):
       arrays, or castable to arrays.
 
     * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
-     treated as static. This must be defined if
-     :attr:`compilable_argnames <Operator2.compilable_argnames>` is undefined.
+      treated as static. This must be defined if
+      :attr:`compilable_argnames <Operator2.compilable_argnames>` is undefined.
 
     * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
       treated as **compilable** static arguments. Compilable static arguments include numeric values,
@@ -103,7 +103,7 @@ class Operator2(ABC):
         following custom operator: ``MyOp(pauli_string, angle_array, wires, rot_wire)``.
         The ``wires`` and ``rot_wire`` arguments will be a part of
         :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
-        will belong to :attr:`static_argnames <Operator2.static_argnames>` and
+        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
         :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
 
         .. code-block python
@@ -113,7 +113,7 @@ class Operator2(ABC):
 
             class MyOp(qp.operation2.Operator2):
                 wire_argnames = ("wires", "rot_wire")
-                static_argnames = ("pauli_string")
+                compilable_argnames = ("pauli_string")
                 dynamic_argnames = ("angle_array")
 
                 def __init__(self, pauli_string, angle_array, wires, rot_wire):
