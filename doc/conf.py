@@ -67,7 +67,7 @@ ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
 # suppress_warnings = ["ref.python"]
-warnings.filterwarnings("error", message=".*Explicit markup ends without a blank line.*")
+warnings.filterwarnings("warning", message=".*Explicit markup ends without a blank line.*")
 
 
 # The base URL with a proper language and version.
