@@ -26,7 +26,6 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.shots import Shots
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
@@ -461,26 +460,6 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
-
-    def eval_jaxpr(
-        self,
-        jaxpr: "jax.extend.core.Jaxpr",
-        consts: list,
-        *args,
-        execution_config=None,
-        shots=Shots(None),
-    ) -> list:
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-            AbstractMeasurement,
-        )
-
-        def zeros_like(var, shots):
-            if isinstance(var.aval, AbstractMeasurement):
-                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
-                return math.zeros(s, dtype=dtype, like="jax")
-            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
-
-        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]
 
 
 def _op_has_decomp(op):

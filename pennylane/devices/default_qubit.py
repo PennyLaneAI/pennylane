@@ -25,9 +25,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from pennylane import capture, math, ops
+from pennylane import math, ops
 from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
-from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -44,14 +43,11 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBat
 from pennylane.transforms import (
     broadcast_expand,
     convert_to_numpy_parameters,
-)
-from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import (
     defer_measurements,
     dynamic_one_shot,
 )
 from pennylane.transforms.core import CompilePipeline, transform
-from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .device_api import Device
 from .execution_config import ExecutionConfig, MCMConfig
@@ -75,8 +71,6 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from numbers import Number
-
-    from jax.extend.core import Jaxpr
 
     from pennylane.core.operator import Operator
 
@@ -617,21 +611,6 @@ class DefaultQubit(Device):
             return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
-    def _capture_preprocess_transforms(self, config: ExecutionConfig) -> CompilePipeline:
-        compile_pileline = CompilePipeline()
-        target_gate_set = ALL_DQ_GATES
-        if config.mcm_config.mcm_method == "deferred":
-            compile_pileline.add_transform(defer_measurements, num_wires=len(self.wires))
-        else:
-            target_gate_set = ALL_DQ_GATES_PLUS_MCM
-        compile_pileline.add_transform(
-            transforms_decompose,
-            gate_set=target_gate_set,
-            stopping_condition=stopping_condition,
-        )
-
-        return compile_pileline
-
     @debug_logger
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
@@ -647,9 +626,6 @@ class DefaultQubit(Device):
 
         """
         config = execution_config or ExecutionConfig()
-
-        if capture.enabled():
-            return self._capture_preprocess_transforms(config)
 
         compile_pileline = CompilePipeline()
         target_gate_set = ALL_DQ_GATES
@@ -726,29 +702,22 @@ class DefaultQubit(Device):
 
         # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
         # we assume that if someone provides a PRNGkey, they want to jit end-to-end
-        if not capture.enabled():
-            jax_interfaces = {math.Interface.JAX, math.Interface.JAX_JIT}
-            updated_values["convert_to_numpy"] = not (
-                self._prng_key is not None
-                and config.interface in jax_interfaces
-                and config.gradient_method != "adjoint"
-                # need numpy to use caching, and need caching higher order derivatives
-                and config.derivative_order == 1
-            )
+        jax_interfaces = {math.Interface.JAX, math.Interface.JAX_JIT}
+        updated_values["convert_to_numpy"] = not (
+            self._prng_key is not None
+            and config.interface in jax_interfaces
+            and config.gradient_method != "adjoint"
+            # need numpy to use caching, and need caching higher order derivatives
+            and config.derivative_order == 1
+        )
 
-        for option, value in config.device_options.items():
+        for option in config.device_options:
             if option not in self._device_options:
                 raise DeviceError(f"device option {option} not present on {self}")
 
-            if capture.enabled():
-                if option == "max_workers" and value is not None:
-                    raise DeviceError("Cannot set 'max_workers' if program capture is enabled.")
-
         gradient_method = config.gradient_method
         if config.gradient_method == "best":
-            no_max_workers = (
-                config.device_options.get("max_workers", self._max_workers) is None
-            ) or capture.enabled()
+            no_max_workers = config.device_options.get("max_workers", self._max_workers) is None
             gradient_method = "backprop" if no_max_workers else "adjoint"
             updated_values["gradient_method"] = gradient_method
 
@@ -773,8 +742,6 @@ class DefaultQubit(Device):
         return replace(config, **updated_values)
 
     def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
-        if capture.enabled():
-            return self._capture_setup_mcm_config(mcm_config)
 
         final_mcm_method = mcm_config.mcm_method
         if mcm_config.mcm_method is None:
@@ -795,21 +762,6 @@ class DefaultQubit(Device):
             )
 
         return replace(mcm_config, mcm_method=final_mcm_method)
-
-    def _capture_setup_mcm_config(self, mcm_config):
-        mcm_updated_values = {}
-        mcm_method = mcm_config.mcm_method
-
-        if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
-            warnings.warn(
-                "Setting 'postselect_mode' is not supported with mcm_method='single-branch-"
-                "statistics'. 'postselect_mode' will be ignored.",
-                UserWarning,
-            )
-            mcm_updated_values["postselect_mode"] = None
-        if mcm_method is None:
-            mcm_updated_values["mcm_method"] = "deferred"
-        return replace(mcm_config, **mcm_updated_values)
 
     @debug_logger
     def execute(
@@ -1123,48 +1075,6 @@ class DefaultQubit(Device):
         return tuple(zip(*results, strict=True))
 
     # pylint: disable=import-outside-toplevel
-    @debug_logger
-    def eval_jaxpr(
-        self,
-        jaxpr: Jaxpr,
-        consts: list[TensorLike],
-        *args,
-        execution_config=None,
-        shots=Shots(None),
-    ) -> list[TensorLike]:
-        from .qubit.dq_interpreter import DefaultQubitInterpreter
-
-        execution_config = execution_config or ExecutionConfig()
-        if (mcm_method := execution_config.mcm_config.mcm_method) not in (
-            "deferred",
-            "single-branch-statistics",
-            None,
-        ):
-            raise DeviceError(
-                f"mcm_method='{mcm_method}' is not supported with default.qubit "
-                "when program capture is enabled."
-            )
-
-        if self.wires is None:
-            raise DeviceError("Device wires are required for jaxpr execution.")
-        shots = Shots(shots)
-        if shots.has_partitioned_shots:
-            raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
-        if self._prng_key is not None:
-            key = self.get_prng_keys()[0]
-        else:
-            import jax
-
-            key = jax.random.PRNGKey(self._rng.integers(100000))
-
-        interpreter = DefaultQubitInterpreter(
-            num_wires=len(self.wires),
-            shots=shots.total_shots,
-            key=key,
-            execution_config=execution_config,
-        )
-        return interpreter.eval(jaxpr, consts, *args)
-
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
         import jax
 
