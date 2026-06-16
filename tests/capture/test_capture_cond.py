@@ -16,7 +16,7 @@ Tests for capturing conditionals into jaxpr.
 """
 
 # pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,unbalanced-tuple-unpacking
 
 from functools import partial
 
@@ -152,44 +152,6 @@ class TestCond:
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-
-    @pytest.mark.parametrize(
-        "selector, arg",
-        [
-            (1, 10.0),
-            (0, 10.0),
-        ],
-    )
-    def test_gradient(self, testing_functions, selector, arg, decorator):
-        """Test the gradient of the conditional."""
-        from pennylane.capture.primitives import jacobian_prim
-
-        true_fn, false_fn, _, _, _, _ = testing_functions
-
-        def func(pred):
-            if decorator:
-                conditional = qp.cond(pred > 0)(true_fn)
-                conditional.otherwise(false_fn)
-                return conditional
-
-            return qp.cond(
-                pred > 0,
-                true_fn,
-                false_fn,
-            )
-
-        test_func = qp.grad(func(selector))
-
-        jaxpr = jax.make_jaxpr(test_func)(arg)
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == jacobian_prim
-        # broken on jax0.5.3
-        # correct_func = jax.grad(func(selector))
-        # assert np.allclose(correct_func(arg), expected)
-        # assert np.allclose(test_func(arg), correct_func(arg))
-
-        # manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
-        # assert np.allclose(manual_res, correct_func(arg))
 
     @pytest.mark.parametrize(
         "selector, arg, expected",

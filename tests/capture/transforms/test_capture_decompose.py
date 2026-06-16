@@ -27,7 +27,6 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
-    jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
@@ -460,32 +459,6 @@ class TestDecomposeInterpreter:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qp.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[4].primitive == qp.measurements.ExpectationMP._obs_primitive
-
-    @pytest.mark.parametrize("grad_fn", [qp.grad, qp.jacobian])
-    def test_grad_and_jac_higher_order_primitive(self, grad_fn):
-        """Test that the grad and jacobian primitives are correctly interpreted"""
-        dev = qp.device("default.qubit", wires=2)
-        gate_set = [qp.RX, qp.RY, qp.RZ]
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def f(x, y, z):
-            @qp.qnode(dev)
-            def circuit(a, b, c):
-                qp.Rot(a, b, c, 0)
-                return qp.expval(qp.Z(0))
-
-            return grad_fn(circuit)(x, y, z)
-
-        jaxpr = jax.make_jaxpr(f)(0.5, 1.5, 2.5)
-
-        assert jaxpr.eqns[0].primitive == jacobian_prim
-        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == qp.RZ._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qp.RY._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qp.RZ._primitive

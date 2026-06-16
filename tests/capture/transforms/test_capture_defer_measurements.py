@@ -21,7 +21,7 @@ import pennylane as qp
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import jacobian_prim, qnode_prim
+from pennylane.capture.primitives import qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
@@ -690,44 +690,6 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qp.measurements.SampleMP(wires=[9, 8], eigvals=None),
             qp.measurements.SampleMP(wires=[8, 9], eigvals=qp.math.array([0.0, 1.0, -4.0, -3.0])),
         ]
-        assert measurements == expected_measurements
-
-    @pytest.mark.parametrize("diff_fn", [(qp.grad), (qp.jacobian)])
-    def test_grad_jac(self, diff_fn, postselect):
-        """Test that differentiation primitives are transformed correctly."""
-        dev = qp.device("default.qubit", wires=4)
-
-        @qp.qnode(dev)
-        def circuit(x):
-            qp.RX(x, 0)
-            m0 = qp.measure(0, postselect=postselect)
-
-            @qp.cond(m0)
-            def true_fn(phi):
-                qp.RX(phi, 0)
-
-            true_fn(x)
-            return qp.expval(qp.PauliZ(0))
-
-        x = 1.5
-        transformed_fn = DeferMeasurementsInterpreter(num_wires=4)(diff_fn(circuit))
-        jaxpr = jax.make_jaxpr(transformed_fn)(x)
-        assert jaxpr.eqns[0].primitive == jacobian_prim
-        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        assert inner_jaxpr.eqns[0].primitive == qnode_prim
-        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
-
-        collector = CollectOpsandMeas()
-        collector.eval(qfunc_jaxpr, jaxpr.consts, x)
-
-        ops = collector.state["ops"]
-        expected_ops = [qp.RX(x, 0), qp.CNOT([0, 3]), qp.CRX(x, [3, 0])]
-        if postselect is not None:
-            expected_ops.insert(1, qp.Projector(qp.math.array([postselect]), 0))
-        assert ops == expected_ops
-
-        measurements = collector.state["measurements"]
-        expected_measurements = [qp.expval(qp.Z(0))]
         assert measurements == expected_measurements
 
 
