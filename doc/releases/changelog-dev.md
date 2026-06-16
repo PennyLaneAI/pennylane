@@ -491,6 +491,9 @@
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
+* PLxPR execution support have been removed for `default.qubit`.
+  [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
   [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)

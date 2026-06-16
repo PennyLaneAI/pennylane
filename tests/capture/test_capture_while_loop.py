@@ -15,6 +15,8 @@
 Tests for capturing for while loops into jaxpr.
 """
 
+# pylint: disable=unbalanced-tuple-unpacking
+
 import numpy as np
 import pytest
 
@@ -287,12 +289,7 @@ class TestCaptureCircuitsWhileLoop:
         def func_qp(x):
             return qp.grad(inner_func)(x)
 
-        def func_jax(x):
-            return jax.grad(inner_func)(x)
-
         x = 0.7
-        jax_out = func_jax(x)
-        assert qp.math.allclose(func_qp(x), jax_out)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qp)(x)
@@ -312,9 +309,6 @@ class TestCaptureCircuitsWhileLoop:
         assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
-
-        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qp.math.allclose(manual_eval, jax_out)
 
 
 def test_pytree_input_output():
