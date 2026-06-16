@@ -54,20 +54,22 @@ class Operator2(ABC):
     :func:`~.qjit`.
 
     Child classes of `Operator2` are defined by their name and argument types, of which there are
-    five categories that correspond to class variables that must be defined for new operators. These
-    arguments dictate how `Operator2` child classes are handled when compiling with :func:`~.qjit`.
+    five categories that designated as class variables. These arguments dictate how `Operator2`
+    child classes are handled when compiling with :func:`~.qjit`.
 
-    * :attr:`wire_argnames <~.Operator2.wire_argnames>`: The names of arguments corresponding to
-    wires. Values for these arguments are automatically wrapped in :class:`~.Wires` objects by the
-    `Operator2` constructor.
+    * :attr:`wire_argnames <~.Operator2.wire_argnames>` : The names of arguments corresponding to
+    wires. This **must** be defined. Values for these arguments are automatically wrapped in
+    :class:`~.Wires` objects by the `Operator2` constructor.
 
-    * :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`: The names of arguments that are
-    treated as dynamic. Inputs for these arguments must be scalars, arrays, or castable to arrays.
+    * :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>` : The names of arguments that are
+    treated as dynamic. This **must** be defined. Inputs for these arguments must be scalars,
+    arrays, or castable to arrays.
 
-    * :attr:`static_argnames <~.Operator2.static_argnames>`: The names of arguments that are
-    treated as static.
+    * :attr:`static_argnames <~.Operator2.static_argnames>` : The names of arguments that are
+    treated as static. This must be defined if
+    :attr:`compilable_argnames <~.Operator2.compilable_argnames>` is undefined.
 
-    * :attr:`compilable_argnames <~.Operator2.compilable_argnames>`: The names of arguments that are
+    * :attr:`compilable_argnames <~.Operator2.compilable_argnames>` : The names of arguments that are
     treated as **compilable** static arguments. Compilable static arguments include numeric values,
     strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
     not guaranteed to be compilable, it is safer to place them in
@@ -80,7 +82,7 @@ class Operator2(ABC):
         static arguments cannot be lowered to the IR, then all static arguments must be treated as
         not lowerable.
 
-    * :attr:`hybrid_argnames <~.Operator2.hybrid_argnames>`: The names of arguments that represent
+    * :attr:`hybrid_argnames <~.Operator2.hybrid_argnames>` : The names of arguments that represent
     dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
     overlap with ``wire_argnames`` when those arguments contain nested structures of wires.
 
@@ -92,69 +94,80 @@ class Operator2(ABC):
     .. details::
         :title: Defining Custom Operators
 
-        TODO
+        Custom `Operator2` instances **require** specifying
+        :attr:`wire_argnames <~.Operator2.wire_argnames>`, one of
+        :attr:`static_argnames <~.Operator2.static_argnames>` or
+        :attr:`compilable_argnames <~.Operator2.compilable_argnames>`, and
+        :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`, if any. As an example, consider the
+        following custom operator: `MyOp(pauli_string, angle_array, wires, other_wires)`.
+        The `wires` and `other_wires` arguments will be a part of
+        :attr:`wire_argnames <~.Operator2.wire_argnames>`, and `pauli_string` and `angle_array`
+        will belong to :attr:`static_argnames <~.Operator2.static_argnames>` and
+        :attr:`dynamic_argnames <~.Operator2.dynamic_argnames>`, respectively.
 
         .. code-block python
 
             import pennylane as qp
+            import jax.numpy as jnp
 
             class MyOp(qp.operation2.Operator2):
-                wire_argnames = ("wires", "other_wire")
-                dynamic_argnames = ("angle_array")
+                wire_argnames = ("wires", "rot_wire")
                 static_argnames = ("pauli_string")
+                dynamic_argnames = ("angle_array")
 
-                def __init__(self, pauli_string, angle_array, wires, other_wire=None):
-                    assert len(other_wire) <= 1, f"other_wire can be 0 or 1. Got {len(other_wire)}."
-                    assert len(pauli_string) == len(wires), f"pauli_string length must be equal to number of wires ({len(wires)}). Got {len(pauli_string)}."
+                def __init__(self, pauli_string, angle_array, wires, rot_wire):
+                    super().__init__(pauli_string, angle_array, wires, rot_wire)
 
-                    super().__init__(pauli_string, angle_array, wires, other_wire)
+                @staticmethod
+                def compute_matrix(pauli_string, angle_array, wires, rot_wire):
+                    wire_map = {wires[i]: i for i in range(len(wires))}
+                    pauli_op = qp.pauli.string_to_pauli_word(pauli_string, wire_map=wire_map)
+                    rot_op = qp.Rot(*angle_array, wires=rot_wire)
+                    return qp.matrix(qp.prod(pauli_op, rot_op))
 
-            from jax import numpy as jnp
+        >>> from jax import numpy as jnp
+        >>> angle_array = jnp.array([0.1, 0.2, 0.3])
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
+        >>> op
+        MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
 
-            angle_array = jnp.array([0.1, 0.2, 0.3])
+        For `MyOp` to be a usable quantum operator, it must define a decomposition with
+        :func:`~.add_decomps` or a `compute_matrix` method (for state-vector simulation).
 
-            op = MyOp("XYZ", angle_array, wires=(0, 1, 2), other_wire=(3,))
+        **Decomposing Operators**
 
-            **`static_argnames` vs. `compilable_argnames`**
+        TODO
 
-            TODO
-
-            **Decomposing Operators**
+        .. code-block python
 
             from collections import defaultdict
 
             pauli_map = {"X": qp.X, "Y": qp.Y, "Z": qp.Z}
 
-            def my_op_resources(pauli_string, angle_array, wires, other_wire=None):
-
+            def _my_op_resources(pauli_string, angle_array, wires, rot_wire):
                 resources = defaultdict(int)
 
                 for char in pauli_string:
                     resources[pauli_map[char]] += 1
 
-                # work_wires can only be 1
-                if other_wire:
-                    resources[qp.CNOT] += len(angle_array)
-
-                resources[qp.MultiRZ(float, wires=qp.wires.Wires[len(wires)])] += len(angle_array)
-
+                resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_resources(my_op_resources)
-            def _my_op_decomp(pauli_string, angle_array, wires, other_wire):
-                for i, pauli in enumerate(pauli_string):
-                    qp.apply(pauli_map[pauli])(wires[i])
-
-                for i, angle in enumerate(angle_array):
-                    qp.MultiRZ(angle, wires=wires)
-
-                    if other_wire:
-                        qp.CNOT((wires[0], other_wire))
+            @qp.register_resources(_my_op_resources)
+            def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
+                wire_map = {wires[i]: i for i in range(len(wires))}
+                qp.pauli.string_to_pauli_word(pauli_string, wire_map=wire_map)
+                qp.Rot(*angle_array, wires=rot_wire)
 
             qp.add_decomps(MyOp, _my_op_decomp)
-            print(qp.inspect_decomps(MyOp, _my_op_decomp))
 
-    TODO: [sc-120453] Fill docstring
+        **`static_argnames` vs. `compilable_argnames`**
+
+        TODO
+
+        **`hybrid_argnames`**
+
+        TODO: [sc-120453] Fill docstring
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
