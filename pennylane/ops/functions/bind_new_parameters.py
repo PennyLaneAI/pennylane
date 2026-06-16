@@ -101,7 +101,7 @@ def bind_new_arguments(
 
     if isinstance(dyn_args, dict):
         final_args = (
-            _get_most_recent_args("dynamic_args")
+            dyn_args
             | _get_most_recent_args("wire_args")
             | _get_most_recent_args("static_args")
             | _get_most_recent_args("hybrid_args")
