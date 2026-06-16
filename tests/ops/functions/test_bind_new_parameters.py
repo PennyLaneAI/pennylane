@@ -20,7 +20,10 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 
 @pytest.mark.parametrize(
@@ -114,6 +117,68 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
+
+
+class MultiRot(Operator2):
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("wires",)
+    static_argnames = ("string",)
+
+    def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        assert len(angles) == len(string) == len(wires)
+        for letter in string:
+            assert letter in ("X", "Y", "Z")
+        super().__init__(angles, wires, string)
+
+    def compute_decomposition(self, angles: TensorLike, wires: WiresLike, string: str):
+        decomp = []
+        for angle, wire, letter in zip(angles, wires, string, strict=True):
+            if letter == "X":
+                decomp.append(qp.RX(angle, wire))
+            elif letter == "Y":
+                decomp.append(qp.RY(angle, wire))
+            else:
+                decomp.append(qp.RZ(angle, wire))
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (
+            MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
+            {
+                "dynamic_args": {
+                    "angles": [np.pi / 4, np.pi / 8],
+                },
+                "wire_args": {
+                    "wires": [1, 0],
+                },
+                "static_args": {
+                    "string": "YZ",
+                },
+            },
+            MultiRot([np.pi / 4, np.pi / 8], [1, 0], "YZ"),
+        ),
+        # traditional interface
+        (
+            MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
+            ([np.pi / 4, np.pi / 8],),
+            MultiRot([np.pi / 4, np.pi / 8], [0, 1], "XY"),
+        ),
+    ],
+)
+def test_operator_2_ops(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with `ScalarSymbolicOp` returns a new
+    operator with the new parameters without mutating the original
+    operator."""
+    new_op = (
+        bind_new_parameters(op, **new_params)
+        if isinstance(new_params, dict)
+        else bind_new_parameters(op, new_params)
+    )
+
+    qp.assert_equal(new_op, expected_op)
+    assert new_op is not op
 
 
 @pytest.mark.parametrize(
