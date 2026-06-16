@@ -453,7 +453,7 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    if not isinstance(op, Operator2):
+    if isinstance(op, Operator1):
         for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
