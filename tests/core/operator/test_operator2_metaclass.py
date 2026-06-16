@@ -85,9 +85,12 @@ class TestOperatorAbstractInputs:
         "concrete_wires, abstract_wires",
         [
             (0, AbstractWires(1)),
+            (0.0, AbstractWires(1)),
             ([0], AbstractWires(1)),
             ([0, 1], AbstractWires(2)),
+            ({"a": 0, "b": 1}, AbstractWires(2)),
             ("a", AbstractWires(1)),
+            ("blah", AbstractWires(1)),
             (Wires([0, 1, 2]), AbstractWires(3)),
         ],
     )

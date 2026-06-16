@@ -52,17 +52,6 @@ def _contains_abstract_type(val):
     return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
 
 
-def _canonicalize_wire_leaf(leaf) -> AbstractWires:
-    """Abstractifies a leaf that represents a wires object."""
-    if isinstance(leaf, Wires):
-        return AbstractWires(len(leaf))
-
-    if isinstance(leaf, (int, str)):
-        return AbstractWires(1)
-
-    return AbstractWires(len(list(leaf)))
-
-
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -80,7 +69,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     match kind:
         case _ArgType.WIRES:
-            return _canonicalize_wire_leaf(val)
+            # Use Wires object to sanitize inputs
+            canonical_wires = val if isinstance(val, Wires) else Wires(val)
+            return AbstractWires(len(canonical_wires))
 
         case _ArgType.DYN:
             canonical_arr = math.asarray(val)
@@ -93,7 +84,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                 if isinstance(leaf, (AbstractArray, AbstractWires)):
                     new_leaves.append(leaf)
                 elif isinstance(leaf, Wires):
-                    new_leaves.append(_canonicalize_wire_leaf(leaf))
+                    new_leaves.append(AbstractWires(len(leaf)))
                 # Process arrays
                 elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
                     new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
