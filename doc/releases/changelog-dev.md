@@ -245,6 +245,7 @@
 
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
@@ -764,6 +765,10 @@
 * ``qp.ctrl`` no longer produces ``Controlled(Allocate)`` when applied to quantum functions that
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
+
+* Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
+  symbolic operators.
+  [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 
 <h3>Contributors ✍️</h3>
 
