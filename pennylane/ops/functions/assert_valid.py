@@ -17,7 +17,6 @@ Operator class is correctly defined.
 """
 
 import copy
-import inspect
 import itertools
 import pickle
 from collections import defaultdict
@@ -27,11 +26,12 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator2
+from pennylane.core import Operator, Operator2
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
 from .equal import assert_equal
@@ -453,10 +453,11 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    for d1, d2 in zip(op.data, leaves, strict=True):
-        assert qp.math.allclose(
-            d1, d2
-        ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+    if not isinstance(op, Operator2):
+        for d1, d2 in zip(op.data, leaves, strict=True):
+            assert qp.math.allclose(
+                d1, d2
+            ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
 def _check_capture(op):
@@ -578,6 +579,14 @@ def _get_signature(op):
 # pylint: disable=too-many-arguments
 def _assert_valid_operator2(
     op: qp.core.Operator2,
+    skip_deepcopy=False,
+    skip_differentiation=False,
+    skip_new_decomp=False,
+    skip_decomp_matrix_check=False,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_capture=False,
+    skip_pytree=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -606,47 +615,48 @@ def _assert_valid_operator2(
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
 
-    assert len(op.static_argnames) or len(
-        op.dynamic_argnames
-    ), "at least one of static_argnames and dynamic_argnames must be set"
     assert len(op.ndim_params) == len(
         op.dynamic_argnames
     ), "ndim_params must have the same length as dynamic_argnames"
-    assert len(op.wire_argnames) >= 1, "wire_argnames must have at least one element"
 
-    assert isinstance(
-        op._bound_args, inspect.BoundArguments
-    ), "bound_args must be a BoundArguments instance"
-    assert isinstance(op._sig, inspect.Signature), "signature must be a Signature instance"
+    assert_equal(type(op)(**op.arguments), op)
 
-    dyn_index = 0
-    wire_index = 0
-    for name, val in op.arguments.items():
-        # make sure that the bound args matches the signature
-        assert name in list(op._sig.parameters)
-
+    for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
         # make sure that the bound args are not outside the allowed dimensions
-        if hasattr(val, "shape") and name in op.dynamic_argnames:
-            assert (
-                val.shape == op.ndim_params[dyn_index]
-            ), f"shape of {name} is not equal to dimension in ndim_params"
-            dyn_index += 1
-        elif name in op.dynamic_argnames:
-            assert op.ndim_params[dyn_index] == 0
+        if hasattr(val, "shape"):
+            assert val.shape == dim, f"shape of {name} is not equal to dimension in ndim_params"
+        else:
+            assert dim == 0
 
+    for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
-        if name in op.wire_argnames and op.wire_sizes:
-            assert (op.wire_sizes[wire_index] is None) or (
-                len(val) == op.wire_sizes[wire_index]
+        if op.wire_sizes:
+            assert (dim is None) or (
+                len(val) == dim
             ), f"Wires argument {name} has an invalid dimension."
-            wire_index += 1
+
+    for name, val in op.hybrid_args.items():
+        leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))
+        for leaf in leaves:
+            if isinstance(leaf, Operator):
+                assert_valid(
+                    leaf,
+                    skip_deepcopy=skip_deepcopy,
+                    skip_differentiation=skip_differentiation,
+                    skip_new_decomp=skip_new_decomp,
+                    skip_decomp_matrix_check=skip_decomp_matrix_check,
+                    skip_pickle=skip_pickle,
+                    skip_wire_mapping=skip_wire_mapping,
+                    skip_capture=skip_capture,
+                    skip_pytree=skip_pytree,
+                )
 
     _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
 def assert_valid(
-    op: qp.operation.Operator | qp.core.Operator2,
+    op: qp.core.Operator,
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -657,7 +667,7 @@ def assert_valid(
     skip_capture=False,
     skip_pytree=False,
 ) -> None:
-    """Runs basic validation checks on an :class:`~.operation.Operator` or :class:`~.core.Operator2` to make
+    """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
 
     Args:
@@ -717,10 +727,20 @@ def assert_valid(
         skip_capture = True
         # Temporary, as we will be integrating Operator2 with graph decomps soon
         skip_new_decomp = True
-        # The pytree leaves of an Operator2 include its wires
-        skip_pytree = True
+        # Temporary, as we will integrate with differentiation soon
+        skip_differentiation = True
 
-        _assert_valid_operator2(op)
+        _assert_valid_operator2(
+            op,
+            skip_deepcopy,
+            skip_differentiation,
+            skip_new_decomp,
+            skip_decomp_matrix_check,
+            skip_pickle,
+            skip_wire_mapping,
+            skip_capture,
+            skip_pytree,
+        )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
         assert isinstance(op.parameters, list), "op.parameters must be a list"

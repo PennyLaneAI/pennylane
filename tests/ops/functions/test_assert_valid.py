@@ -685,6 +685,33 @@ class TestOperator2AssertValid:
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
             assert_valid(op, skip_pickle=True, skip_differentiation=True)
 
+    def test_hybrid_ops_arg(self):
+        """``assert_valid`` fails if a hybrid op arg is invalid."""
+
+        class NoCopyOp(Operator2):
+            dynamic_argnames = ("gamma",)
+            wire_argnames = ("wires",)
+
+            def __copy__(self):
+                return self
+
+            def __init__(self, gamma, wires):
+                super().__init__(gamma, wires=wires)
+
+        class HybridOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+            hybrid_argnames = ("ops",)
+
+            def __init__(self, phi, wires, ops):
+                super().__init__(phi, wires=wires, ops=ops)
+
+        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
+            assert_valid(
+                HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
+                skip_pickle=True,
+            )
+
 
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""

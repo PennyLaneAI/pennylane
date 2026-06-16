@@ -18,6 +18,7 @@ from functools import partial
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import GeneratorUndefinedError
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -92,7 +93,7 @@ class TestErrors:
 
         jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
 
-        with pytest.raises(ValueError):
+        with pytest.raises(GeneratorUndefinedError):
             execute_and_jvp(jaxpr, (0.5,), (1.0,), num_wires=1)
 
         assert qp.capture.enabled()

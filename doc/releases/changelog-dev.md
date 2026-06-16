@@ -576,6 +576,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
+  [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
+
 * The core and JAX CI test suites now use the `least_duration` test-splitting algorithm,
   producing more balanced test groups across parallel CI jobs.
   [(#9519)](https://github.com/PennyLaneAI/pennylane/pull/9519)
@@ -609,6 +612,7 @@
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
+  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
 
 * Adds a new `pennylane/core` module.
