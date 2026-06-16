@@ -245,6 +245,7 @@
 
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
@@ -614,6 +615,7 @@
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Adds a new `pennylane/core` module.

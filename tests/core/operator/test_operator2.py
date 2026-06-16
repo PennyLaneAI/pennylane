@@ -2175,3 +2175,90 @@ class TestStatePrepBase:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
             BadStatePrep(0)
+
+
+class NoParamOp(Operator2):
+    """A simple operator with wires and no dynamic parameters."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
+class TestLegacyCompatibilityViews:
+    """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
+
+    def test_no_param_op_legacy_views(self):
+        """Test legacy views for an operator with no dynamic parameters."""
+        op = NoParamOp(wires=0)
+
+        assert op.data == ()
+        assert op.parameters == []
+        assert op.hyperparameters == {}
+
+    def test_dynamic_op_data_preserves_order(self):
+        """Test that ``data`` preserves dynamic argument order."""
+
+        class TwoParamOp(Operator2):
+            dynamic_argnames = ("alpha", "beta")
+
+            def __init__(self, alpha, beta, wires):
+                super().__init__(alpha, beta, wires=wires)
+
+        op = TwoParamOp(1.1, 2.2, wires=0)
+
+        assert op.data == (1.1, 2.2)
+        assert op.parameters == [1.1, 2.2]
+        assert op.parameters == list(op.data)
+
+    def test_static_args_excluded_from_data_and_parameters(self):
+        """Test that static args are not exposed through ``data`` or ``parameters``."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert op.data == (0.5,)
+        assert op.parameters == [0.5]
+
+    def test_hyperparameters_include_static_and_hybrid_args(self):
+        """Test that static and hybrid args appear in the legacy hyperparameter view."""
+        nested = [DynOp(0.1, wires=0)]
+        op = FullOp(0.5, static="XY", hybrid=nested, wires=0)
+
+        assert op.hyperparameters == {"static": "XY", "hybrid": nested}
+
+    def test_hyperparameters_exclude_dynamic_and_wire_args(self):
+        """Test that dynamic and wire args are excluded from hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+
+    def test_compilable_args_in_hyperparameters(self):
+        """Test that compilable args appear in the legacy hyperparameter view."""
+
+        class CompOp(Operator2):
+            dynamic_argnames = ("phi",)
+            compilable_argnames = ("order",)
+
+            def __init__(self, phi, order, wires):
+                super().__init__(phi, order, wires=wires)
+
+        op = CompOp(0.5, order=3, wires=0)
+
+        assert op.hyperparameters == {"order": 3}
+        assert op.data == (0.5,)
+
+    def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
+        """Test that non-``wires`` wire argument names are excluded."""
+
+        class AuxWiresOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "aux_wires")
+            wire_sizes = (1, None)
+
+            def __init__(self, phi, wires, aux_wires):
+                super().__init__(phi, wires=wires, aux_wires=aux_wires)
+
+        op = AuxWiresOp(0.5, wires=0, aux_wires=[1, 2])
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+        assert "aux_wires" not in op.hyperparameters
