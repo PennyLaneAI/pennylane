@@ -283,7 +283,7 @@ def _compute_expectation(
 ) -> complex:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
-    new_state = _AdditiveIdentity()
+    new_expected_value = 0j
 
     for term, coeff in _op_list(commutator).items():
         tmp_state = copy.copy(state)
@@ -297,9 +297,9 @@ def _compute_expectation(
 
             tmp_state = frag.apply(tmp_state)
 
-        new_state += coeff * tmp_state
+        new_expected_value += coeff * state.dot(tmp_state)
 
-    return state.dot(new_state)
+    return new_expected_value
 
 
 def _compute_expectation_track_order(
@@ -307,7 +307,7 @@ def _compute_expectation_track_order(
 ) -> tuple[complex, int]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
 
-    new_state = _AdditiveIdentity()
+    new_expected_value = 0j
 
     for term, coeff in _op_list(commutator).items():
         tmp_state = copy.copy(state)
@@ -321,9 +321,9 @@ def _compute_expectation_track_order(
 
             tmp_state = frag.apply(tmp_state)
 
-        new_state += coeff * tmp_state
+        new_expected_value += coeff * state.dot(tmp_state)
 
-    return state.dot(new_state), len(commutator)
+    return new_expected_value, len(commutator)
 
 
 def _op_list(commutator) -> dict[tuple[Hashable], complex]:
