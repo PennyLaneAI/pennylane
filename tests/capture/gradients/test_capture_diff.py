@@ -23,7 +23,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import jacobian_prim  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import jacobian_prim, qnode_prim
 
 jnp = jax.numpy
 
@@ -224,6 +225,52 @@ class TestGrad:
         # manual_eval_3 = jax.core.eval_jaxpr(jaxpr_3.jaxpr, jaxpr_3.consts, x)
         # assert qp.math.allclose(manual_eval_3, expected_3)
 
+    @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
+    def test_grad_of_simple_qnode(self, diff_method):
+        """Test capturing the gradient of a simple qnode."""
+        # pylint: disable=protected-access
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1] ** 2, wires=0)
+            return qp.expval(qp.Z(0))
+
+        g_circuit = qp.grad(circuit)
+
+        x = jnp.array([0.5, 0.9])
+        jaxpr = jax.make_jaxpr(g_circuit)(x)
+
+        assert len(jaxpr.eqns) == 1  # grad equation
+        assert jaxpr.in_avals == [jax.core.ShapedArray((2,), fdtype)]
+        assert jaxpr.out_avals == [jax.core.ShapedArray((2,), fdtype)]
+
+        grad_eqn = jaxpr.eqns[0]
+        assert grad_eqn.invars[0].aval == jaxpr.in_avals[0]
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=circuit)
+        grad_jaxpr = grad_eqn.params["jaxpr"]
+        assert len(grad_jaxpr.eqns) == 1  # qnode equation
+
+        qnode_eqn = grad_jaxpr.eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert qnode_eqn.invars[0].aval == jaxpr.in_avals[0]
+
+        qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
+        # Skipping a few equations related to indexing and preprocessing
+        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qp.RY._primitive
+        assert qfunc_jaxpr.eqns[7].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
+
+        assert len(qnode_eqn.outvars) == 1
+        assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)
+
+        assert len(grad_eqn.outvars) == 1
+        assert grad_eqn.outvars[0].aval == jax.core.ShapedArray((2,), fdtype)
+
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
     def test_jacobian_pytree_input(self, argnums):
         """Test that the qp.grad primitive can be captured with pytree inputs."""
@@ -267,6 +314,43 @@ class TestGrad:
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qp.math.allclose(jax_out_flat, manual_out_flat)
+
+    @pytest.mark.parametrize("argnums", ([0, 1, 2], [0, 2], [1], 0))
+    def test_grad_qnode_with_pytrees(self, argnums):
+        """Test capturing the gradient of a qnode that uses Pytrees."""
+        # pylint: disable=protected-access
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev, diff_method="backprop")
+        def circuit(x, y, z):
+            qp.RX(x["a"], wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z[1][0], wires=0)
+            return qp.expval(qp.X(0))
+
+        dcircuit = qp.grad(circuit, argnums=argnums)
+        x = {"a": 0.6, "b": 0.9}
+        y = 0.6
+        z = ({"c": 0.5}, [0.2, 0.3])
+
+        jaxpr = jax.make_jaxpr(dcircuit)(x, y, z)
+
+        assert len(jaxpr.eqns) == 1  # grad equation
+        assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * 6
+        argnums = (argnums,) if isinstance(argnums, int) else tuple(argnums)
+        num_out_avals = 2 * (0 in argnums) + (1 in argnums) + 3 * (2 in argnums)
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * num_out_avals
+
+        grad_eqn = jaxpr.eqns[0]
+        assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
+        flat_argnums = tuple(
+            [0, 1] * (0 in argnums) + [2] * (1 in argnums) + [3, 4, 5] * (2 in argnums)
+        )
+        diff_eqn_assertions(grad_eqn, scalar_out=True, argnums=flat_argnums, fn=circuit)
+        grad_jaxpr = grad_eqn.params["jaxpr"]
+        assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
@@ -444,6 +528,53 @@ class TestJacobian:
 
         # manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
         # assert _jac_allclose(manual_eval_2, expected_2, 1, atol=atol)
+
+    @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
+    def test_jacobian_of_simple_qnode(self, diff_method):
+        """Test capturing the gradient of a simple qnode."""
+        # pylint: disable=protected-access
+        fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+
+        dev = qp.device("default.qubit", wires=2)
+
+        # Note the decorator
+        @qp.jacobian
+        @qp.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=0)
+            return qp.expval(qp.Z(0)), qp.probs(0)
+
+        x = jnp.array([0.5, 0.9])
+
+        jaxpr = jax.make_jaxpr(circuit)(x)
+
+        assert len(jaxpr.eqns) == 1  # Jacobian equation
+        assert jaxpr.in_avals == [jax.core.ShapedArray((2,), fdtype)]
+        assert jaxpr.out_avals == [jax.core.ShapedArray(sh, fdtype) for sh in [(2,), (2, 2)]]
+
+        jac_eqn = jaxpr.eqns[0]
+        assert jac_eqn.invars[0].aval == jaxpr.in_avals[0]
+        diff_eqn_assertions(jac_eqn, scalar_out=False)
+        jac_jaxpr = jac_eqn.params["jaxpr"]
+        assert len(jac_jaxpr.eqns) == 1  # qnode equation
+
+        qnode_eqn = jac_jaxpr.eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert qnode_eqn.invars[0].aval == jaxpr.in_avals[0]
+
+        qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
+        # Skipping a few equations related to indexing
+        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qp.RY._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive
+
+        assert len(qnode_eqn.outvars) == 2
+        assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)
+        assert qnode_eqn.outvars[1].aval == jax.core.ShapedArray((2,), fdtype)
+
+        assert [outvar.aval for outvar in jac_eqn.outvars] == jaxpr.out_avals
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
     def test_jacobian_pytrees(self, argnums):
