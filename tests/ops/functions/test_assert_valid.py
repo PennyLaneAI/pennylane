@@ -672,11 +672,7 @@ class TestOperator2AssertValid:
             assert_valid(LocalOp(np.pi, wires=0))
 
     def test_check_bind_new_parameters(self):
-        """``_check_bind_new_parameters`` fails if ``bind_new_parameters`` cannot update the data.
-
-        Here the constructor ignores its dynamic ``phi`` argument and always stores ``1.0``, so
-        binding new parameters has no effect.
-        """
+        """``_check_bind_new_parameters`` fails if ``bind_new_parameters`` cannot update the data."""
 
         class IgnoresParams(Operator2):
             dynamic_argnames = ("phi",)
