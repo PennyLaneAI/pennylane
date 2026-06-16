@@ -1973,20 +1973,9 @@ class TestGraphDecomposition:
             assert Op(0.5, wires=0).has_decomposition is True
 
 
-class TestDecompositionTransformSurfaces:
-    """Characterization tests pinning *which* decomposition surfaces work for ``Operator2``.
-
-    The direct ``Operator2.decomposition()`` instance method and the surfaces that route
-    through it (non-graph ``decompose``, graph construction/solving) are asserted as normal
-    passing tests.
-
-    The graph-enabled transform, decomposition introspection, capture/plxpr, and Catalyst
-    paths invoke decomposition rules (or read parameters) through the *legacy* operator
-    interface (``op.parameters`` / ``op.data`` / ``op.hyperparameters``), which ``Operator2``
-    deliberately does not provide. Those surfaces remain unsupported; the tests for them attempt
-    the *desired* end-state and are marked ``xfail(strict=True)`` so that landing the follow-up
-    that wires ``Operator2`` into the tape/graph-transform pipeline converts them into loud
-    failures prompting removal of the marker."""
+class TestDecompositionIntegration:
+    """Integration tests verifying ``Operator2`` works through the tape-level transform
+    pipeline (``qp.transforms.decompose``, ``DecompositionGraph``, ``QuantumScript``)."""
 
     @staticmethod
     def _make_op_cls():
@@ -2003,8 +1992,6 @@ class TestDecompositionTransformSurfaces:
                 return {}
 
         return Op
-
-    # --- Surface B: non-graph transform routes through ``op.decomposition()`` (supported) ---
 
     def test_non_graph_transform_uses_compute_decomposition(self, disable_graph_decomposition):
         """Without the graph enabled, ``qp.transforms.decompose`` on a tape routes through
@@ -2045,8 +2032,6 @@ class TestDecompositionTransformSurfaces:
         assert [type(o).__name__ for o in new_tape.operations] == ["RX", "RZ"]
         assert qp.equal(new_tape.operations[0], qp.RX(0.5, wires=0))
 
-    # --- Surface 5: graph construction + solving (supported via resource_params) ---
-
     def test_graph_solver_supports_operator2(self, enable_graph_decomposition):
         """The decomposition graph can be built and solved for an ``Operator2`` because
         ``resource_keys``/``resource_params`` are defined; ``resource_estimate`` works."""
@@ -2071,73 +2056,9 @@ class TestDecompositionTransformSurfaces:
                 qp.resource_rep(qp.RZ): 1,
             }
 
-    # --- Surfaces 3/4/0: rule invocation / param extraction through the legacy interface ---
-    #
-    # These surfaces invoke decomposition rules (or read operator parameters) via the *legacy*
-    # operator interface (``op.parameters`` / ``op.data``), which ``Operator2`` deliberately
-    # does not provide. They are NOT supported by this ticket. Each test below attempts the
-    # *desired* end-state and is marked ``xfail(strict=True)``: it currently xfails on the
-    # ``AttributeError``, and if a follow-up wires ``Operator2`` into the tape/graph pipeline it
-    # will xpass, turning the strict marker into a loud failure that signals "remove the xfail".
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Graph-enabled decompose invokes the solved rule as "
-        "op_rule(*op.parameters, wires=op.wires, **kwargs); Operator2 has no 'parameters'. "
-        "Needs Operator2<->tape integration (follow-up).",
-    )
-    def test_graph_enabled_transform_with_operator2(self, enable_graph_decomposition):
-        """DESIRED (not yet supported): the graph-enabled transform decomposes an
-        ``Operator2`` to its registered rule's gates."""
-        Op = self._make_op_cls()
-
-        with qp.decomposition.local_decomps():
-
-            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
-            def rule(phi, label, wires, **__):
-                qp.RX(phi, wires=wires[0])
-                qp.RZ(phi, wires=wires[0])
-
-            tape = qp.tape.QuantumScript([Op(0.5, "spin", wires=0)], [qp.state()])
-            (new_tape,), _ = qp.transforms.decompose(
-                [tape], gate_set={"RX", "RZ"}, fixed_decomps={Op: rule}
-            )
-
-        assert [type(o).__name__ for o in new_tape.operations] == ["RX", "RZ"]
-        assert qp.equal(new_tape.operations[0], qp.RX(0.5, wires=0))
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="inspect_decomps renders/counts a rule via op.data; Operator2 has no 'data'. "
-        "Needs Operator2<->tape integration (follow-up).",
-    )
-    def test_inspect_decomps_with_operator2(self, enable_graph_decomposition):
-        """DESIRED (not yet supported): ``inspect_decomps`` renders the registered rule for an
-        ``Operator2`` instance."""
-        Op = self._make_op_cls()
-
-        with qp.decomposition.local_decomps():
-
-            @qp.register_resources({qp.RX: 1, qp.RZ: 1})
-            def rule(phi, label, wires, **__):
-                qp.RX(phi, wires=wires[0])
-                qp.RZ(phi, wires=wires[0])
-
-            qp.add_decomps(Op, rule)
-            op = Op(0.5, "spin", wires=0)
-            rendered = str(qp.inspect_decomps(op))
-
-        assert "RX" in rendered and "RZ" in rendered
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="QuantumScript.get_parameters reads op.data; Operator2 has no 'data'. This is "
-        "the upstream blocker for end-to-end QNode/draw/execute/capture/Catalyst workflows. "
-        "Needs Operator2<->tape integration (follow-up).",
-    )
     def test_tape_get_parameters_with_operator2(self):
-        """DESIRED (not yet supported): an ``Operator2`` in a tape exposes its parameters via
-        ``QuantumScript.get_parameters`` (the root-cause blocker for QNode/capture/Catalyst)."""
+        """``Operator2`` in a tape exposes its parameters via
+        ``QuantumScript.get_parameters`` through the legacy ``data`` view."""
         Op = self._make_op_cls()
         tape = qp.tape.QuantumScript([Op(0.5, "spin", wires=0)], [qp.state()])
         assert tape.get_parameters(trainable_only=False) == [0.5]
