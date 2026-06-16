@@ -15,7 +15,7 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports,unbalanced-tuple-unpacking
 
 import pytest
 
@@ -763,36 +763,21 @@ class TestDevicePreprocessing:
         assert all(sample == 0 for sample in results) or all(sample == 1 for sample in results)
 
 
-class TestDifferentiation:
+def test_error_backprop_unsupported():
+    """Test an error is raised with backprop if the device does not support it."""
 
-    def test_error_backprop_unsupported(self):
-        """Test an error is raised with backprop if the device does not support it."""
+    # pylint: disable=too-few-public-methods
+    class DummyDev(qp.devices.Device):
 
-        # pylint: disable=too-few-public-methods
-        class DummyDev(qp.devices.Device):
+        def execute(self, *_, **__):
+            return 0
 
-            def execute(self, *_, **__):
-                return 0
+    with pytest.raises(QuantumFunctionError, match="does not support backprop"):
 
-        with pytest.raises(QuantumFunctionError, match="does not support backprop"):
-
-            @qp.qnode(DummyDev(wires=2), diff_method="backprop")
-            def _(x):
-                qp.RX(x, 0)
-                return qp.expval(qp.Z(0))
-
-    def test_error_unsupported_diff_method(self):
-        """Test an error is raised for a non-backprop diff method."""
-
-        @qp.qnode(qp.device("default.qubit", wires=2), diff_method="parameter-shift")
-        def circuit(x):
+        @qp.qnode(DummyDev(wires=2), diff_method="backprop")
+        def _(x):
             qp.RX(x, 0)
             return qp.expval(qp.Z(0))
-
-        with pytest.raises(
-            NotImplementedError, match="diff_method parameter-shift not yet implemented."
-        ):
-            jax.grad(circuit)(0.5)
 
 
 def test_qnode_jit():

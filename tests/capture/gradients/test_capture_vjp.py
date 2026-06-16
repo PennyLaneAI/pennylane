@@ -222,3 +222,45 @@ class TestCapturingVJP:
         assert vjp_eqn.outvars[0].aval.shape == ()  # result
         assert vjp_eqn.outvars[1].aval.shape == (2,)  # dx
         assert vjp_eqn.outvars[2].aval.shape == (4,)  # dz
+
+
+def test_pytrees_in_and_out():
+    """Test that pytrees can be handled with both the inputs and the outputs."""
+
+    def f(x, y):
+        return {"result": x["a"] * y[0] + x["b"] * y[1]}
+
+    x = {"a": 0.5, "b": 1.2}
+    y = [2.0, 3.0]
+
+    results, dparams = qp.vjp(f, (x, y), {"result": -1.0})
+
+    assert isinstance(results, dict)
+    assert jnp.allclose(results["result"], 0.5 * 2 + 3.0 * 1.2)
+
+    assert isinstance(dparams, dict)
+    assert jnp.allclose(dparams["a"], -y[0])
+    assert jnp.allclose(dparams["b"], -y[1])
+
+
+def test_argnum_int_squeeze():
+    """Test that if argnum is an int, dparams looses a singleton dimension"""
+
+    def f(x):
+        return 2 * x
+
+    def w(x, argnums):
+        return qp.vjp(f, (x,), (1.0,), argnums=argnums)
+
+    # as int
+    results, dparams = w(0.5, 0)
+    assert qp.math.allclose(results, 1.0)
+    assert isinstance(dparams, jax.numpy.ndarray)
+    assert qp.math.allclose(dparams, 2)
+
+    # as array
+    results, dparams = w(0.5, [0])
+    assert qp.math.allclose(results, 1.0)
+    assert isinstance(dparams, tuple)
+    assert isinstance(dparams[0], jax.numpy.ndarray)
+    assert qp.math.allclose(dparams[0], 2)
