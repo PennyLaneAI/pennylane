@@ -577,7 +577,6 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
-    skip_pytree=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -591,7 +590,6 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
-        skip_pytree: If ``True``, the pytree test will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -639,7 +637,6 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_capture=skip_capture,
-                    skip_pytree=skip_pytree,
                 )
 
 
@@ -654,7 +651,6 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
-    skip_pytree=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -674,7 +670,6 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_capture: If ``True``, the program capture tests will be skipped.
-        skip_pytree: If ``True``, the pytree tests will be skipped.
 
     **Examples:**
 
@@ -728,7 +723,6 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
-            skip_pytree,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -740,8 +734,7 @@ def assert_valid(
 
         _check_bind_new_parameters(op)
 
-    if not skip_pytree:
-        _check_pytree(op)
+    _check_pytree(op)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
