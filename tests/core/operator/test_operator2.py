@@ -1868,8 +1868,11 @@ class TestGraphDecomposition:
             op.decomposition()
 
     def test_no_applicable_rule_raises(self):
-        """When rules exist but none are applicable, ``decomposition`` raises
-        ``DecompositionUndefinedError`` and ``has_decomposition`` is ``False``."""
+        """When rules exist for the type but none are applicable to a given instance,
+        ``decomposition`` raises ``DecompositionUndefinedError``. ``has_decomposition`` is a
+        class-level check, so it stays ``True`` (a rule is registered for the type) even though
+        this instance has no applicable rule — the per-instance selection happens in
+        ``decomposition``."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -1892,7 +1895,7 @@ class TestGraphDecomposition:
             qp.add_decomps(Op, five_wire)
 
             op = Op(0.5, wires=[0])
-            assert op.has_decomposition is False
+            assert op.has_decomposition is True  # class-level: a rule is registered for the type
             with pytest.raises(DecompositionUndefinedError):
                 op.decomposition()
 
@@ -1945,7 +1948,8 @@ class TestGraphDecomposition:
         assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
 
     def test_has_decomposition_reflects_registered_rules(self):
-        """``has_decomposition`` is consistent with rule availability and applicability."""
+        """``has_decomposition`` (a class-level check) reports ``True`` once decomposition rules
+        are registered for the operator type, for both class and instance access."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -1980,8 +1984,8 @@ class TestDecompositionTransformSurfaces:
     interface (``op.parameters`` / ``op.data`` / ``op.hyperparameters``), which ``Operator2``
     deliberately does not provide. Those surfaces remain unsupported; the tests for them attempt
     the *desired* end-state and are marked ``xfail(strict=True)`` so that landing the follow-up
-    integration converts them into loud failures prompting removal of the marker. See
-    ``.benchmarks/operator2_decomp_sc120519/followup_risks.md`` for the scope boundary."""
+    that wires ``Operator2`` into the tape/graph-transform pipeline converts them into loud
+    failures prompting removal of the marker."""
 
     @staticmethod
     def _make_op_cls():
@@ -2074,13 +2078,12 @@ class TestDecompositionTransformSurfaces:
     # *desired* end-state and is marked ``xfail(strict=True)``: it currently xfails on the
     # ``AttributeError``, and if a follow-up wires ``Operator2`` into the tape/graph pipeline it
     # will xpass, turning the strict marker into a loud failure that signals "remove the xfail".
-    # See ``.benchmarks/operator2_decomp_sc120519/followup_risks.md`` for the scope boundary.
 
     @pytest.mark.xfail(
         strict=True,
         reason="Graph-enabled decompose invokes the solved rule as "
         "op_rule(*op.parameters, wires=op.wires, **kwargs); Operator2 has no 'parameters'. "
-        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+        "Needs Operator2<->tape integration (follow-up).",
     )
     def test_graph_enabled_transform_with_operator2(self, enable_graph_decomposition):
         """DESIRED (not yet supported): the graph-enabled transform decomposes an
@@ -2105,7 +2108,7 @@ class TestDecompositionTransformSurfaces:
     @pytest.mark.xfail(
         strict=True,
         reason="inspect_decomps renders/counts a rule via op.data; Operator2 has no 'data'. "
-        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+        "Needs Operator2<->tape integration (follow-up).",
     )
     def test_inspect_decomps_with_operator2(self, enable_graph_decomposition):
         """DESIRED (not yet supported): ``inspect_decomps`` renders the registered rule for an
@@ -2129,7 +2132,7 @@ class TestDecompositionTransformSurfaces:
         strict=True,
         reason="QuantumScript.get_parameters reads op.data; Operator2 has no 'data'. This is "
         "the upstream blocker for end-to-end QNode/draw/execute/capture/Catalyst workflows. "
-        "Needs Operator2<->tape integration (follow-up). See followup_risks.md.",
+        "Needs Operator2<->tape integration (follow-up).",
     )
     def test_tape_get_parameters_with_operator2(self):
         """DESIRED (not yet supported): an ``Operator2`` in a tape exposes its parameters via

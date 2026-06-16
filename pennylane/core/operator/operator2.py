@@ -49,30 +49,6 @@ from pennylane.wires import Wires, WiresLike
 from .base import _UNSET_BATCH_SIZE
 
 
-class _HasDecomposition:
-    """Descriptor backing :attr:`Operator2.has_decomposition`.
-
-    Accessed on a class, it reports whether the operator *type* defines a decomposition:
-    either ``compute_decomposition`` or ``decomposition`` is overridden, or graph-based
-    decomposition rules are registered for it. Accessed on an instance, it additionally
-    requires that at least one registered rule is applicable to the instance's
-    :attr:`~.Operator2.resource_params`, mirroring the instance-aware behaviour of the
-    legacy ``Operator.has_decomposition``.
-    """
-
-    def __get__(self, obj: "Operator2 | None", cls: "type[Operator2] | None" = None) -> bool:
-        if cls is None:
-            cls = type(obj)
-        if (
-            cls.compute_decomposition != Operator2.compute_decomposition
-            or cls.decomposition != Operator2.decomposition
-        ):
-            return True
-        if obj is None:
-            return len(qp.list_decomps(cls)) > 0
-        return any(rule.is_applicable(**obj.resource_params) for rule in qp.list_decomps(obj))
-
-
 class Operator2(ABC):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
@@ -173,14 +149,6 @@ class Operator2(ABC):
     * the number of wires is fixed,
     * there are no static (compilable or non-compilable) arguments, and,
     * there are no hybrid arguments.
-    """
-
-    resource_keys: ClassVar[set] = set()
-    """The set of parameters that affect the resource requirement of the operator's
-    decomposition. Graph-based decomposition rules registered for this operator class are
-    expected to accept keyword arguments matching these keys exactly (see
-    :attr:`~.Operator2.resource_params`). The default is an empty set, suitable for operators
-    whose decompositions have static resource requirements.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -707,16 +675,21 @@ class Operator2(ABC):
         """
         raise DecompositionUndefinedError
 
-    has_decomposition: ClassVar[_HasDecomposition] = _HasDecomposition()
-    """Bool: Whether or not the Operator returns a defined decomposition.
+    @classproperty
+    @classmethod
+    def has_decomposition(cls) -> bool:
+        """Bool: Whether or not the Operator returns a defined decomposition.
 
-    When accessed on a class, this reports whether the operator type defines a decomposition
-    at all: either ``compute_decomposition`` or ``decomposition`` is overridden, or graph-based
-    decomposition rules are registered for it. When accessed on an instance, it additionally
-    requires that at least one registered rule is applicable to the instance's
-    :attr:`~.Operator2.resource_params` (mirroring the instance-aware legacy
-    ``Operator.has_decomposition``).
-    """
+        This is a class-level check (no per-instance dispatch): ``True`` if
+        ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
+        rules are registered for the operator type. Per-instance rule applicability is resolved
+        in :meth:`~.Operator2.decomposition`, not here.
+        """
+        return (
+            cls.compute_decomposition != Operator2.compute_decomposition
+            or cls.decomposition != Operator2.decomposition
+            or qp.decomposition.has_decomp(cls)
+        )
 
     def decomposition(self) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators.
@@ -743,6 +716,14 @@ class Operator2(ABC):
                 return q.queue
 
         raise DecompositionUndefinedError
+
+    resource_keys: ClassVar[set] = set()
+    """The set of parameters that affect the resource requirement of the operator's
+    decomposition. Graph-based decomposition rules registered for this operator class are
+    expected to accept keyword arguments matching these keys exactly (see
+    :attr:`~.Operator2.resource_params`). The default is an empty set, suitable for operators
+    whose decompositions have static resource requirements.
+    """
 
     @property
     def resource_params(self) -> dict[str, Any]:
@@ -1042,8 +1023,6 @@ class Operator2(ABC):
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
-        # TODO: [sc-120429] Add processing for overriding has_decomposition
-
         cls._sig = signature(cls)
 
         if is_baseclass:
