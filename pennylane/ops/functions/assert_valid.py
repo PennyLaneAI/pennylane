@@ -364,7 +364,7 @@ def _check_eigendecomposition(op):
     has_eigvals = True
     try:
         args, kwargs = _get_signature(op)
-        if not isinstance(op, qp.operation.Operator2):
+        if isinstance(op, Operator1):
             kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
         compute_eg = type(op).compute_eigvals(*args, **kwargs)
     except EigvalsUndefinedError:
