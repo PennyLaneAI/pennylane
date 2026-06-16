@@ -370,7 +370,7 @@ class PartialUnaryStatePreparation(Operation):
 
     .. seealso::
 
-        :class:`~.templates.state_preparations.PUIIsometryFinder` for the class implementing
+        :class:`~.PUIIsometryFinder` for the class implementing
         the classical algorithm that finds the isometry for the circuit.
 
     Args:
