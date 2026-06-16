@@ -168,8 +168,8 @@ class MultiRot(Operator2):
     ],
 )
 def test_operator_2_ops(op, new_params, expected_op):
-    """Test that `bind_new_parameters` with `ScalarSymbolicOp` returns a new
-    operator with the new parameters without mutating the original
+    """Test that `bind_new_arguments` with `Operator2` returns a new
+    operator with the new arguments without mutating the original
     operator."""
     new_op = (
         bind_new_parameters(op, **new_params)
