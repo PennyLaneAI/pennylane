@@ -20,7 +20,6 @@ This module contains the qp.bind_new_parameters function.
 import copy
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import Any
 
 from pennylane import ops
 from pennylane.core import Operator2
