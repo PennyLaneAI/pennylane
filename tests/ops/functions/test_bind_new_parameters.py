@@ -151,6 +151,8 @@ class MultiRot(Operator2):
             else:
                 decomp.append(qp.RZ(angle, wire))
 
+        return decomp
+
 
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
