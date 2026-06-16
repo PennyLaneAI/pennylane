@@ -1014,18 +1014,18 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         if not self.fixed_sig:
             return
 
-        for p, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
-            argval = self.arguments[p.name]
+        for name, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
+            argval = self.arguments[name]
             if not expected_type.issubtype(argval):
                 # Dynamic argument
-                if p.name in self.dynamic_argnames:
-                    raise TypeError(
-                        f"Expected '{p.name}' to have shape {expected_type.shape} and "
-                        f"datatype {str(expected_type.dtype)}, but got {argval}."
+                if name in self.dynamic_argnames:
+                    raise ValueError(
+                        f"Expected '{name}' to have shape {expected_type.shape} and "
+                        f"dtype {str(expected_type.dtype)}, but got {argval}."
                     )
                 # Wire argument
-                raise TypeError(
-                    f"Expected '{p.name}' to have length {expected_type.num_wires}, "
+                raise ValueError(
+                    f"Expected '{name}' to have length {expected_type.num_wires}, "
                     f"but got {argval}."
                 )
 
@@ -1116,11 +1116,11 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
             if cls.fixed_sig:
                 j = 0
-                for i, p in enumerate(cls._sig.parameters):
-                    if p.name in cls.wire_argnames:
+                for i, name in enumerate(cls._sig.parameters):
+                    if name in cls.wire_argnames:
                         if cls.fixed_sig[i].num_wires != cls.wire_sizes[j]:
                             raise TypeError(
-                                f"Number of wires specified for '{p.name}' does not match in "
+                                f"Number of wires specified for '{name}' does not match in "
                                 f"{cls.__name__}.fixed_sig and {cls.__name__}.wire_sizes."
                             )
                         j += 1
@@ -1139,9 +1139,9 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         elif cls.fixed_sig:
             cls.wire_sizes = tuple(
-                cls.fixed_sig[i]
-                for i, p in enumerate(cls._sig.parameters)
-                if p.name in cls.wire_argnames
+                cls.fixed_sig[i].num_wires
+                for i, name in enumerate(cls._sig.parameters)
+                if name in cls.wire_argnames
             )
         else:
             cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
@@ -1481,7 +1481,15 @@ def _is_hash_leaf(l) -> bool:
 @abstractify.register(Operator2)
 def _abstractify_operator(val: Operator2) -> Operator2:
     """Abstractify an operator."""
-    leaves, tree = flatten(val, is_leaf=_is_hash_leaf)
+    # data, metadata = val._flatten()
+    # dyn_args, wires, hybrid_args = data
+    # abstract_data = (
+    #     [abstractify(arg) for arg in dyn_args],
+    #     [abstractify(w) for w in wires],
+    #     [abstractify(arg) for arg in hybrid_args],
+    # )
+    # return type(val)._unflatten(abstract_data, metadata)
+    leaves, tree = flatten(val, is_leaf=_is_wires)
     abstract_leaves = tuple(abstractify(l) for l in leaves)
     return unflatten(abstract_leaves, tree)
 

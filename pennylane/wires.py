@@ -786,9 +786,11 @@ class AbstractWires:
         """
         if self.num_wires is Ellipsis:
             return True
+        if isinstance(val, Wires):
+            return len(val) == self.num_wires
         if isinstance(val, Sized) and not isinstance(val, str):
-            val = (val,)
-        return len(val) == self.num_wires
+            return len(val) == self.num_wires
+        return len((val,)) == self.num_wires
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable

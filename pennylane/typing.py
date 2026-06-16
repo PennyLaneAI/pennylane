@@ -170,8 +170,9 @@ class AbstractArray:
             dummy = torch.tensor((), dtype=self.dtype)
             object.__setattr__(self, "dtype", dummy.numpy().dtype)
 
-        if not issubclass(self.dtype, Number):
-            object.__setattr__(self, "dtype", np.dtype(self.dtype))
+        if isinstance(self.dtype, type) and issubclass(self.dtype, Number):
+            return
+        object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
     def __instancecheck__(self, instance):
         if not getattr(instance, "dtype", None) == self.dtype:
@@ -193,7 +194,10 @@ class AbstractArray:
 
         if issubclass(self.dtype, Number) and self.dtype.__name__ not in dtype:
             return False
-        if dtype != self.dtype.name:
+        if (
+            not (isinstance(self.dtype, type) and issubclass(self.dtype, Number))
+            and dtype != self.dtype.name
+        ):
             return False
         if len(shape) != self.ndim:
             return False
