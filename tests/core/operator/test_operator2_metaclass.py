@@ -124,7 +124,7 @@ class TestOperatorAbstractInputs:
             ),
         ],
     )
-    def test_mixed_arg_op_with_hybrid_args(self, hybrid_in, hybrid_out):
+    def test_mixed_arg_op(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
@@ -167,30 +167,23 @@ class TestOperatorAbstractInputs:
             ),
         ],
     )
-    def test_mixed_arg_op_with_hybrid_wires(self, hybrid_in, hybrid_out):
+    def test_op_with_hybrid_wires(self, hybrid_in, hybrid_out):
         """Tests that different types of arguments canonicalize differently."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class HybridWiresOp(Operator2):  # pylint: disable=too-few-public-methods
             """Operator with static, dynamic and hybrid argnames."""
 
-            static_argnames = ("static_arg",)
-            dynamic_argnames = ("dynamic_arg",)
             hybrid_argnames = ("hybrid_arg",)
             # Hybrid arg holds a 'Wires' object in one of it's key value pairs
             wire_argnames = ("hybrid_arg", "wires")
 
-            def __init__(self, static_arg, dynamic_arg, hybrid_arg, wires):
-                super().__init__(static_arg, dynamic_arg, hybrid_arg, wires=wires)
+            def __init__(self, hybrid_arg, wires):
+                super().__init__(hybrid_arg, wires=wires)
 
-        op = MixedArgOp(
-            static_arg="blah",
-            dynamic_arg=[0, 1],
+        op = HybridWiresOp(
             hybrid_arg=hybrid_in,
             wires=AbstractWires(1),
         )
-        assert op.static_arg == "blah"
-        # Cast to abstract array
-        assert op.dynamic_arg == AbstractArray((2,), int)
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(
