@@ -126,7 +126,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     r"""A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
-        ops (Iterable[Operator]): An iterable of the operations to be performed
+        ops (Iterable[Operator]): An iterable of the ``operations`` to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
         prep (Iterable[Operator]): Arguments to specify state preparations to
             perform at the start of the circuit. These should go at the beginning of ``ops``
@@ -145,7 +145,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     **Example**
 
-    Tapes can be constructed by directly providing operations and measurements:
+    Tapes can be constructed by directly providing ``operations`` and measurements:
 
     >>> ops = [qp.BasisState([1, 0], wires=[0, 1]), qp.S(0), qp.T(1)]
     >>> measurements = [qp.state()]

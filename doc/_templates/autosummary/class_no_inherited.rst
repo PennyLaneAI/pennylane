@@ -1,4 +1,4 @@
-{{ fullname | replace("pennylane", "qml") }}
+{{ fullname | replace("pennylane", "qp") }}
 {{ underline }}
 
 .. autoclass:: {{ fullname }}
@@ -34,7 +34,7 @@
 
    {% for item in attributes %}
    {%- if item not in inherited_members %}
-   .. autoattribute:: {{ fullname }}.{{ item }}
+   .. autoattribute:: {{ item }}
    {%- endif %}
    {%- endfor %}
 
@@ -70,7 +70,7 @@
 
    {% for item in methods %}
    {%- if item not in inherited_members %}
-   .. automethod:: {{ fullname }}.{{ item }}
+   .. automethod:: {{ item }}
    {%- endif %}
    {%- endfor %}
 
