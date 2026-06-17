@@ -173,11 +173,7 @@ def test_operator_2_ops(op, new_params, expected_op):
     """Test that `bind_new_arguments` with `Operator2` returns a new
     operator with the new arguments without mutating the original
     operator."""
-    new_op = (
-        bind_new_parameters(op, **new_params)
-        if isinstance(new_params, dict)
-        else bind_new_parameters(op, new_params)
-    )
+    new_op = bind_new_parameters(op, new_params)
 
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
