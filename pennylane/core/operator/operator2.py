@@ -147,7 +147,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    fixed_sig: ClassVar[tuple[type, ...]] = None
+    fixed_sig: ClassVar[tuple[AbstractArray | AbstractWires, ...] | None] = None
     """The expected signature of an operator. If set, it must have the same length as
     the total number of arguments, and be in the same order as the order of the arguments
     in an operator's constructor. This attribute is optional—not setting it has no loss
