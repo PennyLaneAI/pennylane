@@ -95,15 +95,18 @@ class Operator2(ABC):
     .. details::
         :title: Defining Custom Operators
 
-        Custom ``Operator2`` instances **require** specifying
-        :attr:`wire_argnames <Operator2.wire_argnames>`, one of
-        :attr:`static_argnames <Operator2.static_argnames>` or
-        :attr:`compilable_argnames <Operator2.compilable_argnames>`, and
-        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, if any. As an example, consider the
-        following custom operator: ``MyOp(pauli_string, angle_array, wires, rot_wire)``.
-        The ``wires`` and ``rot_wire`` arguments will be a part of
-        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
-        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
+        Custom ``Operator2`` instances **require** specifying the following:
+
+        * :attr:`wire_argnames <Operator2.wire_argnames>`,
+        * one of :attr:`static_argnames <Operator2.static_argnames>` or
+          :attr:`compilable_argnames <Operator2.compilable_argnames>`, and
+        * :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, if any.
+
+        As an example, consider the following custom operator:
+        ``MyOp(pauli_string, angle_array, wires, rot_wire)``. The ``wires`` and ``rot_wire``
+        arguments will be a part of :attr:`wire_argnames <Operator2.wire_argnames>`, and
+        ``pauli_string`` and ``angle_array`` will belong to
+        :attr:`compilable_argnames <Operator2.compilable_argnames>` and
         :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
 
         .. code-block python
@@ -137,8 +140,6 @@ class Operator2(ABC):
 
         **Decomposing Operators**
 
-        TODO
-
         .. code-block python
 
             from collections import defaultdict
@@ -164,7 +165,53 @@ class Operator2(ABC):
 
         **static_argnames vs. compilable_argnames**
 
-        TODO
+        .. note::
+
+            An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
+            :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
+            static arguments cannot be lowered to the IR, then all static arguments must be treated
+            as not lowerable.
+
+        Static and *compilable static* arguments are similar, but have key differences to note that
+        dictate how certain arguments are treated when compiled down to MLIR.
+
+        Both ``static_argnames`` and ``compilable_argnames`` denote data that cannot be dynamic. In
+        other words, they both represent concrete data whose values are known when tracing the
+        program. The distinction in their behaviour comes at compile-time.
+
+        Arguments in ``compilable_argnames`` denote data that *can* be concretely accessed and
+        inspected at compile-time (it can be compiled and represented concretely in MLIR), including
+        numeric values, strings, lists, tuples, and dictionaries.
+
+        In the example above with ``MyOp``, the ``pauli_string`` argument is part of
+        ``compilable_argnames``. Its concrete (static) value will be accessible at compile time,
+        being represented at the MLIR level as follows, where the concrete value of
+        ``pauli_string`` is captured in the ``static_data`` attribute in MLIR:
+
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
+
+        ```mlir
+        %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+        quregs(%out_qreg) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+        static_data = {pauli_string = "XYZ"}
+        param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
+        ```
+
+        Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
+        inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
+        including arbitrary Python objects, Python functions, and custom classes. Static data will
+        be reduced to a Unique Identifier (UID) at the MLIR level.
+
+        In the example above with ``MyOp``, if the ``pauli_string`` argument was part of
+        ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
+        value of ``pauli_string`` is reduced to a UID in MLIR:
+
+        ```mlir
+        %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+        UID(278653)
+        quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+        param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
+        ```
 
         **hybrid_argnames**
 
