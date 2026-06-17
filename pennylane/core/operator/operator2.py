@@ -1237,7 +1237,7 @@ class Operator2(ABC):
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if  not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
                 return self
             return qp.sum(
                 self,
