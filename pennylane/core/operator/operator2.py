@@ -148,7 +148,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    # TODO: [sc-120517] Add proper fixed_sig support and update docs accordingly
     fixed_sig: ClassVar[tuple[type, ...]] = None
     """The expected signature of an operator. If set, it must have the same length as
     the total number of arguments, and be in the same order as the order of the arguments
@@ -159,6 +158,11 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     * the number of wires is fixed,
     * there are no static (compilable or non-compilable) arguments, and,
     * there are no hybrid arguments.
+
+    If set, it can be used to perform automatic validation of an operators inputs during
+    construction. Additionally, when defining decomposition rules for an operator,
+    operator types with fixed signatures can be placed in the rules' resources without
+    needing to fully construct abstract operators.
     """
 
     # ----------------- Class variables set automatically --------------------
