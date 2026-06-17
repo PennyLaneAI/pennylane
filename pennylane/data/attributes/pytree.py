@@ -48,19 +48,20 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
 
         bind["treedef"] = np.void(serialization.pytree_structure_dump(treedef, decode=False))
 
-        # Non-numeric leaves
-        # (e.g. string wire labels) must use a list, since HDF5 would
-        # otherwise read them back as bytes.
+        # Store leaves as a single array (more efficient) only when they form a homogeneous
+        # numeric array; otherwise store them as a list. ``np.asarray`` raises on inhomogeneous
+        # (ragged) leaves, and returns a non-numeric dtype for e.g. string wire labels, which an
+        # HDF5 array would read back as bytes -- both must be stored as a list.
         # "biufc" are the numpy dtype ``kind`` codes for numeric data:
         # boolean, signed integer, unsigned integer, float, and complex.
-        if np.asarray(leaves).dtype.kind not in "biufc":
-            DatasetList(leaves, parent_and_key=(bind, "leaves"))
+        try:
+            store_as_array = np.asarray(leaves).dtype.kind in "biufc"
+        except (ValueError, TypeError):
+            store_as_array = False
+
+        if store_as_array:
+            DatasetArray(leaves, parent_and_key=(bind, "leaves"))
         else:
-            try:
-                # Attempt to store leaves as an array, which will be more efficient
-                # but will fail if the leaves are not homogenous
-                DatasetArray(leaves, parent_and_key=(bind, "leaves"))
-            except (ValueError, TypeError):
-                DatasetList(leaves, parent_and_key=(bind, "leaves"))
+            DatasetList(leaves, parent_and_key=(bind, "leaves"))
 
         return bind

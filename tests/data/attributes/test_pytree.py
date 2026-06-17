@@ -17,6 +17,7 @@ Tests for the ``DatasetPyTree`` attribute type.
 
 from dataclasses import dataclass
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -120,6 +121,21 @@ class TestDatasetPyTree:
 
         assert list(result.data) == ["a", "b"]
         assert all(isinstance(leaf, str) for leaf in result.data)
+
+    def test_inhomogeneous_numeric_leaves(self):
+        """Test that ragged (inhomogeneous) numeric leaves round-trip.
+
+        ``np.asarray`` raises on leaves with inhomogeneous shapes (e.g. a scalar
+        coefficient alongside a matrix, as in a ``Hamiltonian`` with a ``Hermitian``
+        term), so they must fall back to being stored as a list rather than an array.
+        """
+        matrix = np.array([[1.0, 2.0], [3.0, 4.0]])
+        value = CustomNode([1.0, matrix], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert result.data[0] == 1.0
+        assert np.array_equal(result.data[1], matrix)
 
 
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
