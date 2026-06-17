@@ -67,6 +67,7 @@ Native Python executors
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.concurrency.executors.native
+
 .. automodule:: pennylane.concurrency.executors.native
     :noindex:
 
@@ -75,6 +76,7 @@ External package-backed executors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.concurrency.executors.external
+
 .. automodule:: pennylane.concurrency.executors.external
     :noindex:
 
@@ -83,6 +85,7 @@ Executor API
 ============
 
 .. currentmodule:: pennylane.concurrency.executors.base
+
 .. automodule:: pennylane.concurrency.executors.base
     :noindex:
 

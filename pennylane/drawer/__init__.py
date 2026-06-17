@@ -15,6 +15,7 @@
 This module provides the circuit drawing functionality used to display circuits visually.
 
 .. currentmodule:: pennylane.drawer
+
 .. autosummary::
     :toctree: api
 

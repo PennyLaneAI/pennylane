@@ -19,6 +19,7 @@ at your own discretion.
 
 
 .. currentmodule:: pennylane.devices.qutrit_mixed
+
 .. autosummary::
     :toctree: api
 

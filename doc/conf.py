@@ -18,7 +18,6 @@ import warnings
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
-import logging as _logging
 
 logger = logging.getLogger(__name__)
 
@@ -67,18 +66,6 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
-class _TraceExplicitMarkup(_logging.Filter):
-    def filter(self, record):
-        if "Explicit markup ends without a blank line" in record.getMessage():
-            import traceback
-            print("=" * 60)
-            print("EXPLICIT MARKUP WARNING TRACEBACK:")
-            traceback.print_stack()
-            print("=" * 60)
-        return True
-
-for _name in ["docutils", "sphinx", "sphinx.application"]:
-    _logging.getLogger(_name).addFilter(_TraceExplicitMarkup())
 
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "https://docs.pennylane.ai/")

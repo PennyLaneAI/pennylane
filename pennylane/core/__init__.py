@@ -16,6 +16,7 @@ Operator Types
 ~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
+
 .. autosummary::
     :toctree: api
 

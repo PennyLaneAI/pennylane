@@ -79,6 +79,7 @@ There is a set of transforms that use
 to optimize circuits.
 
 .. currentmodule:: pennylane.transforms
+
 .. autosummary::
     :toctree: api
 
@@ -91,6 +92,7 @@ The following utility functions assist when working explicitly with ZX diagrams,
 writing custom ZX compilation passes. Also see the section on intermediate representations below.
 
 .. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
@@ -116,6 +118,7 @@ produce a new quantum circuit:
 In addition, there are the following utility functions to traverse a graph:
 
 .. currentmodule:: pennylane.transforms
+
 .. autosummary::
     :toctree: api
 
@@ -129,6 +132,7 @@ The following transforms are useful for multiple purposes such as circuit prepro
 information from a circuit, and more.
 
 .. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
@@ -150,6 +154,7 @@ The following transforms only accept QNodes, and return new transformed function
 desired quantity.
 
 .. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
@@ -215,6 +220,7 @@ Transforms developer classes
 ----------------------------
 
 .. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
