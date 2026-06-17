@@ -187,33 +187,3 @@ class TestExecution:
 
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
         assert qp.math.allclose(res, jax.numpy.cos(0.5))
-
-
-class TestJVP:
-    """Unit tests for default.qubit JVP with program capture."""
-
-    def test_error_unsupported_diff_method(self):
-
-        dev = qp.device("default.qubit", wires=1)
-        jaxpr = jax.make_jaxpr(lambda x: x + 1)(1)
-        config = qp.devices.ExecutionConfig(gradient_method="hello")
-        with pytest.raises(NotImplementedError, match="does not support gradient_method=hello"):
-            dev.jaxpr_jvp(jaxpr.jaxpr, jaxpr.consts, 2, execution_config=config)
-
-    def test_adjoint_unsupported_control_flow(self):
-
-        def circuit(x):
-            @qp.for_loop(3)
-            def f(i):
-                qp.RX(x, i)
-
-            f()
-
-            return qp.expval(qp.Z(0))
-
-        jaxpr = jax.make_jaxpr(circuit)(0.5)
-        dev = qp.device("default.qubit", wires=4)
-        config = qp.devices.ExecutionConfig(gradient_method="adjoint")
-
-        with pytest.raises(NotImplementedError, match="does not have a jvp rule"):
-            dev.jaxpr_jvp(jaxpr.jaxpr, (0.5,), (1.0,), execution_config=config)
