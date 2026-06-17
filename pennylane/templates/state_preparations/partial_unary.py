@@ -46,8 +46,8 @@ class PUIsometryFinder:
         The core idea for this isometry mapping stems from
         `Malvetti et al. (2021) <https://quantum-journal.org/papers/q-2021-03-15-412/>`__.
         To prepare the mapping, we split the overall wires (excluding dedicated work wires) into
-        a *subspace register* of size :math:`n_{\text{subspace}}=\lceil \log_2(L)\rceil` and the
-        remainder register of size :math:`n_r =n-n_{\text{subspace}}. The goal then is
+        a *subspace register* of size :math:`n_{\text{subspace}}=\lceil \log_2(|L|)\rceil` and the
+        remainder register of size :math:`n_r =n-n_{\text{subspace}}`. The goal then is
         to map all states :math:`|\ell\rangle = |\ell_s\rangle \otimes |\ell_r\rangle` to some
         unique subspace state :math:`|f(\ell)\rangle = |f(\ell)\rangle \otimes |0\rangle`,
         where :math:`f` is a bijection.
@@ -63,7 +63,7 @@ class PUIsometryFinder:
         0. Initialize an empty batch :math:`\mathcal{B}=\{\}` of integer pairs, a global
            bijection :math:`f` of integers, and a global counter :math:`k=0`.
 
-        1. If :math:`j\coloneqq|\mathcal{B}| < m-1`, go to step 2, otherwise to step 4.
+        1. If :math:`j:=|\mathcal{B}| < m-1`, go to step 2, otherwise to step 4.
 
         2. Search for the next :math:`\ell'\in L\setminus\mathcal{B}` that has the :math:`j`\ th
            remainder bit set to one. There are three stages to this, where the latter two are
@@ -142,12 +142,26 @@ class PUIsometryFinder:
         `Rupprecht and Wölk <https://arxiv.org/abs/2601.09388>`__ use the word to point to the
         sliced range the used unary iteration circuits.
 
+        **Space-time tradeoff**
+
+        The isometry finder can naturally make use of a space-time tradeoff; to understand this,
+        note that the batches passed to the partial unary iterators are limited by the maximal size
+        :math:`m` inferred from the number of remainder qubits. As the subspace register size is
+        exclusively determined by :math:`|L|`, adding work wires (or more system wires) directly
+        adds them to the remainder register, thus increasing :math:`m`.
+
+        Overall, the isometry circuit needs to iterate over the entire range :math:`[0,|L|)`,
+        but the smaller the (maximal) batch size, the more iterators are needed, each of which
+        comes with some overhead for the control structure that selects the subspace on which
+        it acts. Increasing the batch size therefore allows for fewer iterators, for which
+        we thus pay less overhead.
+
     """
 
     def __init__(self, basis_states: list, n_qubits: int):
-        s = len(basis_states)
+        num_entries = len(basis_states)
         self.n = n_qubits
-        self.n_subspace = max(math.ceil_log2(s), 1)
+        self.n_subspace = max(math.ceil_log2(num_entries), 1)
         n_r = self.n - self.n_subspace
         # Largest power of 2 less than or equal to n_r, the remainder register size
         self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
@@ -382,7 +396,7 @@ class PartialUnaryStatePreparation(Operation):
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
         work_wires (qp.wires.WiresLike): Work wires used for the state preparation. For
-            :math:`L` entries in the state, :math:`\max(\lceil \log_2(L)\rceil-1, 1)` work wires
+            :math:`|L|` entries in the state, :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)` work wires
             are needed.
 
     .. warning::
@@ -456,12 +470,12 @@ class PartialUnaryStatePreparation(Operation):
     .. code-block:: python
 
         np.random.seed(31)
-        L = 2553
-        coefficients = np.random.random(L)
+        num_entries = 2553
+        coefficients = np.random.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
-        indices = np.random.choice(2**15, L, replace=False)
+        indices = np.random.choice(2**15, num_entries, replace=False)
         wires = list(range(15))
-        num_work_wires = qp.math.ceil_log2(L) - 1
+        num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
@@ -478,7 +492,7 @@ class PartialUnaryStatePreparation(Operation):
     - state(all wires): 1
     Depth: Not computed
 
-    Note that passing more work wires than the needed :math:`\max(\lceil \log_2(L)\rceil-1, 1)`
+    Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
 
     >>> new_num_work_wires = 3*num_work_wires
@@ -498,7 +512,7 @@ class PartialUnaryStatePreparation(Operation):
     Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
-    number of indices :math:`L`, it is the same between the two decompositions.
+    number of indices :math:`|L|`, it is the same between the two decompositions.
 
     """
 
@@ -513,16 +527,20 @@ class PartialUnaryStatePreparation(Operation):
         }
 
     def __init__(self, coefficients, wires, indices, work_wires):
-        s = len(indices)
-        if len(set(indices)) != s:
+        num_entries = len(indices)
+        if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
-        if len(coefficients) != s:
+        if len(coefficients) != num_entries:
             raise ValueError(
                 "The number of coefficients and the number of state indices must match."
             )
         if max(indices) > 2 ** len(wires) - 1:
             raise ValueError(
                 f"The state indices must be smaller than {2**len(wires)=}. Largest index is {max(indices)}"
+            )
+        if min(indices) < 0:
+            raise ValueError(
+                f"The state indices must be positive. Smallest index is {min(indices)}"
             )
 
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -606,12 +624,12 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This core method is used by the two rules below, which only differ by the work
     wire management."""
-    s = len(indices)
-    if s == 1:
+    num_entries = len(indices)
+    if num_entries == 1:
         qp.BasisState(indices[0], wires)
         return
 
-    n_subspace = max(math.ceil_log2(s), 1)
+    n_subspace = max(math.ceil_log2(num_entries), 1)
     needed_work_wires = max(n_subspace - 1, 1)  # Need n_subspace-1 for QROM, 1 for Toffoli
     wires = Wires(wires)
     if len(work_wires) > needed_work_wires:

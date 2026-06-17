@@ -248,3 +248,7 @@ class TestPartialUnaryStatePreparation:
         unique_indices = (0, 4, 1, 2, 3, 6, 63)
         with pytest.raises(ValueError, match=r"must be smaller than 2\*\*len\(wires\)=16"):
             PartialUnaryStatePreparation(coeffs, wires, unique_indices, [])
+
+        unique_indices = (0, -4, 1, 2, 3, 6, 10)
+        with pytest.raises(ValueError, match=r"must be positive"):
+            PartialUnaryStatePreparation(coeffs, wires, unique_indices, [])
