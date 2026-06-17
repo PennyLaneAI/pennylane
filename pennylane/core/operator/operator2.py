@@ -1510,7 +1510,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # We stringify the data because arrays are unhashable
     return str(
         id(d)
-        if math.is_abstract(d) or isinstance(d, (AbstractWires, AbstractArray))
+        if math.is_abstract(d) or isinstance(d, AbstractArray)
         else _mod_and_round(d, mod_val)
     )
 
