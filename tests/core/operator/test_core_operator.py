@@ -1796,6 +1796,8 @@ pairs_of_ops = [
     (MultiRot([np.pi / 4, np.pi / 2], [0, 1], "ZX"), qp.CNOT((0, 1))),
 ]
 
+X2 = lambda w: MultiRot([np.pi], [w], "X")
+
 
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
@@ -1821,14 +1823,21 @@ class TestNewOpMath:
             assert op[1].scalar == -1
             qp.assert_equal(op[1].base, op1)
 
-        def test_sub_with_unknown_not_supported(self):
+        @pytest.mark.parametrize("op", [
+            X2(0),
+            qp.S(0)
+        ])
+        def test_sub_with_unknown_not_supported(self, op):
             """Test subtracting an unexpected type from an Operator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
-                _ = qp.S(0) - "foo"
+                _ = op - "foo"
 
-        def test_op_with_scalar(self):
+        @pytest.mark.parametrize("x0, x1", [
+            (X2(0), X2(1)),
+            (qp.PauliX(0), qp.PauliX(1)),
+        ])
+        def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
-            x0 = qp.PauliX(0)
             for op in [x0 + 1, 1 + x0]:
                 assert isinstance(op, Sum)
                 qp.assert_equal(op[0], x0)
@@ -1836,7 +1845,6 @@ class TestNewOpMath:
                 assert op[1].scalar == 1
                 qp.assert_equal(op[1].base, qp.Identity(0))
 
-            x1 = qp.PauliX(1)
             op = x1 - 1.1
             assert isinstance(op, Sum)
             qp.assert_equal(op[0], x1)
@@ -1855,7 +1863,7 @@ class TestNewOpMath:
 
         def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
-            op0, op1, op2 = qp.S(0), qp.T(0), qp.PauliZ(0)
+            op0, op1, op2 = qp.S(0), qp.T(0), X2(0)
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
             assert len(op) == 3
@@ -1866,10 +1874,23 @@ class TestNewOpMath:
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
 
-        @pytest.mark.parametrize("scalar", [0, 1, 1.1, 1 + 2j, [3, 4j]])
-        def test_mul(self, scalar):
+        @pytest.mark.parametrize(
+            "scalar, base",
+            [
+                (0, qp.PauliX(0)),
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                ([3, 4j], qp.PauliX(0)),
+                (0, X2(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                ([3, 4j], X2(0)),
+            ]
+        )
+        def test_mul(self, scalar, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
-            base = qp.PauliX(0)
             for op in [scalar * base, base * scalar]:
                 assert isinstance(op, SProd)
                 assert qp.math.allequal(op.scalar, scalar)
