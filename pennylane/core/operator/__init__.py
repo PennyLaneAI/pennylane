@@ -131,7 +131,6 @@ Boolean Functions
 The ``operation`` module provides the following:
 
 .. currentmodule:: pennylane.operation
-
 .. autosummary::
     :toctree: api
 
@@ -141,7 +140,6 @@ Other
 ~~~~~
 
 .. currentmodule:: pennylane.operation
-
 .. autosummary::
     :toctree: api
 
