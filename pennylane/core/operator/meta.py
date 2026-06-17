@@ -25,7 +25,12 @@ from pennylane.capture import enabled
 
 def _stop_autograph(f):
     """Stop the autograph interpretation of operators by making it so that ``f`` always
-    belongs to the pennylane namespace."""
+    belongs to the pennylane namespace.
+
+    Autograph only transforms functions belonging to non-pennylane namespaces. So, custom
+    operators created outside the pennylane namespace would be transformed by autograph
+    without this decorator.
+    """
 
     def new_f(*args, **kwargs):
         return f(*args, **kwargs)

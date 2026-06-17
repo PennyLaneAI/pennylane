@@ -67,6 +67,16 @@ class TestCaptureBasics:
             op = DynOp(0.5, wires=0)
             assert op.tracer is None
 
+    def test_no_bind_without_capture(self):
+        """Test that the operator primitive is not bound when program capture is disabled."""
+
+        def fn(x):
+            with qp.capture.pause():
+                DynOp(x, wires=0)
+
+        jaxpr = jax.make_jaxpr(fn)(1.5)
+        assert len(jaxpr.eqns) == 0
+
     def test_queued_during_capture(self):
         """Test that constructing an operator during capture still queues it."""
         with qp.queuing.AnnotatedQueue() as q:
