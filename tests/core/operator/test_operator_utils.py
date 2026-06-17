@@ -51,7 +51,6 @@ class TestAbstractify:
         result = abstractify(val)
         assert result == [AbstractWires(1), (AbstractWires(2), AbstractWires(1))]
 
-    @pytest.mark.xfail(strict=True)
     def test_operator(self):
         """Test that ``Operator2`` instances are abstractified correctly."""
         op = DynOp(0.5, wires=[0, 1])
@@ -61,7 +60,6 @@ class TestAbstractify:
         assert result.phi == AbstractArray((), float)
         assert result.wires == AbstractWires(2)
 
-    @pytest.mark.xfail(strict=True)
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
         are hybrid arguments."""
@@ -71,13 +69,13 @@ class TestAbstractify:
         assert isinstance(result, MixedHybridOp)
         assert result.phi == AbstractArray((), float)
         assert result.pytree_wires == [AbstractWires(1), AbstractWires(3), AbstractWires(1)]
-        assert result.wires == AbstractWires(1)
+        assert result.wires == AbstractWires(7)
 
         inner_op = result.ops[0]
         assert isinstance(result.ops, list) and len(result.ops) == 1
         assert isinstance(inner_op, DynOp)
         assert inner_op.phi == AbstractArray((), float)
-        assert inner_op.wires == Wires([AbstractWires(2)])
+        assert inner_op.wires == AbstractWires(1)
 
 
 if __name__ == "__main__":

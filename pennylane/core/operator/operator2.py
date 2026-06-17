@@ -50,8 +50,7 @@ from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .meta import ABCOperatorMeta
-
-# from .utils import abstractify
+from .utils import abstractify
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -1061,8 +1060,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                     )
                 # Wire argument
                 raise ValueError(
-                    f"Expected '{name}' to have length {expected_type.num_wires}, "
-                    f"but got {argval}."
+                    f"Expected '{name}' to have length {expected_type.num_wires}, but got {argval}."
                 )
 
     # pylint: disable=too-many-branches
@@ -1263,7 +1261,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         # We use type.__call__ instead of instantiating the operator normally so that
         # the operator isn't queued and the operator primitive isn't bound.
-        return type.__call__(cls, **args)
+        return type(cls).__call__(cls, **args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1514,20 +1512,20 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
-# @abstractify.register(Operator2)
-# def _abstractify_operator(val: Operator2) -> Operator2:
-#     """Abstractify an operator."""
-#     # data, metadata = val._flatten()
-#     # dyn_args, wires, hybrid_args = data
-#     # abstract_data = (
-#     #     [abstractify(arg) for arg in dyn_args],
-#     #     [abstractify(w) for w in wires],
-#     #     [abstractify(arg) for arg in hybrid_args],
-#     # )
-#     # return type(val)._unflatten(abstract_data, metadata)
-#     leaves, tree = flatten(val, is_leaf=_is_wires)
-#     abstract_leaves = tuple(abstractify(l) for l in leaves)
-#     return unflatten(abstract_leaves, tree)
+@abstractify.register(Operator2)
+def _abstractify_operator(val: Operator2) -> Operator2:
+    """Abstractify an operator."""
+    # data, metadata = val._flatten()
+    # dyn_args, wires, hybrid_args = data
+    # abstract_data = (
+    #     [abstractify(arg) for arg in dyn_args],
+    #     [abstractify(w) for w in wires],
+    #     [abstractify(arg) for arg in hybrid_args],
+    # )
+    # return type(val)._unflatten(abstract_data, metadata)
+    leaves, tree = flatten(val, is_leaf=_is_wires)
+    abstract_leaves = tuple(abstractify(l) for l in leaves)
+    return unflatten(abstract_leaves, tree)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):
