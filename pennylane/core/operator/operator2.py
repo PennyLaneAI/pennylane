@@ -190,12 +190,13 @@ class Operator2(ABC):
 
         >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
 
-        ```
-        %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
-        quregs(%out_qreg) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
-        static_data = {pauli_string = "XYZ"}
-        param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
-        ```
+        .. code-block:: mlir
+
+            %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+            quregs(%out_qreg) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+            static_data = {pauli_string = "XYZ"}
+            param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
+
 
         Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
         inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
@@ -206,12 +207,12 @@ class Operator2(ABC):
         ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
         value of ``pauli_string`` is reduced to a UID in MLIR:
 
-        ```
-        %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
-        UID(278653)
-        quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
-        param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
-        ```
+        .. code-block:: mlir
+
+            %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+            UID(278653)
+            quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+            param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
 
         **hybrid_argnames**
 
