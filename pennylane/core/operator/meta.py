@@ -46,6 +46,9 @@ class OperatorMeta(type):
 
     @property
     def __signature__(cls):
+        # __signature__ must be overridden because using custom metaclasses causes
+        # signature(cls) to return ``self`` as the first argument, which is inconsistent
+        # with the behaviour of regular classes.
         sig = signature(cls.__init__)
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
