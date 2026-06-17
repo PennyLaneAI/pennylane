@@ -25,7 +25,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
 
-class PUIIsometryFinder:
+class PUIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell in L}` to the first consecutive
@@ -370,7 +370,7 @@ class PartialUnaryStatePreparation(Operation):
 
     .. seealso::
 
-        :class:`~.PUIIsometryFinder` for the classical algorithm that finds the isometry for
+        :class:`~.PUIsometryFinder` for the classical algorithm that finds the isometry for
         the circuit, as well as :class:`~.SumOfSlatersPrep` for another sparse state
         preparation technique.
 
@@ -622,7 +622,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    iso_finder = PUIIsometryFinder(np.array(indices), len(wires))
+    iso_finder = PUIsometryFinder(np.array(indices), len(wires))
     circuit, bijection = iso_finder.find_isometry()
 
     subspace_wires = Wires(wires[:n_subspace])
