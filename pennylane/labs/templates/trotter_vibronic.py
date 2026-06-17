@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains the Trotter template for vibronic Hamiltonians."""
+
 from itertools import combinations
 
 import numpy as np
@@ -60,93 +61,104 @@ def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
     return dense
 
 
-def get_coefficients(fragment: RealspaceMatrix, fragment_type: str):
-    """Get the coefficients for a given position or momentum fragment.
+def get_position_coefficients(fragment: RealspaceMatrix):
+    """Get the coefficients for a given position fragment.
     Also validates that the terms in the fragment are limited to expected terms.
 
     Args:
         fragment (RealspaceMatrix): fragment of which to read the coefficients
-        fragment_type (str): type of the fragment. This is redundant to the operator types within
-            ``fragment`` and is used as consistency check. Valid options are ``"position"`` and
-            ``"momentum"``.
 
     Returns:
-        tuple[np.ndarray] or np.ndarray: Dense coefficient tensors, arranged for QROM encoding by
-        diagonalizing the electronic degrees of freedom. Returns a tuple of four tensors for
-        ``fragment_type="position"`` and a single tensor for ``fragment_type="momentum"``.
+        tuple[np.ndarray]: Dense coefficient tensors, arranged for QROM encoding by
+        diagonalizing the electronic degrees of freedom. Returns a tuple of four tensors,
+        corresponding to the constant, linear, quadratic, and bilinear dependencies on
+        vibrational modes. The axes corresponding to mode indices are the first axes, followed
+        by a single axis for the electronic state index.
 
     """
-    if fragment_type == "position":
-        n_states = fragment.states
-        wires = list(range(qp.math.ceil_log2(n_states)))
-        M = qp.matrix(diagonalize_vibronic, wires)(fragment, wires)[:n_states, :n_states]
-        constant = M.T @ fragment_to_dense(fragment, ()) @ M
-        constant_diag = np.diag(constant)
-        assert np.allclose(np.diag(constant_diag), constant)
-
-        linear = np.einsum("ba,bcz,cd->adz", M, fragment_to_dense(fragment, ("Q",)), M)
-        linear_diag = np.diagonal(linear).T # np.diagonal puts the diagonal dimension to the end
-        assert all(np.allclose(np.diag(sub_diag), sub) for sub_diag, sub in zip(linear_diag.T, np.transpose(linear, (2, 0, 1)), strict=True))
-
-        sec_order = np.einsum("ba,bcwz,cd->adwz", M, fragment_to_dense(fragment, ("Q", "Q")), M)
-        # np.diagonal puts the diagonal dimension to the end
-        sec_order_diag = np.transpose(np.diagonal(sec_order), (2, 0, 1))
-        assert all(np.allclose(np.diag(sub_diag), sub) for sub_diag, sub in zip(np.transpose(sec_order_diag, (1, 2, 0).reshape((n_modes**2, -1)), np.transpose(sec_order, (2, 3, 0, 1)).reshape((n_modes**2, n_states,n_states)), strict=True)))
-
-        quadratic = np.diagonal(sec_order_diag, axis1=1, axis2=2)
-        bilinear =
-
-
-
-
     n_states = fragment.states
     n_modes = fragment.modes
-    if fragment_type == "position":
-        # Note that per fragment, all of the following arrays only will be populated with one
-        # entry per row and per column, so we can improve in terms of memory usage.
-        const_coeffs = np.zeros(n_states)
-        linear_coeffs = np.zeros((n_states, n_modes))
-        quadratic_coeffs = np.zeros((n_states, n_modes))
-        bilinear_coeffs = np.zeros((n_states, n_modes, n_modes))
+    wires = list(range(qp.math.ceil_log2(n_states)))
+    M = qp.matrix(diagonalize_vibronic, wires)(fragment, wires)[:n_states, :n_states]
+    # constant.shape = (n_states, n_states)
+    constant = M.T @ fragment_to_dense(fragment, ()) @ M
+    # constant_diag.shape = (n_states,)
+    constant_diag = np.diag(constant)
+    # Make sure the diagonalization worked
+    assert np.allclose(np.diag(constant_diag), constant)
 
-        for (row, _), val in fragment.get_coefficients().items():
-            if not val:
-                continue
-            # Make sure we are not silently dropping any terms
-            assert all(op_type in [(), ("Q",), ("Q", "Q")] for op_type in val), f"{val.keys()=}"
+    # linear.shape = (n_modes, n_states, n_states)
+    linear = np.einsum("ba,bcz,cd->zad", M, fragment_to_dense(fragment, ("Q",)), M)
+    # linear_diag.shape = (n_modes, n_states)
+    linear_diag = np.diagonal(linear, axis1=1, axis2=2)
+    # Make sure the diagonalization worked
+    assert all(
+        np.allclose(np.diag(sub_diag), sub)
+        for sub_diag, sub in zip(linear_diag, linear, strict=True)
+    )
 
-            _order_zero = val.get((), None)
-            if _order_zero is not None:
-                const_coeffs[row] = _order_zero.get((), 0.0)
-            _order_one = val.get(("Q",), None)
-            if _order_one is not None:
-                linear_coeffs[row] = [_order_one.get((mode,), 0.0) for mode in range(n_modes)]
-            _order_two = val.get(("Q", "Q"), None)
-            if _order_two is not None:
-                quadratic_coeffs[row] = [_order_two.get((mode, mode), 0.0) for mode in range(n_modes)]
-                bilinear_coeffs[row][np.triu_indices(n_modes, k=1)] = [_order_two.get(mode_pair, 0.0) for mode_pair in combinations(range(n_modes), r=2)]
-        return const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs
+    # sec_order.shape = (n_modes, n_modes, n_states, n_states)
+    sec_order = np.einsum("ba,bcyz,cd->yzad", M, fragment_to_dense(fragment, ("Q", "Q")), M)
+    # sec_order_diag.shape = (n_modes, n_modes, n_states)
+    sec_order_diag = np.diagonal(sec_order, axis1=2, axis2=3)
+    # Make sure the diagonalization worked
+    assert all(
+        np.allclose(np.diag(sub_diag), sub)
+        for sub_diag, sub in zip(
+            sec_order_diag.reshape((n_modes**2, -1)),
+            sec_order.reshape((n_modes**2, n_states, n_states)),
+            strict=True,
+        )
+    )
 
-    assert fragment_type == "momentum"
-    # We will retrieve the redundantly stored frequencies and validate that they are actually
-    # redundant, so that no interaction with the electronic system exists.
-    quadratic_coeffs = np.zeros((n_states, n_modes))
-    for (row, col), val in fragment.get_coefficients().items():
-        if not val:
-            continue
-        # The momentum term is stored on the diagonal of the electronic coupling registry.
-        # This means it is stored redundantly n_states times and for off-diagonal entries, the
-        # above skipping clause should have triggered
-        assert row == col
-        # Make sure we are not silently dropping any terms - momentum should only have (P, P) term.
-        assert set(val) == {("P", "P")}
-        _order_two = val.get(("P", "P"))
-        # No mode interaction terms, just quadratic kinetic terms
-        assert all(k[0] == k[1] for k in _order_two)
-        quadratic_coeffs[row] = [_order_two.get((mode, mode), 0.0) for mode in range(n_modes)]
+    # quadratic.shape = (n_modes, n_states)
+    quadratic = np.diagonal(sec_order_diag).copy()
+    # bilinear.shape = (n_modes, n_modes, n_states), upper triangle w.r.t. axes=(0, 1) populated
+    bilinear = sec_order_diag
+    bilinear[np.tril_indices(n_modes)] = 0.0
+    return constant_diag, linear_diag, quadratic, bilinear
 
-    assert np.allclose(quadratic_coeffs, quadratic_coeffs[0]) # Validate redundancy
-    return quadratic_coeffs[0]
+
+def get_momentum_coefficients(fragment: RealspaceMatrix):
+    """Get the coefficients for a given momentum fragment.
+    Also validates that the terms in the fragment are limited to expected terms.
+
+    Args:
+        fragment (RealspaceMatrix): fragment of which to read the coefficients
+
+    Returns:
+        np.ndarray: Array of momentum coefficients with shape ``(fragment.modes,)``
+
+    """
+    n_states = fragment.states
+    n_modes = fragment.modes
+    # coeffs.shape = (n_modes, n_modes, n_states, n_states)
+    coeffs = fragment_to_dense(fragment, ("P", "P"))
+    # coeffs_diag.shape = (n_modes, n_modes, n_states)
+    coeffs_diag = np.diagonal(coeffs, axis1=2, axis2=3)
+    # Make sure the kinetic term is diagonal with respect to electronic states
+    assert all(
+        np.allclose(np.diag(sub_diag), sub)
+        for sub_diag, sub in zip(
+            coeffs_diag.reshape((n_modes**2, -1)),
+            coeffs.reshape((n_modes**2, n_states, n_states)),
+            strict=True,
+        )
+    )
+    # coeffs_diag2.shape = (n_modes, n_states)
+    coeffs_diag2 = np.diagonal(coeffs_diag)
+    # Make sure the kinetic term is diagonal with respect to modes
+    assert all(
+        np.allclose(np.diag(sub_diag2), sub)
+        for sub_diag2, sub in zip(coeffs_diag2.T, coeffs_diag.T, strict=True)
+    )
+    # coeffs_final.shape = (n_modes,)
+    coeffs_final = coeffs_diag2[:, 0]
+    # Make sure the kinetic term is encoded redundantly across electronic states, i.e. there is
+    # not interaction between electronic state and vibrational kinetic energy
+    assert np.allclose(coeffs_diag2, coeffs_final[:, None])
+    return coeffs_final
+
 
 def diagonalize_vibronic(fragment: RealspaceMatrix, wires: WiresLike):
     r"""Diagonalize a vibronic fragment by applying Clifford operations.
@@ -172,17 +184,16 @@ def diagonalize_vibronic(fragment: RealspaceMatrix, wires: WiresLike):
     """
     first_coeff_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
     if first_coeff_key[0] == first_coeff_key[1]:
+        # No diagonalization needed
         return
     diagonalization_key = qp.math.int_to_binary(first_coeff_key[0] ^ first_coeff_key[1], len(wires))
     support = np.where(diagonalization_key)[0][::-1]
     control = support[0]
     qp.H(wires=wires[control])
-    [qp.CNOT(wires=[wires[control], wires[k]]) for k in support[1:]]
-    return
+    _ = [qp.CNOT(wires=[wires[control], wires[k]]) for k in support[1:]]
 
-def _trotter_step_second_order(
-    j, time, fragments, registers, params
-):  # pylint: disable=unused-argument
+
+def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
     """Second-order Trotter time evolution step implemented via custom arithmetic circuits
     based on a phase gradient resource state.
 
@@ -202,7 +213,6 @@ def _trotter_step_second_order(
 
     """
     # pylint: disable=no-value-for-parameter
-    n_states, n_modes, aqft_order, prec_bits = params
 
     precision = len(registers["coefficients"])
     first_order_time_step = time / 2
@@ -215,8 +225,8 @@ def _trotter_step_second_order(
 
     def position_fragments(i):
         fragment = fragments[i]
-        qp.adjoint(diagonalize_vibronic)(fragment, wires["electronic"])
-        all_coeffs = get_coefficients(fragment, n_states, n_modes, fragment_type="position")
+        qp.adjoint(diagonalize_vibronic)(fragment, registers["electronic"])
+        all_coeffs = get_position_coefficients(fragment)
         all_coeffs = (qp.math.array(c, like="jax") * first_order_time_step for c in all_coeffs)
         const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
 
@@ -229,7 +239,7 @@ def _trotter_step_second_order(
             qp.SemiAdder(registers["coefficients"], registers["phase gradient"], registers["work"])
             return new_bitstrings
 
-        @qp.for_loop(n_modes)
+        @qp.for_loop(fragment.modes)
         def linear_terms(k, prev_bitstrings):
             """Run a single linear time evolution sub-fragment for mode ``k``.
             The currently encoded bitstrings on the coefficients register are provided in
@@ -250,10 +260,10 @@ def _trotter_step_second_order(
             qp.SignedOutMultiplier(**mult_wires)
             return new_bitstrings
 
-        @qp.for_loop(n_modes)
+        @qp.for_loop(fragment.modes)
         def quadratic_terms(k, prev_bitstrings):
             """Run a single quadratic time evolution sub-fragment for mode ``k``.
-            The currently encoded bitstrings on the coefficients register is provided in
+            The currently encoded bitstrings on the coefficients register are provided in
             ``prev_bitstrings``."""
             _coeffs = quadratic_coeffs[k]
             if np.allclose(_coeffs, 0):
@@ -277,14 +287,15 @@ def _trotter_step_second_order(
             qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
             return new_bitstrings
 
-        @qp.for_loop(n_modes - 1)
+        @qp.for_loop(fragment.modes - 1)
         def bilinear_terms(k, prev_bitstrings):
-            """Run a single quadratic time evolution sub-fragment for mode ``k``.
-            The currently encoded bitstrings on the coefficients register is provided in
+            """Run a single bilinear time evolution sub-fragment for mode ``k``.
+            The currently encoded bitstrings on the coefficients register are provided in
             ``prev_bitstrings``."""
 
-            # Note that k < ell matches the data structure of bilinear_coeffs
-            @qp.for_loop(k + 1, n_modes)
+            # Note that k < ell matches the data structure of bilinear_coeffs, which is only
+            # populated in the upper triangular part, w.r.t. the mode axes.
+            @qp.for_loop(k + 1, fragment.modes)
             def _inner_bilinear_terms(ell, prev_bitstrings):
                 _coeffs = bilinear_coeffs[k, ell]
                 if np.allclose(_coeffs, 0):
@@ -325,18 +336,17 @@ def _trotter_step_second_order(
         qp.QROM(prev_bitstrings, **qrom_wires)
         diagonalize_vibronic(fragment, registers["electronic"])
 
-    def kinetic_fragment():
+    def kinetic_fragment(fragment, aqft_order):
         # use time, not first_order_time_step because the kinetic fragment is the
         # middle one in second-order Trotter, so we immediately merge the two neighbouring
         # fragments with first_order_time_step duration.
         # todo: Replace BasisState + SignedMultiplier by a classical-quantum multiplier?
-        kinetic_coeffs = get_coefficients(fragment, n_states, n_modes, fragment_type="momentum")
+        kinetic_coeffs = get_momentum_coefficients(fragment)
         kinetic_coeffs = qp.math.array(kinetic_coeffs, like="jax") * time
 
-        @qp.for_loop(n_modes)
+        @qp.for_loop(fragment.modes)
         def kinetic_terms(k):
-            """Run a single quadratic time evolution sub-fragment for mode ``k`` in momentum space.
-            """
+            """Run a single quadratic time evolution sub-fragment for mode ``k`` in momentum space."""
             coeff = kinetic_coeffs[k]
             if np.isclose(coeff, 0):
                 return
@@ -362,23 +372,66 @@ def _trotter_step_second_order(
 
     qp.for_loop(len(fragments) - 1)(position_fragments)()
 
-    kinetic_fragment()
+    kinetic_fragment(fragments[-1], aqft_order)
 
     qp.for_loop(len(fragments) - 2, -1, -1)(position_fragments)()
 
 
-
-def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers):
-    """Trotter circuit for vibronic simulation algorithm, explicitly using phase gradient
-    arithmetic.
+def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aqft_order):
+    r"""Second-order Trotter circuit for vibronic simulation algorithm, explicitly using phase
+    gradient arithmetic.
 
     Args:
+        evolution_time (float): Time for which to evolve under the vibronic Hamiltonian
+        num_trotter_steps (int): Number of Trotter steps to use for the time evolution
+        fragments (list[RealspaceMatrix]): Fragments of the vibronic Hamiltonian
+        registers (dict[str, WiresLike]): Wire registers. See details below.
+        aqft_order (int): Approximation order used in :class:`~.AQFT`, which is used to transform
+            between position and momentum space.
+
+    .. details::
+        :title: Usage details
+        :href: usage-details
+
+        The vibronic Hamiltonian acts on :math:`N` electronic states, represented on
+        :math:`n=\lceil\log_2(N)\rceil` qubits, as well as :math:`M` vibrational modes,
+        each discretized on a grid with :math:`K` grid points, requiring
+        :math:`k=\lceil\log_2(K)\rceil` qubits per mode. Phases are implemented directly with
+        arithmetic acting on a phase gradient state with :math:`b` qubits.
+
+        According to this setup, the ``registers`` passed to this function should include the
+        following wire registers:
+
+        .. list-table::
+           :widths: 30 40 30
+           :header-rows: 1
+
+           * - ``key``
+             - Expected size
+             - Comment
+           * - ``"electronic"``
+             - :math:`n`
+             - Encodes electronic states
+           * - ``f"mode {i}"``
+             - :math:`k`
+             - Encodes the :math:`i`\ th vibrational mode
+           * - ``"cache"``
+             - :math:`???` # TODO: figure out
+             - Cache storing computations from one or two vibrational modes
+           * - ``"coefficients"``
+             - :math:`b`
+             - Coefficient encoding register for phase gradient arithmetic
+           * - ``"phase gradient"``
+             - :math:`b`
+             - Stores the phase gradient state
+           * - ``"work"``
+             - :math:`???` # TODO: figure out
+             - Work wires for phase gradient arithmetic # TODO: VERIFY
 
     """
 
     assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps
-    _params = (n_modes, aqft_order, prec_bits)
 
     @qp.for_loop(num_trotter_steps)
     def trotter_steps(step_idx):
@@ -387,7 +440,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers):
             time=trotter_time_step,
             fragments=fragments,
             registers=registers,
-            params=_params,
+            aqft_order=aqft_order,
         )
 
     trotter_steps()  # pylint: disable=no-value-for-parameter
