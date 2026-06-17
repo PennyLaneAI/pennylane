@@ -920,7 +920,10 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                 res = value
             # Non-hybrid wire arguments
             elif key not in self.hybrid_argnames:
-                res = value.tolist()
+                if isinstance(value, Wires):
+                    res = value.tolist()
+                else:
+                    res = value
             # Hybrid wire arguments
             else:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
@@ -1510,6 +1513,16 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+@abstractify.register(ABCOperatorMeta)
+def _abstractify_operator_type(val: type[Operator2]) -> Operator2:
+    """Abstractify a subclass of operator."""
+
+    if hasattr(val, "fixed_sig"):
+        return val(*val.fixed_sig)
+
+    raise NotImplementedError
 
 
 @abstractify.register(Operator2)
