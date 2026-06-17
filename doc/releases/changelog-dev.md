@@ -607,6 +607,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -618,6 +619,7 @@
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
