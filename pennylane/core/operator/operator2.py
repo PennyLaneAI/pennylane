@@ -109,7 +109,7 @@ class Operator2(ABC):
         :attr:`compilable_argnames <Operator2.compilable_argnames>` and
         :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
 
-        .. code-block python
+        .. code-block:: python
 
             import pennylane as qp
             import jax.numpy as jnp
@@ -140,7 +140,7 @@ class Operator2(ABC):
 
         **Decomposing Operators**
 
-        .. code-block python
+        .. code-block:: python
 
             from collections import defaultdict
 
@@ -190,7 +190,7 @@ class Operator2(ABC):
 
         >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
 
-        ```mlir
+        ```
         %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
         quregs(%out_qreg) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
         static_data = {pauli_string = "XYZ"}
@@ -206,7 +206,7 @@ class Operator2(ABC):
         ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
         value of ``pauli_string`` is reduced to a UID in MLIR:
 
-        ```mlir
+        ```
         %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
         UID(278653)
         quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
