@@ -47,7 +47,7 @@ class PUIsometryFinder:
         `Malvetti et al. (2021) <https://quantum-journal.org/papers/q-2021-03-15-412/>`__.
         To prepare the mapping, we split the overall wires (excluding dedicated work wires) into
         a *subspace register* of size :math:`n_{\text{subspace}}=\lceil \log_2(|L|)\rceil` and the
-        remainder register of size :math:`n_r =n-n_{\text{subspace}}`. The goal then is
+        *remainder register* of size :math:`n_r =n-n_{\text{subspace}}`. The goal then is
         to map all states :math:`|\ell\rangle = |\ell_s\rangle \otimes |\ell_r\rangle` to some
         unique subspace state :math:`|f(\ell)\rangle = |f(\ell)\rangle \otimes |0\rangle`,
         where :math:`f` is a bijection.
@@ -55,6 +55,8 @@ class PUIsometryFinder:
         for example in the split of :math:`\ell` into its first :math:`n_{\text{subspace}}` bits
         :math:`\ell_s` and the remaining substring :math:`\ell_r`.
         Finally, we also define a *batch size* :math:`m = 2^{\lfloor \log_2(n_r)\rfloor}`.
+
+        **Algorithm description**
 
         The algorithm now proceeds iteratively in batches. We will denote some actions in bold,
         which are both carried out on the bit strings of all the states to be encoded (stored
@@ -112,6 +114,9 @@ class PUIsometryFinder:
         is used to prepare the dense state :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle`
         on the subspace register. The latter can be executed in reverse to map the states to the
         desired :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
+
+        **Example**
+
 
         **Why does this work?**
 
@@ -448,15 +453,15 @@ class PartialUnaryStatePreparation(Operation):
     The preparation circuit looks like this:
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
-    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭QROM(M1)─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
-    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├QROM(M1)─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├QROM(M1)─╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
+    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
+    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
     4: ───────────────────────────────────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●───┤ ├State
     5: ───────────────────────────────────────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩─┤ ├State
-    6: ───────────────────────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)────────────────┤ ├State
-    7: ───────────────────────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)────────────────┤ ├State
-    8: ───────────────────────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)────────────────┤ ╰State
+    6: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
+    7: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
+    8: ───────────────────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work────────────────────┤ ╰State
 
     We can make out the dense state preparation on the *subspace register* ``0`` through ``3``,
     followed by the isometry circuit consisting of partial unary iteration circuits and ``CNOT``
