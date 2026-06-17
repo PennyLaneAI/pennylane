@@ -1823,19 +1823,19 @@ class TestNewOpMath:
             assert op[1].scalar == -1
             qp.assert_equal(op[1].base, op1)
 
-        @pytest.mark.parametrize("op", [
-            X2(0),
-            qp.S(0)
-        ])
+        @pytest.mark.parametrize("op", [X2(0), qp.S(0)])
         def test_sub_with_unknown_not_supported(self, op):
             """Test subtracting an unexpected type from an Operator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
 
-        @pytest.mark.parametrize("x0, x1", [
-            (X2(0), X2(1)),
-            (qp.PauliX(0), qp.PauliX(1)),
-        ])
+        @pytest.mark.parametrize(
+            "x0, x1",
+            [
+                (X2(0), X2(1)),
+                (qp.PauliX(0), qp.PauliX(1)),
+            ],
+        )
         def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
             for op in [x0 + 1, 1 + x0]:
@@ -1887,7 +1887,7 @@ class TestNewOpMath:
                 (1.1, X2(0)),
                 (1 + 2j, X2(0)),
                 ([3, 4j], X2(0)),
-            ]
+            ],
         )
         def test_mul(self, scalar, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
@@ -1896,22 +1896,34 @@ class TestNewOpMath:
                 assert qp.math.allequal(op.scalar, scalar)
                 qp.assert_equal(op.base, base)
 
-        @pytest.mark.parametrize("scalar", [1, 1.1, 1 + 2j, qp.numpy.array([3, 4j])])
-        def test_div(self, scalar):
+        @pytest.mark.parametrize(
+            "scalar, base",
+            [
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                (qp.numpy.array([3, 4j]), qp.PauliX(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                (qp.numpy.array([3, 4j]), X2(0)),
+            ],
+        )
+        def test_div(self, scalar, base):
             """Tests diviing an operator by a scalar coefficient works as expected."""
-            base = qp.PauliX(0)
             op = base / scalar
             assert isinstance(op, SProd)
             assert qp.math.allequal(op.scalar, 1 / scalar)
             qp.assert_equal(op.base, base)
 
-        def test_mul_does_auto_simplify(self):
+        @pytest.mark.parametrize("op", [X2(0), qp.PauliX(0)])
+        def test_mul_does_auto_simplify(self, op):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
-            op = 2 * qp.PauliX(0)
-            nested = 0.5 * op
+            _op = 2 * op
+            nested = 0.5 * _op
             assert isinstance(nested, SProd)
             assert nested.scalar == 1.0
-            qp.assert_equal(nested.base, qp.X(0))
+            qp.assert_equal(nested.base, op)
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -1930,7 +1942,7 @@ class TestNewOpMath:
 
         def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
-            op0, op1, op2 = qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)
+            op0, op1, op2 = qp.PauliX(0), qp.PauliY(1), X2(0)
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
             assert len(op) == 3
