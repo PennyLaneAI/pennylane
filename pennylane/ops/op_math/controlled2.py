@@ -33,7 +33,52 @@ from .symbolicop2 import SymbolicOp2
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
-    """The base class for controlled operators."""
+    """The base class for controlled operators.
+
+    This class acts as a common interface for all operators that can be considered controlled
+    operators. The main purpose of this class is to provide common properties such as ``base``,
+    ``control_values``, ``control_wires``, etc., and implement default implementations for
+    methods such as ``compute_matrix``, ``compute_eigvals``, etc.
+
+    Subclasses of ``Controlled2`` typically has a different signature than the standard signature
+    defined here. In this case, the subclass should package the arguments from its own signature
+    into a dictionary and pass that into ``override_init_args``, which will then be passed along
+    to the base ``Operator2.__init__`` for standard initialization.
+
+    .. note::
+
+        This class is an interface that is not meant to be instantiated. To properly create a
+        controlled version of an individual operator, use the :class:`ControlledOp2` instead.
+
+    **Example**
+
+    .. code-block:: python
+
+        class CRot(Controlled2):
+
+            dynamic_argnames = ("phi", "theta", "omega")
+
+            wires_argnames = ("wires",)
+
+            wire_sizes = (2,)
+
+            def __init__(self, phi, theta, omega, wires):
+                super().__init__(
+                    qp.Rot(phi, theta, omega, wires=wires[1]),
+                    control_wires=wires[0],
+                    override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
+                )
+
+
+    In this example, when ``super().__init__`` is called with the base op and control wires of
+    ``CRot``, i.e., the ``qp.Rot`` and ``wires[0]``. These are used to initialize the interface
+    properties of ``Controlled2``, but the base ``Operator.__init__`` expects arguments that
+    match the argument specifications of the op, i.e., the ``dynamic_argnames``, ``wire_argnames``
+    defined in the subclass. Therefore, we package the arguments that the subclass constructor
+    receives and pass it to ``override_init_args``, so that they can be passed along as is to
+    the base ``Operator2.__init__`` constructor.
+
+    """
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -318,7 +363,23 @@ def _bool_array_to_int(arr: list[bool]):
 
 
 class ControlledOp2(Controlled2):
-    """Represents a controlled version of an arbitrary base operator."""
+    """Represents a controlled version of an arbitrary base operator.
+
+    Args:
+        base (~.core.Operator): the operator that is controlled
+        control_wires (WiresLike): The wires to control on.
+
+    Keyword Args:
+        control_values (Iterable[Bool]): The values to control on for each control wire.
+            Defaults to ``True`` for all control wires.
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``.
+            ``"zeroed"`` indicates that the work wires are in the :math:`|0\rangle` state,
+            whereas ``"borrowed"`` work wires can be in any arbitrary state. In both cases,
+            it is expected that the work wires are restored to their original states by
+            the end of the decomposition. Defaults to ``"borrowed"``.
+
+    """
 
     dynamic_argnames = ("control_values",)
 
