@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
+from typing import Callable
 
 import numpy as np
 import pytest
@@ -31,6 +32,7 @@ from pennylane.operation import (
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -1861,6 +1863,10 @@ class TestNewOpMath:
             assert op[1].scalar == 1.1
             qp.assert_equal(op[1].base, qp.Identity(1))
 
+            op = x1 + 0
+            qp.assert_equal(op, x1)
+            assert op is x1
+
         def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
             op0, op1, op2 = qp.S(0), qp.T(0), X2(0)
@@ -1871,11 +1877,23 @@ class TestNewOpMath:
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
 
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                base + "carrot stew"
+
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
 
         @pytest.mark.parametrize(
-            "scalar, base",
+            "operand, base",
             [
                 (0, qp.PauliX(0)),
                 (1, qp.PauliX(0)),
@@ -1887,14 +1905,18 @@ class TestNewOpMath:
                 (1.1, X2(0)),
                 (1 + 2j, X2(0)),
                 ([3, 4j], X2(0)),
+                (lambda x: x, X2(0)),
             ],
         )
-        def test_mul(self, scalar, base):
+        def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
-            for op in [scalar * base, base * scalar]:
-                assert isinstance(op, SProd)
-                assert qp.math.allequal(op.scalar, scalar)
-                qp.assert_equal(op.base, base)
+            for op in [operand * base, base * operand]:
+                if isinstance(operand, Callable):
+                    assert isinstance(op, qp.pulse.ParametrizedHamiltonian)
+                else:
+                    assert isinstance(op, SProd)
+                    assert qp.math.allequal(op.scalar, operand)
+                    qp.assert_equal(op.base, base)
 
         @pytest.mark.parametrize(
             "scalar, base",
@@ -1925,6 +1947,21 @@ class TestNewOpMath:
             assert nested.scalar == 1.0
             qp.assert_equal(nested.base, op)
 
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="non-int of type"):
+                base * "science..."
+
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                base / "rules"
+
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
 
@@ -1949,6 +1986,42 @@ class TestNewOpMath:
             qp.assert_equal(op[0], op0)
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
+
+    class TestPow:
+
+        @pytest.mark.parametrize(
+            "power, base",
+            [
+                (0, qp.PauliX(0)),
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                ([3, 4j], qp.PauliX(0)),
+                (0, X2(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                ([3, 4j], X2(0)),
+            ],
+        )
+        def test_pow(self, power, base):
+            """Tests multiplying an operator by a scalar coefficient works as expected."""
+            op = base**power
+            assert isinstance(op, PowOperation)
+            qp.assert_equal(op.base, base)
+            assert op.z == power
+
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                base ** "potato"
 
 
 class TestHamiltonianLinearCombinationAlias:
