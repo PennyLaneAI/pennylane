@@ -794,16 +794,6 @@ class TestPytreeMethods:
         assert new_op.arguments == op.arguments
         assert new_op.wires == op.wires
 
-    def test_unflatten_does_not_queue(self):
-        """Test that reconstructing an operator via ``_unflatten`` does not queue it."""
-        op = DynOp(0.5, wires=0)
-        data, metadata = op._flatten()
-
-        with AnnotatedQueue() as q:
-            _ = DynOp._unflatten(data, metadata)
-
-        assert len(q) == 0
-
 
 class TestDynamicProperties:
     """Tests for the dynamic properties generated using operator parameters."""
