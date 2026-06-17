@@ -276,11 +276,9 @@ def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbo
         layer_str[config.wire_map[w]] += "◑"
 
     target_label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    print(obj.target_wires)
     for w in obj.target_wires:
         layer_str[config.wire_map[w]] += target_label
 
-    print(obj.work_wires)
     for w in obj.work_wires:
         layer_str[config.wire_map[w]] += "work"
 
