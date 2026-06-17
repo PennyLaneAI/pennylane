@@ -23,6 +23,7 @@ from pennylane.noise.insert_ops import insert
 from pennylane.tape import QuantumScript
 
 
+# pylint: disable=too-few-public-methods
 class DummyOp2(qp.core.operator.Operator2):
 
     def __init__(self, wires):
