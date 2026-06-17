@@ -1256,9 +1256,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        # We use type.__call__ instead of instantiating the operator normally so that
-        # the operator isn't queued and the operator primitive isn't bound.
-        return type.__call__(cls, **args)
+        return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
