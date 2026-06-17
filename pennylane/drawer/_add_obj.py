@@ -268,7 +268,7 @@ def _add_select_pauli_rot(
 
 @_add_obj.register
 def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
-    """Updates ``layer_str`` with ``op`` operation of type ``SelectPauliRot``."""
+    """Updates ``layer_str`` with ``op`` operation of type ``QROM``."""
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
