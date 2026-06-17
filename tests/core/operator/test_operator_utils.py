@@ -81,7 +81,7 @@ class TestAbstractify:
     def test_operator_subclass_with_fixed_sig(self):
         """Tests that an operator subclass with fixed sig works correctly."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             fixed_sig = (
@@ -101,7 +101,7 @@ class TestAbstractify:
     def test_operator_subclass_without_fixed_sig(self):
         """Tests that an error is raised if an operator subclass is used without a defined fixed_sig."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
 
