@@ -22,7 +22,7 @@ from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar, Union, Callable
+from typing import Any, Callable, ClassVar, Union
 
 import numpy as np
 from scipy.sparse import spmatrix

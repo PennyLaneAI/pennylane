@@ -31,7 +31,8 @@ from pennylane.operation import (
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
@@ -1746,12 +1747,52 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
+# pylint: disable=too-few-public-methods
+class MultiRot(Operator2):
+    """MultiRot class used for testing purposes."""
+
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("wires",)
+    static_argnames = ("string",)
+
+    def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        """
+        A simple MultiRot operator based on Operator2.
+
+        Args:
+            angles: The angles of each rotation.
+            wires: The wires each rotation applies to.
+            string: The type ("X", "Y", "Z") of each rotation.
+        """
+        assert len(angles) == len(string) == len(wires)
+        for letter in string:
+            assert letter in ("X", "Y", "Z")
+        super().__init__(angles, wires, string)
+
+    def compute_decomposition(self, angles: TensorLike, wires: WiresLike, string: str):
+        decomp = []
+        for angle, wire, letter in zip(angles, wires, string, strict=True):
+            if letter == "X":
+                decomp.append(qp.RX(angle, wire))
+            elif letter == "Y":
+                decomp.append(qp.RY(angle, wire))
+            else:
+                decomp.append(qp.RZ(angle, wire))
+
+        return decomp
+
+
 pairs_of_ops = [
     (qp.S(0), qp.T(0)),
     (qp.S(0), qp.PauliX(0)),
     (qp.PauliX(0), qp.S(0)),
     (qp.PauliX(0), qp.PauliY(0)),
     (qp.PauliZ(0), qp.prod(qp.PauliX(0), qp.PauliY(1))),
+    (qp.CNOT((0, 1)), MultiRot([np.pi / 4, np.pi / 2], [0, 1], "XX")),
+    (
+        MultiRot([np.pi / 8, np.pi / 16], [0, 1], "YY"),
+        MultiRot([np.pi / 4, np.pi / 2], [0, 1], "XX"),
+    ),
 ]
 
 
