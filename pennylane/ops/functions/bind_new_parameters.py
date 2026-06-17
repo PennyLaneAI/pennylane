@@ -34,6 +34,7 @@ from pennylane.ops import (
     SProd,
     SymbolicOp,
 )
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     ApproxTimeEvolution,
@@ -230,6 +231,11 @@ def bind_new_parameters_adjoint(op: Adjoint, params: Sequence[TensorLike]):
     # signature results in a call to `Adjoint.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Adjoint(bind_new_parameters(op.base, params))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_adjoint(op: Adjoint2, params: Sequence[TensorLike]):
+    return Adjoint2(bind_new_parameters(op.base, params))
 
 
 @bind_new_parameters.register

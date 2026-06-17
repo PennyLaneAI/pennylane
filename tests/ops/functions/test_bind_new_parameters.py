@@ -22,6 +22,7 @@ from gate_data import GELL_MANN, I, X, Y, Z
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -166,6 +167,11 @@ class MultiRot(Operator2):
             MultiRot([np.pi, np.pi / 2], [1, 2], "ZX"),
             ([np.pi / 3, np.pi / 6],),
             MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX"),
+        ),
+        (
+            Adjoint2(MultiRot([np.pi, np.pi / 2], [1, 2], "ZX")),
+            ([np.pi / 3, np.pi / 6],),
+            Adjoint2(MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX")),
         ),
     ],
 )
