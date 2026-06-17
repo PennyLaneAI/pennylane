@@ -78,15 +78,8 @@ def bind_new_dynamic_arguments(
     op: Operator2,
     dynamic_args: Sequence[TensorLike],
 ) -> Operator2:
-    dyn_args = (
-        dynamic_args
-        if dynamic_args != getattr(op, "dynamic_args") and dynamic_args is not None
-        else getattr(op, "dynamic_args")
-    )
-
     kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
-
-    return op.__class__(*dyn_args, **kwargs)
+    return op.__class__(*dynamic_args, **kwargs)
 
 
 @bind_new_parameters.register
