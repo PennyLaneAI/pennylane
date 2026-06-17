@@ -1887,7 +1887,7 @@ class TestNewOpMath:
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
-                base + "carrot stew"
+                _ = base + "carrot stew"
 
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
@@ -1957,10 +1957,10 @@ class TestNewOpMath:
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="non-int of type"):
-                base * "science..."
+                _ = base * "science..."
 
             with pytest.raises(TypeError, match="unsupported operand type"):
-                base / "rules"
+                _ = base / "rules"
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -2021,7 +2021,7 @@ class TestNewOpMath:
         def test_raises(self, base):
             """Tests that the dunder raises with incompatible types."""
             with pytest.raises(TypeError, match="unsupported operand type"):
-                base ** "potato"
+                _ = base ** "potato"
 
 
 class TestHamiltonianLinearCombinationAlias:
