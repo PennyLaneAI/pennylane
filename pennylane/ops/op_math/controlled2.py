@@ -412,6 +412,16 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     compilable_argnames = ("work_wire_type",)
 
+    def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
+        self,
+        base: Operator,
+        control_wires: WiresLike,
+        control_values: Sequence[int | bool] | None = None,
+        work_wires: WiresLike | None = None,
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+    ):
+        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+
     @property
     @override
     def name(self):
