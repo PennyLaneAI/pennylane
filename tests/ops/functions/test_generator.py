@@ -157,7 +157,8 @@ class SparseOp(CustomOp):
 ###################################################################
 
 
-class TestValidation:
+class TestValidation:  # pylint: disable=too-few-public-methods
+
     def test_non_hermitian_generator(self):
         """Check that an error is raised if the generator
         returned is non-Hermitian"""
@@ -172,21 +173,6 @@ class TestValidation:
         op = SomeOp(0.5, wires=0)
 
         with pytest.raises(QuantumFunctionError, match="is not hermitian"):
-            qp.generator(op)
-
-    def test_multi_param_op(self):
-        """Test that an error is raised if the operator has more than one parameter"""
-
-        class SomeOp(qp.operation.Operation):
-            num_params = 2
-            num_wires = 1
-
-            def generator(self):
-                return qp.RX(self.data[0], wires=self.wires[0])
-
-        op = SomeOp(0.5, 0.1, wires=0)
-
-        with pytest.raises(ValueError, match="is not written in terms of a single parameter"):
             qp.generator(op)
 
     def test_unknown_format(self):

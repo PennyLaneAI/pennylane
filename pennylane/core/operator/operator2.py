@@ -343,6 +343,34 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         return self._pauli_rep
 
     # ------------------------------------------------------------------------
+    # -------------- Legacy Operator compatibility views ----------------------
+    # ------------------------------------------------------------------------
+    # The following properties provide backwards-compatible read-only views
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
+    # control_wires).
+    # They are *not* the canonical Operator2 API — prefer ``arguments``,
+    # ``dynamic_args``, ``static_args``, etc. for new code.
+
+    @property
+    def data(self) -> tuple:
+        """Legacy Operator compatibility view of dynamic numerical arguments."""
+        return tuple(self.arguments[name] for name in self.dynamic_argnames)
+
+    @property
+    def parameters(self) -> list:
+        """Legacy Operator compatibility view of dynamic numerical arguments as a list."""
+        return list(self.data)
+
+    @property
+    def hyperparameters(self) -> dict:
+        """Legacy Operator compatibility view of non-dynamic, non-wire constructor arguments."""
+        return {
+            name: value
+            for name, value in self.arguments.items()
+            if name not in self.dynamic_argnames and name not in self.wire_argnames
+        }
+
+    # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
     # ------------------------------------------------------------------------
 
