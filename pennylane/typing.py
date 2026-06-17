@@ -169,6 +169,9 @@ class AbstractArray:
 
             dummy = torch.tensor((), dtype=self.dtype)
             object.__setattr__(self, "dtype", dummy.numpy().dtype)
+
+        if isinstance(self.dtype, type) and issubclass(self.dtype, Number):
+            return
         object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
     def __instancecheck__(self, instance):
@@ -177,6 +180,28 @@ class AbstractArray:
         shape = getattr(instance, "shape", None)
         if shape is None or len(shape) != len(self.shape):
             return False
+        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
+
+    def issubtype(self, val) -> bool:
+        """Check whether a given value has a shape and dtype that adheres
+        to the shape and dtype of an ``AbstractArray``.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pennylane import math  # tach-ignore
+
+        shape = math.shape(val)
+        dtype = math.get_dtype_name(val)
+
+        if issubclass(self.dtype, Number) and self.dtype.__name__ not in dtype:
+            return False
+        if (
+            not (isinstance(self.dtype, type) and issubclass(self.dtype, Number))
+            and dtype != self.dtype.name
+        ):
+            return False
+        if len(shape) != self.ndim:
+            return False
+
         return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
 
     @property

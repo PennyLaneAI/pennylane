@@ -644,3 +644,16 @@ class TestAbstractWires:
         a = qp.wires.AbstractWires(3)
         assert a.shape == (3,)
         assert a.dtype == np.int64
+
+    def test_issubtype_wires(self):
+        """Test ``issubtype`` for wire arguments."""
+        aw = AbstractWires(2)
+        assert aw.issubtype(Wires([0, 1]))
+        assert aw.issubtype([0, 1])
+        assert not aw.issubtype(Wires([0]))
+
+    def test_issubtype_ellipsis_accepts_any_length(self):
+        """Test that ``AbstractWires(...)`` accepts any wire length."""
+        aw = AbstractWires(...)
+        assert aw.issubtype(Wires([0]))
+        assert aw.issubtype([0, 1, 2, 3])

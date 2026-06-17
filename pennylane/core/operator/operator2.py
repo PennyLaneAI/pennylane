@@ -45,11 +45,13 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import QueuingManager, apply
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import AbstractArray, FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .meta import ABCOperatorMeta
+
+# from .utils import abstractify
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -147,7 +149,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     """
 
     # TODO: [sc-120517] Add proper fixed_sig support and update docs accordingly
-    fixed_sig: ClassVar[tuple[type, ...]]
+    fixed_sig: ClassVar[tuple[type, ...]] = None
     """The expected signature of an operator. If set, it must have the same length as
     the total number of arguments, and be in the same order as the order of the arguments
     in an operator's constructor. This attribute is optional—not setting it has no loss
@@ -186,6 +188,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         self._bound_args.apply_defaults()
 
         self.__init_wires()
+        self.__validate_arg_types()
 
         # Broadcasting-related initialization
         self._batch_size: int | None = _UNSET_BATCH_SIZE
@@ -1039,6 +1042,29 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         else:
             self._wires = Wires.all_wires(all_algorithmic_wires)
 
+    def __validate_arg_types(self) -> None:
+        """Validate the provided arguments against their expected type. This method
+        only performs validation on operators if ``op.fixed_sig`` is defined.
+        """
+        # fixed_sig not present or there are no arguments
+        if not self.fixed_sig:
+            return
+
+        for name, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
+            argval = self.arguments[name]
+            if not expected_type.issubtype(argval):
+                # Dynamic argument
+                if name in self.dynamic_argnames:
+                    raise ValueError(
+                        f"Expected '{name}' to have shape {expected_type.shape} and "
+                        f"dtype {str(expected_type.dtype)}, but got {argval}."
+                    )
+                # Wire argument
+                raise ValueError(
+                    f"Expected '{name}' to have length {expected_type.num_wires}, "
+                    f"but got {argval}."
+                )
+
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         # TODO: [sc-120429] Add processing for overriding has_decomposition
@@ -1083,6 +1109,22 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                     )
                 seen[name] = group_name
 
+        # fixed_sig can only be defined if there are no hybrid, static, or compilable arguments
+        if cls.fixed_sig is not None:
+            if cls.hybrid_argnames or cls.compilable_argnames or cls.static_argnames:
+                raise TypeError(
+                    f"'{cls.__name__}.fixed_sig' can only be defined if there are no "
+                    "hybrid, static, or compilable arguments."
+                )
+            for at in cls.fixed_sig:
+                if (isinstance(at, AbstractArray) and any(s is Ellipsis for s in at.shape)) or (
+                    isinstance(at, AbstractWires) and at.num_wires is Ellipsis
+                ):
+                    raise TypeError(
+                        f"'{cls.__name__}.fixed_sig' can only specify types with static sizes, "
+                        f"but got {at} that allows the argument to have arbitrary shape."
+                    )
+
         # hybrid_argnames may overlap with wire_argnames, but not with the others.
         hybrid = set(cls.hybrid_argnames)
         non_wire = {n for n, g in seen.items() if g != "wire_argnames"}
@@ -1108,6 +1150,17 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             if len(cls.wire_sizes) != len(cls.wire_argnames):
                 raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
 
+            if cls.fixed_sig:
+                j = 0
+                for i, name in enumerate(cls._sig.parameters):
+                    if name in cls.wire_argnames:
+                        if cls.fixed_sig[i].num_wires != cls.wire_sizes[j]:
+                            raise TypeError(
+                                f"Number of wires specified for '{name}' does not match in "
+                                f"{cls.__name__}.fixed_sig and {cls.__name__}.wire_sizes."
+                            )
+                        j += 1
+
             for wn, ws in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
                 if wn in cls.hybrid_argnames and ws is not None:
                     raise TypeError(
@@ -1120,6 +1173,12 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                         f"of positive integers or 'None' values, but got {cls.wire_sizes}."
                     )
 
+        elif cls.fixed_sig:
+            cls.wire_sizes = tuple(
+                cls.fixed_sig[i].num_wires
+                for i, name in enumerate(cls._sig.parameters)
+                if name in cls.wire_argnames
+            )
         else:
             cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
 
@@ -1453,6 +1512,22 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+# @abstractify.register(Operator2)
+# def _abstractify_operator(val: Operator2) -> Operator2:
+#     """Abstractify an operator."""
+#     # data, metadata = val._flatten()
+#     # dyn_args, wires, hybrid_args = data
+#     # abstract_data = (
+#     #     [abstractify(arg) for arg in dyn_args],
+#     #     [abstractify(w) for w in wires],
+#     #     [abstractify(arg) for arg in hybrid_args],
+#     # )
+#     # return type(val)._unflatten(abstract_data, metadata)
+#     leaves, tree = flatten(val, is_leaf=_is_wires)
+#     abstract_leaves = tuple(abstractify(l) for l in leaves)
+#     return unflatten(abstract_leaves, tree)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):

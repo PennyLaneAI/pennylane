@@ -222,7 +222,7 @@
   nr_wires = 1
   rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
   rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
-  
+
   dev = qp.device("default.qutrit.mixed", wires=1)
   @qp.qnode(dev)
   def circuit():
@@ -235,7 +235,7 @@
   array([[[0.+0.j, 0.+0.j, 0.+0.j],
           [0.+0.j, 0.+0.j, 0.+0.j],
           [0.+0.j, 0.+0.j, 1.+0.j]]])
-  
+
   ```
 
 <h3>Improvements 🛠</h3>
@@ -365,7 +365,7 @@
   contain dynamic wire allocations.
   [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
 
-* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of
   any qudit density matrices with constant qudit dimension.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
@@ -491,8 +491,9 @@
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
-* PLxPR execution support have been removed for `default.qubit`.
+* Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+  [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
@@ -620,6 +621,7 @@
   [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
   [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -771,7 +773,7 @@
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
-* Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
+* Fixed a bug where resource decompositions and parameters were not properly resolved for nested
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 

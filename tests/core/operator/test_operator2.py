@@ -41,7 +41,8 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import Wires
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires, Wires
 
 
 class TestInitSubclass:
@@ -233,6 +234,85 @@ class TestInitSubclass:
 
                 def __init__(self, wires):
                     super().__init__(wires=wires)
+
+    @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
+    def test_fixed_sig_incompatible_with_other_arg_groups(self, attr):
+        """Test that ``fixed_sig`` cannot be combined with hybrid, static, or compilable args."""
+
+        attrs = {
+            "dynamic_argnames": ("phi",),
+            "fixed_sig": (AbstractArray((), float), AbstractWires(1)),
+            attr: ("extra",),
+            "__init__": lambda self, phi, extra, wires: Operator2.__init__(
+                self, phi, extra, wires=wires
+            ),
+        }
+
+        with pytest.raises(
+            TypeError,
+            match="'Op.fixed_sig' can only be defined if there are no hybrid, static, or compilable",
+        ):
+            type("Op", (Operator2,), attrs)
+
+    @pytest.mark.parametrize(
+        "abstract_type",
+        [AbstractArray((...,), float), AbstractArray((2, ...), int), AbstractWires(...)],
+    )
+    def test_fixed_sig_rejects_ellipsis_sizes(self, abstract_type):
+        """Test that ``fixed_sig`` entries must have static sizes."""
+
+        fixed_sig = (
+            (AbstractArray((), float), abstract_type)
+            if isinstance(abstract_type, AbstractWires)
+            else (abstract_type, AbstractWires(1))
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="'Op.fixed_sig' can only specify types with static sizes",
+        ):
+            type(
+                "Op",
+                (Operator2,),
+                {
+                    "dynamic_argnames": ("phi",),
+                    "fixed_sig": fixed_sig,
+                    "__init__": lambda self, phi, wires: Operator2.__init__(self, phi, wires=wires),
+                },
+            )
+
+    def test_wire_sizes_derived_from_fixed_sig(self):
+        """Test that ``wire_sizes`` is inferred from ``fixed_sig`` when not declared."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "ctrl_wires")
+            fixed_sig = (
+                AbstractArray((), float),
+                AbstractWires(2),
+                AbstractWires(1),
+            )
+
+            def __init__(self, phi, wires, ctrl_wires):
+                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
+
+        assert Op.wire_sizes == (2, 1)
+
+    def test_fixed_sig_wire_sizes_mismatch_error(self):
+        """Test that ``fixed_sig`` and ``wire_sizes`` must agree on wire counts."""
+
+        with pytest.raises(
+            TypeError,
+            match="Number of wires specified for 'wires' does not match",
+        ):
+            # pylint: disable=unused-variable
+            class Op(Operator2):
+                dynamic_argnames = ("phi",)
+                wire_sizes = (3,)
+                fixed_sig = (AbstractArray((), float), AbstractWires(2))
+
+                def __init__(self, phi, wires):
+                    super().__init__(phi, wires=wires)
 
 
 class TestOperatorInit:
@@ -430,6 +510,77 @@ class TestOperatorInit:
 
         assert len(q) == 1
         assert list(q.keys())[0].obj is op
+
+
+class TestInitFixedSigValidation:
+    """Tests for runtime ``fixed_sig`` argument validation."""
+
+    def test_valid_fixed_sig_accepts_matching_args(self):
+        """Test that matching dynamic and wire arguments pass validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=[0, 1])
+        assert op.arguments["phi"] == 0.5
+        assert op.wires == Wires([0, 1])
+
+        op1 = Op(np.array(0.5), wires=[0, 1])
+        assert op1.arguments["phi"] == np.array(0.5)
+        assert op1.wires == Wires([0, 1])
+
+    def test_no_validation_without_fixed_sig(self):
+        """Test that operators without ``fixed_sig`` skip type validation."""
+
+        op = DynOp(0.5, wires=[0, 1, 2])
+        assert op.wires == Wires([0, 1, 2])
+
+    def test_dynamic_arg_wrong_shape_error(self):
+        """Test that a dynamic argument with the wrong shape raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((2,), float), AbstractWires(1))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match=r"Expected 'phi' to have shape \(2,\)"):
+            Op(np.array([0.5]), wires=0)
+
+    def test_dynamic_arg_wrong_dtype_error(self):
+        """Test that a dynamic argument with the wrong dtype raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((), int), AbstractWires(1))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(
+            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype <class 'int'>"
+        ):
+            Op(0.5, wires=0)
+
+    def test_wire_arg_wrong_length_error(self):
+        """Test that a wire argument with the wrong length raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(
+            ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
+        ):
+            Op(0.5, wires=[0])
 
 
 class TestProperties:

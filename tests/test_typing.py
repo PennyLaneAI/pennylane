@@ -113,12 +113,12 @@ class TestAbstractArray:
 
         a = AbstractArray([2, 3], dtype=float)
         assert a.shape == (2, 3)  # converted to tuple
-        assert a.dtype == np.float64  # converted to numpy dtype
+        assert a.dtype == float  # builtin number types are preserved
 
         assert a.size == 6
         assert a.ndim == 2
         assert a.T.shape == (3, 2)
-        assert a.T.dtype == np.float64
+        assert a.T.dtype == float
 
         assert len(a) == 2
 
@@ -212,3 +212,25 @@ class TestAbstractArray:
             assert not isinstance(np.ones((4, 2), float), variant)
 
             assert not isinstance("a", variant)
+
+    def test_issubtype_scalar(self):
+        """Test ``issubtype`` for scalar values."""
+        aa = AbstractArray((), float)
+        assert aa.issubtype(0.5)
+        assert aa.issubtype(np.array(0.5))
+        assert not aa.issubtype(1)
+        assert not aa.issubtype(np.array([0.5, 0.6]))
+
+    def test_issubtype_array(self):
+        """Test ``issubtype`` for array values."""
+        aa = AbstractArray((2, 3), float)
+        assert aa.issubtype(np.ones((2, 3)))
+        assert not aa.issubtype(np.ones((2, 2)))
+        assert not aa.issubtype(np.ones((2, 3), dtype=int))
+
+    def test_issubtype_builtin_number_dtype(self):
+        """Test ``issubtype`` when ``AbstractArray.dtype`` is a builtin number type."""
+        aa = AbstractArray((), int)
+        assert aa.issubtype(2)
+        assert aa.issubtype(np.int64(2))
+        assert not aa.issubtype(2.0)
