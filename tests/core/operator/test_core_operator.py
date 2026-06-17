@@ -1793,6 +1793,7 @@ pairs_of_ops = [
         MultiRot([np.pi / 8, np.pi / 16], [0, 1], "YY"),
         MultiRot([np.pi / 4, np.pi / 2], [0, 1], "XX"),
     ),
+    (MultiRot([np.pi / 4, np.pi / 2], [0, 1], "ZX"), qp.CNOT((0, 1))),
 ]
 
 
