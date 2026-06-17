@@ -609,6 +609,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -617,6 +618,7 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
