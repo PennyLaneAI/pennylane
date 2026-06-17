@@ -370,8 +370,9 @@ class PartialUnaryStatePreparation(Operation):
 
     .. seealso::
 
-        :class:`~.PUIIsometryFinder` for the class implementing
-        the classical algorithm that finds the isometry for the circuit.
+        :class:`~.PUIIsometryFinder` for the classical algorithm that finds the isometry for
+        the circuit, as well as :class:`~.SumOfSlatersPrep` for another sparse state
+        preparation technique.
 
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
@@ -465,12 +466,12 @@ class PartialUnaryStatePreparation(Operation):
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 26
-    Total gates: 6040
+    Total gates: 6,040
     Gate counts:
     - MultiplexerStatePreparation: 1
-    - BasisState: 2414
-    - QROM: 1207
-    - C(BasisState): 2414
+    - BasisState: 2,414
+    - QROM: 1,207
+    - C(BasisState): 2,414
     - MultiControlledX: 3
     - SWAP: 1
     Measurements:
@@ -484,12 +485,12 @@ class PartialUnaryStatePreparation(Operation):
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
     Wire allocations: 48
-    Total gates: 3056
+    Total gates: 3,056
     Gate counts:
     - MultiplexerStatePreparation: 1
     - BasisState: 320
     - QROM: 160
-    - C(BasisState): 2553
+    - C(BasisState): 2,553
     - MultiControlledX: 6
     - SWAP: 16
     Measurements:
