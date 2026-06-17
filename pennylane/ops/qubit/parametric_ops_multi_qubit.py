@@ -2141,10 +2141,10 @@ class CPhaseShift00(Operation):
     * Number of dimensions per parameter: (0,)
     * Gradient recipe:
 
-    .. math::
-        \frac{d}{d \phi} CR_{00}(\phi)
-        = \frac{1}{2} \left[ CR_{00}(\phi + \pi / 2)
-            - CR_{00}(\phi - \pi / 2) \right]
+        .. math::
+            \frac{d}{d \phi} CR_{00}(\phi)
+            = \frac{1}{2} \left[ CR_{00}(\phi + \pi / 2)
+                - CR_{00}(\phi - \pi / 2) \right]
 
     Args:
         phi (float): rotation angle :math:`\phi`
