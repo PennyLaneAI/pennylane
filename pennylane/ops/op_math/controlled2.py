@@ -40,11 +40,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     ``control_values``, ``control_wires``, etc., and implement default implementations for
     methods such as ``compute_matrix``, ``compute_eigvals``, etc.
 
-    Subclasses of ``Controlled2`` typically has a different signature than the standard signature
-    defined here. In this case, the subclass should package the arguments from its own signature
-    into a dictionary and pass that into ``override_init_args``, which will then be passed along
-    to the base ``Operator2.__init__`` for standard initialization.
-
     .. note::
 
         This class is an interface that is not meant to be instantiated. To properly create a
@@ -53,6 +48,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     **Example**
 
     .. code-block:: python
+
+        from pennylane.ops import Controlled2
 
         class CRot(Controlled2):
 
@@ -63,22 +60,41 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             wire_sizes = (2,)
 
             def __init__(self, phi, theta, omega, wires):
-                super().__init__(
-                    qp.Rot(phi, theta, omega, wires=wires[1]),
-                    control_wires=wires[0],
-                    override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
-                )
+                super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
 
-
-    In this example, when ``super().__init__`` is called with the base op and control wires of
-    ``CRot``, i.e., the ``qp.Rot`` and ``wires[0]``. These are used to initialize the interface
-    properties of ``Controlled2``, but the base ``Operator.__init__`` expects arguments that
-    match the argument specifications of the op, i.e., the ``dynamic_argnames``, ``wire_argnames``
-    defined in the subclass. Therefore, we package the arguments that the subclass constructor
-    receives and pass it to ``override_init_args``, so that they can be passed along as is to
-    the base ``Operator2.__init__`` constructor.
+    >>> op = CRot(0.1, 0.2, 0.3, wires=[0, 1])
+    >>> isinstance(op, Controlled2)
+    True
+    >>> op.control_wires
+    Wires([0])
+    >>> op.target_wires
+    Wires([1])
+    >>> op.matrix()
+    array([[ 1.        +0.j        ,  0.        +0.j        ,
+             0.        +0.j        ,  0.        +0.j        ],
+           [ 0.        +0.j        ,  1.        +0.j        ,
+             0.        +0.j        ,  0.        +0.j        ],
+           [ 0.        +0.j        ,  0.        +0.j        ,
+             0.97517...-0.19767...j, -0.09933...+0.00996...j],
+           [ 0.        +0.j        ,  0.        +0.j        ,
+             0.09933...+0.00996...j,  0.97517...+0.19767...j]])
 
     """
+
+    _init_args: dict  # initialized in __new__, declared here for type checking purposes.
+    """Arguments that the operator is initialized with."""
+
+    def __new__(cls, *args, **kwargs):
+        # The purpose of this function here is to intercept the argument passed to the
+        # constructor of the subclass and store it on the operator, so that in __init__,
+        # we can pass that along to the base Operator2.__init__, which expects the
+        # arguments to match the pre-defined signature of the subclass.
+        obj = super().__new__(cls)
+        sig = signature(cls)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        obj._init_args = bound_args.arguments
+        return obj
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -87,7 +103,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        override_init_args: dict | None = None,
     ):
 
         control_wires = Wires(control_wires)
@@ -120,11 +135,16 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
 
-        if override_init_args:
-            super().__init__(**override_init_args)
-            return
+        if "control_wires" in self._init_args:
+            self._init_args["control_wires"] = control_wires
 
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+        if "control_values" in self._init_args:
+            self._init_args["control_values"] = control_values
+
+        if "work_wires" in self._init_args:
+            self._init_args["work_wires"] = work_wires
+
+        super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
 
@@ -349,6 +369,9 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             work_wire_type=self.work_wire_type,
         )
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
+
 
 def _get_sparse_matrix(base):
     if base.has_sparse_matrix:
@@ -362,7 +385,7 @@ def _bool_array_to_int(arr: list[bool]):
     return sum(2**i for i, val in enumerate(reversed(arr)) if val)
 
 
-class ControlledOp2(Controlled2):
+class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     """Represents a controlled version of an arbitrary base operator.
 
     Args:
@@ -389,16 +412,6 @@ class ControlledOp2(Controlled2):
 
     compilable_argnames = ("work_wire_type",)
 
-    def __init__(  # pylint: disable=too-many-arguments
-        self,
-        base: Operator,
-        control_wires: WiresLike,
-        control_values: Sequence[int | bool] | None = None,
-        work_wires: WiresLike | None = None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-    ):
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
-
     @property
     @override
     def name(self):
@@ -411,6 +424,3 @@ class ControlledOp2(Controlled2):
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return self.base.label(decimals=decimals, base_label=base_label, cache=cache)

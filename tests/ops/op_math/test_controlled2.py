@@ -1,5 +1,4 @@
 # Copyright 2026 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,7 +39,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, wires):
-                super().__init__(qp.H(wires[1]), wires[0], override_init_args={"wires": wires})
+                super().__init__(qp.H(wires[1]), wires[0])
 
             @override
             def adjoint(self):
@@ -75,11 +74,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, phi, theta, omega, wires):
-                super().__init__(
-                    qp.Rot(phi, theta, omega, wires=wires[1]),
-                    control_wires=wires[0],
-                    override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
-                )
+                super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
 
             @override
             def adjoint(self):
@@ -113,11 +108,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, phi, theta, omega, wires):
-                super().__init__(
-                    qp.Rot(phi, theta, omega, wires=wires[1]),
-                    control_wires=wires[0],
-                    override_init_args={"phi": phi, "theta": theta, "omega": omega, "wires": wires},
-                )
+                super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
 
             @override
             def adjoint(self):
@@ -152,11 +143,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, theta, wires):
-                super().__init__(
-                    qp.RX(theta, wires[1]),
-                    control_wires=wires[0],
-                    override_init_args={"theta": theta, "wires": wires},
-                )
+                super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
 
         op = CRX2(0.5, wires=[0, 1])
         expected = qp.CRX.compute_matrix(0.5)
@@ -171,7 +158,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, wires):
-                super().__init__(qp.H(wires[1]), wires[0], override_init_args={"wires": wires})
+                super().__init__(qp.H(wires[1]), wires[0])
 
         op = CH2([0, 1])
         gates = [qp.RY(-np.pi / 4, wires=1)]
@@ -189,7 +176,7 @@ class TestControlled2:
             wire_sizes = (2,)
 
             def __init__(self, wires):
-                super().__init__(qp.H(wires[1]), wires[0], override_init_args={"wires": wires})
+                super().__init__(qp.H(wires[1]), wires[0])
 
             @override
             def adjoint(self):
