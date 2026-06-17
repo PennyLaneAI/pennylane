@@ -253,9 +253,11 @@
   decomposition when using phase-gradient based decompositions of multiplexers.
   [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
-* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
-  symbols on the control wires and a Pauli rotation label on the target wire.
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` and :class:`~.QROM` with 
+  multiplexer selector symbols on the control wires and a Pauli rotation and a "QROM" label,
+  respectively, on the target wire(s).
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
+  [(#9692)](https://github.com/PennyLaneAI/pennylane/pull/9692)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
