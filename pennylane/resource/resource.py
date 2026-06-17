@@ -36,11 +36,27 @@ from .error.error import _compute_algo_error
 from .expression import Expression, convert_int_vals_to_expression
 
 
-def _count_to_str(count: int | Expression) -> str:
-    """Helper for printing counts, converts large counts to scientific notation."""
+def _count_to_str(
+    count: int | Expression, extra_compact: bool = False, markdown_safe: bool = False
+) -> str:
+    """
+    Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
+
+    Args:
+        count (int | Expression): the count to convert to a string
+        extra_compact (bool): whether to remove spaces from expressions for compactness
+        markdown_safe (bool): whether to escape asterisks for markdown tables
+    """
     if isinstance(count, Expression):
-        return str(count).replace(" ", "")
-    return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
+        if count.vars:
+            retval = str(count)
+            if markdown_safe:
+                retval = retval.replace("*", "\\*")  # Escape asterisks for markdown tables
+            if extra_compact:
+                retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
+            return retval
+        count = int(count)
+    return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
 
 
 @lru_cache
@@ -378,24 +394,26 @@ class SpecsResources:
         prefix = " " * preindent
         lines = []
 
-        lines.append(f"{prefix}Wire allocations: {self.num_allocs}")
-        lines.append(f"{prefix}Total gates: {self.num_gates}")
+        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
+        lines.append(f"{prefix}Total gates: {_count_to_str(self.num_gates)}")
 
         lines.append(f"{prefix}Gate counts:")
         if not self.gate_types:
             lines.append(prefix + "- No gates.")
         else:
             for gate, count in self.gate_types.items():
-                lines.append(f"{prefix}- {gate}: {count}")
+                lines.append(f"{prefix}- {gate}: {_count_to_str(count)}")
 
         lines.append(f"{prefix}Measurements:")
         if not self.measurements:
             lines.append(prefix + "- No measurements.")
         else:
             for meas, count in self.measurements.items():
-                lines.append(f"{prefix}- {meas}: {count}")
+                lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Depth: {self.depth if self.depth is not None else 'Not computed'}")
+        lines.append(
+            f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
+        )
 
         return "\n".join(lines)
 
@@ -403,10 +421,40 @@ class SpecsResources:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
+    def _repr_markdown_(self) -> str:
+        """
+        Return a Markdown table representation of the :class:`SpecsResources` for Jupyter notebook display.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+        lines = []
+        lines.append("| **Metric** | **Value** |")
+        lines.append("| :--- | ---: |")
+        lines.append(
+            f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
+        )
+        lines.append(f"| **Total gates** | {_count_to_str(self.num_gates, markdown_safe=True)} |")
+        lines.append("| **Gate counts:** | |")
+        if not self.gate_types:
+            lines.append("| *No gates* | |")
+        else:
+            for gate, count in self.gate_types.items():
+                lines.append(f"| {gate} | {_count_to_str(count, markdown_safe=True)} |")
+        lines.append("| **Measurements:** | |")
+        if not self.measurements:
+            lines.append("| *No measurements* | |")
+        else:
+            for meas, count in self.measurements.items():
+                lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
+        depth_str = (
+            _count_to_str(self.depth, markdown_safe=True)
+            if self.depth is not None
+            else "Not computed"
+        )
+        lines.append(f"| **Depth** | {depth_str} |")
+        return "\n".join(lines)
 
 
 @dataclass(frozen=True)
@@ -738,15 +786,19 @@ class CircuitSpecs:
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 2)
-                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+                max_column_size = max(
+                    max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
+                )
             for meas, count in res.measurements.items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
-                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+                max_column_size = max(
+                    max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
+                )
             max_column_size = max(
                 max_column_size,
-                len(_count_to_str(res.num_allocs)) + 1,
-                len(_count_to_str(res.num_gates)) + 1,
+                len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
+                len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
             )
 
         return max_metric_length, max_column_size, all_gate_types, all_meas_types
@@ -773,7 +825,7 @@ class CircuitSpecs:
             "Wire allocations".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_allocs).rjust(max_column_size)
+                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -781,7 +833,7 @@ class CircuitSpecs:
             "Total gates".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_gates).rjust(max_column_size)
+                _count_to_str(res.num_gates, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -792,7 +844,9 @@ class CircuitSpecs:
                 f"- {gate}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.gate_types.get(gate, 0)).rjust(max_column_size)
+                    _count_to_str(res.gate_types.get(gate, 0), extra_compact=True).rjust(
+                        max_column_size
+                    )
                     for res in flat_resources.values()
                 )
             )
@@ -802,7 +856,9 @@ class CircuitSpecs:
                 f"- {meas}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
-                    _count_to_str(res.measurements.get(meas, 0)).rjust(max_column_size)
+                    _count_to_str(res.measurements.get(meas, 0), extra_compact=True).rjust(
+                        max_column_size
+                    )
                     for res in flat_resources.values()
                 )
             )
@@ -839,10 +895,129 @@ class CircuitSpecs:
     def __str__(self) -> str:
         return self.to_pretty_str()
 
-    def _ipython_display_(self):  # pragma: no cover
-        """Displays __str__ in ipython instead of __repr__"""
-        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        print(str(self))
+    def _to_markdown_tabular(self) -> str:
+        """Return a Markdown table for dict-type resources."""
+        flat_resources = self._flattened_resources()
+        levels = list(flat_resources.keys())
+
+        all_gate_types: dict[str, None] = {}
+        all_meas_types: dict[str, None] = {}
+        for res in flat_resources.values():
+            for gate in res.gate_types:
+                all_gate_types[gate] = None
+            for meas in res.measurements:
+                all_meas_types[meas] = None
+
+        def data_row(label, values):
+            return f"| {label} | " + " | ".join(str(v) for v in values) + " |"
+
+        lines = []
+        lines.append("| ↓Metric / Level→ | " + " | ".join(str(lvl) for lvl in levels) + " |")
+        lines.append("| :--- |" + " ---: |" * len(levels))
+        lines.append(
+            data_row(
+                "**Wire allocations**",
+                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
+            )
+        )
+        lines.append(
+            data_row(
+                "**Total gates**",
+                [_count_to_str(r.num_gates, markdown_safe=True) for r in flat_resources.values()],
+            )
+        )
+        lines.append(data_row("**Gate counts**", [""] * len(levels)))
+        for gate in all_gate_types:
+            lines.append(
+                data_row(
+                    gate,
+                    [
+                        _count_to_str(r.gate_types.get(gate, 0), markdown_safe=True)
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
+        lines.append(data_row("**Measurements**", [""] * len(levels)))
+        for meas in all_meas_types:
+            lines.append(
+                data_row(
+                    meas,
+                    [
+                        _count_to_str(r.measurements.get(meas, 0), markdown_safe=True)
+                        for r in flat_resources.values()
+                    ],
+                )
+            )
+        return "\n".join(lines)
+
+    def _repr_markdown_(self, collapsible: bool = True) -> str:
+        """
+        Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
+
+        Args:
+            collapsible (bool): Whether to display the resources in collapsible sections.
+
+        Returns:
+            str: A Markdown representation of this object for Jupyter notebooks.
+
+        .. seealso::
+
+            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        """
+        # pylint: disable=too-many-branches
+        # Ignore pylint on this one, this is not better served by splitting into even
+        # smaller functions than it already has
+        lines = []
+        if collapsible:
+            lines.append("<details open>")
+            lines.append("<summary>Circuit Specs</summary>")
+        else:
+            lines.append("**Circuit Specs:**")
+        lines.append("")
+        lines.append("| Metric | Value |")
+        lines.append("| :--- | ---: |")
+        lines.append(f"| **Device** | {self.device_name} |")
+        lines.append(f"| **Device wires** | {self.num_device_wires} |")
+        lines.append(f"| **Shots** | {self.shots} |")
+        if isinstance(self.level, dict):
+            lines.append("| **Levels** | |")
+            for k, v in self.level.items():
+                lines.append(f"| {k} | {v} |")
+        else:
+            lines.append(f"| **Level** | {self.level} |")
+
+        lines.append("")
+
+        if collapsible:
+            lines.append("</details>")
+            lines.append("<details open>")
+            lines.append("<summary>Resources</summary>")
+        else:
+            lines.append("**Resources:**")
+        lines.append("")
+
+        if isinstance(self.resources, SpecsResources):
+            lines.append(self.resources._repr_markdown_())  # pylint: disable=protected-access
+        elif isinstance(self.resources, list):
+            for i, r in enumerate(self.resources):
+                if collapsible:
+                    lines.append("<details open>")
+                    lines.append(f"<summary>Batched tape {num_to_letters(i)}</summary>")
+                else:
+                    lines.append(f"**Batched tape {num_to_letters(i)}:**")
+                lines.append("")
+                lines.append(r._repr_markdown_())  # pylint: disable=protected-access
+                lines.append("")
+                if collapsible:
+                    lines.append("</details>")
+        elif isinstance(self.resources, dict):
+            lines.append(self._to_markdown_tabular())
+
+        if collapsible:
+            lines.append("")
+            lines.append("</details>")
+
+        return "\n".join(lines)
 
 
 class ResourcesOperation(Operation):

@@ -1149,14 +1149,22 @@ class TestGeneralMethods:
 
         # Check that the original op is unchanged
         assert op.wires == Wires([0])
+        assert op.arguments["wires"] == Wires([0])
+        # Check new op
         assert new_op == DynOp(0.5, wires="a")
+        assert new_op.wires == Wires(["a"])
+        assert new_op.arguments["wires"] == Wires(["a"])
 
     def test_map_wires_unmapped_labels_preserved(self):
         """Test that wire labels missing from the wire map are kept as-is."""
         op = DynOp(0.5, wires=[0, 1, 2])
         new_op = op.map_wires({0: "a", 2: "c"})
 
+        assert op.wires == Wires([0, 1, 2])
+        assert op.arguments["wires"] == Wires([0, 1, 2])
         assert new_op == DynOp(0.5, wires=["a", 1, "c"])
+        assert new_op.wires == Wires(["a", 1, "c"])
+        assert new_op.arguments["wires"] == Wires(["a", 1, "c"])
 
     def test_map_wires_multiple_wire_args(self):
         """Test that ``map_wires`` maps wires across multiple wire arguments."""
@@ -1170,7 +1178,9 @@ class TestGeneralMethods:
         op = TwoWireOp(wires=[0, 1], ctrl_wires=[2])
         new_op = op.map_wires({0: "a", 1: "b", 2: "c"})
 
+        assert op.wires == Wires([0, 1, 2])
         assert new_op == TwoWireOp(wires=["a", "b"], ctrl_wires=["c"])
+        assert new_op.wires == Wires(["a", "b", "c"])
 
     def test_map_wires_pytree_hybrid_wires(self):
         """Test that ``map_wires`` correctly maps pytree-structured wires inside a hybrid arg."""
@@ -1186,23 +1196,35 @@ class TestGeneralMethods:
         op = PytreeWiresOp(wires=[[0], [1, 2]])
         new_op = op.map_wires({0: "a", 1: "b"})
 
+        assert op.wires == Wires([0, 1, 2])
         assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
+        assert new_op.wires == Wires(["a", "b", 2])
 
     def test_map_wires_op_argument(self):
         """Test that ``map_wires`` correctly maps hybrid arguments with operator leaves."""
         op = FullOp(0.5, static="static", hybrid=[DynOp(1.5, wires=[2, 3, 4])], wires=[0, 1])
         new_op = op.map_wires({0: "a", 2: "b", 3: "c"})
 
+        assert op.wires == Wires([0, 1, 2, 3, 4])
         assert new_op == FullOp(
             0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
         )
+        assert new_op.wires == Wires(["a", 1, "b", "c", 4])
 
     def test_map_wires_pauli_rep(self):
-        """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly."""
-        op = DynOp(1.5, wires=[0, 1])
-        # pylint: disable=attribute-defined-outside-init
-        op._pauli_rep = PauliSentence({PauliWord({0: "X", 1: "Y"}): 1.0})
+        """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly
+        when the subclass computes it during construction."""
 
+        class PauliRepOp(Operator2):
+            wire_argnames = ("wires",)
+
+            def __init__(self, wires):
+                super().__init__(wires=Wires(wires))
+                self._pauli_rep = PauliSentence(
+                    {PauliWord({self.wires[0]: "X", self.wires[1]: "Y"}): 1.0}
+                )
+
+        op = PauliRepOp(wires=[0, 1])
         new_op = op.map_wires({0: "a", 1: "b"})
         assert new_op.pauli_rep == PauliSentence({PauliWord({"a": "X", "b": "Y"}): 1.0})
 
@@ -1738,3 +1760,90 @@ class TestStatePrepBase:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
             BadStatePrep(0)
+
+
+class NoParamOp(Operator2):
+    """A simple operator with wires and no dynamic parameters."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
+class TestLegacyCompatibilityViews:
+    """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
+
+    def test_no_param_op_legacy_views(self):
+        """Test legacy views for an operator with no dynamic parameters."""
+        op = NoParamOp(wires=0)
+
+        assert op.data == ()
+        assert op.parameters == []
+        assert op.hyperparameters == {}
+
+    def test_dynamic_op_data_preserves_order(self):
+        """Test that ``data`` preserves dynamic argument order."""
+
+        class TwoParamOp(Operator2):
+            dynamic_argnames = ("alpha", "beta")
+
+            def __init__(self, alpha, beta, wires):
+                super().__init__(alpha, beta, wires=wires)
+
+        op = TwoParamOp(1.1, 2.2, wires=0)
+
+        assert op.data == (1.1, 2.2)
+        assert op.parameters == [1.1, 2.2]
+        assert op.parameters == list(op.data)
+
+    def test_static_args_excluded_from_data_and_parameters(self):
+        """Test that static args are not exposed through ``data`` or ``parameters``."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert op.data == (0.5,)
+        assert op.parameters == [0.5]
+
+    def test_hyperparameters_include_static_and_hybrid_args(self):
+        """Test that static and hybrid args appear in the legacy hyperparameter view."""
+        nested = [DynOp(0.1, wires=0)]
+        op = FullOp(0.5, static="XY", hybrid=nested, wires=0)
+
+        assert op.hyperparameters == {"static": "XY", "hybrid": nested}
+
+    def test_hyperparameters_exclude_dynamic_and_wire_args(self):
+        """Test that dynamic and wire args are excluded from hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+
+    def test_compilable_args_in_hyperparameters(self):
+        """Test that compilable args appear in the legacy hyperparameter view."""
+
+        class CompOp(Operator2):
+            dynamic_argnames = ("phi",)
+            compilable_argnames = ("order",)
+
+            def __init__(self, phi, order, wires):
+                super().__init__(phi, order, wires=wires)
+
+        op = CompOp(0.5, order=3, wires=0)
+
+        assert op.hyperparameters == {"order": 3}
+        assert op.data == (0.5,)
+
+    def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
+        """Test that non-``wires`` wire argument names are excluded."""
+
+        class AuxWiresOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "aux_wires")
+            wire_sizes = (1, None)
+
+            def __init__(self, phi, wires, aux_wires):
+                super().__init__(phi, wires=wires, aux_wires=aux_wires)
+
+        op = AuxWiresOp(0.5, wires=0, aux_wires=[1, 2])
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+        assert "aux_wires" not in op.hyperparameters
