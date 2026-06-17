@@ -1521,10 +1521,12 @@ def _is_hash_leaf(l) -> bool:
 def _abstractify_operator_type(val: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if hasattr(val, "fixed_sig"):
-        return val(*val.fixed_sig)
+    if fixed_sig := getattr(val, "fixed_sig") is not None:
+        return val(*fixed_sig)
 
-    raise NotImplementedError
+    raise ValueError(
+        "In order to abstractify from an operator type, a 'fixed_sig' must be defined."
+    )
 
 
 @abstractify.register(Operator2)
