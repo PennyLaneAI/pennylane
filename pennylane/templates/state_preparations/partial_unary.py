@@ -46,7 +46,7 @@ class PUIIsometryFinder:
         The core idea for this isometry mapping stems from
         `Malvetti et al. (2021) <https://quantum-journal.org/papers/q-2021-03-15-412/>`__.
         To prepare the mapping, we split the overall wires (excluding dedicated work wires) into
-        a subspace register of size :math:`n_{\text{subspace}}=\lceil \log_2(L)\rceil` and the
+        a *subspace register* of size :math:`n_{\text{subspace}}=\lceil \log_2(L)\rceil` and the
         remainder register of size :math:`n_r =n-n_{\text{subspace}}. The goal then is
         to map all states :math:`|\ell\rangle = |\ell_s\rangle \otimes |\ell_r\rangle` to some
         unique subspace state :math:`|f(\ell)\rangle = |f(\ell)\rangle \otimes |0\rangle`,
@@ -361,8 +361,8 @@ class PartialUnaryStatePreparation(Operation):
     binary representation of :math:`\ell`.
 
     This state preparation technique was introduced in
-    `Rupprecht and Wölk, arXiv:2601.09388 <https://arxiv.org/abs/2601.09388>`__. It consists
-    of a dense state preparation of the amplitudes on a subspace register, and an isometric mapping
+    `Rupprecht and Wölk, arXiv:2601.09388 <https://arxiv.org/abs/2601.09388>`__. It consists of a
+    dense state preparation of the amplitudes on a *subspace register*, and an isometric mapping
     that permutes the prepared amplitudes into the correct positions for the target state.
     As such, this method is tailored to sparse states. However, it approaches
     :class:`~.MultiplexerStatePreparation` for less sparse states, effectively providing an
@@ -444,10 +444,10 @@ class PartialUnaryStatePreparation(Operation):
     7: ───────────────────────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)─────────────────────├QROM(M1)────────────────┤ ├State
     8: ───────────────────────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)─────────────────────╰QROM(M1)────────────────┤ ╰State
 
-    We can make out the dense state preparation on the subspace wires ``0`` through ``3``, followed
-    by the isometry circuit consisting of partial unary iteration circuits and ``CNOT`` blocks.
-    The basis state preparations denoted as ``|Ψ⟩`` are layers of simple ``PauliX`` bit flips
-    that allow us to shift the range of the partial unary iterations to start from ``0``, and
+    We can make out the dense state preparation on the *subspace register* ``0`` through ``3``,
+    followed by the isometry circuit consisting of partial unary iteration circuits and ``CNOT``
+    blocks. The basis state preparations denoted as ``|Ψ⟩`` are layers of simple ``PauliX`` bit
+    flips that allow us to shift the range of the partial unary iterations to start from ``0``, and
     thus to reuse generic :class:`~.Select` subroutines, independent of the actual iteration range.
 
     For more complex examples, the circuit may also contain :class:`~.SWAP` and/or Toffoli
