@@ -385,6 +385,23 @@ def _bool_array_to_int(arr: list[bool]):
     return sum(2**i for i, val in enumerate(reversed(arr)) if val)
 
 
+# There are a couple of reasons to define this as a distinct subclass rather than merging it
+# into the base class that is Controlled2. At the conceptual level, a Controlled(SomeOp) should
+# be considered equal to a CNOT in terms of operator hierarchy. They share the same interface
+# of having a base and a set of control wires, etc., but conceptually, it doesn't make sense
+# to say that one inherits from the other. In practice, with Operator2, the signature of the
+# operator has become a core defining component of the operator itself. The ControlledOp2 class
+# is **initialized** with things like base, control_wires, etc., but to operators like CNOT
+# which is initialized with a completely different signature (e.g., just wires and nothing else),
+# it doesn't make sense for them to automatically inherit from the base class the argnames. If
+# we merge the ControlledOp2 class into Controlled2, then every custom controlled op would have
+# to explicitly override every single argname group (e.g., CNOT would have to explicitly override
+# its hybrid_argnames to be empty so that it doesn't accidentally inherit hybrid_argnames = ('base',)
+# from the base class). Similarly, by default, op.name is just the name of the operator class,
+# but if we merge ControlledOp2 into Controlled2, every single custom controlled op would have
+# to explicitly override its name property, otherwise the name of a CNOT would become C(X) all
+# of a sudden instead of just CNOT. Therefore, I'd say that merging ControlledOp2 into Controlled2
+# would actually create more code duplications and errors, not less.
 class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     """Represents a controlled version of an arbitrary base operator.
 
