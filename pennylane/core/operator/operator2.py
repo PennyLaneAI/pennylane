@@ -1243,7 +1243,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
         if not enabled():
-            return  # pragma: no cover
+            return
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
@@ -1350,7 +1350,12 @@ else:  # pragma: no cover
 
 
 def _delete_op_eqns(ops: Iterable) -> None:
-    """Delete the jaxpr equations for operators that have been used as data."""
+    """Delete the jaxpr equations for operators that have been used as data.
+
+    These equations must be deleted because operators used as data are treated as
+    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
+    corresponds to the operator as an instruction should be removed.
+    """
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
