@@ -745,28 +745,39 @@ class Operator2(ABC):
 
         raise DecompositionUndefinedError
 
-    resource_keys: ClassVar[set] = set()
-    """The set of parameters that affect the resource requirement of the operator's
-    decomposition. Graph-based decomposition rules registered for this operator class are
-    expected to accept keyword arguments matching these keys exactly (see
-    :attr:`~.Operator2.resource_params`). The default is an empty set, suitable for operators
-    whose decompositions have static resource requirements.
-    """
+    @classproperty
+    @classmethod
+    def resource_keys(cls) -> set[str]:
+        """The set of parameters that affect the resource requirement of the operator's
+        decomposition. Graph-based decomposition rules registered for this operator class are
+        expected to accept keyword arguments matching these keys exactly (see
+        :attr:`~.Operator2.resource_params`).
+
+        By default, these are the operator's static and compilable argument names: the values
+        known at compile time that are neither dynamic data (rotation angles, matrices, etc.)
+        nor wires. Operators whose resource requirements depend on additional information (for
+        example, the *number* of wires) should override this together with
+        :attr:`~.Operator2.resource_params`.
+        """
+        return set(cls.static_argnames) | set(cls.compilable_argnames)
 
     @property
     def resource_params(self) -> dict[str, Any]:
         """A dictionary containing the minimal information needed to compute a resource
         estimate of the operator's decomposition.
 
-        The keys of this dictionary should match the :attr:`~.Operator2.resource_keys`
-        attribute of the operator class. Two instances of the same operator type should have
-        identical ``resource_params`` iff their decompositions exhibit the same counts for each
-        gate type, even if the individual gate parameters differ.
+        The keys of this dictionary match the :attr:`~.Operator2.resource_keys` attribute of the
+        operator class. Two instances of the same operator type should have identical
+        ``resource_params`` iff their decompositions exhibit the same counts for each gate type,
+        even if the individual gate parameters differ.
 
-        The default implementation returns an empty dictionary, matching the default empty
-        :attr:`~.Operator2.resource_keys`.
+        By default this returns the operator's static and compilable arguments (everything known
+        at compile time other than dynamic data and wires). Wires are deliberately excluded: the
+        resource estimate must not depend on wire *labels*, so operators whose decomposition
+        depends on the *number* of wires should override this (and
+        :attr:`~.Operator2.resource_keys`) to expose ``num_wires`` instead.
         """
-        return {}
+        return {**self.static_args, **self.compilable_args}
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
