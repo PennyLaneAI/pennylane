@@ -412,6 +412,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     compilable_argnames = ("work_wire_type",)
 
+    # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
+    # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
+    # overriden with a different signature, we must override __init__ so that the signature
+    # of the __init__ is correctly retrieved as the signature of the operator subclass.
     def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
         self,
         base: Operator,
