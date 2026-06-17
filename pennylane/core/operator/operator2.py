@@ -51,8 +51,6 @@ from pennylane.wires import AbstractWires, Wires, WiresLike
 from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
 from .meta import ABCOperatorMeta
 
-# from .utils import abstractify
-
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
 
@@ -148,7 +146,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    # TODO: [sc-120517] Add proper fixed_sig support and update docs accordingly
     fixed_sig: ClassVar[tuple[type, ...]] = None
     """The expected signature of an operator. If set, it must have the same length as
     the total number of arguments, and be in the same order as the order of the arguments
@@ -159,6 +156,11 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     * the number of wires is fixed,
     * there are no static (compilable or non-compilable) arguments, and,
     * there are no hybrid arguments.
+
+    If set, it can be used to perform automatic validation of an operators inputs during
+    construction. Additionally, when defining decomposition rules for an operator,
+    operator types with fixed signatures can be placed in the rules' resources without
+    needing to fully construct abstract operators.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -1261,9 +1263,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        # We use type.__call__ instead of instantiating the operator normally so that
-        # the operator isn't queued and the operator primitive isn't bound.
-        return type.__call__(cls, **args)
+        return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1512,22 +1512,6 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
-
-
-# @abstractify.register(Operator2)
-# def _abstractify_operator(val: Operator2) -> Operator2:
-#     """Abstractify an operator."""
-#     # data, metadata = val._flatten()
-#     # dyn_args, wires, hybrid_args = data
-#     # abstract_data = (
-#     #     [abstractify(arg) for arg in dyn_args],
-#     #     [abstractify(w) for w in wires],
-#     #     [abstractify(arg) for arg in hybrid_args],
-#     # )
-#     # return type(val)._unflatten(abstract_data, metadata)
-#     leaves, tree = flatten(val, is_leaf=_is_wires)
-#     abstract_leaves = tuple(abstractify(l) for l in leaves)
-#     return unflatten(abstract_leaves, tree)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):
