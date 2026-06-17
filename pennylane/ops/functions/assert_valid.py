@@ -26,7 +26,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane.core import Operator, Operator2
+from pennylane.core import Operator, Operator1, Operator2
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
 from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
@@ -364,7 +364,7 @@ def _check_eigendecomposition(op):
     has_eigvals = True
     try:
         args, kwargs = _get_signature(op)
-        if not isinstance(op, qp.operation.Operator2):
+        if isinstance(op, Operator1):
             kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
         compute_eg = type(op).compute_eigvals(*args, **kwargs)
     except EigvalsUndefinedError:
@@ -453,7 +453,7 @@ def _check_pytree(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
-    if not isinstance(op, Operator2):
+    if isinstance(op, Operator1):
         for d1, d2 in zip(op.data, leaves, strict=True):
             assert qp.math.allclose(
                 d1, d2
@@ -586,7 +586,6 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_capture=False,
-    skip_pytree=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -600,7 +599,6 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_capture: If ``True``, the program capture test will be skipped.
-        skip_pytree: If ``True``, the pytree test will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -648,7 +646,6 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_capture=skip_capture,
-                    skip_pytree=skip_pytree,
                 )
 
     _check_bind_new_parameters_op2(op)
@@ -739,7 +736,6 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_capture,
-            skip_pytree,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -751,8 +747,7 @@ def assert_valid(
 
         _check_bind_new_parameters(op)
 
-    if not skip_pytree:
-        _check_pytree(op)
+    _check_pytree(op)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
