@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 
 from .utils import to_name
 
@@ -586,6 +586,10 @@ def auto_wrap(op_type):
     """Conveniently wrap an operator type in a resource representation."""
     if isinstance(op_type, CompressedResourceOp):
         return op_type
+    if isinstance(op_type, Operator2):
+        return abstractify(op_type)
+    if isinstance(op_type, type) and issubclass(op_type, Operator2):
+        return abstractify(op_type)
     if not issubclass(op_type, Operator):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "
