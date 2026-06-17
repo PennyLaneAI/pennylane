@@ -25,6 +25,14 @@ from pennylane.wires import AbstractWires, Wires
 class TestAbstractify:
     """Tests for the ``abstractify`` helper."""
 
+    @pytest.mark.parametrize(
+        "x", [0.12, np.ones((2, 3), dtype=np.float32), [0, 1], {"w": Wires([0, 1, 2])}]
+    )
+    def test_indempotency(self, x):
+        """Tests the round-trip behaviour of this helper."""
+
+        assert abstractify(abstractify(x)) == abstractify(x)
+
     def test_scalar_number(self):
         """Test that Python numbers become scalar ``AbstractArray`` instances."""
         assert abstractify(1.5) == AbstractArray((), float)
@@ -110,6 +118,30 @@ class TestAbstractify:
 
         with pytest.raises(ValueError, match="'fixed_sig' must be defined."):
             _ = abstractify(FixedSigOp)
+
+    def test_abstract_instance_hash_stable(self):
+        """Ensures that we get the same hash value for equal type specifiers."""
+        a = abstractify(DynOp(0.5, 0))
+        b = abstractify(DynOp(1.5, 0))
+        c = abstractify(DynOp(1.5, 1))
+        assert hash(a) == hash(b)
+        assert hash(b) == hash(c)
+
+    def test_abstract_instance_equal(self):
+        """Ensures that equality works on the output of abstractify."""
+        phi1 = 0.5
+        phi2 = 1.5
+        assert phi1 != phi2
+
+        # Different phi same wire
+        a = abstractify(DynOp(phi1, 0))
+        b = abstractify(DynOp(phi2, 0))
+        assert a == b
+
+        # Same phi different wires
+        a = abstractify(DynOp(phi1, 0))
+        b = abstractify(DynOp(phi1, 1))
+        assert a == b
 
 
 if __name__ == "__main__":
