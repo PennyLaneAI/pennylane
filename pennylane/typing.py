@@ -144,13 +144,13 @@ class AbstractArray:
 
     >>> from pennylane.typing import AbstractArray
     >>> AbstractArray((4, 2), float)
-    AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+    AbstractArray(shape=(4, 2), dtype=<class 'float'>)
 
     Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
 
     >>> aa = AbstractArray((..., 2), np.int32)
     >>> aa
-    AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
+    AbstractArray(shape=(Ellipsis, 2), dtype=<class 'numpy.int32'>)
 
     ``AbstractArray``'s can be used together with ``isinstance`` checks:
 
