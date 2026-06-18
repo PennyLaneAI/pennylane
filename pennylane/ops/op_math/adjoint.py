@@ -360,7 +360,7 @@ class Adjoint(SymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if issubclass(subclass, qp.ops.op_math.Adjoint2):
+        if subclass == qp.ops.op_math.Adjoint2:
             return True
         return NotImplemented
 
@@ -462,7 +462,7 @@ class AdjointOperation(Adjoint, Operation):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if issubclass(subclass, qp.ops.op_math.Adjoint2):
+        if subclass == qp.ops.op_math.Adjoint2:
             return True
         return NotImplemented
 
