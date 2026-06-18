@@ -31,7 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled
+from pennylane.capture import enabled, pause
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -1257,7 +1257,9 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        return cls(**args)
+        with QueuingManager.stop_recording():
+            with pause():
+                return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
