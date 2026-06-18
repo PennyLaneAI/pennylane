@@ -48,7 +48,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import auto_wrap
-from pennylane.operation import Operation, Operator
+from pennylane.core import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
