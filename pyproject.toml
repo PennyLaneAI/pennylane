@@ -195,11 +195,11 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sig
 
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312", "py313"]
+target-version = ["py312", "py313", "py314"]
 include = '\.pyi?$'
 
 [tool.isort]
-py_version = 311
+py_version = 312
 profile = "black"
 line_length = 100
 known_third_party = ["autoray"]
