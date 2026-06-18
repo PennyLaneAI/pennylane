@@ -103,7 +103,7 @@ class TestControlled2:
 
             dynamic_argnames = ("phi", "theta", "omega")
 
-            wires_argname = ("wires",)
+            wire_argnames = ("wires",)
 
             wire_sizes = (2,)
 
