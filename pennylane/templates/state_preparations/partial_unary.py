@@ -148,6 +148,7 @@ class PUIsometryFinder:
         will activate the Fanout (blue box).
         The Fanout is recorded as part of the circuit, and the tableau is updated:
 
+
         .. math::
 
             \begin{array}{rccc|cccc}
@@ -155,8 +156,8 @@ class PUIsometryFinder:
              & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
              & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
-             & 0 & \bbox[#E5BCD3]{1} & \bbox[#E5BCD3]{1} & \bbox[#F2CF7F]{1} & \bbox[#E5BCD3]{1} & 0 & \bbox[#E5BCD3]{1} \\
-             & 0 & 1 & 1 & \bbox[#AAD9F4]{1} & 1 & 1 & 1 \\
+             & 0 & \bbox[#E5BCD3, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & \bbox[#F2CF7F, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & 0 & \bbox[#E5BCD3, 2px]{1} \\
+             & 0 & 1 & 1 & \bbox[#AAD9F4, 2px]{1} & 1 & 1 & 1 \\
              & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
              & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
             &  &  &  & \uparrow &  &  &  \\
@@ -166,8 +167,8 @@ class PUIsometryFinder:
              & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
              & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
-            \scriptstyle \color{#009E73}{k=0} & \multicolumn{3}{c}{\color{#009E73}\rule{3.60em}{1px}} & \multicolumn{4}{c}{\color{#009E73}\rule{4.80em}{1px}} \\
+             & 0 & \bbox[#E5BCD3, 2px]{1} & \bbox[#E5BCD3, 2px]{0} & 0 & \bbox[#F2CF7F, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & 0 \\
+            \scriptstyle \color{#009E73}{k=0} & \rlap{\color{#009E73}\rule{3.60em}{1px}} &  &  & \rlap{\color{#009E73}\rule{4.80em}{1px}} &  &  &  \\
              & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 1 & 0 & 1 & 0 \\
              & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
@@ -459,7 +460,7 @@ class PartialUnaryStatePreparation(Operation):
             that in ``coefficients``.
         work_wires (qp.wires.WiresLike): Work wires used for the state preparation. For
             :math:`|L|` entries in the state, :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)` work wires
-            are needed.
+            are needed. Adding more work wires reduces the depth and gate count of the circuit.
 
     .. warning::
 
