@@ -18,12 +18,12 @@ TODO: [sc-120453] Fill docstring
 
 import abc
 from abc import ABC
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -1304,6 +1304,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
+        # Skip if program capture is disabled
         if not enabled():
             return
 
@@ -1350,8 +1351,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             hybrid_trees=hybrid_trees,
             **static_args,
         )
-        # If we bind the primitive outside a tracing context, `res`` will be an operator,
-        # not an abstract tracer, so we don't save it.
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
 
@@ -1387,7 +1388,7 @@ if has_jax:
             else:
                 len_ = next(wire_lens_iter)
                 # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete.
+                # there should not be any abstract values when calling the concrete impl.
                 args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
                 i += len_
 

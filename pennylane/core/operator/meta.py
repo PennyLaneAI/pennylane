@@ -53,7 +53,7 @@ class OperatorMeta(type):
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
 
-    @_stop_autograph
+    # @_stop_autograph
     def __call__(cls, *args, **kwargs):
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
