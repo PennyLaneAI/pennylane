@@ -23,7 +23,7 @@ from copy import copy, deepcopy
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -48,7 +48,7 @@ from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import AbstractArray, FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
+from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import ABCOperatorMeta
 
 if TYPE_CHECKING:
@@ -986,6 +986,68 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for attr, value in vars(self).items():
             setattr(copied_op, attr, deepcopy(value, memo))
         return copied_op
+
+    # ------------------------------------------------------------------------
+    # ------------------ Operator arithmetic dunder methods ------------------
+    # ------------------------------------------------------------------------
+
+    def __add__(self, other: Operator | TensorLike) -> Operator:
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return qp.sum(self, other, lazy=False)
+        if isinstance(other, TensorLike):
+            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+                return self
+            return qp.sum(
+                self,
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other: Callable | TensorLike) -> Operator:
+        """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qp.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
+        return NotImplemented
+
+    def __truediv__(self, other: TensorLike):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: Operator) -> Operator:
+        """The product operation between Operator objects."""
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+
+    def __sub__(self, other: Operator | TensorLike) -> Operator:
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return self + qp.s_prod(-1, other, lazy=False)
+        if isinstance(other, TensorLike):
+            return self + (qp.math.multiply(-1, other))
+        return NotImplemented
+
+    def __rsub__(self, other: Operator | TensorLike) -> Operator:
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self) -> Operator:
+        """The negation operation of an Operator object."""
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+    def __pow__(self, other: TensorLike) -> Operator:
+        r"""The power operation of an Operator object."""
+        if isinstance(other, TensorLike):
+            return qp.pow(self, z=other)
+        return NotImplemented
 
     # ----------------------------------------------------------------------------
     # ------------------ Private utililities for initialization ------------------
