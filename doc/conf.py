@@ -14,7 +14,6 @@
 import os
 import re
 import sys
-import warnings
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
@@ -101,7 +100,7 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qp_transforms*", "no module named pennylane.transforms")]
+ignore_warnings = [("code/api/qp_transforms*", "no module named pennylane.transforms", "Explicit markup ends without a blank line; unexpected unindent")]
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
