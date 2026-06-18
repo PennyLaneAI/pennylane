@@ -283,7 +283,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
             qp.QROM(change_bitstrings, **qrom_wires)
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
-            qp.SignedOutMultiplier(**mult_wires)
+            qp.OutMultiplier(**mult_wires)
             qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
             return new_bitstrings
 
@@ -377,6 +377,24 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
     qp.for_loop(len(fragments) - 2, -1, -1)(position_fragments)()
 
 
+def _validate_registers(registers, fragments):
+    n_states = fragments[0].states
+    n_modes = fragments[0].modes
+
+    expected_register_names = {"electronic", "cache", "coefficients", "phase gradient", "work"}
+    expected_register_names |= {f"mode {i}" for i in range(n_modes)}
+    assert isinstance(registers, dict)
+    assert set(registers) == expected_register_names
+    k = len(registers["mode 0"])
+    b = len(registers["coefficients"])
+
+    assert len(registers["electronic"]) == qp.math.ceil_log2(n_states)
+    assert len(registers["cache"]) >= 2 * k
+    assert len(registers["phase gradient"]) >= b
+    assert len(registers["coefficients"]) >= 2 + b + max(b, 2 * k)
+    assert all(len(registers[f"mode {i}"]) == k for i in range(1, n_modes))
+
+
 def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aqft_order):
     r"""Second-order Trotter circuit for vibronic simulation algorithm, explicitly using phase
     gradient arithmetic.
@@ -390,8 +408,8 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
             between position and momentum space.
 
     .. details::
-        :title: Usage details
-        :href: usage-details
+        :title: Register sizes
+        :href: register-sizes
 
         The vibronic Hamiltonian acts on :math:`N` electronic states, represented on
         :math:`n=\lceil\log_2(N)\rceil` qubits, as well as :math:`M` vibrational modes,
@@ -403,7 +421,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         following wire registers:
 
         .. list-table::
-           :widths: 30 40 30
+           :widths: 25 25 50
            :header-rows: 1
 
            * - ``key``
@@ -416,8 +434,8 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
              - :math:`k`
              - Encodes the :math:`i`\ th vibrational mode
            * - ``"cache"``
-             - :math:`???` # TODO: figure out
-             - Cache storing computations from one or two vibrational modes
+             - :math:`2k`
+             - Cache squares/products of vibrational modes (see below)
            * - ``"coefficients"``
              - :math:`b`
              - Coefficient encoding register for phase gradient arithmetic
@@ -425,10 +443,46 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
              - :math:`b`
              - Stores the phase gradient state
            * - ``"work"``
-             - :math:`???` # TODO: figure out
-             - Work wires for phase gradient arithmetic # TODO: VERIFY
+             - :math:`2+b+\max(b, 2k)`
+             - Work wires for data loading/arithmetic (see below)
+
+        The reasoning for the cache register size is:
+
+        - Squaring a signed :math:`k`-bit integer yields values from the range
+          :math:`[0, 2^{2k-2}]`, so that :math:`2k-1` (unsigned) bits are needed to represent
+          the output.
+        - Multiplying two signed :math:`k`-bit integers yields values from the range
+          :math:`[-2^{k-1}(2^{k-1}-1), 2^{2k-2}]`. The lower end of the range would only require
+          :math:`2k-1` (signed) bits, but that would limit the upper end to :math:`2^{2k-2}-1`.
+          Thus, we need one more bit, i.e. :math:`2k` (signed) bits are needed to represent the
+          output.
+
+        The reasoning for the work register size is:
+
+        - The ``QROM``\ s using this register have :math:`n` control wires (electronic register)
+          and thus require at least :math:`n-1` work wires for efficient implementation (unary
+          iteration).
+        - The ``SemiAdder`` in the constant term computes on registers of size :math:`b`, so it
+          needs :math:`b-1` work wires.
+        - The ``SignedOutMultiplier`` (with ``output_wires_zeroed=False`` and
+          ``len(output_wires)=b``) in the linear terms requires :math:`b+\max(2+\max(b, b-1, k, b), b-1)=2+b+\max(b,k)`. Here, we accounted for the :math:`b` cache qubits for going to ``output_wires_zeroed=True``, :math:`2` aux qubits to cache signs, the largest work wire register required for unsigned multiplication and two's complement calculations, and finally the number of work wires required for the last addition in the signed multiplier.
+        - The ``SignedOutSquare`` of a :math:`k` qubit register with ``output_wires_zeroed=True`` requires :math:`k` work wires.
+        - The ``OutMultiplier`` of the unsigned square cache and the coefficients into the phase gradient register requires :math:`b+1` work wires.
+        - The ``SignedOutMultiplier`` in the bilinear terms between two modes needs :math:`2+\max(2k, 2k-1, k, k)=2k+2` work wires, as it has ``output_wires_zeroed=True``. The ``SignedOutMultiplier`` between the cache and the coefficient register into the phase gradient requires :math:`b+\max(2+\max(b, b-1, 2k, b), b-1)=2+b+\max(b, 2k)`, as it has ``output_wires_zeroed=False``. This calculation is analogue to that of the multiplier for the linear terms, but with one input augmented from :math:`k` to :math:`2k` qubits.
+
+        Overall, we the largest requirement is
+
+        .. math::
+
+            \max(n-1, b-1, 2+b+\max(b,k), k, b+1, 2k+2, 2+b+\max(b, 2k))
+            =\max(n-1, 2+b+\max(b, 2k))
+
+        It is _very_ likely that :math:`n` is much smaller than the second term, so we assume
+        a work wire requirement of :math:`2+b+\max(b, 2k)` going forward.
+
 
     """
+    _validate_registers(registers, fragments)
 
     assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps

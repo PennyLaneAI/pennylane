@@ -16,7 +16,8 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -90,7 +91,7 @@ class SignedOutMultiplier(Operator):
                 x_wires,
                 y_wires,
                 output_wires,
-                work_wires, 
+                work_wires,
                 output_wires_zeroed=True,
             )
             return qp.sample(wires=output_wires)
