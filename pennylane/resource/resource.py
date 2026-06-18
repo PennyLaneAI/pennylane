@@ -331,6 +331,7 @@ class SpecsResources:
     measurements: dict[str, int]
     num_allocs: int
     depth: int | None = None
+    pbc_depth: tuple[int, int] | None = None
 
     def __post_init__(self):
         if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
@@ -344,6 +345,9 @@ class SpecsResources:
         # Need to explicitly include properties
         d = asdict(self)
         d["num_gates"] = self.num_gates
+
+        if self.pbc_depth is None:
+            del d["pbc_depth"]
 
         return d
 
@@ -411,9 +415,13 @@ class SpecsResources:
             for meas, count in self.measurements.items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(
-            f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
-        )
+        if self.pbc_depth is None:
+            lines.append(
+                f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
+            )
+        else:
+            for depth_type, value in enumerate(self.pbc_depth):
+                lines.append(f"{prefix}Depth-{depth_type} (PBC): {_count_to_str(value)}")
 
         return "\n".join(lines)
 
@@ -448,13 +456,18 @@ class SpecsResources:
         else:
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
-        depth_str = (
-            _count_to_str(self.depth, markdown_safe=True)
-            if self.depth is not None
-            else "Not computed"
-        )
-        lines.append(f"| **Depth** | {depth_str} |")
-        return "\n".join(lines)
+
+        if self.pbc_depth is None:
+            depth_str = (
+                _count_to_str(self.depth, markdown_safe=True)
+                if self.depth is not None
+                else "Not computed"
+            )
+            lines.append(f"| **Depth** | {depth_str} |")
+            return "\n".join(lines)
+        else:
+            for depth_type, value in enumerate(self.pbc_depth):
+                lines.append(f"{depth_type}Depth (PBC): {_count_to_str(value)}")
 
 
 @dataclass(frozen=True)
@@ -480,6 +493,7 @@ class SymbolicSpecsResources(SpecsResources):
     # measurements: dict[str, Expression]
     # num_allocs: Expression
     # depth: Expression | None = None
+    # pbc_depth: tuple[Expression, Expression] | None = None
     vars: set[str] = field(init=False)
 
     def __post_init__(self):
@@ -489,6 +503,12 @@ class SymbolicSpecsResources(SpecsResources):
                 self,
                 "depth",
                 Expression(self.depth),
+            )
+        if self.pbc_depth is not None:
+            object.__setattr__(
+                self,
+                "pbc_depth",
+                tuple(Expression(depth) for depth in self.pbc_depth),
             )
         if isinstance(self.num_allocs, int):
             object.__setattr__(
@@ -511,6 +531,9 @@ class SymbolicSpecsResources(SpecsResources):
         # ensure the top-level objects has the full set of variables
         if self.depth is not None:
             vars |= self.depth.vars
+        if self.pbc_depth is not None:
+            for depth in self.pbc_depth:
+                vars |= depth.vars
         vars |= self.num_allocs.vars
 
         # Union over all expressions
@@ -545,6 +568,10 @@ class SymbolicSpecsResources(SpecsResources):
 
         num_allocs = self.num_allocs.subs(substitutions)
         depth = self.depth.subs(substitutions) if self.depth is not None else None
+        if self.pbc_depth is not None:
+            pbc_depth = tuple(depth.subs(substitutions) for depth in self.pbc_depth)
+        else:
+            pbc_depth = None
 
         gate_types = {k: v.subs(substitutions) for k, v in self.gate_types.items()}
         gate_sizes = {k: v.subs(substitutions) for k, v in self.gate_sizes.items()}
@@ -558,6 +585,9 @@ class SymbolicSpecsResources(SpecsResources):
                 measurements={k: int(v) for k, v in measurements.items()},
                 num_allocs=int(num_allocs),
                 depth=int(depth) if depth is not None else None,
+                pbc_depth=(
+                    tuple(int(depth) for depth in pbc_depth) if pbc_depth is not None else None
+                ),
             )
 
         return SymbolicSpecsResources(
@@ -566,6 +596,7 @@ class SymbolicSpecsResources(SpecsResources):
             measurements=measurements,
             num_allocs=num_allocs,
             depth=depth,
+            pbc_depth=pbc_depth,
         )
 
     def __eq__(self, other):
@@ -580,6 +611,7 @@ class SymbolicSpecsResources(SpecsResources):
             self.vars == other.vars
             and self.num_allocs == other.num_allocs
             and self.depth == other.depth
+            and self.pbc_depth == other.pbc_depth
             and self.gate_types == other.gate_types
             and self.gate_sizes == other.gate_sizes
             and self.measurements == other.measurements
@@ -795,6 +827,20 @@ class CircuitSpecs:
                 max_column_size = max(
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
+            if res.pbc_depth is not None:
+                max_column_size = max(
+                    max_column_size,
+                    *[
+                        len(
+                            _count_to_str(
+                                res.pbc_depth[depth_type],
+                                extra_compact=True,
+                            )
+                        )
+                        + 1
+                        for depth_type in (0, 1)
+                    ],
+                )
             max_column_size = max(
                 max_column_size,
                 len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
@@ -862,6 +908,24 @@ class CircuitSpecs:
                     for res in flat_resources.values()
                 )
             )
+        if any(res.pbc_depth is not None for res in flat_resources.values()):
+            lines.append("Depth (PBC):".ljust(max_metric_length) + " |")
+            for depth_type in (0, 1):
+                lines.append(
+                    f"- Depth-{depth_type}".ljust(max_metric_length)
+                    + " |"
+                    + " |".join(
+                        (
+                            _count_to_str(
+                                res.pbc_depth[depth_type],
+                                extra_compact=True,
+                            )
+                            if res.pbc_depth is not None
+                            else " "
+                        ).rjust(max_column_size)
+                        for res in flat_resources.values()
+                    )
+                )
 
         return "\n".join(lines).rstrip("\n")
 
@@ -948,6 +1012,26 @@ class CircuitSpecs:
                     ],
                 )
             )
+        if any(res.pbc_depth is not None for res in flat_resources.values()):
+            lines.append(data_row("**Depth (PBC)**", [""] * len(levels)))
+            for depth_type in (0, 1):
+                lines.append(
+                    data_row(
+                        f"Depth-{depth_type}",
+                        [
+                            (
+                                _count_to_str(
+                                    res.pbc_depth[depth_type],
+                                    extra_compact=True,
+                                    markdown_safe=True,
+                                )
+                                if res.pbc_depth is not None
+                                else " "
+                            )
+                            for res in flat_resources.values()
+                        ],
+                    )
+                )
         return "\n".join(lines)
 
     def _repr_markdown_(self, collapsible: bool = True) -> str:

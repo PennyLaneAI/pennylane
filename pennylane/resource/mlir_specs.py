@@ -113,6 +113,11 @@ def _mlir_resources_to_specs_resources(
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
 
+    pbc_depth = None
+    if depths := resources.get("pbc_depth"):
+        if "depth_0" in depths and "depth_1" in depths:
+            pbc_depth = (depths["depth_0"], depths["depth_1"])
+
     if resources.get("auto_qubit_management", False):
         warnings.warn(
             f"Specs detected that function '{focus}' uses automatic qubit management. "
@@ -160,6 +165,14 @@ def _mlir_resources_to_specs_resources(
         for meas, meas_count in called_fn_resources.measurements.items():
             measurements[meas] += call_count * meas_count
 
+        if pbc_depth is None:
+            pbc_depth = called_fn_resources.pbc_depth
+        elif called_fn_resources.pbc_depth is not None:
+            pbc_depth = (
+                pbc_depth[0] + called_fn_resources.pbc_depth[0],
+                pbc_depth[1] + called_fn_resources.pbc_depth[1],
+            )
+
     # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
     fn_resources[focus] = SymbolicSpecsResources(
@@ -167,7 +180,8 @@ def _mlir_resources_to_specs_resources(
         gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
         measurements={k: measurements[k] for k in sorted(measurements.keys())},
         num_allocs=num_allocs,
-        depth=None,  # Can't get depth from MLIR pass results
+        depth=None,  # Can't get circuit depth from MLIR pass results
+        pbc_depth=pbc_depth,
     )
 
 
