@@ -374,6 +374,11 @@
 * Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* :class:`~.Adder` now accepts a ``method`` argument to select its decomposition strategy. The new
+  ``method="arithmetic"`` option provides a QFT-free, carry-ripple adder that avoids the arbitrarily
+  precise rotations of the default ``method="qft"`` decomposition and supports an arbitrary modulus.
+  [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
@@ -568,11 +573,6 @@
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
   [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
-
-* :class:`~.Adder` now accepts a ``method`` argument to select its decomposition strategy. The new
-  ``method="arithmetic"`` option provides a QFT-free, carry-ripple adder that avoids the arbitrarily
-  precise rotations of the default ``method="qft"`` decomposition and supports an arbitrary modulus.
-  [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
 <h3>Deprecations 👋</h3>
 
