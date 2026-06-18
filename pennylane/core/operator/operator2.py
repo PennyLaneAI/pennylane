@@ -1248,7 +1248,7 @@ class Operator2(ABC):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+    def __mul__(self, other: Callable | TensorLike) -> Operator:
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qp.pulse.ParametrizedHamiltonian([other], [self])
