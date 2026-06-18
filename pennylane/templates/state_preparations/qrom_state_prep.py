@@ -16,7 +16,7 @@ r"""Contains the QROMStatePreparation template."""
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.wires import Wires
 
 #: Small constant to prevent division by zero in state preparation.

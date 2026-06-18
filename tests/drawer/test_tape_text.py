@@ -38,6 +38,7 @@ from pennylane.drawer.tape_text import _Config
 from pennylane.tape import QuantumScript
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
+default_wire_layers = {i: [[-1, 10]] for i in range(4)}
 default_bit_map = {}
 
 default_mid_measure_1 = qp.ops.MidMeasure(0, meas_uid="1")
@@ -120,7 +121,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     )
     def test_add_mid_measure_grouping_symbols(self, op, layer_str, bit_map, out):
         """Test private _add_grouping_symbols function renders as expected for MidMeasures."""
-        config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=1)
+        config = _Config(
+            wire_map=default_wire_map,
+            bit_map=bit_map,
+            num_op_layers=4,
+            cur_layer=1,
+            wire_layers=default_wire_layers,
+        )
         assert out == _add_mid_measure_grouping_symbols(op, layer_str, config)
 
     def test_subroutine_mcm_grouping(self):
@@ -136,6 +143,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             bit_map={op.output[1].measurements[0]: 0, op.output[2].measurements[0]: 2},
             num_op_layers=4,
             cur_layer=0,
+            wire_layers=default_wire_layers,
         )
         new_layer = _add_subroutine_mcm_grouping_symbols(op, ["" for _ in range(7)], config)
         assert new_layer == ["", "", "", "║", "╠", "║", "╚"]
@@ -201,6 +209,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             cur_layer=cur_layer,
             cwire_layers={0: [[0]], 1: [[1]]},
             num_op_layers=4,
+            wire_layers=default_wire_layers,
         )
 
         assert out == _add_cond_grouping_symbols(op, layer_str, config)
@@ -264,8 +273,12 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qp.expval(qp.PauliX(0)), ["<X>", "", "", ""]),
             (qp.probs(wires=(0, 2)), ["╭Probs", "│", "╰Probs", ""]),
             (qp.var(qp.PauliX(1)), ["", "Var[X]", "", ""]),
-            (qp.state(), ["State", "State", "State", "State"]),
-            (qp.sample(), ["Sample", "Sample", "Sample", "Sample"]),
+            # Following the fix for issue #7807, measurements that span all
+            # wires implicitly (StateMP / SampleMP / etc. with empty
+            # ``m.wires``) now render with the same grouping brackets as
+            # multi-wire measurements that list their wires explicitly.
+            (qp.state(), ["╭State", "├State", "├State", "╰State"]),
+            (qp.sample(), ["╭Sample", "├Sample", "├Sample", "╰Sample"]),
             (qp.purity(0), ["purity", "", "", ""]),
             (qp.vn_entropy([2, 1]), ["", "╭vnentropy", "╰vnentropy", ""]),
             (qp.mutual_info(3, 1), ["", "╭mutualinfo", "│", "╰mutualinfo"]),
@@ -310,6 +323,18 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qp.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰⊕"]),
             (qp.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰⊕"]),
             (qp.ctrl(qp.TemporaryAND([0, 1, 2]), control=[3]), ["╭●", "├●", "├⊕", "╰●"]),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 3, rot_axis="Y"),
+                ["╭◑", "├◑", "│", "╰RY"],
+            ),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 3, rot_axis="X"),
+                ["╭◑", "├◑", "│", "╰RX"],
+            ),
+            (
+                qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [2, 0], 1, rot_axis="Z"),
+                ["╭◑", "├RZ", "╰◑", "─"],
+            ),
         ],
     )
     def test_add_obj(self, op, out):
@@ -318,6 +343,42 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             wire_map=default_wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1
         )
         assert out == _add_obj(op, ["─"] * 4, config)
+
+    @pytest.mark.parametrize(
+        "all_wires, expected",
+        [
+            (([2, 0], [1, 3, 4], [5]), ["╭◑", "├QROM", "├◑", "├QROM", "├QROM", "╰work"]),
+            (([0], [1], []), ["╭◑", "╰QROM"]),
+            (([1], [0, 2, 3], [4]), ["╭QROM", "├◑", "├QROM", "├QROM", "╰work"]),
+            (([2, 0, 1, 3], [7], [5, 6, 4]), ["╭◑"] + ["├◑"] * 3 + ["├work"] * 3 + ["╰QROM"]),
+        ],
+    )
+    def test_add_qrom(self, all_wires, expected):
+        """Test adding the first operation to array of strings"""
+        num_wires = sum(len(w) for w in all_wires)
+        op = qp.QROM(np.ones((2 ** len(all_wires[0]), len(all_wires[1]))), *all_wires)
+        _wire_map = {i: i for i in range(num_wires)}
+        config = _Config(
+            wire_map=_wire_map, bit_map=default_bit_map, num_op_layers=num_wires, cur_layer=1
+        )
+        out = _add_obj(op, ["─"] * num_wires, config)
+        assert expected == out
+
+    def test_add_obj_allocation(self):
+        """Test _add_obj for allocation and deallocation."""
+
+        wire = qp.allocation.DynamicWire()
+        config = _Config(wire_map={0: 0, wire: 1}, bit_map={}, num_op_layers=4, cur_layer=1)
+        out = _add_obj(qp.allocation.Allocate(wire), ["-"] * 2, config)
+        assert out == ["-", "-|0>├"]
+
+        out = _add_obj(
+            qp.allocation.Allocate(wire, state=qp.allocation.AllocateState.ANY), ["-"] * 2, config
+        )
+        assert out == ["-", "-├"]
+
+        out2 = _add_obj(qp.allocation.Deallocate(wire), ["-", "-"], config)
+        assert out2 == ["-", "-┤"]
 
     @pytest.mark.parametrize(
         "op, bit_map, layer_str, out",
@@ -339,7 +400,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     )
     def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
         """Test adding the first MidMeasure to array of strings"""
-        config = _Config(wire_map=default_wire_map, bit_map=bit_map, num_op_layers=4, cur_layer=0)
+        config = _Config(
+            wire_map=default_wire_map,
+            bit_map=bit_map,
+            num_op_layers=4,
+            cur_layer=0,
+            wire_layers=default_wire_layers,
+        )
         assert out == _add_obj(op, layer_str, config)
 
     @pytest.mark.parametrize(
@@ -381,6 +448,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             cur_layer=1,
             cwire_layers={0: [[0]], 1: [[1]]},
             num_op_layers=4,
+            wire_layers=default_wire_layers,
         )
 
         assert out == _add_obj(op, layer_str, config)
@@ -447,7 +515,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
         expected = [f"╭{label}"] + [f"├{label}"] * (n_wires - 2) + [f"╰{label}"]
-        config = _Config(wire_map=wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1)
+        config = _Config(
+            wire_map=wire_map,
+            bit_map=default_bit_map,
+            num_op_layers=4,
+            cur_layer=1,
+            wire_layers=default_wire_layers,
+        )
         out = _add_obj(op, ["─"] * n_wires, config)
         assert expected == out
 
@@ -648,6 +722,18 @@ single_op_tests_data = [
     ),
     (qp.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
     (qp.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="Y"),
+        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RY(M0)─┤  ",
+    ),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="X"),
+        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RX(M0)─┤  ",
+    ),
+    (
+        qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [2, 0], 1, rot_axis="Z"),
+        "2: ─╭◑──────┤  \n0: ─├◑──────┤  \n1: ─╰RZ(M0)─┤  ",
+    ),
     (qp.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
     (qp.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
     (

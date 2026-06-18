@@ -24,6 +24,7 @@ from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -33,7 +34,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.reconstruct import get_decomp_kwargs
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
@@ -82,7 +82,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                 )
             super().interpret_operation(ctrl_op)
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,super-init-not-called
     class DecomposeInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
         when program capture is enabled.

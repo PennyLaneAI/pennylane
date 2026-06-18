@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
@@ -27,6 +26,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -34,11 +35,7 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
 )
 from pennylane.ops import MidMeasure
@@ -81,7 +78,7 @@ if TYPE_CHECKING:
 
     from jax.extend.core import Jaxpr
 
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 # Base gate set for DefaultQubit
@@ -1189,28 +1186,6 @@ class DefaultQubit(Device):
         tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
-
-    # pylint :disable=import-outside-toplevel, unused-argument
-    @debug_logger
-    def jaxpr_jvp(
-        self,
-        jaxpr,
-        args: Sequence[TensorLike],
-        tangents: Sequence[TensorLike],
-        execution_config=None,
-    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
-        gradient_method = getattr(execution_config, "gradient_method", "backprop")
-        if gradient_method == "backprop":
-            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
-
-        if gradient_method == "adjoint":
-            from .qubit.jaxpr_adjoint import execute_and_jvp
-
-            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
-
-        raise NotImplementedError(
-            f"DefaultQubit does not support gradient_method={gradient_method}"
-        )
 
 
 def _simulate_wrapper(circuit, kwargs):

@@ -23,8 +23,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
@@ -173,7 +173,7 @@ class FABLE(Operation):
         op_list = [Hadamard(w) for w in wires_i]
 
         nots = {}
-        for theta, control_index in zip(thetas, control_wires):
+        for theta, control_index in zip(thetas, control_wires, strict=True):
             if math.is_abstract(theta):
                 for c_wire in nots:
                     op_list.append(CNOT(wires=[c_wire] + auxiliary))
@@ -195,7 +195,7 @@ class FABLE(Operation):
         for c_wire in nots:
             op_list.append(CNOT([c_wire] + auxiliary))
 
-        for w_i, w_j in zip(wires_i, wires_j):
+        for w_i, w_j in zip(wires_i, wires_j, strict=True):
             op_list.append(SWAP(wires=[w_i, w_j]))
 
         for w in wires_i:
@@ -214,7 +214,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
     wire_map = dict(enumerate(wires_j + wires_i))
 
     nots = {}
-    for theta, control_index in zip(thetas, control_wires):
+    for theta, control_index in zip(thetas, control_wires, strict=True):
 
         if math.abs(2 * theta) > tol:
             for _ in nots:

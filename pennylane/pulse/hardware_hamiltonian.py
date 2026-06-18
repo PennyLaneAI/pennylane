@@ -21,7 +21,7 @@ from typing import Union
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Identity, LinearCombination, SProd, X, Y
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires

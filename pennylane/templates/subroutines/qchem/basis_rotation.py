@@ -19,8 +19,8 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import Wires, WiresLike
 
@@ -427,7 +427,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
             cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary)
-        givens_matrices, givens_ids = zip(*givens_list)
+        givens_matrices, givens_ids = zip(*givens_list, strict=True)
 
         if _qjit_or_capture():
             givens_ids = math.array(givens_ids, like="jax")
@@ -445,7 +445,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
 
     def complex_unitary(unitary, wires):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
-        givens_matrices, givens_ids = zip(*givens_list)
+        givens_matrices, givens_ids = zip(*givens_list, strict=True)
 
         if _qjit_or_capture():
             phase_list = math.array(phase_list, like="jax")

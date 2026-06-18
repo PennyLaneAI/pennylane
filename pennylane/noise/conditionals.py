@@ -22,8 +22,8 @@ from inspect import isclass, signature
 from pennylane import math, measurements
 from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
+from pennylane.core.operator import Operation
 from pennylane.exceptions import WireError
-from pennylane.operation import Operation
 from pennylane.ops import (
     Adjoint,
     Controlled,

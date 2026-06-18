@@ -19,9 +19,12 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator2
+from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import Shots, StateMP
+from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
+from pennylane.queuing import AnnotatedQueue
 from pennylane.tape.qscript import QuantumScript, process_queue
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
@@ -39,6 +42,52 @@ def test_adjoint_deprecated():
     qs = QuantumScript([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
     with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
         qs.adjoint()
+
+
+# pylint: disable=too-few-public-methods
+class Op2(Operator2):
+    """A simple ``Operator2`` subclass for testing."""
+
+    dynamic_argnames = ("phi",)
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
+
+
+class TestProcessQueueOperator2:
+    """Tests that ``process_queue`` correctly handles :class:`~.Operator2` instances."""
+
+    def test_operator2_collected_as_op(self):
+        """Test that an ``Operator2`` instance in the queue ends up in the ``ops`` list."""
+        with AnnotatedQueue() as q:
+            op = Op2(0.5, wires=0)
+            m = qp.expval(qp.PauliZ(0))
+
+        ops, measurements = process_queue(q)
+        assert ops == [op]
+        assert measurements == [m]
+
+    def test_operator2_after_measurement_error(self):
+        """Test that an ``Operator2`` appearing after a measurement raises an error."""
+        with AnnotatedQueue() as q:
+            qp.expval(qp.PauliZ(0))
+            Op2(0.5, wires=0)
+
+        with pytest.raises(ValueError, match="must occur prior to measurements"):
+            process_queue(q)
+
+    def test_mixed_operator_and_operator2(self):
+        """Test that legacy ``Operator`` and new ``Operator2`` instances both end up in
+        ``ops`` and preserve insertion order."""
+        with AnnotatedQueue() as q:
+            o1 = qp.PauliX(0)
+            o2 = Op2(0.5, wires=1)
+            o3 = qp.PauliY(2)
+            m = qp.expval(qp.PauliZ(0))
+
+        ops, measurements = process_queue(q)
+        assert ops == [o1, o2, o3]
+        assert measurements == [m]
 
 
 class TestInitialization:
