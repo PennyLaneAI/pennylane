@@ -1276,7 +1276,7 @@ class Operator2(ABC):
             return self + (qp.math.multiply(-1, other))
         return NotImplemented
 
-    def __rsub__(self, other: Union["Operator", TensorLike]):
+    def __rsub__(self, other: Operator | TensorLike]) -> Operator:
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
