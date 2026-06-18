@@ -240,7 +240,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Type aliases `Int`, `Float`, `Complex`, `Bool` have been introduced that allow for an intuitive 
+* Type aliases `Int`, `Float`, `Complex`, `Bool, Wire` have been introduced that allow for an intuitive 
   sized abstract type notation.  
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
 
@@ -250,6 +250,9 @@
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
+  Wire            # Single abstract wire
+  Wire[4]         # Four abstract wires
+  Wire[-1]        # Wire sequence with dynamic size
   ```
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
