@@ -38,11 +38,11 @@
    .. autosummary::
       :nosignatures:
 
-   {%- for item in attributes %}
+      {% for item in attributes -%}
       ~{{ name }}.{{ item }}
-   {%- endfor %}
+      {% endfor %}
 
-   {%- endif %}
+   {% endif %}
    {%- endblock %}
 
    {%- for item in attributes %}
@@ -72,11 +72,11 @@
 
    .. autosummary::
 
-   {%- for item in methods %}
+      {% for item in methods -%}
       ~{{ name }}.{{ item }}
-   {%- endfor %}
+      {% endfor %}
 
-   {%- endif %}
+   {% endif %}
    {%- endblock %}
 
    {%- for item in methods %}
