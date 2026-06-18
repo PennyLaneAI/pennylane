@@ -33,51 +33,61 @@ from pennylane.wires import Wires, WiresLike
 from .phase_adder import PhaseAdder
 
 
-def _increment_specs(wires, control=()):
-    """Gate specs for a carry-ripple +1 (mod 2^len) on big-endian ``wires``."""
+def _increment_specs(wires, all_wires, control=()):
+    """Gate specs for a carry-ripple +1 (mod 2^len) on big-endian ``wires``.
+
+    Each multi-controlled ``X`` borrows every uninvolved wire as a dirty ancilla, allowing
+    an ancilla-assisted decomposition while leaving those wires unchanged.
+    """
     specs = []
     for i, target in enumerate(wires):
         controls = list(wires[i + 1 :]) + list(control)
-        specs.append(("MCX", controls + [target]) if controls else ("X", [target]))
+        if not controls:
+            specs.append(("X", [target], []))
+            continue
+        involved = set(controls) | {target}
+        borrowed = [w for w in all_wires if w not in involved]
+        specs.append(("MCX", controls + [target], borrowed))
     return specs
 
 
-def _add_constant_specs(k, wires, control=()):
+def _add_constant_specs(k, wires, all_wires, control=()):
     """Gate specs adding the constant ``k`` (mod 2^len) to big-endian ``wires``."""
     n = len(wires)
     k %= 2**n
     specs = []
     for j in range(n):
         if (k >> j) & 1:
-            specs.extend(_increment_specs(wires[0 : n - j], control))
+            specs.extend(_increment_specs(wires[0 : n - j], all_wires, control))
     return specs
 
 
 def _arithmetic_adder_specs(k, x_wires, mod, work_wires):
     """Gate specs for the QFT-free modular adder. Reversing a spec sublist gives its adjoint."""
     n = len(x_wires)
+    all_wires = list(x_wires) + list(work_wires)
     if mod == 2**n:
-        return _add_constant_specs(k, x_wires)
+        return _add_constant_specs(k, list(x_wires), all_wires)
 
     aug = list(work_wires[:1]) + list(x_wires)
     flag = work_wires[1]
     msb = aug[0]
     k %= mod
 
-    specs = _add_constant_specs(k, aug)
-    specs += _add_constant_specs(mod, aug)[::-1]
-    specs.append(("CNOT", [msb, flag]))
-    specs += _add_constant_specs(mod, aug, control=[flag])
-    specs += _add_constant_specs(k, aug)[::-1]
-    specs += [("X", [msb]), ("CNOT", [msb, flag]), ("X", [msb])]
-    specs += _add_constant_specs(k, aug)
+    specs = _add_constant_specs(k, aug, all_wires)
+    specs += _add_constant_specs(mod, aug, all_wires)[::-1]
+    specs.append(("CNOT", [msb, flag], []))
+    specs += _add_constant_specs(mod, aug, all_wires, control=[flag])
+    specs += _add_constant_specs(k, aug, all_wires)[::-1]
+    specs += [("X", [msb], []), ("CNOT", [msb, flag], []), ("X", [msb], [])]
+    specs += _add_constant_specs(k, aug, all_wires)
     return specs
 
 
 def _spec_to_op(spec):
-    kind, wires = spec
+    kind, wires, borrowed = spec
     if kind == "MCX":
-        return MultiControlledX(wires=wires)
+        return MultiControlledX(wires=wires, work_wires=borrowed, work_wire_type="borrowed")
     if kind == "CNOT":
         return CNOT(wires=wires)
     return PauliX(wires[0])
@@ -85,14 +95,14 @@ def _spec_to_op(spec):
 
 def _count_specs(specs) -> dict:
     counts = defaultdict(int)
-    for kind, wires in specs:
+    for kind, wires, borrowed in specs:
         if kind == "MCX":
             counts[
                 resource_rep(
                     MultiControlledX,
                     num_control_wires=len(wires) - 1,
                     num_zero_control_values=0,
-                    num_work_wires=0,
+                    num_work_wires=len(borrowed),
                     work_wire_type="borrowed",
                 )
             ] += 1
@@ -116,7 +126,8 @@ class Adder(Operation):
     By default, the implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. A QFT-free ``method="arithmetic"``
     decomposition built from carry-ripple incrementers is also available, which avoids the
-    arbitrarily precise rotations of the QFT approach.
+    arbitrarily precise rotations of the QFT approach. Its multi-controlled gates reuse the
+    remaining wires as borrowed (dirty) ancillas, enabling a more efficient decomposition.
 
     .. note::
 
@@ -185,7 +196,7 @@ class Adder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "mod", "k", "method"}
+    resource_keys = {"num_x_wires", "num_work_wires", "mod", "k", "method"}
 
     def __init__(
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), method="qft"
@@ -227,6 +238,7 @@ class Adder(Operation):
     def resource_params(self) -> dict:
         return {
             "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
             "k": self.hyperparameters["k"],
             "method": self.hyperparameters["method"],
@@ -340,9 +352,9 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
     change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
 
 
-def _adder_arithmetic_resources(num_x_wires, mod, k, **__) -> dict:
+def _adder_arithmetic_resources(num_x_wires, num_work_wires, mod, k, **__) -> dict:
     x_wires = list(range(num_x_wires))
-    work_wires = [num_x_wires, num_x_wires + 1]
+    work_wires = list(range(num_x_wires, num_x_wires + num_work_wires))
     return _count_specs(_arithmetic_adder_specs(k, x_wires, mod, work_wires))
 
 
