@@ -376,13 +376,20 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
+  the decomposition rule validate the number of available work wires against the needed work wires
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
+  number of control wires/angles.
+  [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
+
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
   decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
+  decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
@@ -609,6 +616,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -622,6 +630,7 @@
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
 
 * Adds a new `pennylane/core` module.

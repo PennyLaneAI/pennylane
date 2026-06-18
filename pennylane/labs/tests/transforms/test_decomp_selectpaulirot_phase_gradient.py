@@ -34,17 +34,36 @@ from pennylane.wires import WireError
     [
         [5, 3, 2, "angle_wires and phase_grad wires must be of same size"],
         [3, 4, 2, "angle_wires and phase_grad wires must be of same size"],
-        [4, 4, 2, "work_wires need to be at least of size phase_grad_wires - 1"],
+        [4, 4, 2, r"work_wires need to be at least of size len\(phase_grad_wires\) - 1"],
     ],
 )
-def test_wires_error(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
-    """Test WireError is raised correctly"""
+def test_wires_error_constructor(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
+    """Test WireError is raised correctly when constructing the DecompositionRule"""
     angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
 
     with pytest.raises(WireError, match=msg_match):
         _ = make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+
+
+def test_wires_error_decomp_fun():
+    """Test WireError is raised correctly when calling the decomposition function on a large
+    SelectPauliRot that needs more work wires for its QROM than are available."""
+    registers = {
+        "angle_wires": 3,
+        "phase_grad_wires": 3,
+        "work_wires": 2,
+        "control_wires": 4,
+        "target_wires": 1,
+    }
+    registers = qp.registers(registers)
+    control_wires = registers.pop("control_wires")
+    target_wire = registers.pop("target_wires")[0]
+    rule = make_selectpaulirot_to_phase_gradient_decomp(**registers)
+    angles = np.random.random(2**4)
+    with pytest.raises(WireError, match=r"work_wires need to be at least of size len\(control"):
+        rule(angles, control_wires, target_wire, "X")
 
 
 @pytest.mark.parametrize("prec", [2, 3, 5])
