@@ -1232,7 +1232,7 @@ class Operator2(ABC):
 
             self._batch_size = first_dims[0]
 
-    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
+    def __add__(self, other: Operator | TensorLike) -> Operator:
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
