@@ -253,9 +253,11 @@
   decomposition when using phase-gradient based decompositions of multiplexers.
   [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
-* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
-  symbols on the control wires and a Pauli rotation label on the target wire.
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` and :class:`~.QROM` with 
+  multiplexer selector symbols on the control wires and a Pauli rotation and a "QROM" label,
+  respectively, on the target wire(s).
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
+  [(#9692)](https://github.com/PennyLaneAI/pennylane/pull/9692)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
@@ -374,13 +376,20 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
+  the decomposition rule validate the number of available work wires against the needed work wires
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
+  number of control wires/angles.
+  [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
+
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
   decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
+  decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
@@ -490,6 +499,10 @@
 
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
+
+* Support for executing PLxPR without qjit has been removed.
+  [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+  [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
@@ -603,6 +616,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -616,6 +630,8 @@
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
+  [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.

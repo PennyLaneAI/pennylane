@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
@@ -1187,28 +1186,6 @@ class DefaultQubit(Device):
         tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
-
-    # pylint :disable=import-outside-toplevel, unused-argument
-    @debug_logger
-    def jaxpr_jvp(
-        self,
-        jaxpr,
-        args: Sequence[TensorLike],
-        tangents: Sequence[TensorLike],
-        execution_config=None,
-    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
-        gradient_method = getattr(execution_config, "gradient_method", "backprop")
-        if gradient_method == "backprop":
-            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
-
-        if gradient_method == "adjoint":
-            from .qubit.jaxpr_adjoint import execute_and_jvp
-
-            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
-
-        raise NotImplementedError(
-            f"DefaultQubit does not support gradient_method={gradient_method}"
-        )
 
 
 def _simulate_wrapper(circuit, kwargs):

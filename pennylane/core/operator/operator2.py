@@ -22,7 +22,7 @@ from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -1246,7 +1246,7 @@ class Operator2(ABC):
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if qp.math.allequal(other, 0):
+            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
                 return self
             return qp.sum(
                 self,
@@ -1285,11 +1285,11 @@ class Operator2(ABC):
             return self + (qp.math.multiply(-1, other))
         return NotImplemented
 
-    def __rsub__(self, other: Operator | TensorLike):
+    def __rsub__(self, other: Operator | TensorLike) -> Operator:
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
-    def __neg__(self):
+    def __neg__(self) -> Operator:
         """The negation operation of an Operator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
