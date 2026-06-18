@@ -15,18 +15,92 @@
 Contains the Adder template.
 """
 
+from collections import defaultdict
+
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
+    register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
+from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
+
+
+def _increment_specs(wires, control=()):
+    """Gate specs for a carry-ripple +1 (mod 2^len) on big-endian ``wires``."""
+    specs = []
+    for i, target in enumerate(wires):
+        controls = list(wires[i + 1 :]) + list(control)
+        specs.append(("MCX", controls + [target]) if controls else ("X", [target]))
+    return specs
+
+
+def _add_constant_specs(k, wires, control=()):
+    """Gate specs adding the constant ``k`` (mod 2^len) to big-endian ``wires``."""
+    n = len(wires)
+    k %= 2**n
+    specs = []
+    for j in range(n):
+        if (k >> j) & 1:
+            specs.extend(_increment_specs(wires[0 : n - j], control))
+    return specs
+
+
+def _arithmetic_adder_specs(k, x_wires, mod, work_wires):
+    """Gate specs for the QFT-free modular adder. Reversing a spec sublist gives its adjoint."""
+    n = len(x_wires)
+    if mod == 2**n:
+        return _add_constant_specs(k, x_wires)
+
+    aug = list(work_wires[:1]) + list(x_wires)
+    flag = work_wires[1]
+    msb = aug[0]
+    k %= mod
+
+    specs = _add_constant_specs(k, aug)
+    specs += _add_constant_specs(mod, aug)[::-1]
+    specs.append(("CNOT", [msb, flag]))
+    specs += _add_constant_specs(mod, aug, control=[flag])
+    specs += _add_constant_specs(k, aug)[::-1]
+    specs += [("X", [msb]), ("CNOT", [msb, flag]), ("X", [msb])]
+    specs += _add_constant_specs(k, aug)
+    return specs
+
+
+def _spec_to_op(spec):
+    kind, wires = spec
+    if kind == "MCX":
+        return MultiControlledX(wires=wires)
+    if kind == "CNOT":
+        return CNOT(wires=wires)
+    return PauliX(wires[0])
+
+
+def _count_specs(specs) -> dict:
+    counts = defaultdict(int)
+    for kind, wires in specs:
+        if kind == "MCX":
+            counts[
+                resource_rep(
+                    MultiControlledX,
+                    num_control_wires=len(wires) - 1,
+                    num_zero_control_values=0,
+                    num_work_wires=0,
+                    work_wire_type="borrowed",
+                )
+            ] += 1
+        elif kind == "CNOT":
+            counts[resource_rep(CNOT)] += 1
+        else:
+            counts[resource_rep(PauliX)] += 1
+    return dict(counts)
 
 
 class Adder(Operation):
@@ -39,8 +113,10 @@ class Adder(Operation):
 
         \text{Adder}(k, mod) |x \rangle = | x+k \; \text{mod} \; mod \rangle.
 
-    The implementation is based on the quantum Fourier transform method presented in
-    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+    By default, the implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. A QFT-free ``method="arithmetic"``
+    decomposition built from carry-ripple incrementers is also available, which avoids the
+    arbitrarily precise rotations of the QFT approach.
 
     .. note::
 
@@ -57,6 +133,8 @@ class Adder(Operation):
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
             should be provided. Defaults to empty tuple.
+        method (str): the decomposition strategy to use, either ``"qft"`` (default) for the
+            QFT-based adder or ``"arithmetic"`` for the QFT-free carry-ripple adder.
 
     **Example**
 
@@ -107,10 +185,10 @@ class Adder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "mod"}
+    resource_keys = {"num_x_wires", "mod", "k", "method"}
 
     def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), method="qft"
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -124,6 +202,8 @@ class Adder(Operation):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
+        if method not in ("qft", "arithmetic"):
+            raise ValueError(f"method must be 'qft' or 'arithmetic', but received {method}.")
         if num_works_wires != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -139,6 +219,7 @@ class Adder(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
+        self.hyperparameters["method"] = method
 
         super().__init__(wires=all_wires)
 
@@ -147,6 +228,8 @@ class Adder(Operation):
         return {
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "mod": self.hyperparameters["mod"],
+            "k": self.hyperparameters["k"],
+            "method": self.hyperparameters["method"],
         }
 
     @property
@@ -173,6 +256,7 @@ class Adder(Operation):
             new_dict["x_wires"],
             self.hyperparameters["mod"],
             new_dict["work_wires"],
+            self.hyperparameters["method"],
         )
 
     def decomposition(self):
@@ -184,7 +268,7 @@ class Adder(Operation):
 
     @staticmethod
     def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wires: WiresLike
+        k, x_wires: WiresLike, mod, work_wires: WiresLike, method="qft"
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -197,6 +281,8 @@ class Adder(Operation):
             work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
                 work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
                 should be provided.
+            method (str): the decomposition strategy, either ``"qft"`` (default) or the QFT-free
+                ``"arithmetic"`` carry-ripple adder.
         Returns:
             list[.Operator]: Decomposition of the operator
 
@@ -205,6 +291,12 @@ class Adder(Operation):
         >>> qp.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
         [(Adjoint(QFT(wires=[0, 1, 2]))) @ PhaseAdder(wires=[0, 1, 2]) @ QFT(wires=[0, 1, 2])]
         """
+        if method == "arithmetic":
+            return [
+                _spec_to_op(spec)
+                for spec in _arithmetic_adder_specs(k, list(x_wires), mod, list(work_wires))
+            ]
+
         if mod == 2 ** len(x_wires):
             qft_wires = x_wires
             work_wire = ()
@@ -217,7 +309,7 @@ class Adder(Operation):
         return op_list
 
 
-def _adder_decomposition_resources(num_x_wires, mod) -> dict:
+def _adder_decomposition_resources(num_x_wires, mod, **__) -> dict:
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
@@ -227,6 +319,15 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     }
 
 
+def _qft_method_condition(method="qft", **__):
+    return method == "qft"
+
+
+def _arithmetic_method_condition(method="qft", **__):
+    return method == "arithmetic"
+
+
+@register_condition(_qft_method_condition)
 @register_resources(_adder_decomposition_resources)
 def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod == 2 ** len(x_wires):
@@ -239,4 +340,17 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
     change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
 
 
-add_decomps(Adder, _adder_decomposition)
+def _adder_arithmetic_resources(num_x_wires, mod, k, **__) -> dict:
+    x_wires = list(range(num_x_wires))
+    work_wires = [num_x_wires, num_x_wires + 1]
+    return _count_specs(_arithmetic_adder_specs(k, x_wires, mod, work_wires))
+
+
+@register_condition(_arithmetic_method_condition)
+@register_resources(_adder_arithmetic_resources)
+def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+    for spec in _arithmetic_adder_specs(k, list(x_wires), mod, list(work_wires)):
+        _spec_to_op(spec)
+
+
+add_decomps(Adder, _adder_decomposition, _adder_arithmetic_decomposition)
