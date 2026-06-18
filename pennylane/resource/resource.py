@@ -464,10 +464,13 @@ class SpecsResources:
                 else "Not computed"
             )
             lines.append(f"| **Depth** | {depth_str} |")
-            return "\n".join(lines)
         else:
+
             for depth_type, value in enumerate(self.pbc_depth):
-                lines.append(f"{depth_type}Depth (PBC): {_count_to_str(value)}")
+                lines.append(
+                    f"| Depth-{depth_type} (PBC) | {_count_to_str(value, markdown_safe=True)} |"
+                )
+        return "\n".join(lines)
 
 
 @dataclass(frozen=True)

@@ -241,7 +241,7 @@
 <h3>Improvements 🛠</h3>
 
 * Pauli-Based Computation (PBC) depth data can now be returned from :func:`~.specs`.
-  [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+  [(#9703)](https://github.com/PennyLaneAI/pennylane/pull/9703)
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)

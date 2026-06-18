@@ -165,13 +165,14 @@ def _mlir_resources_to_specs_resources(
         for meas, meas_count in called_fn_resources.measurements.items():
             measurements[meas] += call_count * meas_count
 
-        if pbc_depth is None:
-            pbc_depth = called_fn_resources.pbc_depth
-        elif called_fn_resources.pbc_depth is not None:
-            pbc_depth = (
-                pbc_depth[0] + called_fn_resources.pbc_depth[0],
-                pbc_depth[1] + called_fn_resources.pbc_depth[1],
-            )
+        if called_fn_resources.pbc_depth is not None:
+            if pbc_depth is None:
+                pbc_depth = tuple(call_count * depth for depth in called_fn_resources.pbc_depth)
+            else:
+                pbc_depth = (
+                    pbc_depth[0] + call_count * called_fn_resources.pbc_depth[0],
+                    pbc_depth[1] + call_count * called_fn_resources.pbc_depth[1],
+                )
 
     # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
