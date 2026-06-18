@@ -87,7 +87,7 @@ docs = [
     "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
-    "docutils==0.20",
+    "docutils==0.23",
     "sphinx==9.0",
     "sphinx-automodapi==0.22",
     "sphinx-copybutton",
