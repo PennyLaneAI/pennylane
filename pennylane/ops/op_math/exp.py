@@ -364,15 +364,26 @@ class Exp(ScalarSymbolicOp, Operation):
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
-                eigvals = self.eigvals()
+                # Compute the eigendecomposition without recording. Diagonalizing a
+                # composite base (e.g. a Sum/Hamiltonian) constructs intermediate
+                # operators; if those are queued into an active recording context,
+                # ``qp.matrix`` below would pick them up and return an incorrect
+                # diagonalizing matrix, silently producing a wrong (exception-free)
+                # result and incorrect gradients.
+                with queuing.QueuingManager.stop_recording():
+                    eigvals = self.eigvals()
+                    diagonalizing_gates = self.diagonalizing_gates()
                 eigvals_mat = (
                     math.stack([math.diag(e) for e in eigvals])
                     if math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )
-                if len(self.diagonalizing_gates()) == 0:
+                if len(diagonalizing_gates) == 0:
                     return math.expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
-                diagonalizing_mat = qp.matrix(self.diagonalizing_gates, wire_order=self.wires)()
+                with queuing.QueuingManager.stop_recording():
+                    diagonalizing_mat = qp.matrix(
+                        qp.tape.QuantumScript(diagonalizing_gates), wire_order=self.wires
+                    )
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
