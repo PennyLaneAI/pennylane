@@ -562,6 +562,10 @@
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
   [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
+* :class:`~.Adder` now accepts a ``method`` argument to select its decomposition strategy. The new
+  ``method="arithmetic"`` option provides a QFT-free, carry-ripple adder that avoids the arbitrarily
+  precise rotations of the default ``method="qft"`` decomposition and supports an arbitrary modulus.
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
