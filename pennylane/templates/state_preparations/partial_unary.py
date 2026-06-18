@@ -155,48 +155,25 @@ class PUIsometryFinder:
              & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
              & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
-             & 0 & \bbox[#f4a3a3, 2px]{1} & \bbox[#f4a3a3]{1} & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} & 0 & \bbox[#f4a3a3]{1} \\
-             & 0 & 1 & 1 & \bbox[#9dc3f0]{1} & 1 & 1 & 1 \\
+             & 0 & \bbox[#E5BCD3]{1} & \bbox[#E5BCD3]{1} & \bbox[#F2CF7F]{1} & \bbox[#E5BCD3]{1} & 0 & \bbox[#E5BCD3]{1} \\
+             & 0 & 1 & 1 & \bbox[#AAD9F4]{1} & 1 & 1 & 1 \\
              & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
              & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
-            \hline  &  &  &  & \uparrow &  &  &  \\
+            &  &  &  & \uparrow &  &  &  \\
             \end{array}
             \xrightarrow{\substack{\text{Fanout} \\ 3:(1, 2, 4, 6)}}
             \begin{array}{rccc|cccc}
              & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
              & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-             & 0 & \bbox[#f4a3a3]{1} & \bbox[#f4a3a3]{0} & 0 & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} & 0 \\ \hline
-            \scriptstyle k=0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
+            \scriptstyle \color{#009E73}{k=0} & \multicolumn{3}{c}{\color{#009E73}\rule{3.60em}{1px}} & \multicolumn{4}{c}{\color{#009E73}\rule{4.80em}{1px}} \\
+             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
              & 0 & 0 & 0 & 1 & 0 & 1 & 0 \\
              & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
              & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
-            \\ \hline  &  &  &  & \uparrow &  &  &  \\
+            &  &  &  & \uparrow &  &  &  \\
             \end{array}
-            \xrightarrow{\substack{\text{Fanout} \\ 4:(1, 2, 5)}}
-            \underset{\mathcal{B} = \{0, 1\}}{\begin{array}{rccc|cccc}
-             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
-             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-             & 0 & \bbox[#f4a3a3]{0} & 0 & 0 & 0 & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} \\ \hline
-            \scriptstyle h=1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 \\
-             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
-             & 0 & 0 & 0 & 1 & 0 & \bbox[#9dc3f0]{1} & 0 \\
-             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & \bbox[#9dc3f0]{1} & 0 \\
-            \\ \hline  &  &  &  &  &  & \uparrow &  \\
-            \end{array}}
-            \xrightarrow{\substack{\text{Fanout} \\ 5:(1, 6)}}
-            \underset{\mathcal{B} = \{0, 1, 2\}}{\begin{array}{rccc|cccc}
-             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
-             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-             & 0 & 1 & 0 & 0 & 0 & 1 & 0 \\ \hline
-            \scriptstyle h=2 & 0 & 0 & 1 & 0 & 1 & 0 & 0 \\
-             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
-             & 0 & 1 & \bbox[#f4a3a3]{0} & \bbox[#f4a3a3]{1} & 0 & \bbox[#f4a3a3]{1} & \bbox[#f7c98b]{1} \\
-             & 1 & 0 & 1 & 0 & 0 & 0 & \bbox[#9dc3f0]{1} \\
-             & 1 & 1 & 1 & 0 & 0 & 1 & \bbox[#9dc3f0]{1} \\
-            \end{array}}
-
 
         **Why does this work?**
 
