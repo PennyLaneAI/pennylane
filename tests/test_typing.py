@@ -20,6 +20,7 @@ import pennylane.numpy as pnp
 from pennylane.typing import (
     AbstractArray,
     AbstractTypeFactory,
+    AbstractWires,
     AbstractWireTypeFactory,
     Bool,
     Complex,
@@ -27,7 +28,6 @@ from pennylane.typing import (
     Int,
     TensorLike,
 )
-from pennylane.wires import AbstractWires
 
 
 class TestTensorLike:

@@ -27,8 +27,6 @@ from typing import Any, Optional, TypeVar, Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-from pennylane.wires import AbstractWires
-
 FlatPytree = tuple[Sequence[Any], Hashable]
 
 
@@ -303,6 +301,45 @@ True
 AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
 
 """
+
+
+@dataclass(frozen=True)
+class AbstractWires:
+    """An abstract representation of a sequence of wires that contains the number
+    of wires, useful for resource calculations.
+
+    Args:
+        num_wires (int): The number of wires
+    """
+
+    num_wires: int | types.EllipsisType
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, AbstractWires):
+            return self.num_wires == other.num_wires
+
+        raise TypeError("Tried to check equality against an abstract wire register.")
+
+    @property
+    def shape(self) -> tuple[int]:
+        """The number of wires expressed as shape ``(num_wires, )``."""
+        return (self.num_wires,)
+
+    @property
+    def dtype(self):
+        """np.int64.  The dtype of wires when used with Catalyst."""
+        return np.int64
+
+    def __hash__(self):
+        return hash(("AbstractWires", self.num_wires))
+
+    def __len__(self) -> int:
+        return self.num_wires
+
+    def __instancecheck__(self, instance):
+        if not instance.__class__.__name__ == "Wires":
+            return False
+        return len(instance) == self.num_wires
 
 
 class AbstractWireTypeFactory(AbstractWires):
