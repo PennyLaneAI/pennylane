@@ -55,7 +55,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
             dynamic_argnames = ("phi", "theta", "omega")
 
-            wires_argnames = ("wires",)
+            wire_argnames = ("wires",)
 
             wire_sizes = (2,)
 
