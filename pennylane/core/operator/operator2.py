@@ -1268,7 +1268,7 @@ class Operator2(ABC):
         """The product operation between Operator objects."""
         return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
-    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
+    def __sub__(self, other: Operator | TensorLike]) -> Operator:
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return self + qp.s_prod(-1, other, lazy=False)
