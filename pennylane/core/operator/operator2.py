@@ -1280,7 +1280,7 @@ class Operator2(ABC):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
-    def __neg__(self):
+    def __neg__(self) -> Operator:
         """The negation operation of an Operator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
