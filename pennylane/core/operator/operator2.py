@@ -1298,6 +1298,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
+        if qp.math.asarray(x).dtype == bool:
+            return x
         x = x if mod_val is None else qp.math.real(x) % mod_val
         return qp.math.round(x, 10)
 

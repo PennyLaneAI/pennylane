@@ -269,6 +269,27 @@ class TestControlledOp2:
         assert op.work_wires == Wires([3])
         assert op.work_wire_type == "zeroed"
 
+    def test_hash(self):
+        """Verify that a controlled op is hashable."""
+
+        base = qp.H(0)
+        op = ControlledOp2(
+            base,
+            control_wires=[1, 2],
+            control_values=[0, 1],
+            work_wires=[3],
+            work_wire_type="zeroed",
+        )
+        base2 = qp.H(0)
+        op2 = ControlledOp2(
+            base2,
+            control_wires=[1, 2],
+            control_values=[0, 1],
+            work_wires=[3],
+            work_wire_type="zeroed",
+        )
+        assert hash(op) == hash(op2)
+
     def test_representations(self):
         """Tests the representation methods."""
 
