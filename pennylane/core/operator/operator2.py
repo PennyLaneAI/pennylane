@@ -88,9 +88,8 @@ class Operator2(ABC):
       nested structures of wires.
 
     Args:
-        *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
+        *args (tuple[...]): positional arguments
+        **kwargs (dict[str, Any]): Key-word arguments
 
     .. details::
         :title: Defining Custom Operators
