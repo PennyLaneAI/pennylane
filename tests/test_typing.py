@@ -283,3 +283,40 @@ class TestAbstractArray:
             assert not isinstance(np.ones((4, 2), float), variant)
 
             assert not isinstance("a", variant)
+
+
+class TestAbstractWires:
+    """Test for the AbstractWires class."""
+
+    def test_basic(self):
+        """Basic tests for the AbstractWires class."""
+
+        a = AbstractWires(3)
+        assert a.num_wires == 3
+        assert len(a) == 3
+
+    def test_comparison(self):
+        """Test for equality and comparison."""
+        a = AbstractWires(3)
+        assert a == AbstractWires(3)
+        assert a != AbstractWires(4)
+        assert hash(a) == hash(AbstractWires(3))
+        assert hash(a) != hash(AbstractWires(4))
+
+        with pytest.raises(
+            TypeError, match="Tried to check equality against an abstract wire register."
+        ):
+            _ = a == 2
+
+    def test_ellipsis(self):
+        """Test that number of wires can be specified by an ellipsis."""
+
+        a = AbstractWires(...)
+        assert a.num_wires == ...
+
+    def test_shape_and_dtype(self):
+        """Test that AbstractWires have a shape and dtype."""
+
+        a = qp.wires.AbstractWires(3)
+        assert a.shape == (3,)
+        assert a.dtype == np.int64
