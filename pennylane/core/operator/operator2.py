@@ -1264,7 +1264,7 @@ class Operator2(ABC):
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: "Operator") -> "Operator":
+    def __matmul__(self, other: Operator) -> Operator:
         """The product operation between Operator objects."""
         return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
