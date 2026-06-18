@@ -344,6 +344,26 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         )
         assert out == _add_obj(op, ["─"] * 4, config)
 
+    @pytest.mark.parametrize(
+        "all_wires, expected",
+        [
+            (([2, 0], [1, 3, 4], [5]), ["╭◑", "├QROM", "├◑", "├QROM", "├QROM", "╰work"]),
+            (([0], [1], []), ["╭◑", "╰QROM"]),
+            (([1], [0, 2, 3], [4]), ["╭QROM", "├◑", "├QROM", "├QROM", "╰work"]),
+            (([2, 0, 1, 3], [7], [5, 6, 4]), ["╭◑"] + ["├◑"] * 3 + ["├work"] * 3 + ["╰QROM"]),
+        ],
+    )
+    def test_add_qrom(self, all_wires, expected):
+        """Test adding the first operation to array of strings"""
+        num_wires = sum(len(w) for w in all_wires)
+        op = qp.QROM(np.ones((2 ** len(all_wires[0]), len(all_wires[1]))), *all_wires)
+        _wire_map = {i: i for i in range(num_wires)}
+        config = _Config(
+            wire_map=_wire_map, bit_map=default_bit_map, num_op_layers=num_wires, cur_layer=1
+        )
+        out = _add_obj(op, ["─"] * num_wires, config)
+        assert expected == out
+
     def test_add_obj_allocation(self):
         """Test _add_obj for allocation and deallocation."""
 

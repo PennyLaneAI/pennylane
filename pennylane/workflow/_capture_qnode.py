@@ -360,41 +360,8 @@ def _qnode_batching_rule(
 
 
 @debug_logger
-def _finite_diff(args, tangents, **impl_kwargs):
-    if not jax.config.jax_enable_x64:
-        warn(
-            "Detected 32 bits precision with finite differences. This can lead to incorrect results."
-            " Recommend enabling jax.config.update('jax_enable_x64', True).",
-            UserWarning,
-        )
-    f = partial(qnode_prim.bind, **impl_kwargs)
-    return qp.gradients.finite_diff_jvp(
-        f, args, tangents, **impl_kwargs["execution_config"].gradient_keyword_arguments
-    )
-
-
-diff_method_map = {"finite-diff": _finite_diff}
-
-
-@debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
-    execution_config = device.setup_execution_config(execution_config)
-    if execution_config.use_device_gradient:
-        return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
-
-    if execution_config.gradient_method not in diff_method_map:
-        raise NotImplementedError(
-            f"diff_method {execution_config.gradient_method} not yet implemented."
-        )
-
-    return diff_method_map[execution_config.gradient_method](
-        args,
-        tangents,
-        execution_config=execution_config,
-        device=device,
-        qfunc_jaxpr=qfunc_jaxpr,
-        **impl_kwargs,
-    )
+    raise NotImplementedError
 
 
 ### END JVP CALCULATION #######################################################
