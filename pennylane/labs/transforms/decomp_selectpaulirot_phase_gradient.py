@@ -102,6 +102,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             For the latter, at least ``len(control_wires)-1`` work wires are required for an
             efficient decomposition, where ``control_wires`` are the control wires of the (largest)
             ``SelectPauliRot`` to be decomposed with the produced decomposition rule.
+            Overall, we thus require ``max(len(angle_wires), len(control_wires))-1`` work wires.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
