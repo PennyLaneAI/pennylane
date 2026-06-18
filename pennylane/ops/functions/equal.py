@@ -515,10 +515,10 @@ def _check_dynamic_value(
     if is_aa1 and is_aa2:
         if dval1 == dval2:
             return True
-        return f"op1 and op2 have different AbstractWires type specifiers for {dname}: Got {dval1} and {dval2}."
+        return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
 
     if is_aa1 != is_aa2:
-        return f"Mismatched wire representations for {dname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {dval1} and {dval2}."
+        return f"Mismatched representations for {dname}. One operator has an AbstractArray type specifier while the other has concrete or traced wires. Got {dval1} and {dval2}."
 
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
