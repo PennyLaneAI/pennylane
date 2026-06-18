@@ -75,7 +75,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
     match kind:
         case _ArgType.WIRES:
             # Use Wires object to sanitize inputs
-            canonical_wires = val if isinstance(val, Wires) else Wires(val)
+            canonical_wires = Wires(val)
             return AbstractWires(len(canonical_wires))
 
         case _ArgType.DYN:
