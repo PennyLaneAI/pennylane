@@ -82,4 +82,8 @@ jobs:
             && pip3 install torch~=$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
             && pip3 install --group docs
             && pip3 install .
-          build-command: "sphinx-build -b html . _build -W --keep-going"
+          build-command: "sphinx-build -b html . _build -W --keep-going --show-traceback -w ./warnings.txt"
+
+      - name: Output warnings
+        if: always()
+        run: cat doc/warnings.txt || true
