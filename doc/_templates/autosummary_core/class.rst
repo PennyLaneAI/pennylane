@@ -3,10 +3,10 @@
 {% endif %}
 
 {% if module.split(".")[1:] | length >= 1 %}
-	{% set mod = module.split(".")[1:] | join(".") %}
-	{% set mod = "qp." + mod %}
+   {% set mod = module.split(".")[1:] | join(".") %}
+   {% set mod = "qp." + mod %}
 {% else %}
-	{% set mod = "qp" %}
+   {% set mod = "qp" %}
 {% endif %}
 
 {{ mod }}.{{ objname }}
@@ -20,9 +20,8 @@
    {% if '__init__' in methods %}
      {% set caught_result = methods.remove('__init__') %}
    {% endif %}
-
-   {% block attributes_documentation %}
-   {% if attributes %}
+   {%- block attributes_documentation %}
+   {%- if attributes %}
 
    .. raw:: html
 
@@ -33,19 +32,20 @@
       </a>
       <div class="collapse" id="attrDetails">
 
-   {% block attributes_summary %}
-   {% if attributes %}
+   {%- block attributes_summary %}
+   {%- if attributes %}
 
    .. autosummary::
       :nosignatures:
-   {% for item in attributes %}
+
+   {%- for item in attributes %}
       ~{{ name }}.{{ item }}
    {%- endfor %}
 
-   {% endif %}
-   {% endblock %}
+   {%- endif %}
+   {%- endblock %}
 
-   {% for item in attributes %}
+   {%- for item in attributes %}
    .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
@@ -53,11 +53,10 @@
 
       </div>
 
-   {% endif %}
-   {% endblock %}
-
-   {% block methods_documentation %}
-   {% if methods %}
+   {%- endif %}
+   {%- endblock %}
+   {%- block methods_documentation %}
+   {%- if methods %}
 
    .. raw:: html
 
@@ -68,18 +67,19 @@
       </a>
       <div class="collapse" id="methDetails">
 
-   {% block methods_summary %}
-   {% if methods %}
+   {%- block methods_summary %}
+   {%- if methods %}
 
    .. autosummary::
-   {% for item in methods %}
+
+   {%- for item in methods %}
       ~{{ name }}.{{ item }}
    {%- endfor %}
 
-   {% endif %}
-   {% endblock %}
+   {%- endif %}
+   {%- endblock %}
 
-   {% for item in methods %}
+   {%- for item in methods %}
    .. automethod:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
@@ -87,8 +87,8 @@
 
       </div>
 
-   {% endif %}
-   {% endblock %}
+   {%- endif %}
+   {%- endblock %}
 
    .. raw:: html
 
