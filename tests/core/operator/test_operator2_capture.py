@@ -34,6 +34,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
 from pennylane.core.operator.operator2 import AbstractOperator, operator_p
+from pennylane.pytrees import unflatten
 
 # ---------------------- Helpers ----------------------
 
@@ -72,7 +73,9 @@ class TestCaptureBasics:
 
         def fn(x):
             with qp.capture.pause():
+                # pylint: disable=protected-access
                 DynOp(x, wires=0)
+                DynOp(x, wires=0)._bind_primitive()
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
         assert len(jaxpr.eqns) == 0
@@ -99,18 +102,14 @@ class TestCaptureBasics:
     def test_construction_returns_concrete_instance(self):
         """Test that constructing an operator during capture returns a concrete
         ``Operator2`` instance with a tracer attached (rather than the tracer itself)."""
-        captured = {}
 
         def f(x):
             op = DynOp(x, wires=0)
-            captured["op"] = op
+            assert isinstance(op, DynOp)
+            assert op.tracer is not None
+            assert isinstance(op.tracer.aval, AbstractOperator)
 
         _ = jax.make_jaxpr(f)(0.5)
-
-        op = captured["op"]
-        assert isinstance(op, DynOp)
-        assert op.tracer is not None
-        assert isinstance(op.tracer.aval, AbstractOperator)
 
     def test_dynamic_args_are_inputs(self):
         """Test that dynamic arguments are passed as equation inputs."""
@@ -136,13 +135,13 @@ class TestCaptureBasics:
         """Test that static arguments are stored as equation parameters."""
         jaxpr = jax.make_jaxpr(lambda: StaticOp("a", wires=0))()
         eqn = _single_op_eqn(jaxpr)
-        assert "label" in eqn.params
+        assert unflatten(*eqn.params["label"]) == "a"
 
     def test_compilable_arg_in_params(self):
         """Test that compilable arguments are stored as equation parameters."""
         jaxpr = jax.make_jaxpr(lambda: CompOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
-        assert "n" in eqn.params
+        assert unflatten(*eqn.params["n"]) == 5
 
 
 class TestHybridCapture:
@@ -165,6 +164,27 @@ class TestHybridCapture:
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].params["op_cls"] is HybridOp
+
+    def test_nested_operator_in_different_scope(self):
+        """Test that operators of operators are captured correctly when the inner operator
+        is initialized in a higher scope."""
+
+        @qp.capture.run_autograph
+        def f(pred):
+            op = DynOp(0.5, 0)
+
+            if pred:
+                HybridOp([op], 2)
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive.name == "cond"
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_branches"][0]
+        assert len(inner_jaxpr.eqns) == 1
+
+        op_eqn = inner_jaxpr.eqns[0]
+        assert op_eqn.primitive is operator_p
+        assert op_eqn.params["op_cls"] is HybridOp
 
     def test_two_level_nested_single_equation(self):
         """Test that two levels of nested operators collapse to a single equation."""
