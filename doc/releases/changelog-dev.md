@@ -692,6 +692,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
+  [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)
+
 * Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
   removing the module from the documentation-test skip list.
   [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
