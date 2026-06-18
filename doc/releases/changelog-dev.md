@@ -633,6 +633,7 @@
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
