@@ -54,7 +54,7 @@ class Operator2(ABC):
     :func:`~.qjit`.
 
     Child classes of `Operator2` are defined by their name and argument types, of which there are
-    five categories that designated as class variables. These arguments dictate how ``Operator2``
+    five categories that are designated as class variables. These arguments dictate how ``Operator2``
     child classes are handled when compiling with :func:`~.qjit`.
 
     * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
@@ -192,10 +192,9 @@ class Operator2(ABC):
 
         .. code-block:: mlir
 
-            %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
-            quregs(%out_qreg) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
-            static_data = {pauli_string = "XYZ"}
-            param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%q0, %q1, %q2, %q3)
+              static_data = {pauli_string = "XYZ"}
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
 
         Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
@@ -212,7 +211,9 @@ class Operator2(ABC):
             %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
             UID(278653)
             quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
-            param_map = {angle_array = [0]} qubit_map = {rot_wires = [1], wires = [0]}
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%arg4, %arg5, %arg6, %arg7)
+              UID(234567)
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
 
         **hybrid_argnames**
 
