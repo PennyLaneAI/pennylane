@@ -40,7 +40,6 @@ import numpy as np
 
 from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
-from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -49,6 +48,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.resources import auto_wrap
+from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray
@@ -175,17 +175,18 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     We can add ``S`` to the resources of another ``Operator`` by using this function together with
     an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
-    :class:`~.AbstractWires`. ``AbstractWires`` can be created by indexing into the :class:`~.Wires` class.
+    :class:`~.AbstractWires`. These can be created by indexing into the ``Float`` utility and
+    ``Wires`` respectively.
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray
+        from pennylane.typing import Float
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((4,), float)
+        abstract_params = Float[4]
         abstract_wires = qp.wires.Wires[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
@@ -604,10 +605,11 @@ class Subroutine:
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     and :class:`~.AbstractWires` classes. :class:`~.AbstractWires` can be created by indexing into
-    ``Wires`` with the number of wires.
+    ``Wires`` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
+    builtin ``Float``.
 
-    >>> from pennylane.typing import AbstractArray
-    >>> abstract_params = AbstractArray((10, ), float)
+    >>> from pennylane.typing import Float
+    >>> abstract_params = Float[10]
     >>> abstract_wires = qp.wires.Wires[1]
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
@@ -617,13 +619,13 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray
+        from pennylane.typing import Float
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((3,), float)
+        abstract_params = Float[3]
         abstract_wires = qp.wires.Wires[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 

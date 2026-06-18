@@ -221,3 +221,83 @@ class AbstractArray:
 
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
+
+
+class AbstractTypeFactory(AbstractArray):
+    """
+    An abstraction that enables the generation of AbstractArrays via a highly user-friendly type notation,
+    using an override of the __getitem__ method.
+    """
+
+    def __getitem__(self, shape):
+        """
+        Overrides the indexing mechanism in python to achieve a user-friendly
+        sized type notation.
+
+        Args:
+            shape: Gives the shape of the desired abstract type. This is not an index,
+                but should be thought of as type notation for sized types.
+
+        Returns:
+            An instance of AbstractArray with the desired shape.
+        """
+
+        if self.shape:
+            raise IndexError(
+                "AbstractTypeFactory's can only be indexed into once to create new versions."
+            )
+
+        if isinstance(shape, int) or shape == ...:
+            shape = (shape,)
+        if not isinstance(shape, tuple) or not all(isinstance(n, int) or n == ... for n in shape):
+            raise TypeError(
+                "AbstractTypeFactory's can only be subscripted with integers and Ellipsis."
+            )
+        return AbstractArray(shape, self.dtype)
+
+
+Int = AbstractTypeFactory((), int)
+"""An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(2), qp.typing.Int)
+True
+>>> qp.typing.Int[4,2]
+AbstractArray(shape=(4, 2), dtype=dtype('int64'))
+
+"""
+
+
+Float = AbstractTypeFactory((), float)
+"""An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(2.0), qp.typing.Float)
+True
+>>> qp.typing.Int[4,2]
+AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+
+"""
+
+Bool = AbstractTypeFactory((), bool)
+"""An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(False), qp.typing.Bool)
+True
+>>> qp.typing.Bool[4]
+AbstractArray(shape=(4,), dtype=dtype('bool'))
+
+"""
+
+
+Complex = AbstractTypeFactory((), complex)
+"""An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+
+>>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+True
+>>> qp.typing.Complex[..., 2]
+AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+
+"""
