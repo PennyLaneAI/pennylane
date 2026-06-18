@@ -25,28 +25,31 @@
 
    .. raw:: html
 
-      <a class="attr-details-header collapse-header" data-toggle="collapse" href="#attrDetails" aria-expanded="false" aria-controls="attrDetails"><h2 style="font-size: 24px;"><i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes</h2></a><div class="collapse" id="attrDetails">
+      <a class="attr-details-header collapse-header" data-toggle="collapse" href="#attrDetails" aria-expanded="false" aria-controls="attrDetails">
+         <h2 style="font-size: 24px;">
+            <i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes
+         </h2>
+      </a>
 
-   {%- block attributes_summary %}
-   {%- if attributes %}
+   .. container:: collapse
+      :name: attrDetails
 
-   .. autosummary::
-      :nosignatures:
+      {% block attributes_summary %}
+      {% if attributes %}
+
+      .. autosummary::
+         :nosignatures:
+
+         {% for item in attributes -%}
+         ~{{ name }}.{{ item }}
+         {% endfor %}
+
+      {% endif %}
+      {% endblock %}
 
       {% for item in attributes -%}
-      ~{{ name }}.{{ item }}
+      .. autoattribute:: {{ fullname }}.{{ item }}
       {% endfor %}
-
-   {% endif %}
-   {%- endblock %}
-
-   {%- for item in attributes %}
-   .. autoattribute:: {{ fullname }}.{{ item }}
-   {%- endfor %}
-
-   .. raw:: html
-
-      </div>
 
    {%- endif %}
    {%- endblock %}
@@ -55,27 +58,30 @@
 
    .. raw:: html
 
-      <a class="meth-details-header collapse-header" data-toggle="collapse" href="#methDetails" aria-expanded="false" aria-controls="methDetails"><h2 style="font-size: 24px;"><i class="fas fa-angle-down rotate" style="float: right;"></i> Methods</h2></a><div class="collapse" id="methDetails">
+      <a class="meth-details-header collapse-header" data-toggle="collapse" href="#methDetails" aria-expanded="false" aria-controls="methDetails">
+         <h2 style="font-size: 24px;">
+            <i class="fas fa-angle-down rotate" style="float: right;"></i> Methods
+         </h2>
+      </a>
 
-   {%- block methods_summary %}
-   {%- if methods %}
+   .. container:: collapse
+      :name: methDetails
 
-   .. autosummary::
+      {% block methods_summary %}
+      {% if methods %}
+
+      .. autosummary::
+
+         {% for item in methods -%}
+         ~{{ name }}.{{ item }}
+         {% endfor %}
+
+      {% endif %}
+      {% endblock %}
 
       {% for item in methods -%}
-      ~{{ name }}.{{ item }}
+      .. automethod:: {{ fullname }}.{{ item }}
       {% endfor %}
-
-   {% endif %}
-   {%- endblock %}
-
-   {%- for item in methods %}
-   .. automethod:: {{ fullname }}.{{ item }}
-   {%- endfor %}
-
-   .. raw:: html
-
-      </div>
 
    {%- endif %}
    {%- endblock %}
