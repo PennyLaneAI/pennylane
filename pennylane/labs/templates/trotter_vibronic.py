@@ -19,14 +19,16 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.labs.trotter_error.realspace import RealspaceMatrix
+from .semi_signed_out_multiplier import semi_signed_out_multiplier
 from pennylane.wires import WiresLike
 
+"""
+TODOs
 
-def float_to_binary(x: float, k: int) -> str:
-    """Convert a floating-point number x to binary with k-bit precision."""
-    # todo: figure out signed float-to-binary encoding that is compatible with phase gradients
-    # in terms of scaling, range/period, and sign.
-    return None
+- tests!
+- slice cache
+- custom multiplier signed x unsigned -> unsigned, output_wires_zeroed=False
+"""
 
 
 def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
@@ -214,7 +216,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
     """
     # pylint: disable=no-value-for-parameter
 
-    precision = len(registers["coefficients"])
+    precision = len(registers["phase gradient"])
     first_order_time_step = time / 2
     qrom_wires = {
         "control_wires": "electronic",
@@ -229,14 +231,17 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
         all_coeffs = get_position_coefficients(fragment)
         all_coeffs = (qp.math.array(c, like="jax") * first_order_time_step for c in all_coeffs)
         const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
+        # TODO: Filter fully-zeroed coefficients along the right axis/axes
 
         def constant_term(prev_bitstrings):
             if np.allclose(const_coeffs, 0):
                 return prev_bitstrings
-            new_bitstrings = float_to_binary(const_coeffs, precision)
+            new_bitstrings = qp.math.binary_decimals(const_coeffs, precision, unit=2 * np.pi)
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
             qp.QROM(change_bitstrings, **qrom_wires)
-            qp.SemiAdder(registers["coefficients"], registers["phase gradient"], registers["work"])
+            qp.SemiAdder(
+                registers["coefficients"], registers["phase gradient"], registers["work"]
+            )
             return new_bitstrings
 
         @qp.for_loop(fragment.modes)
@@ -254,10 +259,10 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
                 "work_wires": "work",
             }
             mult_wires = {new: registers[old] for new, old in mult_wires.items()}
-            new_bitstrings = float_to_binary(_coeffs, precision)
+            new_bitstrings = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
             qp.QROM(change_bitstrings, **qrom_wires)
-            qp.SignedOutMultiplier(**mult_wires)
+            semi_signed_out_multiplier(**mult_wires)
             return new_bitstrings
 
         @qp.for_loop(fragment.modes)
@@ -279,7 +284,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
             }
             mult_wires = {new: registers[old] for new, old in mult_wires.items()}
 
-            new_bitstrings = float_to_binary(_coeffs, precision)
+            new_bitstrings = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
             qp.QROM(change_bitstrings, **qrom_wires)
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
@@ -316,11 +321,11 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
                 }
                 coeff_mult_wires = {new: registers[old] for new, old in coeff_mult_wires.items()}
 
-                new_bitstrings = float_to_binary(_coeffs, precision)
+                new_bitstrings = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
                 change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
                 qp.QROM(change_bitstrings, **qrom_wires)
                 qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
-                qp.SignedOutMultiplier(**coeff_mult_wires)
+                semi_signed_out_multiplier(**coeff_mult_wires)
                 qp.adjoint(qp.SignedOutMultiplier)(**mode_mult_wires, output_wires_zeroed=True)
                 return new_bitstrings
 
@@ -359,14 +364,15 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
                 "work_wires": "work",
             }
             mult_wires = {new: registers[old] for new, old in mult_wires.items()}
-            x = float_to_binary(coeff, precision)
-            qp.BasisState(x, registers["coefficients"])
+
+            bitstring = qp.math.binary_decimals(coeff, precision, unit=2 * np.pi)
+            qp.BasisState(bitstring, registers["coefficients"])
             qp.AQFT(order=aqft_order, wires=registers[f"mode {k}"])
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
-            qp.SignedOutMultiplier(**mult_wires)
+            qp.OutMultiplier(**mult_wires)
             qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
             qp.adjoint(qp.AQFT)(order=aqft_order, wires=registers[f"mode {k}"])
-            qp.BasisState(x, registers["coefficients"])
+            qp.BasisState(bitstring, registers["coefficients"])
 
         kinetic_terms()
 
@@ -446,7 +452,8 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
              - :math:`2+b+\max(b, 2k)`
              - Work wires for data loading/arithmetic (see below)
 
-        The reasoning for the cache register size is:
+
+        **The reasoning for the cache register size is:**
 
         - Squaring a signed :math:`k`-bit integer yields values from the range
           :math:`[0, 2^{2k-2}]`, so that :math:`2k-1` (unsigned) bits are needed to represent
@@ -457,7 +464,9 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
           Thus, we need one more bit, i.e. :math:`2k` (signed) bits are needed to represent the
           output.
 
-        The reasoning for the work register size is:
+        **The reasoning for the work register size is:**
+
+        TODO: UPDATE THE BELOW AFTER INTRODUCTION OF SEMI_SIGNED_OUT_MULTIPLIER
 
         - The ``QROM``\ s using this register have :math:`n` control wires (electronic register)
           and thus require at least :math:`n-1` work wires for efficient implementation (unary
@@ -480,6 +489,9 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         It is _very_ likely that :math:`n` is much smaller than the second term, so we assume
         a work wire requirement of :math:`2+b+\max(b, 2k)` going forward.
 
+        Note that the work wire requirements (in particular those of ``SignedOutMultiplier``)
+        can be reduced at the cost of additional non-Clifford gates. The above maximizes qubit
+        overhead and minimizes the non-Clifford gate count.
 
     """
     _validate_registers(registers, fragments)
