@@ -117,6 +117,86 @@ class PUIsometryFinder:
 
         **Example**
 
+        Let's consider an example with ``n_qubits=7`` and :math:`|L|=6` entries in the sparse
+        state, at ``basis_states = (0, 3, 38, 61, 63, 81, 82)``.
+        The corresponding bit tableau, with each row representing one basis state index and each
+        column representing one qubit, reads
+
+        .. math::
+
+            \begin{array}{rccc|cccc}
+             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
+             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
+             & 0 & 1 & 1 & 1 & 1 & 0 & 1 \\
+             & 0 & 1 & 1 & 1 & 1 & 1 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & 1 & 0
+            \end{array}
+
+        Here, we marked the boundary between the first three subspace qubits and the
+        four remainder qubits by a vertical line and included the qubit labels in the first row
+        for convenience.
+        The first step, shown below, is to identify some bitstring (we use the first) that has the
+        first remainder qubit (orange arrow), i.e., qubit 3, set to one (orange box). Controlled
+        on qubit 3, we then flip all other remainder qubits that are set to one in that same
+        bitstring as well as the subspace qubits, as needed to set them to the bitstring
+        of ``k=0`` (red boxes). We describe call this a *Fanout* operation, and denote it as
+        :math:`a: (b_0, b_1, \dots b_k)`, where :math:`a` is the control qubit and :math:`b_i` are
+        the targets that need to be flipped. We also mark the control bits in other rows that
+        will activate the Fanout (blue box).
+        The Fanout is recorded as part of the circuit, and the tableau is updated:
+
+        .. math::
+
+            \begin{array}{rccc|cccc}
+             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
+             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
+             & 0 & \bbox[#f4a3a3, 2px]{1} & \bbox[#f4a3a3]{1} & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} & 0 & \bbox[#f4a3a3]{1} \\
+             & 0 & 1 & 1 & \bbox[#9dc3f0]{1} & 1 & 1 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
+            \hline  &  &  &  & \uparrow &  &  &  \\
+            \end{array}
+            \xrightarrow{\substack{\text{Fanout} \\ 3:(1, 2, 4, 6)}}
+            \begin{array}{rccc|cccc}
+             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
+             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+             & 0 & \bbox[#f4a3a3]{1} & \bbox[#f4a3a3]{0} & 0 & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} & 0 \\ \hline
+            \scriptstyle k=0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+             & 0 & 0 & 0 & 1 & 0 & 1 & 0 \\
+             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
+            \\ \hline  &  &  &  & \uparrow &  &  &  \\
+            \end{array}
+            \xrightarrow{\substack{\text{Fanout} \\ 4:(1, 2, 5)}}
+            \underset{\mathcal{B} = \{0, 1\}}{\begin{array}{rccc|cccc}
+             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
+             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+             & 0 & \bbox[#f4a3a3]{0} & 0 & 0 & 0 & \bbox[#f7c98b]{1} & \bbox[#f4a3a3]{1} \\ \hline
+            \scriptstyle h=1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 \\
+             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+             & 0 & 0 & 0 & 1 & 0 & \bbox[#9dc3f0]{1} & 0 \\
+             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
+             & 1 & 0 & 1 & 0 & 0 & \bbox[#9dc3f0]{1} & 0 \\
+            \\ \hline  &  &  &  &  &  & \uparrow &  \\
+            \end{array}}
+            \xrightarrow{\substack{\text{Fanout} \\ 5:(1, 6)}}
+            \underset{\mathcal{B} = \{0, 1, 2\}}{\begin{array}{rccc|cccc}
+             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
+             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+             & 0 & 1 & 0 & 0 & 0 & 1 & 0 \\ \hline
+            \scriptstyle h=2 & 0 & 0 & 1 & 0 & 1 & 0 & 0 \\
+             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+             & 0 & 1 & \bbox[#f4a3a3]{0} & \bbox[#f4a3a3]{1} & 0 & \bbox[#f4a3a3]{1} & \bbox[#f7c98b]{1} \\
+             & 1 & 0 & 1 & 0 & 0 & 0 & \bbox[#9dc3f0]{1} \\
+             & 1 & 1 & 1 & 0 & 0 & 1 & \bbox[#9dc3f0]{1} \\
+            \end{array}}
+
 
         **Why does this work?**
 
