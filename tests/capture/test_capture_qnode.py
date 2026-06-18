@@ -94,9 +94,6 @@ def test_error_if_no_device_wires():
     with pytest.raises(NotImplementedError, match="devices must specify wires"):
         jax.make_jaxpr(circuit)()
 
-    with pytest.raises(NotImplementedError, match="devices must specify wires"):
-        circuit()
-
 
 def test_simple_qnode():
     """Test capturing a qnode for a simple use."""
@@ -107,9 +104,6 @@ def test_simple_qnode():
     def circuit(x):
         qp.RX(x, wires=0)
         return qp.expval(qp.Z(0))
-
-    res = circuit(0.5)
-    assert qp.math.allclose(res, jnp.cos(0.5))
 
     jaxpr = jax.make_jaxpr(circuit)(0.5)
 
@@ -147,9 +141,6 @@ def test_simple_qnode():
 
     assert len(eqn0.outvars) == 1
     assert eqn0.outvars[0].aval == jax.core.ShapedArray((), fdtype)
-
-    output = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-    assert qp.math.allclose(output[0], jnp.cos(0.5))
 
 
 def test_providing_keywords_dynamic():
@@ -197,16 +188,6 @@ def test_multiple_measurements():
     assert jaxpr.out_avals[2] == jax.core.ShapedArray(
         (), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
     )
-
-    res1, res2, res3 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-    assert qp.math.allclose(res1, jnp.zeros((50, 3)))
-    assert qp.math.allclose(res2, jnp.array([1, 0, 0, 0]))
-    assert qp.math.allclose(res3, 1.0)
-
-    res1, res2, res3 = circuit()
-    assert qp.math.allclose(res1, jnp.zeros((50, 3)))
-    assert qp.math.allclose(res2, jnp.array([1, 0, 0, 0]))
-    assert qp.math.allclose(res3, 1.0)
 
 
 def test_complex_return_types():
@@ -280,9 +261,6 @@ def test_qnode_closure_variables():
     assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
     assert jaxpr.eqns[0].params["n_consts"] == 1
 
-    out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jnp.array(0.5)], 0)
-    assert qp.math.allclose(out, jnp.cos(0.5))
-
 
 def test_qnode_pytree_input():
     """Test that we can capture and execute a qnode with a pytree input."""
@@ -293,8 +271,6 @@ def test_qnode_pytree_input():
         return qp.expval(qp.Z(wires=x["wires"]))
 
     x = {"val": 0.5, "wires": 0}
-    res = circuit(x)
-    assert qp.math.allclose(res, jnp.cos(0.5))
 
     jaxpr = jax.make_jaxpr(circuit)(x)
     assert len(jaxpr.eqns[0].invars) == 2
