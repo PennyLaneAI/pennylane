@@ -27,6 +27,8 @@ from typing import Any, Optional, TypeVar, Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
+from pennylane.wires import AbstractWires
+
 FlatPytree = tuple[Sequence[Any], Hashable]
 
 
@@ -299,5 +301,47 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 True
 >>> qp.typing.Complex[..., 2]
 AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+
+"""
+
+
+class AbstractWireTypeFactory(AbstractWires):
+    """
+    An abstraction that enables the generation of AbstractWires via a highly user-friendly type notation,
+    using an override of the __getitem__ method.
+    """
+
+    def __getitem__(self, shape):
+        """
+        Overrides the indexing mechanism in python to achieve a user-friendly
+        sized type notation.
+
+        Args:
+            shape: Gives the shape of the desired abstract wires type. This is not an index,
+                but should be thought of as type notation for sized types.
+
+        Returns:
+            An instance of AbstractWires with the desired shape.
+        """
+        if self.num_wires != 1:
+            raise IndexError(
+                "AbstractTypeFactory's can only be indexed into once to create new versions."
+            )
+
+        if not (isinstance(shape, int) or shape == ...):
+            raise TypeError(
+                "AbstractWireTypeFactory's can only be subscripted with integers and Ellipsis."
+            )
+        return AbstractWires(shape)
+
+
+Wire = AbstractWireTypeFactory(1)
+"""An :class:`~.AbstractWires`` subclass. On it's own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensions.
+
+>>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
+True
+>>> qp.typing.Wire[2]
+AbstractWires(num_wires=2)
 
 """

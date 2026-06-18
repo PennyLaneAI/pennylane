@@ -17,7 +17,17 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, TensorLike, AbstractTypeFactory
+from pennylane.typing import (
+    AbstractArray,
+    AbstractTypeFactory,
+    AbstractWireTypeFactory,
+    Bool,
+    Complex,
+    Float,
+    Int,
+    TensorLike,
+)
+from pennylane.wires import AbstractWires
 
 
 class TestTensorLike:
@@ -160,7 +170,9 @@ class TestAbstractArray:
         assert a4 != a0
         assert hash(a4) != hash(a0)
 
-        with pytest.raises(TypeError, match=r"Cannot check equality between AbstractArray and <class 'int'>"):
+        with pytest.raises(
+            TypeError, match=r"Cannot check equality between AbstractArray and <class 'int'>"
+        ):
             _ = a3 == 2
 
     def test_ellipsis_in_shape(self):
@@ -176,8 +188,21 @@ class TestAbstractArray:
 
         assert a.ndim == 2
 
+    def test_wire_type_factory(self):
+        """Test that we can index into a wire type factory to produce a new hint with a size."""
+
+        a = AbstractWireTypeFactory(1)
+
+        b = a[2]
+        assert isinstance(b, AbstractWires)
+        assert b.num_wires == 2
+
+        c = a[...]
+        assert isinstance(c, AbstractWires)
+        assert c.num_wires == ...
+
     def test_type_factory(self):
-        """Test that we can index into a scalar to produce a new hint with a size."""
+        """Test that we can index into a type factory to produce a new hint with a size."""
 
         a = AbstractTypeFactory((), int)
 
@@ -221,9 +246,13 @@ class TestAbstractArray:
         """Test that an error is raised on invalid indices."""
 
         a = AbstractTypeFactory((), int)
+        b = AbstractWireTypeFactory(1)
 
         with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
             _ = a[bad_index]
+
+        with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
+            _ = b[bad_index]
 
     @pytest.mark.parametrize(
         "shortcut, dtype",

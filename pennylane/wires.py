@@ -780,6 +780,11 @@ class AbstractWires:
     def __len__(self) -> int:
         return self.num_wires
 
+    def __instancecheck__(self, instance):
+        if not isinstance(instance, Wires):
+            return False
+        return len(instance) == self.num_wires
+
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
 
