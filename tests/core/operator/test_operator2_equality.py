@@ -29,6 +29,9 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operator2
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires
 
 # ---------------------- Tests ----------------------
 
@@ -421,6 +424,53 @@ class TestEqualFullOperator:
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match=match):
             qp.assert_equal(op1, op2)
+
+
+class TestAbstractOperatorEquality:
+    """Tests the equality of abstract operators."""
+
+    @pytest.mark.parametrize(
+        "wires1, wires2, are_equal",
+        [
+            (AbstractWires(1), AbstractWires(1), True),
+            (AbstractWires(1), AbstractWires(2), False),
+        ],
+    )
+    def test_abstract_wires(self, wires1, wires2, are_equal):
+        """Test that operators with abstract wires are detected correctly."""
+
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(wires1)
+        op2 = SimpleOp(wires2)
+
+        assert qp.equal(op1, op2) is are_equal
+
+    def test_comparing_abstract_and_concrete_wires(self):
+        """Assert that an abstract type specifier is not the same as an operator instance."""
+
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(AbstractWires(1))
+        op2 = SimpleOp([0])
+
+        assert qp.equal(op1, op2) is False
+
+    def test_comparing_dynamic_args(self):
+        """Tests that abstract dynamic args behave correctly."""
+
+        op1 = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
+        op2 = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
+        op3 = DynOp(AbstractArray((2, 1), int), AbstractWires(1))
+        op4 = DynOp(3.14, 0)
+
+        assert qp.equal(op1, op2)
+        assert not qp.equal(op1, op3)
+        assert not qp.equal(op1, op4)
 
 
 def _jit_eq_fn(phi, wires, assert_=False):

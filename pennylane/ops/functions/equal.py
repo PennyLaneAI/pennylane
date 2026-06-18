@@ -470,11 +470,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
         return f"op1 and op2 have different AbstractWires type specifiers for {wname}: Got {wval1} and {wval2}."
 
     if is_aw1 != is_aw2:
-        return (
-            f"Mismatched wire representations for {wname}. ",
-            "One operator has an abstract wires type specifier while the other has concrete or traced wires. ",
-            f"Got {wval1} and {wval2}.",
-        )
+        return f"Mismatched wire representations for {wname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {wval1} and {wval2}."
 
     unequal_wires = False
     abstract_wires = False
@@ -522,11 +518,7 @@ def _check_dynamic_value(
         return f"op1 and op2 have different AbstractWires type specifiers for {dname}: Got {dval1} and {dval2}."
 
     if is_aa1 != is_aa2:
-        return (
-            f"Mismatched wire representations for {dname}. ",
-            "One operator has an abstract wires type specifier while the other has concrete or traced wires. ",
-            f"Got {dval1} and {dval2}.",
-        )
+        return f"Mismatched wire representations for {dname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {dval1} and {dval2}."
 
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
