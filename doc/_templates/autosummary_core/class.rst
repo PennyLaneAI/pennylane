@@ -25,12 +25,7 @@
 
    .. raw:: html
 
-      <a class="attr-details-header collapse-header" data-toggle="collapse" href="#attrDetails" aria-expanded="false" aria-controls="attrDetails">
-         <h2 style="font-size: 24px;">
-            <i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes
-         </h2>
-      </a>
-      <div class="collapse" id="attrDetails">
+      <a class="attr-details-header collapse-header" data-toggle="collapse" href="#attrDetails" aria-expanded="false" aria-controls="attrDetails"><h2 style="font-size: 24px;"><i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes</h2></a><div class="collapse" id="attrDetails">
 
    {%- block attributes_summary %}
    {%- if attributes %}
@@ -60,12 +55,7 @@
 
    .. raw:: html
 
-      <a class="meth-details-header collapse-header" data-toggle="collapse" href="#methDetails" aria-expanded="false" aria-controls="methDetails">
-         <h2 style="font-size: 24px;">
-            <i class="fas fa-angle-down rotate" style="float: right;"></i> Methods
-         </h2>
-      </a>
-      <div class="collapse" id="methDetails">
+      <a class="meth-details-header collapse-header" data-toggle="collapse" href="#methDetails" aria-expanded="false" aria-controls="methDetails"><h2 style="font-size: 24px;"><i class="fas fa-angle-down rotate" style="float: right;"></i> Methods</h2></a><div class="collapse" id="methDetails">
 
    {%- block methods_summary %}
    {%- if methods %}
