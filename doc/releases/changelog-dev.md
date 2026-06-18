@@ -618,6 +618,7 @@
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
     when ``compute_decomposition`` is not overridden.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -629,9 +630,11 @@
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+  [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
 
 * Adds a new `pennylane/core` module.
