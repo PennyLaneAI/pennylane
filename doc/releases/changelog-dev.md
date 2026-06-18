@@ -497,6 +497,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
@@ -589,6 +592,9 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* CI workflows dropped all Python 3.11 test jobs.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
 * The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
   [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
