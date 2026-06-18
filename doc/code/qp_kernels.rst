@@ -23,7 +23,7 @@ Description
 
 Given a kernel
 
-.. math::
+.. math ::
 
     k: \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}, \quad
     (x_1, x_2)\mapsto k(x_1, x_2)
@@ -32,7 +32,7 @@ the kernel matrix of :math:`k` on a training dataset
 :math:`\{(x_1, y_1),\cdots (x_n, y_n)\}` with :math:`x_i\in\mathbb{R}^d`
 and :math:`y_i\in\{-1, 1\}` is defined as
 
-.. math::
+.. math ::
 
     K_{ij} = k(x_i, x_j).
 
@@ -40,7 +40,7 @@ For valid kernels, this is a real symmetric positive semi-definite matrix.
 We also define the *ideal kernel matrix* for the training dataset which
 perfectly predicts whether two points have identical labels or not:
 
-.. math::
+.. math ::
 
     K^\ast_{ij} = y_i y_j
 
@@ -48,14 +48,14 @@ We can measure the similarity between :math:`K` and :math:`K^\ast`,
 through the *kernel polarity* which can be expressed as the Frobenius inner
 product between the two matrices:
 
-.. math::
+.. math ::
 
     \operatorname{P}(k) = \langle K^\ast, K \rangle_F = \sum_{i,j=1}^n y_i y_j k(x_i, x_j)
 
 Additionally, there is the *kernel-target alignment*, which is the normalized
 counterpart to the kernel polarity:
 
-.. math::
+.. math ::
 
     \operatorname{TA}(k) &= \frac{P(k)}{\lVert K^\ast \rVert_F\;\lVert K \rVert_F}\\
         \lVert K\rVert_F &= \sqrt{\sum_{i,j=1}^n k(x_i, x_j)^2}\\

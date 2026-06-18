@@ -21,7 +21,6 @@ to verify and test quantum gradient computations.
 
 
 .. currentmodule:: pennylane.devices
-
 .. autosummary::
     :toctree: api
 
@@ -47,7 +46,6 @@ Next generation devices
 replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.QubitDevice`.
 
 .. currentmodule:: pennylane.devices
-
 .. autosummary::
     :toctree: api
 
@@ -69,7 +67,6 @@ The ``preprocess`` module offers several transforms that can be used in construc
 method for devices.
 
 .. currentmodule:: pennylane.devices.preprocess
-
 .. autosummary::
     :toctree: api
 
@@ -89,7 +86,6 @@ method for devices.
 Other transforms that may be relevant to device preprocessing include:
 
 .. currentmodule:: pennylane
-
 .. autosummary::
     :toctree: api
 
@@ -103,7 +99,6 @@ Modifiers
 The ``modifiers`` allow for the easy addition of default behaviour to a device.
 
 .. currentmodule:: pennylane.devices.modifiers
-
 .. autosummary::
     :toctree: api
 
@@ -149,7 +144,6 @@ Qubit Simulation Tools
 ----------------------
 
 .. currentmodule:: pennylane.devices.qubit
-
 .. automodule:: pennylane.devices.qubit
 
 
@@ -157,7 +151,6 @@ Qubit Mixed-State Simulation Tools
 -----------------------------------
 
 .. currentmodule:: pennylane.devices.qubit_mixed
-
 .. automodule:: pennylane.devices.qubit_mixed
 
 
@@ -165,7 +158,6 @@ Qutrit Mixed-State Simulation Tools
 -----------------------------------
 
 .. currentmodule:: pennylane.devices.qutrit_mixed
-
 .. automodule:: pennylane.devices.qutrit_mixed
 
 """

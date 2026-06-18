@@ -3,10 +3,10 @@
 {% endif %}
 
 {% if module.split(".")[1:] | length >= 1 %}
-   {% set mod = module.split(".")[1:] | join(".") %}
-   {% set mod = "qp." + mod %}
+	{% set mod = module.split(".")[1:] | join(".") %}
+	{% set mod = "qp." + mod %}
 {% else %}
-   {% set mod = "qp" %}
+	{% set mod = "qp" %}
 {% endif %}
 
 {{ mod }}.{{ objname }}
@@ -20,8 +20,9 @@
    {% if '__init__' in methods %}
      {% set caught_result = methods.remove('__init__') %}
    {% endif %}
-   {%- block attributes_documentation %}
-   {%- if attributes %}
+
+   {% block attributes_documentation %}
+   {% if attributes %}
 
    .. raw:: html
 
@@ -30,31 +31,33 @@
             <i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes
          </h2>
       </a>
+      <div class="collapse" id="attrDetails">
 
-   .. container:: collapse
-      :name: attrDetails
+   {% block attributes_summary %}
+   {% if attributes %}
 
-      {% block attributes_summary %}
-      {% if attributes %}
+   .. autosummary::
+      :nosignatures:
+   {% for item in attributes %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
 
-      .. autosummary::
-         :nosignatures:
+   {% endif %}
+   {% endblock %}
 
-         {% for item in attributes -%}
-         ~{{ name }}.{{ item }}
-         {% endfor %}
+   {% for item in attributes %}
+   .. autoattribute:: {{ item }}
+   {%- endfor %}
 
-      {% endif %}
-      {% endblock %}
+   .. raw:: html
 
-      {% for item in attributes -%}
-      .. autoattribute:: {{ fullname }}.{{ item }}
-      {% endfor %}
+      </div>
 
-   {%- endif %}
-   {%- endblock %}
-   {%- block methods_documentation %}
-   {%- if methods %}
+   {% endif %}
+   {% endblock %}
+
+   {% block methods_documentation %}
+   {% if methods %}
 
    .. raw:: html
 
@@ -63,28 +66,29 @@
             <i class="fas fa-angle-down rotate" style="float: right;"></i> Methods
          </h2>
       </a>
+      <div class="collapse" id="methDetails">
 
-   .. container:: collapse
-      :name: methDetails
+   {% block methods_summary %}
+   {% if methods %}
 
-      {% block methods_summary %}
-      {% if methods %}
+   .. autosummary::
+   {% for item in methods %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
 
-      .. autosummary::
+   {% endif %}
+   {% endblock %}
 
-         {% for item in methods -%}
-         ~{{ name }}.{{ item }}
-         {% endfor %}
+   {% for item in methods %}
+   .. automethod:: {{ item }}
+   {%- endfor %}
 
-      {% endif %}
-      {% endblock %}
+   .. raw:: html
 
-      {% for item in methods -%}
-      .. automethod:: {{ fullname }}.{{ item }}
-      {% endfor %}
+      </div>
 
-   {%- endif %}
-   {%- endblock %}
+   {% endif %}
+   {% endblock %}
 
    .. raw:: html
 

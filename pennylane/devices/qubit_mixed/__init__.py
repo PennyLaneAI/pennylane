@@ -18,7 +18,6 @@ This submodule is internal and subject to change without a deprecation cycle. Us
 at your own discretion.
 
 .. currentmodule:: pennylane.devices.qubit_mixed
-
 .. autosummary::
     :toctree: api
 
