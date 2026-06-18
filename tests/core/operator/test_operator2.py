@@ -1740,32 +1740,6 @@ class TestGraphDecomposition:
         assert DynOp.resource_keys == set()
         assert op.resource_params == {}
 
-    def test_resource_params_default_from_static_and_compilable_args(self):
-        """By default, ``resource_keys``/``resource_params`` are derived from the static and
-        compilable arguments; dynamic args, hybrid args, and wires are excluded."""
-        # FullOp has dynamic ``phi``, static ``static``, hybrid ``hybrid``, and ``wires``.
-        op = FullOp(0.5, "info", [], wires=0)
-        assert FullOp.resource_keys == {"static"}
-        assert op.resource_params == {"static": "info"}
-
-        class WithCompilable(Operator2):
-            dynamic_argnames = ("phi",)
-            compilable_argnames = ("n",)
-
-            def __init__(self, phi, n, wires):
-                super().__init__(phi, n, wires=wires)
-
-        assert WithCompilable.resource_keys == {"n"}
-        assert WithCompilable(0.5, 3, wires=0).resource_params == {"n": 3}
-
-    def test_resource_params_excludes_wire_labels(self):
-        """``resource_params`` must not depend on wire labels: two instances differing only in
-        wires (and dynamic data) have identical ``resource_params``, so the graph treats them as
-        one resource node."""
-        op_a = FullOp(0.5, "info", [], wires=0)
-        op_b = FullOp(0.9, "info", [], wires=5)
-        assert op_a.resource_params == op_b.resource_params == {"static": "info"}
-
     def test_compute_decomposition_takes_precedence(self):
         """An overridden ``compute_decomposition`` is used over registered graph rules."""
 

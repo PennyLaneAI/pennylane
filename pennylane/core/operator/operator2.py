@@ -759,7 +759,7 @@ class Operator2(ABC):
         example, the *number* of wires) should override this together with
         :attr:`~.Operator2.resource_params`.
         """
-        return set(cls.static_argnames) | set(cls.compilable_argnames)
+        return set()
 
     @property
     def resource_params(self) -> dict[str, Any]:
@@ -777,7 +777,7 @@ class Operator2(ABC):
         depends on the *number* of wires should override this (and
         :attr:`~.Operator2.resource_keys`) to expose ``num_wires`` instead.
         """
-        return {**self.static_args, **self.compilable_args}
+        return dict()
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
