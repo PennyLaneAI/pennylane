@@ -373,6 +373,7 @@
   precise rotations of the default ``method="qft"`` decomposition and supports an arbitrary modulus.
   Its multi-controlled gates reuse the remaining wires as borrowed ancillas, so large controls
   decompose with far fewer elementary gates.
+  [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
