@@ -439,6 +439,7 @@ class TestAbstractOperatorEquality:
     def test_abstract_wires(self, wires1, wires2, are_equal):
         """Test that operators with abstract wires are detected correctly."""
 
+        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
             def __init__(self, wires) -> None:
                 super().__init__(wires)
@@ -451,6 +452,7 @@ class TestAbstractOperatorEquality:
     def test_comparing_abstract_and_concrete_wires(self):
         """Assert that an abstract type specifier is not the same as an operator instance."""
 
+        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
             def __init__(self, wires) -> None:
                 super().__init__(wires)
