@@ -18,6 +18,7 @@ from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
 from sphinx.util import logging
+import logging as python_logging
 
 logger = logging.getLogger(__name__)
 
@@ -106,15 +107,14 @@ ignore_warnings = [
 ]
 suppress_warnings = ["docutils.parser"]
 autodoc_mock_imports = ["torch"]
-class DocutilsWarningFilter(logging.Filter):
-    def filter(self, record):
-        # Intercept and drop the specific unindent string
-        if "Explicit markup ends without a blank line" in record.getMessage():
-            return False  # Silences this warning completely
-        return True       # Keeps all other docutils and link warnings intact
+def docutils_warning_filter(record):
+    # Intercept and drop the specific unindent string
+    if "Explicit markup ends without a blank line" in record.getMessage():
+        return False  # Silences this warning completely
+    return True       # Keeps all other docutils and link warnings intact
 
-# Apply the filter globally to the docutils logging channel immediately
-logging.getLogger("docutils").addFilter(DocutilsWarningFilter())
+# Inject directly into Python's native logging framework for the docutils channel
+python_logging.getLogger("docutils").addFilter(docutils_warning_filter)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
