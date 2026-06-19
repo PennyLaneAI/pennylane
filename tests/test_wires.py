@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.typing import AbstractWires
 from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
