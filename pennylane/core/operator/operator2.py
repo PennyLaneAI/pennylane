@@ -1520,11 +1520,11 @@ def _is_hash_leaf(l) -> bool:
 
 
 @abstractify.register(ABCOperatorMeta)
-def _abstractify_operator_type(val: type[Operator2]) -> Operator2:
+def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if (fixed_sig := getattr(val, "fixed_sig")) is not None:
-        return val(*fixed_sig)
+    if (fixed_sig := getattr(op_type, "fixed_sig")) is not None:
+        return op_type(*fixed_sig)
 
     raise ValueError(
         "In order to abstractify from an operator type, a 'fixed_sig' must be defined."
@@ -1532,9 +1532,9 @@ def _abstractify_operator_type(val: type[Operator2]) -> Operator2:
 
 
 @abstractify.register(Operator2)
-def _abstractify_operator(val: Operator2) -> Operator2:
+def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    leaves, tree = flatten(val, is_leaf=_is_wires)
+    leaves, tree = flatten(op, is_leaf=_is_wires)
     abstract_leaves = tuple(abstractify(l) for l in leaves)
     return unflatten(abstract_leaves, tree)
 
