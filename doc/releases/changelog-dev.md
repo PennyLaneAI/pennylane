@@ -628,7 +628,7 @@
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
 
-* Added a new `abstractify` utility function that is able to convert various objects
+* Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
 
