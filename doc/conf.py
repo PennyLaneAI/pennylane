@@ -17,6 +17,7 @@ import sys
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,10 @@ ignore_warnings = [
     ("", "Explicit markup ends without a blank line"),
 ]
 autodoc_mock_imports = ["torch"]
+warnings.filterwarnings(
+    "ignore", 
+    message=r".*Explicit markup ends without a blank line.*"
+)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
