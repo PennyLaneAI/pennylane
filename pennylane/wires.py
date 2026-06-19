@@ -19,7 +19,7 @@ import functools
 import itertools
 import types
 import uuid
-from collections.abc import Hashable, Iterable, Sequence, Sized
+from collections.abc import Hashable, Iterable, Sequence
 from dataclasses import dataclass
 from importlib import import_module, util
 
@@ -780,17 +780,8 @@ class AbstractWires:
     def __len__(self) -> int:
         return self.num_wires
 
-    def issubtype(self, val) -> bool:
-        """Check whether a given value has a shape that adheres to the shape
-        of an ``AbstractWires``.
-        """
-        if self.num_wires is Ellipsis:
-            return True
-        if isinstance(val, Wires):
-            return len(val) == self.num_wires
-        if isinstance(val, Sized) and not isinstance(val, str):
-            return len(val) == self.num_wires
-        return len((val,)) == self.num_wires
+    def __repr__(self):
+        return f"AbstractWires({self.num_wires})"
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
