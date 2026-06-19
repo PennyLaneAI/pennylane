@@ -389,6 +389,26 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
+    def test_operator_without_fixed_sig_raises_error(self):
+        """Tests that if an operator type without a fixed_sig is used, an error is raised."""
+
+        class MissingFixedSigOp(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires)
+
+        @register_resources(
+            {
+                MissingFixedSigOp: 1,
+            }
+        )
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
+            _ = custom_decomp.compute_resources()
+
     def test_resource_keys_are_abstract_operators(self):
         """Tests that abstract operators can be used as keys."""
 
@@ -405,16 +425,17 @@ class TestDecompositionRule:
 
         @register_resources(
             {
-                # Gets processed to an abstract operator under the hood
+                # all three represent the same abstract operator
                 FixedSigOp: 1,
                 FixedSigOp(phi=AbstractArray((), float), wires=AbstractWires(1)): 2,
+                FixedSigOp(1.5, 0): 3,
             }
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
         # Gets grouped together
-        exp_dict = {FixedSigOp(*FixedSigOp.fixed_sig): 3}
+        exp_dict = {FixedSigOp(AbstractArray((), float), AbstractWires(1)): 6}  # 1 + 2 + 3
         assert custom_decomp.compute_resources().gate_counts == exp_dict
 
     def test_auto_wrap_fails(self):
