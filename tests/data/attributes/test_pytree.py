@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.data import Dataset, DatasetPyTree
+from pennylane.data.attributes.pytree import _storable_as_array
 from pennylane.pytrees.pytrees import (
     _register_pytree_with_pennylane,
     flatten_registrations,
@@ -136,6 +137,25 @@ class TestDatasetPyTree:
 
         assert result.data[0] == 1.0
         assert np.array_equal(result.data[1], matrix)
+
+    def test_bytes_leaves_preserved(self):
+        """Test that ``bytes`` leaves round-trip as ``bytes`` rather than being
+        coerced to another type when stored as a list."""
+        value = CustomNode([b"abc", b"de"], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert list(result.data) == [b"abc", b"de"]
+        assert all(isinstance(leaf, bytes) for leaf in result.data)
+
+    @pytest.mark.torch
+    def test_non_numpy_leaves_do_not_raise(self):
+        """Test that the array/list decision does not call ``np.asarray`` on non-numpy
+        leaves (e.g. a ``torch`` tensor that requires grad), which would raise."""
+        torch = pytest.importorskip("torch")
+        leaf = torch.tensor([1.0, 2.0], requires_grad=True)
+
+        assert _storable_as_array([leaf]) is False
 
 
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
