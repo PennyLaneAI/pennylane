@@ -36,7 +36,7 @@ class Resources:
         weighted_cost (float): the cumulative weight of the gates.
     """
 
-    gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
+    gate_counts: dict[CompressedResourceOp | Operator2, int] = field(default_factory=dict)
     weighted_cost: float = field(default=None)
 
     def __post_init__(self):
