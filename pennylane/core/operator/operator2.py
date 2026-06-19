@@ -1372,21 +1372,14 @@ class Operator2(metaclass=OperatorMeta):
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
-        hybrid_wire_argnames = []
         wire_lens = []
         for name, value in self.wire_args.items():
-            if name in self.hybrid_argnames:
-                hybrid_wire_argnames.append(name)
-            else:
+            if name not in self.hybrid_argnames:
                 pos_args.extend(value)
                 wire_lens.append(len(value))
 
-        # Reorder hybrid args such that hybrid wire args are first
-        hybrid_argnames = hybrid_wire_argnames + [
-            h for h in self.hybrid_argnames if h not in self.wire_argnames
-        ]
         hybrid_lens, hybrid_trees = [], []
-        for name in hybrid_argnames:
+        for name in self.hybrid_argnames:
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
             op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
@@ -1442,12 +1435,9 @@ if has_jax:
             args[name] = all_args[i]
             i += 1
 
-        hybrid_wire_argnames = []
         wire_lens_iter = iter(wire_lens)
         for name in op_cls.wire_argnames:
-            if name in op_cls.hybrid_argnames:
-                hybrid_wire_argnames.append(name)
-            else:
+            if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
                 # We can safely cast to `int` inside the concrete impl because there
                 # there should not be any abstract values when calling the concrete impl.
@@ -1455,10 +1445,7 @@ if has_jax:
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
-        hybrid_argnames = hybrid_wire_argnames + [
-            name for name in op_cls.hybrid_argnames if name not in op_cls.wire_argnames
-        ]
-        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
             leaves = all_args[i : i + len_]
             args[name] = unflatten(leaves, tree)
             i += len_
