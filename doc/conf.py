@@ -106,6 +106,15 @@ ignore_warnings = [
 ]
 suppress_warnings = ["docutils.parser"]
 autodoc_mock_imports = ["torch"]
+class DocutilsWarningFilter(logging.Filter):
+    def filter(self, record):
+        # Intercept and drop the specific unindent string
+        if "Explicit markup ends without a blank line" in record.getMessage():
+            return False  # Silences this warning completely
+        return True       # Keeps all other docutils and link warnings intact
+
+# Apply the filter globally to the docutils logging channel immediately
+logging.getLogger("docutils").addFilter(DocutilsWarningFilter())
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
