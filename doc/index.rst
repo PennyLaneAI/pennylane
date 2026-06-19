@@ -112,9 +112,9 @@ dependencies, can be done using pip:
 Docker support
 ---------------
 
-Docker images are found on the [PennyLane Docker Hub page](https://hub.docker.com/u/pennylaneai), 
+Docker images are found on the `PennyLane Docker Hub page <https://hub.docker.com/u/pennylaneai>`__, 
 where there is also a detailed description about PennyLane Docker support. 
-[See description here](https://docs.pennylane.ai/projects/lightning/en/stable/dev/docker.html) 
+`See description here <https://docs.pennylane.ai/projects/lightning/en/stable/dev/docker.html>`__ 
 for more information.
 
 
