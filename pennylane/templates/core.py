@@ -608,9 +608,9 @@ class Subroutine:
     ``Wires`` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
     builtin ``Float``.
 
-    >>> from pennylane.typing import Float
+    >>> from pennylane.typing import Float, Wire
     >>> abstract_params = Float[10]
-    >>> abstract_wires = qp.typing.Wire[1]
+    >>> abstract_wires = Wire[1]
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
@@ -619,14 +619,14 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.typing import Float
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = Float[3]
-        abstract_wires = qp.typing.Wire[3]
+        abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
         @qp.decomposition.register_resources({rxlayer_rep: 1})
