@@ -20,7 +20,11 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 
 @pytest.mark.parametrize(
@@ -114,6 +118,71 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
     assert new_op.base is not op.base
+
+
+# pylint: disable=too-few-public-methods
+class MultiRot(Operator2):
+    """MultiRot class used for testing purposes."""
+
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("wires",)
+    static_argnames = ("string",)
+
+    def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        """
+        A simple MultiRot operator based on Operator2.
+
+        Args:
+            angles: The angles of each rotation.
+            wires: The wires each rotation applies to.
+            string: The type ("X", "Y", "Z") of each rotation.
+        """
+        assert len(angles) == len(string) == len(wires)
+        for letter in string:
+            assert letter in ("X", "Y", "Z")
+        super().__init__(angles, wires, string)
+
+    def compute_decomposition(self, angles: TensorLike, wires: WiresLike, string: str):
+        decomp = []
+        for angle, wire, letter in zip(angles, wires, string, strict=True):
+            if letter == "X":
+                decomp.append(qp.RX(angle, wire))
+            elif letter == "Y":
+                decomp.append(qp.RY(angle, wire))
+            else:
+                decomp.append(qp.RZ(angle, wire))
+
+        return decomp
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (
+            MultiRot([np.pi, np.pi / 2], [0, 1], "XY"),
+            ([np.pi / 4, np.pi / 8],),
+            MultiRot([np.pi / 4, np.pi / 8], [0, 1], "XY"),
+        ),
+        (
+            MultiRot([np.pi, np.pi / 2], [1, 2], "ZX"),
+            ([np.pi / 3, np.pi / 6],),
+            MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX"),
+        ),
+        (
+            Adjoint2(MultiRot([np.pi, np.pi / 2], [1, 2], "ZX")),
+            ([np.pi / 3, np.pi / 6],),
+            Adjoint2(MultiRot([np.pi / 3, np.pi / 6], [1, 2], "ZX")),
+        ),
+    ],
+)
+def test_operator_2_ops(op, new_params, expected_op):
+    """Test that `bind_new_arguments` with `Operator2` returns a new
+    operator with the new arguments without mutating the original
+    operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    qp.assert_equal(new_op, expected_op)
+    assert new_op is not op
 
 
 @pytest.mark.parametrize(

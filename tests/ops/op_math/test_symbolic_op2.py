@@ -45,7 +45,11 @@ class RX2(Operator2):
 class CustomSymbolicOp(SymbolicOp2):  # pylint: disable=too-few-public-methods
     """A custom symbolic operator class."""
 
+    hybrid_argnames = ("base",)
+
     dynamic_argnames = ("val",)
+
+    wire_argnames = ()
 
     compilable_argnames = ("toggle",)
 

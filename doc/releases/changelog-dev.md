@@ -420,13 +420,20 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
+  the decomposition rule validate the number of available work wires against the needed work wires
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
+  number of control wires/angles.
+  [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
+
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
   decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
+  decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
@@ -653,6 +660,7 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -664,8 +672,10 @@
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
   [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+  [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
 
 * Adds a new `pennylane/core` module.
@@ -726,6 +736,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
+  [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)
+
 * Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
   removing the module from the documentation-test skip list.
   [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
@@ -753,6 +766,12 @@
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
+
+* Fixed a bug where :func:`~.evolve` / :class:`~.ops.op_math.Evolution` silently produced
+  incorrect results and wrong gradients under the default autograd/backprop differentiation path
+  when the generator was a linear combination of overlapping Pauli words (e.g. a :class:`~.Sum`
+  or :class:`~.Hamiltonian`).
+  [(#9636)](https://github.com/PennyLaneAI/pennylane/pull/9636)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
