@@ -38,7 +38,7 @@ def zyz_rotation_angles(U) -> tuple[float, float, float, float]:
 
     Returns:
         tuple: The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
-        global phase :math:`\alpha`.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
 
     """
 
@@ -79,7 +79,7 @@ def xyx_rotation_angles(U) -> tuple[float, float, float, float]:
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha`.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     """
 
@@ -107,7 +107,7 @@ def xzx_rotation_angles(U) -> tuple[float, float, float, float]:
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha`.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     """
 
@@ -135,7 +135,7 @@ def zxz_rotation_angles(U) -> tuple[float, float, float, float]:
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha`.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
     """
 
