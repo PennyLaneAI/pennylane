@@ -1524,7 +1524,7 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
     if op_type.fixed_sig is not None:
-        return op_type(*fixed_sig)
+        return op_type(*op_type.fixed_sig)
 
     raise ValueError(
         "In order to abstractify from an operator type, a 'fixed_sig' must be defined."
