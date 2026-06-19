@@ -16,6 +16,7 @@
 
 from textwrap import dedent
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -437,7 +438,7 @@ class TestDecompositionRule:
                     matrix=AbstractArray((2, 2), float),
                     wires=AbstractWires(1),
                 ): 2,
-                FixedSigOp(1.5, [[0.0, 1.0], [1.0, 0.0]], 0): 3,
+                FixedSigOp(1.5, np.ones((2, 2), dtype=float), 0): 3,
             }
         )
         def custom_decomp(*_, **__):
