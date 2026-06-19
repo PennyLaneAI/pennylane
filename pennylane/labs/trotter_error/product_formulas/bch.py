@@ -150,7 +150,6 @@ def _bch_product_formula(
         for comm2, coeff2 in bilinear_expansion(comm1, comm_dict, max_order, coeff1).items():
             ret[comm2] += coeff2
 
-    #ret = _normalize_order_1(ret)
     ret = _cancel_terms(ret)
     ret = _group_terms(ret, max_order)
     ret = _scale_dict(ret, product_formula.exponent)
@@ -207,7 +206,6 @@ def _bch_symbols(
         for comm2, coeff2 in bilinear_expansion(comm1, terms, max_order, coeff1).items():
             bch_final[comm2] += coeff2
 
-    bch_final = _normalize_order_1(bch_final)
     bch_final = _cancel_terms(bch_final)
     bch_final = _group_terms(bch_final, max_order)
 
@@ -397,36 +395,5 @@ def _group_terms(d: dict[ASTNode, float], max_order: int) -> dict[ASTNode, float
 
         for comm in merged:
             ret[comm] += coeff
-
-    return ret
-
-
-def _normalize_order_1(d: dict[ASTNode, float]) -> dict[ASTNode, float]:
-    """Collapse all order-one terms into a single combined symbol node.
-
-    The first-order part of a BCH expansion is a linear combination of base
-    symbols. This function gathers every order-one term, accumulates the total
-    coefficient of each underlying symbol, and replaces them all with one
-    :class:`SymbolNode` holding that combined linear combination (with overall
-    coefficient one). Higher-order terms are carried through unchanged.
-
-    Args:
-        d (dict[ASTNode, float]): the expansion to normalize.
-
-    Returns:
-        dict[ASTNode, float]: the expansion with its order-one terms merged into
-        a single symbol node.
-    """
-    order_1 = {comm: coeff for comm, coeff in d.items() if comm.order == 1}
-    ret = defaultdict(float, {comm: coeff for comm, coeff in d.items() if comm.order > 1})
-
-    all_symbols = defaultdict(float)
-    for lincomb, coeff in order_1.items():
-        for symbol, sym_coeff in lincomb.symbols:
-            all_symbols[symbol] += coeff * sym_coeff
-
-    symbols, coeffs = zip(*all_symbols.items())
-    new_order_1_comm = SymbolNode(symbols, coeffs)
-    ret[new_order_1_comm] = 1
 
     return ret
