@@ -94,7 +94,6 @@ Key Features
   actively defining the frontier of quantum computing. Whether quantum is your day job or you’re
   getting your first taste at a `hackathon <https://pennylane.ai/challenges>`__, you’re backed by
   the `most responsive community <https://discuss.pennylane.ai>`__ in the field.
-..
 
 For more details and additional features, please see the `PennyLane website <https://pennylane.ai/features/>`__
 and our most recent `release notes <https://docs.pennylane.ai/en/stable/development/release_notes.html>`__.
@@ -106,7 +105,7 @@ Installation
 PennyLane requires Python version 3.11 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
-.. code-block:: python
+.. code-block:: bash
 
     python -m pip install pennylane
 
@@ -144,7 +143,8 @@ Key Resources
 You can also check out our `documentation <https://pennylane.readthedocs.io>`__, and detailed `developer guides <https://docs.pennylane.ai/en/stable/development/guide.html>`__.
 
 Demos
------------------------
+------------------------
+
 Take a deeper dive into quantum computing by exploring quantum computing research with 
 the `PennyLane Demos <https://pennylane.ai/qml/demonstrations>`__—covering fundamental
 quantum concepts alongside the latest quantum algorithm research results.
@@ -158,7 +158,7 @@ guide <https://pennylane.ai/qml/demos_submission>`__.
     :target: javascript:void(0);
 
 Contributing to PennyLane
------------------------
+------------------------
 
 We welcome contributions—simply fork the PennyLane repository, and then make a `pull
 request <https://help.github.com/articles/about-pull-requests/>`__ containing your contribution. All
@@ -173,7 +173,7 @@ page <https://github.com/PennyLaneAI/pennylane/blob/main/.github/CONTRIBUTING.md
 details.
 
 Support
------------------------
+------------------------
 
 - **Source Code:** https://github.com/PennyLaneAI/pennylane
 - **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
