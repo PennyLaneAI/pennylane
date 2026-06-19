@@ -160,7 +160,7 @@ class AbstractArray:
     """
 
     shape: tuple[int | types.EllipsisType, ...]
-    dtype: np.dtype | type[Number]
+    dtype: np.dtype | type[Number] | type
 
     def __post_init__(self):
         object.__setattr__(self, "shape", tuple(self.shape))

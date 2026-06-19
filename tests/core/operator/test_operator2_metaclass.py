@@ -18,6 +18,7 @@ from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
+from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
 
@@ -229,11 +230,22 @@ class TestOperatorAbstractInputs:
         op = WireTrackingOp(hybrid_wires, base_wires)
         assert op.wires == expected_wires
 
+    def test_abstract_operator_doesnt_queue(self):
+        """Ensures that an abstract operator doesn't get queued."""
+
+        with AnnotatedQueue() as q:
+            op = DynOp(0.5, wires=AbstractWires(1))
+
+        assert op.wires == AbstractWires(1)
+        assert op.phi == AbstractArray((), float)
+
+        assert len(q) == 0
+
 
 class TestOperatorAbstractInputsCapture:
     """Tests the capture of operators with abstract inputs."""
 
-    def test_bind_isnt_trigger_for_abstract_wires(self):
+    def test_bind_isnt_triggered_for_abstract_wires(self):
         """Tests that no operator equation enters the jaxpr for abstract wires."""
 
         def f():
@@ -242,7 +254,7 @@ class TestOperatorAbstractInputsCapture:
         cjaxpr = jax.make_jaxpr(f)()
         assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
 
-    def test_bind_isnt_trigger_for_abstract_array(self):
+    def test_bind_isnt_triggered_for_abstract_array(self):
         """Tests that no operator equation enters the jaxpr for abstract inputs."""
 
         def f():

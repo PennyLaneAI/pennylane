@@ -147,7 +147,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    fixed_sig: ClassVar[tuple[type, ...]] = None
+    fixed_sig: ClassVar[tuple[AbstractArray | AbstractWires, ...] | None] = None
     """The expected signature of an operator. If set, it must have the same length as
     the total number of arguments, and be in the same order as the order of the arguments
     in an operator's constructor. This attribute is optional—not setting it has no loss
@@ -1508,11 +1508,9 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         mod_val = None
 
     # We stringify the data because arrays are unhashable
-    return str(
-        id(d)
-        if math.is_abstract(d) or isinstance(d, AbstractArray)
-        else _mod_and_round(d, mod_val)
-    )
+    if isinstance(d, AbstractArray):
+        return str(d)
+    return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
 
 
 def _is_hash_leaf(l) -> bool:
@@ -1522,19 +1520,21 @@ def _is_hash_leaf(l) -> bool:
 
 
 @abstractify.register(ABCOperatorMeta)
-def _abstractify_operator_type(val: type[Operator2]) -> Operator2:
+def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if hasattr(val, "fixed_sig"):
-        return val(*val.fixed_sig)
+    if op_type.fixed_sig is not None:
+        return op_type(*op_type.fixed_sig)
 
-    raise NotImplementedError
+    raise TypeError(
+        f"Operator type '{op_type.__name__}' must define a 'fixed_sig' to be abstractified."
+    )
 
 
 @abstractify.register(Operator2)
-def _abstractify_operator(val: Operator2) -> Operator2:
+def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    leaves, tree = flatten(val, is_leaf=_is_wires)
+    leaves, tree = flatten(op, is_leaf=_is_wires)
     abstract_leaves = tuple(abstractify(l) for l in leaves)
     return unflatten(abstract_leaves, tree)
 

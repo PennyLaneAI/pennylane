@@ -980,6 +980,15 @@ class TestDynamicProperties:
 class TestDunderMethods:
     """Tests for ``Operator2`` dunder methods."""
 
+    def test_repr_with_abstract_args(self):
+        """Tests that abstract wires properly render."""
+
+        op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
+        assert (
+            repr(op)
+            == "DynOp(phi=AbstractArray(shape=(1, 2), dtype=<class 'float'>), wires=AbstractWires(num_wires=1))"
+        )
+
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
@@ -1860,7 +1869,6 @@ class TestRepresentations:
 
 
 class TestStatePrepBase:
-
     def test_state_prep_base_label(self):
         """Tests that the label is as expected."""
 

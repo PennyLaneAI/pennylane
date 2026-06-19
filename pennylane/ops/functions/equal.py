@@ -47,7 +47,8 @@ from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, TensorLike
+from pennylane.wires import AbstractWires
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -459,6 +460,18 @@ def _equal_operator2(
 
 def _check_wire_value(wname: str, wval1: Any, wval2: Any):
     """Check for equality of a wire argument of an Operator2 instance."""
+
+    is_aw1 = isinstance(wval1, AbstractWires)
+    is_aw2 = isinstance(wval2, AbstractWires)
+
+    if is_aw1 and is_aw2:
+        if wval1 == wval2:
+            return True
+        return f"op1 and op2 have different AbstractWires type specifiers for {wname}: Got {wval1} and {wval2}."
+
+    if is_aw1 != is_aw2:
+        return f"Mismatched wire representations for {wname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {wval1} and {wval2}."
+
     unequal_wires = False
     abstract_wires = False
 
@@ -496,6 +509,17 @@ def _check_dynamic_value(
     atol=1e-9,
 ):
     """Check for equality of a dynamic argument of an Operator2 instance."""
+    is_aa1 = isinstance(dval1, AbstractArray)
+    is_aa2 = isinstance(dval2, AbstractArray)
+
+    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
+    # execution because Operator2's metaclass ensures abstract operators are fully abstract
+    # and so the wires check would fail first
+    if is_aa1 and is_aa2:
+        if dval1 == dval2:
+            return True
+        return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
+
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
