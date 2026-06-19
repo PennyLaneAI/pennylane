@@ -412,6 +412,10 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
             _ = custom_decomp.compute_resources()
 
+    @pytest.mark.xfail(
+        reason="Upstream issue in #9675 that causes hash(float) != hash(np.dtype('float64')) which breaks the test.",
+        strict=True,
+    )
     def test_resource_keys_are_abstract_operators(self):
         """Tests that abstract operators can be used as keys."""
 
