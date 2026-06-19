@@ -203,6 +203,10 @@ class TestAbstractArray:
         assert isinstance(c, AbstractWires)
         assert c.num_wires == ...
 
+        d = a[-1]
+        assert isinstance(d, AbstractWires)
+        assert d.num_wires == -1
+
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
 
@@ -227,6 +231,11 @@ class TestAbstractArray:
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, ..., 2)
         assert e.dtype == np.int64
+
+        f = a[-1]
+        assert isinstance(f, AbstractArray)
+        assert f.dtype == np.int64
+        assert f.shape == (-1,)
 
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
