@@ -159,7 +159,7 @@ guide <https://pennylane.ai/qml/demos_submission>`__.
     :target: https://pennylane.ai/qml/demonstrations;
 
 Contributing to PennyLane
-------------------------
+---------------------------------
 
 We welcome contributions—simply fork the PennyLane repository, and then make a `pull
 request <https://help.github.com/articles/about-pull-requests/>`__ containing your contribution. All
