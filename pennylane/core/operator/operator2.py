@@ -1110,14 +1110,20 @@ class Operator2(metaclass=OperatorMeta):
 
         for name, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
             argval = self.arguments[name]
-            if not expected_type.issubtype(argval):
-                # Dynamic argument
-                if name in self.dynamic_argnames:
-                    raise ValueError(
-                        f"Expected '{name}' to have shape {expected_type.shape} and "
-                        f"dtype {str(expected_type.dtype)}, but got {argval}."
-                    )
-                # Wire argument
+            if name in self.dynamic_argnames and not expected_type.is_compatible_with(argval):
+                raise ValueError(
+                    f"Expected '{name}' to have shape {expected_type.shape} and "
+                    f"dtype '{expected_type.dtype.name}', but got {argval}."
+                )
+            if (
+                name in self.wire_argnames
+                and expected_type.num_wires >= 0
+                and len(argval) != expected_type.num_wires
+            ):  # pragma: no cover
+                # This branch is basically unreachable because __init_subclass__ uses fixed_sig
+                # to set wire_sizes if it isn't already set. If wire_sizes is set, __init_wires
+                # catches invalid wire sizes before we ever reach here. The only way to reach it
+                # is to manually call this function.
                 raise ValueError(
                     f"Expected '{name}' to have length {expected_type.num_wires}, "
                     f"but got {argval}."
@@ -1173,9 +1179,10 @@ class Operator2(metaclass=OperatorMeta):
                     "hybrid, static, or compilable arguments."
                 )
             for at in cls.fixed_sig:
-                if (isinstance(at, AbstractArray) and any(s is Ellipsis for s in at.shape)) or (
-                    isinstance(at, AbstractWires) and at.num_wires is Ellipsis
-                ):
+                if (
+                    isinstance(at, AbstractArray)
+                    and (at.shape is Ellipsis or any(s < 0 for s in at.shape))
+                ) or (isinstance(at, AbstractWires) and at.num_wires < 0):
                     raise TypeError(
                         f"'{cls.__name__}.fixed_sig' can only specify types with static sizes, "
                         f"but got {at} that allows the argument to have arbitrary shape."

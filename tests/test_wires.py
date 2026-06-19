@@ -616,11 +616,15 @@ class TestAbstractWires:
         ):
             _ = a == 2
 
-    def test_ellipsis(self):
-        """Test that number of wires can be specified by an ellipsis."""
+    def test_unknown_num_wires(self):
+        """Test that -1 marks an unknown number of wires."""
 
-        a = AbstractWires(...)
-        assert a.num_wires == ...
+        a = AbstractWires(-1)
+        assert a.num_wires == -1
+        assert a.shape == (-1,)
+
+        with pytest.raises(TypeError, match="len\\(\\) is undefined for"):
+            _ = len(a)
 
     def test_wires_getitem(self):
         """Test that AbstractWires can created by indexing into Wires."""
@@ -629,13 +633,11 @@ class TestAbstractWires:
         assert isinstance(a, AbstractWires)
         assert a.num_wires == 4
 
-        b = qp.wires.Wires[...]
+        b = qp.wires.Wires[-1]
         assert isinstance(b, AbstractWires)
-        assert b.num_wires == ...
+        assert b.num_wires == -1
 
-        with pytest.raises(
-            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
-        ):
+        with pytest.raises(TypeError, match="AbstractWires can only be subscripted with integers."):
             _ = qp.wires.Wires[2, 3, 4]
 
     def test_shape_and_dtype(self):
@@ -644,16 +646,3 @@ class TestAbstractWires:
         a = qp.wires.AbstractWires(3)
         assert a.shape == (3,)
         assert a.dtype == np.int64
-
-    def test_issubtype_wires(self):
-        """Test ``issubtype`` for wire arguments."""
-        aw = AbstractWires(2)
-        assert aw.issubtype(Wires([0, 1]))
-        assert aw.issubtype([0, 1])
-        assert not aw.issubtype(Wires([0]))
-
-    def test_issubtype_ellipsis_accepts_any_length(self):
-        """Test that ``AbstractWires(...)`` accepts any wire length."""
-        aw = AbstractWires(...)
-        assert aw.issubtype(Wires([0]))
-        assert aw.issubtype([0, 1, 2, 3])

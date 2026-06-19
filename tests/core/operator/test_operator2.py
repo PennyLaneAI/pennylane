@@ -256,10 +256,10 @@ class TestInitSubclass:
 
     @pytest.mark.parametrize(
         "abstract_type",
-        [AbstractArray((...,), float), AbstractArray((2, ...), int), AbstractWires(...)],
+        [AbstractArray(..., float), AbstractArray((-1, 2), int), AbstractWires(-1)],
     )
-    def test_fixed_sig_rejects_ellipsis_sizes(self, abstract_type):
-        """Test that ``fixed_sig`` entries must have static sizes."""
+    def test_fixed_sig_rejects_non_static_sizes(self, abstract_type):
+        """Test that ``fixed_sig`` entries must have fully static sizes."""
 
         fixed_sig = (
             (AbstractArray((), float), abstract_type)
@@ -563,9 +563,22 @@ class TestInitFixedSigValidation:
                 super().__init__(phi, wires=wires)
 
         with pytest.raises(
-            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype <class 'int'>"
+            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype 'int64'"
         ):
             Op(0.5, wires=0)
+
+    def test_weak_type_allows_python_scalar(self):
+        """Test that ``fixed_sig`` weak types accept Python scalar inputs."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=[0, 1])
+        assert op.arguments["phi"] == 0.5
 
     def test_wire_arg_wrong_length_error(self):
         """Test that a wire argument with the wrong length raises an error."""
@@ -581,6 +594,22 @@ class TestInitFixedSigValidation:
             ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
         ):
             Op(0.5, wires=[0])
+
+    def test_validate_arg_types_wire_length_error(self):
+        """Test the ``fixed_sig`` wire-length branch of ``__validate_arg_types`` directly."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=[0, 1])
+        op.arguments["wires"] = Wires([0])
+
+        with pytest.raises(ValueError, match=r"Expected 'wires' to have length 2"):
+            op._Operator2__validate_arg_types()
 
 
 class TestProperties:
@@ -2061,10 +2090,10 @@ class TestStatePrepBase:
     def test_interface_not_implemented(self):
         """Tests that an error is raised if an interface isn't implemented."""
 
+        # pylint: disable=useless-parent-delegation,abstract-method
         class BadStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 

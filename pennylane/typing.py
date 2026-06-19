@@ -137,35 +137,56 @@ class AbstractArray:
     attributes necessary for resource calculations.
 
     Args:
-        shape (tuple(int | types.EllipsisType)): the dimensions of the array.
-            ``()`` corresponds to a scalar, and ``...`` corresponds to an unknown dimension.
+        shape (tuple[int, ...] | Ellipsis): the dimensions of the array.
+            ``()`` corresponds to a scalar. ``Ellipsis`` (``...``) means the number of axes
+            is unknown. Within a shape tuple, ``-1`` marks an axis whose size is unknown.
         dtype (type): the data type of the array. Can either be a ``builtin`` like
             ``float`` or ``int``, or a numpy dtype like ``np.complex64``.
 
     >>> from pennylane.typing import AbstractArray
     >>> AbstractArray((4, 2), float)
-    AbstractArray(shape=(4, 2), dtype=dtype('float'))
+    AbstractArray((4, 2), 'float64')
 
-    Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
+    Use ``-1`` for an axis with unknown size:
 
-    >>> aa = AbstractArray((..., 2), np.int32)
-    >>> aa
-    AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
+    >>> aa = AbstractArray((-1, 2), np.int32)
+    >>> isinstance(np.ones((4, 2), np.int32), aa)
+    True
 
-    ``AbstractArray``'s can be used together with ``isinstance`` checks:
+    Use ``Ellipsis`` when the rank itself is unknown:
 
-    >>> isinstance(np.ones((4,2), np.int32), aa)
+    >>> isinstance(np.ones((4, 2)), AbstractArray(..., float))
     True
 
     """
 
-    shape: tuple[int | types.EllipsisType, ...]
+    shape: tuple[int, ...] | types.EllipsisType
     dtype: np.dtype
     _weak_type: bool = field(init=False, hash=True)
 
     def __post_init__(self):
-        weak_type = isinstance(self.dtype, type) and issubclass(self.dtype, Number)
-        object.__setattr__(self, "shape", tuple(self.shape))
+        weak_type = (
+            isinstance(self.dtype, type)
+            and issubclass(self.dtype, Number)
+            # Need to check this because builtin numpy dtypes (like np.float32) are
+            # subclasses of Number
+            and self.dtype.__module__ == "builtins"
+        )
+        if self.shape is not Ellipsis:
+            shape = tuple(self.shape)
+            if Ellipsis in shape:
+                raise ValueError(
+                    f"Ellipsis cannot appear inside a shape tuple, but got {shape}. "
+                    "Use -1 for axes with unknown sizes, or shape=Ellipsis when the "
+                    "number of axes is unknown."
+                )
+            if not all(isinstance(s, int) for s in shape):
+                raise ValueError(
+                    f"Shapes can only be initialized with integer values, but got {shape}. "
+                    "For axes with unknown sizes, use -1. For an unknown number of axes, "
+                    "use shape=Ellipsis."
+                )
+            object.__setattr__(self, "shape", shape)
         object.__setattr__(self, "dtype", np.dtype(self._resolve_dtype(self.dtype)))
         object.__setattr__(self, "_weak_type", weak_type)
 
@@ -173,15 +194,17 @@ class AbstractArray:
         dtype = getattr(instance, "dtype", None)
         if dtype is None or self._resolve_dtype(dtype) != self.dtype:
             return False
+
+        if self.shape is Ellipsis:
+            return True
+
         shape = getattr(instance, "shape", None)
-        if shape is None or len(shape) != len(self.shape):
-            return False
-        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
+        return shape is not None and self._shape_matches(shape)
 
     def is_compatible_with(self, val) -> bool:
         """Check whether an input value is compatible with an ``AbstractArray``."""
         # No need to create a new array if value is already an array
-        val = np.array(val) if isinstance(val, (list, tuple)) else val
+        val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
         shape = val.shape
         dtype = self._resolve_dtype(val.dtype)
 
@@ -199,30 +222,34 @@ class AbstractArray:
         if not np.can_cast(dtype, self.dtype, casting=casting):
             return False
 
+        if self.shape is Ellipsis:
+            return True
+
+        return self._shape_matches(shape)
+
+    def _shape_matches(self, shape) -> bool:
         if len(shape) != len(self.shape):
             return False
-        return all(s2 in {s1, Ellipsis} for s1, s2 in zip(shape, self.shape, strict=True))
+        return all(s2 in {s1, -1} for s1, s2 in zip(shape, self.shape, strict=True))
 
     @property
     def size(self) -> int:
         """Total number of elements."""
-        try:
-            return prod(self.shape)
-        except TypeError as e:
-            if any(s == ... for s in self.shape):
-                raise TypeError(
-                    f"size is undefined for {self} with unknown shape dimension specified by Ellipsis."
-                ) from e
-            raise e  # pragma: no cover
+        if self.shape is Ellipsis or any(s == -1 for s in self.shape):
+            raise TypeError(f"size is undefined for {self} with incomplete shape.")
+        return prod(self.shape)
 
     @property
     def T(self) -> "AbstractArray":
         """Transpose view of the array."""
-        return AbstractArray(self.shape[::-1], self.dtype)
+        new_shape = self.shape if self.shape is Ellipsis else self.shape[::-1]
+        return AbstractArray(new_shape, self.dtype)
 
     @property
     def ndim(self) -> int:
         """Number of dimensions."""
+        if self.shape is Ellipsis:
+            raise TypeError(f"ndim is undefined for {self} with incomplete shape.")
         return len(self.shape)
 
     def _resolve_dtype(self, dtype):
@@ -236,7 +263,7 @@ class AbstractArray:
         return np.dtype(dtype)
 
     def __repr__(self):
-        args = f"{self.shape}, {self.dtype.name}"
+        args = f"{self.shape}, '{self.dtype.name}'"
         if self._weak_type:
             args += ", weak_type=True"
         return f"AbstractArray({args})"
@@ -248,8 +275,10 @@ class AbstractArray:
         raise IndexError("Cannot index into an AbstractArray.")
 
     def __len__(self) -> int:
-        if not self.shape:
+        if not self.shape or self.shape is Ellipsis:
             raise TypeError("len() of unsized object.")
+        if self.shape[0] < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown size for the first axis.")
         return self.shape[0]
 
     def __eq__(self, other) -> bool:
