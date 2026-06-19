@@ -320,7 +320,7 @@ class AbstractWires:
 
     @property
     def shape(self) -> tuple[int]:
-        """The number of wires expressed as shape ``(num_wires, )``."""
+        """The number of wires expressed as shape ``(num_wires,)``."""
         return (self.num_wires,)
 
     @property
