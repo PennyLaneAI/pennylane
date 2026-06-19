@@ -203,6 +203,11 @@ class TestAbstractArray:
         assert isinstance(c, AbstractWires)
         assert c.num_wires == ...
 
+    def assert_wire_type_factory_raises(self):
+        """Test that we can only index into a wire type factory once."""
+        with pytest.raises(IndexError, match=r"only be indexed into once"):
+            _ = AbstractWireTypeFactory(1)[1][2]
+
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
 
@@ -227,6 +232,11 @@ class TestAbstractArray:
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, ..., 2)
         assert e.dtype == np.int64
+
+    def assert_type_factory_raises(self):
+        """Test that we can only index into a type factory once."""
+        with pytest.raises(IndexError, match=r"only be indexed into once"):
+            _ = AbstractTypeFactory((), int)[1][2]
 
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""

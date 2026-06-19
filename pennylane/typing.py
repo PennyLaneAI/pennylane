@@ -362,7 +362,7 @@ class AbstractWireTypeFactory(AbstractWires):
         """
         if self.num_wires != 1:
             raise IndexError(
-                "AbstractTypeFactory's can only be indexed into once to create new versions."
+                "AbstractWireTypeFactory's can only be indexed into once to create new versions."
             )
 
         if not (isinstance(shape, int) or shape == ...):
