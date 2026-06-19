@@ -155,7 +155,7 @@ guide <https://pennylane.ai/qml/demos_submission>`__.
 .. image:: https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/demos.png
     :align: right
     :width: 900px
-    :target: javascript:void(0);
+    :target: https://pennylane.ai/qml/demonstrations;
 
 Contributing to PennyLane
 ------------------------
