@@ -316,7 +316,7 @@ class AbstractWires:
         if isinstance(other, AbstractWires):
             return self.num_wires == other.num_wires
 
-        raise TypeError("Tried to check equality against an abstract wire register.")
+        raise TypeError("Tried to check equality against abstract wires.")
 
     @property
     def shape(self) -> tuple[int]:
