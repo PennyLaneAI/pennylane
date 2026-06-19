@@ -325,7 +325,7 @@ class AbstractWires:
 
     @property
     def dtype(self):
-        """np.int64.  The dtype of wires when used with Catalyst."""
+        """np.int64. The dtype of wires when used with Catalyst."""
         return np.int64
 
     def __hash__(self):
