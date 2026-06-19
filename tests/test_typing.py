@@ -27,7 +27,7 @@ from pennylane.typing import (
     Float,
     Int,
     TensorLike,
-    Wire,
+    WireType,
 )
 from pennylane.wires import Wires
 
@@ -324,21 +324,21 @@ class TestAbstractWires:
         assert a.dtype == np.int64
 
     def test_instance_check(self):
-        """Test instance check of Wire."""
+        """Test instance check of WireType."""
 
         # int wire labels
         for i in range(4):
             w = Wires(list(range(i)))
-            assert isinstance(w, Wire[i])
-            assert not isinstance(w, Wire[i - 1])
+            assert isinstance(w, WireType[i])
+            assert not isinstance(w, WireType[i - 1])
 
         # str wire labels
         l = ["a", "b", "c"]
 
         for i in range(len(l)):
             w = Wires(l[:i])
-            assert isinstance(w, Wire[i])
-            assert not isinstance(w, Wire[i - 1])
+            assert isinstance(w, WireType[i])
+            assert not isinstance(w, WireType[i - 1])
 
         # non-wires
-        assert not isinstance({"not": "wires"}, Wire)
+        assert not isinstance({"not": "wires"}, WireType)
