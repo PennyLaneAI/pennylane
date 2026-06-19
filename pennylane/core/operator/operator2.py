@@ -16,8 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
-import abc
-from abc import ABC
+from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
@@ -49,7 +48,7 @@ from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
-from .meta import ABCOperatorMeta
+from .meta import OperatorMeta
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -57,7 +56,7 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 
-class Operator2(ABC, metaclass=ABCOperatorMeta):
+class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
@@ -1521,7 +1520,7 @@ def _is_hash_leaf(l) -> bool:
 class StatePrepBase2(Operator2, is_baseclass=True):
     """An interface for state-prep operations."""
 
-    @abc.abstractmethod
+    @abstractmethod
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
