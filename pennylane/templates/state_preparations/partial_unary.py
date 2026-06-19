@@ -115,67 +115,6 @@ class PUIsometryFinder:
         on the subspace register. The latter can be executed in reverse to map the states to the
         desired :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
 
-        **Example**
-
-        Let's consider an example with ``n_qubits=7`` and :math:`|L|=6` entries in the sparse
-        state, at ``basis_states = (0, 3, 38, 61, 63, 81, 82)``.
-        The corresponding bit tableau, with each row representing one basis state index and each
-        column representing one qubit, reads
-
-        .. math::
-
-            \begin{array}{rccc|cccc}
-             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
-             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
-             & 0 & 1 & 1 & 1 & 1 & 0 & 1 \\
-             & 0 & 1 & 1 & 1 & 1 & 1 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & 1 & 0
-            \end{array}
-
-        Here, we marked the boundary between the first three subspace qubits and the
-        four remainder qubits by a vertical line and included the qubit labels in the first row
-        for convenience.
-        The first step, shown below, is to identify some bitstring (we use the first) that has the
-        first remainder qubit (orange arrow), i.e., qubit 3, set to one (orange box). Controlled
-        on qubit 3, we then flip all other remainder qubits that are set to one in that same
-        bitstring as well as the subspace qubits, as needed to set them to the bitstring
-        of ``k=0`` (red boxes). We describe call this a *Fanout* operation, and denote it as
-        :math:`a: (b_0, b_1, \dots b_k)`, where :math:`a` is the control qubit and :math:`b_i` are
-        the targets that need to be flipped. We also mark the control bits in other rows that
-        will activate the Fanout (blue box).
-        The Fanout is recorded as part of the circuit, and the tableau is updated:
-
-
-        .. math::
-
-            \begin{array}{rccc|cccc}
-             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
-             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-             & 0 & 1 & 0 & 0 & 1 & 1 & 0 \\
-             & 0 & \bbox[#E5BCD3, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & \bbox[#F2CF7F, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & 0 & \bbox[#E5BCD3, 2px]{1} \\
-             & 0 & 1 & 1 & \bbox[#AAD9F4, 2px]{1} & 1 & 1 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
-            &  &  &  & \uparrow &  &  &  \\
-            \end{array}
-            \xrightarrow{\substack{\text{Fanout} \\ 3:(1, 2, 4, 6)}}
-            \begin{array}{rccc|cccc}
-             & 0 & 1 & 2 & 3 & 4 & 5 & 6 \\ \hline
-             & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-             & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
-             & 0 & \bbox[#E5BCD3, 2px]{1} & \bbox[#E5BCD3, 2px]{0} & 0 & \bbox[#F2CF7F, 2px]{1} & \bbox[#E5BCD3, 2px]{1} & 0 \\
-            \scriptstyle \color{#009E73}{k=0} & \rlap{\color{#009E73}\rule{3.60em}{1px}} &  &  & \rlap{\color{#009E73}\rule{4.80em}{1px}} &  &  &  \\
-             & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
-             & 0 & 0 & 0 & 1 & 0 & 1 & 0 \\
-             & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\
-             & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
-            &  &  &  & \uparrow &  &  &  \\
-            \end{array}
-
         **Why does this work?**
 
         We will not go into too much detail about the correctness but want to leave some comments.
