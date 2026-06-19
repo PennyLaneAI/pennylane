@@ -120,7 +120,7 @@ class TestAbstractify:
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
 
-        with pytest.raises(ValueError, match="'fixed_sig' must be defined."):
+        with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
             _ = abstractify(FixedSigOp)
 
     def test_abstract_instance_hash_stable(self):
