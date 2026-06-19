@@ -104,6 +104,7 @@ ignore_warnings = [
     ("code/api/qp_transforms*", "no module named pennylane.transforms"),
     ("code/api/pennylane*", "Explicit markup ends without a blank line; unexpected unindent. [docutils]"),
 ]
+suppress_warnings = ["docutils"]
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
