@@ -19,7 +19,7 @@ import contextlib
 import sys
 import types
 from collections.abc import Callable, Hashable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from typing import Any, Optional, TypeVar, Union
@@ -144,7 +144,7 @@ class AbstractArray:
 
     >>> from pennylane.typing import AbstractArray
     >>> AbstractArray((4, 2), float)
-    AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+    AbstractArray(shape=(4, 2), dtype=dtype('float'))
 
     Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
 
@@ -160,49 +160,48 @@ class AbstractArray:
     """
 
     shape: tuple[int | types.EllipsisType, ...]
-    dtype: np.dtype | type[Number]
+    dtype: np.dtype
+    _weak_type: bool = field(init=False, hash=True)
 
     def __post_init__(self):
+        weak_type = isinstance(self.dtype, type) and issubclass(self.dtype, Number)
         object.__setattr__(self, "shape", tuple(self.shape))
-        if self.dtype.__class__.__module__.split(".")[0] == "torch":
-            import torch  # pylint: disable=import-outside-toplevel
-
-            dummy = torch.tensor((), dtype=self.dtype)
-            object.__setattr__(self, "dtype", dummy.numpy().dtype)
-
-        if isinstance(self.dtype, type) and issubclass(self.dtype, Number):
-            return
-        object.__setattr__(self, "dtype", np.dtype(self.dtype))
+        object.__setattr__(self, "dtype", np.dtype(self._resolve_dtype(self.dtype)))
+        object.__setattr__(self, "_weak_type", weak_type)
 
     def __instancecheck__(self, instance):
-        if not getattr(instance, "dtype", None) == self.dtype:
+        dtype = getattr(instance, "dtype", None)
+        if dtype is None or self._resolve_dtype(dtype) != self.dtype:
             return False
         shape = getattr(instance, "shape", None)
         if shape is None or len(shape) != len(self.shape):
             return False
         return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
 
-    def issubtype(self, val) -> bool:
-        """Check whether a given value has a shape and dtype that adheres
-        to the shape and dtype of an ``AbstractArray``.
-        """
-        # pylint: disable=import-outside-toplevel
-        from pennylane import math  # tach-ignore
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractArray``."""
+        # No need to create a new array if value is already an array
+        val = np.array(val) if isinstance(val, (list, tuple)) else val
+        shape = val.shape
+        dtype = self._resolve_dtype(val.dtype)
 
-        shape = math.shape(val)
-        dtype = math.get_dtype_name(val)
+        # If self._weak_type, then ``instance``'s dtype must be promotable to self.dtype. For
+        # example, int64 can be promoted to float64, and float32 can be promoted to float64.
+        # However, the inverse is not true in either case.
+        casting = "safe" if self._weak_type else "equiv"
+        # In the general case with weak types, this check will fail if there would be subtype
+        # promotion but precision demotion. For example, comparing ``dtype == int64`` and
+        # ``self.dtype == float32`` will fail, which is inconsistent with weak typing. However,
+        # this is fine because our dtype is weak only if the input dtype was a Python builtin
+        # number type. In that case, ``self.dtype`` will always have the default precision
+        # NumPy uses. For example, ``np.dtype(int) == np.int64``, so ``self.dtype`` will always
+        # have a precision for which this check will behave as expected.
+        if not np.can_cast(dtype, self.dtype, casting=casting):
+            return False
 
-        if issubclass(self.dtype, Number) and self.dtype.__name__ not in dtype:
+        if len(shape) != len(self.shape):
             return False
-        if (
-            not (isinstance(self.dtype, type) and issubclass(self.dtype, Number))
-            and dtype != self.dtype.name
-        ):
-            return False
-        if len(shape) != self.ndim:
-            return False
-
-        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
+        return all(s2 in {s1, Ellipsis} for s1, s2 in zip(shape, self.shape, strict=True))
 
     @property
     def size(self) -> int:
@@ -225,6 +224,22 @@ class AbstractArray:
     def ndim(self) -> int:
         """Number of dimensions."""
         return len(self.shape)
+
+    def _resolve_dtype(self, dtype):
+        """Convert an arbitrary dtype into a numpy dtype."""
+        if dtype.__class__.__module__.split(".")[0] == "torch":
+            import torch  # pylint: disable=import-outside-toplevel
+
+            dummy = torch.tensor((), dtype=self.dtype)
+            dtype = dummy.numpy().dtype
+
+        return np.dtype(dtype)
+
+    def __repr__(self):
+        args = f"{self.shape}, {self.dtype.name}"
+        if self._weak_type:
+            args += ", weak_type=True"
+        return f"AbstractArray({args})"
 
     def __getitem__(self, item):
         raise IndexError("Cannot index into an AbstractArray.")
