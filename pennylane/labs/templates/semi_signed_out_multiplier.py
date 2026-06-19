@@ -45,10 +45,11 @@ def semi_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
       :class:`~.OutMultiplier` with ``output_wires_zeroed=True``. Here, :math:`k` is
       ``len(output_wires)``.
     - :math:`k+1` work wires for the unsigned ``OutMultiplier``.
+    - :math:`k-1` work wires for adding the cached multiplication into the output wires
 
-    The two's complement helper function returns its work wires in a clean state, so it can use
-    the same work wires as the (cached) multiplication. Thus,
-    we overall require :math:`1+\max(m-1, 2k+1)` work wires for lowest-gate-count decompositions.
+    The two's complement helper function, the multiplier, and the addition return their work wires
+    in a clean state, so they can use the same work wires. Thus, we overall
+    require :math:`1+\max(m-1, 2k+1, k-1)` work wires for lowest-gate-count decompositions.
     At the cost of additional gates, the multiplier work wires can be reduced from :math:`2k+1` to
     :math:`\min(2k-1, k+m+1)` (cache + adder-based decomposition), :math:`k+1` (no cache +
     controlled add-subtract decomposition), or :math:`k` (no cache + adder-based decomposition).

@@ -19,8 +19,9 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.labs.trotter_error.realspace import RealspaceMatrix
-from .semi_signed_out_multiplier import semi_signed_out_multiplier
 from pennylane.wires import WiresLike
+
+from .semi_signed_out_multiplier import semi_signed_out_multiplier
 
 """
 TODOs
@@ -239,9 +240,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
             new_bitstrings = qp.math.binary_decimals(const_coeffs, precision, unit=2 * np.pi)
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
             qp.QROM(change_bitstrings, **qrom_wires)
-            qp.SemiAdder(
-                registers["coefficients"], registers["phase gradient"], registers["work"]
-            )
+            qp.SemiAdder(registers["coefficients"], registers["phase gradient"], registers["work"])
             return new_bitstrings
 
         @qp.for_loop(fragment.modes)
@@ -252,6 +251,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
             _coeffs = linear_coeffs[k]
             if np.allclose(_coeffs, 0):
                 return prev_bitstrings
+            # The signed register for semi_signed_out_multiplier must be the _second_ input
             mult_wires = {
                 "x_wires": "coefficients",
                 "y_wires": f"mode {k}",
@@ -276,6 +276,8 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
 
             square_wires = {"x_wires": f"mode {k}", "y_wires": "cache", "work_wires": "work"}
             square_wires = {new: registers[old] for new, old in square_wires.items()}
+            # The cache contains 2k wires, we just need 2k-1 here
+            square_wires["y_wires"] = square_wires["y_wires"][1:]
             mult_wires = {
                 "x_wires": "coefficients",
                 "y_wires": "cache",
@@ -283,6 +285,8 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
                 "work_wires": "work",
             }
             mult_wires = {new: registers[old] for new, old in mult_wires.items()}
+            # The cache contains 2k wires, we just need 2k-1 here, see above
+            mult_wires["y_wires"] = mult_wires["y_wires"][1:]
 
             new_bitstrings = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
             change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
@@ -313,6 +317,7 @@ def _trotter_step_second_order(_, time, fragments, registers, aqft_order):
                     "work_wires": "work",
                 }
                 mode_mult_wires = {new: registers[old] for new, old in mode_mult_wires.items()}
+                # The signed register for semi_signed_out_multiplier must be the _second_ input
                 coeff_mult_wires = {
                     "x_wires": "coefficients",
                     "y_wires": "cache",
@@ -449,7 +454,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
              - :math:`b`
              - Stores the phase gradient state
            * - ``"work"``
-             - :math:`2+b+\max(b, 2k)`
+             - :math:`\max(n-1, 2k, 2b+2)`
              - Work wires for data loading/arithmetic (see below)
 
 
@@ -464,34 +469,41 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
           Thus, we need one more bit, i.e. :math:`2k` (signed) bits are needed to represent the
           output.
 
-        **The reasoning for the work register size is:**
+        Overall, we thus can use a cache register of size :math:`2k` and always consider it to be
+        a signed integer register. When caching the squaring result, we simply use just the
+        unsigned part of that register, slicing away the sign bit.
 
-        TODO: UPDATE THE BELOW AFTER INTRODUCTION OF SEMI_SIGNED_OUT_MULTIPLIER
+        **The reasoning for the work register size is:**
 
         - The ``QROM``\ s using this register have :math:`n` control wires (electronic register)
           and thus require at least :math:`n-1` work wires for efficient implementation (unary
           iteration).
         - The ``SemiAdder`` in the constant term computes on registers of size :math:`b`, so it
           needs :math:`b-1` work wires.
-        - The ``SignedOutMultiplier`` (with ``output_wires_zeroed=False`` and
-          ``len(output_wires)=b``) in the linear terms requires :math:`b+\max(2+\max(b, b-1, k, b), b-1)=2+b+\max(b,k)`. Here, we accounted for the :math:`b` cache qubits for going to ``output_wires_zeroed=True``, :math:`2` aux qubits to cache signs, the largest work wire register required for unsigned multiplication and two's complement calculations, and finally the number of work wires required for the last addition in the signed multiplier.
-        - The ``SignedOutSquare`` of a :math:`k` qubit register with ``output_wires_zeroed=True`` requires :math:`k` work wires.
-        - The ``OutMultiplier`` of the unsigned square cache and the coefficients into the phase gradient register requires :math:`b+1` work wires.
-        - The ``SignedOutMultiplier`` in the bilinear terms between two modes needs :math:`2+\max(2k, 2k-1, k, k)=2k+2` work wires, as it has ``output_wires_zeroed=True``. The ``SignedOutMultiplier`` between the cache and the coefficient register into the phase gradient requires :math:`b+\max(2+\max(b, b-1, 2k, b), b-1)=2+b+\max(b, 2k)`, as it has ``output_wires_zeroed=False``. This calculation is analogue to that of the multiplier for the linear terms, but with one input augmented from :math:`k` to :math:`2k` qubits.
+        - The :func:`~.pennylane.labs.templates.semi_signed_out_multiplier`
+          (with ``len(y_wires)=k`` and ``len(output_wires)=b``)
+          in the linear terms requires :math:`\max(k, 2b+2)` (see documentation).
+        - The ``SignedOutSquare`` of a :math:`k` qubit register with ``output_wires_zeroed=True``
+          requires :math:`k` work wires.
+        - The ``OutMultiplier`` of the unsigned square cache and the coefficients into the phase
+          gradient register (with ``output_wires_zeroed=True``) requires :math:`b+1` work wires.
+        - The :func:`~.pennylane.labs.templates.semi_signed_out_multiplier`
+          (with ``len(y_wires)=2k`` and ``len(output_wires)=b``)
+          in the bilinear terms requires :math:`\max(2k, 2b+2)` (see documentation).
 
-        Overall, we the largest requirement is
+        Overall, the largest requirement is
 
         .. math::
 
-            \max(n-1, b-1, 2+b+\max(b,k), k, b+1, 2k+2, 2+b+\max(b, 2k))
-            =\max(n-1, 2+b+\max(b, 2k))
+            \max(n-1, b-1, \max(k, 2b+2), k, b+1, \max(2k, 2b+2))
+            =\max(n-1, 2k, 2b+2)
 
-        It is _very_ likely that :math:`n` is much smaller than the second term, so we assume
-        a work wire requirement of :math:`2+b+\max(b, 2k)` going forward.
+        We typically would expect :math:`b>k\approx n`, so the third term to be the largest, but
+        this depends on the specific simulation setup.
 
-        Note that the work wire requirements (in particular those of ``SignedOutMultiplier``)
-        can be reduced at the cost of additional non-Clifford gates. The above maximizes qubit
-        overhead and minimizes the non-Clifford gate count.
+        Note that the work wire requirements (in particular those of ``semi_signed_out_multiplier``)
+        can be reduced at the cost of additional non-Clifford gates. The above calculation maximizes
+        qubit overhead and minimizes the non-Clifford gate count.
 
     """
     _validate_registers(registers, fragments)
