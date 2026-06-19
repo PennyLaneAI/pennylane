@@ -19,6 +19,7 @@ import copy
 import math
 from collections import defaultdict
 from collections.abc import Sequence
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -132,32 +133,22 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> dict[
     hall_commutators = [x, y]
     bch_coeffs = [1, 1]
 
-    file = "sbch.npz" if symmetric else "bch.npz"
-    filepath = Path(__file__).parent / file
+    rows = zip(*load_hall_basis(symmetric))
 
-    with np.load(filepath) as bch:
+    for l_comm, r_comm, p, q in rows:
+        left, right = int(l_comm), int(r_comm)
+        bch_coeff = int(p) / int(q)
 
-        l_comms = bch["l_comm"][2:]
-        r_comms = bch["r_comm"][2:]
-        ps = bch["p"][2:]
-        qs = bch["q"][2:]
+        left = copy.deepcopy(hall_commutators[left - 1])
+        right = copy.deepcopy(hall_commutators[right - 1])
 
-        rows = zip(l_comms, r_comms, ps, qs)
+        basis_element = CommutatorNode(left, right)
 
-        for l_comm, r_comm, p, q in rows:
-            left, right = int(l_comm), int(r_comm)
-            bch_coeff = int(p) / int(q)
+        if basis_element.order > max_order:
+            break
 
-            left = copy.deepcopy(hall_commutators[left - 1])
-            right = copy.deepcopy(hall_commutators[right - 1])
-
-            basis_element = CommutatorNode(left, right)
-
-            if basis_element.order > max_order:
-                break
-
-            hall_commutators.append(basis_element)
-            bch_coeffs.append(bch_coeff)
+        hall_commutators.append(basis_element)
+        bch_coeffs.append(bch_coeff)
 
     return dict(zip(hall_commutators, bch_coeffs))
 
@@ -225,3 +216,19 @@ def _group_terms(d: dict[ASTNode, float], max_order: int) -> dict[ASTNode, float
             ret[comm] += coeff
 
     return ret
+
+
+@cache
+def load_hall_basis(symmetric: bool):
+    """Load the Hall basis data from a precomputed numpy archive"""
+
+    file = "sbch.npz" if symmetric else "bch.npz"
+    filepath = Path(__file__).parent / file
+
+    with np.load(filepath) as bch:
+        l_comms = bch["l_comm"][2:]
+        r_comms = bch["r_comm"][2:]
+        ps = bch["p"][2:]
+        qs = bch["q"][2:]
+
+    return l_comms, r_comms, ps, qs
