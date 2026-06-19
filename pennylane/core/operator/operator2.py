@@ -613,7 +613,9 @@ class Operator2(ABC):
             tensor_like: matrix representation
         """
         canonical_matrix = self.compute_matrix(**self.arguments)
+        return self._expand_canonical_matrix(canonical_matrix, wire_order)
 
+    def _expand_canonical_matrix(self, canonical_matrix, wire_order) -> TensorLike:
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
@@ -676,10 +678,8 @@ class Operator2(ABC):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format="csr")
-        return math.expand_matrix(
-            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
-        ).asformat(format)
+        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
+        return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
@@ -1356,6 +1356,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
+        if qp.math.asarray(x).dtype == bool:
+            return x
         x = x if mod_val is None else qp.math.real(x) % mod_val
         return qp.math.round(x, 10)
 
