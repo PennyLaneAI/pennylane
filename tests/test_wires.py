@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
+import re
 from importlib import import_module, util
 
 import numpy as np
@@ -403,6 +404,18 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    def test_class_index(self):
+        """Test that indexing the class raises."""
+        w = Wires
+        for i in range(5):
+            with pytest.raises(
+                WireError,
+                match=re.escape(
+                    f"Wires[{i}] is not supported syntax. Are you looking for Wire[{i}]?"
+                ),
+            ):
+                _ = w[i]
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
