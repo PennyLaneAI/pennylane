@@ -306,7 +306,7 @@ class TestAbstractWires:
         assert hash(a) != hash(AbstractWires(4))
 
         with pytest.raises(
-            TypeError, match="Tried to check equality against an abstract wire register."
+            TypeError, match="Tried to check equality against abstract wires"
         ):
             _ = a == 2
 

@@ -232,6 +232,14 @@ class AbstractTypeFactory(AbstractArray):
     def __init__(self, dtype):
         super().__init__((), dtype)
 
+    def __new__(cls, base_type="arr"):
+        if base_type == "wires":
+            parent = AbstractWires
+        else:
+            parent = AbstractArray
+        subclass = type("AbstractSubType", (parent, cls), {})
+        return super(AbstractTypeFactory, subclass).__new__(subclass)
+
     def __getitem__(self, shape):
         """
         Overrides the indexing mechanism in python to achieve a user-friendly
