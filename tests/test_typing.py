@@ -305,9 +305,7 @@ class TestAbstractWires:
         assert hash(a) == hash(AbstractWires(3))
         assert hash(a) != hash(AbstractWires(4))
 
-        with pytest.raises(
-            TypeError, match="Tried to check equality against abstract wires"
-        ):
+        with pytest.raises(TypeError, match="Tried to check equality against abstract wires"):
             _ = a == 2
 
     def test_ellipsis(self):
