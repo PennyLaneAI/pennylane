@@ -1732,14 +1732,6 @@ class TestGraphDecomposition:
     when ``compute_decomposition`` is not overridden, ``decomposition`` falls
     back to registered graph decomposition rules instead of immediately raising."""
 
-    def test_resource_defaults(self):
-        """Test the default empty ``resource_keys`` and ``resource_params`` for an operator
-        with only dynamic arguments and wires."""
-        op = DynOp(0.5, wires=0)
-        assert Operator2.resource_keys == set()
-        assert DynOp.resource_keys == set()
-        assert op.resource_params == {}
-
     def test_compute_decomposition_takes_precedence(self):
         """An overridden ``compute_decomposition`` is used over registered graph rules."""
 
@@ -1786,43 +1778,6 @@ class TestGraphDecomposition:
             assert len(decomp) == 1
             assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
 
-    def test_is_applicable_selects_rule_by_resource_params(self):
-        """Only the rule applicable to the instance's ``resource_params`` is used, with two
-        registered rules where exactly one applies depending on the number of wires."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            resource_keys = {"num_wires"}
-
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires=wires)
-
-            @property
-            def resource_params(self):
-                return {"num_wires": len(self.wires)}
-
-        with qp.decomposition.local_decomps():
-
-            @qp.register_condition(lambda num_wires, **__: num_wires == 1)
-            @qp.register_resources({qp.RX: 1})
-            def one_wire(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
-
-            @qp.register_condition(lambda num_wires, **__: num_wires == 2)
-            @qp.register_resources({qp.RY: 1})
-            def two_wire(phi, wires, **__):
-                qp.RY(phi, wires=wires[1])
-
-            qp.add_decomps(Op, one_wire, two_wire)
-
-            d1 = Op(0.3, wires=[0]).decomposition()
-            assert len(d1) == 1
-            assert qp.equal(d1[0], qp.RX(0.3, wires=0))
-
-            d2 = Op(0.4, wires=[0, 1]).decomposition()
-            assert len(d2) == 1
-            assert qp.equal(d2[0], qp.RY(0.4, wires=1))
-
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
         captured = {}
@@ -1867,38 +1822,6 @@ class TestGraphDecomposition:
         op = Op(0.5, wires=0)
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-    def test_no_applicable_rule_raises(self):
-        """When rules exist for the type but none are applicable to a given instance,
-        ``decomposition`` raises ``DecompositionUndefinedError``. ``has_decomposition`` is a
-        class-level check, so it stays ``True`` (a rule is registered for the type) even though
-        this instance has no applicable rule — the per-instance selection happens in
-        ``decomposition``."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            resource_keys = {"num_wires"}
-
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires=wires)
-
-            @property
-            def resource_params(self):
-                return {"num_wires": len(self.wires)}
-
-        with qp.decomposition.local_decomps():
-
-            @qp.register_condition(lambda num_wires, **__: num_wires == 5)
-            @qp.register_resources({qp.RX: 1})
-            def five_wire(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
-
-            qp.add_decomps(Op, five_wire)
-
-            op = Op(0.5, wires=[0])
-            assert op.has_decomposition is True  # class-level: a rule is registered for the type
-            with pytest.raises(DecompositionUndefinedError):
-                op.decomposition()
 
     def test_decomposition_queued_during_recording(self):
         """Produced ops are queued when decomposition happens during active recording."""
@@ -2006,7 +1929,7 @@ class TestStatePrepBase:
             # state_vector is not implemented!
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
-            BadStatePrep(0)
+            BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
 
 
 class NoParamOp(Operator2):

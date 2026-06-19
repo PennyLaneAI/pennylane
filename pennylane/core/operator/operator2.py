@@ -735,7 +735,7 @@ class Operator2(ABC):
             return self.compute_decomposition(**self.arguments)
 
         for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.resource_params):
+            if decomp.is_applicable():
                 with AnnotatedQueue() as q:
                     decomp(**self.arguments)
                 if QueuingManager.recording():
@@ -744,40 +744,6 @@ class Operator2(ABC):
                 return q.queue
 
         raise DecompositionUndefinedError
-
-    @classproperty
-    @classmethod
-    def resource_keys(cls) -> set[str]:
-        """The set of parameters that affect the resource requirement of the operator's
-        decomposition. Graph-based decomposition rules registered for this operator class are
-        expected to accept keyword arguments matching these keys exactly (see
-        :attr:`~.Operator2.resource_params`).
-
-        By default, these are the operator's static and compilable argument names: the values
-        known at compile time that are neither dynamic data (rotation angles, matrices, etc.)
-        nor wires. Operators whose resource requirements depend on additional information (for
-        example, the *number* of wires) should override this together with
-        :attr:`~.Operator2.resource_params`.
-        """
-        return set()
-
-    @property
-    def resource_params(self) -> dict[str, Any]:
-        """A dictionary containing the minimal information needed to compute a resource
-        estimate of the operator's decomposition.
-
-        The keys of this dictionary match the :attr:`~.Operator2.resource_keys` attribute of the
-        operator class. Two instances of the same operator type should have identical
-        ``resource_params`` iff their decompositions exhibit the same counts for each gate type,
-        even if the individual gate parameters differ.
-
-        By default this returns the operator's static and compilable arguments (everything known
-        at compile time other than dynamic data and wires). Wires are deliberately excluded: the
-        resource estimate must not depend on wire *labels*, so operators whose decomposition
-        depends on the *number* of wires should override this (and
-        :attr:`~.Operator2.resource_keys`) to expose ``num_wires`` instead.
-        """
-        return dict()
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
