@@ -247,7 +247,9 @@ class AbstractTypeFactory(AbstractArray):
 
         if isinstance(shape, int) or shape == ...:
             shape = (shape,)
-        if not isinstance(shape, tuple) or not all(isinstance(n, (int, types.EllipsisType)) for n in shape):
+        if not isinstance(shape, tuple) or not all(
+            isinstance(n, (int, types.EllipsisType)) for n in shape
+        ):
             raise TypeError(
                 "AbstractTypeFactories can only be subscripted with integers and Ellipsis."
             )
