@@ -1727,6 +1727,176 @@ class TestRepresentations:
         assert op.generator() == DynOp(0.5, wires=0)
 
 
+class TestGraphDecomposition:
+    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``:
+    when ``compute_decomposition`` is not overridden, ``decomposition`` falls
+    back to registered graph decomposition rules instead of immediately raising."""
+
+    def test_compute_decomposition_takes_precedence(self):
+        """An overridden ``compute_decomposition`` is used over registered graph rules."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [qp.RZ(phi, wires=wires[0])]
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
+
+    def test_registered_rule_used_as_fallback(self):
+        """Without an overridden ``compute_decomposition``, a registered rule is used."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_rule_receives_full_argument_model(self):
+        """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
+        captured = {}
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            static_argnames = ("label",)
+
+            def __init__(self, phi, label, wires):
+                super().__init__(phi, label, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, label, wires, **__):
+                captured["phi"] = phi
+                captured["label"] = label
+                captured["wires"] = wires
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            decomp = Op(0.6, "spin", wires=2).decomposition()
+
+        assert captured["phi"] == 0.6
+        assert captured["label"] == "spin"
+        assert captured["wires"] == Wires([2])
+        assert [type(o).__name__ for o in decomp] == ["RX", "RY"]
+        assert qp.equal(decomp[0], qp.RX(0.6, wires=2))
+        assert qp.equal(decomp[1], qp.RY(0.6, wires=2))
+
+    def test_no_rule_raises(self):
+        """Without any registered rule, ``decomposition`` raises ``DecompositionUndefinedError``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=0)
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_decomposition_queued_during_recording(self):
+        """Produced ops are queued when decomposition happens during active recording."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            with AnnotatedQueue() as q:
+                decomp = op.decomposition()
+
+        assert q.queue == decomp
+        assert [type(o).__name__ for o in q.queue] == ["RX", "RY"]
+
+    def test_decomposition_not_queued_outside_recording(self):
+        """Outside an active recording context, decomposition returns ops without queuing."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            decomp = op.decomposition()
+
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_has_decomposition_reflects_registered_rules(self):
+        """``has_decomposition`` (a class-level check) reports ``True`` once decomposition rules
+        are registered for the operator type, for both class and instance access."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        # No rules registered globally: both class and instance report False.
+        assert Op.has_decomposition is False
+        assert Op(0.5, wires=0).has_decomposition is False
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            assert Op.has_decomposition is True
+            assert Op(0.5, wires=0).has_decomposition is True
+
+
 class TestStatePrepBase:
 
     def test_state_prep_base_label(self):
@@ -1759,4 +1929,91 @@ class TestStatePrepBase:
             # state_vector is not implemented!
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
-            BadStatePrep(0)
+            BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
+
+
+class NoParamOp(Operator2):
+    """A simple operator with wires and no dynamic parameters."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
+class TestLegacyCompatibilityViews:
+    """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
+
+    def test_no_param_op_legacy_views(self):
+        """Test legacy views for an operator with no dynamic parameters."""
+        op = NoParamOp(wires=0)
+
+        assert op.data == ()
+        assert op.parameters == []
+        assert op.hyperparameters == {}
+
+    def test_dynamic_op_data_preserves_order(self):
+        """Test that ``data`` preserves dynamic argument order."""
+
+        class TwoParamOp(Operator2):
+            dynamic_argnames = ("alpha", "beta")
+
+            def __init__(self, alpha, beta, wires):
+                super().__init__(alpha, beta, wires=wires)
+
+        op = TwoParamOp(1.1, 2.2, wires=0)
+
+        assert op.data == (1.1, 2.2)
+        assert op.parameters == [1.1, 2.2]
+        assert op.parameters == list(op.data)
+
+    def test_static_args_excluded_from_data_and_parameters(self):
+        """Test that static args are not exposed through ``data`` or ``parameters``."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert op.data == (0.5,)
+        assert op.parameters == [0.5]
+
+    def test_hyperparameters_include_static_and_hybrid_args(self):
+        """Test that static and hybrid args appear in the legacy hyperparameter view."""
+        nested = [DynOp(0.1, wires=0)]
+        op = FullOp(0.5, static="XY", hybrid=nested, wires=0)
+
+        assert op.hyperparameters == {"static": "XY", "hybrid": nested}
+
+    def test_hyperparameters_exclude_dynamic_and_wire_args(self):
+        """Test that dynamic and wire args are excluded from hyperparameters."""
+        op = FullOp(0.5, static="XY", hybrid=[], wires=0)
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+
+    def test_compilable_args_in_hyperparameters(self):
+        """Test that compilable args appear in the legacy hyperparameter view."""
+
+        class CompOp(Operator2):
+            dynamic_argnames = ("phi",)
+            compilable_argnames = ("order",)
+
+            def __init__(self, phi, order, wires):
+                super().__init__(phi, order, wires=wires)
+
+        op = CompOp(0.5, order=3, wires=0)
+
+        assert op.hyperparameters == {"order": 3}
+        assert op.data == (0.5,)
+
+    def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
+        """Test that non-``wires`` wire argument names are excluded."""
+
+        class AuxWiresOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "aux_wires")
+            wire_sizes = (1, None)
+
+            def __init__(self, phi, wires, aux_wires):
+                super().__init__(phi, wires=wires, aux_wires=aux_wires)
+
+        op = AuxWiresOp(0.5, wires=0, aux_wires=[1, 2])
+
+        assert "phi" not in op.hyperparameters
+        assert "wires" not in op.hyperparameters
+        assert "aux_wires" not in op.hyperparameters

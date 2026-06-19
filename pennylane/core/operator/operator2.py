@@ -22,7 +22,7 @@ from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -42,11 +42,11 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE
+from .base import _UNSET_BATCH_SIZE, Operator
 
 
 class Operator2(ABC):
@@ -333,6 +333,34 @@ class Operator2(ABC):
         return self._pauli_rep
 
     # ------------------------------------------------------------------------
+    # -------------- Legacy Operator compatibility views ----------------------
+    # ------------------------------------------------------------------------
+    # The following properties provide backwards-compatible read-only views
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
+    # control_wires).
+    # They are *not* the canonical Operator2 API — prefer ``arguments``,
+    # ``dynamic_args``, ``static_args``, etc. for new code.
+
+    @property
+    def data(self) -> tuple:
+        """Legacy Operator compatibility view of dynamic numerical arguments."""
+        return tuple(self.arguments[name] for name in self.dynamic_argnames)
+
+    @property
+    def parameters(self) -> list:
+        """Legacy Operator compatibility view of dynamic numerical arguments as a list."""
+        return list(self.data)
+
+    @property
+    def hyperparameters(self) -> dict:
+        """Legacy Operator compatibility view of non-dynamic, non-wire constructor arguments."""
+        return {
+            name: value
+            for name, value in self.arguments.items()
+            if name not in self.dynamic_argnames and name not in self.wire_argnames
+        }
+
+    # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
     # ------------------------------------------------------------------------
 
@@ -585,7 +613,9 @@ class Operator2(ABC):
             tensor_like: matrix representation
         """
         canonical_matrix = self.compute_matrix(**self.arguments)
+        return self._expand_canonical_matrix(canonical_matrix, wire_order)
 
+    def _expand_canonical_matrix(self, canonical_matrix, wire_order) -> TensorLike:
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
@@ -648,10 +678,8 @@ class Operator2(ABC):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format="csr")
-        return math.expand_matrix(
-            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
-        ).asformat(format)
+        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
+        return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
@@ -678,14 +706,17 @@ class Operator2(ABC):
     @classproperty
     @classmethod
     def has_decomposition(cls) -> bool:
-        """Bool: Whether or not the Operator returns a defined decomposition."""
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # if compute_decomposition or decomposition overwritten and property
-        # not overwritten, set as class property during __init_subclass__
-        # return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
+        """Bool: Whether or not the Operator returns a defined decomposition.
+
+        This is a class-level check (no per-instance dispatch): ``True`` if
+        ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
+        rules are registered for the operator type. Per-instance rule applicability is resolved
+        in :meth:`~.Operator2.decomposition`, not here.
+        """
         return (
             cls.compute_decomposition != Operator2.compute_decomposition
             or cls.decomposition != Operator2.decomposition
+            or qp.decomposition.has_decomp(cls)
         )
 
     def decomposition(self) -> list["Operator2"]:
@@ -703,15 +734,14 @@ class Operator2(ABC):
         if type(self).compute_decomposition != Operator2.compute_decomposition:
             return self.compute_decomposition(**self.arguments)
 
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # for decomp in qp.list_decomps(self):
-        #     if decomp.is_applicable(**self.resource_params):
-        #         with AnnotatedQueue() as q:
-        #             decomp(**self.arguments)
-        #         if QueuingManager.recording():
-        #             # no need for copies if we just use queue method
-        #             _ = [op.queue() for op in q.queue]
-        #         return q.queue
+        for decomp in qp.list_decomps(self):
+            if decomp.is_applicable():
+                with AnnotatedQueue() as q:
+                    decomp(**self.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
 
         raise DecompositionUndefinedError
 
@@ -998,8 +1028,6 @@ class Operator2(ABC):
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
-        # TODO: [sc-120429] Add processing for overriding has_decomposition
-
         cls._sig = signature(cls)
 
         if is_baseclass:
@@ -1204,6 +1232,64 @@ class Operator2(ABC):
 
             self._batch_size = first_dims[0]
 
+    def __add__(self, other: Operator | TensorLike) -> Operator:
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return qp.sum(self, other, lazy=False)
+        if isinstance(other, TensorLike):
+            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+                return self
+            return qp.sum(
+                self,
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other: Callable | TensorLike) -> Operator:
+        """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qp.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
+        return NotImplemented
+
+    def __truediv__(self, other: TensorLike):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: Operator) -> Operator:
+        """The product operation between Operator objects."""
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+
+    def __sub__(self, other: Operator | TensorLike) -> Operator:
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return self + qp.s_prod(-1, other, lazy=False)
+        if isinstance(other, TensorLike):
+            return self + (qp.math.multiply(-1, other))
+        return NotImplemented
+
+    def __rsub__(self, other: Operator | TensorLike) -> Operator:
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self) -> Operator:
+        """The negation operation of an Operator object."""
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+    def __pow__(self, other: TensorLike) -> Operator:
+        r"""The power operation of an Operator object."""
+        if isinstance(other, TensorLike):
+            return qp.pow(self, z=other)
+        return NotImplemented
+
 
 # ------------------------------------------------------------------------------
 # ------------------------------ Helper functions ------------------------------
@@ -1270,6 +1356,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
+        if qp.math.asarray(x).dtype == bool:
+            return x
         x = x if mod_val is None else qp.math.real(x) % mod_val
         return qp.math.round(x, 10)
 

@@ -572,6 +572,12 @@ class Controlled(SymbolicOp):
         new_sig = sig.replace(parameters=new_parameters)
         return new_sig
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if issubclass(subclass, qp.ops.op_math.Controlled2):
+            return True
+        return NotImplemented
+
     # pylint: disable=unused-argument
     def __new__(cls, *args, **kwargs):
         """

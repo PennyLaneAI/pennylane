@@ -25,10 +25,6 @@ class SymbolicOp2(Operator2, is_baseclass=True):
 
     base: Operator2  # declares the existance of a `base` attribute for static type checking
 
-    wire_argnames = ()  # symbolic ops don't have wire args by default
-
-    hybrid_argnames = ("base",)
-
     @property
     @override
     def arithmetic_depth(self) -> int:
