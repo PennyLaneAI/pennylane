@@ -249,7 +249,7 @@ class AbstractTypeFactory(AbstractArray):
             shape = (shape,)
         if not isinstance(shape, tuple) or not all(isinstance(n, int) or n == ... for n in shape):
             raise TypeError(
-                "AbstractTypeFactory's can only be subscripted with integers and Ellipsis."
+                "AbstractTypeFactories can only be subscripted with integers and Ellipsis."
             )
         return AbstractArray(shape, self.dtype)
 
