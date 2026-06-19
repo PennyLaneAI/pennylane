@@ -38,7 +38,7 @@ def _stop_autograph(f):
     return new_f
 
 
-class OperatorMeta(type):
+class OperatorMeta(ABCMeta):
     """A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
     TODO: [sc-120453] Fill docstring
@@ -53,7 +53,7 @@ class OperatorMeta(type):
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
 
-    # @_stop_autograph
+    @_stop_autograph
     def __call__(cls, *args, **kwargs):
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
@@ -69,5 +69,5 @@ class OperatorMeta(type):
 
 
 # pylint: disable=abstract-method
-class ABCOperatorMeta(OperatorMeta, ABCMeta):
-    """A combination of the operator metaclass and ABCMeta."""
+# class ABCOperatorMeta(OperatorMeta, ABCMeta):
+#     """A combination of the operator metaclass and ABCMeta."""
