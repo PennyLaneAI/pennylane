@@ -27,8 +27,8 @@ PennyLane Documentation
 
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-          PennyLane is an open-source quantum software platform
-          for quantum computing, quantum machine learning, and quantum chemistry. 
+          `PennyLane <https://pennylane.ai>`__ is an open-source quantum software platform
+          for `quantum computing <https://pennylane.ai/quantum-computing/>`__, `quantum machine learning <https://pennylane.ai/topics/quantum-machine-learning>`__, and `quantum chemistry <https://pennylane.ai/topics/hamiltonian-simulation>`__.
           
           Create meaningful quantum algorithms, from inspiration to implementation. 
         </p>
@@ -65,15 +65,15 @@ Key Features
 
 - **Inspiration to implementation, quickly.**
   Quantum computing can be complex — PennyLane makes it natural. 
-  Leverage the world’s largest library of `research demos <https://pennylane.ai/qml/demonstrations>`__, `interactive tutorials <https://pennylane.ai/codebook/>`__,
+  Leverage the world’s largest library of `research demos <https://pennylane.ai/demonstrations>`__, `interactive tutorials <https://pennylane.ai/codebook/>`__,
   and state-of-the-art components to build algorithms in `quantum chemistry <https://docs.pennylane.ai/en/stable/introduction/chemistry.html>`__, quantum information,
-  `optimization <https://pennylane.ai/qml/demos/tutorial_dqi>`__, and `quantum machine learning <https://pennylane.ai/topics/quantum-machine-learning>`__.
+  `optimization <https://pennylane.ai/demos/tutorial_dqi>`__, and `quantum machine learning <https://pennylane.ai/topics/quantum-machine-learning>`__.
 
 ..
 
 - **Fast where it matters. Scalable where it counts.**
   Whether executing, compiling, or analyzing, PennyLane is fast. 
-  Unlock production-grade performance with `industrial resource estimation <https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation>`__
+  Unlock production-grade performance with `industrial resource estimation <https://pennylane.ai/demos/re_how_to_use_pennylane_for_resource_estimation>`__
   and the `Catalyst compiler <https://github.com/PennyLaneAI/Catalyst>`__. Scale up your workflows with the
   `high-performance Lightning simulators <https://pennylane.ai/performance>`__ on GPUs, supercomputers, and the cloud.
 
@@ -82,7 +82,7 @@ Key Features
 - **Hardware agnostic, hardware ready.** 
   PennyLane integrates with a wide range of `quantum hardware devices <https://pennylane.ai/devices>`__.
   Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides
-  the tools to `estimate resources <https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation>`__
+  the tools to `estimate resources <https://pennylane.ai/demos/re_how_to_use_pennylane_for_resource_estimation>`__
   and `compile circuits <https://pennylane.ai/topics/quantum-compilation>`__ specifically for the `hardware devices <https://pennylane.ai/topics/quantum-hardware>`__
   of today—and tomorrow!
 
@@ -137,8 +137,8 @@ PennyLane offers a wide range of tools and resources to support your research.
 Key Resources
 -----------------------
 
-* `Library of research demos <https://pennylane.ai/qml/demonstrations>`__
-* `Learn Quantum Programming <https://pennylane.ai/qml/>`__ with the `Codebook <https://pennylane.ai/codebook/>`__ and `Coding Challenges <https://pennylane.ai/challenges/>`__
+* `Library of research demos <https://pennylane.ai/demonstrations>`__
+* `Learn Quantum Programming <https://pennylane.ai/learn/>`__ with the `Codebook <https://pennylane.ai/codebook/>`__ and `Coding Challenges <https://pennylane.ai/challenges/>`__
 * `PennyLane Discussion Forum <https://discuss.pennylane.ai>`__
 
 You can also check out our `documentation <https://pennylane.readthedocs.io>`__, and detailed `developer guides <https://docs.pennylane.ai/en/stable/development/guide.html>`__.
@@ -147,16 +147,16 @@ Demos
 ------------------------
 
 Take a deeper dive into quantum computing by exploring quantum computing research with 
-the `PennyLane Demos <https://pennylane.ai/qml/demonstrations>`__—covering fundamental
+the `PennyLane Demos <https://pennylane.ai/demonstrations>`__—covering fundamental
 quantum concepts alongside the latest quantum algorithm research results.
 
 If you would like to contribute your own demo, see our `demo submission
-guide <https://pennylane.ai/qml/demos_submission>`__.
+guide <https://pennylane.ai/demos_submission>`__.
 
 .. image:: https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/demos.png
     :align: right
     :width: 900px
-    :target: https://pennylane.ai/qml/demonstrations;
+    :target: https://pennylane.ai/demonstrations;
 
 Contributing to PennyLane
 ---------------------------------
