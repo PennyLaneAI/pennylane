@@ -1523,7 +1523,7 @@ def _is_hash_leaf(l) -> bool:
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if (fixed_sig := getattr(op_type, "fixed_sig")) is not None:
+    if op_type.fixed_sig is not None:
         return op_type(*fixed_sig)
 
     raise ValueError(
