@@ -104,21 +104,8 @@ mathjax_path = (
 ignore_warnings = [
     ("code/api/qp_transforms*", "no module named pennylane.transforms"),
 ]
-# suppress_warnings = ["docutils"]
+suppress_warnings = ["docutils.parser"]
 autodoc_mock_imports = ["torch"]
-
-def setup(app):
-    logger = logging.getLogger(__name__)
-    
-    # Custom warning filter function
-    def warning_filter(record):
-        # Check if the warning message contains our troublesome phrase
-        if "Explicit markup ends without a blank line" in record.getMessage():
-            return False  # False means skip/drop this warning completely
-        return True       # True means pass it through (Sphinx will process it normally)
-
-    # Attach the filter to the Sphinx build process when it initializes
-    app.connect("builder-inited", lambda app: logging.getLogger("sphinx").addFilter(warning_filter))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
