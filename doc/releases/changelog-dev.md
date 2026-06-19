@@ -245,7 +245,7 @@
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
 
   ```python
-  from pennylane.typing import Int, Float, Complex, Bool
+  from pennylane.typing import Int, Float, Complex, Bool, Wire
   Int[2, 3]       # Abstract int array with shape (2, 3)
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
