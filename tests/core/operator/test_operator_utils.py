@@ -38,6 +38,10 @@ class TestAbstractify:
         assert abstractify(1.5) == AbstractArray((), float)
         assert abstractify(3) == AbstractArray((), int)
 
+    def test_list(self):
+        """Tests that lists correctly retain shape."""
+        assert abstractify([0, 1]) == [AbstractArray((), int), AbstractArray((), int)]
+
     def test_numpy_array(self):
         """Test that numpy arrays are converted to ``AbstractArray``."""
         arr = np.ones((2, 3), dtype=np.float32)
@@ -123,25 +127,24 @@ class TestAbstractify:
         """Ensures that we get the same hash value for equal type specifiers."""
         a = abstractify(DynOp(0.5, 0))
         b = abstractify(DynOp(1.5, 0))
-        c = abstractify(DynOp(1.5, 1))
-        assert hash(a) == hash(b)
-        assert hash(b) == hash(c)
+        c = abstractify(DynOp(1.5, [0, 1]))
+        assert hash(a) == hash(b)  # Structural match, same hash
+        assert hash(b) != hash(c)  # Structural mismatch, different hash
 
     def test_abstract_instance_equal(self):
         """Ensures that equality works on the output of abstractify."""
         phi1 = 0.5
         phi2 = 1.5
-        assert phi1 != phi2
 
-        # Different phi same wire
-        a = abstractify(DynOp(phi1, 0))
-        b = abstractify(DynOp(phi2, 0))
+        # Different phi, same wire structure
+        a = abstractify(DynOp(phi1, [0]))
+        b = abstractify(DynOp(phi2, [1]))
         assert a == b
 
-        # Same phi different wires
-        a = abstractify(DynOp(phi1, 0))
-        b = abstractify(DynOp(phi1, 1))
-        assert a == b
+        # Same phi, different wire structure
+        a = abstractify(DynOp(phi1, [0]))
+        b = abstractify(DynOp(phi1, [0, 1]))
+        assert a != b
 
 
 if __name__ == "__main__":
