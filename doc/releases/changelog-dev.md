@@ -378,7 +378,7 @@
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
-  to use unary iteration in the decomposition of the used `QROM` operation for the specified
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
   number of control wires/angles.
   [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
 
@@ -388,7 +388,7 @@
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp`
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
   decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
