@@ -54,7 +54,7 @@ PennyLane Documentation
     </div>
 
 Key Features
---------
+-----------------------
 
 .. image:: _static/header-tall.png
     :align: left
@@ -101,16 +101,17 @@ and our most recent `release notes <https://docs.pennylane.ai/en/stable/developm
 
 
 Installation
----------------
+-----------------------
 
 PennyLane requires Python version 3.11 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 .. code-block:: python
+
     python -m pip install pennylane
 
 Docker support
----------------
+-----------------------
 
 Docker images are found on the `PennyLane Docker Hub page <https://hub.docker.com/u/pennylaneai>`__, 
 where there is also a detailed description about PennyLane Docker support. 
@@ -119,7 +120,7 @@ for more information.
 
 
 Getting started
----------------
+-----------------------
 
 Get up and running quickly with PennyLane by following our `interactive tutorials <https://pennylane.ai/codebook/pennylane-fundamentals>`__
 and `quickstart guide <https://docs.pennylane.ai/en/stable/introduction/pennylane.html>`__,
@@ -134,7 +135,7 @@ PennyLane offers a wide range of tools and resources to support your research.
     :target: javascript:void(0);
 
 Key Resources
----------------
+-----------------------
 
 * `Library of research demos <https://pennylane.ai/qml/demonstrations>`__
 * `Learn Quantum Programming <https://pennylane.ai/qml/>`__ with the `Codebook <https://pennylane.ai/codebook/>`__ and `Coding Challenges <https://pennylane.ai/challenges/>`__
@@ -143,7 +144,7 @@ Key Resources
 You can also check out our `documentation <https://pennylane.readthedocs.io>`__, and detailed `developer guides <https://docs.pennylane.ai/en/stable/development/guide.html>`__.
 
 Demos
----------------
+-----------------------
 Take a deeper dive into quantum computing by exploring quantum computing research with 
 the `PennyLane Demos <https://pennylane.ai/qml/demonstrations>`__—covering fundamental
 quantum concepts alongside the latest quantum algorithm research results.
@@ -157,7 +158,7 @@ guide <https://pennylane.ai/qml/demos_submission>`__.
     :target: javascript:void(0);
 
 Contributing to PennyLane
----------------
+-----------------------
 
 We welcome contributions—simply fork the PennyLane repository, and then make a `pull
 request <https://help.github.com/articles/about-pull-requests/>`__ containing your contribution. All
@@ -172,7 +173,7 @@ page <https://github.com/PennyLaneAI/pennylane/blob/main/.github/CONTRIBUTING.md
 details.
 
 Support
-------------------------
+-----------------------
 
 - **Source Code:** https://github.com/PennyLaneAI/pennylane
 - **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
@@ -185,7 +186,7 @@ Note that we are committed to providing a friendly, safe, and welcoming environm
 Please read and respect the `Code of Conduct <https://github.com/PennyLaneAI/pennylane/blob/main/.github/CODE_OF_CONDUCT.md>`__.
 
 Authors
------------
+-----------------------
 
 PennyLane is the work of `many contributors <https://github.com/PennyLaneAI/pennylane/graphs/contributors>`__.
 
@@ -199,7 +200,7 @@ If you are doing research using PennyLane, please cite `our paper <https://arxiv
 
 
 License
--------
+-----------------------
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
