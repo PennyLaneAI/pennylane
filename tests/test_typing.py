@@ -317,6 +317,6 @@ class TestAbstractWires:
     def test_shape_and_dtype(self):
         """Test that AbstractWires have a shape and dtype."""
 
-        a = qp.wires.AbstractWires(3)
+        a = AbstractWires(3)
         assert a.shape == (3,)
         assert a.dtype == np.int64
