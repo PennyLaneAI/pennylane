@@ -598,10 +598,17 @@ class TestAbstractWires:
 
     def test_basic(self):
         """Basic tests for the AbstractWires class."""
-
         a = AbstractWires(3)
         assert a.num_wires == 3
         assert len(a) == 3
+
+    def test_repr(self):
+        """Test that the repr of AbstractWires is correct."""
+        a0 = AbstractWires(2)
+        assert repr(a0) == "AbstractWires(2)"
+
+        a1 = AbstractWires(-1)
+        assert repr(a1) == "AbstractWires(-1)"
 
     def test_comparison(self):
         """Test for equality and comparison."""

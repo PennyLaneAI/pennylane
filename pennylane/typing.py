@@ -263,7 +263,8 @@ class AbstractArray:
         return np.dtype(dtype)
 
     def __repr__(self):
-        args = f"{self.shape}, '{self.dtype.name}'"
+        shape_repr = "?" if self.shape is Ellipsis else self.shape
+        args = f"{shape_repr}, '{self.dtype.name}'"
         if self._weak_type:
             args += ", weak_type=True"
         return f"AbstractArray({args})"

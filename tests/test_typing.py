@@ -171,6 +171,20 @@ class TestAbstractArray:
         with pytest.raises(TypeError, match="Cannot check equality between AbstractArray"):
             _ = a3 == 2
 
+    def test_repr(self):
+        """Test that the repr of AbstractArray is as expected."""
+        a0 = AbstractArray((1, 2), int)
+        assert repr(a0) == "AbstractArray((1, 2), 'int64', weak_type=True)"
+
+        a1 = AbstractArray((1, 2), np.int32)
+        assert repr(a1) == "AbstractArray((1, 2), 'int32')"
+
+        a2 = AbstractArray((-1, 2), np.int32)
+        assert repr(a2) == "AbstractArray((-1, 2), 'int32')"
+
+        a3 = AbstractArray(..., np.int32)
+        assert repr(a3) == "AbstractArray(?, 'int32')"
+
     def test_ellipsis_shape(self):
         """Test that Ellipsis means the number of axes is unknown."""
 
