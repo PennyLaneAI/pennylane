@@ -23,9 +23,11 @@ from inspect import Signature, signature
 
 from pennylane import math
 from pennylane.capture import enabled
-from pennylane.pytrees import flatten, unflatten
+from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray
 from pennylane.wires import AbstractWires, Wires
+
+from .utils import abstractify
 
 
 class _ArgType(Enum):
@@ -74,29 +76,17 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     match kind:
         case _ArgType.WIRES:
-            # Use Wires object to sanitize inputs
-            canonical_wires = Wires(val)
-            return AbstractWires(len(canonical_wires))
+            # abstractify expects a Wires object for wire-routing, so we sanitize it first
+            return abstractify(Wires(val))
 
         case _ArgType.DYN:
-            canonical_arr = math.asarray(val)
-            return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
+            # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            return abstractify(math.asarray(val))
 
         case _ArgType.HYBRID:
-            leaves, structure = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
-            new_leaves = []
-            for leaf in leaves:
-                if isinstance(leaf, (AbstractArray, AbstractWires)):
-                    new_leaves.append(leaf)
-                elif isinstance(leaf, Wires):
-                    new_leaves.append(AbstractWires(len(leaf)))
-                # Process arrays
-                elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
-                    new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
-                # Process scalars
-                else:
-                    new_leaves.append(AbstractArray((), type(leaf)))
-            return unflatten(new_leaves, structure)
+            # Since abstractify natively handles PyTree recursion and leaves,
+            # we can pass the entire structure straight through
+            return abstractify(val)
 
         case _:  # pragma: no cover
             raise ValueError(f"Unknown kind: '{kind}'")
