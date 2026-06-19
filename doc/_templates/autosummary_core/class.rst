@@ -39,14 +39,14 @@
    .. autosummary::
       :nosignatures:
    {% for item in attributes %}
-      ~{{ fullname }}.{{ item }}
+      ~{{ name }}.{{ item }}
    {%- endfor %}
 
    {% endif %}
    {% endblock %}
 
    {% for item in attributes %}
-   .. autoattribute:: {{ item }}
+   .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
@@ -73,14 +73,14 @@
 
    .. autosummary::
    {% for item in methods %}
-      ~{{ fullname }}.{{ item }}
+      ~{{ name }}.{{ item }}
    {%- endfor %}
 
    {% endif %}
    {% endblock %}
 
    {% for item in methods %}
-   .. automethod:: {{ item }}
+   .. automethod:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
