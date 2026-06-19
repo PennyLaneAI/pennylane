@@ -495,6 +495,10 @@
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
+* Massive performance increases to the Trotter error module by introducing a novel algorithm for
+  computing the Baker-Campbell-Hausdorff formula.
+  [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
+
 <h3>Breaking changes 💔</h3>
 
 * Plxpr transforms have been removed.
@@ -813,6 +817,7 @@ Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,

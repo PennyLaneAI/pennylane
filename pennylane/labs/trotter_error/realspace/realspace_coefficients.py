@@ -27,7 +27,7 @@ class RealspaceCoeffs:
 
     The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with an array
     and can be used to represent coefficients of a real space operator. A real space operator
-    is constrcuted from position and momentum operators, e.g., Eq. 4
+    is constructed from position and momentum operators, e.g., Eq. 4
     of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_ which represents a vibrational
     Hamiltonian.
 
@@ -120,7 +120,8 @@ class RealspaceCoeffs:
         """Return the nonzero coefficients in a dictionary.
 
         Args:
-            threshold (float): tolerance to return coefficients with magnitude greater than ``threshold``
+            threshold (float): tolerance to return coefficients with magnitude greater
+                than ``threshold``
 
         Returns:
             dict: a dictionary representation of the coefficient tensor
@@ -149,13 +150,17 @@ class _NodeType(Enum):
 
 class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
     """
-     A tree representing an expression that computes the coefficients of a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
+     A tree representing an expression that computes the coefficients of
+     a :class:`~.pennylane.labs.trotter_error.RealspaceOperator`.
      This class should be instantiated from the following class methods:
 
         * ``tensor_node(tensor)``: a leaf node containing the coefficients as a tensor
-        * ``outer_node(l_child, r_child)``: a node representing the outer product of two ``RealspaceCoeffs`` objects
-        * ``sum_node(l_child, r_child)``: a node representing the sum of two ``RealspaceCoeffs`` objects
-        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs`` object by a scalar
+        * ``outer_node(l_child, r_child)``: a node representing the outer product of two
+          ``RealspaceCoeffs`` objects
+        * ``sum_node(l_child, r_child)``: a node representing the sum of two
+          ``RealspaceCoeffs`` objects
+        * ``scalar_node(scalar, child)``: a node representing the product of a ``RealspaceCoeffs``
+          object by a scalar
 
     **Examples**
 
@@ -208,7 +213,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         value: float = None,
         label: str = None,
     ) -> _RealspaceTree:
-
         self.node_type = node_type
         self.l_child = l_child
         self.r_child = r_child
@@ -244,7 +248,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             r_child (_RealspaceTree): the right child
 
         Returns:
-            _RealspaceTree: a `RealspaceCoeff` object representing the sum of `l_child` and `r_child`
+            _RealspaceTree: a ``RealspaceCoeff`` object representing the sum of ``l_child``
+                and ``r_child``
 
         **Example**
 
@@ -260,7 +265,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         if l_child.shape != r_child.shape:
             raise ValueError(
-                f"Cannot add _RealspaceTree of shape {l_child.shape} with _RealspaceTree of shape {r_child.shape}."
+                f"Cannot add _RealspaceTree of shape {l_child.shape} with _RealspaceTree "
+                f"of shape {r_child.shape}."
             )
 
         return cls(
@@ -282,7 +288,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             r_child (RealspaceCOeffs): the right child
 
         Returns:
-            _RealspaceTree: a ``_RealspaceTree`` object representing the outer product of ``l_child`` and ``r_child``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the outer product
+                of ``l_child`` and ``r_child``
 
         **Example**
 
@@ -307,7 +314,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         Args:
             tensor (ndarray): a tensor of coefficients
-            label (string): a label for the tensor to be used when displaying the ``_RealspaceTree`` object as an expression
+            label (string): a label for the tensor to be used when displaying the ``_RealspaceTree``
+                object as an expression
 
         Returns:
             _RealspaceTree: a ``_RealspaceTree`` object representing containing the tensor
@@ -342,7 +350,8 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
             child (_RealspaceTree): the ``_RealspaceTree`` object to be multiplied by ``scalar``
 
         Returns:
-            _RealspaceTree: a ``_RealspaceTree`` object representing the coefficients of ``child`` multiplied by ``scalar``
+            _RealspaceTree: a ``_RealspaceTree`` object representing the coefficients of ``child``
+                multiplied by ``scalar``
 
         **Example**
 
@@ -414,7 +423,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
     # pylint: disable=protected-access
     def _str(self, indices) -> str:
-
         if self.node_type == _NodeType.TENSOR:
             return f"{self.label}[{','.join(indices)}]"
         if self.node_type == _NodeType.FLOAT:
@@ -481,7 +489,11 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if len(index) != len(self.shape):
             return False
 
-        return all(0 <= x < y for x, y in zip(index, self.shape, strict=True))
+        for x, y in zip(index, self.shape):
+            if x < 0 or x >= y:
+                return False
+
+        return True
 
     def nonzero(self, threshold: float = 0.0):
         """Return the nonzero coefficients in a dictionary.
@@ -604,7 +616,7 @@ def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
     d = {}
 
-    for index in zip(*nz, strict=True):
+    for index in zip(*nz):
         if abs(arr[index]) > threshold:
             index = tuple(map(int, index))
             d[index] = float(arr[index])

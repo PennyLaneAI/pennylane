@@ -20,14 +20,18 @@ from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_array, identity, kron
 
+from pennylane.labs.trotter_error import AbstractState
 
-class HOState:
+
+class HOState(AbstractState):
     """Represent a wavefunction in the harmonic oscillator basis.
 
     Args:
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a sparse state vector for the full wavefunction or a dictionary containing the interacting modes and their non-zero coefficients
+        state: (Union[scipy.sparse.csr_array, Dict[Tuple[int], float]]): a sparse state vector for
+            the full wavefunction or a dictionary containing the interacting modes and their
+            non-zero coefficients
 
 
     **Examples**
@@ -59,14 +63,15 @@ class HOState:
       (1, 0)	1)
     """
 
-    def __init__(self, modes: int, gridpoints: int, state: csr_array):
+    def __init__(self, modes: int, gridpoints: int, state: csr_array | dict):
         if isinstance(state, csr_array):
             if state.shape == (gridpoints**modes,):
                 state = state.reshape((gridpoints**modes, 1))
 
             if state.shape != (gridpoints**modes, 1):
                 raise ValueError(
-                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {state.shape}."
+                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} "
+                    f"but got shape {state.shape}."
                 )
 
             self.vector = state
@@ -174,7 +179,8 @@ class HOState:
         """
         if self.dim != other.dim:
             raise ValueError(
-                f"Dimension mismatch. Attempting to dot product vectors of dimension {self.dim} and {other.dim}."
+                f"Dimension mismatch. Attempting to dot product vectors of "
+                f"dimension {self.dim} and {other.dim}."
             )
 
         return ((self.vector.T).dot(other.vector))[0, 0]
@@ -190,7 +196,8 @@ class VibronicHO:
         states (int): the number of electronic states
         modes (int): the number of vibrational modes
         gridpoints (int): the number of gridpoints used to discretize the state
-        ho_states (Sequence[HOState]): a sequence of :class:`~.pennylane.labs.trotter_error.HOState` objects representing the harmonic oscillator states
+        ho_states (Sequence[HOState]): a sequence of :class:`~.pennylane.labs.trotter_error.HOState` objects
+            representing the harmonic oscillator states
 
     **Example**
 
@@ -213,7 +220,6 @@ class VibronicHO:
     """
 
     def __init__(self, states: int, modes: int, gridpoints: int, ho_states: Sequence[HOState]):
-
         if len(ho_states) != states:
             raise ValueError(
                 f"Got {len(ho_states)} harmonic oscillator states, but expected {states}."
@@ -222,12 +228,14 @@ class VibronicHO:
         for ho_state in ho_states:
             if ho_state.modes != modes:
                 raise ValueError(
-                    f"Mode mismatch: given {modes} modes, but found an HOState on {ho_state.modes} modes."
+                    f"Mode mismatch: given {modes} modes, but found an HOState "
+                    f"on {ho_state.modes} modes."
                 )
 
             if ho_state.gridpoints != gridpoints:
                 raise ValueError(
-                    f"Gridpoint mismatch: given {gridpoints} gridpoints, but found an HOState on {ho_state.gridpoints} gridpoints."
+                    f"Gridpoint mismatch: given {gridpoints} gridpoints, but found an HOState "
+                    f"on {ho_state.gridpoints} gridpoints."
                 )
 
         self.states = states
@@ -241,24 +249,27 @@ class VibronicHO:
     def __add__(self, other: VibronicHO) -> VibronicHO:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot add VibronicHO on {self.states} states with VibronicHO on {other.states} states."
+                f"Cannot add VibronicHO on {self.states} states with VibronicHO "
+                f"on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot add VibronicHO on {self.modes} modes with VibronicHO on {other.modes} modes."
+                f"Cannot add VibronicHO on {self.modes} modes with VibronicHO "
+                f"on {other.modes} modes."
             )
 
         if self.gridpoints != other.gridpoints:
             raise ValueError(
-                f"Cannot add VibronicHO on {self.gridpoints} gridpoints with VibronicHO on {other.gridpoints} gridpoints."
+                f"Cannot add VibronicHO on {self.gridpoints} gridpoints with VibronicHO "
+                f"on {other.gridpoints} gridpoints."
             )
 
         return VibronicHO(
             states=self.states,
             modes=self.modes,
             gridpoints=self.gridpoints,
-            ho_states=[x + y for x, y in zip(self.ho_states, other.ho_states, strict=True)],
+            ho_states=[x + y for x, y in zip(self.ho_states, other.ho_states)],
         )
 
     def __mul__(self, scalar: float) -> VibronicHO:
@@ -287,9 +298,10 @@ class VibronicHO:
 
         >>> from pennylane.labs.trotter_error import VibronicHO
         >>> VibronicHO.zero_state(2, 3, 5)
-        VibronicHO([HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'float64'
-            with 0 stored elements and shape (125, 1)>), HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'float64'
-            with 0 stored elements and shape (125, 1)>)])
+        VibronicHO([HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of
+            dtype 'float64' with 0 stored elements and shape (125, 1)>), HOState(modes=3,
+            gridpoints=5, <Compressed Sparse Row sparse array of dtype 'float64' with 0 stored
+            elements and shape (125, 1)>)])
         """
         return cls(
             states=states,
@@ -320,11 +332,13 @@ class VibronicHO:
         4
         """
 
-        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states, strict=True)))
+        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:
-    """Return the tensor product of ``op`` with the ``gridpoints**mode`` dimensional identity matrix on the left, and the ``gridpoints ** (n_modes - mode - 1)`` dimensional identity matrix on the right."""
+    """Return the tensor product of ``op`` with the ``gridpoints**mode`` dimensional identity matrix
+    on the left, and the ``gridpoints ** (n_modes - mode - 1)`` dimensional identity matrix on the
+    right."""
     if mode == 0:
         return kron(op, identity(gridpoints ** (n_modes - 1)))
 

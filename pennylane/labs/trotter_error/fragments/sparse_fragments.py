@@ -32,7 +32,8 @@ def sparse_fragments(fragments: Sequence[csr_array]) -> list[SparseFragment]:
         fragments (Sequence[csr_array]): A sequence of sparse matrices to be used as fragments.
 
     Returns:
-        List[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated from `fragments`.
+        list[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated
+           from `fragments`.
 
 
     **Example**
@@ -63,7 +64,8 @@ class SparseFragment(Fragment):
     Args:
         fragment (csr_array): The `csr_array` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
 
-    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
+    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantiated through the
+    ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
 
     **Example**
 
@@ -113,6 +115,8 @@ class SparseFragment(Fragment):
         return complex(result.toarray().flatten()[0])
 
     def norm(self, params: dict = None) -> float:
+        """Returns the norm computed by SciPy"""
+
         if params is None:
             params = {}
 
@@ -124,12 +128,12 @@ class SparseFragment(Fragment):
 
 
 class SparseState(AbstractState):
-    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation functions.
-    This class is intended to instantiate states to be used along with the `SparseFragment` class.
+    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error estimation
+    functions. This class is intended to instantiate states to be used along with
+    the `SparseFragment` class.
     """
 
     def __init__(self, state: csr_array):
-
         if not isinstance(state, csr_array):
             raise TypeError(
                 f"SparseState must be instantiated from a csr_array. Got {type(state)}."

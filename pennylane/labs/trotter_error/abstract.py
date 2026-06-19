@@ -11,12 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fragment class"""
+"""The abstract Fragment class that defines the API for Trotter error computations"""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+
+
+class _AdditiveIdentity:
+    """Only used to initialize accumulators for summing Fragments"""
+
+    def __add__(self, other):
+        return other
+
+    def __radd__(self, other):
+        return other
 
 
 class Fragment(ABC):
@@ -51,23 +61,14 @@ class Fragment(ABC):
     def __matmul__(self, other: Fragment) -> Fragment:
         raise NotImplementedError
 
-    @abstractmethod
-    def norm(self, params: dict) -> float:
-        """Compute the norm of the fragment.
-
-        Args:
-            params (Dict): A dictionary of parameters needed to compute the norm. It should be
-                specified for each class inheriting from :class:`~.Fragment`.
-
-        Returns:
-            float: the norm of the :class:`~.Fragment`
-
-        """
-        raise NotImplementedError
+    def commutator(self, other: Fragment) -> Fragment:
+        """Evaluates the commutator [A, B] = AB - BA of two fragments"""
+        return self @ other - other @ self
 
     @abstractmethod
     def apply(self, state: AbstractState) -> AbstractState:
-        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each class inheriting from ``Fragment``.
+        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each
+        class inheriting from ``Fragment``.
 
         Args:
             state (AbstractState): an object representing a quantum state
@@ -79,7 +80,8 @@ class Fragment(ABC):
         raise NotImplementedError
 
     def expectation(self, left: AbstractState, right: AbstractState) -> float:
-        """Return the expectation value of a state. The type of ``state`` is determined by each class inheriting from ``Fragment``.
+        """Return the expectation value of a state. The type of ``state`` is determined by each
+        class inheriting from ``Fragment``.
 
         Args:
             left (AbstractState): the state to be multiplied on the left of the ``Fragment``
@@ -89,6 +91,12 @@ class Fragment(ABC):
             float: the expectation value obtained by applying ``Fragment`` to the given states
         """
         return left.dot(self.apply(right))
+
+    def initialize_parallel_job(self, backend: str):
+        """Set up required for parallel compatibility"""
+
+    def start_parallel_job(self, state: AbstractState):
+        """Start perturbation error computation in parallel"""
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
@@ -142,7 +150,7 @@ class AbstractState(ABC):
     Additionally, it requires the following methods.
 
     * ``zero_state``: returns a representation of the zero state
-    * ``dot``: implments the dot product of two states
+    * ``dot``: implements the dot product of two states
     """
 
     @abstractmethod
@@ -156,16 +164,6 @@ class AbstractState(ABC):
     def __mul__(self, scalar: float) -> AbstractState:
         raise NotImplementedError
 
-    @classmethod
-    @abstractmethod
-    def zero_state(cls) -> AbstractState:
-        """Return a representation of the zero state.
-
-        Returns:
-            AbstractState: an ``AbstractState`` representation of the zero state
-        """
-        raise NotImplementedError
-
     @abstractmethod
     def dot(self, other: AbstractState) -> float:
         """Compute the dot product of two states.
@@ -177,3 +175,9 @@ class AbstractState(ABC):
            float: the dot product of self and other
         """
         raise NotImplementedError
+
+    def initialize_parallel_job(self, backend: str):
+        """Set up required for parallel compatibility"""
+
+    def start_parallel_job(self, backend: str):
+        """Start perturbation error computation in parallel"""

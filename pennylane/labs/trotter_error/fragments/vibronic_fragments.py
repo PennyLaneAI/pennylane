@@ -36,11 +36,15 @@ def vibronic_fragments(
     Args:
         states (int): the number of electronic states
         modes (int): the number of vibrational modes
-        freqs (ndarray): the harmonic frequences
-        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
+        freqs (ndarray): the harmonic frequencies
+        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
+            Taylor expansion. The ith entry in the sequence corresponds to the ith degree Taylor coefficients
+            and has shape (states, states, modes, ..., modes) where there are two states components and
+            i mode components.
 
     Returns:
-        List[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian
+        list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of
+            the vibronic Hamiltonian
 
     **Example**
 
@@ -53,7 +57,7 @@ def vibronic_fragments(
     >>> taylor_coeffs = [r_state.random(size=(n_states, n_states, )), r_state.random(size=(n_states, n_states, n_modes))]
     >>> fragments = vibronic_fragments(n_states, n_modes, freqs, taylor_coeffs)
     >>> for fragment in fragments:
-    >>>     fragment
+    ...     print(fragment)
     RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, (), 0.15601864044243652), RealspaceOperator(4, ('Q',), phi[1][0, 0][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1]))), (1, 1): RealspaceSum((RealspaceOperator(4, (), 0.8661761457749352), RealspaceOperator(4, ('Q',), phi[1][1, 1][idx0]), RealspaceOperator(4, ('Q', 'Q'), omega[idx0,idx1])))})
     RealspaceMatrix({(0, 1): RealspaceSum((RealspaceOperator(4, (), 0.15599452033620265), RealspaceOperator(4, ('Q',), phi[1][0, 1][idx0]))), (1, 0): RealspaceSum((RealspaceOperator(4, (), 0.05808361216819946), RealspaceOperator(4, ('Q',), phi[1][1, 0][idx0])))})
     RealspaceMatrix({(0, 0): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),)), (1, 1): RealspaceSum((RealspaceOperator(4, ('P', 'P'), omega[idx0,idx1]),))})
@@ -127,7 +131,8 @@ def _realspace_sum(
 def _validate_input(
     states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> None:
-    """Validate that the shapes of the harmonic frequencies and the Taylor coefficients are correct."""
+    """Validate that the shapes of the harmonic frequencies and the Taylor coefficients are
+    correct."""
     for i, phi in enumerate(taylor_coeffs):
         shape = (states, states) + (modes,) * i
 

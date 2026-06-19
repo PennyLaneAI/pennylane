@@ -22,8 +22,9 @@ import numpy as np
 import scipy as sp
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.realspace import HOState, RealspaceSum, VibronicHO
+from pennylane.labs.trotter_error.realspace import HOState, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
+from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
 
 # pylint: disable=protected-access
 
@@ -63,7 +64,6 @@ class RealspaceMatrix(Fragment):
         modes: int,
         blocks: dict[tuple[int, int], RealspaceSum] = None,
     ) -> RealspaceMatrix:
-
         if blocks is None:
             blocks = {}
 
@@ -85,12 +85,14 @@ class RealspaceMatrix(Fragment):
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
         >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
-        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]),
+        ... label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).block(0, 0)
         RealspaceSum((RealspaceOperator(5, (), 1), RealspaceOperator(5, 'Q', phi[idx0])))
@@ -110,12 +112,14 @@ class RealspaceMatrix(Fragment):
         Args:
             row (int): the row of the index
             col (int): the column of the index
-            rs_sum (RealspaceSum): the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object to stored in index ``(row, col)``
+            rs_sum (RealspaceSum): the :class:`~.pennylane.labs.trotter_error.RealspaceSum` object to stored in
+                index ``(row, col)``
 
         Returns:
             None
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 2
         >>> n_modes = 5
@@ -150,21 +154,26 @@ class RealspaceMatrix(Fragment):
         """Return a matrix representation of the operator.
 
         Args:
-            gridpoints (int): the number of gridpoints used to discretize the position or momentum operators
-            basis (str): the basis of the matrix, available options are ``realspace`` and ``harmonic``
+            gridpoints (int): the number of gridpoints used to discretize the position or momentum
+                operators
+            basis (str): the basis of the matrix, available options are ``realspace`` and
+                ``harmonic``
             sparse (bool): if ``True`` returns a sparse matrix, otherwise returns a dense matrix
 
         Returns:
-            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of the :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
+            Union[ndarray, scipy.sparse.csr_array]: the matrix representation of the
+                :class:`~.pennylane.labs.trotter_error.RealspaceOperator`
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
         >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
-        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]),
+        ... label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum}).matrix(2)
         [[-25.58680776   0.           0.         ...   0.           0.
@@ -204,17 +213,20 @@ class RealspaceMatrix(Fragment):
         """Returns an upper bound on the spectral norm of the operator.
 
         Args:
-            params (dict[str, Union[int, bool]]): The dictionary of parameters. The supported parameters are
+            params (dict[str, Union[int, bool]]): The dictionary of parameters. The supported
+                parameters are
 
                 * ``gridpoints`` (int): the number of gridpoints used to discretize the operator
-                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults to ``False``.
+                * ``sparse`` (bool): If ``True``, use optimizations for sparse operators. Defaults
+                  to ``False``.
 
         Returns:
             float: an upper bound on the spectral norm of the operator
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
@@ -240,7 +252,8 @@ class RealspaceMatrix(Fragment):
         return padded._norm(params)
 
     def _norm(self, params: dict) -> float:
-        """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a power of two."""
+        """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a
+        power of two."""
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
@@ -254,12 +267,14 @@ class RealspaceMatrix(Fragment):
     def __add__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot add RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
+                f"Cannot add RealspaceMatrix on {self.states} states with RealspaceMatrix "
+                f"on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot add RealspaceMatrix on {self.modes} states with RealspaceMatrix on {other.modes} states."
+                f"Cannot add RealspaceMatrix on {self.modes} states with RealspaceMatrix "
+                f"on {other.modes} states."
             )
 
         new_blocks = {}
@@ -284,12 +299,14 @@ class RealspaceMatrix(Fragment):
     def __sub__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot subtract RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
+                f"Cannot subtract RealspaceMatrix on {self.states} states with RealspaceMatrix "
+                f"on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot subtract RealspaceMatrix on {self.modes} states with RealspaceMatrix on {other.modes} states."
+                f"Cannot subtract RealspaceMatrix on {self.modes} states with RealspaceMatrix "
+                f"on {other.modes} states."
             )
 
         new_blocks = {}
@@ -330,12 +347,14 @@ class RealspaceMatrix(Fragment):
     def __matmul__(self, other: RealspaceMatrix) -> RealspaceMatrix:
         if self.states != other.states:
             raise ValueError(
-                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
+                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix "
+                f"on {other.states} states."
             )
 
         if self.modes != other.modes:
             raise ValueError(
-                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix on {other.states} states."
+                f"Cannot multiply RealspaceMatrix on {self.states} states with RealspaceMatrix "
+                f"on {other.states} states."
             )
 
         product_matrix = RealspaceMatrix(self.states, self.modes)
@@ -364,7 +383,9 @@ class RealspaceMatrix(Fragment):
         return True
 
     def _partition_into_quadrants(self) -> tuple[RealspaceMatrix]:
-        """Partitions the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` into four :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
+        """Partitions the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` into
+        four :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` objects on ``self.states // 2`` states. This
+        method assumes ``self.states`` is a power of two."""
         # pylint: disable=chained-comparison
         half = self.states // 2
 
@@ -388,44 +409,58 @@ class RealspaceMatrix(Fragment):
         return top_left, top_right, bottom_left, bottom_right
 
     def apply(self, state: VibronicHO) -> VibronicHO:
-        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` to an input :class:`~.pennylane.labs.trotter_error.VibronicHO` on the right.
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` to an input
+        :class:`~.pennylane.labs.trotter_error.VibronicHO` on the right.
 
         Args:
             state (VibronicHO): a vibronic wavefunction
 
         Returns:
-            VibronicHO: the result of applying the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` to ``state``
+            VibronicHO: the result of applying the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix`
+                to ``state``
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> from pennylane.labs.trotter_error import HOState, VibronicHO
         >>> import numpy as np
+
         >>> n_states = 1
         >>> n_modes = 3
         >>> gridpoints = 2
-        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs.coeffs(np.array(1), label="lambda"))
-        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs.coeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+
+        >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+        >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3]), label="phi"))
         >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
         >>> vib_matrix = RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
         >>> state_dict = {(1, 0, 0): 1, (0, 1, 1): 1}
-        >>> state = HOState.from_dict(n_modes, gridpoints, state_dict)
-        >>> VibronicHO(n_states, n_modes, gridpoints, [state])
-        VibronicHO([HOState(modes=3, gridpoints=2, <Compressed Sparse Row sparse array of dtype 'int64'
-            with 2 stored elements and shape (8, 1)>
+        >>> state = HOState(n_modes, gridpoints, state_dict)
+        >>> vib_state = VibronicHO(n_states, n_modes, gridpoints, [state])
+        >>> vib_state
+        VibronicHO([HOState(modes=3, gridpoints=2, <Compressed Sparse Row sparse array of dtype 'float64'
+            with 8 stored elements and shape (8, 1)>
           Coords	Values
-          (3, 0)	1
-          (4, 0)	1)])
+          (0, 0)	0.7071067811865475
+          (1, 0)	1.414213562373095
+          (2, 0)	2.1213203435596424
+          (3, 0)	1.0
+          (4, 0)	1.0
+          (5, 0)	2.1213203435596424
+          (6, 0)	1.414213562373095
+          (7, 0)	0.7071067811865475)])
         """
 
         if self.states != len(state.ho_states):
             raise ValueError(
-                f"Cannot apply RealspaceMatrix on {self.states} states to VibronicHO on {len(state.ho_states)} states."
+                f"Cannot apply RealspaceMatrix on {self.states} states to VibronicHO "
+                f"on {len(state.ho_states)} states."
             )
 
         if self.modes != state.modes:
             raise ValueError(
-                f"Cannot apply RealspaceMatrix on {self.modes} modes to VibronicHO on {state.modes} modes."
+                f"Cannot apply RealspaceMatrix on {self.modes} modes to VibronicHO "
+                f"on {state.modes} modes."
             )
 
         ho_states = []
@@ -444,17 +479,22 @@ class RealspaceMatrix(Fragment):
         )
 
     def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[int, int], dict]:
-        """Return a dictionary containing the coefficients of the :class:`~.pennylane.labs.trotter_error.RealspaceSum`
+        """Return a dictionary containing the coefficients of
+        the :class:`~.pennylane.labs.trotter_error.RealspaceSum`
 
         Args:
-            threshold (float): tolerance to return coefficients whose magnitude is greater than ``threshold``
+            threshold (float): tolerance to return coefficients whose magnitude is greater
+                than ``threshold``
 
         Returns:
-            Dict: a dictionary whose keys are the indices of the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` and whose values are dictionaries obtained by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
+            Dict: a dictionary whose keys are the indices of the
+                :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` and whose values are dictionaries obtained
+                by :func:`~pennylane.labs.trotter_error.RealspaceSum.get_coefficients`
 
         **Example**
 
-        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+        >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+        >>> from pennylane.labs.trotter_error import RealspaceMatrix
         >>> import numpy as np
         >>> n_states = 1
         >>> n_modes = 5
@@ -480,7 +520,8 @@ class RealspaceMatrix(Fragment):
             modes (int): the number of vibrational modes
 
         Returns:
-            RealspaceMatrix: a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` on ``states`` electronic states and ``modes`` vibrational modes such that all coefficients are zero
+            RealspaceMatrix: a :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` on ``states`` electronic
+                states and ``modes`` vibrational modes such that all coefficients are zero
         """
         return cls(states, modes, {})
 
