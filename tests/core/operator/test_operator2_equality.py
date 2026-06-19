@@ -465,9 +465,9 @@ class TestAbstractOperatorEquality:
     def test_comparing_dynamic_args(self):
         """Tests that abstract dynamic args behave correctly."""
 
-        op1 = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
-        op2 = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
-        op3 = DynOp(AbstractArray((2, 1), int), AbstractWires(1))
+        op1 = DynOp(AbstractArray((1, 2), float), 0)
+        op2 = DynOp(AbstractArray((1, 2), float), 0)
+        op3 = DynOp(AbstractArray((2, 1), int), 0)
         op4 = DynOp(3.14, 0)
 
         assert qp.equal(op1, op2)
