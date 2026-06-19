@@ -245,14 +245,14 @@
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
 
   ```python
-  from pennylane.typing import Int, Float, Complex, Bool, WireType
+  from pennylane.typing import Int, Float, Complex, Bool, Wire
   Int[2, 3]       # Abstract int array with shape (2, 3)
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
-  WireType        # Single abstract wire
-  WireType[4]     # Four abstract wires
-  WireType[-1]    # Wire sequence with dynamic size
+  Wire            # Single abstract wire
+  Wire[4]         # Four abstract wires
+  Wire[-1]        # Wire sequence with dynamic size
   ```
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.

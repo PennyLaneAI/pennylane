@@ -51,7 +51,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
-from pennylane.typing import AbstractArray, AbstractWires, WireType
+from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
@@ -180,14 +180,14 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.typing import Float, WireType
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = Float[4]
-        abstract_wires = WireType[1] # a single wire
+        abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
         @qp.decomposition.register_resources({S_rep: 1})
@@ -228,7 +228,7 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(WireType[len(val)])
+            key.append(Wire[len(val)])
         else:
             leaves, struct = flatten(val)
 
@@ -608,9 +608,9 @@ class Subroutine:
     ``Wires`` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
     builtin ``Float``.
 
-    >>> from pennylane.typing import Float, WireType
+    >>> from pennylane.typing import Float, Wire
     >>> abstract_params = Float[10]
-    >>> abstract_wires = WireType[1]
+    >>> abstract_wires = Wire[1]
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
@@ -619,14 +619,14 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.typing import Float, WireType
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
         abstract_params = Float[3]
-        abstract_wires = WireType[3]
+        abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
         @qp.decomposition.register_resources({rxlayer_rep: 1})
