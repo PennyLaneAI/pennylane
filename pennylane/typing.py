@@ -229,6 +229,9 @@ class AbstractTypeFactory(AbstractArray):
     using an override of the __getitem__ method.
     """
 
+    def __init__(self, dtype):
+        super().__init__((), dtype)
+
     def __getitem__(self, shape):
         """
         Overrides the indexing mechanism in python to achieve a user-friendly
@@ -242,11 +245,6 @@ class AbstractTypeFactory(AbstractArray):
             An instance of AbstractArray with the desired shape.
         """
 
-        if self.shape:
-            raise IndexError(
-                "AbstractTypeFactory's can only be indexed into once to create new versions."
-            )
-
         if isinstance(shape, int) or shape == ...:
             shape = (shape,)
         if not isinstance(shape, tuple) or not all(isinstance(n, int) or n == ... for n in shape):
@@ -256,7 +254,7 @@ class AbstractTypeFactory(AbstractArray):
         return AbstractArray(shape, self.dtype)
 
 
-Int = AbstractTypeFactory((), int)
+Int = AbstractTypeFactory(int)
 """An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -268,7 +266,7 @@ AbstractArray(shape=(4, 2), dtype=dtype('int64'))
 """
 
 
-Float = AbstractTypeFactory((), float)
+Float = AbstractTypeFactory(float)
 """An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -279,7 +277,7 @@ AbstractArray(shape=(4, 2), dtype=dtype('float64'))
 
 """
 
-Bool = AbstractTypeFactory((), bool)
+Bool = AbstractTypeFactory(bool)
 """An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -291,7 +289,7 @@ AbstractArray(shape=(4,), dtype=dtype('bool'))
 """
 
 
-Complex = AbstractTypeFactory((), complex)
+Complex = AbstractTypeFactory(complex)
 """An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -348,6 +346,9 @@ class AbstractWireTypeFactory(AbstractWires):
     using an override of the __getitem__ method.
     """
 
+    def __init__(self):
+        super().__init__(1)
+
     def __getitem__(self, shape):
         """
         Overrides the indexing mechanism in python to achieve a user-friendly
@@ -360,10 +361,6 @@ class AbstractWireTypeFactory(AbstractWires):
         Returns:
             An instance of AbstractWires with the desired shape.
         """
-        if self.num_wires != 1:
-            raise IndexError(
-                "AbstractWireTypeFactory's can only be indexed into once to create new versions."
-            )
 
         if not (isinstance(shape, int) or shape == ...):
             raise TypeError(
@@ -372,7 +369,7 @@ class AbstractWireTypeFactory(AbstractWires):
         return AbstractWires(shape)
 
 
-Wire = AbstractWireTypeFactory(1)
+Wire = AbstractWireTypeFactory()
 """An :class:`~.AbstractWires`` subclass. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensions.
 

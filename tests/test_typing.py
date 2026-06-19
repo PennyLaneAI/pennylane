@@ -193,7 +193,7 @@ class TestAbstractArray:
     def test_wire_type_factory(self):
         """Test that we can index into a wire type factory to produce a new hint with a size."""
 
-        a = AbstractWireTypeFactory(1)
+        a = AbstractWireTypeFactory()
 
         b = a[2]
         assert isinstance(b, AbstractWires)
@@ -203,15 +203,10 @@ class TestAbstractArray:
         assert isinstance(c, AbstractWires)
         assert c.num_wires == ...
 
-    def assert_wire_type_factory_raises(self):
-        """Test that we can only index into a wire type factory once."""
-        with pytest.raises(IndexError, match=r"only be indexed into once"):
-            _ = AbstractWireTypeFactory(1)[1][2]
-
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
 
-        a = AbstractTypeFactory((), int)
+        a = AbstractTypeFactory(int)
 
         b = a[2, 3]
         assert isinstance(b, AbstractArray)
@@ -233,11 +228,6 @@ class TestAbstractArray:
         assert e.shape == (5, ..., 2)
         assert e.dtype == np.int64
 
-    def assert_type_factory_raises(self):
-        """Test that we can only index into a type factory once."""
-        with pytest.raises(IndexError, match=r"only be indexed into once"):
-            _ = AbstractTypeFactory((), int)[1][2]
-
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
 
@@ -257,8 +247,8 @@ class TestAbstractArray:
     def test_error_bad_indices(self, bad_index):
         """Test that an error is raised on invalid indices."""
 
-        a = AbstractTypeFactory((), int)
-        b = AbstractWireTypeFactory(1)
+        a = AbstractTypeFactory(int)
+        b = AbstractWireTypeFactory()
 
         with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
             _ = a[bad_index]
