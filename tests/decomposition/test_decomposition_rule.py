@@ -19,7 +19,7 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -29,6 +29,8 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.typing import AbstractArray
+from pennylane.wires import AbstractWires
 
 
 class CustomOp(Operator):  # pylint: disable=too-few-public-methods
@@ -332,7 +334,6 @@ class TestDecompositionRule:
             qp.RY(theta, wires=wires[0])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(CustomOp, custom_decomp)
             qp.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
             qp.add_decomps(qp.CRX, custom_decomp)
@@ -369,7 +370,6 @@ class TestDecompositionRule:
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
         @register_resources({DummyOp: 1})
@@ -389,11 +389,38 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
+    def test_resource_keys_are_abstract_operators(self):
+        """Tests that abstract operators can be used as keys."""
+
+        class FixedSigOp(Operator2):
+            dynamic_argnames = ("phi",)
+
+            fixed_sig = (
+                AbstractArray((), float),
+                AbstractWires(1),
+            )
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires)
+
+        @register_resources(
+            {
+                # Gets processed to an abstract operator under the hood
+                FixedSigOp: 1,
+                FixedSigOp(phi=AbstractArray((), float), wires=AbstractWires(1)): 2,
+            }
+        )
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        # Gets grouped together
+        exp_dict = {FixedSigOp(*FixedSigOp.fixed_sig): 3}
+        assert custom_decomp.compute_resources().gate_counts == exp_dict
+
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1})
@@ -610,7 +637,6 @@ class TestInspectDecomps:
 
         @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1})
         def general_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 1)
             def _loop(i):
                 qp.CZ(wires=[wires[i], wires[i + 1]])
@@ -638,7 +664,6 @@ class TestInspectDecomps:
             name="with-aux",
         )
         def another_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 2)
             def _loop(i):
                 qp.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])
