@@ -83,11 +83,7 @@ class HybridWireOp(Operator2):
 
 
 class MixedHybridOp(Operator2):
-    """Operator with dynamic, non-hybrid wires, hybrid wires, and hybrid ops.
-
-    ``hybrid_argnames`` lists ``ops`` before ``pytree_wires``, but capture must
-    process the hybrid wire argument first.
-    """
+    """Operator with dynamic, non-hybrid wires, hybrid wires, and hybrid ops."""
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires", "pytree_wires")
