@@ -102,8 +102,8 @@ mathjax_path = (
 )
 ignore_warnings = [
     ("code/api/qp_transforms*", "no module named pennylane.transforms"),
-    (None, "Explicit markup ends without a blank line; unexpected unindent. [docutils]"),
 ]
+suppress_warnings = ["docutils.parser"]
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
