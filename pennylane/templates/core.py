@@ -187,7 +187,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
             pass
 
         abstract_params = Float[4]
-        abstract_wires = qp.typing.Wire[1] # a single wire
+        abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
         @qp.decomposition.register_resources({S_rep: 1})
