@@ -68,6 +68,13 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
     return display_names[var]
 
 
+def _update_resource_dict(
+    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+) -> None:
+    for label, value in fn_resources.items():
+        result_dict[label] += call_count * value
+
+
 def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
@@ -96,6 +103,9 @@ def _mlir_resources_to_specs_resources(
         display_names (dict[str, str]): a mapping from symbolic variable names to their display
             names in the output. (modified in-place by this function)
     """
+    # pylint: disable=too-many-branches
+    # This method would not be benefit by being broken up further, the parsing logic just requires
+    # serveral branches
 
     if focus in fn_resources:
         return
@@ -158,12 +168,9 @@ def _mlir_resources_to_specs_resources(
             continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
-        for gate, gate_count in called_fn_resources.gate_types.items():
-            gate_types[gate] += call_count * gate_count
-        for size, size_count in called_fn_resources.gate_sizes.items():
-            gate_sizes[size] += call_count * size_count
-        for meas, meas_count in called_fn_resources.measurements.items():
-            measurements[meas] += call_count * meas_count
+        _update_resource_dict(gate_types, call_count, called_fn_resources.gate_types)
+        _update_resource_dict(gate_sizes, call_count, called_fn_resources.gate_sizes)
+        _update_resource_dict(measurements, call_count, called_fn_resources.measurements)
 
         if called_fn_resources.pbc_depth is not None:
             if pbc_depth is None:

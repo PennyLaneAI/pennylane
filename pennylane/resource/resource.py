@@ -457,7 +457,9 @@ class SpecsResources:
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
+        # A resource will only ever need to display PBC depth or ordinary circuit depth, never both
         if self.pbc_depth is None:
+            # Always show a depth row, even if depth is None
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)
                 if self.depth is not None
@@ -465,10 +467,9 @@ class SpecsResources:
             )
             lines.append(f"| **Depth** | {depth_str} |")
         else:
-
             for depth_type, value in enumerate(self.pbc_depth):
                 lines.append(
-                    f"| Depth-{depth_type} (PBC) | {_count_to_str(value, markdown_safe=True)} |"
+                    f"| **Depth-{depth_type} (PBC)** | {_count_to_str(value, markdown_safe=True)} |"
                 )
         return "\n".join(lines)
 

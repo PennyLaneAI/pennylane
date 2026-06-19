@@ -1790,6 +1790,88 @@ class TestCountResources:
         assert computed_resources == expected_resources
 
 
+class TestResourcePBCDepth:
+    """Separate class for testing PBC depth counting since it will be refactor soon."""
+
+    @pytest.fixture
+    def example_resource(self):
+        return SpecsResources(
+            gate_types={"Hadamard": 1, "CNOT": 2},
+            gate_sizes={1: 1, 2: 2},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            pbc_depth=(3, 6),
+        )
+
+    def test_str_pbc_depth(self, example_resource):
+        """Test the string representation of a SpecsResources instance with PBC depth."""
+        s = example_resource
+
+        expected = "Wire allocations: 2\n"
+        expected += "Total gates: 3\n"
+        expected += "Gate counts:\n"
+        expected += "- Hadamard: 1\n"
+        expected += "- CNOT: 2\n"
+        expected += "Measurements:\n"
+        expected += "- expval(PauliZ): 1\n"
+        expected += "Depth-0 (PBC): 3\n"
+        expected += "Depth-1 (PBC): 6"
+
+        assert str(s) == expected
+
+    def test_ipython_display_pbc_depth(self, example_resource):
+        """Test the IPython display of a SpecsResources instance with PBC depth."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 3 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth-0 (PBC)** | 3 |
+            | **Depth-1 (PBC)** | 6 |
+        """)
+        actual = example_resource._repr_markdown_()
+
+        assert actual.strip() == expected.strip()
+
+    def test_circuit_specs_str(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric   Level→ |  1
+            ---------------------
+            Wire allocations |  2
+            Total gates      |  3
+            Gate counts:     |
+            - Hadamard       |  1
+            - CNOT           |  2
+            Measurements:    |
+            - expval(PauliZ) |  1
+            Depth (PBC):     |
+            - Depth-0        |  3
+            - Depth-1        |  6
+        """).strip()
+
+        assert str(s) == expected
+
+
 def test_count_to_str():
     """Test the _count_to_str helper function."""
     assert _count_to_str(0) == "0"

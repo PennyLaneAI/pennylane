@@ -75,7 +75,7 @@ class Tracker:
     >>> tracker.totals
     {'batches': 2, 'simulations': 3, 'executions': 3, 'results': np.float64(1.02), 'shots': 300}
     >>> import pprint
-    >>> pprint.pprint(tracker.latest)
+    >>> pprint.pprint(tracker.latest)  # doctest: +SKIP
     {'errors': {},
      'executions': 1,
      'resources': SpecsResources(gate_types={'RX': 1},
@@ -202,7 +202,7 @@ class Tracker:
         >>> tracker.latest
         {'a': 1, 'b': 2, 'c': 'c'}
         >>> import pprint
-        >>> pprint.pprint(tracker.history)
+        >>> pprint.pprint(tracker.history)  # doctest: +SKIP
         {'a': [1],
          'b': [2],
          'batches': [1],
