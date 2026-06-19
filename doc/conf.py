@@ -17,7 +17,6 @@ import sys
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
-import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -103,13 +102,9 @@ mathjax_path = (
 )
 ignore_warnings = [
     ("code/api/qp_transforms*", "no module named pennylane.transforms"),
-    ("", "Explicit markup ends without a blank line"),
+    ("*", "Explicit markup ends without a blank line"),
 ]
 autodoc_mock_imports = ["torch"]
-warnings.filterwarnings(
-    "ignore", 
-    message=r".*Explicit markup ends without a blank line.*"
-)
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
