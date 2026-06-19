@@ -43,7 +43,7 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager, apply
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import AbstractArray, FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
@@ -718,14 +718,17 @@ class Operator2(metaclass=OperatorMeta):
     @classproperty
     @classmethod
     def has_decomposition(cls) -> bool:
-        """Bool: Whether or not the Operator returns a defined decomposition."""
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # if compute_decomposition or decomposition overwritten and property
-        # not overwritten, set as class property during __init_subclass__
-        # return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
+        """Bool: Whether or not the Operator returns a defined decomposition.
+
+        This is a class-level check (no per-instance dispatch): ``True`` if
+        ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
+        rules are registered for the operator type. Per-instance rule applicability is resolved
+        in :meth:`~.Operator2.decomposition`, not here.
+        """
         return (
             cls.compute_decomposition != Operator2.compute_decomposition
             or cls.decomposition != Operator2.decomposition
+            or qp.decomposition.has_decomp(cls)
         )
 
     def decomposition(self) -> list["Operator2"]:
@@ -743,15 +746,14 @@ class Operator2(metaclass=OperatorMeta):
         if type(self).compute_decomposition != Operator2.compute_decomposition:
             return self.compute_decomposition(**self.arguments)
 
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # for decomp in qp.list_decomps(self):
-        #     if decomp.is_applicable(**self.resource_params):
-        #         with AnnotatedQueue() as q:
-        #             decomp(**self.arguments)
-        #         if QueuingManager.recording():
-        #             # no need for copies if we just use queue method
-        #             _ = [op.queue() for op in q.queue]
-        #         return q.queue
+        for decomp in qp.list_decomps(self):
+            if decomp.is_applicable():
+                with AnnotatedQueue() as q:
+                    decomp(**self.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
 
         raise DecompositionUndefinedError
 
@@ -1123,8 +1125,6 @@ class Operator2(metaclass=OperatorMeta):
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
-        # TODO: [sc-120429] Add processing for overriding has_decomposition
-
         cls._sig = signature(cls)
 
         if is_baseclass:
