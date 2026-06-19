@@ -180,7 +180,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        from pennylane.typing import Float
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
