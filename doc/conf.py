@@ -102,7 +102,7 @@ mathjax_path = (
 )
 ignore_warnings = [
     ("code/api/qp_transforms*", "no module named pennylane.transforms"),
-    (None, "Explicit markup ends without a blank line; unexpected unindent"),
+    (None, "Explicit markup ends without a blank line"),
 ]
 autodoc_mock_imports = ["torch"]
 
