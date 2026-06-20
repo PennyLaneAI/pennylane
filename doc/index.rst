@@ -28,9 +28,9 @@ PennyLane Documentation
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
           <a href="https://pennylane.ai">PennyLane</a> is an open-source quantum software platform
-+          for <a href="https://pennylane.ai/quantum-computing/">quantum computing</a>, <a href="https://pennylane.ai/topics/quantum-machine-learning">quantum machine learning</a>, and <a href="https://pennylane.ai/topics/hamiltonian-simulation">quantum chemistry</a>.
+          for <a href="https://pennylane.ai/quantum-computing/">quantum computing</a>, <a href="https://pennylane.ai/topics/quantum-machine-learning">quantum machine learning</a>, and <a href="https://pennylane.ai/topics/hamiltonian-simulation">quantum chemistry</a>.
           <br/><br/>
-          Create meaningful quantum algorithms, from inspiration to implementation. 
+          Create meaningful quantum algorithms, from inspiration to implementation.
         </p>
         <div class="row mt-3">
 
