@@ -366,7 +366,7 @@ class AbstractWireTypeFactory(AbstractWires):
 
         if not (isinstance(shape, int) or shape == ...):
             raise TypeError(
-                "AbstractWireTypeFactory's can only be subscripted with integers and Ellipsis."
+                "AbstractWireTypeFactory's can only be subscripted with integers and ellipsis."
             )
         return AbstractWires(shape)
 
