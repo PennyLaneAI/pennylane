@@ -381,7 +381,7 @@ class _AbstractWireTypeFactory(AbstractWires):
 
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires`` subclass. On it's own, it corresponds to a single scalar, but
+"""An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensions.
 
 >>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
