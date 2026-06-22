@@ -258,34 +258,14 @@
   ```pycon
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
-
-  ```
-
-  ```pycon
   >>> qp.typing.Bool[4]
   AbstractArray(shape=(4,), dtype=dtype('bool'))
-  
-  ```
-
-  ```pycon
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
-  
-  ```
-  
-  ```pycon
   >>> qp.typing.Complex[..., 2]
   AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
-  
-  ```
-
-  ```pycon
-  >>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
+  >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
-  
-  ```
-  
-  ```pycon
   >>> qp.typing.Wire[2]
   AbstractWires(num_wires=2)
 
