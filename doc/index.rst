@@ -154,7 +154,7 @@ If you would like to contribute your own demo, see our `demo submission
 guide <https://pennylane.ai/demos_submission>`__.
 
 .. image:: https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/demos.png
-    :align: right
+    :align: center
     :width: 900px
     :target: https://pennylane.ai/demonstrations
 
