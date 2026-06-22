@@ -408,14 +408,14 @@ class TestWires:
     def test_class_index(self):
         """Test that indexing the class raises."""
         with pytest.raises(
-            WireError,
-            match=re.escape("Wires[3] is not supported syntax. Are you looking for Wire[3]?"),
+            TypeError,
+            match=re.escape("Wires[3]' is not supported syntax. Did you mean"),
         ):
             _ = Wires[3]
 
         with pytest.raises(
-            WireError,
-            match=re.escape("Wires[...] is not supported syntax. Are you looking for Wire[...]?"),
+            TypeError,
+            match=re.escape("Wires[Ellipsis]' is not supported syntax. Did you mean"),
         ):
             _ = Wires[...]
 

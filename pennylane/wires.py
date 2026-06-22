@@ -738,7 +738,7 @@ class Wires(Sequence):
         return Wires(set(_process(other)) ^ set(self.labels))
 
     def __class_getitem__(cls, item):
-        raise WireError(
+        raise TypeError(
             f"'pennylane.wires.Wires[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
         )
 
