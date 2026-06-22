@@ -214,8 +214,10 @@ def test_adjoint_equality():
     """Tests comparing adjoint operators."""
 
     base_op = RX2(0.5, wires=1)
-    class OldOp(qp.core.operator.Operator1):
+
+    class OldOp(qp.core.operator.Operator1):  # pylint: disable=too-few-public-methods
         pass
+
     another_base = OldOp(wires=0)
 
     assert qp.adjoint(base_op) == Adjoint2(base_op)
