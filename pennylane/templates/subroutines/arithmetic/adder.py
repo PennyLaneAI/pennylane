@@ -302,6 +302,15 @@ class Adder(Operation):
 
         >>> qp.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
         [(Adjoint(QFT(wires=[0, 1, 2]))) @ PhaseAdder(wires=[0, 1, 2]) @ QFT(wires=[0, 1, 2])]
+        >>> ops = qp.Adder.compute_decomposition(
+        ...     k=2, x_wires=[0, 1, 2], mod=7, work_wires=[3, 4], method="arithmetic"
+        ... )
+        >>> len(ops), [op.name for op in ops[:5]]
+        (31, ['MultiControlledX', 'MultiControlledX', 'PauliX', 'PauliX', 'MultiControlledX'])
+
+        For ``method="arithmetic"``, the decomposition uses reversible carry-ripple add/subtract
+        blocks and a flag qubit for conditional correction, implementing
+        :math:`x \mapsto (x + k) \bmod mod` without QFT rotations.
         """
         if method == "arithmetic":
             return [
