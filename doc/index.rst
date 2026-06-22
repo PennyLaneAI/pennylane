@@ -158,6 +158,7 @@ guide <https://pennylane.ai/demos_submission>`__.
     :width: 900px
     :target: https://pennylane.ai/demonstrations
 
+
 Contributing to PennyLane
 ---------------------------------
 
