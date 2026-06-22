@@ -145,7 +145,7 @@ class AbstractArray:
 
     >>> from pennylane.typing import AbstractArray
     >>> AbstractArray((4, 2), float)
-    AbstractArray((4, 2), 'float64', weak_type=True)
+    AbstractArray((4, 2), float64, weak_type=True)
 
     Use ``-1`` for an axis with unknown size:
 
