@@ -40,7 +40,7 @@ import numpy as np
 
 from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
-from pennylane.core import Operation, Operator
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,

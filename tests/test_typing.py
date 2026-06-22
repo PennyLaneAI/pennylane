@@ -137,6 +137,9 @@ class TestAbstractArray:
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             a[1] = 2
 
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
+            _ = a[1]
+
     @pytest.mark.torch
     def test_provide_torch_dtype(self):
         """Test that a torch dtype is converted to a numpy dtype."""
@@ -244,6 +247,9 @@ class TestAbstractArray:
 
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
             _ = a[1]
+
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
+            a[1] = 2
 
     def test_error_len_on_scalar(self):
         """Test that requesting the len of a scalar results in an error."""
