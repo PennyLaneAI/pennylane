@@ -1338,7 +1338,7 @@ class TestConvertToSUMatrices:
         """Tests the conversion of a simple matrix to SU(2)"""
 
         matrix = _random_unitary(size)
-        su, phase = converter(matrix, return_global_phase=True)
+        su, phase = converter(matrix)
         self._assert_correct(matrix, su, phase)
 
     def test_batched(self, size, converter):
@@ -1346,7 +1346,7 @@ class TestConvertToSUMatrices:
 
         matrices = [_random_unitary(size) for _ in range(3)]
         matrices = np.stack(matrices)
-        sus, phases = converter(matrices, return_global_phase=True)
+        sus, phases = converter(matrices)
         assert qp.math.shape(sus) == (3, size, size)
         assert qp.math.shape(phases) == (3,)
         for matrix, su2, phase in zip(matrices, sus, phases):
