@@ -107,12 +107,7 @@ ignore_warnings = [
 ]
 suppress_warnings = ["docutils.parser"]
 autodoc_mock_imports = ["torch"]
-def docutils_warning_filter(record):
-    if "Explicit markup ends without a blank line" in record.getMessage():
-        return False  
-    return True       
 
-python_logging.getLogger("docutils").addFilter(docutils_warning_filter)
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
