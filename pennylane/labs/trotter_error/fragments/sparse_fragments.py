@@ -22,7 +22,7 @@ import scipy as sp
 from scipy.sparse import csr_array
 
 from pennylane.labs.trotter_error import Fragment
-from pennylane.labs.trotter_error.abstract import AbstractState
+from pennylane.labs.trotter_error.abstract import TrotterState
 
 
 def sparse_fragments(fragments: Sequence[csr_array]) -> list[SparseFragment]:
@@ -127,7 +127,7 @@ class SparseFragment(Fragment):
         return f"SparseFragment(shape={self.fragment.shape}, dtype={self.fragment.dtype})"
 
 
-class SparseState(AbstractState):
+class SparseState(TrotterState):
     """A wrapper class to allow scipy sparse vectors to be used in the Trotter error estimation
     functions. This class is intended to instantiate states to be used along with
     the `SparseFragment` class.

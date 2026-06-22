@@ -30,7 +30,8 @@ class _AdditiveIdentity:
 
 
 class Fragment(ABC):
-    """Abstract class used to define a fragment object for product formula error estimation.
+    r"""Abstract class used to define a fragment object for product formula error estimation. For
+    Trotter error a Hamiltonian is expressed a sum of fragments :math:`H = \sum H_i`.
 
     A :class:`~.Fragment` is an object that has a well-defined notion of a commutator. To ensure
     the existence of commutators, the implementation requires the following arithmetic dunder
@@ -62,30 +63,31 @@ class Fragment(ABC):
         raise NotImplementedError
 
     def commutator(self, other: Fragment) -> Fragment:
-        """Evaluates the commutator [A, B] = AB - BA of two fragments"""
+        """Evaluates the commutator :math:`[A, B] = AB - BA` of two fragments"""
         return self @ other - other @ self
 
     @abstractmethod
-    def apply(self, state: AbstractState) -> AbstractState:
+    def apply(self, state: TrotterState) -> TrotterState:
         """Apply the Fragment to a state on the right. The type of ``state`` is determined by each
-        class inheriting from ``Fragment``.
+        class inheriting from ``Fragment``. Implementation of this function is mandatory for
+        :func:`~.pennylane.labs.trotter_error.perturbation_error`.
 
         Args:
-            state (AbstractState): an object representing a quantum state
+            state (TrotterState): an object representing a quantum state
 
         Returns:
-            AbstractState: the result of applying the ``Fragment`` to ``state``
+            TrotterState: the result of applying the ``Fragment`` to ``state``
 
         """
         raise NotImplementedError
 
-    def expectation(self, left: AbstractState, right: AbstractState) -> float:
+    def expectation(self, left: TrotterState, right: TrotterState) -> float:
         """Return the expectation value of a state. The type of ``state`` is determined by each
         class inheriting from ``Fragment``.
 
         Args:
-            left (AbstractState): the state to be multiplied on the left of the ``Fragment``
-            right (AbstractState): the state to be multiplied on the right of the ``Fragment``
+            left (TrotterState): the state to be multiplied on the left of the ``Fragment``
+            right (TrotterState): the state to be multiplied on the right of the ``Fragment``
 
         Returns:
             float: the expectation value obtained by applying ``Fragment`` to the given states
@@ -93,10 +95,15 @@ class Fragment(ABC):
         return left.dot(self.apply(right))
 
     def initialize_parallel_job(self, backend: str):
-        """Set up required for parallel compatibility"""
+        """Set up required for parallel compatibility. This method is called in 
+        :func:`~.pennylane.labs.trotter_error.perturbation_error` before the parallel computations
+        are called. Any required setup for parallel jobs goes into this function."""
 
-    def start_parallel_job(self, state: AbstractState):
-        """Start perturbation error computation in parallel"""
+    def start_parallel_job(self, state: TrotterState):
+        """Start perturbation error computation in parallel. This method is the first operation called
+        in each parallel job dispatched by :func:`~.pennylane.labs.trotter_error.perturbation_error`.
+        Anything necessary to start the parallel job (such as reading from disk memory) goes into this
+        function."""
 
 
 def commutator(a: Fragment, b: Fragment) -> Fragment:
@@ -139,10 +146,10 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
     return commutator(head, nested_commutator(tail))
 
 
-class AbstractState(ABC):
-    """Abstract class used to define a state object for product formula error estimation.
+class TrotterState(ABC):
+    """Abstract class used to define a state object for perturbation error estimation.
 
-    A class inheriting from ``AbstractState`` must implement the following dunder methods.
+    A class inheriting from ``TrotterState`` must implement the following dunder methods.
 
     * ``__add__``: implements addition
     * ``__mul__``: implements multiplication
@@ -154,22 +161,22 @@ class AbstractState(ABC):
     """
 
     @abstractmethod
-    def __add__(self, other: AbstractState) -> AbstractState:
+    def __add__(self, other: TrotterState) -> TrotterState:
         raise NotImplementedError
 
-    def __sub__(self, other: AbstractState) -> AbstractState:
+    def __sub__(self, other: TrotterState) -> TrotterState:
         return self + (-1) * other
 
     @abstractmethod
-    def __mul__(self, scalar: float) -> AbstractState:
+    def __mul__(self, scalar: float) -> TrotterState:
         raise NotImplementedError
 
     @abstractmethod
-    def dot(self, other: AbstractState) -> float:
+    def dot(self, other: TrotterState) -> float:
         """Compute the dot product of two states.
 
         Args:
-            other (AbstractState): the state to take the dot product with
+            other (TrotterState): the state to take the dot product with
 
         Returns:
            float: the dot product of self and other
@@ -177,7 +184,12 @@ class AbstractState(ABC):
         raise NotImplementedError
 
     def initialize_parallel_job(self, backend: str):
-        """Set up required for parallel compatibility"""
+        """Set up required for parallel compatibility. This method is called in 
+        :func:`~.pennylane.labs.trotter_error.perturbation_error` before the parallel computations
+        are called. Any required setup for parallel jobs goes into this function."""
 
     def start_parallel_job(self, backend: str):
-        """Start perturbation error computation in parallel"""
+        """Start perturbation error computation in parallel. This method is the first operation called
+        in each parallel job dispatched by :func:`~.pennylane.labs.trotter_error.perturbation_error`.
+        Anything necessary to start the parallel job (such as reading from disk memory) goes into this
+        function."""

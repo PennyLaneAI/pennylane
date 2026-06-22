@@ -29,8 +29,8 @@ Abstract Base Classes
 .. autosummary::
     :toctree: api
 
-    ~AbstractState
     ~Fragment
+    ~TrotterState
 
 Fragments
 ~~~~~~~~~
@@ -77,7 +77,7 @@ Realspace Representations
 
 """
 
-from .abstract import AbstractState, Fragment
+from .abstract import TrotterState, Fragment
 from .fragments import (
     NumpyFragment,
     NumpyState,
@@ -102,7 +102,7 @@ from .realspace import (
 )
 
 __all__ = [
-    "AbstractState",
+    "TrotterState",
     "Fragment",
     "NumpyFragment",
     "NumpyState",

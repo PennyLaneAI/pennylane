@@ -20,10 +20,10 @@ from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_array, identity, kron
 
-from pennylane.labs.trotter_error import AbstractState
+from pennylane.labs.trotter_error import TrotterState
 
 
-class HOState(AbstractState):
+class HOState(TrotterState):
     """Represent a wavefunction in the harmonic oscillator basis.
 
     Args:

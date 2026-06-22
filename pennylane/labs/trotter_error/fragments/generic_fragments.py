@@ -18,7 +18,7 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import ArrayLike
 
-from pennylane.labs.trotter_error import AbstractState, Fragment
+from pennylane.labs.trotter_error import TrotterState, Fragment
 
 
 class NumpyFragment(Fragment):
@@ -56,7 +56,7 @@ class NumpyFragment(Fragment):
         return f"NumpyFragment(type={type(self.fragment)})"
 
 
-class NumpyState(AbstractState):
+class NumpyState(TrotterState):
     """State wrapper for Numpy objects."""
 
     def __init__(self, state: ArrayLike):

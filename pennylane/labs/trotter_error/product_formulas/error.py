@@ -22,7 +22,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from pennylane import concurrency
-from pennylane.labs.trotter_error import AbstractState, Fragment
+from pennylane.labs.trotter_error import TrotterState, Fragment
 from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.commutator import (
@@ -133,7 +133,7 @@ class ImportanceConfig:
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
-    state: AbstractState,
+    state: TrotterState,
     order: int | Sequence[int],
     timestep: float = 1.0,
     num_workers: int = 1,
@@ -152,7 +152,7 @@ def perturbation_error(
             the effective Hamiltonian
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
-        states (Sequence[AbstractState]): the states to compute expectation values from
+        states (Sequence[TrotterState]): the states to compute expectation values from
         order (int | Sequence[int]): Computes the perturbation error using commutators of order `order`.
         timestep (float): time step for the Trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value
@@ -201,8 +201,8 @@ def perturbation_error(
     if not all(isinstance(fragment, Fragment) for fragment in fragments.values()):
         raise TypeError("Fragments must be an instance of Fragment.")
 
-    if not isinstance(state, AbstractState):
-        raise TypeError("State must be an instance of AbstractState.")
+    if not isinstance(state, TrotterState):
+        raise TypeError("State must be an instance of TrotterState.")
 
     if not isinstance(order, Sequence):
         order = [order]
@@ -282,7 +282,7 @@ def perturbation_error(
 def _apply_single_term(
     term: tuple[SymbolNode],
     fragments: Sequence[Fragment],
-    state: AbstractState,
+    state: TrotterState,
     coeff: float,
     backend: str = None,
 ) -> float:
@@ -301,7 +301,7 @@ def _apply_single_term(
 def _compute_expectation(
     commutator: CommutatorNode,
     fragments: dict[Hashable, Fragment],
-    state: AbstractState,
+    state: TrotterState,
     coeff: float,
 ) -> tuple[CommutatorNode, float]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""
