@@ -175,8 +175,8 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     We can add ``S`` to the resources of another ``Operator`` by using this function together with
     an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
-    :class:`~.AbstractWires`. These can be created by indexing into the ``Float`` utility and
-    ``Wires`` respectively.
+    :class:`~.AbstractWires`. These can be created by indexing into the :func:`~.typing.Float` and
+    :func:`~.typing.Wire` abstract types respectively.
 
     .. code-block:: python
 
