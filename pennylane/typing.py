@@ -301,7 +301,7 @@ Complex = _AbstractTypeFactory(complex)
 """An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
->>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+>>> isinstance(np.array(0 + 1.2j), qp.typing.Complex)
 True
 >>> qp.typing.Complex[..., 2]
 AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
