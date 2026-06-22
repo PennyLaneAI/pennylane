@@ -154,10 +154,13 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> dict[
 
 
 def _scale_dict(d: dict, k: float) -> dict:
-    for key in d:
-        d[key] *= k
 
-    return d
+    new_dict = {}
+
+    for key in d:
+        new_dict[key] = k * d[key]
+
+    return new_dict
 
 
 def _add_dicts(ds: Sequence[dict]) -> dict:
