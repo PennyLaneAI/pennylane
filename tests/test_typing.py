@@ -250,7 +250,7 @@ class TestAbstractArray:
         a = AbstractArray((), Int)
 
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
-            len(a)
+            _ = len(a)
 
     @pytest.mark.parametrize("bad_index", (5.0, "a", None))
     def test_error_bad_indices(self, bad_index):

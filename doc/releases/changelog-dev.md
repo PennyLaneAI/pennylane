@@ -240,8 +240,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Type aliases `Int`, `Float`, `Complex`, `Bool`, `Wire` have been introduced that allow for an intuitive 
-  sized abstract type notation.  
+* Type aliases `Int`, `Float`, `Complex`, `Bool`, `Wire` have been introduced that allow for intuitive 
+  abstract type notation.  
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
 
   ```python
