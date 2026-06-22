@@ -254,6 +254,44 @@
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
+ 
+  ```pycon
+  >>> isinstance(np.array(False), qp.typing.Bool)
+  True
+
+  ```
+
+  ```pycon
+  >>> qp.typing.Bool[4]
+  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  
+  ```
+
+  ```pycon
+  >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+  True
+  
+  ```
+  
+  ```pycon
+  >>> qp.typing.Complex[..., 2]
+  AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+  
+  ```
+
+  ```pycon
+  >>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
+  True
+  
+  ```
+  
+  ```pycon
+  >>> qp.typing.Wire[2]
+  AbstractWires(num_wires=2)
+
+  ```
+
+  etc.
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
