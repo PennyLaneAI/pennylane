@@ -193,17 +193,13 @@ class TestAdder:
             qp.Adder(k, x_wires, mod, work_wires)
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
 
         k = 2
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        adder_decomposition = (
-            qp.Adder(k, x_wires, mod, work_wires)
-            .compute_decomposition(k, x_wires, mod, work_wires)[0]
-            .decomposition()
-        )
+        adder_decomposition = qp.Adder(k, x_wires, mod, work_wires).decomposition()[0].decomposition()
 
         op_list = []
         op_list.append(qp.QFT(work_wires[:1] + x_wires))

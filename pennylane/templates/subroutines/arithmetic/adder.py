@@ -173,6 +173,18 @@ class Adder(Operation):
     The result, :math:`[[1 1 0 1]]`, is the binary representation of
     :math:`8 + 5  \; \text{modulo} \; 15 = 13`.
 
+    The arithmetic decomposition can be selected explicitly:
+
+    .. code-block:: pycon
+
+        >>> op = qp.Adder(2, x_wires=[0, 1, 2], mod=7, work_wires=[3, 4], method="arithmetic")
+        >>> len(op.decomposition()), [gate.name for gate in op.decomposition()[:5]]
+        (31, ['MultiControlledX', 'MultiControlledX', 'PauliX', 'PauliX', 'MultiControlledX'])
+
+    For ``method="arithmetic"``, the decomposition uses reversible carry-ripple add/subtract
+    blocks and a flag qubit for conditional correction, implementing
+    :math:`x \mapsto (x + k) \bmod mod` without QFT rotations.
+
     .. details::
         :title: Usage Details
 
@@ -271,63 +283,9 @@ class Adder(Operation):
             self.hyperparameters["method"],
         )
 
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wires: WiresLike, method="qft"
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            k (int): the number that needs to be added
-            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
-                for encoding `x` in the computational basis. The number of wires also limits the
-                maximum value for `mod`.
-            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-                work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-                should be provided.
-            method (str): the decomposition strategy, either ``"qft"`` (default) or the QFT-free
-                ``"arithmetic"`` carry-ripple adder.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> qp.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
-        [(Adjoint(QFT(wires=[0, 1, 2]))) @ PhaseAdder(wires=[0, 1, 2]) @ QFT(wires=[0, 1, 2])]
-        >>> ops = qp.Adder.compute_decomposition(
-        ...     k=2, x_wires=[0, 1, 2], mod=7, work_wires=[3, 4], method="arithmetic"
-        ... )
-        >>> len(ops), [op.name for op in ops[:5]]
-        (31, ['MultiControlledX', 'MultiControlledX', 'PauliX', 'PauliX', 'MultiControlledX'])
-
-        For ``method="arithmetic"``, the decomposition uses reversible carry-ripple add/subtract
-        blocks and a flag qubit for conditional correction, implementing
-        :math:`x \mapsto (x + k) \bmod mod` without QFT rotations.
-        """
-        if method == "arithmetic":
-            return [
-                _spec_to_op(spec)
-                for spec in _arithmetic_adder_specs(k, list(x_wires), mod, list(work_wires))
-            ]
-
-        if mod == 2 ** len(x_wires):
-            qft_wires = x_wires
-            work_wire = ()
-        else:
-            qft_wires = work_wires[:1] + x_wires
-            work_wire = work_wires[1:]
-
-        op_list = [change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))]
-
-        return op_list
 
 
 def _adder_decomposition_resources(num_x_wires, mod, **__) -> dict:
