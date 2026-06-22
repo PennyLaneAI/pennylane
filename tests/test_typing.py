@@ -247,7 +247,7 @@ class TestAbstractArray:
 
     def test_error_len_on_scalar(self):
         """Test that requesting the len of a scalar results in an error."""
-        a = AbstractArray((), Int)
+        a = AbstractArray((), int)
 
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
             _ = len(a)
