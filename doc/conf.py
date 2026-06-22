@@ -17,8 +17,6 @@ import sys
 from docutils import nodes
 from datetime import datetime
 from sphinx.util import logging, inspect
-from sphinx.util import logging
-import logging as python_logging
 
 logger = logging.getLogger(__name__)
 
