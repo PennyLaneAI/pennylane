@@ -264,6 +264,8 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 True
 >>> qp.typing.Int[4,2]
 AbstractArray(shape=(4, 2), dtype=dtype('int64'))
+>>> qp.typing.Int[..., 10]
+AbstractArray(shape=(Ellipsis, 10), dtype=dtype('int64'))
 
 """
 
