@@ -257,7 +257,7 @@ class AbstractArray:
         if dtype.__class__.__module__.split(".")[0] == "torch":
             import torch  # pylint: disable=import-outside-toplevel
 
-            dummy = torch.tensor((), dtype=self.dtype)
+            dummy = torch.tensor((), dtype=dtype)
             dtype = dummy.numpy().dtype
 
         return np.dtype(dtype)

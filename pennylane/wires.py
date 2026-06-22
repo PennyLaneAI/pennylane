@@ -760,9 +760,10 @@ class AbstractWires:
             raise TypeError(
                 f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
             )
-        if self.num_wires < -1 or self.num_wires == 0:
+        if self.num_wires < -1:
             raise ValueError(
-                f"'num_wires' must be a positive integer or -1, but got {self.num_wires}."
+                f"'num_wires' must be a non-negative integer, but got {self.num_wires}. "
+                "For a dynamic number of wires, use -1."
             )
 
     def __eq__(self, other) -> bool:
