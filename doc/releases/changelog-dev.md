@@ -583,7 +583,7 @@
 
   ```pycon
   >>> # You can always discard the last return value if the global phase is not needed.
-  >>> phi, theta, omega, _ = zyz_rotation_angles(U)
+  >>> phi, theta, omega, _ = qp.math.decomposition.zyz_rotation_angles(U)
   ```
 
 <h3>Deprecations 👋</h3>
