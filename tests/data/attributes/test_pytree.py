@@ -17,7 +17,6 @@ Tests for the ``DatasetPyTree`` attribute type.
 
 from dataclasses import dataclass
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -130,13 +129,13 @@ class TestDatasetPyTree:
         coefficient alongside a matrix, as in a ``Hamiltonian`` with a ``Hermitian``
         term), so they must fall back to being stored as a list rather than an array.
         """
-        matrix = np.array([[1.0, 2.0], [3.0, 4.0]])
+        matrix = qp.math.array([[1.0, 2.0], [3.0, 4.0]])
         value = CustomNode([1.0, matrix], {"meta": "data"})
 
         result = DatasetPyTree(value).get_value()
 
         assert result.data[0] == 1.0
-        assert np.array_equal(result.data[1], matrix)
+        assert qp.math.allequal(result.data[1], matrix)
 
     def test_bytes_leaves_preserved(self):
         """Test that ``bytes`` leaves round-trip as ``bytes`` rather than being
@@ -152,8 +151,7 @@ class TestDatasetPyTree:
     def test_non_numpy_leaves_do_not_raise(self):
         """Test that the array/list decision does not call ``np.asarray`` on non-numpy
         leaves (e.g. a ``torch`` tensor that requires grad), which would raise."""
-        torch = pytest.importorskip("torch")
-        leaf = torch.tensor([1.0, 2.0], requires_grad=True)
+        leaf = qp.math.asarray([1.0, 2.0], like="torch", requires_grad=True)
 
         assert _storable_as_array([leaf]) is False
 
