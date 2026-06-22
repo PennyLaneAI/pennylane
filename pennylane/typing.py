@@ -309,7 +309,7 @@ class AbstractWires:
     of wires, useful for resource calculations.
 
     Args:
-        num_wires (int): The number of wires
+        num_wires (int | EllipsisType): The number of wires
     """
 
     num_wires: int | types.EllipsisType
