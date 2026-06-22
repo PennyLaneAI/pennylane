@@ -606,7 +606,7 @@ class Subroutine:
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     and :class:`~.AbstractWires` classes. :class:`~.AbstractWires` can be created by indexing into
     :func:`~.typing.Wire` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
-     :func:`~.typing.Float` abstract type.
+    :func:`~.typing.Float` abstract type.
 
     >>> from pennylane.typing import Float, Wire
     >>> abstract_params = Float[10]
