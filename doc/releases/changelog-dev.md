@@ -609,6 +609,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The CI workflow `Documentation Tests` has been renamed to `Test documentation code examples`.
+  [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
+
 * The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
   [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
 
