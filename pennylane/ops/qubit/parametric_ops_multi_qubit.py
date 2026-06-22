@@ -2123,6 +2123,32 @@ add_decomps("Adjoint(PSWAP)", qjit_compatible_adjoint_rotation)
 class CPhaseShift00(Operation):
     r"""
     A qubit controlled phase shift.
+
+    .. math:: CR_{00}(\phi) = \begin{bmatrix}
+                e^{i\phi} & 0 & 0 & 0 \\
+                0 & 1 & 0 & 0 \\
+                0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit** and controls
+        on the zero state :math:`|0\rangle`.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe:
+
+        .. math::
+            \frac{d}{d \phi} CR_{00}(\phi)
+            = \frac{1}{2} \left[ CR_{00}(\phi + \pi / 2)
+                - CR_{00}(\phi - \pi / 2) \right]
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wire the operation acts on
     """
 
     num_wires = 2

@@ -80,10 +80,10 @@ class FABLE(Operation):
     """
 
     num_params = 1
-    #"""int: Number of trainable parameters that the operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-    # """Gradient computation method."""
+    """Gradient computation method."""
 
     resource_keys = {"wires", "thetas", "control_wires", "tol"}
 
