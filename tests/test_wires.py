@@ -412,7 +412,7 @@ class TestWires:
             with pytest.raises(
                 WireError,
                 match=re.escape(
-                    f"Wires[{i}] is not supported syntax. Are you looking for Wire[{i}]?"
+                    f"'pennylane.wires.Wires[{i}]' is not supported syntax. Do you mean: 'pennylane.typing.Wire[{i}]'?"
                 ),
             ):
                 _ = w[i]
