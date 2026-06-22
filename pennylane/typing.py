@@ -287,6 +287,8 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 True
 >>> qp.typing.Bool[4]
 AbstractArray(shape=(4,), dtype=dtype('bool'))
+>>> qp.typing.Bool[..., 10]
+AbstractArray(shape=(Ellipsis, 10), dtype=dtype('bool'))
 
 """
 
