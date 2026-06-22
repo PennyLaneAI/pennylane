@@ -747,8 +747,7 @@ def _count_tempAND_in_measurement_qrom(k):
         return 0
     if k / 2 ** math.ceil_log2(k) > 3 / 4:
         return k - 3
-    else:
-        return k - 2
+    return k - 2
 
 
 def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
