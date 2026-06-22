@@ -742,7 +742,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):  # pylint: disabl
     _measurement_uncompute(sec_wires[2], [sec_wires[0], sec_wires[1]], targets, diff_q3)
 
 
-def _measurement_qrom_count_TemporaryAnd(k):
+def _count_tempAND_in_measurement_qrom(k):
     """Count TemporaryAND gates for the measurement-based decomposition."""
 
     if k < 3:
@@ -778,7 +778,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
             resource_rep(CNOT): num_target_wires,
         }
 
-    num_ands = _measurement_qrom_count_TemporaryAnd(L)
+    num_ands = _count_tempAND_in_measurement_qrom(L)
     num_measurements = 2 * num_ands  # X-type + Z per uncomputation
     num_cz = num_ands  # CZ correction per uncomputation
 

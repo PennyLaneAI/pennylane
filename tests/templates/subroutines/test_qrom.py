@@ -16,7 +16,6 @@ Tests for the QROM template.
 """
 
 import math
-import random
 
 import numpy
 import pytest
@@ -28,13 +27,13 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.qrom import (
     _calculate_n_select_work_wires,
-    _measurement_qrom_count_TemporaryAnd,
+    _count_tempAND_in_measurement_qrom,
     _qrom_decomposition,
     _qrom_measurement_decomposition,
 )
 from pennylane.templates.subroutines.select import _select_decomp_unary
 
-gate_set = {
+clifford_t_measure = {
     qp.H,
     qp.T,
     qp.S,
@@ -585,7 +584,7 @@ class TestMeasurementQROM:
     )
     def test_count_TemporaryAnd(self, L, expected_ands):
         """Test that TemporaryAND count matches expected values."""
-        assert _measurement_qrom_count_TemporaryAnd(L) == expected_ands
+        assert _count_tempAND_in_measurement_qrom(L) == expected_ands
 
     @pytest.mark.external
     @pytest.mark.parametrize(
@@ -611,7 +610,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=gate_set)
+        @qp.decompose(gate_set=clifford_t_measure)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -650,7 +649,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=gate_set)
+        @qp.decompose(gate_set=clifford_t_measure)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
