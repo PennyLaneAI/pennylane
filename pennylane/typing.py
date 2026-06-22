@@ -276,7 +276,7 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 
 >>> isinstance(np.array(2.0), qp.typing.Float)
 True
->>> qp.typing.Int[4,2]
+>>> qp.typing.Float[4, 2]
 AbstractArray(shape=(4, 2), dtype=dtype('float64'))
 >>> qp.typing.Float[..., 10]
 AbstractArray(shape=(Ellipsis, 10), dtype=dtype('float64'))
