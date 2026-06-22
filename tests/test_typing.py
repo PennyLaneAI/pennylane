@@ -19,9 +19,9 @@ import pytest
 import pennylane.numpy as pnp
 from pennylane.typing import (
     AbstractArray,
-    AbstractTypeFactory,
+    _AbstractTypeFactory,
     AbstractWires,
-    AbstractWireTypeFactory,
+    _AbstractWireTypeFactory,
     Bool,
     Complex,
     Float,
@@ -193,7 +193,7 @@ class TestAbstractArray:
     def test_wire_type_factory(self):
         """Test that we can index into a wire type factory to produce a new hint with a size."""
 
-        a = AbstractWireTypeFactory()
+        a = _AbstractWireTypeFactory()
 
         b = a[2]
         assert isinstance(b, AbstractWires)
@@ -210,7 +210,7 @@ class TestAbstractArray:
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
 
-        a = AbstractTypeFactory(int)
+        a = _AbstractTypeFactory(int)
 
         b = a[2, 3]
         assert isinstance(b, AbstractArray)
@@ -256,13 +256,13 @@ class TestAbstractArray:
     def test_error_bad_indices(self, bad_index):
         """Test that an error is raised on invalid indices."""
 
-        a = AbstractTypeFactory(int)
-        b = AbstractWireTypeFactory()
+        a = _AbstractTypeFactory(int)
+        b = _AbstractWireTypeFactory()
 
-        with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
+        with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
             _ = a[bad_index]
 
-        with pytest.raises(TypeError, match="can only be subscripted with integers and Ellipsis."):
+        with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
             _ = b[bad_index]
 
     @pytest.mark.parametrize(

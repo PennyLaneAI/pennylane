@@ -223,7 +223,7 @@ class AbstractArray:
         return hash(("AbstractArray", self.shape, self.dtype))
 
 
-class AbstractTypeFactory(AbstractArray):
+class _AbstractTypeFactory(AbstractArray):
     """
     An abstraction that enables the generation of AbstractArrays via a highly user-friendly type notation,
     using an override of the __getitem__ method.
@@ -251,12 +251,12 @@ class AbstractTypeFactory(AbstractArray):
             isinstance(n, (int, types.EllipsisType)) for n in shape
         ):
             raise TypeError(
-                "AbstractTypeFactories can only be subscripted with integers and Ellipsis."
+                "AbstractTypeFactories can only be subscripted with integers and ellipsis."
             )
         return AbstractArray(shape, self.dtype)
 
 
-Int = AbstractTypeFactory(int)
+Int = _AbstractTypeFactory(int)
 """An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -268,7 +268,7 @@ AbstractArray(shape=(4, 2), dtype=dtype('int64'))
 """
 
 
-Float = AbstractTypeFactory(float)
+Float = _AbstractTypeFactory(float)
 """An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -279,7 +279,7 @@ AbstractArray(shape=(4, 2), dtype=dtype('float64'))
 
 """
 
-Bool = AbstractTypeFactory(bool)
+Bool = _AbstractTypeFactory(bool)
 """An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -291,7 +291,7 @@ AbstractArray(shape=(4,), dtype=dtype('bool'))
 """
 
 
-Complex = AbstractTypeFactory(complex)
+Complex = _AbstractTypeFactory(complex)
 """An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
 
@@ -345,7 +345,7 @@ class AbstractWires:
         return len(instance) == self.num_wires
 
 
-class AbstractWireTypeFactory(AbstractWires):
+class _AbstractWireTypeFactory(AbstractWires):
     """
     An abstraction that enables the generation of AbstractWires via a highly user-friendly type notation,
     using an override of the __getitem__ method.
@@ -369,12 +369,12 @@ class AbstractWireTypeFactory(AbstractWires):
 
         if not (isinstance(shape, int) or shape == ...):
             raise TypeError(
-                "AbstractWireTypeFactory's can only be subscripted with integers and ellipsis."
+                "_AbstractWireTypeFactory's can only be subscripted with integers and ellipsis."
             )
         return AbstractWires(shape)
 
 
-Wire = AbstractWireTypeFactory()
+Wire = _AbstractWireTypeFactory()
 """An :class:`~.AbstractWires`` subclass. On it's own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensions.
 
