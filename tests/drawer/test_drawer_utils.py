@@ -259,16 +259,18 @@ class TestUnwrapControls:
 class TestCwireConnections:
     """Tests for the cwire_connections helper method."""
 
+    wire_map = {i: i for i in range(4)}
+
     def test_null_circuit(self):
         """Test null behavior with an empty circuit."""
-        bit_map, layers, wires = cwire_connections([[]], {})
+        bit_map, layers, wires = cwire_connections([[]], {}, self.wire_map)
         assert layers == {}
         assert wires == {}
         assert bit_map == {}
 
     def test_single_measure(self):
         """Test a single meassurment that does not have a conditional."""
-        bit_map, layers, wires = cwire_connections([qp.measure(0).measurements], {})
+        bit_map, layers, wires = cwire_connections([qp.measure(0).measurements], {}, self.wire_map)
         assert layers == {}
         assert wires == {}
         assert bit_map == {}
@@ -280,7 +282,7 @@ class TestCwireConnections:
         layers = [m.measurements, [cond]]
         bit_map = {m.measurements[0]: 0}
 
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1]]}
         assert wires == {0: [[0, 0]]}
         assert new_bit_map == bit_map
@@ -296,7 +298,7 @@ class TestCwireConnections:
         bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
         layers = [m0.measurements, m1.measurements, [cond0], m2_nonused.measurements, [cond1]]
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 2]], 1: [[1, 2, 4]]}
         assert wires == {0: [[0, 1]], 1: [[1, 1, 2]]}
         assert new_bit_map == bit_map
@@ -308,7 +310,7 @@ class TestCwireConnections:
         cond0 = qp.ops.Conditional(m0, qp.S(0))
         layers = [m0.measurements, [cond0], [qp.expval(qp.PauliX(0))]]
         bit_map = {m0.measurements[0]: 0}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1]]}
         assert wires == {0: [[0, 0]]}
         assert new_bit_map == bit_map
@@ -320,7 +322,7 @@ class TestCwireConnections:
         m0 = qp.measure(0)
         layers = [m0.measurements, [qp.expval(m0)]]
         bit_map = {m0.measurements[0]: 0}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1]]}
         assert wires == {0: [[0]]}
         assert new_bit_map == bit_map
@@ -333,7 +335,7 @@ class TestCwireConnections:
         cond0 = qp.ops.Conditional(m0, qp.X(0))
         layers = [m0.measurements, [cond0], [qp.expval(m0)]]
         bit_map = {m0.measurements[0]: 0}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1, 2]]}
         assert wires == {0: [[1, 0]]}
         assert new_bit_map == bit_map
@@ -354,7 +356,7 @@ class TestCwireConnections:
             [qp.expval(m0), qp.expval(m1), qp.expval(m2)],
         ]
         bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1, m2.measurements[0]: 2}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[1, 3]], 2: [[2, 3]]}
         assert wires == {0: [[0]], 1: [[1]], 2: [[0]]}
         assert new_bit_map == bit_map
@@ -367,7 +369,7 @@ class TestCwireConnections:
             [qp.expval(m0), qp.expval(m1)],
         ]
         bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[1, 3]]}
         assert wires == {0: [[0]], 1: [[1]]}
         assert new_bit_map == bit_map
@@ -380,7 +382,7 @@ class TestCwireConnections:
             [qp.expval(m0), qp.expval(m2)],
         ]
         bit_map = {m0.measurements[0]: 0, m2.measurements[0]: 1}
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 3]], 1: [[2, 3]]}
         assert wires == {0: [[0]], 1: [[0]]}
         assert new_bit_map == bit_map
@@ -397,21 +399,21 @@ class TestCwireConnections:
 
         # final expval prevents wire reusing
         layers = [m0.measurements, [cond0], m1.measurements, [qp.X(0), cond1], [qp.expval(m0)]]
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1, 4]], 1: [[2, 3]]}
         assert wires == {0: [[0, 1]], 1: [[1, 1]]}
         assert new_bit_map == bit_map
 
         # Nested measuring + cond already prevents wire reusing
         layers = [m0.measurements, m1.measurements, [cond0], [qp.X(0), cond1], [qp.expval(m1)]]
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 2]], 1: [[1, 3, 4]]}
         assert wires == {0: [[0, 1]], 1: [[1, 1]]}
         assert new_bit_map == bit_map
 
         # Wire can be reused
         layers = [m0.measurements, [cond0], m1.measurements, [qp.X(0), cond1], [qp.expval(m1)]]
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1], [2, 3, 4]]}
         assert wires == {0: [[0, 1], [1, 1]]}
         assert new_bit_map == {key: 0 for key in bit_map}
@@ -424,7 +426,7 @@ class TestCwireConnections:
             [qp.X(0), cond1],
             [qp.expval(m1), qp.expval(m0)],
         ]
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1, 4]], 1: [[2, 3, 4]]}
         assert wires == {0: [[0, 1]], 1: [[1, 1]]}
         assert new_bit_map == bit_map
@@ -437,7 +439,7 @@ class TestCwireConnections:
         bit_map = {_m.measurements[0]: i for i, _m in enumerate(m)}
         layers = sum(([_m.measurements, [_c]] for _m, _c in zip(m, conds)), start=[])
 
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
 
         assert clayers == {0: [[2 * i, 2 * i + 1] for i in range(rep)]}
         assert wires == {0: [[0, 2]] * rep}
@@ -460,7 +462,7 @@ class TestCwireConnections:
         layers = [[f_op], [conds[0]], [conds[1]], [conds[2]]]
         bit_map = {f_op.output[1].measurements[0]: 0, f_op.output[2].measurements[0]: 1}
 
-        new_bit_map, clayers, wires = cwire_connections(layers, bit_map)
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
 
         assert bit_map == new_bit_map
         assert clayers == {0: [[0, 1, 3]], 1: [[0, 2]]}

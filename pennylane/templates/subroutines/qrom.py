@@ -45,7 +45,7 @@ from .select import Select
 
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2):
+    for wire1, wire2 in zip(wires1, wires2, strict=True):
         qp_ops.SWAP(wires=[wire1, wire2])
 
 
@@ -90,12 +90,12 @@ def _select_ops(
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_swap_wires = control_wires[n_control_select_wires:]
+    num_targets = len(target_wires)
     for i in range(len(control_swap_wires) - 1, -1, -1):
         for j in range(2**i - 1, -1, -1):
-            qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(
-                swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
-                swap_wires[(j + 2**i) * len(target_wires) : (j + 2 ** (i + 1)) * len(target_wires)],
-            )
+            _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
+            _wires1 = swap_wires[(j + 2**i) * num_targets : (j + 2**i + 1) * num_targets]
+            qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
 
 class QROM(Operation):
@@ -349,16 +349,14 @@ class QROM(Operation):
             # Swap block
             control_swap_wires = control_wires[n_control_select_wires:]
             swap_ops = []
+            num_targets = len(target_wires)
             for ind in range(len(control_swap_wires)):
                 for j in range(2**ind):
-                    new_op = qp_ops.prod(_multi_swap)(
-                        swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
-                        swap_wires[
-                            (j + 2**ind)
-                            * len(target_wires) : (j + 2 ** (ind + 1))
-                            * len(target_wires)
-                        ],
-                    )
+                    _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
+                    _wires1 = swap_wires[
+                        (j + 2**ind) * num_targets : (j + 2**ind + 1) * num_targets
+                    ]
+                    new_op = qp_ops.prod(_multi_swap)(_wires0, _wires1)
                     swap_ops.insert(0, qp_ops.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
             if not clean or depth == 1:

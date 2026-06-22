@@ -183,6 +183,73 @@ def _process_data(op):
     return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
+# pylint: disable=abstract-method
+class _GiveOperatorMeta(capture.ABCCaptureMeta):
+    """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
+
+    def __new__(mcs, name, bases, attrs):
+        new_bases = tuple(Operator if base.__name__ == "Operator1" else base for base in bases)
+        return super().__new__(mcs, name, new_bases, attrs)
+
+
+# pylint: disable=too-few-public-methods
+class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
+    """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
+
+    While inheriting from :class:`~.Operator` provides the old, version 1 interface, using ``Operator``
+    with ``isinstance`` and ``issubclass`` checks returns whether an object is *either* ``Operator``
+    *or* the new :class:`~.Operator2`. This has been done to speed up integration, as the exposed interfaces
+    are mostly the same. This ``Operator1`` class can be used to check if an instance is *specifically*
+    the old version of the interface.
+
+    Suppose we have an old operator and a new operator:
+
+    .. code-block:: python
+
+        class OldOp(qp.core.Operator):
+            pass
+
+        class NewOp(qp.core.Operator2):
+
+            def __init__(self, wires):
+                super().__init__(wires)
+
+        old_op = OldOp(wires=0)
+        new_op = NewOp(wires=0)
+
+    We can see that both versions are "instances" of ``Operator``:
+
+    >>> isinstance(old_op, qp.core.Operator)
+    True
+    >>> isinstance(new_op, qp.core.Operator)
+    True
+
+    but only ``old_op`` is an instance of ``Operator1``.
+
+    >>> isinstance(old_op, qp.core.Operator1)
+    True
+    >>> isinstance(new_op, qp.core.Operator1)
+    False
+
+    When inheriting from this class, it is switched out for :class:`~.Operator`. The following
+    is equivalent to inheriting from ``qp.core.Operator``.
+
+    .. code-block:: python
+
+        class AnotherOldOp(qp.core.Operator1):
+            pass
+    """
+
+    def __new__(cls, *args, **kwargs):
+        raise ValueError(
+            "Operator1 cannot be instantiated on its own. Please inherit from it instead."
+        )
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return getattr(subclass, "_operator_version", None) == 1
+
+
 class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -467,6 +534,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    _operator_version = 1
+
     _primitive: Optional["jax.extend.core.Primitive"] = None
     """
     Optional[jax.extend.core.Primitive]
@@ -486,6 +555,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         :meth:`~.Operator.resource_params`
 
     """
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Operator:
+            return getattr(subclass, "_operator_version", None) in {1, 2}
+        return NotImplemented
 
     def __init_subclass__(cls, **_):
         # turn has_decomposition into a class property if possible
@@ -1582,6 +1657,12 @@ class Operation(Operator):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
     """
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is Operation and getattr(subclass, "_operator_version", None) == 2:
+            return True
+        return NotImplemented
 
     @property
     def grad_method(self) -> Literal["A", "F", None]:

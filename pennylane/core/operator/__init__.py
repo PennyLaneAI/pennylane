@@ -116,6 +116,7 @@ Operator Types
     ~CVOperation
     ~Channel
     ~StatePrepBase
+    ~Operator1
 
 .. currentmodule:: pennylane.core.operator
 
@@ -181,9 +182,21 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 
 """
 
-from .base import Operator, Operation
+from .base import Operator, Operation, Operator1
+from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .cv import CV, CVObservable, CVOperation
 from .state_prep import StatePrepBase
 
-__all__ = ["Operator", "Operation", "Channel", "CV", "CVObservable", "CVOperation", "StatePrepBase"]
+__all__ = [
+    "Operator",
+    "Operator2",
+    "Operation",
+    "Channel",
+    "CV",
+    "CVObservable",
+    "CVOperation",
+    "StatePrepBase",
+    "Operator1",
+    "StatePrepBase2",
+]

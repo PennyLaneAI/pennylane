@@ -17,16 +17,22 @@ of a qubit-based quantum tape.
 """
 
 import warnings
-from functools import partial
+from functools import partial, singledispatch
 
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import gate_sets
-from pennylane.exceptions import OperatorPropertyUndefined, ParameterFrequenciesUndefinedError
+from pennylane.exceptions import (
+    GeneratorUndefinedError,
+    OperatorPropertyUndefined,
+    ParameterFrequenciesUndefinedError,
+)
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import Prod, prod
+from pennylane.ops.functions import eigvals, generator
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
@@ -35,6 +41,7 @@ from pennylane.typing import PostprocessingFn
 from .finite_difference import finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
+    eigvals_to_frequencies,
     frequencies_to_period,
     generate_shift_rule,
     generate_shifted_tapes,
@@ -91,7 +98,7 @@ def _process_op_recipe(op, p_idx, order):
 
     # Try to obtain the period of the operator frequencies for iteration of custom recipe
     try:
-        period = frequencies_to_period(op.parameter_frequencies[p_idx])
+        period = frequencies_to_period(parameter_frequencies(op)[p_idx])
     except ParameterFrequenciesUndefinedError:
         period = None
 
@@ -280,7 +287,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
-        frequencies = op.parameter_frequencies[p_idx]
+        frequencies = parameter_frequencies(op)[p_idx]
     except ParameterFrequenciesUndefinedError as e:
         raise OperatorPropertyUndefined(
             f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
@@ -1228,3 +1235,108 @@ def param_shift(
         return gradient_tapes, processing_fn
 
     return gradient_tapes, fn
+
+
+@singledispatch
+def parameter_frequencies(op: Operation | Operator2):
+    r"""
+    Returns the frequencies for each operator parameter with respect
+    to an expectation value of the form
+    :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+
+    These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+    on the value of the expectation value as the parameters are modified.
+    For more details, please see the :mod:`.pennylane.fourier` module.
+
+    Returns:
+        list[tuple[int or float]]: Tuple of frequencies for each parameter.
+        Note that only non-negative frequency values are returned.
+
+    **Example**
+
+    >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+    >>> parameter_frequencies(op)
+    [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
+
+    For operators that define a generator, the parameter frequencies are directly
+    related to the eigenvalues of the generator:
+
+    >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
+    >>> parameter_frequencies(op)
+    [(1,)]
+    >>> gen = qp.generator(op, format="observable")
+    >>> gen_eigvals = qp.eigvals(gen)
+    >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+    (np.float64(1.0),)
+
+    For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+
+    **Registering Handlers**
+
+    Parameter frequencies are defined on an ``Operation`` or calculated in a dispatch handler
+    for an ``Operator2``. To register parameter frequencies for a new ``Operator2`` subclass,
+    please register a new handler like:
+
+    .. code-block:: python
+
+        from pennylane.core.operator import Operator2
+        from pennylane.wires import WiresLike
+        from pennylane.gradients import parameter_frequencies
+
+        class MultiArgOpNoGenParamFreqs(Operator2):
+            num_params = 2
+            num_wires = 1
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi: float, theta: float, wires: WiresLike):
+                super().__init__(phi, theta, wires=wires)
+
+        @parameter_frequencies.register
+        def multi_arg_op_no_gen_param_freqs(op: MultiArgOpNoGenParamFreqs):
+            return [(0.5, 1.0), (0.8, 0.2)]
+
+    """
+    raise ParameterFrequenciesUndefinedError(
+        f"Operation {op.name} does not have parameter frequencies defined."
+    )
+
+
+@parameter_frequencies.register
+def _handle_operation(op: Operation):
+    """Returns the parameter frequencies for a given Operation."""
+    return op.parameter_frequencies
+
+
+@parameter_frequencies.register
+def _handle_operator2(op: Operator2):
+    """Calculates the parameter frequencies for a given Operator2 if they are not defined explicitly."""
+    if len(op.dynamic_argnames) == 1:
+        # if the operator has a single parameter, we can query the
+        # generator, and if defined, use its eigenvalues.
+        try:
+            gen = generator(op, format="observable")
+        except GeneratorUndefinedError as e:
+            raise ParameterFrequenciesUndefinedError(
+                f"Operation {op.name} does not have parameter frequencies defined."
+            ) from e
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore", message=r".+ eigenvalues will be computed numerically\."
+            )
+            eigs = eigvals(gen, k=2 ** len(op.wires))
+
+        eigs = tuple(np.round(eigs, 8))
+        return [eigvals_to_frequencies(eigs)]
+
+    raise ParameterFrequenciesUndefinedError(
+        f"Operation {op.name} does not have parameter frequencies defined, "
+        "and parameter frequencies can not be computed as no generator is defined."
+    )
+
+
+@parameter_frequencies.register
+def _handle_adjoint2(op: Adjoint2):
+    """Calculates the parameter frequencies for an Adjoint2."""
+    return parameter_frequencies(op.base)
