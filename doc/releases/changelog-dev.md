@@ -269,6 +269,7 @@
   True
   >>> qp.typing.Wire[2]
   AbstractWires(num_wires=2)
+  
   ```
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
