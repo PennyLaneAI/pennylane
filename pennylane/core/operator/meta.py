@@ -102,15 +102,17 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             raise ValueError(f"Unknown kind: '{kind}'")
 
 
-class OperatorMeta(type):
-    """
-    A metatype that overrides class construction for operators for program capture
+class OperatorMeta(ABCMeta):
+    """A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
     TODO: [sc-120453] Fill docstring
     """
 
     @property
     def __signature__(cls):
+        # __signature__ must be overridden because using custom metaclasses causes
+        # signature(cls) to return ``self`` as the first argument, which is inconsistent
+        # with the behaviour of regular classes.
         sig = signature(cls.__init__)
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
@@ -157,5 +159,5 @@ class OperatorMeta(type):
 
 
 # pylint: disable=abstract-method
-class ABCOperatorMeta(OperatorMeta, ABCMeta):
-    """A combination of the operator metaclass and ABCMeta."""
+# class ABCOperatorMeta(OperatorMeta, ABCMeta):
+#     """A combination of the operator metaclass and ABCMeta."""

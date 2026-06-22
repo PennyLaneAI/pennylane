@@ -671,6 +671,20 @@ class TestOperator2AssertValid:
         with pytest.raises((AttributeError, PicklingError)):
             assert_valid(LocalOp(np.pi, wires=0))
 
+    def test_check_bind_new_parameters(self):
+        """``_check_bind_new_parameters`` fails if ``bind_new_parameters`` cannot update the data."""
+
+        class IgnoresParams(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires",)
+
+            def __init__(self, phi, wires):  # pylint: disable=unused-argument
+                super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
+
+        op = IgnoresParams(0.5, wires=0)
+        with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
+            assert_valid(op, skip_pickle=True, skip_differentiation=True)
+
     def test_hybrid_ops_arg(self):
         """``assert_valid`` fails if a hybrid op arg is invalid."""
 

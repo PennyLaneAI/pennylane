@@ -16,9 +16,8 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
-import abc
-from abc import ABC
-from collections.abc import Hashable, Iterable, Sequence
+from abc import abstractmethod
+from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from importlib.util import find_spec
@@ -31,7 +30,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled
+from pennylane.capture import enabled, pause
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,12 +43,12 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager, apply
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import AbstractArray, FlatPytree, TensorLike
 from pennylane.wires import AbstractWires, Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, _get_abstract_operator
-from .meta import ABCOperatorMeta
+from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
+from .meta import OperatorMeta
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -57,7 +56,7 @@ if TYPE_CHECKING:
 has_jax = find_spec("jax") is not None
 
 
-class Operator2(ABC, metaclass=ABCOperatorMeta):
+class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators.
     TODO: [sc-120453] Fill docstring
     """
@@ -626,7 +625,9 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             tensor_like: matrix representation
         """
         canonical_matrix = self.compute_matrix(**self.arguments)
+        return self._expand_canonical_matrix(canonical_matrix, wire_order)
 
+    def _expand_canonical_matrix(self, canonical_matrix, wire_order) -> TensorLike:
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
@@ -689,10 +690,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format="csr")
-        return math.expand_matrix(
-            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
-        ).asformat(format)
+        canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
+        return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
@@ -719,14 +718,17 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
     @classproperty
     @classmethod
     def has_decomposition(cls) -> bool:
-        """Bool: Whether or not the Operator returns a defined decomposition."""
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # if compute_decomposition or decomposition overwritten and property
-        # not overwritten, set as class property during __init_subclass__
-        # return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
+        """Bool: Whether or not the Operator returns a defined decomposition.
+
+        This is a class-level check (no per-instance dispatch): ``True`` if
+        ``compute_decomposition`` or ``decomposition`` is overridden, or if graph decomposition
+        rules are registered for the operator type. Per-instance rule applicability is resolved
+        in :meth:`~.Operator2.decomposition`, not here.
+        """
         return (
             cls.compute_decomposition != Operator2.compute_decomposition
             or cls.decomposition != Operator2.decomposition
+            or qp.decomposition.has_decomp(cls)
         )
 
     def decomposition(self) -> list["Operator2"]:
@@ -744,15 +746,14 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         if type(self).compute_decomposition != Operator2.compute_decomposition:
             return self.compute_decomposition(**self.arguments)
 
-        # TODO: [sc-120519] Update when integrating with graph decompositions
-        # for decomp in qp.list_decomps(self):
-        #     if decomp.is_applicable(**self.resource_params):
-        #         with AnnotatedQueue() as q:
-        #             decomp(**self.arguments)
-        #         if QueuingManager.recording():
-        #             # no need for copies if we just use queue method
-        #             _ = [op.queue() for op in q.queue]
-        #         return q.queue
+        for decomp in qp.list_decomps(self):
+            if decomp.is_applicable():
+                with AnnotatedQueue() as q:
+                    decomp(**self.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
 
         raise DecompositionUndefinedError
 
@@ -987,6 +988,68 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             setattr(copied_op, attr, deepcopy(value, memo))
         return copied_op
 
+    # ------------------------------------------------------------------------
+    # ------------------ Operator arithmetic dunder methods ------------------
+    # ------------------------------------------------------------------------
+
+    def __add__(self, other: Operator | TensorLike) -> Operator:
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return qp.sum(self, other, lazy=False)
+        if isinstance(other, TensorLike):
+            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+                return self
+            return qp.sum(
+                self,
+                qp.s_prod(scalar=other, operator=qp.Identity(self.wires), lazy=False),
+                lazy=False,
+            )
+        return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other: Callable | TensorLike) -> Operator:
+        """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qp.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
+            return qp.s_prod(scalar=other, operator=self, lazy=False)
+        return NotImplemented
+
+    def __truediv__(self, other: TensorLike):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: Operator) -> Operator:
+        """The product operation between Operator objects."""
+        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+
+    def __sub__(self, other: Operator | TensorLike) -> Operator:
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, Operator):
+            return self + qp.s_prod(-1, other, lazy=False)
+        if isinstance(other, TensorLike):
+            return self + (qp.math.multiply(-1, other))
+        return NotImplemented
+
+    def __rsub__(self, other: Operator | TensorLike) -> Operator:
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self) -> Operator:
+        """The negation operation of an Operator object."""
+        return qp.s_prod(scalar=-1, operator=self, lazy=False)
+
+    def __pow__(self, other: TensorLike) -> Operator:
+        r"""The power operation of an Operator object."""
+        if isinstance(other, TensorLike):
+            return qp.pow(self, z=other)
+        return NotImplemented
+
     # ----------------------------------------------------------------------------
     # ------------------ Private utililities for initialization ------------------
     # ----------------------------------------------------------------------------
@@ -1054,14 +1117,20 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
         for name, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
             argval = self.arguments[name]
-            if not expected_type.issubtype(argval):
-                # Dynamic argument
-                if name in self.dynamic_argnames:
-                    raise ValueError(
-                        f"Expected '{name}' to have shape {expected_type.shape} and "
-                        f"dtype {str(expected_type.dtype)}, but got {argval}."
-                    )
-                # Wire argument
+            if name in self.dynamic_argnames and not expected_type.is_compatible_with(argval):
+                raise ValueError(
+                    f"Expected '{name}' to have shape {expected_type.shape} and "
+                    f"dtype '{expected_type.dtype.name}', but got {argval}."
+                )
+            if (
+                name in self.wire_argnames
+                and expected_type.num_wires >= 0
+                and len(argval) != expected_type.num_wires
+            ):  # pragma: no cover
+                # This branch is basically unreachable because __init_subclass__ uses fixed_sig
+                # to set wire_sizes if it isn't already set. If wire_sizes is set, __init_wires
+                # catches invalid wire sizes before we ever reach here. The only way to reach it
+                # is to manually call this function.
                 raise ValueError(
                     f"Expected '{name}' to have length {expected_type.num_wires}, "
                     f"but got {argval}."
@@ -1069,8 +1138,6 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
-        # TODO: [sc-120429] Add processing for overriding has_decomposition
-
         cls._sig = signature(cls)
 
         if is_baseclass:
@@ -1119,9 +1186,10 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                     "hybrid, static, or compilable arguments."
                 )
             for at in cls.fixed_sig:
-                if (isinstance(at, AbstractArray) and any(s is Ellipsis for s in at.shape)) or (
-                    isinstance(at, AbstractWires) and at.num_wires is Ellipsis
-                ):
+                if (
+                    isinstance(at, AbstractArray)
+                    and (at.shape is Ellipsis or any(s < 0 for s in at.shape))
+                ) or (isinstance(at, AbstractWires) and at.num_wires < 0):
                     raise TypeError(
                         f"'{cls.__name__}.fixed_sig' can only specify types with static sizes, "
                         f"but got {at} that allows the argument to have arbitrary shape."
@@ -1263,7 +1331,9 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        return cls(**args)
+        with QueuingManager.stop_recording():
+            with pause():
+                return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1310,26 +1380,20 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
+        # Skip if program capture is disabled
         if not enabled():
-            return  # pragma: no cover
+            return
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
-        hybrid_wire_argnames = []
         wire_lens = []
         for name, value in self.wire_args.items():
-            if name in self.hybrid_argnames:
-                hybrid_wire_argnames.append(name)
-            else:
+            if name not in self.hybrid_argnames:
                 pos_args.extend(value)
                 wire_lens.append(len(value))
 
-        # Reorder hybrid args such that hybrid wire args are first
-        hybrid_argnames = hybrid_wire_argnames + [
-            h for h in self.hybrid_argnames if h not in self.wire_argnames
-        ]
         hybrid_lens, hybrid_trees = [], []
-        for name in hybrid_argnames:
+        for name in self.hybrid_argnames:
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
             op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
@@ -1356,8 +1420,8 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
             hybrid_trees=hybrid_trees,
             **static_args,
         )
-        # If we bind the primitive outside a tracing context, `res`` will be an operator,
-        # not an abstract tracer, so we don't save it.
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
 
@@ -1385,23 +1449,17 @@ if has_jax:
             args[name] = all_args[i]
             i += 1
 
-        hybrid_wire_argnames = []
         wire_lens_iter = iter(wire_lens)
         for name in op_cls.wire_argnames:
-            if name in op_cls.hybrid_argnames:
-                hybrid_wire_argnames.append(name)
-            else:
+            if name not in op_cls.hybrid_argnames:
                 len_ = next(wire_lens_iter)
                 # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete.
+                # there should not be any abstract values when calling the concrete impl.
                 args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
-        hybrid_argnames = hybrid_wire_argnames + [
-            name for name in op_cls.hybrid_argnames if name not in op_cls.wire_argnames
-        ]
-        for name, len_, tree in zip(hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
             leaves = all_args[i : i + len_]
             args[name] = unflatten(leaves, tree)
             i += len_
@@ -1418,7 +1476,12 @@ else:  # pragma: no cover
 
 
 def _delete_op_eqns(ops: Iterable) -> None:
-    """Delete the jaxpr equations for operators that have been used as data."""
+    """Delete the jaxpr equations for operators that have been used as data.
+
+    These equations must be deleted because operators used as data are treated as
+    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
+    corresponds to the operator as an instruction should be removed.
+    """
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
@@ -1493,8 +1556,10 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     """Canonicalize dynamic data for hashing."""
 
     def _mod_and_round(x, mod_val):
-        x = x if mod_val is None else math.real(x) % mod_val
-        return math.round(x, 10)
+        if qp.math.asarray(x).dtype == bool:
+            return x
+        x = x if mod_val is None else qp.math.real(x) % mod_val
+        return qp.math.round(x, 10)
 
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
@@ -1517,7 +1582,7 @@ def _is_hash_leaf(l) -> bool:
 class StatePrepBase2(Operator2, is_baseclass=True):
     """An interface for state-prep operations."""
 
-    @abc.abstractmethod
+    @abstractmethod
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
