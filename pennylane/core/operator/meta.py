@@ -139,7 +139,7 @@ class OperatorMeta(ABCMeta):
 
                 arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
-            obj = cls.__new__(cls)
+            obj = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
 
             Operator2.__init__(obj, *bound.args, **bound.kwargs)
@@ -156,8 +156,3 @@ class OperatorMeta(ABCMeta):
             op._bind_primitive()
 
         return op
-
-
-# pylint: disable=abstract-method
-# class ABCOperatorMeta(OperatorMeta, ABCMeta):
-#     """A combination of the operator metaclass and ABCMeta."""
