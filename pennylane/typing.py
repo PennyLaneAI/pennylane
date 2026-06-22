@@ -382,5 +382,7 @@ can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensi
 True
 >>> qp.typing.Wire[2]
 AbstractWires(num_wires=2)
+>>> qp.typing.Wire[...]
+AbstractWires(num_wires=Ellipsis)
 
 """
