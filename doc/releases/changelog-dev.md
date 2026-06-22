@@ -260,15 +260,15 @@
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  AbstractArray(shape=(4,), dtype=bool)
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
   >>> qp.typing.Complex[-1, 2]
-  AbstractArray(shape=(-1, 2), dtype=dtype('complex128'))
+  AbstractArray(shape=(-1, 2), dtype=complex128)
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
-  AbstractWires(num_wires=2)
+  AbstractWires(2)
 
   ```
 
