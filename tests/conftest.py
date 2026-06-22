@@ -35,6 +35,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 TOL = 1e-3
 TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
+qp.capture.enable()
 
 
 # pylint: disable=too-few-public-methods
@@ -171,7 +172,8 @@ def enable_disable_plxpr():
     try:
         yield
     finally:
-        qp.capture.disable()
+        pass
+        # qp.capture.disable()
 
 
 @pytest.fixture(scope="function")
