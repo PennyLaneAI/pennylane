@@ -739,7 +739,7 @@ class Wires(Sequence):
 
     def __class_getitem__(cls, item):
         raise TypeError(
-            f"'pennylane.wires.Wires[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
+            f"'{cls.__name__}[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
         )
 
 
