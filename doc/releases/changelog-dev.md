@@ -569,6 +569,23 @@
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
   [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
+* The `return_global_phase` keyword argument has been removed from the following helper methods in `qp.math`:
+
+  - :math:`~.math.decomposition.zyz_rotation_angles`
+  - :math:`~.math.decomposition.xyx_rotation_angles`
+  - :math:`~.math.decomposition.xzx_rotation_angles`
+  - :math:`~.math.decomposition.zxz_rotation_angles`
+  - :math:`~.math.convert_to_su2`
+  - :math:`~.math.convert_to_su4`
+
+  These methods will now always return the additional global phase.
+  [(#9496)](https://github.com/PennyLaneAI/pennylane/pull/9496)
+
+  ```pycon
+  >>> # You can always discard the last return value if the global phase is not needed.
+  >>> phi, theta, omega, _ = qp.math.decomposition.zyz_rotation_angles(U)
+  ```
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -636,6 +653,7 @@
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
