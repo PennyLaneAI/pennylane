@@ -924,10 +924,7 @@ class Operator2(ABC, metaclass=ABCOperatorMeta):
                 res = value
             # Non-hybrid wire arguments
             elif key not in self.hybrid_argnames:
-                if isinstance(value, Wires):
-                    res = value.tolist()
-                else:
-                    res = value
+                res = value.tolist() if isinstance(value, Wires) else value
             # Hybrid wire arguments
             else:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
