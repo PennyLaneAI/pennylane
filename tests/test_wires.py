@@ -407,15 +407,17 @@ class TestWires:
 
     def test_class_index(self):
         """Test that indexing the class raises."""
-        w = Wires
-        for i in range(5):
-            with pytest.raises(
-                WireError,
-                match=re.escape(
-                    f"'pennylane.wires.Wires[{i}]' is not supported syntax. Do you mean: 'pennylane.typing.Wire[{i}]'?"
-                ),
-            ):
-                _ = w[i]
+        with pytest.raises(
+            WireError,
+            match=re.escape("Wires[3] is not supported syntax. Are you looking for Wire[3]?"),
+        ):
+            _ = Wires[3]
+
+        with pytest.raises(
+            WireError,
+            match=re.escape("Wires[...] is not supported syntax. Are you looking for Wire[...]?"),
+        ):
+            _ = Wires[...]
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
