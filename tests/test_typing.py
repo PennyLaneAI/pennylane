@@ -19,15 +19,15 @@ import pytest
 import pennylane.numpy as pnp
 from pennylane.typing import (
     AbstractArray,
-    _AbstractTypeFactory,
     AbstractWires,
-    _AbstractWireTypeFactory,
     Bool,
     Complex,
     Float,
     Int,
     TensorLike,
     Wire,
+    _AbstractTypeFactory,
+    _AbstractWireTypeFactory,
 )
 from pennylane.wires import Wires
 
@@ -314,7 +314,9 @@ class TestAbstractWires:
         assert hash(a) == hash(AbstractWires(3))
         assert hash(a) != hash(AbstractWires(4))
 
-        with pytest.raises(TypeError, match="Cannot check equality between AbstractWires and an object"):
+        with pytest.raises(
+            TypeError, match="Cannot check equality between AbstractWires and an object"
+        ):
             _ = a == 2
 
     def test_ellipsis(self):
