@@ -254,7 +254,8 @@
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
- 
+  For example, these abstract types can be used to do type-checking on concrete values:
+  
   ```pycon
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
@@ -268,10 +269,7 @@
   True
   >>> qp.typing.Wire[2]
   AbstractWires(num_wires=2)
-
   ```
-
-  etc.
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
