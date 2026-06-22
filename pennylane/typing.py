@@ -318,7 +318,10 @@ class AbstractWires:
         if isinstance(other, AbstractWires):
             return self.num_wires == other.num_wires
 
-        raise TypeError("Tried to check equality against abstract wires.")
+        raise TypeError(
+            f"Cannot check equality between AbstractWires and an object of type '{type(other).__name__}'. "
+            f"AbstractWires equality is only supported against other AbstractWires instances."
+        )
 
     @property
     def shape(self) -> tuple[int]:
