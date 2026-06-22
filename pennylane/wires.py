@@ -738,7 +738,7 @@ class Wires(Sequence):
         return Wires(set(_process(other)) ^ set(self.labels))
 
     def __class_getitem__(cls, item):
-        raise WireError(f"Wires[{item}] is not supported syntax. Are you looking for Wire[{item}]?")
+        raise WireError(f"'pennylane.wires.Wires[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?")
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
