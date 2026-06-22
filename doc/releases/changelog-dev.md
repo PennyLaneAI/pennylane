@@ -291,11 +291,10 @@
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
   [(#9692)](https://github.com/PennyLaneAI/pennylane/pull/9692)
 
-* `AbstractArray` has been added to
-  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
-  These will support a new method of having compressed operators for resource estimation
-  and decomposition.
+* `AbstractArray` and `AbstractWires` have been added to `pennylane.typing`. These will support
+  a new method of having compressed operators for resource estimation and decomposition.
   [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
+  [(#9712)](https://github.com/PennyLaneAI/pennylane/pull/9712)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
