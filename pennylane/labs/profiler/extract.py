@@ -46,7 +46,7 @@ def profile(
 ) -> tuple[ProfileNode, Resources] | Callable:
     r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gate set.
 
-    In addition to the aggregated :class:`~pennylane.estimator.Resources`, this function returns the
+    In addition to the aggregated :class:`~pennylane.estimator.resources_base.Resources`, this function returns the
     root :class:`~.ProfileNode` of a call graph that records how each high-level operator
     decomposes into the target gate set. This tree can be exported with
     :func:`~.export_flame_graph_data` to visualize where the cost of a circuit comes from.
@@ -54,8 +54,8 @@ def profile(
     Args:
         workflow (Callable | ResourceOperator | Resources | QNode): the workflow to profile.
             This may be a quantum function (or :class:`~pennylane.QNode`) that queues
-            operators, a single :class:`~pennylane.estimator.ResourceOperator`, or a precomputed
-            :class:`~pennylane.estimator.Resources` object.
+            operators, a single :class:`~pennylane.estimator.resource_operator.ResourceOperator`, or a precomputed
+            :class:`~pennylane.estimator.resources_base.Resources` object.
         gate_set (set[str] | None): the set of operator names that the workflow should be
             decomposed into. If ``None``, the estimator's default gate set is used.
         zeroed_wires (int): the number of available auxiliary wires that are guaranteed to be
@@ -71,8 +71,8 @@ def profile(
 
     Returns:
         tuple[ProfileNode, Resources] | Callable: when ``workflow`` is a
-        :class:`~pennylane.estimator.ResourceOperator` or :class:`~pennylane.estimator.Resources`, a tuple of
-        the root :class:`~.ProfileNode` and the aggregated :class:`~.estimator.Resources` is
+        :class:`~pennylane.estimator.resource_operator.ResourceOperator` or :class:`~pennylane.estimator.resources_base.Resources`, a tuple of
+        the root :class:`~.ProfileNode` and the aggregated :class:`~pennylane.estimator.resources_base.Resources` is
         returned. When ``workflow`` is a quantum function or :class:`~pennylane.QNode`, a
         wrapped callable is returned which produces that tuple when called with the workflow's
         arguments.

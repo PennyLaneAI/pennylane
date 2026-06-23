@@ -43,7 +43,7 @@ class ProfileNode:
             default value of ``None``.
         scalar (int): the number of times ``cmpr_op`` appears at this level of the
             decomposition (the *local* multiplicity). Defaults to ``1``.
-        gate_data (dict | None): a mapping from :class:`~pennylane.estimator.CompressedResourceOp`
+        gate_data (dict | None): a mapping from :class:`~pennylane.estimator.resource_operator.CompressedResourceOp`
             to the integer number of times each gate-set operator occurs in the subtree
             rooted at this node. If ``None``, an empty ``defaultdict(int)`` is used.
         children (list[ProfileNode] | None): the child nodes obtained by decomposing
