@@ -92,7 +92,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     if sparse.issparse(U):
         U = U.todense()
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, global_phase = math.convert_to_su2(U)
     with queuing.AnnotatedQueue() as q:
         supported_rotations[rotations](U, wires=Wires(wire))
         if return_global_phase:
@@ -204,7 +204,7 @@ def two_qubit_decomposition(U, wires):
 
     with queuing.AnnotatedQueue() as q:
 
-        U, phase = math.convert_to_su4(U, return_global_phase=True)
+        U, phase = math.convert_to_su4(U)
 
         if _is_jax_jit(U):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
@@ -301,8 +301,7 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
-        U, phase = math.convert_to_su2(U, return_global_phase=True)
-        su2_rule(U, wires=wires)
+        phase = su2_rule(U, wires=wires)
         if _is_jax_jit(U):
             ops.GlobalPhase(-phase)
         else:
@@ -319,12 +318,13 @@ def _su2_rot_resource():
 
 
 def _su2_rot_decomp(U, wires, **__):
-    phi, theta, omega = zyz_rotation_angles(U)
+    phi, theta, omega, alpha = zyz_rotation_angles(U)
     ops.cond(
-        math.allclose(U[..., 0, 1], 0.0),
-        lambda: ops.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
+        math.allclose(theta, 0.0),
+        lambda: ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0]),
         lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
     )()
+    return alpha
 
 
 def _su2_zyz_resource():
@@ -332,10 +332,11 @@ def _su2_zyz_resource():
 
 
 def _su2_zyz_decomp(U, wires, **__):
-    phi, theta, omega = zyz_rotation_angles(U)
+    phi, theta, omega, alpha = zyz_rotation_angles(U)
     ops.RZ(phi, wires=wires[0])
     ops.RY(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_xyx_resource():
@@ -344,10 +345,11 @@ def _su2_xyx_resource():
 
 def _su2_xyx_decomp(U, wires, **__):
     """Decomposes a QubitUnitary into a sequence of XYX rotations."""
-    phi, theta, omega = xyx_rotation_angles(U)
+    phi, theta, omega, alpha = xyx_rotation_angles(U)
     ops.RX(phi, wires=wires[0])
     ops.RY(theta, wires=wires[0])
     ops.RX(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_xzx_resource():
@@ -355,10 +357,11 @@ def _su2_xzx_resource():
 
 
 def _su2_xzx_decomp(U, wires, **__):
-    phi, theta, omega = xzx_rotation_angles(U)
+    phi, theta, omega, alpha = xzx_rotation_angles(U)
     ops.RX(phi, wires=wires[0])
     ops.RZ(theta, wires=wires[0])
     ops.RX(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_zxz_resource():
@@ -366,10 +369,11 @@ def _su2_zxz_resource():
 
 
 def _su2_zxz_decomp(U, wires, **__):
-    phi, theta, omega = zxz_rotation_angles(U)
+    phi, theta, omega, alpha = zxz_rotation_angles(U)
     ops.RZ(phi, wires=wires[0])
     ops.RX(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
+    return alpha
 
 
 rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
@@ -395,7 +399,7 @@ def _two_qubit_resource(**_):
 def two_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a two-qubit unitary."""
 
-    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
+    U, initial_phase = math.convert_to_su4(U)
     num_cnots = _compute_num_cnots(U)
 
     elifs = [(num_cnots == 1, _decompose_1_cnot)]
@@ -544,8 +548,8 @@ def _decompose_0_cnots(U, wires, initial_phase):
      -╰U- = -B-
     """
     A, B = math.decomposition.su2su2_to_tensor_products(U)
-    A, phaseA = math.convert_to_su2(A, return_global_phase=True)
-    B, phaseB = math.convert_to_su2(B, return_global_phase=True)
+    A, phaseA = math.convert_to_su2(A)
+    B, phaseB = math.convert_to_su2(B)
     ops.QubitUnitary(A, wires=wires[0])
     ops.QubitUnitary(B, wires=wires[1])
     return math.cast_like(phaseA + phaseB, initial_phase)
