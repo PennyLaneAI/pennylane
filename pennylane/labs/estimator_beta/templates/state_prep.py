@@ -492,7 +492,7 @@ class PrepAmp(qre.ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: 
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:
             the operator in a compressed representation
         """
         params = {"n": n}
