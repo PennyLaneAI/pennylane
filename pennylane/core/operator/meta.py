@@ -92,13 +92,13 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             return AbstractWires(len(canonical_wires))
 
         case _ArgType.DYN:
-            # An array of types is not supported (i.e., [float, float, float])
+            # A sequence of types is not supported (i.e., [float, float, float])
             # for dynamic args. Ambiguous how to canonicalize it generally.
             if isinstance(val, (list, tuple)) and any(
                 isinstance(x, type) and issubclass(x, Number) for x in val
             ):
                 raise NotImplementedError(
-                    "An array of types for a dynamic argument is not "
+                    "A sequence of types for a dynamic argument is not "
                     "currently supported. Instead, please use the type "
                     "specifiers found in pennylane.typing."
                 )
