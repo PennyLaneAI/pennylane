@@ -22,11 +22,10 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import H, X, Y, Z
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,

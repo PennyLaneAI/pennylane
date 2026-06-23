@@ -72,6 +72,13 @@ from .measurements import (
     MeasurementTransform,
 )
 from .shots import Shots, ShotCopies, ShotsLike
+from .qscript import (
+    QuantumScript,
+    QuantumScriptBatch,
+    QuantumScriptOrBatch,
+    make_qscript,
+    process_queue,
+)
 
 __all__ = [
     "Operator",
@@ -91,4 +98,9 @@ __all__ = [
     "Shots",
     "ShotCopies",
     "ShotsLike",
+    "QuantumScript",
+    "QuantumScriptBatch",
+    "QuantumScriptOrBatch",
+    "make_qscript",
+    "process_queue",
 ]
