@@ -44,7 +44,96 @@ def profile(
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
 ) -> Resources | Callable[..., Resources]:
-    r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gateset."""
+    r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gate set.
+
+    In addition to the aggregated :class:`~.estimator.Resources`, this function returns the
+    root :class:`~.ProfileNode` of a call graph that records how each high-level operator
+    decomposes into the target gate set. This tree can be exported with
+    :func:`~.export_flame_graph_data` to visualize where the cost of a circuit comes from.
+
+    Args:
+        workflow (Callable | ResourceOperator | Resources | QNode): the workflow to profile.
+            This may be a quantum function (or :class:`~pennylane.QNode`) that queues
+            operators, a single :class:`~.estimator.ResourceOperator`, or a precomputed
+            :class:`~.estimator.Resources` object.
+        gate_set (set[str] | None): the set of operator names that the workflow should be
+            decomposed into. If ``None``, the estimator's default gate set is used.
+        zeroed_wires (int): the number of available auxiliary wires that are guaranteed to be
+            in the zero state. Defaults to ``0``.
+        any_state_wires (int): the number of available auxiliary wires that may be in any
+            state. Defaults to ``0``.
+        tight_wires_budget (bool): if ``True``, a :class:`ValueError` is raised when the
+            workflow allocates more auxiliary wires than the budget specified by
+            ``zeroed_wires`` and ``any_state_wires``. Defaults to ``False``.
+        config (LabsResourceConfig | None): the configuration specifying the decomposition
+            rules and precisions to use. If ``None``, a default
+            :class:`~.estimator_beta.LabsResourceConfig` is used.
+
+    Returns:
+        tuple[ProfileNode, Resources] | Callable: when ``workflow`` is a
+        :class:`~.estimator.ResourceOperator` or :class:`~.estimator.Resources`, a tuple of
+        the root :class:`~.ProfileNode` and the aggregated :class:`~.estimator.Resources` is
+        returned. When ``workflow`` is a quantum function or :class:`~pennylane.QNode`, a
+        wrapped callable is returned which produces that tuple when called with the workflow's
+        arguments.
+
+    Raises:
+        TypeError: if ``workflow`` is not one of the supported types.
+        ValueError: if ``tight_wires_budget`` is ``True`` and the allocated auxiliary wires
+            exceed the supplied budget.
+
+    **Example**
+
+    **Example**
+
+    ``profile`` can be used in just the same way as :func:`~.pennylane.labs.estimator_beta.estimate`:
+
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> from pennylane.labs.profiler import profile
+    ... def circuit():
+    ...     for w in range(5):
+    ...         qre.Hadamard()
+    ...         qre.RZ(1e-9)
+    ...
+    ...     qre.QPE(qre.RX(precision=1e-3), 4)
+    ...     qre.QFT(4)
+    >>>
+    >>> gate_set = {"T", "Hadamard", "CNOT"}
+    >>> res_profile, resources = profile(circuit, gate_set)()
+    >>> print(resources)
+    --- Resources: ---
+     Total wires: 5
+       algorithmic wires: 5
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 2.041E+3
+       'T': 1.972E+3,
+       'CNOT': 44,
+       'Hadamard': 25
+
+    However, we additionally have access to a resource profile, which can be processed to produce flame graph
+    type visualizations.
+
+    >>> from pennylane.labs.profiler import export_flame_graph_data
+    >>> extracted_info = export_flame_graph_data(res_profile)
+    >>> ids, names, values, parents = extracted_info
+    >>>
+    >>> import plotly.graph_objects as go  # visualization library
+    >>> fig = go.Figure()
+    >>>
+    >>> fig.add_trace(go.Icicle(
+    ...     ids=ids,
+    ...     labels=names,
+    ...     parents=parents,
+    ...     values=values, # T cost
+    ...     branchvalues="total",
+    ...     root_color="lightgrey",)
+    ... )
+    >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+    >>> fig.show()
+
+    """
     return _profile_resources_dispatch(
         workflow, gate_set, zeroed_wires, any_state_wires, tight_wires_budget, config
     )
@@ -183,7 +272,7 @@ def _profile_from_resource_operator(
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
 ) -> Resources:
-    """Extract resources from a resource operator."""
+    """Extract resource profile from a resource operator."""
     resources = 1 * workflow
     return _profile_from_resource(
         workflow=resources,
@@ -204,7 +293,7 @@ def _profile_from_pl_ops(
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
 ) -> Resources:
-    """Extract resources from a pl operator."""
+    """Extract resource profile from a pl operator."""
     workflow = _map_to_resource_op(workflow)
     resources = 1 * workflow
     return _profile_from_resource(

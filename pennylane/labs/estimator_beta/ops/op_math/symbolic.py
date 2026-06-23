@@ -14,7 +14,7 @@
 r"""Resource operators for symbolic operations."""
 
 from functools import wraps
-from inspect import signature, Signature
+from inspect import Signature, signature
 from typing import Callable, Iterable
 
 import pennylane.labs.estimator_beta as qre
@@ -28,7 +28,13 @@ from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
 
-def _generate_name(func_name: str, func_sig: Signature, include_params: Iterable[str] | None = None, *args, **kwargs):
+def _generate_name(
+    func_name: str,
+    func_sig: Signature,
+    include_params: Iterable[str] | None = None,
+    *args,
+    **kwargs,
+):
     r"""Format a string representing the name of a function from its signature.
 
     Args:
@@ -50,7 +56,7 @@ def _generate_name(func_name: str, func_sig: Signature, include_params: Iterable
     ...
     >>> f_name = my_func.__name__
     >>> f_sig = signature(my_func)
-    >>> 
+    >>>
     >>> _generate_name(f_name, f_sig)
     'my_func'
     >>> _generate_name(
@@ -93,7 +99,7 @@ def _generate_name(func_name: str, func_sig: Signature, include_params: Iterable
 
 def prod(qfunc: Callable, include_params: Iterable[str] | None = None):
     r"""A decorator that can be used to promote a quantum function to a resource operator.
-    This allows users to explicitly track counts to subroutines which have been implented as 
+    This allows users to explicitly track counts to subroutines which have been implented as
     quantum functions.
 
     Args:
@@ -104,7 +110,7 @@ def prod(qfunc: Callable, include_params: Iterable[str] | None = None):
     Returns:
         Callable: A function which, when executed, returns a :class:``~.estimator.ResourceOperator``
             that represents the product of the operators defined within the input ``qfunc`` function.
-    
+
     **Example**
 
     This decorator can be used to help track resources at higher, user-defined levels of abstraction.
@@ -123,15 +129,15 @@ def prod(qfunc: Callable, include_params: Iterable[str] | None = None):
 
         def circuit():
             SubroutineA(5)
-            
+
             qre.CNOT()
-            
+
             SubroutineA(3)
-            
+
             qre.QROM(3, 2)
-            
+
             SubroutineA(5)
-            
+
     >>> gate_set = {"CNOT", "QROM", "SubroutineA"}
     >>> print(qre.estimate(circuit, gate_set)())
     --- Resources: ---
@@ -160,7 +166,7 @@ def prod(qfunc: Callable, include_params: Iterable[str] | None = None):
                     qre.Z()
                 else:
                     qre.X()
-    
+
     >>> gate_set = {"CNOT", "QROM", "SubroutineA(num_iter = 5)", "SubroutineA(num_iter = 3)"}
     >>> print(qre.estimate(circuit, gate_set)())
     --- Resources: ---
@@ -176,6 +182,7 @@ def prod(qfunc: Callable, include_params: Iterable[str] | None = None):
        'CNOT': 1
 
     """
+
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         func_name = qfunc.__name__
