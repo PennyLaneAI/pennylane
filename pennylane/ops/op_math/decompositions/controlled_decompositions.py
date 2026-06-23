@@ -174,18 +174,7 @@ def ctrl_decomp_zyz(
     control_wires = Wires(control_wires)
     target_wire = target_operation.wires
 
-    if isinstance(target_operation, Operation):
-        try:
-            *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
-        except NotImplementedError:
-            *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-                ops.functions.matrix(target_operation), return_global_phase=True
-            )
-    else:
-        *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-            ops.functions.matrix(target_operation), return_global_phase=True
-        )
-
+    *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
     with queuing.AnnotatedQueue() as q:
         all_wires = control_wires + target_wire
         if len(control_wires) > 1:
@@ -281,7 +270,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 def ctrl_decomp_bisect_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
-    U, phase = math.convert_to_su2(U, return_global_phase=True)
+    U, phase = math.convert_to_su2(U)
     imag_U = math.imag(U)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
@@ -320,7 +309,7 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
@@ -357,7 +346,7 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
     _multi_control_zyz(
         phi,
         theta,

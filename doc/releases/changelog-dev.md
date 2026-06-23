@@ -240,6 +240,38 @@
 
 <h3>Improvements 🛠</h3>
 
+* Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive 
+  abstract type notation.  
+  [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+
+  ```python
+  from pennylane.typing import Int, Float, Complex, Bool, Wire
+  Int[2, 3]       # Abstract int array with shape (2, 3)
+  Float           # Float scalar
+  Complex[...]    # Abstract complex array with any shape
+  Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
+  Wire            # Single abstract wire
+  Wire[4]         # Four abstract wires
+  Wire[-1]        # Wire sequence with dynamic size
+  ```
+  For example, these abstract types can be used to do type-checking on concrete values:
+  
+  ```pycon
+  >>> isinstance(np.array(False), qp.typing.Bool)
+  True
+  >>> qp.typing.Bool[4]
+  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+  True
+  >>> qp.typing.Complex[..., 2]
+  AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+  >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
+  True
+  >>> qp.typing.Wire[2]
+  AbstractWires(num_wires=2)
+  
+  ```
+
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
 
@@ -253,9 +285,11 @@
   decomposition when using phase-gradient based decompositions of multiplexers.
   [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
-* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` with multiplexer selector
-  symbols on the control wires and a Pauli rotation label on the target wire.
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` and :class:`~.QROM` with 
+  multiplexer selector symbols on the control wires and a Pauli rotation and a "QROM" label,
+  respectively, on the target wire(s).
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
+  [(#9692)](https://github.com/PennyLaneAI/pennylane/pull/9692)
 
 * `AbstractArray` has been added to
   `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
@@ -374,13 +408,20 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
+  the decomposition rule validate the number of available work wires against the needed work wires
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
+  number of control wires/angles.
+  [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
+
 * Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
   This variant handles work wires explicitly instead of allocating them dynamically in the
   decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` decomposition rule factories to be compatible with program capture.
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
+  decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
@@ -491,6 +532,10 @@
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
+* Support for executing PLxPR without qjit has been removed.
+  [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
+  [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
+
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
   [(#9419)](https://github.com/PennyLaneAI/pennylane/pull/9419)
@@ -556,6 +601,25 @@
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
   [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
+* The `return_global_phase` keyword argument has been removed from the following helper methods in `qp.math`:
+
+  - :math:`~.math.decomposition.zyz_rotation_angles`
+  - :math:`~.math.decomposition.xyx_rotation_angles`
+  - :math:`~.math.decomposition.xzx_rotation_angles`
+  - :math:`~.math.decomposition.zxz_rotation_angles`
+  - :math:`~.math.convert_to_su2`
+  - :math:`~.math.convert_to_su4`
+
+  These methods will now always return the additional global phase.
+  [(#9496)](https://github.com/PennyLaneAI/pennylane/pull/9496)
+
+  ```pycon
+  >>> # You can always discard the last return value if the global phase is not needed.
+  >>> U = qp.Hadamard(0).matrix()
+  >>> phi, theta, omega, _ = qp.math.decomposition.zyz_rotation_angles(U)
+
+  ```
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -576,6 +640,9 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
+  [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
 * The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
   [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
@@ -603,6 +670,10 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
+    when ``compute_decomposition`` is not overridden.
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
+  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -611,8 +682,15 @@
   [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
   [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
   [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
+  [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+  [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
+  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
+  [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -672,6 +750,9 @@
 
 <h3>Documentation 📝</h3>
 
+* A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
+  [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)
+
 * Enabled documentation testing for the :mod:`pennylane.shadows` module by updating its executable examples and
   removing the module from the documentation-test skip list.
   [(#9566)](https://github.com/PennyLaneAI/pennylane/pull/9566)
@@ -699,6 +780,12 @@
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
+
+* Fixed a bug where :func:`~.evolve` / :class:`~.ops.op_math.Evolution` silently produced
+  incorrect results and wrong gradients under the default autograd/backprop differentiation path
+  when the generator was a linear combination of overlapping Pauli words (e.g. a :class:`~.Sum`
+  or :class:`~.Hamiltonian`).
+  [(#9636)](https://github.com/PennyLaneAI/pennylane/pull/9636)
 
 * Fixed a bug in `change_op_basis` where `TypeError` raised within the body of callable inputs were
   accidentally being masked by internal try/except logic.
