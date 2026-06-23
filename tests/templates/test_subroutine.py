@@ -31,8 +31,7 @@ from pennylane.templates.core import (
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 class TestInitialization:
