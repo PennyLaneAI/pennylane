@@ -30,8 +30,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 class CustomOp(Operator):  # pylint: disable=too-few-public-methods
