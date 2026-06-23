@@ -44,8 +44,8 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import AbstractArray, FlatPytree, TensorLike
-from pennylane.wires import AbstractWires, Wires, WiresLike
+from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta
@@ -1132,8 +1132,7 @@ class Operator2(metaclass=OperatorMeta):
                 # catches invalid wire sizes before we ever reach here. The only way to reach it
                 # is to manually call this function.
                 raise ValueError(
-                    f"Expected '{name}' to have length {expected_type.num_wires}, "
-                    f"but got {argval}."
+                    f"Expected '{name}' to have length {expected_type.num_wires}, but got {argval}."
                 )
 
     # pylint: disable=too-many-branches
