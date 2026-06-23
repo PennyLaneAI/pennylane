@@ -146,11 +146,11 @@ class Operator2(metaclass=OperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    expected_argtypes: ClassVar[dict[str, type]] = None
+    arg_specs: ClassVar[dict[str, type]] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
     validation of an operators inputs during construction. Additionally, when defining
-    decomposition rules for an operator, operator types with ``expected_argtypes`` that spans
+    decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
     """
@@ -159,6 +159,15 @@ class Operator2(metaclass=OperatorMeta):
 
     _sig: ClassVar[Signature]
     """The signature of the operator. Internal use only."""
+
+    fixed_sig: ClassVar[bool]
+    """Whether the expected signature of an operator is fixed. If ``True``, then the operator's
+    signature will always be fully known. When defining decomposition rules for an operator,
+    operator types with fixed signatures can be placed in the rules' resources without needing
+    to fully construct abstract operators. This is set automatically when ``arg_specs`` covers
+    every dynamic and wire argument, there are no hybrid, static, or compilable arguments, and
+    every declared type is fully fixed (no unknown array shapes or wire counts).
+    """
 
     # ----------------- Instance variables set automatically -----------------
 
@@ -1095,13 +1104,13 @@ class Operator2(metaclass=OperatorMeta):
 
     def __validate_arg_types(self) -> None:
         """Validate the provided arguments against their expected type. This method
-        only performs validation on operators if ``op.expected_argtypes`` is defined.
+        only performs validation on operators if ``op.arg_specs`` is defined.
         """
-        # expected_argtypes not present or there are no arguments
-        if not self.expected_argtypes:
+        # arg_specs not present or there are no arguments
+        if not self.arg_specs:
             return
 
-        for name, et in self.expected_argtypes.items():
+        for name, et in self.arg_specs.items():
             argval = self.arguments[name]
             if name in self.dynamic_argnames and not et.is_compatible_with(argval):
                 raise ValueError(
@@ -1120,12 +1129,8 @@ class Operator2(metaclass=OperatorMeta):
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
-
         if is_baseclass:
             return
-
-        _add_dynamic_properties(cls)
-        register_pytree(cls, cls._flatten, cls._unflatten)
 
         # Argnames setup
         for attr in (
@@ -1138,54 +1143,31 @@ class Operator2(metaclass=OperatorMeta):
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
-        if cls.static_argnames and cls.compilable_argnames:
-            raise TypeError(
-                "Operators can only contain 'static_argnames' or 'compilable_argnames', not both."
-            )
+        _init_subclass_validate_argnames(cls)
+        _add_dynamic_properties(cls)
+        register_pytree(cls, cls._flatten, cls._unflatten)
 
-        # dynamic/wire/static/compilable argnames must be disjoint.
-        seen: dict[str, str] = {}
-        for group_name in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "compilable_argnames",
-        ):
-            for name in getattr(cls, group_name):
-                if other := seen.get(name):
-                    raise TypeError(
-                        f"Argument '{name}' appears in both '{other}' and '{group_name}'; "
-                        "dynamic, wire, static, and compilable argnames must not overlap."
-                    )
-                seen[name] = group_name
-
-        if cls.expected_argtypes:
-            for name, et in cls.expected_argtypes.items():
+        cls.fixed_sig = (
+            set((cls.arg_specs or {}).keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
+            and len(set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)) == 0
+        )
+        if cls.arg_specs:
+            for name, et in cls.arg_specs.items():
                 if name in cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames:
                     raise TypeError(
-                        f"{cls.__name__}.expected_argtypes can only contain dynamic and "
+                        f"{cls.__name__}.arg_specs can only contain dynamic and "
                         f"non-hybrid arguments, but got {name}."
                     )
 
+                canon_et = et
                 if isinstance(et, type) and issubclass(et, Number):
-                    cls.expected_argtypes[name] = AbstractArray((), et)
+                    canon_et = AbstractArray((), et)
+                    cls.arg_specs[name] = canon_et
 
-        # hybrid_argnames may overlap with wire_argnames, but not with the others.
-        hybrid = set(cls.hybrid_argnames)
-        non_wire = {n for n, g in seen.items() if g != "wire_argnames"}
-        if bad := hybrid & non_wire:
-            raise TypeError(
-                f"hybrid_argnames {bad} overlap with dynamic, static, or "
-                "compilable argnames; hybrid_argnames may only overlap with wire_argnames."
-            )
-
-        # Every named signature parameter must appear in at least one *_argnames.
-        sig_params = set(cls._sig.parameters.keys())
-        if unclassified := sig_params - set(seen.keys()) - hybrid:
-            raise TypeError(
-                f"The following parameters of '{cls.__name__}' are not classified in "
-                f"any argnames tuples: {unclassified}."
-            )
+                if name in cls.dynamic_argnames and not canon_et.shape_fixed:
+                    cls.fixed_sig = False
+                elif name in cls.wire_argnames and canon_et.num_wires == -1:
+                    cls.fixed_sig = False
 
         # Wire sizes setup
         if cls.wire_sizes is not None:
@@ -1209,28 +1191,28 @@ class Operator2(metaclass=OperatorMeta):
                         f"of positive integers or 'None' values, but got {cls.wire_sizes}."
                     )
 
-                # If the wire argument is in expected_argtypes, the entries in expected_argtypes
+                # If the wire argument is in arg_specs, the entries in arg_specs
                 # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
-                # ``-1`` in wire_sizes and expected_argtypes respectively.
-                if cls.expected_argtypes and (et := cls.expected_argtypes.get(wname)) is not None:
+                # ``-1`` in wire_sizes and arg_specs respectively.
+                if cls.arg_specs and (et := cls.arg_specs.get(wname)) is not None:
                     nwires = et.num_wires
                     if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
                         cname = cls.__name__
                         raise TypeError(
                             f"Number of wires specified for '{wname}' does not match the declared "
-                            f"type in {cname}.expected_argtypes and {cname}.wire_sizes. Got "
+                            f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
                             f"{nwires} and {wsize} respectively."
                         )
 
-        elif cls.expected_argtypes:
+        elif cls.arg_specs:
             cls.wire_sizes = tuple(
                 (
                     None
-                    if name not in cls.expected_argtypes
+                    if name not in cls.arg_specs
                     else (
                         None
-                        if cls.expected_argtypes[name].num_wires == -1
-                        else cls.expected_argtypes[name].num_wires
+                        if cls.arg_specs[name].num_wires == -1
+                        else cls.arg_specs[name].num_wires
                     )
                 )
                 for name in cls.wire_argnames
@@ -1480,6 +1462,47 @@ def _delete_op_eqns(ops: Iterable) -> None:
 
             # delete reference to tracer after its equation has been deleted
             op.tracer = None
+
+
+def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
+    """Validate the values inside all ``**_argnames`` for an operator class."""
+    if cls.static_argnames and cls.compilable_argnames:
+        raise TypeError(
+            "Operators can only contain 'static_argnames' or 'compilable_argnames', not both."
+        )
+
+    # dynamic/wire/static/compilable argnames must be disjoint.
+    seen: dict[str, str] = {}
+    for group_name in (
+        "dynamic_argnames",
+        "wire_argnames",
+        "static_argnames",
+        "compilable_argnames",
+    ):
+        for name in getattr(cls, group_name):
+            if other := seen.get(name):
+                raise TypeError(
+                    f"Argument '{name}' appears in both '{other}' and '{group_name}'; "
+                    "dynamic, wire, static, and compilable argnames must not overlap."
+                )
+            seen[name] = group_name
+
+    # hybrid_argnames may overlap with wire_argnames, but not with the others.
+    hybrid = set(cls.hybrid_argnames)
+    non_wire = {n for n, g in seen.items() if g != "wire_argnames"}
+    if bad := hybrid & non_wire:
+        raise TypeError(
+            f"hybrid_argnames {bad} overlap with dynamic, static, or "
+            "compilable argnames; hybrid_argnames may only overlap with wire_argnames."
+        )
+
+    # Every named signature parameter must appear in at least one *_argnames.
+    sig_params = set(cls._sig.parameters.keys())  # pylint: disable=protected-access
+    if unclassified := sig_params - set(seen.keys()) - hybrid:
+        raise TypeError(
+            f"The following parameters of '{cls.__name__}' are not classified in "
+            f"any argnames tuples: {unclassified}."
+        )
 
 
 def _add_dynamic_properties(cls: type[Operator2]) -> None:
