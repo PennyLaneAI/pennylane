@@ -430,10 +430,10 @@ class TestDecompositionRule:
             (
                 (
                     AbstractArray((), int),
-                    AbstractArray((2, 2), int),
+                    AbstractArray((-1, 2), int),
                     AbstractWires(1),
                 ),
-                (5, np.ones((2, 2), dtype=np.int32), 5),
+                (5, np.ones((6, 2), dtype=np.int32), 5),
             ),
         ],
     )
