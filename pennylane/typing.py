@@ -17,11 +17,11 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
-import types
 from collections.abc import Callable, Hashable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
+from types import EllipsisType
 from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
@@ -137,69 +137,136 @@ class AbstractArray:
     attributes necessary for resource calculations.
 
     Args:
-        shape (tuple(int | types.EllipsisType)): the dimensions of the array.
-            ``()`` corresponds to a scalar, and ``...`` corresponds to an unknown dimension.
+        shape (tuple[int, ...] | Ellipsis): the dimensions of the array.
+            ``()`` corresponds to a scalar. ``Ellipsis`` (``...``) means the number of axes
+            is unknown. Within a shape tuple, ``-1`` marks an axis whose size is unknown.
         dtype (type): the data type of the array. Can either be a ``builtin`` like
             ``float`` or ``int``, or a numpy dtype like ``np.complex64``.
 
     >>> from pennylane.typing import AbstractArray
     >>> AbstractArray((4, 2), float)
-    AbstractArray(shape=(4, 2), dtype=dtype('float64'))
+    AbstractArray((4, 2), float64, weak_type=True)
 
-    Ellipsis (``...``) can be used as a placeholder for an unknown, arbitrary sized dimension.
+    Use ``-1`` for an axis with unknown size:
 
-    >>> aa = AbstractArray((..., 2), np.int32)
-    >>> aa
-    AbstractArray(shape=(Ellipsis, 2), dtype=dtype('int32'))
+    >>> aa = AbstractArray((-1, 2), np.int32)
+    >>> isinstance(np.ones((4, 2), np.int32), aa)
+    True
 
-    ``AbstractArray``'s can be used together with ``isinstance`` checks:
+    Use ``Ellipsis`` when the rank itself is unknown:
 
-    >>> isinstance(np.ones((4,2), np.int32), aa)
+    >>> isinstance(np.ones((4, 2)), AbstractArray(..., float))
     True
 
     """
 
-    shape: tuple[int | types.EllipsisType, ...]
-    dtype: np.dtype | type[Number]
+    shape: tuple[int, ...] | EllipsisType
+    dtype: np.dtype
+    _weak_type: bool = field(init=False)
 
     def __post_init__(self):
-        object.__setattr__(self, "shape", tuple(self.shape))
-        if self.dtype.__class__.__module__.split(".")[0] == "torch":
-            import torch  # pylint: disable=import-outside-toplevel
+        weak_type = (
+            isinstance(self.dtype, type)
+            and issubclass(self.dtype, Number)
+            # Need to check this because builtin numpy dtypes (like np.float32) are
+            # subclasses of Number
+            and self.dtype.__module__ == "builtins"
+        )
+        if self.shape is not Ellipsis:
+            shape = tuple(self.shape)
+            if not all(isinstance(s, int) and s >= -1 for s in shape):
+                raise ValueError(
+                    f"Shapes can only be initialized with integer values, but got {shape}. "
+                    "For axes with unknown sizes, use -1. For an unknown number of axes, "
+                    "use shape=Ellipsis."
+                )
+            object.__setattr__(self, "shape", shape)
 
-            dummy = torch.tensor((), dtype=self.dtype)
-            object.__setattr__(self, "dtype", dummy.numpy().dtype)
-        object.__setattr__(self, "dtype", np.dtype(self.dtype))
+        object.__setattr__(self, "dtype", np.dtype(self._resolve_dtype(self.dtype)))
+        object.__setattr__(self, "_weak_type", weak_type)
 
     def __instancecheck__(self, instance):
-        if not getattr(instance, "dtype", None) == self.dtype:
+        dtype = getattr(instance, "dtype", None)
+        if dtype is None or self._resolve_dtype(dtype) != self.dtype:
             return False
+
+        if self.shape is Ellipsis:
+            return True
+
         shape = getattr(instance, "shape", None)
-        if shape is None or len(shape) != len(self.shape):
+        return shape is not None and self._shape_matches(shape)
+
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractArray``."""
+        # No need to create a new array if value is already an array
+        val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
+        shape = getattr(val, "shape", None)
+        dtype = getattr(val, "dtype", None)
+        if shape is None or dtype is None:
             return False
-        return all(s2 in {s1, ...} for s1, s2 in zip(shape, self.shape, strict=True))
+
+        dtype = self._resolve_dtype(val.dtype)
+
+        # If self._weak_type, then ``instance``'s dtype must be promotable to self.dtype. For
+        # example, int64 can be promoted to float64, and float32 can be promoted to float64.
+        # However, the inverse is not true in either case.
+        casting = "safe" if self._weak_type else "equiv"
+        # In the general case with weak types, this check will fail if there would be subtype
+        # promotion but precision demotion. For example, comparing ``dtype == int64`` and
+        # ``self.dtype == float32`` will fail, which is inconsistent with weak typing. However,
+        # this is fine because our dtype is weak only if the input dtype was a Python builtin
+        # number type. In that case, ``self.dtype`` will always have the default precision
+        # NumPy uses. For example, ``np.dtype(int) == np.int64``, so ``self.dtype`` will always
+        # have a precision for which this check will behave as expected.
+        if not np.can_cast(dtype, self.dtype, casting=casting):
+            return False
+
+        if self.shape is Ellipsis:
+            return True
+
+        return self._shape_matches(shape)
+
+    def _shape_matches(self, shape) -> bool:
+        if len(shape) != len(self.shape):
+            return False
+        return all(s2 in (s1, -1) for s1, s2 in zip(shape, self.shape, strict=True))
 
     @property
     def size(self) -> int:
         """Total number of elements."""
-        try:
-            return prod(self.shape)
-        except TypeError as e:
-            if any(s == ... for s in self.shape):
-                raise TypeError(
-                    f"size is undefined for {self} with unknown shape dimension specified by Ellipsis."
-                ) from e
-            raise e  # pragma: no cover
+        if self.shape is Ellipsis or any(s == -1 for s in self.shape):
+            raise TypeError(f"size is undefined for {self} with incomplete shape.")
+        return prod(self.shape)
 
     @property
     def T(self) -> "AbstractArray":
         """Transpose view of the array."""
-        return AbstractArray(self.shape[::-1], self.dtype)
+        new_shape = self.shape if self.shape is Ellipsis else self.shape[::-1]
+        return AbstractArray(new_shape, self.dtype)
 
     @property
     def ndim(self) -> int:
         """Number of dimensions."""
+        if self.shape is Ellipsis:
+            raise TypeError(f"ndim is undefined for {self} with incomplete shape.")
         return len(self.shape)
+
+    def _resolve_dtype(self, dtype):
+        """Convert an arbitrary dtype into a numpy dtype."""
+        if dtype.__class__.__module__.split(".")[0] == "torch":
+            import torch  # pylint: disable=import-outside-toplevel
+
+            dummy = torch.empty((), dtype=dtype)
+            dtype = dummy.numpy().dtype
+
+        return np.dtype(dtype)
+
+    def __repr__(self):
+        shape_repr = "..." if self.shape is Ellipsis else self.shape
+        args = f"{shape_repr}, {self.dtype.name}"
+        if self._weak_type:
+            args += ", weak_type=True"
+        return f"AbstractArray({args})"
 
     def __getitem__(self, item):
         raise IndexError("Cannot index into an AbstractArray.")
@@ -208,8 +275,10 @@ class AbstractArray:
         raise IndexError("Cannot index into an AbstractArray.")
 
     def __len__(self) -> int:
-        if not self.shape:
+        if not self.shape or self.shape is Ellipsis:
             raise TypeError("len() of unsized object.")
+        if self.shape[0] < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown size for the first axis.")
         return self.shape[0]
 
     def __eq__(self, other) -> bool:
@@ -244,12 +313,12 @@ class _AbstractTypeFactory(AbstractArray):
         Returns:
             An instance of AbstractArray with the desired shape.
         """
+        if shape is Ellipsis:
+            return AbstractArray(shape, self.dtype)
 
-        if isinstance(shape, int) or shape == ...:
+        if isinstance(shape, int):
             shape = (shape,)
-        if not isinstance(shape, tuple) or not all(
-            isinstance(n, (int, types.EllipsisType)) for n in shape
-        ):
+        if not isinstance(shape, tuple) or not all(isinstance(n, int) and n >= -1 for n in shape):
             raise TypeError(
                 "AbstractTypeFactories can only be subscripted with integers and ellipsis."
             )
@@ -315,18 +384,30 @@ class AbstractWires:
     of wires, useful for resource calculations.
 
     Args:
-        num_wires (int | EllipsisType): The number of wires
+        num_wires (int | EllipsisType): The number of wires. Use ``-1`` when the wire count is unknown.
     """
 
-    num_wires: int | types.EllipsisType
+    num_wires: int
+
+    def __post_init__(self):
+        if not isinstance(self.num_wires, int):
+            raise TypeError(
+                f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
+            )
+        if self.num_wires < -1:
+            raise ValueError(
+                f"'num_wires' must be a non-negative integer, but got {self.num_wires}. "
+                "For a dynamic number of wires, use -1."
+            )
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
             return self.num_wires == other.num_wires
 
         raise TypeError(
-            f"Cannot check equality between AbstractWires and an object of type '{type(other).__name__}'. "
-            f"AbstractWires equality is only supported against other AbstractWires instances."
+            "Cannot check equality between AbstractWires and an object of type "
+            f"'{type(other).__name__}'. AbstractWires equality is only supported "
+            "against other AbstractWires instances."
         )
 
     @property
@@ -343,7 +424,12 @@ class AbstractWires:
         return hash(("AbstractWires", self.num_wires))
 
     def __len__(self) -> int:
+        if self.num_wires < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
         return self.num_wires
+
+    def __repr__(self):
+        return f"AbstractWires({self.num_wires})"
 
     def __instancecheck__(self, instance):
         if not instance.__class__.__name__ == "Wires":
