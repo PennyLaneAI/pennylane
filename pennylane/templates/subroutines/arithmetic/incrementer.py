@@ -190,11 +190,7 @@ class Incrementer(Operator):
         work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
         keep = set(self.wires) - set(self.hyperparameters["work_wires"])
         wires = [wire_map.get(w, w) for w in self.wires if w in keep]
-
-        return Incrementer(
-            wires,
-            work_wires,
-        )
+        return Incrementer(wires, work_wires)
 
 
 def _incrementer_resources(num_wires, **_):
