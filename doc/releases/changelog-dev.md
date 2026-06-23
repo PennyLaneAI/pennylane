@@ -620,6 +620,9 @@
 
   ```
 
+* The ``qp.decomposition.reconstruct`` function and all infrastructure built around it has been removed.
+  [(#9711)](https://github.com/PennyLaneAI/pennylane/pull/9711)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
