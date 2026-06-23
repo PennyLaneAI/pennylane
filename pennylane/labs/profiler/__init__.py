@@ -14,6 +14,34 @@
 r"""
 This module contains experimental features for
 visually profiling resource estimation.
+
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+
+Resource Profiler
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.profiler
+
+.. autosummary::
+    :toctree: api
+
+    ~profile
+    ~export_flame_graph_data
+
+Base Class
+~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.profiler
+
+.. autosummary::
+    :toctree: api
+
+    ~ProfileNode
+
 """
 
 from .extract import profile

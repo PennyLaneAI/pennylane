@@ -21,9 +21,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.estimator.resources_base import Resources
-from pennylane.labs.estimator_beta import T
 from pennylane.labs.profiler import ProfileNode, export_flame_graph_data, profile
 
 # pylint: disable=no-self-use, too-few-public-methods
@@ -145,7 +143,7 @@ def equal_resource_profile(root: ProfileNode, other_root: ProfileNode):
         len(root.children) == len(other_root.children),
     )
     if all(equality_checks) and all(
-        [equal_resource_profile(c1, c2) for c1, c2 in zip(root.children, other_root.children)]
+        equal_resource_profile(c1, c2) for c1, c2 in zip(root.children, other_root.children)
     ):
         return True
     return False
@@ -555,7 +553,7 @@ class TestExportFlameGraphData:
     def test_export_single_operator(self):
         """Test exporting flame graph data for a single resource operator profile."""
         res_profile, _ = profile(qre.QFT(4), {"T", "Hadamard", "CNOT"})
-        ids, names, values, parents = export_flame_graph_data(res_profile)
+        ids, names, _, parents = export_flame_graph_data(res_profile)
 
         assert ids[0] == "circuit"
         assert names[0] == "circuit"

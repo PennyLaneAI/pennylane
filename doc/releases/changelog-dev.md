@@ -559,6 +559,7 @@
     >>> ids, names, values, parents = extracted_info
     >>> print(names[:5])  # just the first 5 entries
     ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
+
   ```
 
 <h3>Breaking changes 💔</h3>
