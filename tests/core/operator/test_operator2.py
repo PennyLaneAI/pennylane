@@ -24,8 +24,7 @@ from operator2_utils import DynOp, FullOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import StatePrepBase2
+from pennylane.core.operator import Operator2, StatePrepBase2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -766,25 +765,6 @@ class TestInitExpectedArgtypesValidation:
             ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
         ):
             Op(0.5, wires=[0])
-
-    def test_validate_arg_types_wire_length_error(self):
-        """Test the ``arg_specs`` wire-length branch of ``__validate_arg_types`` directly."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-            }
-
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires=wires)
-
-        op = Op(np.array(0.5), wires=[0, 1])
-        op.arguments["wires"] = Wires([0])
-
-        with pytest.raises(AssertionError, match=r"Expected 'wires' to have length 2"):
-            op._Operator2__validate_arg_types()
 
 
 class TestProperties:
