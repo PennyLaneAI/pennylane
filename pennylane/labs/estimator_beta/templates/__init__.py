@@ -26,8 +26,6 @@ from .subroutines import (
 )
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
 
-from .subroutines import selectpaulirot_controlled_resource_decomp
-
 from .arithmetic import (
     LabsPhaseAdder,
     LabsAdder,
