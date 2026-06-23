@@ -35,8 +35,8 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.core.queuing import WrappedObj
 from pennylane.decomposition import gate_sets
-from pennylane.queuing import WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 

@@ -12,6 +12,17 @@
 # limitations under the License.
 """The core abstractions of PennyLane.
 
+Queuing
+~~~~~~~
+
+.. currentmodule:: pennylane.core.queuing
+.. autosummary::
+    :toctree: api
+
+    ~QueuingManager
+    ~AnnotatedQueue
+    ~apply
+
 Operator Types
 ~~~~~~~~~~~~~~
 
@@ -74,6 +85,8 @@ Quantum Script
 
 """
 
+from .queuing import QueuingManager, AnnotatedQueue, apply
+
 from .operator import (
     CV,
     Channel,
@@ -102,6 +115,9 @@ from .qscript import (
 )
 
 __all__ = [
+    "QueuingManager",
+    "AnnotatedQueue",
+    "apply",
     "Operator",
     "Operator1",
     "Operator2",

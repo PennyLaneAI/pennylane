@@ -698,6 +698,7 @@
   `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`.
   Moves `QuantumScript`, `QuantumScriptBatch`, `QuantumScriptOrBatch`, `make_qscript`, and `process_queue`
   to `pennylane.core.qscript`.
+  Moves the `pennylane.queuing` to `pennylane.core.queuing`.
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)

@@ -1,9 +1,9 @@
-qp.queuing
+qp.core.queuing
 ===========
 
 Overview
 --------
 
-.. currentmodule:: pennylane.queuing
+.. currentmodule:: pennylane.core.queuing
 
-.. automodule:: pennylane.queuing
+.. automodule:: pennylane.core.queuing

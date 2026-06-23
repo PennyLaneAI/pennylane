@@ -25,12 +25,11 @@ from pennylane import ops
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Operation
 from pennylane.ops.meta import WireCut
-from pennylane.queuing import WrappedObj
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .ops import MeasureNode, PrepareNode
-from .tapes import graph_to_tape
+from .tapes import WrappedObj, graph_to_tape
 
 
 def _prep_zero_state(wire):

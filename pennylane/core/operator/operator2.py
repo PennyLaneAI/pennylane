@@ -18,11 +18,11 @@ TODO: [sc-120453] Fill docstring
 
 import abc
 from abc import ABC
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from functools import partial
 from inspect import BoundArguments, Signature, signature
-from typing import Any, Callable, ClassVar
+from typing import Any, ClassVar
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -30,6 +30,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -42,7 +43,6 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 

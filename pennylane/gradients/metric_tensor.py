@@ -31,11 +31,28 @@ from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
-from pennylane.queuing import WrappedObj
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
+
+
+class WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"Wrapped({self.obj.__repr__()})"
 
 
 def _mt_cjac_tdot(mt, c):

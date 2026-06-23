@@ -25,12 +25,30 @@ import rustworkx as rx
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
+
+
+class WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"Wrapped({self.obj.__repr__()})"
 
 
 def _get_wires(obj, all_wires):

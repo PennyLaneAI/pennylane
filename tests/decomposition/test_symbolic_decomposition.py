@@ -19,7 +19,7 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.decomposition.reconstruct import get_decomp_kwargs, register_reconstructor
 from pennylane.decomposition.resources import (
     Resources,

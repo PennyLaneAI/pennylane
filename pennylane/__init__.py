@@ -21,7 +21,7 @@ import warnings
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
-from pennylane.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager, apply
 
 from pennylane import compiler
 from pennylane.compiler import qjit

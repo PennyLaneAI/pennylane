@@ -22,8 +22,9 @@ from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
-from pennylane import math, ops, queuing
+from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     DecompositionGraph,
