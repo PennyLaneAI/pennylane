@@ -356,5 +356,4 @@ class TestAbstractWires:
             assert not isinstance(w, Wire[i - 1])
 
         # non-wires
-        # pylint: disable=isinstance-second-argument-not-valid-type
         assert not isinstance({"not": "wires"}, Wire)

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.typing import AbstractArray
+from pennylane.templates.core import AbstractArray
 
 
 class TestNumpyMimicForFFT:
@@ -93,6 +93,6 @@ class TestIsRealObjOrClose:
     "dtype, expected", [(int, True), (np.float64, True), (np.complex128, False)]
 )
 def test_is_real_obj_or_close_abstract_array(dtype, expected):
-    """Test that `is_real_obj_or_close` handles qp.typing.AbstractArray correctly."""
+    """Test that `is_real_obj_or_close` handles qp.templates.core.AbstractArray correctly."""
     x = AbstractArray((1, 2, 3), dtype=dtype)
     assert qp.math.is_real_obj_or_close(x) is expected
