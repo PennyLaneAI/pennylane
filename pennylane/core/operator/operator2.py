@@ -22,6 +22,7 @@ from copy import copy, deepcopy
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
+from numbers import Number
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
@@ -146,21 +147,13 @@ class Operator2(metaclass=OperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    fixed_sig: ClassVar[tuple[AbstractArray | AbstractWires, ...] | None] = None
-    """The expected signature of an operator. If set, it must have the same length as
-    the total number of arguments, and be in the same order as the order of the arguments
-    in an operator's constructor. This attribute is optional—not setting it has no loss
-    of functionality. Additionally, it can only be set if:
-
-    * the shape and data type of all dynamic parameters is fixed,
-    * the number of wires is fixed,
-    * there are no static (compilable or non-compilable) arguments, and,
-    * there are no hybrid arguments.
-
-    If set, it can be used to perform automatic validation of an operators inputs during
-    construction. Additionally, when defining decomposition rules for an operator,
-    operator types with fixed signatures can be placed in the rules' resources without
-    needing to fully construct abstract operators.
+    expected_argtypes: ClassVar[dict[str, type]] = None
+    """The expected types for the arguments of an operator. This attribute is optional—not
+    setting it has no loss of functionality. If set, it can be used to perform automatic
+    validation of an operators inputs during construction. Additionally, when defining
+    decomposition rules for an operator, operator types with ``expected_argtypes`` that spans
+    all the arguments with static types can be placed in the rules' resources without needing
+    to fully construct abstract operators.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -1110,31 +1103,27 @@ class Operator2(metaclass=OperatorMeta):
 
     def __validate_arg_types(self) -> None:
         """Validate the provided arguments against their expected type. This method
-        only performs validation on operators if ``op.fixed_sig`` is defined.
+        only performs validation on operators if ``op.expected_argtypes`` is defined.
         """
-        # fixed_sig not present or there are no arguments
-        if not self.fixed_sig:
+        # expected_argtypes not present or there are no arguments
+        if not self.expected_argtypes:
             return
 
-        for name, expected_type in zip(self._sig.parameters, self.fixed_sig, strict=True):
+        for name, et in self.expected_argtypes.items():
             argval = self.arguments[name]
-            if name in self.dynamic_argnames and not expected_type.is_compatible_with(argval):
+            if name in self.dynamic_argnames and not et.is_compatible_with(argval):
                 raise ValueError(
-                    f"Expected '{name}' to have shape {expected_type.shape} and "
-                    f"dtype '{expected_type.dtype.name}', but got {argval}."
+                    f"Expected '{name}' to have shape {et.shape} and dtype '{et.dtype.name}', "
+                    f"but got {argval}."
                 )
-            if (
-                name in self.wire_argnames
-                and expected_type.num_wires >= 0
-                and len(argval) != expected_type.num_wires
-            ):  # pragma: no cover
-                # This branch is basically unreachable because __init_subclass__ uses fixed_sig
-                # to set wire_sizes if it isn't already set. If wire_sizes is set, __init_wires
-                # catches invalid wire sizes before we ever reach here. The only way to reach it
-                # is to manually call this function.
-                raise ValueError(
-                    f"Expected '{name}' to have length {expected_type.num_wires}, but got {argval}."
-                )
+            if name in self.wire_argnames:  # pragma: no cover
+                # This branch is effectively unreachable since a mismatch between the actual
+                # and expected length for a wire argument is validated in __init_wires. We will
+                # only ever reach this branch if __validate_arg_types is called manually.
+                assert et.num_wires in (
+                    -1,
+                    len(argval),
+                ), f"Expected '{name}' to have length {et.num_wires}, but got {argval}."
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
@@ -1178,22 +1167,16 @@ class Operator2(metaclass=OperatorMeta):
                     )
                 seen[name] = group_name
 
-        # fixed_sig can only be defined if there are no hybrid, static, or compilable arguments
-        if cls.fixed_sig is not None:
-            if cls.hybrid_argnames or cls.compilable_argnames or cls.static_argnames:
-                raise TypeError(
-                    f"'{cls.__name__}.fixed_sig' can only be defined if there are no "
-                    "hybrid, static, or compilable arguments."
-                )
-            for at in cls.fixed_sig:
-                if (
-                    isinstance(at, AbstractArray)
-                    and (at.shape is Ellipsis or any(s < 0 for s in at.shape))
-                ) or (isinstance(at, AbstractWires) and at.num_wires < 0):
+        if cls.expected_argtypes:
+            for name, et in cls.expected_argtypes.items():
+                if name in cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames:
                     raise TypeError(
-                        f"'{cls.__name__}.fixed_sig' can only specify types with static sizes, "
-                        f"but got {at} that allows the argument to have arbitrary shape."
+                        f"{cls.__name__}.expected_argtypes can only contain dynamic and "
+                        f"non-hybrid arguments, but got {name}."
                     )
+
+                if isinstance(et, type) and issubclass(et, Number):
+                    cls.expected_argtypes[name] = AbstractArray((), et)
 
         # hybrid_argnames may overlap with wire_argnames, but not with the others.
         hybrid = set(cls.hybrid_argnames)
@@ -1220,34 +1203,45 @@ class Operator2(metaclass=OperatorMeta):
             if len(cls.wire_sizes) != len(cls.wire_argnames):
                 raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
 
-            if cls.fixed_sig:
-                j = 0
-                for i, name in enumerate(cls._sig.parameters):
-                    if name in cls.wire_argnames:
-                        if cls.fixed_sig[i].num_wires != cls.wire_sizes[j]:
-                            raise TypeError(
-                                f"Number of wires specified for '{name}' does not match in "
-                                f"{cls.__name__}.fixed_sig and {cls.__name__}.wire_sizes."
-                            )
-                        j += 1
-
-            for wn, ws in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
-                if wn in cls.hybrid_argnames and ws is not None:
+            for wname, wsize in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
+                # Hybrid wire arguments' entry in wire_sizes must always be ``None``. Hybrid arguments
+                # can be arbitrary pytrees by design
+                if wname in cls.hybrid_argnames and wsize is not None:
                     raise TypeError(
-                        f"Expected wire_size == None for '{wn}' as it is a hybrid wire argument."
+                        f"Expected wire_size == None for '{wname}' as it is a hybrid wire argument."
                     )
 
-                if not ((isinstance(ws, int) and ws > 0) or ws is None):
+                if not ((isinstance(wsize, int) and wsize > 0) or wsize is None):
                     raise TypeError(
                         f"'{cls.__name__}.wire_sizes' is invalid. 'wire_sizes' must be a sequence "
                         f"of positive integers or 'None' values, but got {cls.wire_sizes}."
                     )
 
-        elif cls.fixed_sig:
+                # If the wire argument is in expected_argtypes, the entries in expected_argtypes
+                # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
+                # ``-1`` in wire_sizes and expected_argtypes respectively.
+                if cls.expected_argtypes and (et := cls.expected_argtypes.get(wname)) is not None:
+                    nwires = et.num_wires
+                    if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
+                        cname = cls.__name__
+                        raise TypeError(
+                            f"Number of wires specified for '{wname}' does not match the declared "
+                            f"type in {cname}.expected_argtypes and {cname}.wire_sizes. Got "
+                            f"{nwires} and {wsize} respectively."
+                        )
+
+        elif cls.expected_argtypes:
             cls.wire_sizes = tuple(
-                cls.fixed_sig[i].num_wires
-                for i, name in enumerate(cls._sig.parameters)
-                if name in cls.wire_argnames
+                (
+                    None
+                    if name not in cls.expected_argtypes
+                    else (
+                        None
+                        if cls.expected_argtypes[name].num_wires == -1
+                        else cls.expected_argtypes[name].num_wires
+                    )
+                )
+                for name in cls.wire_argnames
             )
         else:
             cls.wire_sizes = tuple(None for _ in cls.wire_argnames)

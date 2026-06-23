@@ -259,13 +259,15 @@ class TestOperatorAbstractInputs:
         assert op.dynamic_arg == AbstractArray((), builtin_type)
         assert op.hybrid_arg == [AbstractArray((), builtin_type), AbstractArray((), builtin_type)]
 
-    @pytest.mark.parametrize("input", ([float], [float, float]))
+    @pytest.mark.parametrize(
+        "input", ([float], [float, float], [AbstractArray((), float), AbstractArray((), float)])
+    )
     def test_array_of_types_for_dynamic_arg(self, input):
-        """Tests that a NotImplementedError gets raised if an array of types is used as input for dynamic arg."""
+        """Tests that a NotImplementedError gets raised if a sequence of types is used as input for dynamic arg."""
 
         with pytest.raises(
             NotImplementedError,
-            match="array of types for a dynamic argument is not currently supported",
+            match="sequence of types for a dynamic argument is not currently supported",
         ):
             _ = DynOp(input, AbstractWires(1))
 
