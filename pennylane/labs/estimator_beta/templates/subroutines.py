@@ -2337,7 +2337,6 @@ class SelAmp(qre.ResourceOperator):
         gate_cost = []
         x = qre.X.resource_rep()
         cnot = qre.CNOT.resource_rep()
-        h = qre.Hadamard.resource_rep()
         cz = qre.CZ.resource_rep()
         ccz = qre.CCZ.resource_rep()
 
@@ -2361,3 +2360,4 @@ class SelAmp(qre.ResourceOperator):
 
         gate_cost.append(qre.Deallocate(2))
         return gate_cost
+    
