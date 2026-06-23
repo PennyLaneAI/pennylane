@@ -2332,7 +2332,7 @@ class SelAmp(qre.ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        params = {"n": n,}
+        params = {"n": n}
         return qre.CompressedResourceOp(cls, 2 * n + 2, params)
 
     @classmethod
