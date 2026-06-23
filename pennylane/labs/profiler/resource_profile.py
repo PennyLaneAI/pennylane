@@ -43,7 +43,7 @@ class ProfileNode:
             default value of ``None``.
         scalar (int): the number of times ``cmpr_op`` appears at this level of the
             decomposition (the *local* multiplicity). Defaults to ``1``.
-        gate_data (dict | None): a mapping from :class:`~.estimator.CompressedResourceOp`
+        gate_data (dict | None): a mapping from :class:`~pennylane.estimator.CompressedResourceOp`
             to the integer number of times each gate-set operator occurs in the subtree
             rooted at this node. If ``None``, an empty ``defaultdict(int)`` is used.
         children (list[ProfileNode] | None): the child nodes obtained by decomposing
@@ -51,7 +51,7 @@ class ProfileNode:
 
     **Example**
 
-    ``ProfileNode``s are used when profiling the resources of a quantum circuit or operator, and
+    :class:`ProfileNode` instances are used when profiling the resources of a quantum circuit or operator, and
     will be generated using the :func:`~.pennylane.labs.profiler.profile` function.
 
     >>> import pennylane.labs.estimator_beta as qre
@@ -377,8 +377,8 @@ def export_flame_graph_data(
 
     Args:
         root_node (ProfileNode): the root node of the profile tree to export.
-        group_func (Callable | None): a function used to group sibling nodes by name at each
-            level of the tree. If ``None``, :meth:`ProfileNode.default_group_func` is used.
+        group_by (str): A string which determines how to group together similar operators at each
+            level of the tree. Valid options include grouping by ``"name"`` (default) or by ``"type"``.
         cost_func (Callable | None): a function mapping a gate-count dictionary to a numeric
             cost. If ``None``, :meth:`ProfileNode.default_cost_func` is used.
 
@@ -423,9 +423,8 @@ def export_flame_graph_data(
     >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     >>> fig.show()
 
-    .. figure:: ../../_static/profiler_plotly_display.png
+    .. figure:: ../../../_static/profiler_plotly_display.png
         :align: center
-        :width: 60%
         :target: javascript:void(0);
     """
 
