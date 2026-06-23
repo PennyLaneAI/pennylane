@@ -2363,4 +2363,3 @@ class SelAmp(qre.ResourceOperator):
 
         gate_cost.append(qre.Deallocate(2))
         return gate_cost
-    
