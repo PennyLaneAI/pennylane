@@ -420,8 +420,8 @@ class TestAbstractWires:
         with pytest.raises(TypeError, match="'num_wires' must be"):
             _ = AbstractWires("a")
 
-        with pytest.raises(TypeError, match="'num_wires' must be"):
-            _ = AbstractWires("a")
+        with pytest.raises(ValueError, match="'num_wires' must be"):
+            _ = AbstractWires(-3)
 
     def test_comparison(self):
         """Test for equality and comparison."""
