@@ -19,7 +19,7 @@ from collections import defaultdict
 from collections.abc import Hashable, Iterable
 from typing import Any
 
-from pennylane import capture, compiler, math
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
@@ -470,9 +470,6 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-
-    if compiler.active() or capture.enabled():
-        input_reg = math.array(input_reg, like="jax")
 
     # Invert all bits
     @for_loop(len(input_reg))

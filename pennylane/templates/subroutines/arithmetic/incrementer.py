@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
-from pennylane import compiler
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
@@ -244,7 +243,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     def _increment():
         # Construct the wires on which the ladder will act.
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
-        if compiler.active() or enabled():
+        if enabled():
             zipped = array(zipped, like="jax")
             all_wires = jnp.concatenate([wires[:1], zipped])
         else:
@@ -253,7 +252,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            if compiler.active() or enabled():
+            if enabled():
                 TemporaryAND(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
                 TemporaryAND(all_wires[2 * k : 2 * k + 3])
@@ -264,7 +263,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            if compiler.active() or enabled():
+            if enabled():
                 adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
                 adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
