@@ -18,8 +18,8 @@ from operator2_utils import DynOp, MixedHybridOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 
 class TestAbstractify:
