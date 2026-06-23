@@ -137,7 +137,7 @@ class AbstractArray:
     attributes necessary for resource calculations.
 
     Args:
-        shape (tuple[int, ...] | Ellipsis): the dimensions of the array.
+        shape (tuple[int, ...] | types.EllipsisType): the dimensions of the array.
             ``()`` corresponds to a scalar. ``Ellipsis`` (``...``) means the number of axes
             is unknown. Within a shape tuple, ``-1`` marks an axis whose size is unknown.
         dtype (type): the data type of the array. Can either be a ``builtin`` like
@@ -162,6 +162,7 @@ class AbstractArray:
 
     shape: tuple[int, ...] | EllipsisType
     dtype: np.dtype
+    shape_fixed: bool = field(init=False)
     _weak_type: bool = field(init=False)
 
     def __post_init__(self):
@@ -172,15 +173,25 @@ class AbstractArray:
             # subclasses of Number
             and self.dtype.__module__ == "builtins"
         )
-        if self.shape is not Ellipsis:
+
+        if self.shape is Ellipsis:
+            object.__setattr__(self, "shape_fixed", False)
+        else:
             shape = tuple(self.shape)
-            if not all(isinstance(s, int) and s >= -1 for s in shape):
-                raise ValueError(
-                    f"Shapes can only be initialized with integer values, but got {shape}. "
-                    "For axes with unknown sizes, use -1. For an unknown number of axes, "
-                    "use shape=Ellipsis."
-                )
+            shape_fixed = True
+
+            for s in shape:
+                if not isinstance(s, int) or s < -1:
+                    raise ValueError(
+                        f"Shapes can only be initialized with integer values, but got {shape}. "
+                        "For axes with unknown sizes, use -1. For an unknown number of axes, "
+                        "use shape=Ellipsis."
+                    )
+                if s == -1:
+                    shape_fixed = False
+
             object.__setattr__(self, "shape", shape)
+            object.__setattr__(self, "shape_fixed", shape_fixed)
 
         object.__setattr__(self, "dtype", np.dtype(self._resolve_dtype(self.dtype)))
         object.__setattr__(self, "_weak_type", weak_type)
@@ -234,7 +245,7 @@ class AbstractArray:
     @property
     def size(self) -> int:
         """Total number of elements."""
-        if self.shape is Ellipsis or any(s == -1 for s in self.shape):
+        if not self.shape_fixed:
             raise TypeError(f"size is undefined for {self} with incomplete shape.")
         return prod(self.shape)
 
@@ -332,9 +343,9 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 >>> isinstance(np.array(2), qp.typing.Int)
 True
 >>> qp.typing.Int[4, 2]
-AbstractArray(shape=(4, 2), dtype=dtype('int64'))
->>> qp.typing.Int[..., 10]
-AbstractArray(shape=(Ellipsis, 10), dtype=dtype('int64'))
+AbstractArray((4, 2), int64, weak_type=True)
+>>> qp.typing.Int[-1, 10]
+AbstractArray((-1, 10), int64, weak_type=True)
 
 """
 
@@ -346,9 +357,9 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 >>> isinstance(np.array(2.0), qp.typing.Float)
 True
 >>> qp.typing.Float[4, 2]
-AbstractArray(shape=(4, 2), dtype=dtype('float64'))
->>> qp.typing.Float[..., 10]
-AbstractArray(shape=(Ellipsis, 10), dtype=dtype('float64'))
+AbstractArray((4, 2), float64, weak_type=True)
+>>> qp.typing.Float[-1, 10]
+AbstractArray((-1, 10), float64, weak_type=True)
 
 """
 
@@ -359,9 +370,9 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 >>> isinstance(np.array(False), qp.typing.Bool)
 True
 >>> qp.typing.Bool[4]
-AbstractArray(shape=(4,), dtype=dtype('bool'))
->>> qp.typing.Bool[..., 10]
-AbstractArray(shape=(Ellipsis, 10), dtype=dtype('bool'))
+AbstractArray((4,), bool, weak_type=True)
+>>> qp.typing.Bool[-1, 10]
+AbstractArray((-1, 10), bool, weak_type=True)
 
 """
 
@@ -372,8 +383,8 @@ can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensi
 
 >>> isinstance(np.array(0 + 1.2j), qp.typing.Complex)
 True
->>> qp.typing.Complex[..., 2]
-AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+>>> qp.typing.Complex[-1, 2]
+AbstractArray((-1, 2), complex128, weak_type=True)
 
 """
 
@@ -384,7 +395,7 @@ class AbstractWires:
     of wires, useful for resource calculations.
 
     Args:
-        num_wires (int | EllipsisType): The number of wires. Use ``-1`` when the wire count is unknown.
+        num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
     """
 
     num_wires: int
@@ -396,7 +407,7 @@ class AbstractWires:
             )
         if self.num_wires < -1:
             raise ValueError(
-                f"'num_wires' must be a non-negative integer, but got {self.num_wires}. "
+                f"'num_wires' must be a non-negative integer or -1, but got {self.num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
 
@@ -432,8 +443,10 @@ class AbstractWires:
         return f"AbstractWires({self.num_wires})"
 
     def __instancecheck__(self, instance):
-        if not instance.__class__.__name__ == "Wires":
+        if instance.__class__.__name__ != "Wires":
             return False
+        if self.num_wires == -1:
+            return True
         return len(instance) == self.num_wires
 
 
@@ -459,22 +472,20 @@ class _AbstractWireTypeFactory(AbstractWires):
             An instance of AbstractWires with the desired shape.
         """
 
-        if not (isinstance(shape, int) or shape == ...):
-            raise TypeError(
-                "_AbstractWireTypeFactory's can only be subscripted with integers and ellipsis."
-            )
+        if not isinstance(shape, int):
+            raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
         return AbstractWires(shape)
 
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractWires` for arbitrary dimensions.
+"""An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single wire, but
+can be indexed to create :class:`~.AbstractWires` with a fixed or dynamic wire count.
 
 >>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
 True
 >>> qp.typing.Wire[2]
-AbstractWires(num_wires=2)
->>> qp.typing.Wire[...]
-AbstractWires(num_wires=Ellipsis)
+AbstractWires(2)
+>>> qp.typing.Wire[-1]
+AbstractWires(-1)
 
 """
