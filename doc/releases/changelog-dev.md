@@ -860,6 +860,10 @@
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 
+* Fixed bugs where string PyTree leaves were incorrectly
+  restored as ``bytes``.
+  [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
