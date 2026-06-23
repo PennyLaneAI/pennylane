@@ -554,3 +554,6 @@ def __getattr__(key):
             "pennylane.queuing.process_queue has been moved to qp.tape.qscript.from_queue"
         )
     raise AttributeError(f"module 'pennylane.queuing' has no attribute '{key}'")
+
+
+__all__ = ["QueuingManager", "AnnotatedQueue", "apply"]
