@@ -15,10 +15,12 @@
 """Tests for the Adjoint2 class."""
 
 import numpy as np
+import pytest
 from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.wires import Wires
 
@@ -151,6 +153,14 @@ def test_parameter_frequencies():
     assert qp.gradients.parameter_frequencies(op) == [(1,)]
 
 
+def test_instance_check():
+    """Tests that Adjoint2 objects are considered instances of Adjoint."""
+
+    op = qp.adjoint(RX2(-0.5, wires=0))
+    assert isinstance(op, Adjoint)
+    assert isinstance(op, AdjointOperation)
+
+
 def test_methods():
     """Tests the operator methods."""
 
@@ -198,3 +208,19 @@ def test_representation():
     assert repr(nested_op) == "Adjoint(Adjoint(RX2(theta=0.5, wires=[1])))"
     assert nested_op.label() == "(RX2†)†"
     assert nested_op.name == "Adjoint(Adjoint(RX2))"
+
+
+def test_adjoint_equality():
+    """Tests comparing adjoint operators."""
+
+    base_op = RX2(0.5, wires=1)
+
+    class OldOp(qp.core.operator.Operator1):  # pylint: disable=too-few-public-methods
+        pass
+
+    another_base = OldOp(wires=0)
+
+    assert qp.adjoint(base_op) == Adjoint2(base_op)
+
+    with pytest.raises(AssertionError, match="different base operations"):
+        qp.assert_equal(qp.adjoint(base_op), qp.adjoint(another_base))
