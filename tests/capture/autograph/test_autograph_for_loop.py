@@ -119,7 +119,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_array_unpack(self):
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
@@ -133,7 +134,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_numeric_list(self):
         """Test for loop over a Python list that is convertible to an array."""
@@ -147,7 +149,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_numeric_list_of_list(self):
         """Test for loop over a nested Python list that is convertible to an array."""
@@ -162,7 +165,10 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
+        inner_jaxpr = qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-1].primitive.name == "for_loop"
 
     @pytest.mark.xfail(
         reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
@@ -180,7 +186,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
@@ -193,7 +200,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_static_range_indexing_array(self):
         """Test for loop over a Python range with static bounds that is used to index an array."""
@@ -207,7 +215,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_dynamic_range(self):
         """Test for loop over a Python range with dynamic bounds."""
@@ -220,7 +229,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_dynamic_range_indexing_array(self):
         """Test for loop over a Python range with dynamic bounds that is used to index an array."""
@@ -234,7 +244,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_array(self):
         """Test for loop over a Python enumeration on an array."""
@@ -247,7 +258,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_array_no_unpack(self):
         """Test for loop over a Python enumeration with delayed unpacking."""
@@ -260,7 +272,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_nested_unpack(self):
         """Test for loop over a Python enumeration with nested unpacking."""
@@ -274,7 +287,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_start(self):
         """Test for loop over a Python enumeration with offset indices."""
@@ -287,7 +301,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_numeric_list(self):
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
@@ -301,7 +316,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "for_loop[" in str(jaxpr)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_iterating_over_wires(self):
         """Test that a wires obejct is a valid iteration target for a for loop,

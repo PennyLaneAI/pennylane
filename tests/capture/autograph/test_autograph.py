@@ -310,7 +310,8 @@ class TestIntegration:
             return qp.expval(qp.Z(0))
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert "Adjoint" in str(plxpr)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        assert inner_jaxpr.eqns[1].primitive.name == "Adjoint"
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -321,7 +322,12 @@ class TestIntegration:
             return qp.expval(qp.Z(0))
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert "adjoint_transform" in str(plxpr)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        adjoint_transform = inner_jaxpr.eqns[0]
+        assert adjoint_transform.primitive.name == "adjoint_transform"
+        jaxpr_inside_adjoint = adjoint_transform.params["jaxpr"]
+        assert len(jaxpr_inside_adjoint.eqns) == 1
+        assert jaxpr_inside_adjoint.eqns[0].primitive.name == "PauliX"
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qp.adjoint raises an error."""
@@ -392,7 +398,8 @@ class TestIntegration:
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert "Controlled" in str(plxpr)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        assert inner_jaxpr.eqns[2].primitive.name == "Controlled"
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -404,7 +411,12 @@ class TestIntegration:
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
-        assert "ctrl_transform" in str(plxpr)
+        inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
+        ctrl_transform = inner_jaxpr.eqns[1]
+        assert ctrl_transform.primitive.name == "ctrl_transform"
+        jaxpr_inside_ctrl = ctrl_transform.params["jaxpr"]
+        assert len(jaxpr_inside_ctrl.eqns) == 1
+        assert jaxpr_inside_ctrl.eqns[0].primitive.name == "PauliX"
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qp.ctrl raises an error."""
