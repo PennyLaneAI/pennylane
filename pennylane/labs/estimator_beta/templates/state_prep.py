@@ -479,7 +479,8 @@ class PrepAmp(qre.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources."""
+        r"""Returns a dictionary containing the minimal information 
+        needed to compute the resources."""
         # the keys should match the resource keys
         return {
             "n": self.num_wires,
@@ -491,7 +492,8 @@ class PrepAmp(qre.ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: 
+            the operator in a compressed representation
         """
         params = {"n": n}
         return qre.CompressedResourceOp(cls, n, params)
