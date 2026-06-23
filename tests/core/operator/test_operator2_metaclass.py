@@ -263,7 +263,7 @@ class TestOperatorAbstractInputs:
         "input", ([float], [float, float], [AbstractArray((), float), AbstractArray((), float)])
     )
     def test_array_of_types_for_dynamic_arg(self, input):
-        """Tests that a NotImplementedError gets raised if an array of types is used as input for dynamic arg."""
+        """Tests that a NotImplementedError gets raised if a sequence of types is used as input for dynamic arg."""
 
         with pytest.raises(
             NotImplementedError,
