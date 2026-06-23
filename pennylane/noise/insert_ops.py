@@ -66,24 +66,24 @@ def insert(
 
     Circuits passed through this transform will be updated to have the operation, specified by the
     ``op`` argument, added according to the positioning specified in the ``position`` argument. Only
-    single qubit ``operations`` are permitted to be inserted.
+    single qubit operations are permitted to be inserted.
 
     The type of ``op`` can be either a single operation or a quantum
     function acting on a single wire. A quantum function can be used
-    to specify a sequence of ``operations`` acting on a single qubit (see the usage details
+    to specify a sequence of operations acting on a single qubit (see the usage details
     for more information).
 
     Args:
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
-        op (callable or Type[Operation]): the single-qubit operation, or sequence of ``operations``
+        op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
-        position (str or PennyLane operation or list of ``operations``): Specification of where to add the operation.
+        position (str or PennyLane operator or list of operators): Specification of where to add the operation.
             Should be one of: ``"all"`` to add the operation after all gates (except state preparations);
             ``"start"`` to add the operation to all wires at the start of the circuit (but after state preparations);
             ``"end"`` to add the operation to all wires at the end of the circuit;
-            list of ``operations`` to add the operation before or after depending on ``before``.
+            list of operations to add the operation before or after depending on ``before``.
         before (bool): Whether to add the operation before the given operation(s) in ``position``.
             Default is ``False`` and the operation is inserted after.
 

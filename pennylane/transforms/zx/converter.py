@@ -107,7 +107,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
 @_needs_pyzx
 def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
-    The ``graph`` can be optimized and transformed by well-known ZX-calculus reductions.
+    The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
         tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
@@ -115,10 +115,9 @@ def to_zx(tape, expand_measurements=False):
             rotations will be added to the operations.
 
     Returns:
-        ``graph`` (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-
-        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
-        will provide the ZX ``graph`` in the form of a PyZX ``graph``.
+        pyzx.Graph or QNode or quantum function (Callable) or tuple[List[QuantumTape], function]:
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
+            will provide the ZX graph in the form of a PyZX graph.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -126,7 +125,7 @@ def to_zx(tape, expand_measurements=False):
     **Example**
 
     You can use the transform decorator directly on your :class:`~.QNode`, quantum function and executing it will produce a
-    PyZX ``graph``. You can also use the transform directly on the :class:`~.QuantumTape`.
+    PyZX graph. You can also use the transform directly on the :class:`~.QuantumTape`.
 
     .. code-block:: python
 
@@ -153,12 +152,12 @@ def to_zx(tape, expand_measurements=False):
     >>> g
     Graph(20 vertices, 23 edges)
 
-    It is now a PyZX ``graph`` and can apply function from the framework on your Graph, for example you can draw it:
+    It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
 
     >>> pyzx.draw_matplotlib(g)
     <Figure size ... with 1 Axes>
 
-    Alternatively you can use the transform directly on a quantum tape and get PyZX ``graph``.
+    Alternatively you can use the transform directly on a quantum tape and get PyZX graph.
 
     .. code-block:: python
 
@@ -263,9 +262,9 @@ def to_zx(tape, expand_measurements=False):
 
         The circuit contains 63 gates; 28 :func:`qp.T` gates, 28 :func:`qp.CNOT`, 6 :func:`qp.Hadmard` and
         1 :func:`qp.X`. We applied the ``qp.transforms.to_zx`` decorator in order to transform our circuit to
-        a ZX ``graph``.
+        a ZX graph.
 
-        You can get the PyZX ``graph`` by simply calling the QNode:
+        You can get the PyZX graph by simply calling the QNode:
 
         >>> g = mod_5_4()
         >>> pyzx.tcount(g)
@@ -273,7 +272,7 @@ def to_zx(tape, expand_measurements=False):
 
         PyZX gives multiple options for optimizing ZX graphs (:func:`pyzx.full_reduce`, :func:`pyzx.teleport_reduce`, ...).
         The :func:`pyzx.full_reduce` applies all optimization passes, but the final result may not be circuit-like.
-        Converting back to a quantum circuit from a fully reduced ``graph`` may be difficult to impossible.
+        Converting back to a quantum circuit from a fully reduced graph may be difficult to impossible.
         Therefore we instead recommend using :func:`pyzx.teleport_reduce`, as it preserves the circuit structure.
 
         >>> g = pyzx.simplify.teleport_reduce(g)
@@ -311,7 +310,7 @@ def to_zx(tape, expand_measurements=False):
 
     .. note::
 
-        Prior to being added to the ``graph``, Toffoli and CCZ gates are replaced by particular decompositions. These decompositions
+        Prior to being added to the graph, Toffoli and CCZ gates are replaced by particular decompositions. These decompositions
         are described in detail in: J. Welch, A. Bocharov, and K. Svore, “Efficient Approximation of Diagonal Unitaries over the Clifford+T Basis,”
         Quantum information & computation, vol. 16, Dec. 2014, doi: 10.26421/QIC16.1-2-6.
         This is necessary because Toffoli and CCZ gates are not directly supported in PyZX.
