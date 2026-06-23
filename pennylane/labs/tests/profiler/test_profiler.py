@@ -131,8 +131,6 @@ def _manually_generated_resources():
 def equal_resource_profile(root: ProfileNode, other_root: ProfileNode):
     """Check equality of resource profiles"""
 
-
-
     equality_checks = (
         root.cmpr_op == other_root.cmpr_op,
         root.scalar == other_root.scalar,

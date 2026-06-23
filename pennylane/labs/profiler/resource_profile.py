@@ -547,7 +547,7 @@ def _recursive_export_flame_graph_by_type(
         parents.append(parent_id)
 
         sub_grouped_data = group_func(child_nodes)
-        _recurrsive_export_flame_graph_by_type(
+        _recursive_export_flame_graph_by_type(
             group_func,
             cost_func,
             sub_grouped_data,
