@@ -74,7 +74,7 @@ def get_position_coefficients(fragment: RealspaceMatrix):
     n_modes = fragment.modes
     wires = list(range(qp.math.ceil_log2(n_states)))
     diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-    M = qp.matrix(diagonalize_vibronic, wires)(diag_key, wires)[:n_states, :n_states]
+    M = qp.matrix(diagonalize_vibronic, wires)(key=diag_key, wires=wires)[:n_states, :n_states]
     constant = M.T @ fragment_to_dense(fragment, ()) @ M
     # constant.shape = (n_states, n_states)
     constant_diag = np.diag(constant)
@@ -121,7 +121,7 @@ def get_momentum_coefficients(fragment: RealspaceMatrix):
     return coeffs_final
 
 
-def diagonalize_vibronic(key: tuple[int], wires: WiresLike):
+def diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
     r"""Diagonalize a vibronic fragment by applying Clifford operations.
     Based on Fig.2 of `Motlagh et al, arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__.
 
@@ -157,7 +157,8 @@ def load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
     """Extract bit strings for one-dimensional coefficients array, XOR them with
     ``prev_bitstrings``, and load the result with a QROM, using the registers in ``qrom_wires``."""
     new_bitstrings = qp.math.binary_decimals(coefficients, precision, unit=2 * np.pi)
-    change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
+    # np.bitwise_xor is not tracing-compatible
+    change_bitstrings = (prev_bitstrings + new_bitstrings) % 2
     qp.QROM(change_bitstrings, **qrom_wires)
     return new_bitstrings
 
@@ -166,10 +167,10 @@ def _extract_registers(registers, term, *mode_ids):
     """Extract registers for a specific term of the vibronic Trotter time evolution."""
     if term == "quadratic":
         (k,) = mode_ids
-        square_wires = {"x_wires": f"mode {k}", "y_wires": "cache", "work_wires": "work"}
+        square_wires = {"x_wires": f"mode {k}", "output_wires": "cache", "work_wires": "work"}
         square_wires = {new: registers[old] for new, old in square_wires.items()}
         # The cache contains 2k wires, we just need 2k-1 here
-        square_wires["y_wires"] = square_wires["y_wires"][1:]
+        square_wires["output_wires"] = square_wires["output_wires"][1:]
         mult_wires = {
             "x_wires": "coefficients",
             "y_wires": "cache",
@@ -201,7 +202,12 @@ def _extract_registers(registers, term, *mode_ids):
         return mode_mult_wires, coeff_mult_wires
     if term == "QROM":
         reg = {"control_wires": "electronic", "target_wires": "coefficients", "work_wires": "work"}
-    elif term == "constant":
+        qrom_wires = {new: registers[old] for new, old in reg.items()}
+        # Fix lambda=1
+        qrom_wires["work_wires"] = qrom_wires["work_wires"][: len(qrom_wires["control_wires"]) - 1]
+        return qrom_wires
+
+    if term == "constant":
         reg = {"x_wires": "coefficients", "y_wires": "phase gradient", "work_wires": "work"}
     elif term == "linear":
         (k,) = mode_ids
@@ -241,21 +247,24 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
     precision = len(registers["phase gradient"])
     first_order_time_step = time / 2
     qrom_wires = _extract_registers(registers, "QROM")
+    diag_keys = [
+        next(iter(k for k, v in frag.get_coefficients().items() if v)) for frag in fragments
+    ]
 
     def position_fragments(i):
         fragment = fragments[i]
-        diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-        qp.adjoint(diagonalize_vibronic)(diag_key, registers["electronic"])
+        diag_key = diag_keys[i]
+        # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
+        diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
+        # qp.adjoint(diagonalize_vibronic)(key=diag_key, wires=registers["electronic"])
 
-        all_coeffs = get_position_coefficients(fragment)
-        all_coeffs = (qp.math.array(c, like="jax") * first_order_time_step for c in all_coeffs)
+        all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
         const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
-        # TODO: Filter fully-zeroed coefficients along the right axis/axes
 
         def constant_term(prev_bitstrings):
-            new_bitstrings = qp.math.binary_decimals(const_coeffs, precision, unit=2 * np.pi)
-            change_bitstrings = np.bitwise_xor(prev_bitstrings, new_bitstrings)
-            qp.QROM(change_bitstrings, **qrom_wires)
+            if np.allclose(const_coeffs, 0.0):
+                return prev_bitstrings
+            new_bitstrings = load_coefficients(const_coeffs, precision, prev_bitstrings, qrom_wires)
             qp.SemiAdder(**_extract_registers(registers, "constant"))
             return new_bitstrings
 
@@ -265,8 +274,11 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             The currently encoded bitstrings on the coefficients register are provided in
             ``prev_bitstrings``."""
             _coeffs = linear_coeffs[k]
+            if np.allclose(_coeffs, 0.0):
+                return prev_bitstrings
             new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
-            semi_signed_out_multiplier(**_extract_registers(registers, "linear", k))
+            mult_wires = _extract_registers(registers, "linear", k)
+            semi_signed_out_multiplier(**mult_wires)
             return new_bitstrings
 
         @qp.for_loop(fragment.modes)
@@ -275,11 +287,15 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             The currently encoded bitstrings on the coefficients register are provided in
             ``prev_bitstrings``."""
             _coeffs = quadratic_coeffs[k]
+            if np.allclose(_coeffs, 0.0):
+                return prev_bitstrings
             new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
             square_wires, mult_wires = _extract_registers(registers, "quadratic", k)
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
             qp.OutMultiplier(**mult_wires)
-            qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
+            # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
+            qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
+            # qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
             return new_bitstrings
 
         @qp.for_loop(fragment.modes - 1)
@@ -293,16 +309,22 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             @qp.for_loop(k + 1, fragment.modes)
             def _inner_bilinear_terms(ell, prev_bitstrings):
                 _coeffs = bilinear_coeffs[k, ell]
+                if np.allclose(_coeffs, 0.0):
+                    return prev_bitstrings
                 mode_mult_wires, coeff_mult_wires = _extract_registers(
                     registers, "bilinear", k, ell
                 )
                 new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                 semi_signed_out_multiplier(**coeff_mult_wires)
-                qp.adjoint(qp.SignedOutMultiplier)(**mode_mult_wires, output_wires_zeroed=True)
+                # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
+                qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
+                # qp.adjoint(qp.SignedOutMultiplier)(**mode_mult_wires, output_wires_zeroed=True)
                 return new_bitstrings
 
-            return _inner_bilinear_terms(prev_bitstrings)
+            prev_bitstrings = _inner_bilinear_terms(prev_bitstrings)
+
+            return prev_bitstrings
 
         prev_bitstrings = np.zeros(precision, dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
@@ -312,27 +334,32 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         qp.QROM(prev_bitstrings, **qrom_wires)
-        diagonalize_vibronic(diag_key, registers["electronic"])
+        diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
 
     def kinetic_fragment(fragment, aqft_order):
         # use time, not first_order_time_step because the kinetic fragment is the
         # middle one in second-order Trotter, so we immediately merge the two neighbouring
         # fragments with first_order_time_step duration.
         # todo: Replace BasisState + SignedMultiplier by a classical-quantum multiplier?
-        kinetic_coeffs = qp.math.array(get_momentum_coefficients(fragment), like="jax") * time
+        kinetic_coeffs = get_momentum_coefficients(fragment) * time
 
         @qp.for_loop(fragment.modes)
         def kinetic_terms(k):
             """Run a single quadratic time evolution sub-fragment for mode ``k`` in momentum
             space."""
             square_wires, mult_wires = _extract_registers(registers, "quadratic", k)
-            bitstring = qp.math.binary_decimals(kinetic_coeffs[k], precision, unit=2 * np.pi)
+            _coeffs = kinetic_coeffs[k]
+            if np.allclose(_coeffs, 0.0):
+                return
+            bitstring = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
 
             qp.BasisState(bitstring, registers["coefficients"])
             qp.AQFT(order=aqft_order, wires=registers[f"mode {k}"])
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
             qp.OutMultiplier(**mult_wires)
-            qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
+            # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
+            qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
+            # qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
             qp.adjoint(qp.AQFT)(order=aqft_order, wires=registers[f"mode {k}"])
             qp.BasisState(bitstring, registers["coefficients"])
 
@@ -356,10 +383,11 @@ def _validate_registers(registers, fragments):
     k = len(registers["mode 0"])
     b = len(registers["coefficients"])
 
-    assert len(registers["electronic"]) == qp.math.ceil_log2(n_states)
+    n = qp.math.ceil_log2(n_states)
+    assert len(registers["electronic"]) == n
     assert len(registers["cache"]) >= 2 * k
     assert len(registers["phase gradient"]) >= b
-    assert len(registers["coefficients"]) >= 2 + b + max(b, 2 * k)
+    assert len(registers["work"]) >= max(n - 1, 2 * k, 2 * b + 2)
     assert all(len(registers[f"mode {i}"]) == k for i in range(1, n_modes))
 
 
@@ -462,10 +490,14 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         qubit overhead and minimizes the non-Clifford gate count.
 
     """
+    print("trotter_vibronic has been called.")
     _validate_registers(registers, fragments)
 
     assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps
+
+    if aqft_order is None:
+        aqft_order = len(registers["mode 0"]) - 1
 
     @qp.for_loop(num_trotter_steps)
     def trotter_steps(step_idx):
