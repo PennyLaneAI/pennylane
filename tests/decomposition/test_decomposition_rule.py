@@ -416,7 +416,28 @@ class TestDecompositionRule:
         reason="Upstream issue in #9675 that causes hash(float) != hash(np.dtype('float64')) which breaks the test.",
         strict=True,
     )
-    def test_resource_keys_are_abstract_operators(self):
+    @pytest.mark.parametrize(
+        "abstract_sig, concrete_sig",
+        [
+            (
+                (
+                    AbstractArray((), float),
+                    AbstractArray((2, 2), float),
+                    AbstractWires(1),
+                ),
+                (1.5, np.ones((2, 2), dtype=float), 5),
+            ),
+            (
+                (
+                    AbstractArray((), int),
+                    AbstractArray((2, 2), int),
+                    AbstractWires(1),
+                ),
+                (5, np.ones((2, 2), dtype=np.int32), 5),
+            ),
+        ],
+    )
+    def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
         class FixedSigOp(
@@ -424,11 +445,7 @@ class TestDecompositionRule:
         ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
             dynamic_argnames = ("phi", "matrix")
 
-            fixed_sig = (
-                AbstractArray((), float),
-                AbstractArray((2, 2), float),
-                AbstractWires(1),
-            )
+            fixed_sig = abstract_sig
 
             def __init__(self, phi, matrix, wires):
                 super().__init__(phi, matrix, wires)
@@ -437,21 +454,15 @@ class TestDecompositionRule:
             {
                 # all three represent the same abstract operator
                 FixedSigOp: 1,
-                FixedSigOp(
-                    phi=AbstractArray((), float),
-                    matrix=AbstractArray((2, 2), float),
-                    wires=AbstractWires(1),
-                ): 2,
-                FixedSigOp(1.5, np.ones((2, 2), dtype=float), 0): 3,
+                FixedSigOp(*abstract_sig): 2,
+                FixedSigOp(*concrete_sig): 3,
             }
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
         # Gets grouped together
-        exp_dict = {
-            FixedSigOp(AbstractArray((), float), AbstractArray((2, 2), float), AbstractWires(1)): 6
-        }  # 1 + 2 + 3
+        exp_dict = {FixedSigOp(*abstract_sig): 6}  # 1 + 2 + 3
         assert custom_decomp.compute_resources().gate_counts == exp_dict
 
     def test_auto_wrap_fails(self):
