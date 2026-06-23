@@ -257,7 +257,7 @@ class ProfileNode:
         QFT(4) x1
 
         The child nodes can be grouped using the ``group_by_name`` method. Note that only operators that are
-        programatically identical, i.e share the same type and same resource parameters, will be merged together
+        programmatically identical, i.e share the same type and same resource parameters, will be merged together
         (e.g ``qre.CRX(1e-9)`` vs. ``qre.CRX(1e-3)``).
 
         >>> grouped_nodes = ProfileNode.group_by_type(res_profile.children)
@@ -450,7 +450,7 @@ def export_flame_graph_data(
     grouped_data = group_func(child_nodes)
 
     if group_by == "type":
-        _recurrsive_export_flame_graph_by_type(
+        _recursive_export_flame_graph_by_type(
             group_func,
             cost_func,
             grouped_data,
@@ -459,7 +459,7 @@ def export_flame_graph_data(
         )
 
     if group_by == "name":
-        _recurrsive_export_flame_graph_by_name(
+        _recursive_export_flame_graph_by_name(
             group_func,
             cost_func,
             grouped_data,
@@ -470,7 +470,7 @@ def export_flame_graph_data(
     return export_data
 
 
-def _recurrsive_export_flame_graph_by_name(
+def _recursive_export_flame_graph_by_name(
     group_func: Callable,
     cost_func: Callable,
     grouped_data: dict,
@@ -482,9 +482,9 @@ def _recurrsive_export_flame_graph_by_name(
     Args:
         group_func (Callable): A callable that groups together nodes into a single entry in the overall
             resource profile according to some common criteria.
-        cost_func (Callable): A calleable that determines the weight of the node in the overall resource
+        cost_func (Callable): A callable that determines the weight of the node in the overall resource
             profile based on its resources.
-        grouped_data (dict): a dictionay containing all child nodes that were grouped together
+        grouped_data (dict): a dictionary containing all child nodes that were grouped together
         parent_id (str): The string uniquely identifying the parent node of this child node in the call graph.
         export_data (tuple[list]): a tuple of four parallel lists, ``(ids, names, values, parents)``
     """
@@ -505,7 +505,7 @@ def _recurrsive_export_flame_graph_by_name(
         parents.append(parent_id)
 
         sub_grouped_data = group_func(child_nodes)
-        _recurrsive_export_flame_graph_by_name(
+        _recursive_export_flame_graph_by_name(
             group_func,
             cost_func,
             sub_grouped_data,
@@ -515,7 +515,7 @@ def _recurrsive_export_flame_graph_by_name(
     return
 
 
-def _recurrsive_export_flame_graph_by_type(
+def _recursive_export_flame_graph_by_type(
     group_func, cost_func, grouped_data, parent_id, export_data
 ):
     r"""Iterate over the call graph and extract the column data for flame graph type visualization
@@ -523,7 +523,7 @@ def _recurrsive_export_flame_graph_by_type(
     Args:
         group_func (Callable): A callable that groups together nodes into a single entry in the overall
             resource profile according to some common criteria.
-        cost_func (Callable): A calleable that determines the weight of the node in the overall resource
+        cost_func (Callable): A callable that determines the weight of the node in the overall resource
             profile based on its resources.
         grouped_data (dict): a dictionay containing all child nodes that were grouped together
         parent_id (str): The string uniquely identifying the parent node of this child node in the call graph.

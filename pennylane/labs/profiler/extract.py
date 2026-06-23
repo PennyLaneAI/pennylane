@@ -88,7 +88,7 @@ def profile(
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> from pennylane.labs.profiler import profile
-    ... def circuit():
+    >>> def circuit():
     ...     for w in range(5):
     ...         qre.Hadamard()
     ...         qre.RZ(1e-9)
@@ -314,7 +314,7 @@ def _extract_gate_counts_from_compressed_res_op(
     gate_set: set[str] | None = None,
     config: LabsResourceConfig | None = None,
 ) -> ProfileNode:
-    """Recurrsive algorithm for building the Profile graph"""
+    """Recursive algorithm for building the Profile graph"""
     if gate_set is None:
         gate_set = DefaultGateSet
 

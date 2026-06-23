@@ -131,10 +131,7 @@ def _manually_generated_resources():
 def equal_resource_profile(root: ProfileNode, other_root: ProfileNode):
     """Check equality of resource profiles"""
 
-    print(root.cmpr_op, other_root.cmpr_op, root.cmpr_op == other_root.cmpr_op)
-    print(root.scalar, other_root.scalar)
-    print(root.gate_data, other_root.gate_data, root.gate_data == other_root.gate_data)
-    print(len(root.children), len(other_root.children))
+
 
     equality_checks = (
         root.cmpr_op == other_root.cmpr_op,

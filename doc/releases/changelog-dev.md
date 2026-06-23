@@ -534,7 +534,7 @@
   ```pycon
     >>> import pennylane.labs.estimator_beta as qre
     >>> from pennylane.labs.profiler import profile, export_flame_graph_data
-    ... def circuit():
+    >>> def circuit():
     ...     for w in range(5):
     ...         qre.Hadamard()
     ...         qre.RZ(1e-9)
