@@ -20,6 +20,7 @@ See ``explanations.md`` for technical explanations of how this works.
 from abc import ABCMeta
 from enum import Enum, auto
 from inspect import Signature, signature
+from numbers import Number
 
 from pennylane import math
 from pennylane.capture import enabled
@@ -53,10 +54,20 @@ def _stop_autograph(f):
 
 def _contains_abstract_type(val):
     """Check if pytree contains any abstract types."""
-    leaves = flatten(val)[0]
-    return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
+    leaves, _ = flatten(val)
+
+    for leaf in leaves:
+        if isinstance(leaf, (AbstractArray, AbstractWires)):
+            return True
+
+        if isinstance(val, type) and issubclass(val, Number):
+            return True
+
+    return False
 
 
+# NOTE: This pylint disable will be removed in the PR that adds abstractify
+# pylint: disable=too-many-branches
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -79,6 +90,17 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             return AbstractWires(len(canonical_wires))
 
         case _ArgType.DYN:
+            # Case 1: Bare type is supported (i.e., float, np.float32)
+            if isinstance(val, type) and issubclass(val, Number):
+                return AbstractArray((), val)
+            # Case 2: An array of types is not supported (i.e., [float, float, float])
+            # for dynamic args. Ambiguous how to canonicalize it generally.
+            if isinstance(val, (list, tuple)) and all(
+                isinstance(x, type) and issubclass(x, Number) for x in val
+            ):
+                raise NotImplementedError(
+                    "An array of types for a dynamic argument is not currently supported. Instead, please use the type specifiers found in pennylane.typing."
+                )
             canonical_arr = math.asarray(val)
             return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
 
@@ -90,6 +112,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     new_leaves.append(leaf)
                 elif isinstance(leaf, Wires):
                     new_leaves.append(AbstractWires(len(leaf)))
+                elif isinstance(leaf, type) and issubclass(leaf, Number):
+                    new_leaves.append(AbstractArray((), leaf))
                 # Process arrays
                 elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
                     new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))

@@ -12,6 +12,7 @@
 # limitations under the License.
 """Tests for Operator2's metaclass."""
 
+import numpy as np
 import pytest
 from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 
@@ -240,6 +241,35 @@ class TestOperatorAbstractInputs:
         assert op.phi == AbstractArray((), float)
 
         assert len(q) == 0
+
+    @pytest.mark.parametrize(
+        "builtin_type", (float, int, bool, complex, np.float32, np.bool, np.int_)
+    )
+    def test_abstract_operator_construction_with_python_builtin_types(self, builtin_type):
+        """Tests that you can construct an abstract operator with builtin Python types."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+            hybrid_argnames = ("hybrid_arg",)
+
+            def __init__(self, dynamic_arg, hybrid_arg, wires):
+                super().__init__(dynamic_arg, hybrid_arg, wires=wires)
+
+        op = MixedArgOp(builtin_type, [builtin_type, builtin_type], 0)
+        assert op.dynamic_arg == AbstractArray((), builtin_type)
+        assert op.hybrid_arg == [AbstractArray((), builtin_type), AbstractArray((), builtin_type)]
+
+    @pytest.mark.parametrize("input", ([float], [float, float]))
+    def test_array_of_types_for_dynamic_arg(self, input):
+        """Tests that a NotImplementedError gets raised if an array of types is used as input for dynamic arg."""
+
+        with pytest.raises(
+            NotImplementedError,
+            match="array of types for a dynamic argument is not currently supported",
+        ):
+            _ = DynOp(input, AbstractWires(1))
 
 
 class TestOperatorAbstractInputsCapture:
