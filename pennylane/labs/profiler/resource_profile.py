@@ -51,7 +51,8 @@ class ProfileNode:
 
     **Example**
 
-    ``profile``
+    ``ProfileNode``s are used when profiling the resources of a quantum circuit or operator, and
+    will be generated using the :func:`~.pennylane.labs.profiler.profile` function.
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> from pennylane.labs.profiler import profile
@@ -76,6 +77,21 @@ class ProfileNode:
        'T': 1.972E+3,
        'CNOT': 44,
        'Hadamard': 25
+    >>> for child_node in res_profile.children:
+    ...     print(child_node.cmpr_op.name, f"x{child_node.scalar}")
+    ...
+    Hadamard x1
+    RZ x1
+    Hadamard x1
+    RZ x1
+    Hadamard x1
+    RZ x1
+    Hadamard x1
+    RZ x1
+    Hadamard x1
+    RZ x1
+    QPE(RX, 4, adj_qft=None) x1
+    QFT(4) x1
     """
 
     def __init__(
@@ -113,9 +129,50 @@ class ProfileNode:
 
         **Example**
 
-        >>> from pennylane.labs.profiler.resource_profile import ProfileNode
-        >>> ProfileNode.default_group_func([]) is None
-        True
+        First we generate a resource profile from a quantum circuit.
+
+        >>> import pennylane.labs.estimator_beta as qre
+        >>> from pennylane.labs.profiler import profile, ProfileNode
+        ... def circuit():
+        ...     for w in range(5):
+        ...         qre.Hadamard()
+        ...         qre.CRZ(1e-9)
+        ...
+        ...     qre.CRZ(1e-3)
+        ...     qre.Hadamard()
+        ...     qre.QFT(4)
+        >>>
+        >>> gate_set = {"T", "Hadamard", "CNOT"}
+        >>> res_profile, resources = profile(circuit, gate_set)()
+
+        The child nodes of the call graph have many redundant entries due to the repeated operators.
+
+        >>> for child_node in res_profile.children:
+        ...     print(child_node.cmpr_op.name, f"x{child_node.scalar}")  # Before grouping
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        CRZ x1
+        Hadamard x1
+        QFT(4) x1
+
+        The child nodes can be grouped using the ``group_by_name`` method. Note that any operators that share
+        the same name will be merged together regardless of their specific resource parameters (e.g ``qre.CRX(1e-9)``
+        vs. ``qre.CRX(1e-3)``).
+
+        >>> grouped_nodes = ProfileNode.group_by_name(res_profile.children)
+        >>> for node_name, group_data in grouped_nodes.items():
+        ...     print(node_name, f"x{group_data[0]}")  # After grouping
+        Hadamard x6
+        CRZ x6
+        QFT(4) x1
         """
         if child_nodes is None or len(child_nodes) == 0:
             return
@@ -147,12 +204,11 @@ class ProfileNode:
     def group_by_type(
         cls, child_nodes: list["ProfileNode"]
     ):  # Returns a dict[str, tuple(scalar, gate_counts, child_nodes)]
-        r"""Group a list of child nodes by operator name, merging duplicates.
+        r"""Group a list of child nodes by operator type, merging duplicates.
 
-        Nodes that share the same operator name are merged into a single entry by summing
+        Nodes that share the same operator type are merged into a single entry by summing
         their scalars (multiplicities), adding their gate-count dictionaries together, and
-        concatenating their children. This is the default grouping used when exporting a
-        profile to flame-graph data so that repeated operators are collapsed into one block.
+        concatenating their children.
 
         Args:
             child_nodes (list[ProfileNode]): the nodes to group together.
@@ -166,9 +222,51 @@ class ProfileNode:
 
         **Example**
 
-        >>> from pennylane.labs.profiler.resource_profile import ProfileNode
-        >>> ProfileNode.default_group_func([]) is None
-        True
+        First we generate a resource profile from a quantum circuit.
+
+        >>> import pennylane.labs.estimator_beta as qre
+        >>> from pennylane.labs.profiler import profile, ProfileNode
+        ... def circuit():
+        ...     for w in range(5):
+        ...         qre.Hadamard()
+        ...         qre.CRZ(1e-9)
+        ...
+        ...     qre.CRZ(1e-3)
+        ...     qre.Hadamard()
+        ...     qre.QFT(4)
+        >>>
+        >>> gate_set = {"T", "Hadamard", "CNOT"}
+        >>> res_profile, resources = profile(circuit, gate_set)()
+
+        The child nodes of the call graph have many redundant entries due to the repeated operators.
+
+        >>> for child_node in res_profile.children:
+        ...     print(child_node.cmpr_op.name, f"x{child_node.scalar}")  # Before grouping
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        Hadamard x1
+        CRZ x1
+        CRZ x1
+        Hadamard x1
+        QFT(4) x1
+
+        The child nodes can be grouped using the ``group_by_name`` method. Note that only operators that are
+        programatically identical, i.e share the same type and same resource parameters, will be merged together
+        (e.g ``qre.CRX(1e-9)`` vs. ``qre.CRX(1e-3)``).
+
+        >>> grouped_nodes = ProfileNode.group_by_type(res_profile.children)
+        >>> for node_op, group_data in grouped_nodes.items():
+        ...     print(node_op.name, f"x{group_data[0]}")  # After grouping
+        Hadamard x6
+        CRZ x5
+        CRZ x1
+        QFT(4) x1
         """
         if child_nodes is None or len(child_nodes) == 0:
             return
@@ -266,7 +364,7 @@ class ProfileNode:
 
 
 def export_flame_graph_data(
-    root_node: ProfileNode, group_by: str = "type", cost_func: Callable | None = None
+    root_node: ProfileNode, group_by: str = "name", cost_func: Callable | None = None
 ):
     r"""Flatten a profile tree into the column data used to render a flame graph.
 
@@ -288,17 +386,47 @@ def export_flame_graph_data(
         tuple[list, list, list, list]: the ``(ids, names, values, parents)`` lists describing
         the flame graph.
 
+    Raises:
+        ValueError: If an incompatible argument is provided for ``group_by``.
+
     **Example**
 
-    >>> from pennylane.labs.profiler import profile, export_flame_graph_data
     >>> import pennylane.labs.estimator_beta as qre
-    >>> def circuit():
-    ...     qre.CNOT()
-    ...     qre.CNOT()
-    >>> root, _ = profile(circuit, {"CNOT"})()
-    >>> ids, names, values, parents = export_flame_graph_data(root)
-    >>> names
-    ['circuit', 'CNOT x2']
+    >>> from pennylane.labs.profiler import profile, export_flame_graph_data
+    ... def circuit():
+    ...     for w in range(5):
+    ...         qre.Hadamard()
+    ...         qre.RZ(1e-9)
+    ...
+    ...     qre.QPE(qre.RX(precision=1e-3), 4)
+    ...     qre.QFT(4)
+    >>>
+    >>> gate_set = {"T", "Hadamard", "CNOT"}
+    >>> res_profile, _ = profile(circuit, gate_set)()
+    >>> extracted_info = export_flame_graph_data(res_profile)
+    >>> ids, names, values, parents = extracted_info
+    >>> print(names[:5])  # just the first 5 entries
+    ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
+
+    The column data is used to produce flame graph type visualizations.
+
+    >>> import plotly.graph_objects as go  # visualization library
+    >>> fig = go.Figure()
+    >>> fig.add_trace(go.Icicle(
+    ...     ids=ids,
+    ...     labels=names,
+    ...     parents=parents,
+    ...     values=values, # T cost
+    ...     branchvalues="total",
+    ...     root_color="lightgrey",)
+    ... )
+    >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+    >>> fig.show()
+
+    .. figure:: ../../_static/profiler_plotly_display.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
     """
 
     if group_by == "name":
@@ -344,8 +472,23 @@ def export_flame_graph_data(
 
 
 def _recurrsive_export_flame_graph_by_name(
-    group_func, cost_func, grouped_data, parent_id, export_data
+    group_func: Callable,
+    cost_func: Callable,
+    grouped_data: dict,
+    parent_id: str,
+    export_data: tuple[list],
 ):
+    r"""Iterate over the call graph and extract the column data for flame graph type visualization
+
+    Args:
+        group_func (Callable): A callable that groups together nodes into a single entry in the overall
+            resource profile according to some common criteria.
+        cost_func (Callable): A calleable that determines the weight of the node in the overall resource
+            profile based on its resources.
+        grouped_data (dict): a dictionay containing all child nodes that were grouped together
+        parent_id (str): The string uniquely identifying the parent node of this child node in the call graph.
+        export_data (tuple[list]): a tuple of four parallel lists, ``(ids, names, values, parents)``
+    """
     if grouped_data is None:
         return
 
@@ -376,6 +519,17 @@ def _recurrsive_export_flame_graph_by_name(
 def _recurrsive_export_flame_graph_by_type(
     group_func, cost_func, grouped_data, parent_id, export_data
 ):
+    r"""Iterate over the call graph and extract the column data for flame graph type visualization
+
+    Args:
+        group_func (Callable): A callable that groups together nodes into a single entry in the overall
+            resource profile according to some common criteria.
+        cost_func (Callable): A calleable that determines the weight of the node in the overall resource
+            profile based on its resources.
+        grouped_data (dict): a dictionay containing all child nodes that were grouped together
+        parent_id (str): The string uniquely identifying the parent node of this child node in the call graph.
+        export_data (tuple[list]): a tuple of four parallel lists, ``(ids, names, values, parents)``
+    """
     if grouped_data is None:
         return
 

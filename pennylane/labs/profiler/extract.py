@@ -43,7 +43,7 @@ def profile(
     any_state_wires: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Resources | Callable[..., Resources]:
+) -> tuple[ProfileNode, Resources] | Callable:
     r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gate set.
 
     In addition to the aggregated :class:`~.estimator.Resources`, this function returns the
@@ -84,8 +84,6 @@ def profile(
 
     **Example**
 
-    **Example**
-
     ``profile`` can be used in just the same way as :func:`~.pennylane.labs.estimator_beta.estimate`:
 
     >>> import pennylane.labs.estimator_beta as qre
@@ -121,7 +119,6 @@ def profile(
     >>>
     >>> import plotly.graph_objects as go  # visualization library
     >>> fig = go.Figure()
-    >>>
     >>> fig.add_trace(go.Icicle(
     ...     ids=ids,
     ...     labels=names,
@@ -132,6 +129,11 @@ def profile(
     ... )
     >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     >>> fig.show()
+
+    .. figure:: ../../_static/profiler_plotly_display.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     """
     return _profile_resources_dispatch(
@@ -147,7 +149,7 @@ def _profile_resources_dispatch(
     any_state: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Resources | Callable[..., Resources]:
+) -> tuple[ProfileNode, Resources] | Callable:
     """Internal singledispatch function for resource profiling."""
     raise TypeError(
         f"Could not obtain resources for workflow of type {type(workflow)}. workflow must be one of Resources, Callable, ResourceOperator, or list"
@@ -162,7 +164,7 @@ def _profile_from_qfunc(
     any_state: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Callable[..., Resources]:
+) -> Callable:
     """Generate a resource profile for a quantum function which queues operators"""
     config = config or LabsResourceConfig()
     gate_set = gate_set or DefaultGateSet
@@ -221,7 +223,7 @@ def _profile_from_resource(
     any_state: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Resources:
+) -> tuple[ProfileNode, Resources] | Callable:
     """Generate a resource profile from a Resources object (i.e. a Resources object that
     contains high-level operators can be analyzed with respect to a lower-level gate set)."""
     config = config or LabsResourceConfig()
@@ -271,7 +273,7 @@ def _profile_from_resource_operator(
     any_state: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Resources:
+) -> tuple[ProfileNode, Resources] | Callable:
     """Extract resource profile from a resource operator."""
     resources = 1 * workflow
     return _profile_from_resource(
@@ -292,7 +294,7 @@ def _profile_from_pl_ops(
     any_state: int = 0,
     tight_wires_budget: bool = False,
     config: LabsResourceConfig | None = None,
-) -> Resources:
+) -> tuple[ProfileNode, Resources] | Callable:
     """Extract resource profile from a pl operator."""
     workflow = _map_to_resource_op(workflow)
     resources = 1 * workflow
@@ -312,7 +314,7 @@ def _extract_gate_counts_from_compressed_res_op(
     cumulative_scalar: int = 1,
     gate_set: set[str] | None = None,
     config: LabsResourceConfig | None = None,
-):
+) -> ProfileNode:
     """Recurrsive algorithm for building the Profile graph"""
     if gate_set is None:
         gate_set = DefaultGateSet
