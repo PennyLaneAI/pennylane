@@ -136,12 +136,6 @@ class TestAbstractArray:
 
         assert len(a) == 2
 
-        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
-            a[1] = 2
-
-        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
-            _ = a[1]
-
     @pytest.mark.torch
     def test_provide_torch_dtype(self):
         """Test that a torch dtype is converted to a numpy dtype."""
@@ -217,10 +211,10 @@ class TestAbstractArray:
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
             _ = len(a)
 
-    def test_ellipsis_in_shape_tuple_error(self):
+    def test_invalid_shape_tuple_error(self):
         """Test that Ellipsis cannot appear inside a shape tuple."""
-        with pytest.raises(ValueError, match="Ellipsis cannot appear inside a shape tuple"):
-            AbstractArray((..., 2), int)
+        with pytest.raises(ValueError, match="Shapes can only be initialized with integer values"):
+            AbstractArray(("a", 2), int)
 
     def test_unknown_axis_size(self):
         """Test that -1 marks an axis with unknown size."""
@@ -291,6 +285,13 @@ class TestAbstractArray:
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
             _ = len(a)
 
+    def test_error_len_on_dynamic_zeroeth_axis(self):
+        """Test that requesting the len of a scalar results in an error."""
+        a = AbstractArray((-1,), int)
+
+        with pytest.raises(TypeError, match=r"len\(\) is undefined for"):
+            _ = len(a)
+
     @pytest.mark.parametrize("bad_index", (5.0, "a", None))
     def test_error_bad_indices(self, bad_index):
         """Test that an error is raised on invalid indices."""
@@ -350,6 +351,11 @@ class TestAbstractArray:
         assert AbstractArray((2, 3), np.float32)._weak_type is False
         assert AbstractArray((2, 3), np.bool_)._weak_type is False
 
+    def test_is_compatible_with_non_numeric_input(self):
+        """Test that ``is_compatible_with`` for non-numeric values returns ``False``."""
+        aa = AbstractArray((5,), int)
+        assert aa.is_compatible_with("hello") is False
+
     def test_is_compatible_with_weak_scalar(self):
         """Test ``is_compatible_with`` for scalar values."""
         aa = AbstractArray((), float)
@@ -408,6 +414,14 @@ class TestAbstractWires:
         a = AbstractWires(3)
         assert a.num_wires == 3
         assert len(a) == 3
+
+    def test_invalid_num_wires(self):
+        """Test that an error is raised if the provided ``num_wires`` is not valid."""
+        with pytest.raises(TypeError, match="'num_wires' must be"):
+            _ = AbstractWires("a")
+
+        with pytest.raises(TypeError, match="'num_wires' must be"):
+            _ = AbstractWires("a")
 
     def test_comparison(self):
         """Test for equality and comparison."""

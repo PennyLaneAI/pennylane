@@ -174,12 +174,6 @@ class AbstractArray:
         )
         if self.shape is not Ellipsis:
             shape = tuple(self.shape)
-            if Ellipsis in shape:
-                raise ValueError(
-                    f"Ellipsis cannot appear inside a shape tuple, but got {shape}. "
-                    "Use -1 for axes with unknown sizes, or shape=Ellipsis when the "
-                    "number of axes is unknown."
-                )
             if not all(isinstance(s, int) and s >= -1 for s in shape):
                 raise ValueError(
                     f"Shapes can only be initialized with integer values, but got {shape}. "
