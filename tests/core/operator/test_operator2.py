@@ -326,6 +326,7 @@ class TestInitSubclass:
             wire_argnames = ()
 
             def __init__(self):
+                # pylint: disable=useless-parent-delegation
                 super().__init__()
 
         assert Op.fixed_sig is True
