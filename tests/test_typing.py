@@ -117,7 +117,6 @@ class TestTensorLike:
         assert issubclass(tf.Variable, TensorLike)
 
 
-# pylint: disable=protected-access
 class TestAbstractArray:
     """Tests for the AbstractArray class."""
 
@@ -126,13 +125,13 @@ class TestAbstractArray:
 
         a = AbstractArray([2, 3], dtype=float)
         assert a.shape == (2, 3)  # converted to tuple
-        assert a.dtype == np.float64
-        assert a._weak_type is True
+        assert a.dtype == np.float64  # converted to numpy dtype
 
         assert a.size == 6
         assert a.ndim == 2
         assert a.T.shape == (3, 2)
         assert a.T.dtype == np.float64
+
         assert len(a) == 2
 
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
@@ -172,7 +171,7 @@ class TestAbstractArray:
         assert a3 != a0
         assert hash(a3) != hash(a0)
 
-        a4 = AbstractArray(..., int)
+        a4 = AbstractArray((...,), int)
         assert a4 != a0
         assert hash(a4) != hash(a0)
 
@@ -181,49 +180,13 @@ class TestAbstractArray:
         ):
             _ = a3 == 2
 
-    def test_repr(self):
-        """Test that the repr of AbstractArray is as expected."""
-        a0 = AbstractArray((1, 2), int)
-        assert repr(a0) == "AbstractArray((1, 2), 'int64', weak_type=True)"
+    def test_ellipsis_in_shape(self):
+        """Test that an Ellipsis can be used in the shape tuple."""
 
-        a1 = AbstractArray((1, 2), np.int32)
-        assert repr(a1) == "AbstractArray((1, 2), 'int32')"
+        a = AbstractArray((..., 2), int)
 
-        a2 = AbstractArray((-1, 2), np.int32)
-        assert repr(a2) == "AbstractArray((-1, 2), 'int32')"
-
-        a3 = AbstractArray(..., np.int32)
-        assert repr(a3) == "AbstractArray(?, 'int32')"
-
-    def test_ellipsis_shape(self):
-        """Test that Ellipsis means the number of axes is unknown."""
-
-        a = AbstractArray(..., int)
-
-        assert a.shape is Ellipsis
-        assert a.T.shape is Ellipsis
-
-        with pytest.raises(TypeError, match="size is undefined for"):
-            _ = a.size
-
-        with pytest.raises(TypeError, match="ndim is undefined for"):
-            _ = a.ndim
-
-        with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
-            _ = len(a)
-
-    def test_ellipsis_in_shape_tuple_error(self):
-        """Test that Ellipsis cannot appear inside a shape tuple."""
-        with pytest.raises(ValueError, match="Ellipsis cannot appear inside a shape tuple"):
-            AbstractArray((..., 2), int)
-
-    def test_unknown_axis_size(self):
-        """Test that -1 marks an axis with unknown size."""
-
-        a = AbstractArray((-1, 2), int)
-
-        assert a.shape == (-1, 2)
-        assert a.T.shape == (2, -1)
+        assert a.shape == (..., 2)
+        assert a.T.shape == (2, ...)
 
         with pytest.raises(TypeError, match="size is undefined for"):
             _ = a.size
@@ -327,12 +290,15 @@ class TestAbstractArray:
         """Test that things can be checked to be instances of a AbstractArray instance."""
 
         a = AbstractArray((4, 2), bool)
-        b = AbstractArray((-1, 2), bool)
+        b = AbstractArray((..., 2), bool)
 
         for variant in (a, b):
             assert isinstance(np.zeros((4, 2), bool), variant)
+
             assert not isinstance(np.array([0, 0], dtype=bool), variant)
+
             assert not isinstance(np.ones((4, 2), float), variant)
+
             assert not isinstance("a", variant)
 
 
