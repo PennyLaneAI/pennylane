@@ -265,7 +265,7 @@ class TestOperatorAbstractInputs:
 
         with pytest.raises(
             NotImplementedError,
-            match="array of types for a dynamic argument is not currently supported",
+            match="sequence of types for a dynamic argument is not currently supported",
         ):
             _ = DynOp(input, AbstractWires(1))
 
