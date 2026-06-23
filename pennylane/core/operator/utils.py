@@ -17,8 +17,8 @@ from numbers import Number
 
 from pennylane import math
 from pennylane.pytrees import flatten, leaf, unflatten
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 
 @singledispatch
