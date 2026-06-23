@@ -1101,22 +1101,21 @@ class Operator2(metaclass=OperatorMeta):
         if not self.expected_argtypes:
             return
 
-        for name, expected_type in self.expected_argtypes.items():
+        for name, et in self.expected_argtypes.items():
             argval = self.arguments[name]
-            if name in self.dynamic_argnames and not expected_type.is_compatible_with(argval):
+            if name in self.dynamic_argnames and not et.is_compatible_with(argval):
                 raise ValueError(
-                    f"Expected '{name}' to have shape {expected_type.shape} and "
-                    f"dtype '{expected_type.dtype.name}', but got {argval}."
-                )
-            if (
-                name in self.wire_argnames
-                and expected_type.num_wires != -1
-                and not isinstance(argval, expected_type)
-            ):  # pragma: no cover
-                raise ValueError(
-                    f"Expected '{name}' to have length {expected_type.num_wires}, "
+                    f"Expected '{name}' to have shape {et.shape} and dtype '{et.dtype.name}', "
                     f"but got {argval}."
                 )
+            if name in self.wire_argnames:  # pragma: no cover
+                # This branch is effectively unreachable since a mismatch between the actual
+                # and expected length for a wire argument is validated in __init_wires. We will
+                # only ever reach this branch if __validate_arg_types is called manually.
+                assert et.num_wires in (
+                    -1,
+                    len(argval),
+                ), f"Expected '{name}' to have length {et.num_wires}, but got {argval}."
 
     # pylint: disable=too-many-branches
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:

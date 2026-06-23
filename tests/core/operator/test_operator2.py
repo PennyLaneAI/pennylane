@@ -633,7 +633,7 @@ class TestInitExpectedArgtypesValidation:
         op = Op(np.array(0.5), wires=[0, 1])
         op.arguments["wires"] = Wires([0])
 
-        with pytest.raises(ValueError, match=r"Expected 'wires' to have length 2"):
+        with pytest.raises(AssertionError, match=r"Expected 'wires' to have length 2"):
             op._Operator2__validate_arg_types()
 
 
