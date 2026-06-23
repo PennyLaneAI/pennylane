@@ -19,7 +19,7 @@ import numpy as np
 from pennylane import math
 
 
-def binary_decimals(phi: float, precision: int, unit: float = 1.0):
+def binary_decimals(phi: float | np.ndarray, precision: int, unit: float = 1.0):
     r"""
     Compute the binary decimals :math:`X_{-1} X_{-2} \cdots X_{-p}` of the binary representation of :math:`\phi = (\cdots X_1 X_0.X_{-1} X_{-2} \cdots X_{-p} X_{-p-1} \cdots)_2` up to precision :math:`p`.
 
@@ -30,7 +30,7 @@ def binary_decimals(phi: float, precision: int, unit: float = 1.0):
     In this case, we set the ``unit`` to :math:`2\pi`. In case we additionally divide the angle by 2, as is the case in rotation gates such as :class:`~.RZ`, we use a ``unit`` of :math:`4\pi`.
 
     Args:
-        phi (float): The number to be represented in binary.
+        phi (float or np.ndarray): The number to be represented in binary.
         precision (int): The number of digits to keep.
         unit (float): The angle is to be in the unit of ``unit``, meaning we consider ``(phi % unit)/unit``. The default is :math:`1`.
 
