@@ -69,17 +69,30 @@ def _arithmetic_adder_specs(k, x_wires, mod, work_wires):
     if mod == 2**n:
         return _add_constant_specs(k, list(x_wires), all_wires)
 
+    # Add a spare work wire on top of x_wires as an extra high bit, so the intermediate
+    # values x + k and x + k - mod have room to grow without wrapping around. That extra
+    # bit is the msb, and the second work wire (flag) keeps track of whether we need to
+    # correct the result by adding mod back.
     aug = list(work_wires[:1]) + list(x_wires)
     flag = work_wires[1]
     msb = aug[0]
     k %= mod
 
+    # Add the constant: aug holds x + k (msb starts at 0, so no overflow yet).
     specs = _add_constant_specs(k, aug, all_wires)
+    # Subtract mod (adjoint of "add mod"): aug holds x + k - mod. If x + k < mod this
+    # underflows and sets the msb (two's-complement sign bit).
     specs += _add_constant_specs(mod, aug, all_wires)[::-1]
+    # Copy that sign bit into the flag: flag == 1 exactly when x + k < mod.
     specs.append(("CNOT", [msb, flag], []))
+    # Conditionally add mod back when flag is set, undoing the subtraction in that case.
+    #    aug now holds (x + k) mod mod for both branches.
     specs += _add_constant_specs(mod, aug, all_wires, control=[flag])
+    # Uncompute the flag: temporarily subtract k so the msb again encodes the branch,
+    #      use it to reset flag to 0, then the work wire is clean.
     specs += _add_constant_specs(k, aug, all_wires)[::-1]
     specs += [("X", [msb], []), ("CNOT", [msb, flag], []), ("X", [msb], [])]
+    # Re-add k to land on the final result (x + k) mod mod with all work wires restored.
     specs += _add_constant_specs(k, aug, all_wires)
     return specs
 
