@@ -1051,7 +1051,7 @@ class TestDunderMethods:
         op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
         assert (
             repr(op)
-            == "DynOp(phi=AbstractArray((1, 2), 'float64', weak_type=True), wires=AbstractWires(1))"
+            == "DynOp(phi=AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
         )
 
     def test_repr_with_dynamic_args(self):
