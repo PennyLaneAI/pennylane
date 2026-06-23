@@ -228,7 +228,8 @@ def _AQFT_decomposition(wires, order):
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
-    if compiler.active() or capture.enabled():
+    # if compiler.active() or capture.enabled():
+    if capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
