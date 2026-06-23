@@ -30,8 +30,7 @@ from operator2_utils import (
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires
 
 # ---------------------- Tests ----------------------
 
