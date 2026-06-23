@@ -21,6 +21,7 @@ from pennylane.core.qscript import (
     QuantumScriptBatch,
     QuantumScriptOrBatch,
     make_qscript,
+    process_queue,
 )
 
 from .operation_recorder import OperationRecorder
