@@ -1028,7 +1028,7 @@ def inspect_decomps(
     .. code-block:: python
 
         @qp.register_resources({qp.CNOT: 1, qp.H: 2})
-        def my_cz(wires):
+        def my_cz(wires, **_):
             qp.H(wires[1])
             qp.CNOT(wires)
             qp.H(wires[1])

@@ -74,6 +74,7 @@ class TestAdjointDecompositionRules:
             {resource_rep(CustomOp, key=0): 1}
         )
 
+    @pytest.mark.capture
     def test_cancel_adjoint_capture(self):
         """Tests that the adjoint of an adjoint works with capture."""
 
