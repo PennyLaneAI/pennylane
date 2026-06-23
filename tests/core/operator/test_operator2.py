@@ -300,6 +300,7 @@ class TestInitSubclass:
             dynamic_argnames = ("phi",)
             expected_argtypes = {"phi": float}
 
+            # pylint: disable=useless-parent-delegation
             def __init__(self, phi, wires):
                 super().__init__(phi, wires)
 
