@@ -57,8 +57,8 @@ PennyLane Documentation
 Key Features
 -----------------------
 
-.. image:: _static/header-tall.png
-    :align: left
+.. image:: _static/code.png
+    :align: right
     :width: 450px
     :target: javascript:void(0);
 
