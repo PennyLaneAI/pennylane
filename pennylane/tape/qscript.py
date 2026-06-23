@@ -83,11 +83,11 @@ def process_queue(
 
 
 class QuantumScript:
-    r"""The ``operations`` and measurements that represent instructions for
+    r"""The operations and measurements that represent instructions for
     execution on a quantum device.
 
     Args:
-        ops (Iterable[Operator]): An iterable of the ``operations`` to be performed
+        ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
 
     Keyword Args:
@@ -225,7 +225,7 @@ class QuantumScript:
 
         The circuit is created with the assumptions that:
 
-        * The ``operations`` attribute contains quantum operations and
+        * The operations attribute contains quantum operations and
           mid-circuit measurements and
         * The ``measurements`` attribute contains terminal measurements.
 
@@ -241,10 +241,10 @@ class QuantumScript:
 
     @property
     def operations(self) -> list[Operator]:
-        """Returns the state preparations and ``operations`` on the quantum script.
+        """Returns the state preparations and operations on the quantum script.
 
         Returns:
-            list[.Operator]: quantum ``operations``
+            list[.Operator]: quantum operations
 
         >>> ops = [qp.StatePrep([0, 1], 0), qp.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])

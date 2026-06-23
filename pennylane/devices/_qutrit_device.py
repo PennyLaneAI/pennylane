@@ -34,7 +34,7 @@ class QutritDevice(QubitDevice):
 
     The following abstract method **must** be defined:
 
-    * :meth:`~.apply`: append circuit ``operations``, compile the circuit (if applicable),
+    * :meth:`~.apply`: append circuit operations, compile the circuit (if applicable),
       and perform the quantum computation.
 
     Devices that generate their own samples (such as hardware) may optionally
