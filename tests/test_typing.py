@@ -482,6 +482,7 @@ class TestAbstractWires:
         for i in range(len(l)):
             w = Wires(l[:i])
             assert isinstance(w, Wire[i])
+            assert isinstance(w, Wire[-1])
             assert not isinstance(w, Wire[6])
 
         # non-wires
