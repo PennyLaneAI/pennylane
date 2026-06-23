@@ -20,8 +20,8 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.queuing import AnnotatedQueue
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
 
