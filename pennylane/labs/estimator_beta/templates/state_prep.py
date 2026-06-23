@@ -479,7 +479,7 @@ class PrepAmp(qre.ResourceOperator):
 
     @property
     def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information 
+        r"""Returns a dictionary containing the minimal information
         needed to compute the resources."""
         # the keys should match the resource keys
         return {
