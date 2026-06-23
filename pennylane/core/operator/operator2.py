@@ -44,8 +44,8 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import AbstractArray, FlatPytree, TensorLike
-from pennylane.wires import AbstractWires, Wires, WiresLike
+from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta
