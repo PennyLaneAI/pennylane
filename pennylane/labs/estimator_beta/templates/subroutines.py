@@ -2311,13 +2311,16 @@ class SelAmp(qre.ResourceOperator):
 
     def __init__(self, n, wires=None):
         self.n = n
-        self.num_wires = n + n + 2  # n from amp state, n from target state, 1 ctrl, 1 plus, ignore allocated qubit
-        super().__init__(wires=wires)  # we also usually validate the wires here to make sure they match num_wires
+        # n from amp state, n from target state, 1 ctrl, 1 plus, ignore allocated qubit
+        self.num_wires = n + n + 2  
+        # we also usually validate the wires here to make sure they match num_wires
+        super().__init__(wires=wires)  
 
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources."""
-        return {                   # the keys should match the resource keys
+        # the keys should match the resource keys
+        return {
             "n": self.n,
         }
 
@@ -2352,8 +2355,8 @@ class SelAmp(qre.ResourceOperator):
         gate_cost.append(qre.GateCount(cz, 1))
         gate_cost.append(qre.GateCount(cnot, n - 1))
         gate_cost.append(qre.GateCount(tof, 2 * (n - 1)))
-        gate_cost.append(qre.GateCount(x, 2)) #conjugate zero control
-        gate_cost.append(qre.GateCount(l_elbow))#use a temp and for the triply controlled Z
+        gate_cost.append(qre.GateCount(x, 2)) # conjugate zero control
+        gate_cost.append(qre.GateCount(l_elbow)) # use a temp and for the triply controlled Z
         gate_cost.append(qre.GateCount(r_elbow))
         gate_cost.append(qre.GateCount(ccz, 2))
         gate_cost.append(qre.GateCount(cnot, n - 1))

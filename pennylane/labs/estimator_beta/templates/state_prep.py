@@ -474,12 +474,14 @@ class PrepAmp(qre.ResourceOperator):
 
     def __init__(self, n, wires=None):
         self.num_wires = n
-        super().__init__(wires=wires)  # we also usually validate the wires here to make sure they match num_wires
+        # We also usually validate the wires here to make sure they match num_wires
+        super().__init__(wires=wires)  
 
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources."""
-        return {                   # the keys should match the resource keys
+        # the keys should match the resource keys
+        return {
             "n": self.num_wires,
         }
 
