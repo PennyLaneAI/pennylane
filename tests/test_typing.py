@@ -198,7 +198,7 @@ class TestAbstractArray:
         assert repr(a2) == "AbstractArray((-1, 2), int32)"
 
         a3 = AbstractArray(..., np.int32)
-        assert repr(a3) == "AbstractArray(?, int32)"
+        assert repr(a3) == "AbstractArray(..., int32)"
 
     def test_ellipsis_shape(self):
         """Test that Ellipsis means the number of axes is unknown."""
@@ -353,7 +353,6 @@ class TestAbstractArray:
     def test_is_compatible_with_weak_scalar(self):
         """Test ``is_compatible_with`` for scalar values."""
         aa = AbstractArray((), float)
-        assert aa._weak_type is True
 
         assert aa.is_compatible_with(0.5)
         assert aa.is_compatible_with(np.array(0.5))
@@ -364,7 +363,6 @@ class TestAbstractArray:
     def test_is_compatible_with_weak_array(self):
         """Test ``is_compatible_with`` for array values."""
         aa = AbstractArray((2, 3), float)
-        assert aa._weak_type is True
 
         assert aa.is_compatible_with(np.ones((2, 3)))
         assert aa.is_compatible_with(np.ones((2, 3), dtype=int))

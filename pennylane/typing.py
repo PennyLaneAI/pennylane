@@ -268,7 +268,7 @@ class AbstractArray:
         return np.dtype(dtype)
 
     def __repr__(self):
-        shape_repr = "?" if self.shape is Ellipsis else self.shape
+        shape_repr = "..." if self.shape is Ellipsis else self.shape
         args = f"{shape_repr}, {self.dtype.name}"
         if self._weak_type:
             args += ", weak_type=True"
