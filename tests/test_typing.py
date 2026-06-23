@@ -17,7 +17,19 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import AbstractArray, TensorLike
+from pennylane.typing import (
+    AbstractArray,
+    AbstractWires,
+    Bool,
+    Complex,
+    Float,
+    Int,
+    TensorLike,
+    Wire,
+    _AbstractTypeFactory,
+    _AbstractWireTypeFactory,
+)
+from pennylane.wires import Wires
 
 
 class TestTensorLike:
@@ -163,7 +175,9 @@ class TestAbstractArray:
         assert a4 != a0
         assert hash(a4) != hash(a0)
 
-        with pytest.raises(TypeError, match="Cannot check equality between AbstractArray"):
+        with pytest.raises(
+            TypeError, match=r"Cannot check equality between AbstractArray and <class 'int'>"
+        ):
             _ = a3 == 2
 
     def test_ellipsis_in_shape(self):
@@ -179,7 +193,54 @@ class TestAbstractArray:
 
         assert a.ndim == 2
 
-    def test_error_indexing(self):
+    def test_wire_type_factory(self):
+        """Test that we can index into a wire type factory to produce a new hint with a size."""
+
+        a = _AbstractWireTypeFactory()
+
+        b = a[2]
+        assert isinstance(b, AbstractWires)
+        assert b.num_wires == 2
+
+        c = a[...]
+        assert isinstance(c, AbstractWires)
+        assert c.num_wires == ...
+
+        d = a[-1]
+        assert isinstance(d, AbstractWires)
+        assert d.num_wires == -1
+
+    def test_type_factory(self):
+        """Test that we can index into a type factory to produce a new hint with a size."""
+
+        a = _AbstractTypeFactory(int)
+
+        b = a[2, 3]
+        assert isinstance(b, AbstractArray)
+        assert b.dtype == np.int64
+        assert b.shape == (2, 3)
+
+        c = a[2]
+        assert isinstance(c, AbstractArray)
+        assert c.shape == (2,)
+        assert c.dtype == np.int64
+
+        d = a[...]
+        assert isinstance(d, AbstractArray)
+        assert d.shape == (...,)
+        assert d.dtype == np.int64
+
+        e = a[5, ..., 2]
+        assert isinstance(e, AbstractArray)
+        assert e.shape == (5, ..., 2)
+        assert e.dtype == np.int64
+
+        f = a[-1]
+        assert isinstance(f, AbstractArray)
+        assert f.dtype == np.int64
+        assert f.shape == (-1,)
+
+    def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
 
         a = AbstractArray((2,), int)
@@ -187,7 +248,7 @@ class TestAbstractArray:
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
             _ = a[1]
 
-        with pytest.raises(IndexError, match="Cannot index into an AbstractArray"):
+        with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             a[1] = 2
 
     def test_error_len_on_scalar(self):
@@ -196,6 +257,33 @@ class TestAbstractArray:
 
         with pytest.raises(TypeError, match=r"len\(\) of unsized object."):
             _ = len(a)
+
+    @pytest.mark.parametrize("bad_index", (5.0, "a", None))
+    def test_error_bad_indices(self, bad_index):
+        """Test that an error is raised on invalid indices."""
+
+        a = _AbstractTypeFactory(int)
+        b = _AbstractWireTypeFactory()
+
+        with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
+            _ = a[bad_index]
+
+        with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
+            _ = b[bad_index]
+
+    @pytest.mark.parametrize(
+        "shortcut, dtype",
+        [(Int, np.int64), (Float, np.float64), (Bool, np.bool), (Complex, np.complex128)],
+    )
+    def test_scalar_shortcuts(self, shortcut, dtype):
+        """Test for the various available shortcuts."""
+
+        assert shortcut.dtype == dtype
+        assert shortcut.shape == ()
+
+        a = shortcut[2, 3, ...]
+        assert a.shape == (2, 3, ...)
+        assert a.dtype == dtype
 
     # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):
@@ -212,3 +300,60 @@ class TestAbstractArray:
             assert not isinstance(np.ones((4, 2), float), variant)
 
             assert not isinstance("a", variant)
+
+
+class TestAbstractWires:
+    """Test for the AbstractWires class."""
+
+    def test_basic(self):
+        """Basic tests for the AbstractWires class."""
+
+        a = AbstractWires(3)
+        assert a.num_wires == 3
+        assert len(a) == 3
+
+    def test_comparison(self):
+        """Test for equality and comparison."""
+        a = AbstractWires(3)
+        assert a == AbstractWires(3)
+        assert a != AbstractWires(4)
+        assert hash(a) == hash(AbstractWires(3))
+        assert hash(a) != hash(AbstractWires(4))
+
+        with pytest.raises(
+            TypeError, match="Cannot check equality between AbstractWires and an object"
+        ):
+            _ = a == 2
+
+    def test_ellipsis(self):
+        """Test that number of wires can be specified by an ellipsis."""
+
+        a = AbstractWires(...)
+        assert a.num_wires == ...
+
+    def test_shape_and_dtype(self):
+        """Test that AbstractWires have a shape and dtype."""
+
+        a = AbstractWires(3)
+        assert a.shape == (3,)
+        assert a.dtype == np.int64
+
+    def test_instance_check(self):
+        """Test instance check of Wire."""
+
+        # int wire labels
+        for i in range(4):
+            w = Wires(list(range(i)))
+            assert isinstance(w, Wire[i])
+            assert not isinstance(w, Wire[i - 1])
+
+        # str wire labels
+        l = ["a", "b", "c"]
+
+        for i in range(len(l)):
+            w = Wires(l[:i])
+            assert isinstance(w, Wire[i])
+            assert not isinstance(w, Wire[i - 1])
+
+        # non-wires
+        assert not isinstance({"not": "wires"}, Wire)
