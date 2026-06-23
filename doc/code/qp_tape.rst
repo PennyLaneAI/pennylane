@@ -78,6 +78,7 @@ Quantum Script
 ``QuantumScript`` itself now lives in the ``pennylane.core`` module.
 
 ..currentmodule:: pennylane.core.qscript
+
 .. autosummary::
     :toctree: api
 
@@ -91,6 +92,7 @@ Quantum tape
 ~~~~~~~~~~~~
 
 ..currentmodule:: pennylane.tape
+
 .. autosummary::
     :toctree: api
 
