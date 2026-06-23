@@ -31,8 +31,6 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
-    ~prod
-    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,8 +144,6 @@ from .ops import (
     mcx_one_clean_aux_resource_decomp,
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
-    prod,
-    ResourceQfunc,
 )
 
 CosineWindow = LabsCosineWindow
