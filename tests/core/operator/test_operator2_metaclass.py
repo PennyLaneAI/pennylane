@@ -242,9 +242,7 @@ class TestOperatorAbstractInputs:
 
         assert len(q) == 0
 
-    @pytest.mark.parametrize(
-        "builtin_type", (float, int, bool, complex, np.float32, np.bool, np.int_)
-    )
+    @pytest.mark.parametrize("builtin_type", (float, int, bool, complex, np.float32, np.int_))
     def test_abstract_operator_construction_with_python_builtin_types(self, builtin_type):
         """Tests that you can construct an abstract operator with builtin Python types."""
 

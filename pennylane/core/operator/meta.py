@@ -82,6 +82,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+    if isinstance(val, type) and issubclass(val, Number):
+        return AbstractArray((), val)
 
     match kind:
         case _ArgType.WIRES:
@@ -90,10 +92,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             return AbstractWires(len(canonical_wires))
 
         case _ArgType.DYN:
-            # Case 1: Bare type is supported (i.e., float, np.float32)
-            if isinstance(val, type) and issubclass(val, Number):
-                return AbstractArray((), val)
-            # Case 2: An array of types is not supported (i.e., [float, float, float])
+            # An array of types is not supported (i.e., [float, float, float])
             # for dynamic args. Ambiguous how to canonicalize it generally.
             if isinstance(val, (list, tuple)) and any(
                 isinstance(x, type) and issubclass(x, Number) for x in val
