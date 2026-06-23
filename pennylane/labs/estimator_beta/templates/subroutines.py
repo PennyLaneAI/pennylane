@@ -2331,7 +2331,7 @@ class SelAmp(qre.ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: 
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:
             the operator in a compressed representation
         """
         params = {"n": n}
@@ -2357,8 +2357,8 @@ class SelAmp(qre.ResourceOperator):
         gate_cost.append(qre.GateCount(cz, 1))
         gate_cost.append(qre.GateCount(cnot, n - 1))
         gate_cost.append(qre.GateCount(tof, 2 * (n - 1)))
-        gate_cost.append(qre.GateCount(x, 2)) # conjugate zero control
-        gate_cost.append(qre.GateCount(l_elbow)) # use a temp and for the triply controlled Z
+        gate_cost.append(qre.GateCount(x, 2))  # conjugate zero control
+        gate_cost.append(qre.GateCount(l_elbow))  # use a temp and for the triply controlled Z
         gate_cost.append(qre.GateCount(r_elbow))
         gate_cost.append(qre.GateCount(ccz, 2))
         gate_cost.append(qre.GateCount(cnot, n - 1))
