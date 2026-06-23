@@ -17,9 +17,8 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 
 import functools
 import itertools
-import types
 import uuid
-from collections.abc import Hashable, Iterable, Sequence, Sized
+from collections.abc import Hashable, Iterable, Sequence
 from dataclasses import dataclass
 from importlib import import_module, util
 
@@ -740,10 +739,8 @@ class Wires(Sequence):
         return Wires(set(_process(other)) ^ set(self.labels))
 
     def __class_getitem__(cls, item) -> "AbstractWires":
-        if not isinstance(item, int) and item != ...:
-            raise TypeError(
-                f"AbstractWires can only be subscripted with integers and Ellipsis. Got {item}."
-            )
+        if not isinstance(item, int):
+            raise TypeError(f"AbstractWires can only be subscripted with integers. Got {item}.")
         return AbstractWires(item)
 
 
@@ -753,10 +750,21 @@ class AbstractWires:
     of wires, useful for resource calculations.
 
     Args:
-        num_wires (int): The number of wires
+        num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
     """
 
-    num_wires: int | types.EllipsisType
+    num_wires: int
+
+    def __post_init__(self):
+        if not isinstance(self.num_wires, int):
+            raise TypeError(
+                f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
+            )
+        if self.num_wires < -1:
+            raise ValueError(
+                f"'num_wires' must be a non-negative integer, but got {self.num_wires}. "
+                "For a dynamic number of wires, use -1."
+            )
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
@@ -778,19 +786,12 @@ class AbstractWires:
         return hash(("AbstractWires", self.num_wires))
 
     def __len__(self) -> int:
+        if self.num_wires < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
         return self.num_wires
 
-    def issubtype(self, val) -> bool:
-        """Check whether a given value has a shape that adheres to the shape
-        of an ``AbstractWires``.
-        """
-        if self.num_wires is Ellipsis:
-            return True
-        if isinstance(val, Wires):
-            return len(val) == self.num_wires
-        if isinstance(val, Sized) and not isinstance(val, str):
-            return len(val) == self.num_wires
-        return len((val,)) == self.num_wires
+    def __repr__(self):
+        return f"AbstractWires({self.num_wires})"
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
