@@ -240,6 +240,38 @@
 
 <h3>Improvements 🛠</h3>
 
+* Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive 
+  abstract type notation.  
+  [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+
+  ```python
+  from pennylane.typing import Int, Float, Complex, Bool, Wire
+  Int[2, 3]       # Abstract int array with shape (2, 3)
+  Float           # Float scalar
+  Complex[...]    # Abstract complex array with any shape
+  Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
+  Wire            # Single abstract wire
+  Wire[4]         # Four abstract wires
+  Wire[-1]        # Wire sequence with dynamic size
+  ```
+  For example, these abstract types can be used to do type-checking on concrete values:
+  
+  ```pycon
+  >>> isinstance(np.array(False), qp.typing.Bool)
+  True
+  >>> qp.typing.Bool[4]
+  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+  True
+  >>> qp.typing.Complex[..., 2]
+  AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+  >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
+  True
+  >>> qp.typing.Wire[2]
+  AbstractWires(num_wires=2)
+  
+  ```
+
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
 
@@ -569,6 +601,25 @@
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
   [(#9662)](https://github.com/PennyLaneAI/pennylane/pull/9662)
 
+* The `return_global_phase` keyword argument has been removed from the following helper methods in `qp.math`:
+
+  - :math:`~.math.decomposition.zyz_rotation_angles`
+  - :math:`~.math.decomposition.xyx_rotation_angles`
+  - :math:`~.math.decomposition.xzx_rotation_angles`
+  - :math:`~.math.decomposition.zxz_rotation_angles`
+  - :math:`~.math.convert_to_su2`
+  - :math:`~.math.convert_to_su4`
+
+  These methods will now always return the additional global phase.
+  [(#9496)](https://github.com/PennyLaneAI/pennylane/pull/9496)
+
+  ```pycon
+  >>> # You can always discard the last return value if the global phase is not needed.
+  >>> U = qp.Hadamard(0).matrix()
+  >>> phi, theta, omega, _ = qp.math.decomposition.zyz_rotation_angles(U)
+
+  ```
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -589,6 +640,9 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
+  [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
 * The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
   [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
@@ -640,6 +694,7 @@
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
