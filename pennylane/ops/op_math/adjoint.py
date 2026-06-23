@@ -358,6 +358,12 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
+
     def __init__(self, base=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base)
@@ -453,6 +459,12 @@ class AdjointOperation(Adjoint, Operation):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
 
     @property
     def name(self):
