@@ -485,7 +485,7 @@ def _prod_resources(resources):
 @qp.register_resources(_prod_resources)
 def _prod_decomp(*_, wires=None, operands, **__):
     for op in reversed(operands):
-        qp.pytrees.unflatten(*qp.pytrees.flatten(op))
+        qp.apply(op)
 
 
 qp.add_decomps(Prod, _prod_decomp)
