@@ -175,7 +175,7 @@ class ProfileNode:
         QFT(4) x1
         """
         if child_nodes is None or len(child_nodes) == 0:
-            return
+            return None
 
         grouped_data = {}
         for node in child_nodes:
@@ -269,7 +269,7 @@ class ProfileNode:
         QFT(4) x1
         """
         if child_nodes is None or len(child_nodes) == 0:
-            return
+            return None
 
         grouped_data = {}
         for node in child_nodes:
