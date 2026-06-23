@@ -21,8 +21,8 @@ from collections import defaultdict
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
@@ -253,7 +253,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
+        self, hamiltonian, time, n=1, order=1, check_hermitian=True
     ):
         r"""Initialize the TrotterProduct class"""
 
@@ -298,7 +298,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -567,8 +567,8 @@ class TrotterizedQfunc(Operation):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
-    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The 
+    :math:`m^{\text{th}}`-order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
@@ -638,12 +638,12 @@ class TrotterizedQfunc(Operation):
     >>> time = 0.1
     >>> angles = (0.12, -3.45)
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 
@@ -656,7 +656,6 @@ class TrotterizedQfunc(Operation):
         n=1,
         order=2,
         reverse=False,
-        id=None,
         **non_trainable_kwargs,
     ):
         # This class requires the input function (qfunc) has a very specific
@@ -680,7 +679,7 @@ class TrotterizedQfunc(Operation):
         self._hyperparameters["qfunc"] = qfunc
         self._hyperparameters["reverse"] = reverse
 
-        super().__init__(time, *trainable_args, wires=wires, id=id)
+        super().__init__(time, *trainable_args, wires=wires)
 
     def decomposition(self) -> list[Operator]:
         """The decomposition"""
@@ -796,12 +795,12 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
     >>> theta, phi = (0.12, -3.45)
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 

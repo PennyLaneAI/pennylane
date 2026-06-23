@@ -22,8 +22,8 @@ from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.gradients import param_shift
-from pennylane.measurements import Shots
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -559,12 +559,14 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(self, mocker, theta, shift, broadcast):
+    def test_Rot_gradient(
+        self, mocker, theta, shift, broadcast, seed
+    ):  # pylint: disable=too-many-arguments
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
         shot_vec = tuple([1000000] * 2)
-        dev = qp.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1, seed=seed)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -1315,7 +1317,6 @@ class TestParameterShiftRule:
             assert gradF.shape == ()
             assert qp.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
-    @pytest.mark.local_salt(1)
     def test_non_involutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
@@ -1430,6 +1431,7 @@ class TestParameterShiftRule:
             assert qp.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
             assert qp.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
+    @pytest.mark.local_salt(1)
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""

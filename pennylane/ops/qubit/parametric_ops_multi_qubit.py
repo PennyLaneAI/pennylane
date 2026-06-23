@@ -21,26 +21,25 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 
 import pennylane as qp
 from pennylane import compiler, math, queuing
 from pennylane.capture.autograph import disable_autograph
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.reconstruct import register_reconstructor
-from pennylane.decomposition.symbolic_decomposition import (
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-)
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.operation import FlatPytree, Operation, Operator
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -71,7 +70,6 @@ class MultiRZ(Operation):
     Args:
         theta (TensorLike): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_params = 1
@@ -88,10 +86,10 @@ class MultiRZ(Operation):
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
         if not self._wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."
@@ -206,9 +204,11 @@ class MultiRZ(Operation):
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
-        ops = [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
+        ops = [
+            qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
+        ]
         ops.append(RZ(theta, wires=wires[0]))
-        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
+        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
 
         return ops
 
@@ -255,8 +255,8 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
-add_decomps("Adjoint(MultiRZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(MultiRZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
+add_decomps("Pow(MultiRZ)", pow_rotation)
 
 
 class PauliRot(Operation):
@@ -285,7 +285,6 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -319,17 +318,16 @@ class PauliRot(Operation):
     }
 
     @classmethod
-    def _primitive_bind_call(cls, theta, pauli_word, wires=None, id=None):
-        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires, id=id)
+    def _primitive_bind_call(cls, theta, pauli_word, wires=None):
+        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires)
 
     def __init__(
         self,
         theta: TensorLike,
         pauli_word: str,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(theta, wires=wires, id=id)
+        super().__init__(theta, wires=wires)
 
         if not self._wires:
             raise ValueError(
@@ -453,7 +451,8 @@ class PauliRot(Operation):
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
-            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"],
+            strict=True,
         )
 
         multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
@@ -555,11 +554,12 @@ class PauliRot(Operation):
             return [qp.GlobalPhase(phi=theta / 2)]
 
         active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+            strict=True,
         )
 
         ops = []
-        for wire, gate in zip(active_wires, active_gates):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
@@ -567,7 +567,7 @@ class PauliRot(Operation):
 
         ops.append(MultiRZ(theta, wires=list(active_wires)))
 
-        for wire, gate in zip(active_wires, active_gates):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
@@ -579,11 +579,6 @@ class PauliRot(Operation):
 
     def pow(self, z):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
-
-
-@register_reconstructor(PauliRot)
-def _pauli_rot_reconstructor(theta, wires, pauli_word):
-    return PauliRot(theta, pauli_word, wires)
 
 
 def _pauli_rot_resources(pauli_word):
@@ -604,15 +599,16 @@ def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: st
         qp.GlobalPhase(theta / 2)
         return
     active_wires, active_gates = zip(
-        *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+        strict=True,
     )
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate == "X":
             qp.Hadamard(wires=[wire])
         elif gate == "Y":
             qp.RX(np.pi / 2, wires=[wire])
     qp.MultiRZ(theta, wires=list(active_wires))
-    for wire, gate in zip(active_wires, active_gates):
+    for wire, gate in zip(active_wires, active_gates, strict=True):
         if gate == "X":
             qp.Hadamard(wires=[wire])
         elif gate == "Y":
@@ -620,8 +616,8 @@ def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: st
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
-add_decomps("Adjoint(PauliRot)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(PauliRot)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation)
+add_decomps("Pow(PauliRot)", pow_rotation)
 
 
 class PCPhase(Operation):
@@ -653,7 +649,6 @@ class PCPhase(Operation):
         phi (float): rotation angle :math:`\phi`
         dim (int): the dimension of the subspace
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example:**
 
@@ -706,7 +701,15 @@ class PCPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
@@ -738,7 +741,7 @@ class PCPhase(Operation):
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -747,7 +750,7 @@ class PCPhase(Operation):
                 f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
             )
 
-        super().__init__(phi, wires=wires, id=id)
+        super().__init__(phi, wires=wires)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 
     @property
@@ -1157,7 +1160,6 @@ class IsingXX(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1175,8 +1177,8 @@ class IsingXX(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1292,8 +1294,8 @@ def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
-add_decomps("Adjoint(IsingXX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(IsingXX)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(IsingXX)", adjoint_rotation)
+add_decomps("Pow(IsingXX)", pow_rotation)
 
 
 class IsingYY(Operation):
@@ -1326,7 +1328,6 @@ class IsingYY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1344,8 +1345,8 @@ class IsingYY(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1468,8 +1469,8 @@ def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
-add_decomps("Adjoint(IsingYY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(IsingYY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(IsingYY)", adjoint_rotation)
+add_decomps("Pow(IsingYY)", pow_rotation)
 
 
 class IsingZZ(Operation):
@@ -1503,7 +1504,6 @@ class IsingZZ(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1521,8 +1521,8 @@ class IsingZZ(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1676,8 +1676,8 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
-add_decomps("Adjoint(IsingZZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(IsingZZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
+add_decomps("Pow(IsingZZ)", pow_rotation)
 
 
 class IsingXY(Operation):
@@ -1721,7 +1721,6 @@ class IsingXY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1746,8 +1745,8 @@ class IsingXY(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1906,8 +1905,8 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
-add_decomps("Adjoint(IsingXY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(IsingXY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(IsingXY)", adjoint_rotation)
+add_decomps("Pow(IsingXY)", pow_rotation)
 
 
 class PSWAP(Operation):
@@ -1933,7 +1932,6 @@ class PSWAP(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1948,8 +1946,8 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2110,7 +2108,7 @@ def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
-add_decomps("Adjoint(PSWAP)", qjit_compatible_adjoint_rotation)
+add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
 class CPhaseShift00(Operation):
@@ -2142,7 +2140,6 @@ class CPhaseShift00(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2160,8 +2157,8 @@ class CPhaseShift00(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2333,8 +2330,8 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift00, _cphaseshift00)
-add_decomps("Adjoint(CPhaseShift00)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CPhaseShift00)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
 class CPhaseShift01(Operation):
@@ -2366,7 +2363,6 @@ class CPhaseShift01(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2384,8 +2380,8 @@ class CPhaseShift01(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2548,8 +2544,8 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift01, _cphaseshift01)
-add_decomps("Adjoint(CPhaseShift01)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CPhaseShift01)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
 class CPhaseShift10(Operation):
@@ -2580,7 +2576,6 @@ class CPhaseShift10(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Any, Wires): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2598,8 +2593,8 @@ class CPhaseShift10(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2757,5 +2752,5 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, _cphaseshift10)
-add_decomps("Adjoint(CPhaseShift10)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CPhaseShift10)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift10)", pow_rotation)

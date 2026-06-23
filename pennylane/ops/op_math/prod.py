@@ -26,9 +26,15 @@ from typing import Union
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import math
+from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
+from pennylane.decomposition import (
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    resource_rep,
+)
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -43,7 +49,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, id=None, lazy=True):
+def prod(*ops, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -130,16 +136,15 @@ def prod(*ops, id=None, lazy=True):
                 if qp.QueuingManager.recording():
                     op = qp.apply(op)
                 return op
-            return prod(*qs.operations[::-1], id=id, lazy=lazy)
+            return prod(*qs.operations[::-1], lazy=lazy)
 
         return wrapper
 
     if lazy:
-        return Prod(*ops, id=id)
+        return Prod(*ops)
 
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        id=id,
     )
 
     for op in ops:
@@ -310,7 +315,9 @@ class Prod(CompositeOp):
         else:
             full_mat = qp.math.stack(
                 [
-                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    reduce(
+                        math.kron, [m[i] if b else m for m, b in zip(mats, batched, strict=True)]
+                    )
                     for i in range(self.batch_size)
                 ]
             )
@@ -339,23 +346,6 @@ class Prod(CompositeOp):
     @handle_recursion_error
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
-
-    # pylint: disable=protected-access
-    @property
-    @handle_recursion_error
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-        * `"_ops"`
-        * `"_measurements"`
-        * `None`
-
-        Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
-        """
-        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -395,7 +385,7 @@ class Prod(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
@@ -499,6 +489,135 @@ def _prod_decomp(*_, wires=None, operands, **__):
 
 
 qp.add_decomps(Prod, _prod_decomp)
+
+
+def _ctrl_prod_resources(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]
+    tand_rep = resource_rep(qp.TemporaryAND)
+
+    resources = Counter()
+    resources[tand_rep] += num_control_wires - 1
+    resources[adjoint_resource_rep(qp.TemporaryAND, tand_rep.params)] += num_control_wires - 1
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources)
+def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+def _ctrl_prod_resources_with_one_work_wire(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    multicx_rep = resource_rep(
+        qp.MultiControlledX,
+        num_control_wires=num_control_wires,
+        num_work_wires=0,
+        num_zero_control_values=0,
+        work_wire_type="borrowed",
+    )
+
+    resources = Counter()
+    resources[multicx_rep] += 2
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[
+            controlled_resource_rep(
+                base_class=rep.op_type,
+                base_params=rep.params,
+                num_control_wires=1,
+                num_zero_control_values=0,
+                num_work_wires=0,
+            )
+        ] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with a single zeroed work wire.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires[:1])
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+
+
+qp.add_decomps(
+    "C(Prod)",
+    flip_zero_control(_controlled_product_with_work_wires),
+    flip_zero_control(_controlled_product_with_one_work_wire),
+)
+
+
+def _multi_temporary_and_all_ones(
+    control,
+    work_wires,
+):
+    """Controlled decomposition using a ``TemporaryAND`` ladder.
+
+    Assumes all control values are 1 and returns the last ancilla as the
+    effective control target. Compatible with QJIT: the ladder is expressed
+    via ``control_flow.for_loop`` when running under tracing.
+    """
+    num_needed = len(control) - 1
+
+    if compiler.active() or qp.capture.enabled():
+        control = math.array(control, like="jax")
+        work_wires = math.array(work_wires, like="jax")
+
+    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+
+    @control_flow.for_loop(1, num_needed, 1)
+    def _ladder(i):
+        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+
+    _ladder()  # pylint: disable = no-value-for-parameter
+
+    return work_wires[num_needed - 1]
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -625,7 +744,7 @@ class _ProductFactorsGrouping:
             factor = factor.base
         else:
             exponent = 1
-        op_hash = factor.hash
+        op_hash = hash(factor)
         old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [

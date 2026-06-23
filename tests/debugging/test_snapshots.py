@@ -22,7 +22,7 @@ import pytest
 from scipy.stats import ttest_ind
 
 import pennylane as qp
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -106,10 +106,10 @@ class TestSnapshotTape:
         _, fn_no_meas = qp.snapshots(tape_no_meas)
 
         expected_keys.remove("execution_results")
-        assert "snapshot_tags" in fn.keywords
+        assert "snapshot_tags" in fn_no_meas.keywords
         assert len(fn_no_meas.keywords["snapshot_tags"]) == num_snapshots
         assert all(key in fn_no_meas.keywords["snapshot_tags"] for key in expected_keys)
-        assert fn(["a", 1, 2]) == {
+        assert fn_no_meas(["a", 1, 2]) == {
             0: "a",
             "very_important_state": 1,
             2: 2,
@@ -614,7 +614,7 @@ class TestSnapshotSupportedQNode:
             with pytest.raises(
                 ValueError,
                 match="The measurement PauliZ is not supported as it is not an instance "
-                "of <class 'pennylane.measurements.measurements.MeasurementProcess'>",
+                "of <class 'pennylane.core.measurements.MeasurementProcess'>",
             ):
                 qp.Snapshot(measurement=qp.PauliZ(0))
             return qp.expval(qp.PauliZ(0))
@@ -645,7 +645,6 @@ class TestSnapshotUnsupportedQNode:
     # should be revised and fixed soon
     # current failure rate: ~7%
     # FIXME: [sc-92966]
-    @pytest.mark.local_salt(2)
     def test_lightning_qubit_finite_shots(self, seed):
         dev = qp.device("lightning.qubit", wires=2, seed=seed)
 
@@ -733,11 +732,7 @@ class TestSnapshotUnsupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Specifying 'shots' when executing a QNode is deprecated",
-        ):
-            result = circuit(shots=200)
+        result = qp.set_shots(circuit, shots=200)()
         finite_shot_result = result[0]
         assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
             finite_shot_result,

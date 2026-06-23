@@ -19,11 +19,10 @@ from collections.abc import Callable
 from string import ascii_letters as alphabet
 
 from pennylane import math, queuing
+from pennylane.core.measurements import MeasurementProcess, StateMeasurement
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
 )
@@ -151,7 +150,7 @@ def calculate_probability(
     inactive_wires = Wires.unique_wires([wire_order, wires])
 
     # translate to wire labels used by device
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
+    wire_map = {w: i for i, w in enumerate(wire_order)}
     mapped_wires = [wire_map[w] for w in wires]
     inactive_wires = [wire_map[w] for w in inactive_wires]
 

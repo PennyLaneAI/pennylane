@@ -27,10 +27,10 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -40,7 +40,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import TensorLike
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -108,8 +108,6 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex] or csr_matrix): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
 
     Raises:
@@ -142,7 +140,6 @@ class QubitUnitary(Operation):
         self,
         U: TensorLike | csr_matrix,
         wires: WiresLike,
-        id: str | None = None,
         unitary_check: bool = False,
     ):
         wires = Wires(wires)
@@ -171,7 +168,7 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        super().__init__(U, wires=wires, id=id)
+        super().__init__(U, wires=wires)
 
     @staticmethod
     def _unitary_check(U, dim):
@@ -668,7 +665,18 @@ def _diagonal_qu_decomp(D, wires, **_):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
+def _diagonal_mux_on_aux_resources(num_wires):
+    return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
+
+
+@register_resources(_diagonal_mux_on_aux_resources, work_wires={"zeroed": 1})
+def _diagonal_mux_on_aux_decomp(D, wires, **_):
+    angles = -2 * qp.math.angle(D)
+    with qp.allocate(1, "zero", restored=True) as aux_wire:
+        qp.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
 def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
@@ -717,7 +725,6 @@ class BlockEncode(Operation):
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
@@ -774,7 +781,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, A: TensorLike, wires: WiresLike):
         wires = Wires(wires)
         shape_a = qp.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -804,7 +811,7 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(A, wires=wires, id=id)
+        super().__init__(A, wires=wires)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 

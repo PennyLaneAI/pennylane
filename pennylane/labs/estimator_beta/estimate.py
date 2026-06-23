@@ -17,16 +17,16 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
 
+from pennylane.core.operator import Operation
 from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
-from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
 from .resource_config import LabsResourceConfig
-from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_resources
+from .wires_manager.wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
 
 # pylint: disable=too-many-arguments
 

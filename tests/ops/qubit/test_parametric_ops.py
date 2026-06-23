@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
@@ -162,6 +163,7 @@ SKIP_ASSERT_VALID = {
 
 class TestOperations:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
@@ -275,7 +277,7 @@ class TestParameterFrequencies:
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
         freqs_from_gen = qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
-        freqs = op.parameter_frequencies
+        freqs = parameter_frequencies(op)
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
@@ -2826,6 +2828,7 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
+    @pytest.mark.jax
     def test_assert_valid(self):
         """Tests that a PauliRot is valid"""
 
@@ -3311,6 +3314,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
+    @pytest.mark.jax
     def test_MultiRZ_assert_valid(self):
         """Tests that MultiRZ is valid."""
 

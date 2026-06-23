@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, compiler, control_flow, math, ops, queuing
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
 
@@ -174,21 +174,7 @@ def ctrl_decomp_zyz(
     control_wires = Wires(control_wires)
     target_wire = target_operation.wires
 
-    if isinstance(target_operation, Operation):
-        try:
-            rot_angles = target_operation.single_qubit_rot_angles()
-            _, global_phase = math.convert_to_su2(
-                ops.functions.matrix(target_operation), return_global_phase=True
-            )
-        except NotImplementedError:
-            *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-                ops.functions.matrix(target_operation), return_global_phase=True
-            )
-    else:
-        *rot_angles, global_phase = math.decomposition.zyz_rotation_angles(
-            ops.functions.matrix(target_operation), return_global_phase=True
-        )
-
+    *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
     with queuing.AnnotatedQueue() as q:
         all_wires = control_wires + target_wire
         if len(control_wires) > 1:
@@ -284,7 +270,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 def ctrl_decomp_bisect_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
-    U, phase = math.convert_to_su2(U, return_global_phase=True)
+    U, phase = math.convert_to_su2(U)
     imag_U = math.imag(U)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
@@ -323,7 +309,7 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
@@ -360,7 +346,7 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
     _multi_control_zyz(
         phi,
         theta,
@@ -401,7 +387,7 @@ def _controlled_two_qubit_unitary_resource(
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
+    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
     for w in zero_control_wires:
         ops.PauliX(w)
     ops.ctrl(
@@ -489,7 +475,9 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         loop_down()
 
 
-decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
+decompose_mcx_many_workers_explicit = flip_zero_control(
+    _mcx_many_workers, name="many_explicit_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -510,7 +498,9 @@ def _mcx_many_zeroed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
+decompose_mcx_many_zeroed_workers = flip_zero_control(
+    _mcx_many_zeroed_workers, name="many_zeroed_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -531,7 +521,9 @@ def _mcx_many_borrowed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_workers)
+decompose_mcx_many_borrowed_workers = flip_zero_control(
+    _mcx_many_borrowed_workers, name="many_borrowed_workers"
+)
 
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
@@ -617,7 +609,9 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
+decompose_mcx_two_workers_explicit = flip_zero_control(
+    _mcx_two_workers, name="two_explicit_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -632,7 +626,9 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
+decompose_mcx_two_zeroed_workers = flip_zero_control(
+    _mcx_two_zeroed_workers, name="two_zeroed_workers"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -647,7 +643,9 @@ def _mcx_two_borrowed_workers(wires, **kwargs):
         _mcx_two_workers(wires, **kwargs)
 
 
-decompose_mcx_two_borrowed_workers = flip_zero_control(_mcx_two_borrowed_workers)
+decompose_mcx_two_borrowed_workers = flip_zero_control(
+    _mcx_two_borrowed_workers, name="two_borrowed_workers"
+)
 
 
 def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
@@ -712,7 +710,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
-decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
+decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker, name="one_explicit_worker")
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -727,7 +725,9 @@ def _mcx_one_zeroed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
+decompose_mcx_one_zeroed_worker = flip_zero_control(
+    _mcx_one_zeroed_worker, name="one_zeroed_worker"
+)
 
 
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
@@ -742,7 +742,9 @@ def _mcx_one_borrowed_worker(wires, **kwargs):
         _mcx_one_worker(wires, **kwargs)
 
 
-decompose_mcx_one_borrowed_worker = flip_zero_control(_mcx_one_borrowed_worker)
+decompose_mcx_one_borrowed_worker = flip_zero_control(
+    _mcx_one_borrowed_worker, name="one_borrowed_worker"
+)
 
 
 def _decompose_mcx_no_worker_resource(num_control_wires, **__):
@@ -793,7 +795,7 @@ def _decompose_mcx_with_no_worker(wires, **_):
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
 
 
-decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker)
+decompose_mcx_with_no_worker = flip_zero_control(_decompose_mcx_with_no_worker, "no_workers")
 
 ####################
 # Helper Functions #

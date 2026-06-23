@@ -21,8 +21,8 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qp
-from pennylane import adjoint
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops.op_math import Controlled, adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -56,7 +56,7 @@ def pattern_matching_optimization(
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized.
+        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized (QNode or quantum function).
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
@@ -69,23 +69,24 @@ def pattern_matching_optimization(
 
     **Example**
 
-    >>> dev = qp.device('default.qubit', wires=5)
-
     You can apply the transform directly on a :class:`QNode`. For that, you need first to define a pattern that is to be
     found in the circuit. We use the following pattern that implements the identity:
 
     .. code-block:: python
 
+        import pennylane as qp
+
         ops = [qp.S(0), qp.S(0), qp.Z(0)]
         pattern = qp.tape.QuantumTape(ops)
-
 
     Let's consider the following circuit where we want to replace a sequence of two ``pennylane.S`` gates with a
     ``pennylane.PauliZ`` gate.
 
     .. code-block:: python
 
-        @pattern_matching_optimization(pattern_tapes = [pattern])
+        dev = qp.device('default.qubit', wires=5)
+
+        @qp.transforms.pattern_matching_optimization(pattern_tapes = [pattern])
         @qp.qnode(device=dev)
         def circuit():
             qp.S(wires=0)
@@ -100,8 +101,10 @@ def pattern_matching_optimization(
 
     During the call of the circuit, it is first optimized (if possible) and then executed.
 
-    >>> circuit()
-    np.float64(0.0)
+    >>> print(qp.draw(circuit)())
+    0: ──S†─╭●────┤  <X>
+    1: ──Z──╰Z─╭●─┤
+    2: ──Z─────╰Z─┤
 
     .. details::
         :title: Usage Details
@@ -496,9 +499,9 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     first_match_qubits = []
 
     # Controlled gate
-    if len(node_c.op.control_wires) >= 1:
+    if isinstance(node_c.op, Controlled):
         circuit_control = node_c.op.control_wires
-        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
+        circuit_target = Wires([w for w in node_c.op.wires if w not in circuit_control])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control

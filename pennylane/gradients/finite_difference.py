@@ -29,12 +29,12 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 from pennylane import math, pytrees
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -246,7 +246,7 @@ def finite_diff_jvp(
                 continue
 
             ti_over_h = ti / h
-            for coeff, shift in zip(coeffs, shifts):
+            for coeff, shift in zip(coeffs, shifts, strict=True):
                 if shift == 0:
                     res = flat_initial_res
                 else:
@@ -375,8 +375,8 @@ def finite_diff(
     >>> qp.jacobian(circuit)(params)
     array([-0.38751725, -0.18884792, -0.38355708])
 
-    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
-    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
+    When differentiating QNodes with multiple measurements using Autograd, the outputs of the QNode first
+    need to be stacked. The reason is that this framework only allows differentiating functions with array or
     tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
     post-processing.
 

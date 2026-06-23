@@ -122,11 +122,9 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectResourceOps.register_primitive(cond_prim)
 def explore_all_branches(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle the cond primitive by a flattened python strategy."""
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
     args = invals[slice(*args_slice)]
     outvals = ()
-    for _, jaxpr, consts_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for jaxpr, consts_slice in zip(jaxpr_branches, consts_slices, strict=True):
         consts = invals[slice(*consts_slice)]
         dummy = copy(self).eval(jaxpr, consts, *args)
         # The cond_prim may or may not expect outvals, so we need to check whether

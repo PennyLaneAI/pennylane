@@ -23,13 +23,13 @@ import numpy as np
 
 import pennylane.math as pl_math
 from pennylane import ops as qp_ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import TensorLike
@@ -40,7 +40,7 @@ from .select import Select
 
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2):
+    for wire1, wire2 in zip(wires1, wires2, strict=True):
         qp_ops.SWAP(wires=[wire1, wire2])
 
 
@@ -85,12 +85,12 @@ def _select_ops(
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_swap_wires = control_wires[n_control_select_wires:]
+    num_targets = len(target_wires)
     for i in range(len(control_swap_wires) - 1, -1, -1):
         for j in range(2**i - 1, -1, -1):
-            qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(
-                swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
-                swap_wires[(j + 2**i) * len(target_wires) : (j + 2 ** (i + 1)) * len(target_wires)],
-            )
+            _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
+            _wires1 = swap_wires[(j + 2**i) * num_targets : (j + 2**i + 1) * num_targets]
+            qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
 
 class QROM(Operation):
@@ -195,7 +195,6 @@ class QROM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-        id=None,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
 
         control_wires = Wires(control_wires)
@@ -242,7 +241,7 @@ class QROM(Operation):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         all_wires = target_wires + control_wires + work_wires
-        super().__init__(data, wires=all_wires, id=id)
+        super().__init__(data, wires=all_wires)
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
@@ -345,16 +344,14 @@ class QROM(Operation):
             # Swap block
             control_swap_wires = control_wires[n_control_select_wires:]
             swap_ops = []
+            num_targets = len(target_wires)
             for ind in range(len(control_swap_wires)):
                 for j in range(2**ind):
-                    new_op = qp_ops.prod(_multi_swap)(
-                        swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
-                        swap_wires[
-                            (j + 2**ind)
-                            * len(target_wires) : (j + 2 ** (ind + 1))
-                            * len(target_wires)
-                        ],
-                    )
+                    _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
+                    _wires1 = swap_wires[
+                        (j + 2**ind) * num_targets : (j + 2**ind + 1) * num_targets
+                    ]
+                    new_op = qp_ops.prod(_multi_swap)(_wires0, _wires1)
                     swap_ops.insert(0, qp_ops.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
             if not clean or depth == 1:

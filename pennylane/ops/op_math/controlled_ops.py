@@ -36,12 +36,10 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     flip_zero_control,
     pow_involutory,
-    pow_involutory_no_reconstructor,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-    qjit_compatible_self_adjoint,
+    pow_rotation,
     self_adjoint,
 )
 from pennylane.typing import TensorLike
@@ -333,17 +331,17 @@ class CH(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         control_wires = wires[:1]
         target_wires = wires[1:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Hadamard, wires=target_wires)
-        super().__init__(base, control_wires, id=id)
+        super().__init__(base, control_wires)
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
@@ -427,7 +425,7 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
-add_decomps("Adjoint(CH)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
@@ -451,8 +449,6 @@ class CY(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
     """
 
     num_wires = 2
@@ -476,14 +472,14 @@ class CY(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Y, wires=wires[1:])
-        super().__init__(base, wires[:1], id=id)
+        super().__init__(base, wires[:1])
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -579,7 +575,7 @@ def _cy_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CY, _cy, _cy_to_ppr)
-add_decomps("Adjoint(CY)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
@@ -626,14 +622,14 @@ class CZ(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Z, wires=wires[1:])
-        super().__init__(base, wires[:1], id=id)
+        super().__init__(base, wires[:1])
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -713,7 +709,7 @@ def _cz_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot, _cz_to_ppr)
-add_decomps("Adjoint(CZ)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CZ)", self_adjoint)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -764,17 +760,17 @@ class CSWAP(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=3)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         control_wires = wires[:1]
         target_wires = wires[1:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.SWAP, wires=target_wires)
-        super().__init__(base, control_wires, id=id)
+        super().__init__(base, control_wires)
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
@@ -889,7 +885,7 @@ def _cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CSWAP, _cswap, _cswap_to_ppr)
-add_decomps("Adjoint(CSWAP)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
@@ -910,6 +906,8 @@ class CCZ(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
         0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
         \end{pmatrix}
+    
+    .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
 
@@ -918,10 +916,36 @@ class CCZ(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.H(2)
+            qp.CCZ([0,1,2])
+            qp.H(2)
+            return qp.sample(wires=[0,1,2])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●────┤ ╭Sample
+    1: ──X─├●────┤ ├Sample
+    2: ──H─╰Z──H─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=3)
 
     def _flatten(self):
@@ -944,14 +968,14 @@ class CCZ(ControlledOp):
 
     name = "CCZ"
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         control_wires = wires[:2]
         target_wires = wires[2:]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Z, wires=target_wires)
-        super().__init__(base, control_wires, id=id)
+        super().__init__(base, control_wires)
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
@@ -1098,7 +1122,7 @@ def _ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz, _ccz_to_toffoli)
-add_decomps("Adjoint(CCZ)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -1113,7 +1137,7 @@ class CNOT(ControlledOp):
         0 & 0 & 1 & 0
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control wire**. The second wire is the **target wire**.
 
     **Details:**
 
@@ -1122,6 +1146,28 @@ class CNOT(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.CNOT([0,1])
+            return qp.sample(wires=[0,1])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤ ╭Sample
+    1: ────╰X─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1]])
+
     """
 
     num_wires = 2
@@ -1145,14 +1191,14 @@ class CNOT(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=2)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.X, wires=wires[1:])
-        super().__init__(base, wires[:1], id=id)
+        super().__init__(base, wires[:1])
 
     def adjoint(self):
         return CNOT(self.wires)
@@ -1247,7 +1293,7 @@ def _cnot_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(CNOT, _cnot_to_cz_h, _cnot_to_ppr)
-add_decomps("Adjoint(CNOT)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
@@ -1268,6 +1314,8 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
+    
+    .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
 
@@ -1276,6 +1324,30 @@ class Toffoli(ControlledOp):
 
     Args:
         wires (Sequence[int]): the subsystem the gate acts on
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        dev = qp.device("lightning.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            qp.X(1)
+            qp.Toffoli([0,1,2])
+            return qp.sample(wires=[0,1,2])
+
+    >>> print(qp.draw(circuit)())
+    0: ──X─╭●─┤ ╭Sample
+    1: ──X─├●─┤ ├Sample
+    2: ────╰X─┤ ╰Sample
+    >>> circuit()
+    array([[1, 1, 1]])
+
     """
 
     num_wires = 3
@@ -1299,16 +1371,16 @@ class Toffoli(ControlledOp):
         return cls(metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, wires, id=None):
+    def _primitive_bind_call(cls, wires):
         return cls._primitive.bind(*wires, n_wires=3)
 
-    def __init__(self, wires, id=None):
+    def __init__(self, wires):
         control_wires = wires[:2]
         target_wires = wires[2:]
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.X, wires=target_wires)
-        super().__init__(base, control_wires, id=id)
+        super().__init__(base, control_wires)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
@@ -1484,7 +1556,7 @@ def _toffoli_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr)
-add_decomps("Adjoint(Toffoli)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
@@ -1585,7 +1657,7 @@ class MultiControlledX(ControlledOp):
 
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed"
     ):
         return cls._primitive.bind(
             *wires,
@@ -1741,7 +1813,7 @@ class MultiControlledX(ControlledOp):
 
         .. code-block:: python
 
-            decomp = qp.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1,1,1], work_wires=qp.wires.Wires("aux"))
+            decomp = qp.MultiControlledX.compute_decomposition(wires=[0,1,2,3], control_values=[1, 1, 1], work_wires=qp.wires.Wires("aux"))
 
         >>> print(decomp)
         [Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux']), Toffoli(wires=[0, 'aux', 3]), Toffoli(wires=[2, 1, 'aux'])]
@@ -1760,7 +1832,7 @@ class MultiControlledX(ControlledOp):
 
         work_wires = work_wires or []
 
-        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips1 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
@@ -1769,7 +1841,7 @@ class MultiControlledX(ControlledOp):
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)
 
-        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values) if not val]
+        flips2 = [qp.X(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
 
         return flips1 + decomp + flips2
 
@@ -1794,7 +1866,9 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     elif len(wires) == 2:
         qp.CNOT(wires=wires)
     elif len(wires) == 3:
-        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        zero_control_wires = [
+            w for w, val in zip(control_wires, control_values, strict=True) if not val
+        ]
         for w in zero_control_wires:
             qp.PauliX(w)
         qp.Toffoli(wires=wires)
@@ -1837,7 +1911,7 @@ add_decomps(
     decompose_mcx_two_controls_elbows,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-add_decomps("Pow(MultiControlledX)", pow_involutory_no_reconstructor)
+add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
 class CRX(ControlledOp):
@@ -1876,7 +1950,6 @@ class CRX(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1893,11 +1966,11 @@ class CRX(ControlledOp):
     name = "CRX"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires: WiresLike, id=None):
+    def __init__(self, phi, wires: WiresLike):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RX, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1], id=id)
+        super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1910,7 +1983,7 @@ class CRX(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
+    def _primitive_bind_call(cls, phi, wires: WiresLike):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2053,8 +2126,8 @@ def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
-add_decomps("Adjoint(CRX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRX)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRX)", adjoint_rotation)
+add_decomps("Pow(CRX)", pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -2093,7 +2166,6 @@ class CRY(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -2110,11 +2182,11 @@ class CRY(ControlledOp):
     name = "CRY"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RY, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1], id=id)
+        super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -2127,7 +2199,7 @@ class CRY(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2245,8 +2317,8 @@ def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRY, _cry, _cry_to_ppr)
-add_decomps("Adjoint(CRY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRY)", adjoint_rotation)
+add_decomps("Pow(CRY)", pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2289,7 +2361,6 @@ class CRZ(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2307,11 +2378,11 @@ class CRZ(ControlledOp):
     name = "CRZ"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.RZ, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1], id=id)
+        super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -2324,7 +2395,7 @@ class CRZ(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2480,8 +2551,8 @@ def _crz_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRZ, _crz, _crz_to_ppr)
-add_decomps("Adjoint(CRZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(CRZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(CRZ)", adjoint_rotation)
+add_decomps("Pow(CRZ)", pow_rotation)
 
 
 class CRot(ControlledOp):
@@ -2520,7 +2591,6 @@ class CRot(ControlledOp):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2539,11 +2609,11 @@ class CRot(ControlledOp):
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, phi, theta, omega, wires, id=None):
+    def __init__(self, phi, theta, omega, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.Rot, phi, theta, omega, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1], id=id)
+        super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -2558,7 +2628,7 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
+    def _primitive_bind_call(cls, phi, theta, omega, wires):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
     @property
@@ -2730,7 +2800,6 @@ class ControlledPhaseShift(ControlledOp):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -2748,11 +2817,11 @@ class ControlledPhaseShift(ControlledOp):
     name = "ControlledPhaseShift"
     parameter_frequencies = [(1,)]
 
-    def __init__(self, phi, wires, id=None):
+    def __init__(self, phi, wires):
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qp.PhaseShift, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1], id=id)
+        super().__init__(base, control_wires=wires[:1])
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
@@ -2765,7 +2834,7 @@ class ControlledPhaseShift(ControlledOp):
         return cls(*data, wires=metadata[0])
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires, id=None):
+    def _primitive_bind_call(cls, phi, wires):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
     @property
@@ -2927,7 +2996,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
-add_decomps("Adjoint(ControlledPhaseShift)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(ControlledPhaseShift)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
 CPhase = ControlledPhaseShift

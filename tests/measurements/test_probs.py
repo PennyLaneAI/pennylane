@@ -22,8 +22,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import MeasurementProcess, ProbabilityMP
+from pennylane.measurements import ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -337,7 +338,6 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.local_salt(2)  # [sc-96120]
     @pytest.mark.jax
     @pytest.mark.parametrize("shots", (None, 500))
     @pytest.mark.parametrize("obs", ([0, 1], qp.PauliZ(0) @ qp.PauliZ(1)))

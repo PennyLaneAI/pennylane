@@ -19,8 +19,8 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import Wires, WiresLike
 
@@ -294,19 +294,19 @@ class BasisRotation(Operation):
     resource_keys = {"dim", "is_real"}
 
     @classmethod
-    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
-            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
+            return type.__call__(cls, wires, unitary_matrix, check=check)  # pragma: no cover
 
-        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
+        return cls._primitive.bind(*wires, unitary_matrix, check=check)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(wires=metadata[0], unitary_matrix=data[0])
 
-    def __init__(self, wires, unitary_matrix, check=False, id=None):
+    def __init__(self, wires, unitary_matrix, check=False):
         M, N = math.shape(unitary_matrix)
 
         if M != N:
@@ -323,7 +323,7 @@ class BasisRotation(Operation):
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
-        super().__init__(unitary_matrix, wires=wires, id=id)
+        super().__init__(unitary_matrix, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -427,7 +427,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
             cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary)
-        givens_matrices, givens_ids = zip(*givens_list)
+        givens_matrices, givens_ids = zip(*givens_list, strict=True)
 
         if _qjit_or_capture():
             givens_ids = math.array(givens_ids, like="jax")
@@ -445,7 +445,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
 
     def complex_unitary(unitary, wires):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
-        givens_matrices, givens_ids = zip(*givens_list)
+        givens_matrices, givens_ids = zip(*givens_list, strict=True)
 
         if _qjit_or_capture():
             phase_list = math.array(phase_list, like="jax")

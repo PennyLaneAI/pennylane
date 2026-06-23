@@ -19,8 +19,8 @@ method.
 # pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
 import numpy as np
 
+from pennylane.core.operator import Operation
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
 from pennylane.qchem import factorize
 
 
@@ -165,7 +165,7 @@ class DoubleFactorization(Operation):
             self.beta,
         )
 
-        super().__init__(wires=range(self._qubits))
+        super().__init__(self.one_electron, self.two_electron, wires=range(self._qubits))
 
     def _flatten(self):
         return (self.one_electron, self.two_electron), (

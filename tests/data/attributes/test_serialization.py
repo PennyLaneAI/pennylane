@@ -22,8 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.shots import Shots
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
-from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
@@ -192,7 +192,7 @@ H_TWO_QUBITS = np.array(
             shots=50,
             trainable_params=[0, 1],
         ),
-        Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
+        Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1)),
         Sum(
             qp.Hermitian(H_ONE_QUBIT, 2),
             qp.Hermitian(H_TWO_QUBITS, [0, 1]),
@@ -223,7 +223,7 @@ def test_pennylane_pytree_roundtrip(obj_in: Any):
                 [qp.expval(2 * qp.X(0))],
                 trainable_params=[0, 1],
             ),
-            Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
+            Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1)),
             Sum(
                 qp.Hermitian(H_ONE_QUBIT, 2),
                 qp.Hermitian(H_TWO_QUBITS, [0, 1]),

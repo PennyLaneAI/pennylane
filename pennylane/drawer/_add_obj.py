@@ -27,17 +27,18 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 
 from functools import singledispatch
 
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     Conditional,
@@ -51,13 +52,12 @@ from pennylane.ops import (
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import TemporaryAND
+from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object for conditional
     operators"""
-    n_wires = len(config.wire_map)
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
@@ -67,20 +67,20 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     ctrl_symbol = "╩"
     if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[max_b]):
         ctrl_symbol = "╝"
-    layer_str[max_b + n_wires] = f"═{ctrl_symbol}"
+    layer_str[max_b + config.n_wires] = f"═{ctrl_symbol}"
 
-    for w in range(max_w + 1, max(config.wire_map.values()) + 1):
-        layer_str[w] = "─║"
+    for row in range(max_w + 1, config.n_wires):
+        layer_str[row] = config.wire_filler(row) + "║"
 
     for b in range(max_b):
         if b in mapped_bits:
             intersection = "╬"
             if any(config.cur_layer == stretch[-1] for stretch in config.cwire_layers[b]):
                 intersection = "╣"
-            layer_str[b + n_wires] = f"═{intersection}"
+            layer_str[b + config.n_wires] = f"═{intersection}"
         else:
-            filler = " " if layer_str[b + n_wires][-1] == " " else "═"
-            layer_str[b + n_wires] = f"{filler}║"
+            filler = " " if layer_str[b + config.n_wires][-1] == " " else "═"
+            layer_str[b + config.n_wires] = f"{filler}║"
 
     return layer_str
 
@@ -116,15 +116,14 @@ def _add_mid_measure_grouping_symbols(op, layer_str, config):
     if op not in config.bit_map:
         return layer_str
 
-    n_wires = len(config.wire_map)
     mapped_wire = config.wire_map[op.wires[0]]
-    bit = config.bit_map[op] + n_wires
+    bit = config.bit_map[op] + config.n_wires
     layer_str[bit] += " ╚"
 
-    for w in range(mapped_wire + 1, n_wires):
-        layer_str[w] += "─║"
+    for row in range(mapped_wire + 1, config.n_wires):
+        layer_str[row] += config.wire_filler(row) + "║"
 
-    for b in range(n_wires, bit):
+    for b in range(config.n_wires, bit):
         filler = " " if layer_str[b][-1] == " " else "═"
         layer_str[b] += f"{filler}║"
 
@@ -141,7 +140,7 @@ def _add_subroutine_mcm_grouping_symbols(op, layer_str, config):
     if not any(mcm in config.bit_map for mcm in mcms):
         return layer_str
 
-    n_wires = len(config.wire_map)
+    n_wires = config.n_wires
     mapped_wire = max(config.wire_map[w] for w in op.wires)
     bits = [config.bit_map[mcm] + n_wires for mcm in mcms if mcm in config.bit_map]
     for bit in bits:
@@ -164,6 +163,21 @@ def _add_obj(
     raise NotImplementedError(f"unable to draw object {obj}")
 
 
+@_add_obj.register(Allocate)
+def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    label = "|0>├" if obj.state.value == "zero" else "├"
+    for w in obj.wires:
+        layer_str[config.wire_map[w]] += label
+    return layer_str
+
+
+@_add_obj.register(Deallocate)
+def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    for w in obj.wires:
+        layer_str[config.wire_map[w]] += "┤"
+    return layer_str
+
+
 @_add_obj.register
 def _add_cond(obj: Conditional, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     layer_str = _add_cond_grouping_symbols(obj, layer_str, config)
@@ -178,7 +192,7 @@ def _add_controlled(
         return _add_controlled_global_op(obj, layer_str, config)
 
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
     return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
 
@@ -188,7 +202,7 @@ def _add_controlled_global_op(obj, layer_str, config):
     but a manually managed dispatch."""
     layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
 
-    for w, val in zip(obj.control_wires, obj.control_values):
+    for w, val in zip(obj.control_wires, obj.control_values, strict=True):
         layer_str[config.wire_map[w]] += "●" if val else "○"
 
     label = obj.base.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
@@ -232,6 +246,46 @@ def _add_right_elbow(obj: TemporaryAND, layer_str, config):
 
 
 @_add_obj.register
+def _add_select_pauli_rot(
+    obj: SelectPauliRot, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``SelectPauliRot``."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.hyperparameters["control_wires"]:
+        layer_str[config.wire_map[w]] += "◑"
+
+    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    target_label = obj.label(
+        decimals=config.decimals, base_label=base_label, cache=config.cache
+    ).replace("\n", "")
+    for w in obj.hyperparameters["target_wire"]:
+        layer_str[config.wire_map[w]] += target_label
+
+    return layer_str
+
+
+@_add_obj.register
+def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    """Updates ``layer_str`` with ``op`` operation of type ``QROM``."""
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+
+    for w in obj.control_wires:
+        layer_str[config.wire_map[w]] += "◑"
+
+    target_label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+    for w in obj.target_wires:
+        layer_str[config.wire_map[w]] += target_label
+
+    for w in obj.work_wires:
+        layer_str[config.wire_map[w]] += "work"
+
+    return layer_str
+
+
+@_add_obj.register
 def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
     only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
@@ -249,8 +303,7 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(obj.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
-        n_wires = len(config.wire_map)
-        for i, s in enumerate(layer_str[:n_wires]):
+        for i, s in enumerate(layer_str[: config.n_wires]):
             layer_str[i] = s + label
     else:
         for w in obj.wires:
@@ -277,13 +330,14 @@ def _add_global_op(
     tape_cache=None,
     skip_grouping_symbols=False,
 ):
-    n_wires = len(config.wire_map)
+    active_wires = [w for w, row in config.wire_map.items() if config.wire_filler(row) == "─"]
     if not skip_grouping_symbols:
-        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
+        layer_str = _add_grouping_symbols(active_wires, layer_str, config)
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    for i, s in enumerate(layer_str[:n_wires]):
-        layer_str[i] = s + label
+    for row in range(config.n_wires):
+        if config.wire_filler(row) == "─":  # proxy for occupied wire
+            layer_str[row] = layer_str[row] + label
 
     return layer_str
 
@@ -330,15 +384,14 @@ def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
     """Adds symbols indicating the extent of a given object for mid-circuit measurement
     statistics."""
     if len(mcms) > 1:
-        n_wires = len(config.wire_map)
         mapped_bits = [config.bit_map[m] for m in mcms]
-        min_b, max_b = min(mapped_bits) + n_wires, max(mapped_bits) + n_wires
-
+        min_b = min(mapped_bits) + config.n_wires
+        max_b = max(mapped_bits) + config.n_wires
         layer_str[min_b] = "╭"
         layer_str[max_b] = "╰"
 
         for b in range(min_b + 1, max_b):
-            layer_str[b] = "├" if b - n_wires in mapped_bits else "│"
+            layer_str[b] = "├" if b - config.n_wires in mapped_bits else "│"
 
     return layer_str
 
@@ -352,9 +405,8 @@ def _add_cwire_measurement(m, layer_str, config):
     mv_label = "PPM" if isinstance(mcms[0], PauliMeasure) else "MCM"
     meas_label = measurement_label_map[type(m)](mv_label)
 
-    n_wires = len(config.wire_map)
     for mcm in mcms:
-        ind = config.bit_map[mcm] + n_wires
+        ind = config.bit_map[mcm] + config.n_wires
         layer_str[ind] += meas_label
 
     return layer_str
@@ -383,9 +435,11 @@ def _add_measurement(
     else:
         meas_label = str(m)
 
-    if len(m.wires) == 0:  # state or probability across all wires
-        n_wires = len(config.wire_map)
-        for i, s in enumerate(layer_str[:n_wires]):
+    if len(m.wires) == 0:
+        # add grouping symbols for measurements that span all device wires.
+        algo_wires = [w for w in config.wire_map if not isinstance(w, DynamicWire)]
+        layer_str = _add_grouping_symbols(algo_wires, layer_str, config)
+        for i, s in enumerate(layer_str[: len(algo_wires)]):
             layer_str[i] = s + meas_label
 
     for w in m.wires:

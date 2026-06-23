@@ -22,7 +22,7 @@ from typing import Any
 import numpy as np
 
 from pennylane import ops
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.ops import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
@@ -262,7 +262,7 @@ def find_and_place_cuts(
                 },  # kwargs has higher precedence for colliding keys
             )
             for cut_kwargs in cut_kwargs_probed
-            for trial_id, seed in zip(range(cut_strategy.trials_per_probe), seeds)
+            for trial_id, seed in enumerate(seeds)
         }
 
         valid_cut_edges = {}

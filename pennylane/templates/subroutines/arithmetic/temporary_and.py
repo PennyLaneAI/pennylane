@@ -18,6 +18,7 @@ Contains the TemporaryAND template, which also is known as Elbow.
 from functools import lru_cache
 
 from pennylane import math, ops
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -25,7 +26,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -54,11 +54,11 @@ class TemporaryAND(Operation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
-            third one is the target wire.
-        control_values (tuple[bool or int]): The values on the control wires for which
-            the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
+        wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the
+            control wires and the third one is the target wire.
+        control_values (tuple[bool or int]): The values on the control wires for which the target
+            operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
 
     .. seealso:: The alias :class:`~Elbow`.
@@ -66,6 +66,8 @@ class TemporaryAND(Operation):
     **Example**
 
     .. code-block:: python
+
+        import pennylane as qp
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit"))
@@ -88,6 +90,29 @@ class TemporaryAND(Operation):
     3: ───────╰X─────┤ ╰Sample
     >>> print(circuit())
     [[1 1 0 1]]
+
+    There is also a decomposition of ``TemporaryAND`` into a standard ``Toffoli`` gate, in order
+    to provide a compilation path into gate sets like Clifford + Toffoli:
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.decomposition.enable_graph()
+
+        @qp.decompose(gate_set={qp.Toffoli, qp.X})
+        def circuit():
+            qp.TemporaryAND((0, 1, 2))
+            return qp.expval(qp.Z(2))
+
+    >>> print(qp.draw(circuit)())
+    0: ─╭●─┤
+    1: ─├●─┤
+    2: ─╰X─┤  <Z>
+
+    Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
+    decomposition may contain bit flips on the control qubits, depending on potentially dynamic
+    control values.
     """
 
     num_wires = 3
@@ -107,10 +132,10 @@ class TemporaryAND(Operation):
             return f"TemporaryAND(wires={self.wires})"
         return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
 
-    def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
+    def __init__(self, wires: WiresLike, control_values=(1, 1)):
         wires = Wires(wires)
         self.hyperparameters["control_values"] = tuple(control_values)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:

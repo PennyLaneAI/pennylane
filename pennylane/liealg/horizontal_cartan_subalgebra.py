@@ -21,8 +21,8 @@ from itertools import combinations, combinations_with_replacement
 from scipy.linalg import null_space, sqrtm
 
 from pennylane import math
+from pennylane.core.operator import Operator
 from pennylane.liealg.center import _intersect_bases
-from pennylane.operation import Operator
 from pennylane.ops import Identity
 from pennylane.ops.functions import commutator, equal, matrix, simplify
 from pennylane.pauli import PauliSentence, trace_inner_product
@@ -89,7 +89,11 @@ def horizontal_cartan_subalgebra(
 
     where :math:`\mathfrak{a})` is the CSA and :math:`\tilde{\mathfrak{m}}` is the remainder of the horizontal subspace :math:`\mathfrak{m}`.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
+    .. seealso::
+        :func:`~cartan_decomp`,
+        :func:`~structure_constants`,
+        :doc:`The KAK decomposition in theory (demo) <demo:demos/tutorial_kak_decomposition>`,
+        :doc:`The KAK decomposition in practice (demo) <demo:demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
         k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
@@ -142,7 +146,7 @@ def horizontal_cartan_subalgebra(
 
     >>> v = np_a[0]
     >>> op = sum(v_i * g_i for v_i, g_i in zip(v, g))
-    >>> op.simplify()
+    >>> op.prune()
     >>> op
     -1.0 * Z(0) @ Z(1)
 
@@ -324,8 +328,8 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
-            op_j.simplify()
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
+            op_j.prune()
             res.append(op_j)
         return res
 
@@ -336,7 +340,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
             adj_vecs = math.tensordot(adj_vecs, math.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = sum(c * op for c, op in zip(vec, basis, strict=True))
             op_j = simplify(op_j)
             res.append(op_j)
         return res
@@ -536,7 +540,7 @@ def check_abelian(ops: list[PauliSentence | TensorLike | Operator]):
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj.commutator(oi)
-            com.simplify()
+            com.prune()
             if len(com) != 0:
                 return False
 

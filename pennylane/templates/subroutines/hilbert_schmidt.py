@@ -21,6 +21,7 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import is_abstract
-from pennylane.operation import Operation, Operator
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
@@ -62,7 +62,6 @@ class HilbertSchmidt(Operation):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
@@ -143,7 +142,6 @@ class HilbertSchmidt(Operation):
         self,
         V: Operator | Iterable[Operator],
         U: Operator | Iterable[Operator],
-        id: str | None = None,
     ) -> None:
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -168,7 +166,7 @@ class HilbertSchmidt(Operation):
             raise ValueError("Operators in U and V must act on distinct wires.")
 
         total_wires = Wires(u_wires + v_wires)
-        super().__init__(wires=total_wires, id=id)
+        super().__init__(wires=total_wires)
 
     def map_wires(self, wire_map: dict):
         raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
@@ -241,7 +239,7 @@ class HilbertSchmidt(Operation):
         decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range, strict=True)
         )
 
         # Unitary U
@@ -262,7 +260,7 @@ class HilbertSchmidt(Operation):
         # CNOT second layer
         decomp_ops.extend(
             CNOT(wires=[wires[i], wires[j]])
-            for i, j in zip(reversed(first_range), reversed(second_range))
+            for i, j in zip(reversed(first_range), reversed(second_range), strict=True)
         )
         # Hadamard second layer
         decomp_ops.extend(Hadamard(wires[i]) for i in first_range)
@@ -295,7 +293,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
@@ -373,7 +370,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range, strict=True)
         )
 
         # Unitary U

@@ -27,6 +27,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -34,15 +35,14 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.exceptions import WireError
-from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
-# TODO: Remove TOLERANCE as global variable
-TOLERANCE = 1e-10
+#: Numerical tolerance for validating unit norm of input state vectors.
+_STATE_NORM_TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase):
@@ -70,7 +70,6 @@ class BasisState(StatePrepBase):
         state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): Custom label given to an operator instance. Can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -98,7 +97,7 @@ class BasisState(StatePrepBase):
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
-    def __init__(self, state, wires: WiresLike, id=None):
+    def __init__(self, state, wires: WiresLike):
 
         wires = Wires(wires)
         if isinstance(state, list):
@@ -130,7 +129,7 @@ class BasisState(StatePrepBase):
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
         state = qp.math.cast(state, int)
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def _flatten(self):
         state = self.parameters[0]
@@ -165,13 +164,12 @@ class BasisState(StatePrepBase):
         """
 
         if not qp.math.is_abstract(state):
-            return [qp.X(wire) for wire, basis in zip(wires, state) if basis == 1]
+            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
 
         op_list = []
-        for wire, basis in zip(wires, state):
-            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
+        for wire, basis in zip(wires, state, strict=True):
+            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
             op_list.append(qp.RX(basis * np.pi, wire))
-            op_list.append(qp.PhaseShift(basis * np.pi / 2, wire))
 
         return op_list
 
@@ -188,7 +186,7 @@ class BasisState(StatePrepBase):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals_int):
+            for base_wire_label, value in zip(self.wires, prep_vals_int, strict=True):
                 indices[wire_order.index(base_wire_label)] = value
 
         if qp.math.get_interface(prep_vals_int) == "jax":
@@ -225,7 +223,7 @@ def _jax_jit_basis_state_cond(**_):
 @register_condition(_jax_jit_basis_state_cond)
 @register_resources(_jax_jit_basis_state_resources, exact=False)
 def _jax_jit_basis_state_decomp(state, wires, **__):
-    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state)]
+    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state, strict=True)]
 
 
 def _basis_state_decomp_resources(num_wires):
@@ -239,13 +237,8 @@ def _basis_state_decomp(state, wires, **__):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        if not qp.math.is_abstract(state):
-            state = jnp.array(state)
-
-        if not qp.math.is_abstract(wires):
-            wires = jnp.array(wires)
+        state = qp.math.array(state, like="jax")
+        wires = qp.math.array(wires, like="jax")
 
     @qp.for_loop(len(state))
     def _loop(i):
@@ -286,8 +279,6 @@ class StatePrep(StatePrepBase):
             :math:`n` is the number of wires.
         normalize (bool): whether to normalize the state vector. To represent a valid quantum state vector, the L2-norm
             of ``state`` must be one. The argument ``normalize`` can be set to ``True`` to normalize the state automatically.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
         validate_norm (bool): whether to validate the norm of the input state
 
 
@@ -414,7 +405,6 @@ class StatePrep(StatePrepBase):
         wires: WiresLike,
         pad_with=None,
         normalize: bool = False,
-        id: str | None = None,
         validate_norm: bool = False,
     ):
         self.is_sparse = False
@@ -435,7 +425,7 @@ class StatePrep(StatePrepBase):
             "validate_norm": validate_norm,
         }
 
-        super().__init__(state, wires=wires, id=id)
+        super().__init__(state, wires=wires)
 
     def _check_batching(self):
         if self.is_sparse:
@@ -571,7 +561,7 @@ class StatePrep(StatePrepBase):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
@@ -630,7 +620,7 @@ class StatePrep(StatePrepBase):
         if normalize:
             state /= norm
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        elif not math.allclose(norm, 1.0, atol=_STATE_NORM_TOLERANCE):
             raise ValueError(
                 f"The state must be a vector of norm 1.0; got norm {norm}. "
                 "Use 'normalize=True' to automatically normalize."
@@ -671,8 +661,6 @@ class QubitDensityMatrix(Operation):
     Args:
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     .. details::
         :title: Usage Details

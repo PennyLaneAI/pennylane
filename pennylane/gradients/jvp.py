@@ -193,9 +193,11 @@ def compute_jvp_single(tangent, jac):
     jac_shapes = [j.shape for j in jac]
     new_shapes = [
         shape[: len(shape) - t_ndim] + (tsize,)
-        for shape, t_ndim, tsize in zip(jac_shapes, tangent_ndims, tangent_sizes)
+        for shape, t_ndim, tsize in zip(jac_shapes, tangent_ndims, tangent_sizes, strict=True)
     ]
-    jac = math.concatenate([math.reshape(j, s) for j, s in zip(jac, new_shapes)], axis=-1)
+    jac = math.concatenate(
+        [math.reshape(j, s) for j, s in zip(jac, new_shapes, strict=True)], axis=-1
+    )
     jac = math.cast(math.convert_like(jac, tangent), tangent.dtype)
     return math.tensordot(jac, tangent, [[-1], [0]])
 
@@ -425,7 +427,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
     processing_fns = []
 
     # Loop through the tapes and dys vector
-    for tape, tangent in zip(tapes, tangents):
+    for tape, tangent in zip(tapes, tangents, strict=True):
         g_tapes, fn = jvp(tape, tangent, gradient_fn, gradient_kwargs)
 
         reshape_info.append(len(g_tapes))

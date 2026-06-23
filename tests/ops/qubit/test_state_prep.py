@@ -37,6 +37,7 @@ def test_basis_state_input_cast_to_int():
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
+    @pytest.mark.jax
     def test_assert_valid(self):
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel
@@ -67,6 +68,9 @@ class TestStandardValidityBasisState:
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(state, wires=wires)
                 tapes.append(qp.tape.QuantumScript.from_queue(q))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.BasisState.compute_decomposition(state, wires=wires)
+            tapes.append(qp.tape.QuantumScript.from_queue(q))
 
             return tapes
 
@@ -92,11 +96,18 @@ class TestStandardValidityBasisState:
         )
 
         tapes = jax.jit(abstract_check)(state, wires)
-        for tape in tapes:
+        for tape in tapes[:-1]:  # Test the new decomp rules
             assert len(tape) == 3
             assert all(
                 isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
             )
+        tape = tapes[-1]
+        if state_traced:
+            assert len(tape) == 6
+            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+        else:
+            assert len(tape) == 1
+            assert isinstance(tape[0], qp.X)
 
     @pytest.mark.external
     @pytest.mark.catalyst
@@ -119,9 +130,17 @@ class TestStandardValidityBasisState:
         )
 
         tapes = qp.qjit(abstract_check)(state, wires)
-        for tape in tapes:
+        for tape in tapes[:-1]:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
+
+        tape = tapes[-1]
+        if state_traced:
+            assert len(tape) == 6
+            assert all(isinstance(op, (qp.GlobalPhase, qp.RX)) for op in tape)
+        else:
+            assert len(tape) == 2
+            assert all(isinstance(op, qp.X) for op in tape)
 
 
 @pytest.mark.parametrize(
@@ -169,6 +188,74 @@ class TestDecomposition:
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qp.X)
         assert isinstance(ops2[0], qp.X)
+
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "state",
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+            [1, 1, 1],
+        ],
+    )
+    def test_BasisState_abstract_decomposition_correctness(self, state):
+        """Test that the abstract decomposition of BasisState produces the correct
+        state vector when compiled and executed via ``qjit``.  Uses BasisEmbedding
+        which delegates to BasisState.compute_decomposition through the abstract
+        (traced) path, exercising the GlobalPhase+RX decomposition end-to-end."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        n_wires = len(state)
+        dev = qp.device("lightning.qubit", wires=n_wires)
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit(s):
+            qp.BasisEmbedding(features=s, wires=range(n_wires))
+            return qp.state()
+
+        result = circuit(jax.numpy.array(state))
+
+        expected = np.zeros(2**n_wires, dtype=complex)
+        expected[int("".join(str(b) for b in state), 2)] = 1.0
+
+        assert np.allclose(result, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "state",
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+            [1, 1, 1],
+        ],
+    )
+    def test_BasisState_abstract_decomposition_correctness_jax_jit(self, state):
+        """Test that the abstract decomposition of BasisState produces the correct
+        state vector when traced through ``jax.jit``.  Uses ``reference.qubit``
+        which decomposes BasisState with abstract parameters, exercising the
+        GlobalPhase+RX decomposition end-to-end without requiring Catalyst."""
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+
+        n_wires = len(state)
+
+        @qp.qnode(qp.device("reference.qubit", wires=n_wires))
+        def circuit(s):
+            qp.BasisState(s, wires=range(n_wires))
+            return qp.state()
+
+        result = jax.jit(circuit)(jnp.array(state))
+
+        expected = np.zeros(2**n_wires, dtype=complex)
+        expected[int("".join(str(b) for b in state), 2)] = 1.0
+
+        assert np.allclose(result, expected, atol=1e-6)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""

@@ -24,8 +24,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -201,7 +201,6 @@ class UCCSD(Operation):
         d_wires: Sequence[tuple[Sequence[int], Sequence[int]]] | None = None,
         init_state: Sequence[int] | None = None,
         n_repeats: int = 1,
-        id=None,
     ):
         if init_state is None:
             raise ValueError("Requires `init_state` to be provided.")
@@ -252,7 +251,7 @@ class UCCSD(Operation):
             "n_repeats": n_repeats,
         }
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)

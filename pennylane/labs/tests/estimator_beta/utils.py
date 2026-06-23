@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ def decomp_equal(decomp1, decomp2):
     if len(decomp1) != len(decomp2):
         return False
 
-    for op1, op2 in zip(decomp1, decomp2):
+    for op1, op2 in zip(decomp1, decomp2, strict=True):
         if isinstance(op1, (qre.Allocate, qre.Deallocate)):
             ops_equal = op1.equal(op2)
         else:

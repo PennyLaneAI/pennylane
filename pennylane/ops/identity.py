@@ -22,14 +22,11 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
+from pennylane.core.operator import CVObservable, Operation
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.symbolic_decomposition import (
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-)
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
 
 
@@ -46,8 +43,6 @@ class Identity(CVObservable, Operation):
 
     Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
@@ -57,8 +52,6 @@ class Identity(CVObservable, Operation):
 
     grad_method = None
     """Gradient computation method."""
-
-    _queue_category = "_ops"
 
     ev_order = 1
 
@@ -77,8 +70,8 @@ class Identity(CVObservable, Operation):
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires: WiresLike = (), id=None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
 
@@ -237,8 +230,6 @@ The expectation of this observable
 
 Args:
     wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-    id (str): custom label given to an operator instance,
-        can be useful for some applications where the instance has to be identified.
 
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
@@ -263,8 +254,6 @@ class GlobalPhase(Operation):
     Args:
         phi (TensorLike): the global phase
         wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -315,8 +304,8 @@ class GlobalPhase(Operation):
     ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires: WiresLike = (), id=None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi, wires: WiresLike = ()):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -479,8 +468,8 @@ class GlobalPhase(Operation):
         return qp.s_prod(-1, qp.I(self.wires))
 
 
-add_decomps("Adjoint(GlobalPhase)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(GlobalPhase)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
+add_decomps("Pow(GlobalPhase)", pow_rotation)
 
 
 def _controlled_g_phase_resource(
@@ -520,7 +509,9 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
         qp.GlobalPhase(params[0])
         return
 
-    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    zero_control_wires = [
+        w for w, val in zip(control_wires, control_values, strict=True) if not val
+    ]
     for w in zero_control_wires:
         qp.PauliX(w)
     qp.ctrl(

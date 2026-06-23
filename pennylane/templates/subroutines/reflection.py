@@ -21,6 +21,7 @@ import copy
 import numpy as np
 
 from pennylane import ops, pytrees
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -28,8 +29,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 
@@ -130,7 +130,7 @@ class Reflection(Operation):
         U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
-    def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
+    def __init__(self, U, alpha=np.pi, reflection_wires=None):
         self._name = "Reflection"
         wires = U.wires
 
@@ -145,7 +145,7 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, *U.data, wires=wires, id=id)
+        super().__init__(alpha, *U.data, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -210,6 +210,9 @@ class Reflection(Operation):
             decomp_ops.append(ops.X(wires=wires))
             decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
             decomp_ops.append(ops.X(wires=wires))
+
+        if QueuingManager.recording():
+            apply(U)
 
         decomp_ops.append(U)
 

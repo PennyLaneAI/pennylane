@@ -18,13 +18,13 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import I, X, Y, Z
 from pennylane.labs.dla import (
     batched_pauli_decompose,
     check_orthonormal,
     orthonormalize,
     pauli_coefficients,
 )
+from pennylane.ops import I, X, Y, Z
 from pennylane.pauli import PauliSentence, PauliVSpace, trace_inner_product
 
 # Make an operator matrix on given wire and total wire count
@@ -170,7 +170,7 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.simplify()
+            expected.prune()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
@@ -206,15 +206,15 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
-                e.simplify()
+                e.prune()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)
                 assert qp.equal(_op, e)
 
@@ -236,7 +236,7 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.simplify()
+            expected.prune()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
@@ -274,15 +274,15 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
-                e.simplify()
+                e.prune()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)
                 assert qp.equal(_op, e)
 

@@ -19,13 +19,13 @@ This module contains the qp.var measurement.
 from collections.abc import Sequence
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.operator import Operator
 from pennylane.ops import MeasurementValue
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement
 from .probs import probs
 from .sample import SampleMP
 
@@ -43,8 +43,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
     """
 
     _shortname = "var"

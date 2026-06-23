@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.decomposition.decomposition_rule import DecompositionRule
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qrom import _calculate_n_select_work_wires, _qrom_decomposition
 from pennylane.templates.subroutines.select import _select_decomp_unary
@@ -341,10 +342,10 @@ class TestQROM:
         control_wires = [0, 1, 2]
         target_wires = [3, 4]
 
-        class SpyRule:
+        class SpyRule(DecompositionRule):
             """Wraps a DecompositionRule, tracking __call__ invocations."""
 
-            def __init__(self, original):
+            def __init__(self, original):  # pylint: disable=super-init-not-called
                 self._original = original
                 self.call_count = 0
 

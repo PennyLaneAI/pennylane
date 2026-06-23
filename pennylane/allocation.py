@@ -20,16 +20,15 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
-
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False
@@ -60,7 +59,7 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True
@@ -159,10 +158,11 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-                0: ──H────────╭●────╭●──────────────────────┤  <Z>
-    <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤
-    <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤
-    <DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤
+    0: ──H────╭●────╭●────┤  <Z>
+         |0>├─╰X────╰X──┤
+         |0>├─╭SWAP──┤
+         |0>├─╰SWAP──┤
+
 
     Here, three dynamic wires were allocated in the circuit originally. When PennyLane determines
     which concrete values to use for dynamic wires to send to the device for execution, we can see
@@ -277,12 +277,13 @@ def allocate(
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-                0: ──H───────────────────────┤  <Z>
-                1: ──H───────────────────────┤
-    <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
-    <DynamicWire>: ─╰Allocate──H─╰Deallocate─┤
+    0: ──H──────────┤  <Z>
+    1: ──H──────────┤
+         |0>├──H──┤
+         |0>├──H──┤
 
-    Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
+
+    Equivalently, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
     handling:
 
     .. code-block:: python
@@ -319,12 +320,12 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit)())
-                    0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
-        <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
-        <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
-        <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤
-        <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤
-                                    ╚════════╝             ╚══════════╝
+        0: ──H─────────────────────╭●───────────╭●────┤  <Z>
+             |0>├──┤↗│  │0⟩────────│──────────┤ │
+             ├──────║────────Z─────╰X─────────┤ │
+                    ║        ║|0>├──┤↗│  │0⟩────│───┤
+                    ║        ║├──────║────────Z─╰X──┤
+                    ╚════════╝       ╚════════╝
 
         The user-level circuit drawing shows four separate allocations and deallocations (two per
         loop iteration). However, the circuit that the device receives gets automatically compiled
@@ -357,9 +358,9 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit, level="user")())
-        <DynamicWire>: ──Allocate──H──Deallocate─┤
-        <DynamicWire>: ──Allocate──X──Deallocate─┤
-                    0: ──────────────────────────┤  <Z>
+        0: ─────────────┤  <Z>
+            |0>├──H──┤
+            |0>├──X──┤
         >>> print(qp.draw(circuit, level="device")())
         0: ─────────────────┤  <Z>
         1: ──H──┤↗│  │0⟩──X─┤

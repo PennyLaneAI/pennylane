@@ -55,7 +55,7 @@ class TestGateSetDecomposition:
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
         mat = qp.Rot.compute_matrix(phi, theta, omega)
-        a1, a2, a3 = math.decomposition.xzx_rotation_angles(mat)
+        a1, a2, a3, _ = math.decomposition.xzx_rotation_angles(mat)
 
         with qp.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
@@ -172,7 +172,7 @@ class TestGateSetDecomposition:
             qp.CZ([0, 1])
 
             # MBQC Z rotation: X, X, +/- angle, X
-            angles = rot_xzx_gate.single_qubit_rot_angles()
+            angles = rot_xzx_gate.data
             m1 = measure_x(0)
             m2 = cond_measure(
                 m1,

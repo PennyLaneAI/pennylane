@@ -21,6 +21,7 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
@@ -137,7 +137,7 @@ class PhaseAdder(Operation):
     resource_keys = {"num_x_wires", "mod"}
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None):
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
         x_wires = Wires(x_wires)
@@ -168,7 +168,7 @@ class PhaseAdder(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["x_wires"] = x_wires
-        super().__init__(wires=x_wires, id=id)
+        super().__init__(wires=x_wires)
 
     @property
     def resource_params(self) -> dict:

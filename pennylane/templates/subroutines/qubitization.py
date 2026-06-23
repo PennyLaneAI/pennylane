@@ -17,8 +17,8 @@ This submodule contains the template for Qubitization.
 
 import copy
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import I, Prod, prod
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -81,7 +81,7 @@ class Qubitization(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(self, hamiltonian, control, id=None):
+    def __init__(self, hamiltonian, control):
         wires = Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
@@ -89,7 +89,7 @@ class Qubitization(Operation):
             "control": Wires(control),
         }
 
-        super().__init__(*hamiltonian.data, wires=wires, id=id)
+        super().__init__(*hamiltonian.data, wires=wires)
 
     @property
     def resource_params(self) -> dict:

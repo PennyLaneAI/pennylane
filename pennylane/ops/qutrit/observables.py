@@ -18,7 +18,7 @@ This submodule contains the qutrit quantum observables.
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
@@ -209,7 +209,7 @@ class GellMann(Operator):
         """Append the operator to the Operator queue."""
         return self
 
-    def __init__(self, wires, index=1, id=None):
+    def __init__(self, wires, index=1):
         if not isinstance(index, int) or index < 1 or index > 8:
             raise ValueError(
                 "The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."
@@ -217,7 +217,7 @@ class GellMann(Operator):
 
         self.hyperparameters["index"] = index
 
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or f"GellMann({self.hyperparameters['index']})"

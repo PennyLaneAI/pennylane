@@ -19,13 +19,13 @@ Contains the PrepSelPrep template.
 import copy
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -42,7 +42,9 @@ def _get_new_terms(lcu):
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
     # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
+    new_ops = [
+        prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops, strict=True)
+    ]
 
     return math.abs(coeffs), new_ops
 
@@ -93,7 +95,7 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike, id=None) -> None:
+    def __init__(self, lcu: SymbolicOp | CompositeOp, control: WiresLike) -> None:
         control = Wires(control)
         target_wires = lcu.wires
 
@@ -105,7 +107,7 @@ class PrepSelPrep(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires, id=id)
+        super().__init__(*self.data, wires=all_wires)
 
     def _flatten(self):
         return (self.lcu,), (self.control,)
@@ -132,7 +134,7 @@ class PrepSelPrep(Operation):
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         op_label = base_label or self.__class__.__name__
         if cache is None or not isinstance(cache.get("matrices", None), list):
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label
 
         coeffs = math.array(self.coeffs)
         for i, mat in enumerate(cache["matrices"]):
@@ -144,7 +146,7 @@ class PrepSelPrep(Operation):
             cache["matrices"].append(coeffs)
             str_wo_id = f"{op_label}(M{mat_num})"
 
-        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
+        return str_wo_id
 
     @staticmethod
     def compute_decomposition(lcu, control):

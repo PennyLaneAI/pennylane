@@ -19,8 +19,8 @@ import copy
 from collections import Counter
 
 from pennylane import capture
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops import SWAP
 from pennylane.wires import Wires
 
@@ -157,7 +157,7 @@ class Permute(Operation):
 
     resource_keys = {"wires", "permutation"}
 
-    def __init__(self, permutation, wires, id=None):
+    def __init__(self, permutation, wires):
         if len(permutation) <= 1 or len(wires) <= 1:
             raise ValueError("Permutations must involve at least 2 qubits.")
 
@@ -175,7 +175,7 @@ class Permute(Operation):
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
         self._hyperparameters = {"permutation": tuple(permutation)}
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access

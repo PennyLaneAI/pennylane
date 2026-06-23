@@ -20,8 +20,8 @@ with preparing a certain state on the qutrit device.
 import numpy as np
 
 from pennylane import math
+from pennylane.core.operator import Operation, StatePrepBase
 from pennylane.exceptions import WireError
-from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires
 
@@ -112,9 +112,70 @@ class QutritBasisState(StatePrepBase):
                 raise WireError("Custom wire_order must contain all QutritBasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals):
+            for base_wire_label, value in zip(self.wires, prep_vals, strict=True):
                 indices[wire_order.index(base_wire_label)] = value
 
         ket = np.zeros((3,) * num_wires)
         ket[tuple(indices)] = 1
         return math.convert_like(ket, prep_vals)
+
+
+class QutritDensityMatrix(Operation):
+    r"""QutritDensityMatrix(state, wires)
+    Prepare subsystems using the given density matrix.
+    If not all the wires are specified, remaining dimension is filled by :math:`\mathrm{tr}_{in}(\rho)`,
+    where :math:`\rho` is the full system density matrix before this operation and :math:`\mathrm{tr}_{in}` is a
+    partial trace over the subsystem to be replaced by input state.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    .. note::
+
+        ``QutritDensityMatrix`` operation is a state preparation operation, but it can be used mid-circuit too.
+        If used mid-circuit targeted wires state will be partial-traced out then replaced with ``state``.
+
+    .. note::
+
+        Exception raised if the ``QutritDensityMatrix`` operation is not supported natively on the
+        target device.
+
+    Args:
+        state (array[complex]): a density matrix of size ``(3**len(wires), 3**len(wires))``
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
+    .. details::
+        :title: Usage Details
+
+        Example:
+
+        .. code-block:: python
+
+            import pennylane as qp
+            nr_wires = 1
+            rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
+            rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
+
+            dev = qp.device("default.qutrit.mixed", wires=1)
+            @qp.qnode(dev)
+            def circuit():
+                qp.QutritDensityMatrix(rho, wires=[0])
+                return qp.state()
+
+        Running this circuit:
+
+        >>> circuit()
+        array([[[1.+0.j, 0.+0.j, 0.+0.j],
+                [0.+0.j, 0.+0.j, 0.+0.j],
+                [0.+0.j, 0.+0.j, 0.+0.j]]])
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = None

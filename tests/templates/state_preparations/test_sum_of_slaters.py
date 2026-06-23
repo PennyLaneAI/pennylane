@@ -29,7 +29,9 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
     _find_single_w,
+    _preprocess,
     _sos_state_prep,
+    _sos_state_prep_with_wires,
     compute_sos_encoding,
     select_sos_rows,
 )
@@ -404,6 +406,7 @@ class TestSumOfSlatersPrep:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "num_wires, num_entries",
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
@@ -415,6 +418,7 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity
@@ -459,7 +463,7 @@ class TestSumOfSlatersPrep:
         new_num_bits = len(reduced_bits)
         indices = tuple(2 ** np.arange(new_num_bits - 1, -1, -1) @ reduced_bits)
 
-        sizes = SumOfSlatersPrep.required_register_sizes(num_entries, new_num_bits, num_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
         d = ceil_log2(num_entries)
 
         m = min(new_num_bits, 2 * d - 1)
@@ -493,7 +497,7 @@ class TestSumOfSlatersPrep:
         num_bits = n - 1
         indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
 
-        sizes = SumOfSlatersPrep.required_register_sizes(n, num_bits, n)
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         d = ceil_log2(n)
         m = min(num_bits, 2 * d - 1)
         assert sizes["wires"] == n
@@ -606,3 +610,35 @@ class TestSumOfSlatersPrep:
                 )
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    @pytest.mark.external
+    def test_qjit_on_subroutine(self, seed):
+        """Test that the subroutine of the SumOfSlatersPrep decomposition
+        that uses already allocated wires is qjit compatible."""
+
+        seed += 1
+        n = 6
+        num_entries = 28
+        wires = list(range(n))
+        coefficients, indices = self.make_random_data(n, num_entries, seed=seed)
+
+        v_bits = qp.math.int_to_binary(np.array(indices), n).T
+
+        selected_wires, *data = _preprocess(v_bits, wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
+        data = (coefficients, v_bits, *data)
+        all_wires = qp.registers(sizes)
+        all_wires["selected_wires"] = selected_wires
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit"))
+        def func():
+            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+            return qp.probs(wires=wires)
+
+        output = func()
+        expected = np.zeros(2**n)
+        for c, idx in zip(coefficients, indices, strict=True):
+            expected[idx] = c**2
+
+        assert np.allclose(output, expected)

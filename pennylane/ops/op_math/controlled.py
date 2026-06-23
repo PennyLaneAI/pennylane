@@ -30,15 +30,17 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane._class_property import classproperty
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator, classproperty
 from pennylane.wires import Wires, WiresLike
 
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
@@ -253,14 +255,15 @@ def create_controlled_op(
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    if qp.capture.enabled():
-        return _capture_ctrl_transform(op, control, control_values, work_wires)
     return _ctrl_transform(op, control, control_values, work_wires)
 
 
 def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
+        if qp.capture.enabled():
+            return _capture_ctrl_transform(op, control, control_values, work_wires)(*args, **kwargs)
+
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
@@ -270,15 +273,19 @@ def _ctrl_transform(op, control, control_values, work_wires):
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
         if flip_control_on_zero:
-            _ = [qp.X(w) for w, val in zip(control, control_values) if not val]
+            _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         _ = [
-            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+            (
+                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                if not isinstance(op, (Allocate, Deallocate))
+                else qp.apply(op)
+            )
             for op in qscript.operations
         ]
 
         if flip_control_on_zero:
-            _ = [qp.X(w) for w, val in zip(control, control_values) if not val]
+            _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         if qp.QueuingManager.recording():
             _ = [qp.apply(m) for m in qscript.measurements]
@@ -565,9 +572,27 @@ class Controlled(SymbolicOp):
         new_sig = sig.replace(parameters=new_parameters)
         return new_sig
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if issubclass(subclass, qp.ops.op_math.Controlled2):
+            return True
+        return NotImplemented
+
     # pylint: disable=unused-argument
-    def __new__(cls, base, *_, **__):
-        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
+    def __new__(cls, *args, **kwargs):
+        """
+            Choose the concrete class to allocate for a controlled operator.
+
+        Operation bases should be allocated as ``ControlledOp`` instances, while
+        non-Operation operator bases should remain plain ``Controlled`` instances.
+        """
+        base = args[0] if args else kwargs.get("base")
+
+        # Pickle reconstruction may construct without base arguments.
+        if base is None:
+            return object.__new__(cls)
+
+        # If base is an ``Operation``, then a ``ControlledOp`` should be used instead.
         if isinstance(base, Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
@@ -581,7 +606,6 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
         if isinstance(base, Operator):
             qp.QueuingManager.remove(base)
@@ -603,7 +627,6 @@ class Controlled(SymbolicOp):
         control_values=None,
         work_wires: WiresLike = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        id=None,
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -639,10 +662,9 @@ class Controlled(SymbolicOp):
         self.hyperparameters["work_wire_type"] = work_wire_type
         self._name = f"C({base.name})"
 
-        super().__init__(base, id)
+        super().__init__(base)
 
-    @property
-    def hash(self):
+    def __hash__(self):
         # these gates do not consider global phases in their hash
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
@@ -659,7 +681,7 @@ class Controlled(SymbolicOp):
                 )
             )
         else:
-            base_hash = self.base.hash
+            base_hash = hash(self.base)
         return hash(
             (
                 "Controlled",
@@ -871,7 +893,11 @@ class Controlled(SymbolicOp):
             return decomp
 
         # We need to add paulis to flip some control wires
-        d = [qp.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d = [
+            qp.X(w)
+            for w, val in zip(self.control_wires, self.control_values, strict=True)
+            if not val
+        ]
 
         decomp = _decompose_no_control_values(self)
         if decomp is None:
@@ -881,7 +907,11 @@ class Controlled(SymbolicOp):
         else:
             d += decomp
 
-        d += [qp.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        d += [
+            qp.X(w)
+            for w, val in zip(self.control_wires, self.control_values, strict=True)
+            if not val
+        ]
         return d
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -892,7 +922,8 @@ class Controlled(SymbolicOp):
     def generator(self):
         sub_gen = self.base.generator()
         projectors = (
-            qp.Projector([val], wires=w) for val, w in zip(self.control_values, self.control_wires)
+            qp.Projector([val], wires=w)
+            for val, w in zip(self.control_values, self.control_wires, strict=True)
         )
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle ControlledGlobalPhase, see PR #5194
@@ -1076,9 +1107,8 @@ class ControlledOp(Controlled, Operation):
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type, id)
+        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
         # check the grad_recipe validity
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
@@ -1135,8 +1165,8 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        id=None,
     ):
+        control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
         return type.__call__(
             Controlled,
             base,
@@ -1144,7 +1174,6 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-            id=id,
         )
 
 

@@ -19,9 +19,9 @@ from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qp
 from pennylane import execute
+from pennylane.core.shots import Shots
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
-from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -211,6 +211,7 @@ class TestJaxExecuteIntegration:
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
         assert np.allclose(res, -jnp.sin(a), atol=atol_for_shots(shots))
 
+    @pytest.mark.local_salt(1)
     def test_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test jacobian calculation"""
 

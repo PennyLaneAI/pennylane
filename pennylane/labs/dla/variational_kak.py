@@ -21,8 +21,8 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 try:
@@ -79,16 +79,16 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             for theta_j, k_j in zip(theta_opt, k):
                 qp.exp(-1j * theta_j * k_j)
 
-    Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
+    Internally, this function performs a modified version of `arXiv:2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function
 
     .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
-    see eq. (6) therein and our `demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__ for more details.
+    see eq. (6) therein and our :doc:`demo <demo:demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>` for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
+    .. seealso:: :doc:`The KAK decomposition in theory (demo) <demo:demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demo:demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -314,8 +314,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # validate K_c a K_c^† reproduces H
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
-    assert len(theta_opt) == len(k)
-    for th, op in zip(theta_opt, k):
+    for th, op in zip(theta_opt, k, strict=True):
         opm = qp.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 

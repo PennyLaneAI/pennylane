@@ -16,9 +16,10 @@ from copy import copy
 from functools import lru_cache
 
 from pennylane import math, templates
+from pennylane.core.operator import Operator
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions import equal
 from pennylane.ops.op_math import Adjoint
 from pennylane.tape import make_qscript
@@ -140,7 +141,7 @@ def add_noise(tape, noise_model, level="user"):
             noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
         >>> from pennylane.workflow import get_compile_pipeline
-        >>> print(get_compile_pipeline(circuit)(1,2,3,4))
+        >>> print(get_compile_pipeline(circuit, level="device")(1,2,3,4))
          CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -155,7 +156,7 @@ def add_noise(tape, noise_model, level="user"):
           [11] validate_observables(stopping_condition=..., name=default.mixed)
         )
 
-        >>> print(get_compile_pipeline(noisy_circuit)(1,2,3,4))
+        >>> print(get_compile_pipeline(noisy_circuit, level="device")(1,2,3,4))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -274,7 +275,7 @@ def add_noise(tape, noise_model, level="user"):
     new_operations = []
     for operation in tape.operations:
         curr_ops = [operation]
-        for condition, noise in zip(conditions, noises):
+        for condition, noise in zip(conditions, noises, strict=True):
             if condition(operation):
                 noise_ops = noise(operation, **metadata).operations
                 if any(equal(operation, o) for o in noise_ops):
@@ -296,7 +297,7 @@ def add_noise(tape, noise_model, level="user"):
     split_operations, split_measurements = [], [[] for idx in tape.measurements]
     for midx, measurement in enumerate(tape.measurements):
         readout_operations = new_operations.copy()
-        for condition, noise in zip(meas_conds, meas_funcs):
+        for condition, noise in zip(meas_conds, meas_funcs, strict=True):
             if condition(measurement):
                 noise_ops = noise(measurement, **metadata).operations
                 readout_operations.extend(noise_ops)
@@ -311,7 +312,7 @@ def add_noise(tape, noise_model, level="user"):
 
     new_tapes = [
         tape.copy(operations=operations, measurements=[meas[1] for meas in measurements])
-        for operations, measurements in zip(split_operations, split_measurements)
+        for operations, measurements in zip(split_operations, split_measurements, strict=True)
     ]
 
     def post_processing_fn(results):

@@ -17,15 +17,19 @@ not depend on any parameters.
 """
 
 # pylint: disable=arguments-differ
+
 import cmath
 from copy import copy
 from functools import lru_cache
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -38,10 +42,9 @@ from pennylane.decomposition.symbolic_decomposition import (
     flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
-    qjit_compatible_self_adjoint,
+    self_adjoint,
 )
-from pennylane.operation import Operation
-from pennylane.typing import TensorLike
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -74,8 +77,8 @@ class Hadamard(Operation):
 
     resource_keys = set()
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -212,10 +215,6 @@ class Hadamard(Operation):
     def adjoint(self) -> "Hadamard":
         return Hadamard(wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # H = RZ(\pi) RY(\pi/2) RZ(0)
-        return [np.pi, np.pi / 2, 0.0]
-
     def pow(self, z: int | float):
         return super().pow(z % 2)
 
@@ -262,7 +261,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-add_decomps("Adjoint(Hadamard)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -327,7 +326,14 @@ class PauliX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 
@@ -343,8 +349,8 @@ class PauliX(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def label(
         self,
@@ -482,10 +488,6 @@ class PauliX(Operation):
     def _controlled(self, wire: WiresLike) -> "qp.CNOT":
         return qp.CNOT(wires=Wires(wire) + self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
-        return [np.pi / 2, np.pi, -np.pi / 2]
-
 
 X = PauliX
 r"""The Pauli X operator
@@ -528,7 +530,7 @@ def _pow_x_to_rx(wires, z, **_):
 
 
 add_decomps(PauliX, _paulix_to_rx)
-add_decomps("Adjoint(PauliX)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
@@ -574,7 +576,9 @@ def _controlled_x_decomp(
         )
         return
 
-    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    zero_control_wires = [
+        w for w, val in zip(control_wires, control_values, strict=True) if not val
+    ]
     for w in zero_control_wires:
         qp.PauliX(w)
     qp.Toffoli(wires=wires)
@@ -612,7 +616,14 @@ class PauliY(Operation):
 
     resource_keys = set()
 
-    basis = "Y"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
 
     batch_size = None
 
@@ -624,8 +635,8 @@ class PauliY(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -762,10 +773,6 @@ class PauliY(Operation):
     def _controlled(self, wire: WiresLike) -> "qp.CY":
         return qp.CY(wires=Wires(wire) + self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # Y = RZ(0) RY(\pi) RZ(0)
-        return [0.0, np.pi, 0.0]
-
 
 Y = PauliY
 r"""The Pauli Y operator
@@ -802,7 +809,7 @@ def _pow_y(wires, z, **_):
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
-add_decomps("Adjoint(PauliY)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
@@ -863,7 +870,14 @@ class PauliZ(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -877,8 +891,8 @@ class PauliZ(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: str | None = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     def __repr__(self) -> str:
         """String representation."""
@@ -1024,10 +1038,6 @@ class PauliZ(Operation):
     def _controlled(self, wire: WiresLike) -> "qp.CZ":
         return qp.CZ(wires=wire + self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # Z = RZ(\pi) RY(0) RZ(0)
-        return [np.pi, 0.0, 0.0]
-
 
 Z = PauliZ
 r"""The Pauli Z operator
@@ -1074,7 +1084,7 @@ def _pow_z(wires, z, **_):
 
 
 add_decomps(PauliZ, _pauliz_to_ps)
-add_decomps("Adjoint(PauliZ)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
@@ -1135,7 +1145,14 @@ class S(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1244,10 +1261,6 @@ class S(Operation):
             self
         )
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # S = RZ(\pi/2) RY(0) RZ(0)
-        return [np.pi / 2, 0.0, 0.0]
-
 
 def _s_phaseshift_resources():
     return {qp.PhaseShift: 1}
@@ -1279,7 +1292,7 @@ def _pow_s(wires, z, **_):
     qp.PhaseShift(np.pi * z_mod4 / 2, wires=wires)
 
 
-add_decomps("Pow(S)", make_pow_decomp_with_period(4, True), _pow_s, _pow_s_to_t, _pow_s_to_z)
+add_decomps("Pow(S)", make_pow_decomp_with_period(4), _pow_s, _pow_s_to_t, _pow_s_to_z)
 
 
 class T(Operation):
@@ -1304,7 +1317,14 @@ class T(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
 
     batch_size = None
 
@@ -1413,10 +1433,6 @@ class T(Operation):
             self
         )
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # T = RZ(\pi/4) RY(0) RZ(0)
-        return [np.pi / 4, 0.0, 0.0]
-
 
 def _t_phaseshift_resources():
     return {qp.PhaseShift: 1}
@@ -1436,7 +1452,7 @@ def _pow_t(wires, z, **_):
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=wires)
 
 
-add_decomps("Pow(T)", make_pow_decomp_with_period(8, True), _pow_t)
+add_decomps("Pow(T)", make_pow_decomp_with_period(8), _pow_t)
 
 
 class SX(Operation):
@@ -1461,7 +1477,14 @@ class SX(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
 
     resource_keys = set()
 
@@ -1571,10 +1594,6 @@ class SX(Operation):
             return [X(wires=self.wires)]
         return super().pow(z_mod4)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-        return [np.pi / 2, np.pi / 2, -np.pi / 2]
-
 
 def _sx_to_rx_resources():
     return {qp.RX: 1, qp.GlobalPhase: 1}
@@ -1602,7 +1621,7 @@ def _pow_sx(wires, z, **_):
     qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=wires)
 
 
-add_decomps("Pow(SX)", make_pow_decomp_with_period(4, True), _pow_sx_to_x, _pow_sx)
+add_decomps("Pow(SX)", make_pow_decomp_with_period(4), _pow_sx_to_x, _pow_sx)
 
 
 class SWAP(Operation):
@@ -1771,7 +1790,7 @@ def _swap_to_ppr(wires, **_):
 
 
 add_decomps(SWAP, _swap_to_cnot, _swap_to_ppr)
-add_decomps("Adjoint(SWAP)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -1827,7 +1846,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 2
@@ -1973,7 +1991,7 @@ def _ecr_decomp(wires, **__):
 
 
 add_decomps(ECR, _ecr_decomp)
-add_decomps("Adjoint(ECR)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(ECR)", self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
@@ -2157,9 +2175,7 @@ def _pow_iswap_to_zz(wires, **__):
     qp.Z(wires=wires[1])
 
 
-add_decomps(
-    "Pow(ISWAP)", make_pow_decomp_with_period(4, True), _pow_iswap_to_zz, _pow_iswap_to_siswap
-)
+add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
 
 
 class SISWAP(Operation):
@@ -2375,9 +2391,7 @@ def _pow_siswap_to_zz(wires, **_):
     qp.Z(wires=wires[1])
 
 
-add_decomps(
-    "Pow(SISWAP)", make_pow_decomp_with_period(8, True), _pow_siswap_to_zz, _pow_siswap_to_iswap
-)
+add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
 
 
 SQISW = SISWAP

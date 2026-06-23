@@ -22,12 +22,13 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
-from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
+from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.tape import QuantumScript
@@ -61,7 +62,7 @@ def _create_transform_primitive():
     def setup_env(tracers, params):
         args_tracers = tracers[slice(*params["args_slice"])]
         args_vars = params["inner_jaxpr"].invars
-        env = dict(zip(args_vars, args_tracers), strict=True)
+        env = dict(zip(args_vars, args_tracers, strict=True))
 
         consts_tracers = tracers[slice(*params["consts_slice"])]
         consts_vars = params["inner_jaxpr"].constvars
@@ -487,9 +488,22 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 tape_transform.register = _dummy_register
                 return tape_transform
             if setup_inputs:
-                setup_inputs.custom_qnode_transform = lambda x: x
-                setup_inputs.register = _dummy_register
-                return setup_inputs
+                # NOTE: Prepend "qnode" as an argument to the docstring
+                # so that it's consistent with tape based transform signatures.
+                @wraps(setup_inputs)
+                def _modified_setup_inputs(
+                    qnode, *args, **kwargs
+                ):  # pylint: disable=unused-argument
+                    return setup_inputs(*args, **kwargs)  # pragma: no cover
+
+                orig_sig = signature(setup_inputs)
+                qnode_param = Parameter("qnode", Parameter.POSITIONAL_OR_KEYWORD)
+                _modified_setup_inputs.__signature__ = orig_sig.replace(
+                    parameters=[qnode_param, *orig_sig.parameters.values()]
+                )
+                _modified_setup_inputs.custom_qnode_transform = lambda x: x
+                _modified_setup_inputs.register = _dummy_register
+                return _modified_setup_inputs
             raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
         return super().__new__(cls)
@@ -912,23 +926,6 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         return self._transform.tape_transform
 
     @property
-    def transform(self) -> Callable | None:
-        """The raw tape transform definition of the transform.
-
-        .. warning::
-            This property is deprecated and will be removed in v0.46.
-            Please use :attr:`~.BoundTransform.tape_transform` instead.
-
-        """
-        warnings.warn(
-            "The 'BoundTransform.transform' property is deprecated and will be removed in v0.46. "
-            "Please use 'BoundTransform.tape_transform' instead.",
-            PennyLaneDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.tape_transform
-
-    @property
     def expand_transform(self) -> BoundTransform | None:
         """The expand_transform associated with this transform."""
         if not self._transform.expand_transform:
@@ -1196,7 +1193,7 @@ def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
         count = 0
         final_results = []
 
-        for f, s in zip(batch_fns, tape_counts):
+        for f, s in zip(batch_fns, tape_counts, strict=True):
             # apply any batch transform post-processing
             new_res = f(res[count : count + s])
             final_results.append(new_res)

@@ -19,8 +19,12 @@ from .adder import Adder
 from .mod_exp import ModExp
 from .multiplier import Multiplier
 from .out_adder import OutAdder
-from .out_multiplier import OutMultiplier
-from .out_poly import OutPoly
-from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder
 from .temporary_and import TemporaryAND, Elbow
+from .out_multiplier import OutMultiplier
+from .signed_out_multiplier import SignedOutMultiplier
+from .out_poly import OutPoly
+from .phase_adder import PhaseAdder
+from .incrementer import Incrementer
+from .out_square import OutSquare
+from .signed_out_square import SignedOutSquare

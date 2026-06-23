@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
@@ -27,21 +26,18 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.core.shots import Shots
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -82,7 +78,7 @@ if TYPE_CHECKING:
 
     from jax.extend.core import Jaxpr
 
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 # Base gate set for DefaultQubit
@@ -385,7 +381,7 @@ class DefaultQubit(Device):
         max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
-            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+            issue, say using JAX, or Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
 
@@ -860,7 +856,7 @@ class DefaultQubit(Device):
                         "postselect_mode": execution_config.mcm_config.postselect_mode,
                     },
                 )
-                for c, _key in zip(circuits, prng_keys)
+                for c, _key in zip(circuits, prng_keys, strict=True)
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -872,7 +868,7 @@ class DefaultQubit(Device):
                 "mcm_method": execution_config.mcm_config.mcm_method,
                 "postselect_mode": execution_config.mcm_config.postselect_mode,
             }
-            for _rng, _key in zip(seeds, prng_keys)
+            for _rng, _key in zip(seeds, prng_keys, strict=True)
         ]
 
         with execution_config.executor_backend(max_workers=max_workers) as executor:
@@ -930,7 +926,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     @debug_logger
     def supports_jvp(
@@ -963,7 +959,9 @@ class DefaultQubit(Device):
             execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
+            return tuple(
+                adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents, strict=True)
+            )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with execution_config.executor_backend(max_workers=max_workers) as executor:
@@ -988,7 +986,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_jvp_wrapper(c, t, debugger=self._debugger)
-                for c, t in zip(circuits, tangents)
+                for c, t in zip(circuits, tangents, strict=True)
             )
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -1002,7 +1000,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     @debug_logger
     def supports_vjp(
@@ -1082,7 +1080,7 @@ class DefaultQubit(Device):
 
             return tuple(
                 adjoint_vjp(circuit, cots, state=_state(circuit))
-                for circuit, cots in zip(circuits, cotangents)
+                for circuit, cots in zip(circuits, cotangents, strict=True)
             )
 
         vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -1108,7 +1106,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(
                 _adjoint_vjp_wrapper(c, t, debugger=self._debugger)
-                for c, t in zip(circuits, cotangents)
+                for c, t in zip(circuits, cotangents, strict=True)
             )
         else:
             vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
@@ -1122,7 +1120,7 @@ class DefaultQubit(Device):
                     )
                 )
 
-        return tuple(zip(*results))
+        return tuple(zip(*results, strict=True))
 
     # pylint: disable=import-outside-toplevel
     @debug_logger
@@ -1188,28 +1186,6 @@ class DefaultQubit(Device):
         tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
-
-    # pylint :disable=import-outside-toplevel, unused-argument
-    @debug_logger
-    def jaxpr_jvp(
-        self,
-        jaxpr,
-        args: Sequence[TensorLike],
-        tangents: Sequence[TensorLike],
-        execution_config=None,
-    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
-        gradient_method = getattr(execution_config, "gradient_method", "backprop")
-        if gradient_method == "backprop":
-            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
-
-        if gradient_method == "adjoint":
-            from .qubit.jaxpr_adjoint import execute_and_jvp
-
-            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
-
-        raise NotImplementedError(
-            f"DefaultQubit does not support gradient_method={gradient_method}"
-        )
 
 
 def _simulate_wrapper(circuit, kwargs):

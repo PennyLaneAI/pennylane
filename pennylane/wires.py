@@ -737,6 +737,11 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires(set(_process(other)) ^ set(self.labels))
 
+    def __class_getitem__(cls, item):
+        raise TypeError(
+            f"'{cls.__name__}[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
+        )
+
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
 
@@ -768,3 +773,27 @@ class DynamicWire:
 
     def __repr__(self):
         return "<DynamicWire>"
+
+
+if jax_available:
+
+    class AbstractQubit(jax.core.AbstractValue):
+        """An aval representing an abstract qubit, usually coming from an allocated qubit"""
+
+        hash_value = hash("AbstractQubit")
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractQubit)
+
+        def __hash__(self):
+            return self.hash_value
+
+        def _iter(self):  # pragma: no cover
+            return
+
+
+def is_abstract_qubit(v):
+    """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
+    if not jax_available:
+        return False
+    return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)

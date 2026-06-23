@@ -17,12 +17,15 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 from dataclasses import dataclass, field
 
+from pennylane.allocation import DynamicWire
+
 from ._add_obj import _add_obj
 from .drawable_layers import drawable_layers
 from .utils import (
     convert_wire_order,
     cwire_connections,
     default_bit_map,
+    dynamic_wire_connections,
     transform_deferred_measurements_tape,
 )
 
@@ -34,6 +37,7 @@ class _CurrentTotals:
     bit_totals: list[str]
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class _Config:
     """Dataclass containing attributes needed for updating the strings to be drawn for each layer"""
@@ -58,10 +62,18 @@ class _Config:
     cache: dict | None = None
     """dictionary that carries information between label calls in the same drawing"""
 
-    @property
-    def wire_filler(self) -> str:
-        """The filler character for wires at the current layer."""
-        return "─" if self.cur_layer < self.num_op_layers else " "
+    wire_layers: dict = field(default_factory=dict)
+    """A map from the wire to a tuple of their start layer and stop layer."""
+
+    def wire_filler(self, row: int, next_layer: bool = False) -> str:
+        """The filler character for wires at the current layer and row."""
+        if self.cur_layer >= self.num_op_layers:
+            return " "
+        layer = self.cur_layer + 1 if next_layer else self.cur_layer
+        for layer_stretch in self.wire_layers[row]:
+            if layer_stretch[0] < layer <= layer_stretch[-1]:
+                return "─"
+        return " "
 
     def bit_filler(self, bit, next_layer: bool = False) -> str:
         """The filler character for bits at the current layer and the designated bit."""
@@ -81,7 +93,7 @@ class _Config:
     @property
     def n_wires(self) -> int:
         """The number of wires."""
-        return len(self.wire_map)
+        return len(set(self.wire_map.values()))
 
 
 def _initialize_wire_and_bit_totals(
@@ -92,7 +104,12 @@ def _initialize_wire_and_bit_totals(
     prefix = "··· " if continuation else ""
 
     if show_wire_labels:
-        wire_totals = [f"{wire}: " + prefix for wire in config.wire_map]
+        wire_totals = [" "] * len(config.wire_map)
+        for wire, line in config.wire_map.items():
+            if isinstance(wire, DynamicWire):
+                wire_totals[line] = prefix
+            else:
+                wire_totals[line] = f"{wire}: " + prefix
         line_length = max(len(s) for s in wire_totals)
         wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
         bit_totals = [" " * line_length] * config.n_bits
@@ -113,7 +130,7 @@ def _initialize_layer_str(config: _Config) -> list[str]:
         ['─', '─', '─', ' ', ' ']
 
     """
-    return [config.wire_filler] * config.n_wires + [
+    return [config.wire_filler(row) for row in range(config.n_wires)] + [
         config.bit_filler(b) for b in range(config.n_bits)
     ]
 
@@ -139,7 +156,8 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
     max_label_len = max(len(s) for s in layer_str)
 
     for w in range(config.n_wires):
-        layer_str[w] = layer_str[w].ljust(max_label_len, config.wire_filler)
+        # needs filler for next layer, as adding to the right of this one
+        layer_str[w] = layer_str[w].ljust(max_label_len, config.wire_filler(w, next_layer=True))
 
     # Adjust width for bit filler on unused bits
     for b in range(config.n_bits):
@@ -188,13 +206,17 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     """
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
-        config.wire_filler.join([t, s])
-        for t, s in zip(totals.wire_totals, layer_str[: config.n_wires])
+        config.wire_filler(row).join([t, s])
+        for row, t, s in zip(range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires])
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings
     for j, (bt, s) in enumerate(
-        zip(totals.bit_totals, layer_str[config.n_wires : config.n_wires + config.n_bits])
+        zip(
+            totals.bit_totals,
+            layer_str[config.n_wires : config.n_wires + config.n_bits],
+            strict=True,
+        )
     ):
         totals.bit_totals[j] = config.bit_filler(j).join([bt, s])
 
@@ -203,7 +225,12 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
 
 def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     """Add ending characters to separate the operation layers from the measurement layers"""
-    totals.wire_totals = [f"{s}─┤" for s in totals.wire_totals]
+    for row, s in enumerate(totals.wire_totals):
+        if config.cur_layer < config.wire_layers[row][-1][-1]:
+            totals.wire_totals[row] = f"{s}─┤"
+        else:
+            totals.wire_totals[row] = f"{s}  "
+
     for b in range(config.n_bits):
         if config.cwire_layers[b][-1][-1] >= config.num_op_layers:
             totals.bit_totals[b] += "═╡"
@@ -424,7 +451,8 @@ def tape_text(
     layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
-    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
+    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map, wire_map)
+    wire_map, wire_layers = dynamic_wire_connections(layers, wire_map)
     # Collect information needed for drawing layers
     config = _Config(
         wire_map=wire_map,
@@ -433,6 +461,7 @@ def tape_text(
         cwire_layers=cwire_layers,
         decimals=decimals,
         cache=cache,
+        wire_layers=wire_layers,
     )
 
     totals = _CurrentTotals([], *(_initialize_wire_and_bit_totals(config, show_wire_labels)))
@@ -444,14 +473,13 @@ def tape_text(
 
         for op in layer:
             layer_str = _add_obj(op, layer_str, config, tape_cache)
-        layer_str = _left_justify(layer_str, config)
 
+        layer_str = _left_justify(layer_str, config)
         cur_max_length = max_length - len_suffix if cur_layer < len(layers) - 1 else max_length
         if len(totals.wire_totals[0]) + len(layer_str[0]) > cur_max_length - 1:
             totals = _add_to_finished_lines(totals, config, show_wire_labels)
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
-
         if config.cur_layer == config.num_op_layers - 1:
             totals = _finalize_layers(totals, config)
 

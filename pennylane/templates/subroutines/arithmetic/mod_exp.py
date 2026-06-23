@@ -17,8 +17,8 @@ Contains the ModExp template.
 
 import numpy as np
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.wires import Wires, WiresLike
 
@@ -118,7 +118,7 @@ class ModExp(Operation):
     resource_keys = {"num_x_wires", "num_output_wires", "mod", "num_work_wires"}
 
     def __init__(
-        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
+        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = ()
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         output_wires = Wires(output_wires)
@@ -157,7 +157,7 @@ class ModExp(Operation):
         base = base % mod
         self.hyperparameters["base"] = base
         self.hyperparameters["mod"] = mod
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:

@@ -225,7 +225,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_shadows
    code/qp_spin
    code/qp_transforms
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Internals
@@ -233,15 +233,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    code/qp_capture
    code/qp_concurrency
+   code/qp_core_operator
    code/qp_devices
    code/qp_exceptions
    code/qp_ftqc
    code/qp_gate_sets
    code/qp_measurements
    code/qp_pytrees
-   code/qp_operation
    code/qp_queuing
    code/qp_tape
    code/qp_templates_core
+   code/qp_typing
    code/qp_wires
    code/qp_workflow

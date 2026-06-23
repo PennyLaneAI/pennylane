@@ -18,6 +18,7 @@ Contains the OutPoly template.
 from collections import Counter
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -25,7 +26,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import adjoint, ctrl
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -276,7 +276,6 @@ class OutPoly(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
-        id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         r"""Initialize the OutPoly class"""
@@ -336,7 +335,7 @@ class OutPoly(Operation):
                 "None of the wires in a register should be included in other register."
             )
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     def _flatten(self):
         metadata1 = tuple((key, value) for key, value in self.hyperparameters.items())

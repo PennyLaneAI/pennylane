@@ -34,6 +34,7 @@ from .grover import GroverOperator
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .fable import FABLE
+from .ffft import FFFT, TwoWireFFT
 from .select import Select
 from .prepselprep import PrepSelPrep
 from .reflection import Reflection
@@ -41,7 +42,7 @@ from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
-from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
+from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
 from .gqsp import GQSP
@@ -60,13 +61,17 @@ from .arithmetic import (
     PhaseAdder,
     Adder,
     Multiplier,
-    OutMultiplier,
     OutAdder,
+    OutMultiplier,
+    OutSquare,
+    SignedOutSquare,
     ModExp,
     OutPoly,
     SemiAdder,
     Elbow,
     TemporaryAND,
+    Incrementer,
+    SignedOutMultiplier,
 )
 
 __all__ = [
@@ -78,6 +83,7 @@ __all__ = [
     "TrotterizedQfunc",
     "TrotterProduct",
     "trotterize",
+    "Incrementer",
     "Interferometer",
     "IQP",
     "Permute",
@@ -91,6 +97,8 @@ __all__ = [
     "BasisRotation",
     "QuantumMonteCarlo",
     "FABLE",
+    "FFFT",
+    "TwoWireFFT",
     "Select",
     "SelectOnlyQRAM",
     "PrepSelPrep",
@@ -115,10 +123,15 @@ __all__ = [
     "Adder",
     "Multiplier",
     "OutMultiplier",
+    "SignedOutMultiplier",
     "OutAdder",
+    "OutMultiplier",
+    "OutSquare",
+    "SignedOutSquare",
     "ModExp",
     "OutPoly",
     "SemiAdder",
     "Elbow",
     "TemporaryAND",
+    "FFQRAM",
 ]

@@ -26,6 +26,7 @@ from gate_data import TCLOCK, TSHIFT
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qutrit import validate_subspace
 from pennylane.wires import Wires
 
@@ -111,7 +112,7 @@ class TestParameterFrequencies:
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
         freqs_from_gen = qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
-        freqs = op.parameter_frequencies
+        freqs = parameter_frequencies(op)
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 

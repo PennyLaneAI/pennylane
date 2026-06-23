@@ -20,10 +20,13 @@ import abc
 import copy
 from collections.abc import Callable
 from functools import wraps
+from warnings import warn
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import _UNSET_BATCH_SIZE, Operator
+from pennylane.core.operator import Operator
+from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -76,9 +79,8 @@ class CompositeOp(Operator):
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
-        self, *operands: Operator, id=None, _pauli_rep=None
+        self, *operands: Operator, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
-        self._id = id
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
@@ -272,12 +274,12 @@ class CompositeOp(Operator):
         """
         eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
-        if self.hash not in self._eigs:
+        if self not in self._eigs:
             mat = self.matrix()
             w, U = eigen_func(mat)
-            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
+            self._eigs[self] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[self.hash]
+        return self._eigs[self]
 
     @property
     def has_diagonalizing_gates(self):
@@ -353,7 +355,7 @@ class CompositeOp(Operator):
                     "Composite operator labels require ``base_label`` keyword to be same length as operands."
                 )
             return self._op_symbol.join(
-                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label, strict=True)
             )
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
@@ -372,18 +374,22 @@ class CompositeOp(Operator):
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([factor.hash for factor in self._sort(self.operands)]))
+                (str(self.name), str([hash(factor) for factor in self._sort(self.operands)]))
             )
         return self._hash
 
-    # pylint:disable = missing-function-docstring
+    # pylint:disable = missing-function-docstring, useless-return
     @property
     def basis(self):
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
         return None
 
     @property

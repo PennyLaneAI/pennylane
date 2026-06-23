@@ -24,11 +24,11 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     StateMP,
@@ -1228,7 +1228,7 @@ class TestNativeMidCircuitMeasurements:
     def test_postselect_mode_propagates_to_execute(self, monkeypatch, postselect_mode):
         """Test that the specified postselect mode propagates to execution as expected."""
         dev = self.MCMDevice(wires=1)
-        dev.operations.add("MidMeasure")
+        dev.operations.add("MidMeasureMP")
         pm_propagated = False
 
         def new_apply(*args, **kwargs):  # pylint: disable=unused-argument
@@ -1664,7 +1664,7 @@ def test_generate_basis_states():
     assert np.allclose(ints, np.arange(2**num_wires))
 
 
-def test_samples_to_counts_all_outomces():
+def test_samples_to_counts_all_outcomes():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
     class DummyQubitDevice(qp.devices.QubitDevice):

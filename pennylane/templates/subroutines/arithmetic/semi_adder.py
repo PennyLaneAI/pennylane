@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
@@ -206,9 +206,7 @@ class SemiAdder(Operation):
 
     resource_keys = {"num_x_wires", "num_y_wires", "num_work_wires"}
 
-    def __init__(
-        self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None, id=None
-    ):
+    def __init__(self, x_wires: WiresLike, y_wires: WiresLike, work_wires: WiresLike | None):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -216,7 +214,9 @@ class SemiAdder(Operation):
 
         if work_wires:
             if len(work_wires) < len(y_wires) - 1:
-                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+                raise ValueError(
+                    f"At least {len(y_wires)-1} work_wires should be provided, got {len(work_wires)}"
+                )
             if work_wires.intersection(x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if work_wires.intersection(y_wires):
@@ -233,7 +233,7 @@ class SemiAdder(Operation):
         else:
             all_wires = Wires.all_wires([x_wires, y_wires])
 
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -262,11 +262,7 @@ class SemiAdder(Operation):
             for key in ["x_wires", "y_wires", "work_wires"]
         }
 
-        return SemiAdder(
-            new_dict["x_wires"],
-            new_dict["y_wires"],
-            new_dict["work_wires"],
-        )
+        return SemiAdder(new_dict["x_wires"], new_dict["y_wires"], new_dict["work_wires"])
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators."""
@@ -306,6 +302,8 @@ class SemiAdder(Operation):
 
 
 def _semiadder_resources(num_x_wires, num_y_wires, **_):
+    if num_y_wires == 1:
+        return {CNOT: 1}
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
     # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
@@ -354,9 +352,12 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     """
     # pylint: disable=unused-argument
-    num_x_wires = base_params["num_x_wires"]
     num_y_wires = base_params["num_y_wires"]
     ctrl_kwargs["num_work_wires"] += base_params["num_work_wires"] - (num_y_wires - 1)
+    if num_y_wires == 1:
+        return {controlled_resource_rep(CNOT, {}, **ctrl_kwargs): 1}
+
+    num_x_wires = base_params["num_x_wires"]
     crossover = min(num_y_wires - 1, num_x_wires)
 
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs

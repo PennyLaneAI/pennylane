@@ -23,20 +23,19 @@ from copy import copy
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp, handle_recursion_error
 
 
-def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
+def sum(*summands, grouping_type=None, method="lf", lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
         *summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
-        id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
         grouping_type (str): The type of binary relation between Pauli words used to compute
@@ -105,13 +104,12 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
         :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.compute_partition_indices`.
     """
     if lazy:
-        return Sum(*summands, grouping_type=grouping_type, method=method, id=id)
+        return Sum(*summands, grouping_type=grouping_type, method=method)
 
     summands_simp = Sum(
         *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
         grouping_type=grouping_type,
         method=method,
-        id=id,
     )
 
     for op in summands:
@@ -132,7 +130,6 @@ class Sum(CompositeOp):
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
             or ``'gis'`` (Greedy Independent Set). This keyword argument is ignored if ``grouping_type`` is ``None``.
-        id (str or None): id for the sum operator. Default is None.
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
@@ -227,11 +224,10 @@ class Sum(CompositeOp):
         *operands: Operator,
         grouping_type=None,
         method="lf",
-        id=None,
         _grouping_indices=None,
         _pauli_rep=None,
     ):
-        super().__init__(*operands, id=id, _pauli_rep=_pauli_rep)
+        super().__init__(*operands, _pauli_rep=_pauli_rep)
 
         self._grouping_indices = _grouping_indices
         if _grouping_indices is not None and grouping_type is not None:
@@ -241,9 +237,8 @@ class Sum(CompositeOp):
         if grouping_type is not None:
             self.compute_grouping(grouping_type=grouping_type, method=method)
 
-    @property
     @handle_recursion_error
-    def hash(self):
+    def __hash__(self):
         # Since addition is always commutative, we do not need to sort
         return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
@@ -424,7 +419,7 @@ class Sum(CompositeOp):
     def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
@@ -585,7 +580,7 @@ class _SumSummandsGrouping:
             coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
             self.add(summand=summand.base, coeff=coeff)
         else:
-            op_hash = summand.hash if op_hash is None else op_hash
+            op_hash = hash(summand) if op_hash is None else op_hash
             if op_hash in self.queue:
                 self.queue[op_hash][0] += coeff
             else:

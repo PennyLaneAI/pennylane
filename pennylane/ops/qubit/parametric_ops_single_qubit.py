@@ -18,14 +18,18 @@ core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+
 import functools
 import math as builtin_math
 from itertools import combinations
+from typing import Literal
+from warnings import warn
 
 import numpy as np
 import scipy as sp
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -34,12 +38,11 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
     flip_zero_control,
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
+    pow_rotation,
 )
-from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -76,7 +79,6 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -88,7 +90,15 @@ class RX(Operation):
 
     resource_keys = set()
 
-    basis = "X"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
     resource_keys = set()
@@ -96,8 +106,8 @@ class RX(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -171,11 +181,6 @@ class RX(Operation):
 
         return RX(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        pi_half = qp.math.ones_like(self.data[0]) * (np.pi / 2)
-        return [pi_half, self.data[0], -pi_half]
-
 
 def _rx_to_rot_resources():
     return {qp.Rot: 1}
@@ -225,8 +230,8 @@ def _rx_to_ppr(phi, wires, **_):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
-add_decomps("Adjoint(RX)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RX)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RX)", adjoint_rotation)
+add_decomps("Pow(RX)", pow_rotation)
 
 
 def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -282,7 +287,6 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -292,7 +296,15 @@ class RY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    basis = "Y"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
     resource_keys = set()
@@ -300,8 +312,8 @@ class RY(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -375,10 +387,6 @@ class RY(Operation):
 
         return RY(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RY(\theta) = RZ(0) RY(\theta) RZ(0)
-        return [0.0, self.data[0], 0.0]
-
 
 def _ry_to_rot_resources():
     return {qp.Rot: 1}
@@ -444,8 +452,8 @@ def _ry_to_ppr(phi, wires, **_):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
-add_decomps("Adjoint(RY)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RY)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RY)", adjoint_rotation)
+add_decomps("Pow(RY)", pow_rotation)
 
 
 def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -498,7 +506,6 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -510,15 +517,23 @@ class RZ(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     has_decomposition = False
 
@@ -632,10 +647,6 @@ class RZ(Operation):
 
         return RZ(theta, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
-
 
 def _rz_to_ps_resources():
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
@@ -711,8 +722,8 @@ def _rz_to_ppr(phi, wires, **_):
 
 
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
-add_decomps("Adjoint(RZ)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(RZ)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Pow(RZ)", pow_rotation)
 
 
 def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -765,7 +776,6 @@ class PhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -777,7 +787,15 @@ class PhaseShift(Operation):
 
     resource_keys = set()
 
-    basis = "Z"
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
@@ -788,8 +806,8 @@ class PhaseShift(Operation):
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     def label(
         self,
@@ -920,10 +938,6 @@ class PhaseShift(Operation):
 
         return PhaseShift(phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
-        return [self.data[0], 0.0, 0.0]
-
 
 def _phaseshift_to_rz_gp_resources():
     return {qp.RZ: 1, qp.GlobalPhase: 1}
@@ -955,8 +969,8 @@ def _cphase_to_ppr(theta, wires, **_):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
-add_decomps("Adjoint(PhaseShift)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(PhaseShift)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
+add_decomps("Pow(PhaseShift)", pow_rotation)
 add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
@@ -990,7 +1004,6 @@ class Rot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1014,9 +1027,8 @@ class Rot(Operation):
         theta: TensorLike,
         omega: TensorLike,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(phi, theta, omega, wires=wires, id=id)
+        super().__init__(phi, theta, omega, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1124,9 +1136,6 @@ class Rot(Operation):
 
     def _controlled(self, wire: WiresLike) -> "qp.CRot":
         return qp.CRot(*self.parameters, wires=wire + self.wires)
-
-    def single_qubit_rot_angles(self) -> list[TensorLike]:
-        return self.data
 
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
@@ -1236,7 +1245,6 @@ class U1(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1254,8 +1262,8 @@ class U1(Operation):
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1348,8 +1356,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
-add_decomps("Adjoint(U1)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(U1)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(U1)", adjoint_rotation)
+add_decomps("Pow(U1)", pow_rotation)
 
 
 class U2(Operation):
@@ -1386,7 +1394,6 @@ class U2(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1401,8 +1408,8 @@ class U2(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, delta, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
+        super().__init__(phi, delta, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -1560,7 +1567,6 @@ class U3(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 1
@@ -1582,9 +1588,8 @@ class U3(Operation):
         phi: TensorLike,
         delta: TensorLike,
         wires: WiresLike,
-        id: str | None = None,
     ):
-        super().__init__(theta, phi, delta, wires=wires, id=id)
+        super().__init__(theta, phi, delta, wires=wires)
 
     @property
     def resource_params(self) -> dict:

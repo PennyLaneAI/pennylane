@@ -45,18 +45,6 @@ class DummyDevice(DefaultGaussian):
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
-@pytest.fixture
-def ignore_id_deprecation():
-    """Fixture to suppress PennyLaneDeprecationWarning for 'id' tests."""
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            category=PennyLaneDeprecationWarning,
-            message="The 'id' argument is deprecated",
-        )
-        yield
-
-
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
@@ -259,6 +247,21 @@ except ImportError as e:
 def pytest_generate_tests(metafunc):
     if jax_available:
         jax.config.update("jax_enable_x64", True)
+
+
+@pytest.fixture
+def preserve_jax_x64():
+    """Save and restore jax_enable_x64 around a test.
+
+    Use this fixture on any test that sets ``jax_enable_x64`` to ``False`` so
+    that subsequent tests in the same xdist worker are not contaminated.
+    """
+    if not jax_available:
+        yield
+        return
+    original = jax.config.jax_enable_x64
+    yield
+    jax.config.update("jax_enable_x64", original)
 
 
 @pytest.fixture(

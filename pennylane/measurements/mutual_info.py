@@ -20,11 +20,10 @@ from collections.abc import Sequence
 from copy import copy
 
 from pennylane import math
+from pennylane.core.measurements import StateMeasurement
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class MutualInfoMP(StateMeasurement):
@@ -34,8 +33,6 @@ class MutualInfoMP(StateMeasurement):
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
         log_base (float): base for the logarithm
 
     """
@@ -52,11 +49,10 @@ class MutualInfoMP(StateMeasurement):
     def __init__(
         self,
         wires: Sequence[Wires] | None = None,
-        id: str | None = None,
         log_base: float | None = None,
     ):
         self.log_base = log_base
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     # pylint: disable=arguments-differ
     @classmethod
@@ -69,8 +65,7 @@ class MutualInfoMP(StateMeasurement):
     def __repr__(self):
         return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
 
-    @property
-    def hash(self):
+    def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
@@ -78,7 +73,6 @@ class MutualInfoMP(StateMeasurement):
             tuple(self.raw_wires[1].tolist()),
             self.log_base,
         )
-
         return hash(fingerprint)
 
     @property
