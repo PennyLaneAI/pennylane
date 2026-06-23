@@ -1,4 +1,4 @@
-name: Documentation Tests
+name: Test Documentation Code Examples
 permissions:
   contents: read
 
@@ -32,7 +32,7 @@ jobs:
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
-    name: Documentation Tests on Python 3.12
+    name: Test Documentation Code Examples on Python 3.11
 
     steps:
       - name: Checkout repository
