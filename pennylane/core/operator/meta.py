@@ -99,7 +99,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                 isinstance(x, type) and issubclass(x, Number) for x in val
             ):
                 raise NotImplementedError(
-                    "An array of types for a dynamic argument is not currently supported. Instead, please use the type specifiers found in pennylane.typing."
+                    "An array of types for a dynamic argument is not "
+                    "currently supported. Instead, please use the type "
+                    "specifiers found in pennylane.typing."
                 )
             canonical_arr = math.asarray(val)
             return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
