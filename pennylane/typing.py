@@ -279,6 +279,8 @@ class AbstractArray:
             args += ", weak_type=True"
         return f"AbstractArray({args})"
 
+    __str__ = __repr__
+
     def __getitem__(self, item):
         raise IndexError("Cannot index into an AbstractArray.")
 
@@ -441,6 +443,8 @@ class AbstractWires:
 
     def __repr__(self):
         return f"AbstractWires({self.num_wires})"
+
+    __str__ = __repr__
 
     def __instancecheck__(self, instance):
         if instance.__class__.__name__ != "Wires":
