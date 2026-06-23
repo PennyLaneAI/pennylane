@@ -503,8 +503,8 @@ class PrepAmp(qre.ResourceOperator):
 
         gate_cost = [
             qre.GateCount(h),
-            qre.GateCount(ch, n-2),
-            qre.GateCount(x, n-1),
-            qre.GateCount(cnot, n-1),
+            qre.GateCount(ch, n - 2),
+            qre.GateCount(x, n - 1),
+            qre.GateCount(cnot, n - 1),
         ]
         return gate_cost
