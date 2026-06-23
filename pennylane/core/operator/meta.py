@@ -95,7 +95,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                 return AbstractArray((), val)
             # Case 2: An array of types is not supported (i.e., [float, float, float])
             # for dynamic args. Ambiguous how to canonicalize it generally.
-            if isinstance(val, (list, tuple)) and all(
+            if isinstance(val, (list, tuple)) and any(
                 isinstance(x, type) and issubclass(x, Number) for x in val
             ):
                 raise NotImplementedError(
