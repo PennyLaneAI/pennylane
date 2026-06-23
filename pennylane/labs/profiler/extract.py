@@ -27,7 +27,7 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
