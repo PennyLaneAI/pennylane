@@ -25,8 +25,8 @@ from numbers import Number
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.pytrees import flatten, unflatten
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 
 class _ArgType(Enum):
