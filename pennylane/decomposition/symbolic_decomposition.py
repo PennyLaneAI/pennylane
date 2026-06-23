@@ -56,7 +56,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
         )
         def _impl(*params, wires, base):
             # pylint: disable=protected-access
-            qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+            qp.adjoint(base_decomposition._impl, lazy=False)(
+                *params, wires=wires, **base.hyperparameters
+            )
 
         _impl._source = (
             dedent(_impl._source).strip()
@@ -76,7 +78,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule, use_reconstructor
     )
     def _impl_using_reconstructor(*params, wires, base_params, **_):
         # pylint: disable=protected-access
-        qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base_params)
+        qp.adjoint(base_decomposition._impl, lazy=False)(*params, wires=wires, **base_params)
 
     _impl_using_reconstructor._source = (
         dedent(_impl_using_reconstructor._source).strip()
