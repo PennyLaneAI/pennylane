@@ -51,7 +51,6 @@ from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta
 from .utils import abstractify
 
-
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
 
@@ -1582,7 +1581,7 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
-@abstractify.register(ABCOperatorMeta)
+@abstractify.register(OperatorMeta)
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
