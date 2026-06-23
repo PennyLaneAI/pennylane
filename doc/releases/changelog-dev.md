@@ -641,6 +641,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Made :class:`~.AQFT`, :class:`~.Incrementer` and :class:`~.SignedOutMultiplier` backward-compatible
+  with the ``capture=False`` frontend for Catalyst.
+  [(#9-__)](https://github.com/PennyLaneAI/pennylane/pull/9-__)
+
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
@@ -778,6 +782,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
+  :class:`~.Incrementer` were also included in the target wires.
+  [(#9-__)](https://github.com/PennyLaneAI/pennylane/pull/9-__)
+  
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
