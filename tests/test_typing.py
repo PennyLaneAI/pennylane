@@ -128,6 +128,7 @@ class TestAbstractArray:
         assert a.shape == (2, 3)  # converted to tuple
         assert a.dtype == np.float64  # converted to numpy dtype
         assert a._weak_type is True
+        assert a.shape_fixed is True
 
         assert a.size == 6
         assert a.ndim == 2
@@ -200,6 +201,7 @@ class TestAbstractArray:
         a = AbstractArray(..., int)
 
         assert a.shape is Ellipsis
+        assert a.shape_fixed is False
         assert a.T.shape is Ellipsis
 
         with pytest.raises(TypeError, match="size is undefined for"):
@@ -222,7 +224,11 @@ class TestAbstractArray:
         a = AbstractArray((-1, 2), int)
 
         assert a.shape == (-1, 2)
+        assert a.shape_fixed is False
         assert a.T.shape == (2, -1)
+
+        with pytest.raises(TypeError, match="size is undefined for"):
+            _ = a.size
 
     def test_wire_type_factory(self):
         """Test that we can index into a wire type factory to produce a new hint with a size."""
@@ -302,7 +308,7 @@ class TestAbstractArray:
         with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
             _ = a[bad_index]
 
-        with pytest.raises(TypeError, match="can only be subscripted with integers and ellipsis."):
+        with pytest.raises(TypeError, match="can only be subscripted with integers."):
             _ = b[bad_index]
 
     @pytest.mark.parametrize(
@@ -462,12 +468,13 @@ class TestAbstractWires:
 
     def test_instance_check(self):
         """Test instance check of Wire."""
+        # pylint: disable=isinstance-second-argument-not-valid-type
 
         # int wire labels
         for i in range(4):
             w = Wires(list(range(i)))
             assert isinstance(w, Wire[i])
-            assert not isinstance(w, Wire[i - 1])
+            assert not isinstance(w, Wire[6])
 
         # str wire labels
         l = ["a", "b", "c"]
@@ -475,8 +482,7 @@ class TestAbstractWires:
         for i in range(len(l)):
             w = Wires(l[:i])
             assert isinstance(w, Wire[i])
-            assert not isinstance(w, Wire[i - 1])
+            assert not isinstance(w, Wire[6])
 
         # non-wires
-        # pylint: disable=isinstance-second-argument-not-valid-type
         assert not isinstance({"not": "wires"}, Wire)
