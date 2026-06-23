@@ -41,14 +41,14 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
 from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
-from pennylane.typing import AbstractArray, TensorLike
-from pennylane.wires import AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -232,7 +232,8 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool | str:
-    if not isinstance(op2, type(op1)):
+
+    if not isinstance(op2, type(op1)) and not isinstance(op1, type(op2)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
     dispatch_result = _equal_dispatch(
@@ -772,7 +773,7 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 
 
 @_equal_dispatch.register
-def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
+def _equal_adjoint(op1: Adjoint | Adjoint2, op2: Adjoint | Adjoint2, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
     base_equal_check = _equal(op1.base, op2.base, **kwargs)

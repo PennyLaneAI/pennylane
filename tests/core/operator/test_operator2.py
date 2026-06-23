@@ -41,8 +41,8 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 
 class TestInitSubclass:

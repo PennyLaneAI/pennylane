@@ -20,12 +20,13 @@ See ``explanations.md`` for technical explanations of how this works.
 from abc import ABCMeta
 from enum import Enum, auto
 from inspect import Signature, signature
+from numbers import Number
 
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.pytrees import flatten
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
 from .utils import abstractify
 
@@ -55,10 +56,20 @@ def _stop_autograph(f):
 
 def _contains_abstract_type(val):
     """Check if pytree contains any abstract types."""
-    leaves = flatten(val)[0]
-    return any(isinstance(leaf, (AbstractArray, AbstractWires)) for leaf in leaves)
+    leaves, _ = flatten(val)
+
+    for leaf in leaves:
+        if isinstance(leaf, (AbstractArray, AbstractWires)):
+            return True
+
+        if isinstance(val, type) and issubclass(val, Number):
+            return True
+
+    return False
 
 
+# NOTE: This pylint disable will be removed in the PR that adds abstractify
+# pylint: disable=too-many-branches
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -73,6 +84,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+    if isinstance(val, type) and issubclass(val, Number):
+        return AbstractArray((), val)
 
     match kind:
         case _ArgType.WIRES:
@@ -80,6 +93,16 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             return abstractify(Wires(val))
 
         case _ArgType.DYN:
+            # An array of types is not supported (i.e., [float, float, float])
+            # for dynamic args. Ambiguous how to canonicalize it generally.
+            if isinstance(val, (list, tuple)) and any(
+                isinstance(x, type) and issubclass(x, Number) for x in val
+            ):
+                raise NotImplementedError(
+                    "An array of types for a dynamic argument is not "
+                    "currently supported. Instead, please use the type "
+                    "specifiers found in pennylane.typing."
+                )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
             return abstractify(math.asarray(val))
 

@@ -19,7 +19,6 @@ import functools
 import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
-from dataclasses import dataclass
 from importlib import import_module, util
 
 import numpy as np
@@ -738,60 +737,10 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires(set(_process(other)) ^ set(self.labels))
 
-    def __class_getitem__(cls, item) -> "AbstractWires":
-        if not isinstance(item, int):
-            raise TypeError(f"AbstractWires can only be subscripted with integers. Got {item}.")
-        return AbstractWires(item)
-
-
-@dataclass(frozen=True)
-class AbstractWires:
-    """An abstract representation of a sequence of wires that contains the number
-    of wires, useful for resource calculations.
-
-    Args:
-        num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
-    """
-
-    num_wires: int
-
-    def __post_init__(self):
-        if not isinstance(self.num_wires, int):
-            raise TypeError(
-                f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
-            )
-        if self.num_wires < -1:
-            raise ValueError(
-                f"'num_wires' must be a non-negative integer, but got {self.num_wires}. "
-                "For a dynamic number of wires, use -1."
-            )
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, AbstractWires):
-            return self.num_wires == other.num_wires
-
-        raise TypeError("Tried to check equality against an abstract wire register.")
-
-    @property
-    def shape(self) -> tuple[int]:
-        """The number of wires expressed as shape ``(num_wires, )``."""
-        return (self.num_wires,)
-
-    @property
-    def dtype(self):
-        """np.int64.  The dtype of wires when used with Catalyst."""
-        return np.int64
-
-    def __hash__(self):
-        return hash(("AbstractWires", self.num_wires))
-
-    def __len__(self) -> int:
-        if self.num_wires < 0:
-            raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
-        return self.num_wires
-
-    def __repr__(self):
-        return f"AbstractWires({self.num_wires})"
+    def __class_getitem__(cls, item):
+        raise TypeError(
+            f"'{cls.__name__}[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
+        )
 
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
