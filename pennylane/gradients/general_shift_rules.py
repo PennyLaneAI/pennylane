@@ -25,8 +25,8 @@ from scipy.linalg import solve as linalg_solve
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops.functions import bind_new_parameters
-from pennylane.tape import QuantumScript
 
 #: Threshold for identifying singular matrices in non-equidistant shift rules.
 _SINGULAR_MATRIX_THRESHOLD = 1e-6

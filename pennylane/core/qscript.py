@@ -100,7 +100,7 @@ class QuantumScript:
 
     .. code-block:: python
 
-        from pennylane.tape import QuantumScript
+        from pennylane.core.qscript import QuantumScript
 
         ops = [qp.BasisState(np.array([1,1]), wires=(0,"a")),
                qp.RX(0.432, 0),

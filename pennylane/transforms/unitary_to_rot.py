@@ -17,10 +17,10 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

@@ -25,6 +25,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
@@ -35,7 +36,6 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 

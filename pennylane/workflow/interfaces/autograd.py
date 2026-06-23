@@ -89,7 +89,7 @@ import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qp
-from pennylane.tape import QuantumScriptBatch
+from pennylane.core.qscript import QuantumScriptBatch
 
 ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
 

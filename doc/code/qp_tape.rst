@@ -28,7 +28,7 @@ QuantumTape versus QuantumScript
 A ``QuantumScript`` is purely a representation of a quantum circuit, and can only be constructed
 via initialization. Once it is initialized, the contents should then remain immutable throughout its lifetime.
 
->>> from pennylane.tape import QuantumScript
+>>> from pennylane.core.qscript import QuantumScript
 >>> ops = [qp.PauliX(0)]
 >>> measurements = [qp.expval(qp.PauliZ(0))]
 >>> QuantumScript(ops, measurements, shots=10)

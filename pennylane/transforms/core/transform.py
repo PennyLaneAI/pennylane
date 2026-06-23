@@ -28,10 +28,10 @@ from pennylane import capture, math
 from pennylane.capture import autograph
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch
 
 
@@ -201,7 +201,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        from pennylane.tape import QuantumScript, QuantumScriptBatch
+        from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
         from pennylane.typing import PostprocessingFn
 
         def my_quantum_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:

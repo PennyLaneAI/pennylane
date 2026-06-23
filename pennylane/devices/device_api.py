@@ -307,7 +307,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import QuantumScriptBatch
+                from pennylane.core.qscript import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
                 @qp.transform
@@ -410,7 +410,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            from pennylane.tape import QuantumScriptBatch
+            from pennylane.core.qscript import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
             @qp.transform
