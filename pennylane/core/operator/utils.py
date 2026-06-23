@@ -37,6 +37,15 @@ def abstractify(val) -> AbstractArray:
     return AbstractArray(shape, dtype)
 
 
+@abstractify.register(type)
+def _abstractify_type(val: type) -> AbstractArray:
+    """Abstractify a type."""
+    if issubclass(val, Number):
+        return AbstractArray((), val)
+
+    raise NotImplementedError(f"Cannot abstractify type '{val}'")
+
+
 @abstractify.register(Wires)
 def _abstractify_wires(val: Wires) -> AbstractWires:
     """Abstractify wires."""

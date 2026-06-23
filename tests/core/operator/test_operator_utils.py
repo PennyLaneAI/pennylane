@@ -18,7 +18,7 @@ from operator2_utils import DynOp, MixedHybridOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, Int
 from pennylane.wires import Wires
 
 
@@ -145,6 +145,30 @@ class TestAbstractify:
         a = abstractify(DynOp(phi1, [0]))
         b = abstractify(DynOp(phi1, [0, 1]))
         assert a != b
+
+    @pytest.mark.parametrize(
+        "input, abstract_input",
+        (
+            (float, Float),
+            (int, Int),
+            (complex, Complex),
+            (bool, Bool),
+            (np.float32, AbstractArray((), np.float32)),
+            ([float, float], [Float, Float]),
+            ([float, complex], [Float, Complex]),
+        ),
+    )
+    def test_abstractify_supported_types(self, input, abstract_input):
+        """Ensures that the abstract version of types are correct."""
+
+        assert abstractify(input) == abstract_input
+
+    @pytest.mark.parametrize("input", (str, list, tuple))
+    def test_abstractify_unsupported_types(self, input):
+        """Tests that unsupported types raise an error."""
+
+        with pytest.raises(NotImplementedError, match="Cannot abstractify"):
+            _ = abstractify(input)
 
 
 if __name__ == "__main__":
