@@ -2312,13 +2312,13 @@ class SelAmp(qre.ResourceOperator):
     def __init__(self, n, wires=None):
         self.n = n
         # n from amp state, n from target state, 1 ctrl, 1 plus, ignore allocated qubit
-        self.num_wires = n + n + 2  
+        self.num_wires = n + n + 2
         # we also usually validate the wires here to make sure they match num_wires
-        super().__init__(wires=wires)  
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information 
+        r"""Returns a dictionary containing the minimal information
         needed to compute the resources."""
         # the keys should match the resource keys
         return {
