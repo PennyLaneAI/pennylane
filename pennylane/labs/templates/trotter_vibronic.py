@@ -254,9 +254,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
     def position_fragments(i):
         fragment = fragments[i]
         diag_key = diag_keys[i]
-        # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
-        diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
-        # qp.adjoint(diagonalize_vibronic)(key=diag_key, wires=registers["electronic"])
+        qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
 
         all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
         const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
@@ -293,9 +291,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             square_wires, mult_wires = _extract_registers(registers, "quadratic", k)
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
             qp.OutMultiplier(**mult_wires)
-            # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
-            qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
-            # qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
+            qp.adjoint(qp.SignedOutSquare(**square_wires, output_wires_zeroed=True))
             return new_bitstrings
 
         @qp.for_loop(fragment.modes - 1)
@@ -317,9 +313,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
                 new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                 semi_signed_out_multiplier(**coeff_mult_wires)
-                # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
-                qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
-                # qp.adjoint(qp.SignedOutMultiplier)(**mode_mult_wires, output_wires_zeroed=True)
+                qp.adjoint(qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
             prev_bitstrings = _inner_bilinear_terms(prev_bitstrings)
@@ -357,9 +351,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             qp.AQFT(order=aqft_order, wires=registers[f"mode {k}"])
             qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
             qp.OutMultiplier(**mult_wires)
-            # THIS IS WRONG- THE ADJOINT NEEDS TO BE USED. IT IS REMOVED FOR COMPILABILITY TEST
-            qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
-            # qp.adjoint(qp.SignedOutSquare)(**square_wires, output_wires_zeroed=True)
+            qp.adjoint(qp.SignedOutSquare(**square_wires, output_wires_zeroed=True))
             qp.adjoint(qp.AQFT)(order=aqft_order, wires=registers[f"mode {k}"])
             qp.BasisState(bitstring, registers["coefficients"])
 
