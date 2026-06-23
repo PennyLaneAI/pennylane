@@ -95,7 +95,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
             # A sequence of types is not supported (i.e., [float, float, float])
             # for dynamic args. Ambiguous how to canonicalize it generally.
             if isinstance(val, (list, tuple)) and any(
-                isinstance(x, type) and issubclass(x, Number) for x in val
+                isinstance(x, AbstractArray) or (isinstance(x, type) and issubclass(x, Number))
+                for x in val
             ):
                 raise NotImplementedError(
                     "A sequence of types for a dynamic argument is not "
