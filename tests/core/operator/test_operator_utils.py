@@ -18,7 +18,7 @@ from operator2_utils import DynOp, MixedHybridOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, Int
+from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -35,26 +35,26 @@ class TestAbstractify:
 
     def test_scalar_number(self):
         """Test that Python numbers become scalar ``AbstractArray`` instances."""
-        assert abstractify(1.5) == AbstractArray((), float)
-        assert abstractify(3) == AbstractArray((), int)
+        assert abstractify(1.5) == Float
+        assert abstractify(3) == Int
 
     def test_list(self):
         """Tests that lists correctly retain shape."""
-        assert abstractify([0, 1]) == [AbstractArray((), int), AbstractArray((), int)]
+        assert abstractify([0, 1]) == [Int, Int]
 
     def test_numpy_array(self):
         """Test that numpy arrays are converted to ``AbstractArray``."""
         arr = np.ones((2, 3), dtype=np.float32)
-        assert abstractify(arr) == AbstractArray((2, 3), np.float32)
+        assert abstractify(arr) == Float[2, 3]
 
     def test_wires(self):
         """Test that ``Wires`` are converted to ``AbstractWires``."""
-        assert abstractify(Wires([0, 1, 2])) == AbstractWires(3)
+        assert abstractify(Wires([0, 1, 2])) == Wire[3]
 
     def test_abstract_types_as_input(self):
         """Test that abstract types are returned unchanged."""
-        aa = AbstractArray((2,), float)
-        aw = AbstractWires(2)
+        aa = Float[2]
+        aw = Wire[2]
         assert abstractify(aa) is aa
         assert abstractify(aw) is aw
 
@@ -62,7 +62,7 @@ class TestAbstractify:
         """Test that pytrees containing ``Wires`` leaves are abstractified recursively."""
         val = [Wires([0]), (Wires([1, 2]), Wires([3]))]
         result = abstractify(val)
-        assert result == [AbstractWires(1), (AbstractWires(2), AbstractWires(1))]
+        assert result == [Wire[1], (Wire[2], Wire[1])]
 
     def test_operator(self):
         """Test that ``Operator2`` instances are abstractified correctly."""
@@ -70,8 +70,8 @@ class TestAbstractify:
         result = abstractify(op)
 
         assert isinstance(result, DynOp)
-        assert result.phi == AbstractArray((), float)
-        assert result.wires == AbstractWires(2)
+        assert result.phi == Float
+        assert result.wires == Wire[2]
 
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
@@ -80,15 +80,15 @@ class TestAbstractify:
         result = abstractify(op)
 
         assert isinstance(result, MixedHybridOp)
-        assert result.phi == AbstractArray((), float)
-        assert result.pytree_wires == [AbstractWires(1), AbstractWires(3), AbstractWires(1)]
-        assert result.wires == AbstractWires(7)  # len([0,1,2,3,4,5,6])
+        assert result.phi == Float
+        assert result.pytree_wires == [Wire[1], Wire[3], Wire[1]]
+        assert result.wires == Wire[7]  # len([0,1,2,3,4,5,6])
 
         inner_op = result.ops[0]
         assert isinstance(result.ops, list) and len(result.ops) == 1
         assert isinstance(inner_op, DynOp)
-        assert inner_op.phi == AbstractArray((), float)
-        assert inner_op.wires == AbstractWires(1)
+        assert inner_op.phi == Float
+        assert inner_op.wires == Wire[1]
 
     def test_operator_subclass_with_fixed_sig(self):
         """Tests that an operator subclass with fixed sig works correctly."""
@@ -97,18 +97,18 @@ class TestAbstractify:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             fixed_sig = (
-                AbstractArray((), float),
-                AbstractWires(2),
-                AbstractWires(1),
+                Float,
+                Wire[2],
+                Wire[1],
             )
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
 
         result = abstractify(FixedSigOp)
-        assert result.phi == AbstractArray((), float)
-        assert result.wires == AbstractWires(3)  # 2 + 1
-        assert result.ctrl_wires == AbstractWires(1)
+        assert result.phi == Float
+        assert result.wires == Wire[3]  # 2 + 1
+        assert result.ctrl_wires == Wire[1]
 
     def test_operator_subclass_without_fixed_sig(self):
         """Tests that an error is raised if an operator subclass is used without a defined fixed_sig."""
