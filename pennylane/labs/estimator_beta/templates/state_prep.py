@@ -466,45 +466,45 @@ class LabsSumOfSlatersPrep(ResourceOperator):
 
 
 class PrepAmp(qre.ResourceOperator):
-   """
-   For a given number of qubits $n$, calculates the resources required to prepare an |amp> state.
-   """
+    """
+    For a given number of qubits $n$, calculates the resources required to prepare an |amp> state.
+    """
 
-   resource_keys = {"n"}  # the parameters that determine the resources of this operator
+    resource_keys = {"n"}  # the parameters that determine the resources of this operator
 
-   def __init__(self, n, wires=None):
-       self.num_wires = n
-       super().__init__(wires=wires)  # we also usually validate the wires here to make sure they match num_wires
+    def __init__(self, n, wires=None):
+        self.num_wires = n
+        super().__init__(wires=wires)  # we also usually validate the wires here to make sure they match num_wires
 
-   @property
-   def resource_params(self) -> dict:
-       r"""Returns a dictionary containing the minimal information needed to compute the resources."""
-       return {                   # the keys should match the resource keys
-           "n": self.num_wires,
-       }
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources."""
+        return {                   # the keys should match the resource keys
+            "n": self.num_wires,
+        }
 
-   @classmethod
-   def resource_rep(cls, n) -> qre.CompressedResourceOp:
-       r"""Returns a compressed representation containing only the parameters of
-       the Operator that are needed to compute the resources.
+    @classmethod
+    def resource_rep(cls, n) -> qre.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
 
-       Returns:
-           :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
-       """
-       params = {"n": n}
-       return qre.CompressedResourceOp(cls, n, params)
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {"n": n}
+        return qre.CompressedResourceOp(cls, n, params)
 
-   @classmethod
-   def resource_decomp(cls, n):
-       x = qre.X.resource_rep()
-       cnot = qre.CNOT.resource_rep()
-       h = qre.Hadamard.resource_rep()
-       ch = qre.CH.resource_rep()
+    @classmethod
+    def resource_decomp(cls, n):
+        x = qre.X.resource_rep()
+        cnot = qre.CNOT.resource_rep()
+        h = qre.Hadamard.resource_rep()
+        ch = qre.CH.resource_rep()
 
-       gate_cost = [
-           qre.GateCount(h),
-           qre.GateCount(ch, n-2),
-           qre.GateCount(x, n-1),
-           qre.GateCount(cnot, n-1),
-       ]
-       return gate_cost
+        gate_cost = [
+            qre.GateCount(h),
+            qre.GateCount(ch, n-2),
+            qre.GateCount(x, n-1),
+            qre.GateCount(cnot, n-1),
+        ]
+        return gate_cost
