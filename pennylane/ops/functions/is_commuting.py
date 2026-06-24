@@ -155,7 +155,8 @@ _commutes = _create_commute_function()
 
 
 def _check_opmath_operations(operation1, operation2):
-    """Check that `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
+    """Check whether SProd, Prod, and Sum instances require a matrix fallback.
+    Returns True if matrix fallback is required, False otherwise."""
 
     for op in [operation1, operation2]:
 
@@ -163,10 +164,8 @@ def _check_opmath_operations(operation1, operation2):
             continue
 
         if isinstance(op, (SProd, Prod, Sum)):
-            raise QuantumFunctionError(
-                f"Operation {op} currently not supported. Prod, Sprod, and Sum instances must have a valid Pauli representation."
-            )
-
+           return True
+    return False
 
 def intersection(wires1, wires2):
     r"""Check if two sets of wires intersect.
@@ -321,8 +320,14 @@ def is_commuting(operation1, operation2):
         operation1 = qp.simplify(operation1)
         operation2 = qp.simplify(operation2)
 
-    # Arithmetic non-disjoint operations only contain Pauli words
-    _check_opmath_operations(operation1, operation2)
+    # Arithmetic ops (Prod, SProd, Sum) without a Pauli rep -> fall back to matrix commutation
+    if _check_opmath_operations(operation1, operation2):
+        wire_order = qp.wires.Wires.all_wires([operation1.wires, operation2.wires])
+        op1_mat = qp.matrix(operation1, wire_order=wire_order)
+        op2_mat = qp.matrix(operation2, wire_order=wire_order)
+        mat_12 = np.matmul(op1_mat, op2_mat)
+        mat_21 = np.matmul(op2_mat, op1_mat)
+        return qp.math.allclose(mat_12, mat_21)
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
