@@ -34,21 +34,6 @@ PennyLane Documentation
         </p>
         <div class="row mt-3">
 
-.. index-card::
-    :name: Using PennyLane
-    :link: introduction/pennylane.html
-    :description: A guided tour of the core features of PennyLane
-
-.. index-card::
-    :name: Developing
-    :link: development/guide.html
-    :description: How you can contribute to the development of PennyLane
-
-.. index-card::
-    :name: API
-    :link: code/qp.html
-    :description: Explore the PennyLane API
-
 .. raw:: html
 
         </div>
