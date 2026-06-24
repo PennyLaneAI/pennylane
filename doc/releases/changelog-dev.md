@@ -620,6 +620,9 @@
 
   ```
 
+* The ``qp.decomposition.reconstruct`` function and all infrastructure built around it has been removed.
+  [(#9711)](https://github.com/PennyLaneAI/pennylane/pull/9711)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -641,9 +644,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+<<<<<<< remove-python-311
 * CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
+=======
+* Upgrade Sphinx to version 9.0.
+  [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
+  
+>>>>>>> main
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
@@ -677,6 +686,7 @@
     when ``compute_decomposition`` is not overridden.
   - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+  - Integration with :mod:`pennylane.capture`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -689,6 +699,7 @@
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
@@ -857,6 +868,10 @@
 * Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
+
+* Fixed bugs where string PyTree leaves were incorrectly
+  restored as ``bytes``.
+  [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
 <h3>Contributors ✍️</h3>
 
