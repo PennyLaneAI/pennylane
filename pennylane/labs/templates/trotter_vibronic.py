@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane.labs.trotter_error.realspace import RealspaceMatrix
 from pennylane.wires import WiresLike
 
-from .semi_signed_out_multiplier import semi_signed_out_multiplier
+from .half_signed_out_multiplier import half_signed_out_multiplier
 
 
 def fragment_to_dense(fragment: RealspaceMatrix, op_type: tuple[str]):
@@ -191,7 +191,7 @@ def _extract_registers(registers, term, *mode_ids):
             "work_wires": "work",
         }
         mode_mult_wires = {new: registers[old] for new, old in mode_mult_wires.items()}
-        # The signed register for semi_signed_out_multiplier must be the _second_ input
+        # The signed register for half_signed_out_multiplier must be the _second_ input
         coeff_mult_wires = {
             "x_wires": "coefficients",
             "y_wires": "cache",
@@ -200,6 +200,7 @@ def _extract_registers(registers, term, *mode_ids):
         }
         coeff_mult_wires = {new: registers[old] for new, old in coeff_mult_wires.items()}
         return mode_mult_wires, coeff_mult_wires
+
     if term == "QROM":
         reg = {"control_wires": "electronic", "target_wires": "coefficients", "work_wires": "work"}
         qrom_wires = {new: registers[old] for new, old in reg.items()}
@@ -211,7 +212,7 @@ def _extract_registers(registers, term, *mode_ids):
         reg = {"x_wires": "coefficients", "y_wires": "phase gradient", "work_wires": "work"}
     elif term == "linear":
         (k,) = mode_ids
-        # The signed register for semi_signed_out_multiplier must be the _second_ input
+        # The signed register for half_signed_out_multiplier must be the _second_ input
         reg = {
             "x_wires": "coefficients",
             "y_wires": f"mode {k}",
@@ -226,10 +227,13 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
     based on a phase gradient resource state.
 
     Args:
-        idx (int): Trotter step index. This argument is not used.
-        time (float): Second-order Trotter time step size
-        fragments (List[RealspaceMatrix]): Trotter fragments of the vibronic Hamiltonian.
+        idx (int): Trotter step index. This argument is not used explicitly.
+        time (float): Second-order Trotter time step size.
+        fragments (list[RealspaceMatrix]): Trotter fragments of the vibronic Hamiltonian.
             It is assumed that the kinetic fragment is in the last position.
+        registers (dict[WiresLike]): Wire registers. See main function for details.
+        aqft_order (int): Approximation order used in :class:`~.AQFT`, which is used to transform
+            between position and momentum space. If set to ``None``, no approximation will be made.
 
     The ordering of the time evolution fragments within the second-order Trotter step is fixed
     as follows:
@@ -242,7 +246,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
       quadratic) or pairs of modes (bilinear). This latter iteration is in form of ``for_loop``\ s.
 
     """
-    # pylint: disable=no-value-for-parameter, unused-argument
+    # pylint: disable=no-value-for-parameter, unused-argument, too-many-statements
 
     precision = len(registers["phase gradient"])
     first_order_time_step = time / 2
@@ -275,8 +279,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
             if np.allclose(_coeffs, 0.0):
                 return prev_bitstrings
             new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
-            mult_wires = _extract_registers(registers, "linear", k)
-            semi_signed_out_multiplier(**mult_wires)
+            half_signed_out_multiplier(**_extract_registers(registers, "linear", k))
             return new_bitstrings
 
         @qp.for_loop(fragment.modes)
@@ -312,7 +315,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
                 )
                 new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
-                semi_signed_out_multiplier(**coeff_mult_wires)
+                half_signed_out_multiplier(**coeff_mult_wires)
                 qp.adjoint(qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
@@ -365,6 +368,8 @@ def _trotter_step_second_order(idx, time, fragments, registers, aqft_order):
 
 
 def _validate_registers(registers, fragments):
+    """Validate wire register sizes for vibronic algorithm. See documentation of trotter_vibronic
+    for details on the expected sizes."""
     n_states = fragments[0].states
     n_modes = fragments[0].modes
 
@@ -393,7 +398,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         fragments (list[RealspaceMatrix]): Fragments of the vibronic Hamiltonian
         registers (dict[str, WiresLike]): Wire registers. See details below.
         aqft_order (int): Approximation order used in :class:`~.AQFT`, which is used to transform
-            between position and momentum space.
+            between position and momentum space. If set to ``None``, no approximation will be made.
 
     .. details::
         :title: Register sizes
@@ -456,14 +461,14 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
           iteration).
         - The ``SemiAdder`` in the constant term computes on registers of size :math:`b`, so it
           needs :math:`b-1` work wires.
-        - The :func:`~.pennylane.labs.templates.semi_signed_out_multiplier`
+        - The :func:`~.pennylane.labs.templates.half_signed_out_multiplier`
           (with ``len(y_wires)=k`` and ``len(output_wires)=b``)
           in the linear terms requires :math:`\max(k, 2b+2)` (see documentation).
         - The ``SignedOutSquare`` of a :math:`k` qubit register with ``output_wires_zeroed=True``
           requires :math:`k` work wires.
         - The ``OutMultiplier`` of the unsigned square cache and the coefficients into the phase
           gradient register (with ``output_wires_zeroed=True``) requires :math:`b+1` work wires.
-        - The :func:`~.pennylane.labs.templates.semi_signed_out_multiplier`
+        - The :func:`~.pennylane.labs.templates.half_signed_out_multiplier`
           (with ``len(y_wires)=2k`` and ``len(output_wires)=b``)
           in the bilinear terms requires :math:`\max(2k, 2b+2)` (see documentation).
 
@@ -477,12 +482,11 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
         We typically would expect :math:`b>k\approx n`, so the third term to be the largest, but
         this depends on the specific simulation setup.
 
-        Note that the work wire requirements (in particular those of ``semi_signed_out_multiplier``)
+        Note that the work wire requirements (in particular those of ``half_signed_out_multiplier``)
         can be reduced at the cost of additional non-Clifford gates. The above calculation maximizes
         qubit overhead and minimizes the non-Clifford gate count.
 
     """
-    print("trotter_vibronic has been called.")
     _validate_registers(registers, fragments)
 
     assert num_trotter_steps > 0
