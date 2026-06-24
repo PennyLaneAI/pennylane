@@ -30,7 +30,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import Float, Int, Wire
 
 
 class CustomOp(Operator):  # pylint: disable=too-few-public-methods
@@ -411,27 +411,23 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
             _ = custom_decomp.compute_resources()
 
-    @pytest.mark.xfail(
-        reason="Upstream issue in #9675 that causes hash(float) != hash(np.dtype('float64')) which breaks the test.",
-        strict=True,
-    )
     @pytest.mark.parametrize(
         "abstract_sig, concrete_sig",
         [
             (
-                (
-                    AbstractArray((), float),
-                    AbstractArray((2, 2), float),
-                    AbstractWires(1),
-                ),
+                {
+                    "phi": Float,
+                    "matrix": Float[2, 2],
+                    "wires": Wire[1],
+                },
                 (1.5, np.ones((2, 2), dtype=float), 5),
             ),
             (
-                (
-                    AbstractArray((), int),
-                    AbstractArray((-1, 2), int),
-                    AbstractWires(1),
-                ),
+                {
+                    "phi": Int,
+                    "matrix": Int[-1, 2],
+                    "wires": Wire[1],
+                },
                 (5, np.ones((6, 2), dtype=np.int32), 5),
             ),
         ],
@@ -444,7 +440,7 @@ class TestDecompositionRule:
         ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
             dynamic_argnames = ("phi", "matrix")
 
-            fixed_sig = abstract_sig
+            arg_specs = abstract_sig
 
             def __init__(self, phi, matrix, wires):
                 super().__init__(phi, matrix, wires)
@@ -453,7 +449,7 @@ class TestDecompositionRule:
             {
                 # all three represent the same abstract operator
                 FixedSigOp: 1,
-                FixedSigOp(*abstract_sig): 2,
+                FixedSigOp(**abstract_sig): 2,
                 FixedSigOp(*concrete_sig): 3,
             }
         )
