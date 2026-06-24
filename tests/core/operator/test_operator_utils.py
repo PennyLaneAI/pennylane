@@ -123,7 +123,7 @@ class TestAbstractify:
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
 
-        with pytest.raises(TypeError, match="must have 'arg_specs' set"):
+        with pytest.raises(TypeError, match="must set 'arg_specs'"):
             _ = abstractify(FixedSigOp)
 
     def test_abstract_instance_hash_stable(self):
