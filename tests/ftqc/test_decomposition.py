@@ -296,11 +296,11 @@ class TestMBQCFormalismConversion:
         "op",
         [qp.H(2), qp.S(2), qp.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
     )
-    def test_queue_single_qubit_gate(self, op):
+    def test_queue_single_qubit_gate(self, op, seed):
         """Test that the queue_single_qubit_gate function queues state preparation, MCMs
         and byproduct corrections that are equivalent to the input operator"""
 
-        dev = qp.device("lightning.qubit", wires=5)
+        dev = qp.device("lightning.qubit", wires=5, seed=seed)
         q_mgr = QubitMgr(num_qubits=5, start_idx=0)
         wire_map = {2: q_mgr.acquire_qubit()}
         w = op.wires[0]
@@ -344,11 +344,11 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.05)
 
-    def test_queue_cnot(self):
+    def test_queue_cnot(self, seed):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
 
-        dev = qp.device("lightning.qubit", wires=15, seed=42)
+        dev = qp.device("lightning.qubit", wires=15, seed=seed)
         q_mgr = QubitMgr(num_qubits=15, start_idx=0)
 
         op = qp.CNOT([2, 3])
@@ -512,11 +512,11 @@ class TestMBQCFormalismConversion:
     # this test as flaky and keeping it here for the time being.
     @flaky(max_runs=5, min_passes=3)
     @pytest.mark.slow
-    def test_conversion_of_multi_wire_circuit(self):
+    def test_conversion_of_multi_wire_circuit(self, seed):
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qp.device("lightning.qubit", seed=1234)
+        dev = qp.device("lightning.qubit", seed=seed)
 
         theta = 2.5
         with qp.queuing.AnnotatedQueue() as q:
@@ -574,7 +574,7 @@ class TestMBQCFormalismConversion:
 
 @pytest.mark.catalyst
 @pytest.mark.external
-def test_ppr_to_mbqc_conversion_to_mlir():
+def test_ppr_to_mbqc_conversion_to_mlir(seed):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
@@ -582,7 +582,7 @@ def test_ppr_to_mbqc_conversion_to_mlir():
 
     @qp.qjit(target="mlir", capture=True)
     @ppr_to_mbqc
-    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3, seed=seed), shots=1000)
     def circ():
         qp.H(0)
         qp.S(0)
@@ -595,13 +595,13 @@ def test_ppr_to_mbqc_conversion_to_mlir():
 
 @pytest.mark.catalyst
 @pytest.mark.external
-def test_ppr_to_mbqc_without_qjit_raises_error():
+def test_ppr_to_mbqc_without_qjit_raises_error(seed):
     """Test that trying to apply the transform without QJIT raises an error"""
 
     pytest.importorskip("catalyst")
 
     @ppr_to_mbqc
-    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3, seed=seed), shots=1000)
     def circ():
         qp.H(0)
         qp.S(0)
