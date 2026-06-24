@@ -253,7 +253,7 @@ class TestInitSubclass:
 
         with pytest.raises(
             TypeError,
-            match=r"Op\.arg_specs can only contain dynamic and non-hybrid arguments",
+            match=r"Op\.arg_specs can only contain dynamic and wire arguments",
         ):
             type("Op", (Operator2,), attrs)
 
@@ -306,8 +306,8 @@ class TestInitSubclass:
 
         assert Op.arg_specs == {"phi": AbstractArray((), float)}
 
-    def test_fixed_sig_false_with_argnames_without_arg_specs(self):
-        """Test that ``fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
+    def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
         are any arguments."""
 
         class Op(Operator2):
@@ -316,10 +316,10 @@ class TestInitSubclass:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
-    def test_fixed_sig_true_without_argnames_without_arg_specs(self):
-        """Test that ``fixed_sig`` is ``True`` when ``arg_specs`` is not declared and there
+    def test_has_fixed_sig_true_without_argnames_without_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``True`` when ``arg_specs`` is not declared and there
         are no arguments."""
 
         class Op(Operator2):
@@ -329,10 +329,10 @@ class TestInitSubclass:
                 # pylint: disable=useless-parent-delegation
                 super().__init__()
 
-        assert Op.fixed_sig is True
+        assert Op.has_fixed_sig is True
 
-    def test_fixed_sig_true_for_fully_specified_static_types(self):
-        """Test that ``fixed_sig`` is ``True`` when only dynamic and wire args are fully typed."""
+    def test_has_fixed_sig_true_for_fully_specified_static_types(self):
+        """Test that ``has_fixed_sig`` is ``True`` when only dynamic and wire args are fully typed."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi", "theta")
@@ -347,10 +347,10 @@ class TestInitSubclass:
             def __init__(self, phi, theta, wires, ctrl_wires):
                 super().__init__(phi, theta, wires=wires, ctrl_wires=ctrl_wires)
 
-        assert Op.fixed_sig is True
+        assert Op.has_fixed_sig is True
 
-    def test_fixed_sig_false_for_partial_arg_specs(self):
-        """Test that ``fixed_sig`` is ``False`` when ``arg_specs`` omits some arguments."""
+    def test_has_fixed_sig_false_for_partial_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` omits some arguments."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -359,11 +359,11 @@ class TestInitSubclass:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
     @pytest.mark.parametrize("phi_spec", [AbstractArray(..., float), AbstractArray((-1,), float)])
-    def test_fixed_sig_false_for_unknown_rank_or_axis(self, phi_spec):
-        """Test that ``fixed_sig`` is ``False`` for dynamic shapes that are not fully fixed."""
+    def test_has_fixed_sig_false_for_unknown_rank_or_axis(self, phi_spec):
+        """Test that ``has_fixed_sig`` is ``False`` for dynamic shapes that are not fully fixed."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -372,10 +372,10 @@ class TestInitSubclass:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
-    def test_fixed_sig_false_for_dynamic_wire_count(self):
-        """Test that ``fixed_sig`` is ``False`` when a wire arg has unknown length."""
+    def test_has_fixed_sig_false_for_dynamic_wire_count(self):
+        """Test that ``has_fixed_sig`` is ``False`` when a wire arg has unknown length."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
@@ -387,9 +387,9 @@ class TestInitSubclass:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
-    def test_fixed_sig_true_after_number_type_canonicalization(self):
+    def test_has_fixed_sig_true_after_number_type_canonicalization(self):
         """Test that canonicalized builtin number types still yield a fixed signature."""
 
         class Op(Operator2):
@@ -399,7 +399,7 @@ class TestInitSubclass:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        assert Op.fixed_sig is True
+        assert Op.has_fixed_sig is True
         assert Op.arg_specs["phi"].shape_fixed is True
 
     @pytest.mark.parametrize(
@@ -410,8 +410,8 @@ class TestInitSubclass:
             {"compilable_argnames": ("n",)},
         ],
     )
-    def test_fixed_sig_false_with_non_dynamic_wire_args(self, extra_argnames):
-        """Test that ``fixed_sig`` is ``False`` when hybrid, static, or compilable args exist."""
+    def test_has_fixed_sig_false_with_non_dynamic_wire_args(self, extra_argnames):
+        """Test that ``has_fixed_sig`` is ``False`` when hybrid, static, or compilable args exist."""
 
         attrs = {
             "dynamic_argnames": ("phi",),
@@ -436,9 +436,9 @@ class TestInitSubclass:
             )
 
         Op = type("Op", (Operator2,), attrs)
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
-    def test_fixed_sig_false_with_hybrid_wire_arg(self):
+    def test_has_fixed_sig_false_with_hybrid_wire_arg(self):
         """Test that a hybrid wire argument prevents a fixed signature."""
 
         class Op(Operator2):
@@ -453,7 +453,7 @@ class TestInitSubclass:
             def __init__(self, phi, pytree_wires, wires):
                 super().__init__(phi, [Wires(w) for w in pytree_wires], wires=wires)
 
-        assert Op.fixed_sig is False
+        assert Op.has_fixed_sig is False
 
 
 class TestOperatorInit:

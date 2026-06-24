@@ -453,6 +453,7 @@ class AbstractWires:
     """
 
     num_wires: int
+    shape_fixed: bool = field(init=False)
 
     def __post_init__(self):
         if not isinstance(self.num_wires, int):
@@ -464,6 +465,7 @@ class AbstractWires:
                 f"'num_wires' must be a non-negative integer or -1, but got {self.num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
+        object.__setattr__(self, "shape_fixed", self.num_wires != -1)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
