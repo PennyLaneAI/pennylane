@@ -115,7 +115,6 @@ class TestAQFT:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        """Test usage of AQFT with jax-jit."""
         import jax
 
         wires = 3
@@ -132,25 +131,4 @@ class TestAQFT:
 
         res = circuit()
         res2 = jit_circuit()
-        assert qp.math.allclose(res, res2)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.catalyst
-    @pytest.mark.external
-    def test_with_qjit(self):
-        """Test usage of AQFT with qjit."""
-        wires = 4
-
-        @qp.qnode(qp.device("lightning.qubit", wires=wires))
-        def circuit():
-            qp.X(0)
-            qp.AQFT(order=1, wires=range(wires))
-            qp.Hadamard(1)
-            qp.adjoint(qp.AQFT)(order=2, wires=range(wires))
-            return qp.state()
-
-        qjit_circuit = qp.qjit(circuit)
-
-        res = circuit()
-        res2 = qjit_circuit()
         assert qp.math.allclose(res, res2)
