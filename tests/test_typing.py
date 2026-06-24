@@ -444,14 +444,6 @@ class TestAbstractWires:
         with pytest.raises(ValueError, match="'num_wires' must be"):
             _ = AbstractWires(-3)
 
-    def test_invalid_num_wires(self):
-        """Test that an error is raised if the provided ``num_wires`` is not valid."""
-        with pytest.raises(TypeError, match="'num_wires' must be"):
-            _ = AbstractWires("a")
-
-        with pytest.raises(ValueError, match="'num_wires' must be"):
-            _ = AbstractWires(-3)
-
     def test_comparison(self):
         """Test for equality and comparison."""
         a = AbstractWires(3)
