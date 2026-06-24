@@ -783,6 +783,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in _batched_partial_trace_nonrep_indices where state_indices was reset
+  to its initial value on each iteration of the wire-tracing loop, causing incorrect einsum index
+  mappings when tracing out multiple wires. The fix tracks state_indices across iterations.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
