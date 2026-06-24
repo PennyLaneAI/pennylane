@@ -38,7 +38,7 @@ class ProfileNode:
     to be traversed as a hierarchical call graph (for example, to render a flame graph).
 
     Args:
-        cmpr_op (CompressedResourceOp | None): the compressed resource operator represented
+        cmpr_op (pennylane.estimator.resource_operator.CompressedResourceOp | None): the compressed resource operator represented
             by this node. The root node of a profile has no associated operator and uses the
             default value of ``None``.
         scalar (int): the number of times ``cmpr_op`` appears at this level of the

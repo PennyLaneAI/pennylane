@@ -52,7 +52,7 @@ def profile(
     :func:`~.export_flame_graph_data` to visualize where the cost of a circuit comes from.
 
     Args:
-        workflow (Callable | ResourceOperator | Resources | QNode): the workflow to profile.
+        workflow (Callable | ResourceOperator | pennylane.estimator.resources_base.Resources | QNode): the workflow to profile.
             This may be a quantum function (or :class:`~pennylane.QNode`) that queues
             operators, a single :class:`~pennylane.estimator.resource_operator.ResourceOperator`, or a precomputed
             :class:`~.pennylane.estimator.resources_base.Resources` object.
@@ -70,7 +70,7 @@ def profile(
             :class:`~.estimator_beta.LabsResourceConfig` is used.
 
     Returns:
-        tuple[ProfileNode, Resources] | Callable: when ``workflow`` is a
+        tuple[ProfileNode, pennylane.estimator.resources_base.Resources] | Callable: when ``workflow`` is a
         :class:`~.pennylane.estimator.resource_operator.ResourceOperator` or :class:`~.pennylane.estimator.resources_base.Resources`, a tuple of
         the root :class:`~.ProfileNode` and the aggregated :class:`~.pennylane.estimator.resources_base.Resources` is
         returned. When ``workflow`` is a quantum function or :class:`~pennylane.QNode`, a
