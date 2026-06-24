@@ -643,6 +643,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Upgrade Sphinx to version 9.0.
+  [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
+  
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
