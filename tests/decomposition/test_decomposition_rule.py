@@ -420,7 +420,7 @@ class TestDecompositionRule:
                     "matrix": Float[2, 2],
                     "wires": Wire[1],
                 },
-                (1.5, np.ones((2, 2), dtype=float), 5),
+                {"phi": 1.5, "matrix": np.ones((2, 2), dtype=float), "wires": 5},
             ),
             (
                 {
@@ -428,7 +428,7 @@ class TestDecompositionRule:
                     "matrix": Int[-1, 2],
                     "wires": Wire[1],
                 },
-                (5, np.ones((6, 2), dtype=np.int32), 5),
+                {"phi": 5, "matrix": np.ones((2, 2), dtype=int), "wires": 5},
             ),
         ],
     )
@@ -450,14 +450,14 @@ class TestDecompositionRule:
                 # all three represent the same abstract operator
                 FixedSigOp: 1,
                 FixedSigOp(**abstract_sig): 2,
-                FixedSigOp(*concrete_sig): 3,
+                FixedSigOp(**concrete_sig): 3,
             }
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
         # Gets grouped together
-        exp_dict = {FixedSigOp(*abstract_sig): 6}  # 1 + 2 + 3
+        exp_dict = {FixedSigOp(**abstract_sig): 6}  # 1 + 2 + 3
         assert custom_decomp.compute_resources().gate_counts == exp_dict
 
     def test_auto_wrap_fails(self):
