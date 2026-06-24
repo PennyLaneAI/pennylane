@@ -40,7 +40,7 @@ from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .resources import CompressedResourceOp, Resources, resource_rep
+from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
@@ -58,8 +58,6 @@ from .symbolic_decomposition import (
 from .utils import to_name
 
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
-
-AbstractOperatorLike = CompressedResourceOp | Operator2
 
 
 def _get_kwargs(op: AbstractOperatorLike):
@@ -435,6 +433,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         kwargs = _get_kwargs(op_node.op)
         decomp_resource = rule.compute_resources(**kwargs)
+
         work_wire_spec = rule.get_work_wire_spec(**kwargs)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)

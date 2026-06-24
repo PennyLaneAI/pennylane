@@ -36,7 +36,7 @@ class Resources:
         weighted_cost (float): the cumulative weight of the gates.
     """
 
-    gate_counts: dict[CompressedResourceOp | Operator2, int] = field(default_factory=dict)
+    gate_counts: dict[AbstractOperatorLike, int] = field(default_factory=dict)
     weighted_cost: float = field(default=None)
 
     def __post_init__(self):
@@ -209,6 +209,9 @@ def _validate_resource_rep(op_type, params):
             f"Missing keyword arguments for resource_rep({op_type.__name__}): "
             f"{list(missing_arguments)}. Expected: {list(op_type.resource_keys)}"
         )
+
+
+AbstractOperatorLike = CompressedResourceOp | Operator2
 
 
 def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
