@@ -405,7 +405,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
 
 
 class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Modular Adder
-    r"""Resource class for the Out-of-place Quantum Quantum Modular Adder gate.
+    r"""Resource class for the out-of-place quantum-quantum modular Adder gate.
 
     This operator performs the modular addition of two integers :math:`x` and :math:`y` modulo
     :math:`mod` in the computational basis:
