@@ -1654,7 +1654,7 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
         return op_type(**op_type.arg_specs)
 
     raise TypeError(
-        f"'{op_type.__name__}' must have 'arg_specs' set to cover all dynamic and wire "
+        f"'{op_type.__name__}' must set 'arg_specs' and cover all dynamic and wire "
         "arguments with fixed abstract types to be abstractified."
     )
 
