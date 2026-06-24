@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
+import re
 from importlib import import_module, util
 
 import numpy as np
@@ -22,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.wires import AbstractWires, Wires
+from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -404,6 +405,20 @@ class TestWires:
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
 
+    def test_class_index(self):
+        """Test that indexing the class raises."""
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[3]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[3]
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[Ellipsis]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[...]
+
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
         [
@@ -591,56 +606,3 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
-
-
-class TestAbstractWires:
-    """Test for the AbstractWires class."""
-
-    def test_basic(self):
-        """Basic tests for the AbstractWires class."""
-
-        a = AbstractWires(3)
-        assert a.num_wires == 3
-        assert len(a) == 3
-
-    def test_comparison(self):
-        """Test for equality and comparison."""
-        a = AbstractWires(3)
-        assert a == AbstractWires(3)
-        assert a != AbstractWires(4)
-        assert hash(a) == hash(AbstractWires(3))
-        assert hash(a) != hash(AbstractWires(4))
-
-        with pytest.raises(
-            TypeError, match="Tried to check equality against an abstract wire register."
-        ):
-            _ = a == 2
-
-    def test_ellipsis(self):
-        """Test that number of wires can be specified by an ellipsis."""
-
-        a = AbstractWires(...)
-        assert a.num_wires == ...
-
-    def test_wires_getitem(self):
-        """Test that AbstractWires can created by indexing into Wires."""
-
-        a = qp.wires.Wires[4]
-        assert isinstance(a, AbstractWires)
-        assert a.num_wires == 4
-
-        b = qp.wires.Wires[...]
-        assert isinstance(b, AbstractWires)
-        assert b.num_wires == ...
-
-        with pytest.raises(
-            TypeError, match="AbstractWires can only be subscripted with integers and Ellipsis."
-        ):
-            _ = qp.wires.Wires[2, 3, 4]
-
-    def test_shape_and_dtype(self):
-        """Test that AbstractWires have a shape and dtype."""
-
-        a = qp.wires.AbstractWires(3)
-        assert a.shape == (3,)
-        assert a.dtype == np.int64
