@@ -389,16 +389,29 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
-    def test_operator_without_fixed_sig_raises_error(self):
+    @pytest.mark.parametrize(
+        "my_arg_specs",
+        (
+            pytest.param(
+                {"angles": Float[-1], "eps": Float, "wires": Wire[1]},
+                id="full_signature_with_dynamic_axis",
+            ),
+            pytest.param({"angles": Float[3]}, id="partial_signature"),
+            pytest.param(None, id="no_signature"),
+        ),
+    )
+    def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
         class MissingFixedSigOp(
             Operator2
         ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
-            dynamic_argnames = ("phi",)
+            dynamic_argnames = ("angles", "eps")
 
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires)
+            arg_specs = my_arg_specs
+
+            def __init__(self, angles, eps, wires):
+                super().__init__(angles, eps, wires)
 
         @register_resources(
             {
@@ -425,7 +438,7 @@ class TestDecompositionRule:
             (
                 {
                     "phi": Int,
-                    "matrix": Int[-1, 2],
+                    "matrix": Int[2, 2],
                     "wires": Wire[1],
                 },
                 {"phi": 5, "matrix": np.ones((2, 2), dtype=int), "wires": 5},
