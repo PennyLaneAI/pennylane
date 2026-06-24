@@ -42,9 +42,6 @@ clifford_t_measure = {
     qp.Z,
     qp.CNOT,
     qp.CZ,
-    qp.PauliX,
-    qp.PauliY,
-    qp.PauliZ,
     qp.Hadamard,
     PauliMeasure,
 }
@@ -654,6 +651,7 @@ class TestMeasurementQROM:
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
 
+            # Put target wires in |+> state, so that QROM should act like the identity overall.
             for wire in target_wires:
                 qp.Hadamard(wire)
 

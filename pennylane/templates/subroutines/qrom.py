@@ -580,7 +580,7 @@ def _qrom_decomposition(
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_values=None):
-    """Measurement-based uncomputation on Fig 18. https://arxiv.org/pdf/2211.15465
+    """Measurement-based uncomputation from Fig 18a) https://arxiv.org/abs/2211.15465
 
     Replaces adjoint(TemporaryAND) with two Pauli measurements:
       1. Joint X measurement on work + target qubits where product=1
@@ -745,7 +745,7 @@ def _count_tempAND_in_measurement_qrom(k):
 
     if k < 3:
         return 0
-    if k / 2 ** math.ceil_log2(k) > 3 / 4:
+    if k > 3 / 4 * 2 ** math.ceil_log2(k):
         return k - 3
     return k - 2
 
@@ -813,7 +813,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
     PauliMeasure + conditional corrections instead of adjoint(TemporaryAND).
     Work wires are always left clean (via measurement-based uncomputation).
-    Decomposition is based on Fig 18. https://arxiv.org/pdf/2211.15465
+    Decomposition is based on Fig 18. https://arxiv.org/abs/2211.15465
 
     Requires: len(work_wires) >= ceil_log2(L) - 1.
     """
