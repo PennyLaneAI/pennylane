@@ -45,7 +45,7 @@ class TestAbstractify:
     def test_numpy_array(self):
         """Test that numpy arrays are converted to ``AbstractArray``."""
         arr = np.ones((2, 3), dtype=np.float32)
-        assert abstractify(arr) == Float[2, 3]
+        assert abstractify(arr) == AbstractArray((2, 3), np.float32)
 
     def test_wires(self):
         """Test that ``Wires`` are converted to ``AbstractWires``."""
