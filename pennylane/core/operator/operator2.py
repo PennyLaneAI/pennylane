@@ -1276,7 +1276,7 @@ def _init_wires(op: Operator2):
 
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
-                    f"Incorrect number of wires for '{self.name}.{wname}'. Expected {wsize} "
+                    f"Incorrect number of wires for '{op}.{wname}'. Expected {wsize} "
                     f"wires but got {len(canonical_wires)}."
                 )
 
