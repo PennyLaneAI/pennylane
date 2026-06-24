@@ -932,7 +932,7 @@ class Operator2(metaclass=OperatorMeta):
             # Hybrid wire arguments
             else:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
-                leaves = [w.tolist() for w in leaves]
+                leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 res = unflatten(leaves, tree)
 
             inputs.append(f"{key}={res}")
