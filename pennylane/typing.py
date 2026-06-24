@@ -208,7 +208,59 @@ class AbstractArray:
         return shape is not None and self._shape_matches(shape)
 
     def is_compatible_with(self, val) -> bool:
-        """Check whether an input value is compatible with an ``AbstractArray``."""
+        """Check whether an input value is compatible with an ``AbstractArray``. A value
+        is considered to be compatible if it has a shape and dtype that can be safely cast
+        to the shape and dtype of the ``AbstractArray``.
+
+        Args:
+            val (Any): input value to check for compatibility
+
+        Returns:
+            bool: ``True`` if ``val`` is compatible, ``False`` otherwise
+
+        For shapes, the following conditions must be met to be considered compatible:
+
+            * If the ``AbstractArray`` allows any rank, i.e., ``shape = ...``, then the
+              input value can have any shape.
+            * If the ``AbstractArray`` has size ``-1`` for any of the axes, the input
+              value can have any size **for those axes**, but must have the same size
+              as the ``AbstractArray`` for the rest of the axes.
+            * If the ``AbstractArray`` has a fixed shape, then the shape of the input
+              value must match exactly.
+
+        For dtypes, the following conditions must be met to be considered compatible:
+
+            * If the ``AbstractArray``'s dtype is weak, i.e., it was initialized with
+              a Python builtin number type (``int``, ``float``, etc.), then any dtypes
+              that can be safely cast to the ``AbstractArray``'s dtype are compatible.
+              For example, ``np.bool`` and ``np.int32`` can be safely cast to ``np.int64``,
+              but ``np.float32`` cannot be.
+            * If the ``AbstractArray``'s dtype is not weak, i.e., it was initialized with
+              a dtype with a specific precision, then the dtype of the input value must
+              match the dtype of the ``AbstractArray`` exactly.
+
+        If all the above conditions are met, an input value will be considered compatible.
+
+        **Example**
+
+        >>> aa = AbstractArray((-1, 2), int)
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.int32))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.bool))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 3), dtype=np.int32))
+        False
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.float64))
+        False
+        <BLANKLINE>
+        >>> aa = AbstractArray((3, 2), np.int32)
+        >>> aa.is_compatible_with(np.ones((3, 2), dtype=np.int32))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.int32))
+        False
+        >>> aa.is_compatible_with(np.ones((3, 2), dtype=np.int16))
+        False
+        """
         # No need to create a new array if value is already an array
         val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
         shape = getattr(val, "shape", None)
