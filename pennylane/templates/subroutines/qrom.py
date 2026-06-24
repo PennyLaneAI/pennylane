@@ -582,15 +582,11 @@ def _qrom_decomposition(
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_values=None):
     """Measurement-based uncomputation from Fig 18a) https://arxiv.org/abs/2211.15465
 
-    Replaces adjoint(TemporaryAND) with two Pauli measurements:
-      1. Joint X measurement on work + target qubits where product=1
-      2. Z measurement on work + conditional X corrections
-
     Args:
-        work_wire: the AND output wire to uncompute
-        ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction)
-        targets: target register wires
-        product: bitstring indicating which targets are entangled with work
+        work_wire: the AND output wire to uncompute. Third wire on the figure.
+        ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction). First and second qubit on the figure.
+        targets: target register wires.
+        product: bitstring indicating the X positions in the target register.
         control_values: list of 0/1 indicating the effective AND polarity at the
                        point of uncomputation. If None, defaults to [1, 1].
     """
@@ -599,16 +595,13 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product, control_valu
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
     if control_values is not None:
-        for wire, cv in zip(ctrl_wires, control_values, strict=True):
-            if cv == 0:
-                X(wires=wire)
+        flip = np.array([1 - cv for cv in control_values])
+        BasisState(flip, wires=ctrl_wires)
 
     cond(m1 == 1, CZ)(wires=ctrl_wires)
 
     if control_values is not None:
-        for wire, cv in zip(ctrl_wires, control_values):
-            if cv == 0:
-                X(wires=wire)
+        BasisState(flip, wires=ctrl_wires)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -625,7 +618,8 @@ def _measurement_qrom_inner(controls, targets, bitstrings):
     Args:
         controls: interleaved [flag, sel, work, sel2, work2, ...]
         targets: target register wires
-        bitstrings: k XOR-relative bitstrings
+        bitstrings: The set of k strings to be loaded into the subtree. They do not necessarily match the QROM input values.
+
     """
 
     k = len(bitstrings)
