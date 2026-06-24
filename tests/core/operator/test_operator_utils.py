@@ -90,17 +90,17 @@ class TestAbstractify:
         assert inner_op.phi == Float
         assert inner_op.wires == Wire[1]
 
-    def test_operator_subclass_with_fixed_sig(self):
+    def test_operator_subclass_with_arg_specs_fixed_sig(self):
         """Tests that an operator subclass with fixed sig works correctly."""
 
         class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
-            fixed_sig = (
-                Float,
-                Wire[2],
-                Wire[1],
-            )
+            arg_specs = {
+                "phi": Float,
+                "wires": Wire[2],
+                "ctrl_wires": Wire[1],
+            }
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
@@ -116,6 +116,9 @@ class TestAbstractify:
         class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
+
+            # Incomplete arg spec
+            arg_spec = {"phi": Float}
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)

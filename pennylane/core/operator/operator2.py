@@ -1630,8 +1630,8 @@ def _is_hash_leaf(l) -> bool:
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if op_type.fixed_sig is not None:
-        return op_type(*op_type.fixed_sig)
+    if op_type.fixed_sig:
+        return op_type(**op_type.arg_specs)
 
     raise TypeError(
         f"Operator type '{op_type.__name__}' must define a 'fixed_sig' to be abstractified."
