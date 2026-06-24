@@ -14,6 +14,7 @@
 
 from functools import singledispatch
 from numbers import Number
+from typing import Union
 
 from pennylane import math
 from pennylane.pytrees import flatten, leaf, unflatten
@@ -22,7 +23,7 @@ from pennylane.wires import Wires
 
 
 @singledispatch
-def abstractify(val) -> AbstractArray | AbstractWires | "Operator2":
+def abstractify(val) -> Union[AbstractArray, AbstractWires, "Operator2"]:
     """Convert the provided value into an abstract type."""
     leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
     if tree != leaf:
