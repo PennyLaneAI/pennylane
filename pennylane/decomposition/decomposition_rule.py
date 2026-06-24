@@ -29,7 +29,6 @@ import pennylane as qp
 from pennylane import queuing
 from pennylane.core.operator import Operator
 
-from .reconstruct import get_decomp_kwargs
 from .resources import Resources, auto_wrap, resource_rep
 from .utils import to_name
 
@@ -107,7 +106,7 @@ def register_condition(
         @qp.register_resources({qp.RZ: 2, qp.RY: 1, qp.GlobalPhase: 1})
         def zyz_decomposition(U, wires, **__):
             # Assumes that U is a 2x2 unitary matrix
-            phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+            phi, theta, omega, phase = zyz_rotation_angles(U)
             qp.RZ(phi, wires=wires[0])
             qp.RY(theta, wires=wires[0])
             qp.RZ(omega, wires=wires[0])
@@ -848,8 +847,7 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
     def _circuit_drawing(self) -> str:
         """The circuit drawing of this decomposition rule."""
         assert self._conditions_met and self._enough_work_wires
-        kwargs = get_decomp_kwargs(self._op)
-        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **kwargs)
+        return qp.draw(self._rule)(*self._op.data, wires=self._op.wires, **self._op.hyperparameters)
 
     @property
     def _name(self) -> str:
@@ -1030,7 +1028,7 @@ def inspect_decomps(
     .. code-block:: python
 
         @qp.register_resources({qp.CNOT: 1, qp.H: 2})
-        def my_cz(wires):
+        def my_cz(wires, **_):
             qp.H(wires[1])
             qp.CNOT(wires)
             qp.H(wires[1])
@@ -1061,9 +1059,8 @@ def inspect_decomps(
 def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
-    kwargs = get_decomp_kwargs(op)
     with queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **kwargs)
+        rule(*op.data, wires=op.wires, **op.hyperparameters)
 
     actual_gate_counts = defaultdict(int)
     allocations = defaultdict(int)
