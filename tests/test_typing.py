@@ -195,6 +195,20 @@ class TestAbstractArray:
         a3 = AbstractArray(..., np.int32)
         assert repr(a3) == "AbstractArray(..., int32)"
 
+    def test_str(self):
+        """Test that the str of AbstractArray is as expected."""
+        a0 = AbstractArray((1, 2), int)
+        assert str(a0) == "AbstractArray((1, 2), int64, weak_type=True)"
+
+        a1 = AbstractArray((1, 2), np.int32)
+        assert str(a1) == "AbstractArray((1, 2), int32)"
+
+        a2 = AbstractArray((-1, 2), np.int32)
+        assert str(a2) == "AbstractArray((-1, 2), int32)"
+
+        a3 = AbstractArray(..., np.int32)
+        assert str(a3) == "AbstractArray(..., int32)"
+
     def test_ellipsis_shape(self):
         """Test that Ellipsis means the number of axes is unknown."""
 
@@ -450,6 +464,14 @@ class TestAbstractWires:
         a1 = AbstractWires(-1)
         assert repr(a1) == "AbstractWires(-1)"
 
+    def test_str(self):
+        """Test that the str of AbstractWires is correct."""
+        a0 = AbstractWires(2)
+        assert str(a0) == "AbstractWires(2)"
+
+        a1 = AbstractWires(-1)
+        assert str(a1) == "AbstractWires(-1)"
+
     def test_unknown_num_wires(self):
         """Test that -1 marks an unknown number of wires."""
         a = AbstractWires(-1)
@@ -482,6 +504,7 @@ class TestAbstractWires:
         for i in range(len(l)):
             w = Wires(l[:i])
             assert isinstance(w, Wire[i])
+            assert isinstance(w, Wire[-1])
             assert not isinstance(w, Wire[6])
 
         # non-wires
