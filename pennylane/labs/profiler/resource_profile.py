@@ -107,9 +107,7 @@ class ProfileNode:
         self.gate_data = gate_data or defaultdict(int)
 
     @classmethod
-    def group_by_name(
-        cls, child_nodes: list["ProfileNode"]
-    ):  # Returns a dict[str, tuple(scalar, gate_counts, child_nodes)]
+    def group_by_name(cls, child_nodes: list["ProfileNode"]):
         r"""Group a list of child nodes by operator name, merging duplicates.
 
         Nodes that share the same operator name are merged into a single entry by summing
@@ -366,12 +364,13 @@ class ProfileNode:
 def export_flame_graph_data(
     root_node: ProfileNode, group_by: str = "name", cost_func: Callable | None = None
 ):
-    r"""Flatten a profile tree into the column data used to render a flame graph.
+    r"""Summarize the resource profile into four lists of data for each operator.
+    This format is used to render `icicle/flame-graphs <https://plotly.com/python/icicle-charts/>`_.
 
     The returned data is a tuple of four parallel lists, ``(ids, names, values, parents)``,
-    matching the format expected by the icicle/flame-graph traces in plotting libraries such
-    as Plotly. Each entry corresponds to a block in the flame graph: ``ids`` are unique
-    identifiers, ``names`` are the multiplicity-annotated operator labels,
+    matching the format expected by the `icicle/flame-graph <https://plotly.com/python/icicle-charts/>`_
+    traces in plotting libraries such as Plotly. Each entry corresponds to a block in the flame
+    graph: ``ids`` are unique identifiers, ``names`` are the multiplicity-annotated operator labels,
     ``values`` are the costs computed by ``cost_func`` and ``parents`` link each block to its
     parent via the parent's id. The root block is labelled ``"circuit"``.
 
@@ -423,9 +422,6 @@ def export_flame_graph_data(
     >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     >>> fig.show()
 
-    .. figure:: ../../../_static/profiler_plotly_display.png
-        :align: center
-        :target: javascript:void(0);
     """
 
     if group_by == "name":

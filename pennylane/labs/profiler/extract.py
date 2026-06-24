@@ -110,8 +110,8 @@ def profile(
        'CNOT': 44,
        'Hadamard': 25
 
-    However, we additionally have access to a resource profile, which can be processed to produce flame graph
-    type visualizations.
+    However, we additionally have access to a resource profile, which can be processed to produce
+    `flame graph <https://plotly.com/python/icicle-charts/>`_ type visualizations.
 
     >>> from pennylane.labs.profiler import export_flame_graph_data
     >>> extracted_info = export_flame_graph_data(res_profile)
@@ -129,10 +129,6 @@ def profile(
     ... )
     >>> fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     >>> fig.show()
-
-    .. figure:: ../../../_static/profiler_plotly_display.png
-        :align: center
-        :target: javascript:void(0);
 
     """
     return _profile_resources_dispatch(
