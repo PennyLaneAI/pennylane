@@ -266,26 +266,31 @@ class TestAbstractArray:
         assert isinstance(b, AbstractArray)
         assert b.dtype == np.int64
         assert b.shape == (2, 3)
+        assert b._weak_type is True
 
         c = a[2]
         assert isinstance(c, AbstractArray)
         assert c.shape == (2,)
         assert c.dtype == np.int64
+        assert c._weak_type is True
 
         d = a[...]
         assert isinstance(d, AbstractArray)
         assert d.shape == Ellipsis
         assert d.dtype == np.int64
+        assert d._weak_type is True
 
         e = a[5, -1, 2]
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, -1, 2)
         assert e.dtype == np.int64
+        assert e._weak_type is True
 
         f = a[-1]
         assert isinstance(f, AbstractArray)
         assert f.dtype == np.int64
         assert f.shape == (-1,)
+        assert f._weak_type is True
 
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
