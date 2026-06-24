@@ -408,6 +408,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies 
+  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
+  This specific setup is useful for a vibronic dynamics workflow.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
   to use unary iteration in the decomposition of the used `QROM` operation for the specified 
@@ -783,6 +788,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
+  :class:`~.Incrementer` were also included in the target wires.
+  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
+  
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
