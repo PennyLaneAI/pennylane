@@ -240,6 +240,38 @@
 
 <h3>Improvements 🛠</h3>
 
+* Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive 
+  abstract type notation.  
+  [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+
+  ```python
+  from pennylane.typing import Int, Float, Complex, Bool, Wire
+  Int[2, 3]       # Abstract int array with shape (2, 3)
+  Float           # Float scalar
+  Complex[...]    # Abstract complex array with any shape
+  Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
+  Wire            # Single abstract wire
+  Wire[4]         # Four abstract wires
+  Wire[-1]        # Wire sequence with dynamic size
+  ```
+  For example, these abstract types can be used to do type-checking on concrete values:
+  
+  ```pycon
+  >>> isinstance(np.array(False), qp.typing.Bool)
+  True
+  >>> qp.typing.Bool[4]
+  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
+  True
+  >>> qp.typing.Complex[..., 2]
+  AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+  >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
+  True
+  >>> qp.typing.Wire[2]
+  AbstractWires(num_wires=2)
+  
+  ```
+
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
   [(#9545)](https://github.com/PennyLaneAI/pennylane/pull/9545)
 
@@ -592,6 +624,9 @@
 
   ```
 
+* The ``qp.decomposition.reconstruct`` function and all infrastructure built around it has been removed.
+  [(#9711)](https://github.com/PennyLaneAI/pennylane/pull/9711)
+
 <h3>Deprecations 👋</h3>
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
@@ -612,6 +647,12 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Upgrade Sphinx to version 9.0.
+  [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
+  
+* The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
+  [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
 * The `/benchmark` GitHub comment trigger can now accept additional arguments and has been renamed to `!benchmark`.
   [(#9676)](https://github.com/PennyLaneAI/pennylane/pull/9676)
@@ -643,6 +684,7 @@
     when ``compute_decomposition`` is not overridden.
   - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+  - Integration with :mod:`pennylane.capture`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -655,6 +697,7 @@
   [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
   [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
@@ -823,6 +866,10 @@
 * Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
+
+* Fixed bugs where string PyTree leaves were incorrectly
+  restored as ``bytes``.
+  [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
 <h3>Contributors ✍️</h3>
 
