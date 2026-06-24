@@ -20,11 +20,9 @@ from pennylane.pytrees import flatten, leaf, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
-from .operator2 import Operator2
-
 
 @singledispatch
-def abstractify(val) -> AbstractArray | AbstractWires | Operator2:
+def abstractify(val) -> AbstractArray | AbstractWires | "Operator2":
     """Convert the provided value into an abstract type."""
     leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
     if tree != leaf:
