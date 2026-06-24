@@ -408,7 +408,7 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Added an arithmetic function ``labs.templates.semi_signed_out_multiplier`` that multiplies 
+* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies 
   an unsigned-integer register with a signed-integer register into an unsigned-integer register.
   This specific setup is useful for a vibronic dynamics workflow.
   [(#9-__)](https://github.com/PennyLaneAI/pennylane/pull/9-__)
