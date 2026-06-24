@@ -1800,24 +1800,27 @@ class TestResourcePBCDepth:
             gate_sizes={1: 1, 2: 2},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
-            pbc_depth=(3, 6),
+            pbc_depth={"depth_0": 3, "depth_1": 6},
         )
 
     def test_str_pbc_depth(self, example_resource):
         """Test the string representation of a SpecsResources instance with PBC depth."""
         s = example_resource
 
-        expected = "Wire allocations: 2\n"
-        expected += "Total gates: 3\n"
-        expected += "Gate counts:\n"
-        expected += "- Hadamard: 1\n"
-        expected += "- CNOT: 2\n"
-        expected += "Measurements:\n"
-        expected += "- expval(PauliZ): 1\n"
-        expected += "Depth-0 (PBC): 3\n"
-        expected += "Depth-1 (PBC): 6"
+        expected = textwrap.dedent("""\
+            Wire allocations: 2
+            Total gates: 3
+            Gate counts:
+            - Hadamard: 1
+            - CNOT: 2
+            Measurements:
+            - expval(PauliZ): 1
+            Depths:
+            - Depth (depth_0): 3
+            - Depth (depth_1): 6
+        """)
 
-        assert str(s) == expected
+        assert str(s) == expected.strip()
 
     def test_ipython_display_pbc_depth(self, example_resource):
         """Test the IPython display of a SpecsResources instance with PBC depth."""
@@ -1831,8 +1834,8 @@ class TestResourcePBCDepth:
             | CNOT | 2 |
             | **Measurements:** | |
             | expval(PauliZ) | 1 |
-            | **Depth-0 (PBC)** | 3 |
-            | **Depth-1 (PBC)** | 6 |
+            | **Depth (depth_0)** | 3 |
+            | **Depth (depth_1)** | 6 |
         """)
         actual = example_resource._repr_markdown_()
 
@@ -1855,18 +1858,18 @@ class TestResourcePBCDepth:
             Levels:
             - 1: l1
 
-            ↓Metric   Level→ |  1
-            ---------------------
-            Wire allocations |  2
-            Total gates      |  3
-            Gate counts:     |
-            - Hadamard       |  1
-            - CNOT           |  2
-            Measurements:    |
-            - expval(PauliZ) |  1
-            Depth (PBC):     |
-            - Depth-0        |  3
-            - Depth-1        |  6
+            ↓Metric    Level→ |  1
+            ----------------------
+            Wire allocations  |  2
+            Total gates       |  3
+            Gate counts:      |
+            - Hadamard        |  1
+            - CNOT            |  2
+            Measurements:     |
+            - expval(PauliZ)  |  1
+            Depths:           |
+            - Depth (depth_0) |  3
+            - Depth (depth_1) |  6
         """).strip()
 
         assert str(s) == expected

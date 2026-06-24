@@ -331,7 +331,7 @@ class SpecsResources:
     measurements: dict[str, int]
     num_allocs: int
     depth: int | None = None
-    pbc_depth: tuple[int, int] | None = None
+    pbc_depth: dict[str, int] | None = None
 
     def __post_init__(self):
         if sum(self.gate_types.values()) != sum(self.gate_sizes.values()):
@@ -420,8 +420,9 @@ class SpecsResources:
                 f"{prefix}Depth: {_count_to_str(self.depth) if self.depth is not None else 'Not computed'}"
             )
         else:
-            for depth_type, value in enumerate(self.pbc_depth):
-                lines.append(f"{prefix}Depth-{depth_type} (PBC): {_count_to_str(value)}")
+            lines.append(f"{prefix}Depths:")
+            for key, value in self.pbc_depth.items():
+                lines.append(f"{prefix}- Depth ({key}): {_count_to_str(value)}")
 
         return "\n".join(lines)
 
@@ -457,7 +458,7 @@ class SpecsResources:
             for meas, count in self.measurements.items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
-        # A resource will only ever need to display PBC depth or ordinary circuit depth, never both
+        # A resource will only ever need to display MLIR-derived depth or ordinary circuit depth, never both
         if self.pbc_depth is None:
             # Always show a depth row, even if depth is None
             depth_str = (
@@ -467,10 +468,8 @@ class SpecsResources:
             )
             lines.append(f"| **Depth** | {depth_str} |")
         else:
-            for depth_type, value in enumerate(self.pbc_depth):
-                lines.append(
-                    f"| **Depth-{depth_type} (PBC)** | {_count_to_str(value, markdown_safe=True)} |"
-                )
+            for key, value in self.pbc_depth.items():
+                lines.append(f"| **Depth ({key})** | {_count_to_str(value, markdown_safe=True)} |")
         return "\n".join(lines)
 
 
@@ -497,7 +496,7 @@ class SymbolicSpecsResources(SpecsResources):
     # measurements: dict[str, Expression]
     # num_allocs: Expression
     # depth: Expression | None = None
-    # pbc_depth: tuple[Expression, Expression] | None = None
+    # pbc_depth: dict[str, Expression] | None = None
     vars: set[str] = field(init=False)
 
     def __post_init__(self):
@@ -512,7 +511,7 @@ class SymbolicSpecsResources(SpecsResources):
             object.__setattr__(
                 self,
                 "pbc_depth",
-                tuple(Expression(depth) for depth in self.pbc_depth),
+                {k: Expression(v) for k, v in self.pbc_depth.items()},
             )
         if isinstance(self.num_allocs, int):
             object.__setattr__(
@@ -536,7 +535,7 @@ class SymbolicSpecsResources(SpecsResources):
         if self.depth is not None:
             vars |= self.depth.vars
         if self.pbc_depth is not None:
-            for depth in self.pbc_depth:
+            for depth in self.pbc_depth.values():
                 vars |= depth.vars
         vars |= self.num_allocs.vars
 
@@ -573,7 +572,7 @@ class SymbolicSpecsResources(SpecsResources):
         num_allocs = self.num_allocs.subs(substitutions)
         depth = self.depth.subs(substitutions) if self.depth is not None else None
         if self.pbc_depth is not None:
-            pbc_depth = tuple(depth.subs(substitutions) for depth in self.pbc_depth)
+            pbc_depth = {k: v.subs(substitutions) for k, v in self.pbc_depth.items()}
         else:
             pbc_depth = None
 
@@ -590,7 +589,7 @@ class SymbolicSpecsResources(SpecsResources):
                 num_allocs=int(num_allocs),
                 depth=int(depth) if depth is not None else None,
                 pbc_depth=(
-                    tuple(int(depth) for depth in pbc_depth) if pbc_depth is not None else None
+                    {k: int(v) for k, v in pbc_depth.items()} if pbc_depth is not None else None
                 ),
             )
 
@@ -806,7 +805,7 @@ class CircuitSpecs:
 
     def _get_table_format(
         self, flat_resources: dict[str, SpecsResources]
-    ) -> tuple[int, int, dict[str, None], dict[str, None]]:
+    ) -> tuple[int, int, dict[str, None], dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
         # This is the length of the longest metric name (currently "Wire allocations") plus padding
@@ -816,6 +815,7 @@ class CircuitSpecs:
         # Use dict for these since they are sorted by default unlike a set
         all_gate_types = {}
         all_meas_types = {}
+        all_pbc_keys = {}
 
         # This iteration order will present the gates in the order in which they appear
         for res in flat_resources.values():
@@ -832,26 +832,20 @@ class CircuitSpecs:
                     max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
                 )
             if res.pbc_depth is not None:
-                max_column_size = max(
-                    max_column_size,
-                    *[
-                        len(
-                            _count_to_str(
-                                res.pbc_depth[depth_type],
-                                extra_compact=True,
-                            )
-                        )
-                        + 1
-                        for depth_type in (0, 1)
-                    ],
-                )
+                for key, value in res.pbc_depth.items():
+                    all_pbc_keys[key] = True
+                    max_metric_length = max(max_metric_length, len(key) + 10)
+                    max_column_size = max(
+                        max_column_size,
+                        len(_count_to_str(value, extra_compact=True)) + 1,
+                    )
             max_column_size = max(
                 max_column_size,
                 len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
                 len(_count_to_str(res.num_gates, extra_compact=True)) + 1,
             )
 
-        return max_metric_length, max_column_size, all_gate_types, all_meas_types
+        return max_metric_length, max_column_size, all_gate_types, all_meas_types, all_pbc_keys
 
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
@@ -859,8 +853,8 @@ class CircuitSpecs:
         lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
-        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
-            flat_resources
+        max_metric_length, max_column_size, all_gate_types, all_meas_types, all_pbc_keys = (
+            self._get_table_format(flat_resources)
         )
 
         num_cols = len(flat_resources)
@@ -912,19 +906,19 @@ class CircuitSpecs:
                     for res in flat_resources.values()
                 )
             )
-        if any(res.pbc_depth is not None for res in flat_resources.values()):
-            lines.append("Depth (PBC):".ljust(max_metric_length) + " |")
-            for depth_type in (0, 1):
+        if all_pbc_keys:
+            lines.append("Depths:".ljust(max_metric_length) + " |")
+            for key in all_pbc_keys:
                 lines.append(
-                    f"- Depth-{depth_type}".ljust(max_metric_length)
+                    f"- Depth ({key})".ljust(max_metric_length)
                     + " |"
                     + " |".join(
                         (
                             _count_to_str(
-                                res.pbc_depth[depth_type],
+                                res.pbc_depth[key],
                                 extra_compact=True,
                             )
-                            if res.pbc_depth is not None
+                            if res.pbc_depth is not None and key in res.pbc_depth
                             else " "
                         ).rjust(max_column_size)
                         for res in flat_resources.values()
@@ -970,11 +964,15 @@ class CircuitSpecs:
 
         all_gate_types: dict[str, None] = {}
         all_meas_types: dict[str, None] = {}
+        all_pbc_keys: dict[str, None] = {}
         for res in flat_resources.values():
             for gate in res.gate_types:
                 all_gate_types[gate] = None
             for meas in res.measurements:
                 all_meas_types[meas] = None
+            if res.pbc_depth is not None:
+                for key in res.pbc_depth:
+                    all_pbc_keys[key] = None
 
         def data_row(label, values):
             return f"| {label} | " + " | ".join(str(v) for v in values) + " |"
@@ -1016,20 +1014,20 @@ class CircuitSpecs:
                     ],
                 )
             )
-        if any(res.pbc_depth is not None for res in flat_resources.values()):
-            lines.append(data_row("**Depth (PBC)**", [""] * len(levels)))
-            for depth_type in (0, 1):
+        if all_pbc_keys:
+            lines.append(data_row("**Depths**", [""] * len(levels)))
+            for key in all_pbc_keys:
                 lines.append(
                     data_row(
-                        f"Depth-{depth_type}",
+                        f"Depth ({key})",
                         [
                             (
                                 _count_to_str(
-                                    res.pbc_depth[depth_type],
+                                    res.pbc_depth[key],
                                     extra_compact=True,
                                     markdown_safe=True,
                                 )
-                                if res.pbc_depth is not None
+                                if res.pbc_depth is not None and key in res.pbc_depth
                                 else " "
                             )
                             for res in flat_resources.values()

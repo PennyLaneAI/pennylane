@@ -124,9 +124,8 @@ def _mlir_resources_to_specs_resources(
     num_allocs = resources["num_qubits"]
 
     pbc_depth = None
-    if depths := resources.get("pbc_depth"):
-        if "depth_0" in depths and "depth_1" in depths:
-            pbc_depth = (depths["depth_0"], depths["depth_1"])
+    if depths := resources.get("depth"):
+        pbc_depth = dict(depths)
 
     if resources.get("auto_qubit_management", False):
         warnings.warn(
@@ -174,12 +173,10 @@ def _mlir_resources_to_specs_resources(
 
         if called_fn_resources.pbc_depth is not None:
             if pbc_depth is None:
-                pbc_depth = tuple(call_count * depth for depth in called_fn_resources.pbc_depth)
+                pbc_depth = {k: call_count * v for k, v in called_fn_resources.pbc_depth.items()}
             else:
-                pbc_depth = (
-                    pbc_depth[0] + call_count * called_fn_resources.pbc_depth[0],
-                    pbc_depth[1] + call_count * called_fn_resources.pbc_depth[1],
-                )
+                for k, v in called_fn_resources.pbc_depth.items():
+                    pbc_depth[k] = pbc_depth.get(k, 0) + call_count * v
 
     # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
