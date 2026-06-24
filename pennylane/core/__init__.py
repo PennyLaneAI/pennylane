@@ -49,7 +49,7 @@ Operator Types
 Measurements
 ~~~~~~~~~~~~
 
-..currentmodule:: pennylane.core.measurements
+.. currentmodule:: pennylane.core.measurements
 .. autosummary::
     :toctree: api
 
@@ -61,7 +61,7 @@ Measurements
 Shots
 ~~~~~
 
-..currentmodule:: pennylane.core.shots
+.. currentmodule:: pennylane.core.shots
 .. autosummary::
     :toctree: api
 
@@ -72,7 +72,7 @@ Shots
 Quantum Script
 ~~~~~~~~~~~~~~
 
-..currentmodule:: pennylane.core.qscript
+.. currentmodule:: pennylane.core.qscript
 .. autosummary::
     :toctree: api
 

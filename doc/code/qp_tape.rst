@@ -3,7 +3,8 @@ qp.tape
 
 .. currentmodule:: pennylane.tape
 
-Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane. They are queuing contexts that can record and process quantum operations and measurements.
+Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane.
+They are queuing contexts that can record and process quantum operations and measurements.
 
 In addition to being created internally by QNodes, quantum tapes can also be created,
 nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually.
@@ -70,8 +71,31 @@ used many times in the circuit, potentially reducing its memory footprint.
 Since users are familiar with the term ``QuantumTape``, that term should be used in documentation. For performance
 and a reduction in unintended side effects, ``QuantumScript`` is strictly used in PennyLane source code.
 
-.. automodapi:: pennylane.tape
-    :no-main-docstr:
-    :skip: QuantumTapeBatch, QuantumScriptBatch
-    :include-all-objects:
-    :inheritance-diagram:
+
+Quantum Script
+~~~~~~~~~~~~~~
+
+``QuantumScript`` itself now lives in the ``pennylane.core`` module.
+
+.. currentmodule:: pennylane.core.qscript
+
+.. autosummary::
+    :toctree: api
+
+    ~QuantumScript
+    ~QuantumScriptBatch
+    ~QuantumScriptOrBatch
+    ~make_qscript
+    ~process_queue
+
+Quantum tape
+~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.tape
+
+.. autosummary::
+    :toctree: api
+
+    ~QuantumTape
+    ~QuantumTapeBatch
+    ~OperationRecorder
