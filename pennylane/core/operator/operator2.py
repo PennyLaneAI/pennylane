@@ -1268,11 +1268,11 @@ def _init_wires(op: Operator2):
     # pylint: disable=protected-access
     all_algorithmic_wires = []
 
-    for wname, wsize in zip(self.wire_argnames, self.wire_sizes, strict=True):
-        if wname not in self.hybrid_argnames:
-            warg = self._bound_args.arguments[wname]
+    for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
+        if wname not in op.hybrid_argnames:
+            warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
-            self._bound_args.arguments[wname] = canonical_wires
+            op._bound_args.arguments[wname] = canonical_wires
 
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
@@ -1286,7 +1286,7 @@ def _init_wires(op: Operator2):
 
         # Pytree wires handling
         else:
-            leaves, _ = flatten(self._bound_args.arguments[wname], is_leaf=_is_wires)
+            leaves, _ = flatten(op._bound_args.arguments[wname], is_leaf=_is_wires)
             if not all(isinstance(l, (Wires, AbstractWires)) for l in leaves):
                 raise ValueError(
                     f"Hybrid wires argument '{wname}' is invalid. All leaf values must be "
@@ -1297,10 +1297,10 @@ def _init_wires(op: Operator2):
             if wname not in ("work_wires", "work_wire"):
                 all_algorithmic_wires.extend(leaves)
 
-    for hname in self.hybrid_argnames:
-        if hname in self.wire_argnames:
+    for hname in op.hybrid_argnames:
+        if hname in op.wire_argnames:
             continue
-        leaves, _ = flatten(self._bound_args.arguments[hname], is_leaf=_is_op)
+        leaves, _ = flatten(op._bound_args.arguments[hname], is_leaf=_is_op)
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
@@ -1308,9 +1308,9 @@ def _init_wires(op: Operator2):
     # 'all_algorithmic_wires' is either fully abstract or fully concrete
     if all_algorithmic_wires and isinstance(all_algorithmic_wires[0], AbstractWires):
         total_wires = sum(w.num_wires for w in all_algorithmic_wires)
-        self._wires = AbstractWires(total_wires)
+        op._wires = AbstractWires(total_wires)
     else:
-        self._wires = Wires.all_wires(all_algorithmic_wires)
+        op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
