@@ -1314,21 +1314,21 @@ def _init_arg_types(op: Operator2) -> None:
     if not op.arg_specs:
         return
 
-    for name, et in op.arg_specs.items():
+    for name, exp_type in op.arg_specs.items():
         argval = op.arguments[name]
-        if name in op.dynamic_argnames and not et.is_compatible_with(argval):
+        if name in op.dynamic_argnames and not exp_type.is_compatible_with(argval):
             raise ValueError(
-                f"Expected '{name}' to have shape {et.shape} and dtype '{et.dtype.name}', "
+                f"Expected '{name}' to have shape {exp_type.shape} and dtype '{exp_type.dtype.name}', "
                 f"but got {argval}."
             )
         if name in op.wire_argnames:  # pragma: no cover
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            assert et.num_wires in (
+            assert exp_type.num_wires in (
                 -1,
                 len(argval),
-            ), f"Expected '{name}' to have length {et.num_wires}, but got {argval}."
+            ), f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
 
 
 # -------------------------------------------------------------------------------
@@ -1383,23 +1383,26 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
         set((cls.arg_specs or {}).keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
         and len(set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)) == 0
     )
-    if cls.arg_specs:
-        for name, et in cls.arg_specs.items():
-            if name in cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames:
-                raise TypeError(
-                    f"{cls.__name__}.arg_specs can only contain dynamic and "
-                    f"non-hybrid arguments, but got {name}."
-                )
+    if not cls.arg_specs:
+        return
+        
+    non_dynamic_argnames = cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames
+    if names := set(cls.arg_specs.keys()) - set(non_dynamic_argnames):
+        raise TypeError(
+            f"{cls.__name__}.arg_specs can only contain dynamic and wire arguments, but got {names}."
+        )
 
-            canon_et = et
-            if isinstance(et, type) and issubclass(et, Number):
-                canon_et = AbstractArray((), et)
-                cls.arg_specs[name] = canon_et
+    for name, et in cls.arg_specs.items():
 
-            if name in cls.dynamic_argnames and not canon_et.shape_fixed:
-                cls.fixed_sig = False
-            elif name in cls.wire_argnames and canon_et.num_wires == -1:
-                cls.fixed_sig = False
+        canon_et = et
+        if isinstance(et, type) and issubclass(et, Number):
+            canon_et = AbstractArray((), et)
+            cls.arg_specs[name] = canon_et
+
+        if name in cls.dynamic_argnames and not canon_et.shape_fixed:
+            cls.fixed_sig = False
+        elif canon_et.num_wires == -1:
+            cls.fixed_sig = False
 
 
 def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
