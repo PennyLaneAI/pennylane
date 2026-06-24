@@ -24,7 +24,6 @@ This module contains templates, which are pre-coded routines that can be used in
     ~semi_signed_out_multiplier
     ~SumOfSlatersPrep2
     ~trotter_fragmented
-    ~trotter_vibronic
 """
 
 from .left_classical_comparator import LeftClassicalComparator

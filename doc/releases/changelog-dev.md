@@ -408,6 +408,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added an arithmetic function ``labs.templates.semi_signed_out_multiplier`` that multiplies 
+  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
+  This specific setup is useful for a vibronic dynamics workflow.
+  [(#9-__)](https://github.com/PennyLaneAI/pennylane/pull/9-__)
+
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
   to use unary iteration in the decomposition of the used `QROM` operation for the specified 
@@ -643,10 +648,6 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
-
-* Made :class:`~.AQFT`, :class:`~.Incrementer` and :class:`~.SignedOutMultiplier` backward-compatible
-  with the ``capture=False`` frontend for Catalyst.
-  [(#9-__)](https://github.com/PennyLaneAI/pennylane/pull/9-__)
 
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
