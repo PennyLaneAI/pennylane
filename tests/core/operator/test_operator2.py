@@ -767,6 +767,92 @@ class TestInitExpectedArgtypesValidation:
         ):
             Op(0.5, wires=[0])
 
+    def test_broadcasted_scalar_passes_validation(self):
+        """Test that broadcasted scalar parameters pass ``arg_specs`` validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (0,)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op([0.5, 0.6, 0.7], wires=0)
+        assert op.arguments["phi"] == [0.5, 0.6, 0.7]
+
+    def test_broadcasted_array_shape_validation(self):
+        """Test that broadcasted parameters validate the non-broadcasting dimensions
+        against ``arg_specs``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (1,)
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        _ = Op(np.ones((4, 2)), wires=0)
+
+    def test_broadcasted_array_wrong_shape_error(self):
+        """Test that an invalid broadcasted parameter shape raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (1,)
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.ones((4, 3)), wires=0)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.ones((4, 1, 2)), wires=0)
+
+    def test_broadcasted_array_wrong_dtype_error(self):
+        """Test that broadcasted parameters still enforce dtype compatibility."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (0,)
+            arg_specs = {
+                "phi": AbstractArray((), int),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.array([0.5, 0.6]), wires=0)
+
+    def test_broadcasted_inferred_ndim_from_arg_specs(self):
+        """Test broadcast validation when ``ndim_params`` is inferred from ``arg_specs``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((2, 3), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        _ = Op(np.ones((5, 2, 3)), wires=0)
+
 
 class TestProperties:
     """Tests for public properties of ``Operator2``."""

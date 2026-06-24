@@ -1316,11 +1316,6 @@ def _init_arg_types(op: Operator2) -> None:
 
     for name, exp_type in op.arg_specs.items():
         argval = op.arguments[name]
-        if name in op.dynamic_argnames and not exp_type.is_compatible_with(argval):
-            raise ValueError(
-                f"Expected '{name}' to have shape {exp_type.shape} and dtype '{exp_type.dtype.name}', "
-                f"but got {argval}."
-            )
         if name in op.wire_argnames:  # pragma: no cover
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
@@ -1329,6 +1324,31 @@ def _init_arg_types(op: Operator2) -> None:
                 -1,
                 len(argval),
             ), f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
+            continue
+
+        # Dynamic argument
+        if isinstance(argval, (Number, list, tuple)):
+            argval = np.array(argval)
+        # If the argument is batched, compare the shape other than that batch dimension
+        arg_shape = math.shape(argval)
+        is_broadcasted = exp_type.shape is not Ellipsis and len(arg_shape) > exp_type.ndim
+        unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
+
+        comparison_abstract_type = AbstractArray(
+            unbatched_shape, np.dtype(math.get_dtype_name(argval))
+        )
+        if not exp_type.is_compatible_with(comparison_abstract_type):
+            actual_dtype = math.get_dtype_name(argval)
+            if is_broadcasted:
+                raise ValueError(
+                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
+                    f"for the non-broadcasting diemnsions and dtype '{exp_type.dtype.name}', but "
+                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
+                )
+            raise ValueError(
+                f"Expected '{name}' to have shape {exp_type.shape} and dtype "
+                f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
+            )
 
 
 # -------------------------------------------------------------------------------
