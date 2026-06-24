@@ -1875,6 +1875,107 @@ class TestResourcePBCDepth:
 
         assert str(s) == expected
 
+    def test_circuit_specs_md(self, example_resource):
+        """Test the string representation of a CircuitSpecs instance with PBC depth."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={1: example_resource},
+        )
+
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 1 | l1 |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | ↓Metric / Level→ | 1 |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 3 |
+            | **Gate counts** |  |
+            | Hadamard | 1 |
+            | CNOT | 2 |
+            | **Measurements** |  |
+            | expval(PauliZ) | 1 |
+            | **Depths** |  |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
+
+            </details>
+        """)
+
+        assert s._repr_markdown_() == expected.strip()
+
+    def test_symbolic_pbc_depth_subs(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = SymbolicSpecsResources(
+            gate_types={"Hadamard": Expression({("x",): 2})},
+            gate_sizes={1: Expression({("x",): 2})},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            pbc_depth={"any_commuting_depth": Expression({("x",): 3})},
+        )
+
+        assert s.subs({"x": 2}) == SpecsResources(
+            gate_types={"Hadamard": 4},
+            gate_sizes={1: 4},
+            measurements={"expval(PauliZ)": 1},
+            num_allocs=2,
+            pbc_depth={"any_commuting_depth": 6},
+        )
+
+    def test_symbolic_pbc_depth_str(self):
+        """Test that symbolic PBC depth is correctly displayed in the string representation."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={1: "l1"},
+            resources={
+                1: SymbolicSpecsResources(
+                    gate_types={"Hadamard": Expression({("x",): 2})},
+                    gate_sizes={1: Expression({("x",): 2})},
+                    measurements={"expval(PauliZ)": 1},
+                    num_allocs=2,
+                    pbc_depth={"any_commuting_depth": Expression({("x",): 3})},
+                )
+            },
+        )
+
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 1: l1
+
+            ↓Metric        Level→ |   1
+            ---------------------------
+            Wire allocations      |   2
+            Total gates           | 2*x
+            Gate counts:          |
+            - Hadamard            | 2*x
+            Measurements:         |
+            - expval(PauliZ)      |   1
+            Depths:               |
+            - Any commuting depth | 3*x
+        """).strip()
+
+        assert str(s) == expected
+
 
 def test_count_to_str():
     """Test the _count_to_str helper function."""

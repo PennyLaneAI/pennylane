@@ -470,7 +470,7 @@ class SpecsResources:
             )
             lines.append(f"| **Depth** | {depth_str} |")
         else:
-            lines.append(f"| **Depths:** | |")
+            lines.append("| **Depths:** | |")
 
             for key, value in self.pbc_depth.items():
                 lines.append(
@@ -513,12 +513,6 @@ class SymbolicSpecsResources(SpecsResources):
                 "depth",
                 Expression(self.depth),
             )
-        if self.pbc_depth is not None:
-            object.__setattr__(
-                self,
-                "pbc_depth",
-                {k: Expression(v) for k, v in self.pbc_depth.items()},
-            )
         if isinstance(self.num_allocs, int):
             object.__setattr__(
                 self,
@@ -529,6 +523,8 @@ class SymbolicSpecsResources(SpecsResources):
         convert_int_vals_to_expression(self.gate_types)
         convert_int_vals_to_expression(self.gate_sizes)
         convert_int_vals_to_expression(self.measurements)
+        if self.pbc_depth is not None:
+            convert_int_vals_to_expression(self.pbc_depth)
 
         vars = set()
 
