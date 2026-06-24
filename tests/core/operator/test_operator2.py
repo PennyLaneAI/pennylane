@@ -24,8 +24,7 @@ from operator2_utils import DynOp, FullOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import StatePrepBase2
+from pennylane.core.operator import Operator2, StatePrepBase2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -45,6 +44,7 @@ from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 
+# pylint: disable=too-many-public-methods
 class TestInitSubclass:
     """Tests for the validation performed in ``Operator2.__init_subclass__``."""
 
@@ -236,12 +236,15 @@ class TestInitSubclass:
                     super().__init__(wires=wires)
 
     @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
-    def test_fixed_sig_incompatible_with_other_arg_groups(self, attr):
-        """Test that ``fixed_sig`` cannot be combined with hybrid, static, or compilable args."""
+    def test_arg_specs_incompatible_with_other_arg_groups(self, attr):
+        """Test that ``arg_specs`` cannot name hybrid, static, or compilable args."""
 
         attrs = {
             "dynamic_argnames": ("phi",),
-            "fixed_sig": (AbstractArray((), float), AbstractWires(1)),
+            "arg_specs": {
+                "phi": AbstractArray((), float),
+                "extra": AbstractArray((), float),
+            },
             attr: ("extra",),
             "__init__": lambda self, phi, extra, wires: Operator2.__init__(
                 self, phi, extra, wires=wires
@@ -250,56 +253,29 @@ class TestInitSubclass:
 
         with pytest.raises(
             TypeError,
-            match="'Op.fixed_sig' can only be defined if there are no hybrid, static, or compilable",
+            match=r"Op\.arg_specs can only contain dynamic and non-hybrid arguments",
         ):
             type("Op", (Operator2,), attrs)
 
-    @pytest.mark.parametrize(
-        "abstract_type",
-        [AbstractArray(..., float), AbstractArray((-1, 2), int), AbstractWires(-1)],
-    )
-    def test_fixed_sig_rejects_non_static_sizes(self, abstract_type):
-        """Test that ``fixed_sig`` entries must have fully static sizes."""
-
-        fixed_sig = (
-            (AbstractArray((), float), abstract_type)
-            if isinstance(abstract_type, AbstractWires)
-            else (abstract_type, AbstractWires(1))
-        )
-
-        with pytest.raises(
-            TypeError,
-            match="'Op.fixed_sig' can only specify types with static sizes",
-        ):
-            type(
-                "Op",
-                (Operator2,),
-                {
-                    "dynamic_argnames": ("phi",),
-                    "fixed_sig": fixed_sig,
-                    "__init__": lambda self, phi, wires: Operator2.__init__(self, phi, wires=wires),
-                },
-            )
-
-    def test_wire_sizes_derived_from_fixed_sig(self):
-        """Test that ``wire_sizes`` is inferred from ``fixed_sig`` when not declared."""
+    def test_wire_sizes_derived_from_arg_specs(self):
+        """Test that ``wire_sizes`` is inferred from ``arg_specs`` when not declared."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
-            fixed_sig = (
-                AbstractArray((), float),
-                AbstractWires(2),
-                AbstractWires(1),
-            )
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+                "ctrl_wires": AbstractWires(1),
+            }
 
             def __init__(self, phi, wires, ctrl_wires):
                 super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
 
         assert Op.wire_sizes == (2, 1)
 
-    def test_fixed_sig_wire_sizes_mismatch_error(self):
-        """Test that ``fixed_sig`` and ``wire_sizes`` must agree on wire counts."""
+    def test_arg_specs_wire_sizes_mismatch_error(self):
+        """Test that ``arg_specs`` and ``wire_sizes`` must agree on wire counts."""
 
         with pytest.raises(
             TypeError,
@@ -309,10 +285,175 @@ class TestInitSubclass:
             class Op(Operator2):
                 dynamic_argnames = ("phi",)
                 wire_sizes = (3,)
-                fixed_sig = (AbstractArray((), float), AbstractWires(2))
+                arg_specs = {
+                    "phi": AbstractArray((), float),
+                    "wires": AbstractWires(2),
+                }
 
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
+
+    def test_arg_specs_builtin_num_types_canonicalized(self):
+        """Test that builtin Python number types are canonicalized to ``AbstractArrays``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": float}
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires)
+
+        assert Op.arg_specs == {"phi": AbstractArray((), float)}
+
+    def test_fixed_sig_false_with_argnames_without_arg_specs(self):
+        """Test that ``fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
+        are any arguments."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.fixed_sig is False
+
+    def test_fixed_sig_true_without_argnames_without_arg_specs(self):
+        """Test that ``fixed_sig`` is ``True`` when ``arg_specs`` is not declared and there
+        are no arguments."""
+
+        class Op(Operator2):
+            wire_argnames = ()
+
+            def __init__(self):
+                # pylint: disable=useless-parent-delegation
+                super().__init__()
+
+        assert Op.fixed_sig is True
+
+    def test_fixed_sig_true_for_fully_specified_static_types(self):
+        """Test that ``fixed_sig`` is ``True`` when only dynamic and wire args are fully typed."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "theta": AbstractArray((2,), float),
+                "wires": AbstractWires(2),
+                "ctrl_wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, theta, wires, ctrl_wires):
+                super().__init__(phi, theta, wires=wires, ctrl_wires=ctrl_wires)
+
+        assert Op.fixed_sig is True
+
+    def test_fixed_sig_false_for_partial_arg_specs(self):
+        """Test that ``fixed_sig`` is ``False`` when ``arg_specs`` omits some arguments."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": AbstractArray((), float)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.fixed_sig is False
+
+    @pytest.mark.parametrize("phi_spec", [AbstractArray(..., float), AbstractArray((-1,), float)])
+    def test_fixed_sig_false_for_unknown_rank_or_axis(self, phi_spec):
+        """Test that ``fixed_sig`` is ``False`` for dynamic shapes that are not fully fixed."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": phi_spec, "wires": AbstractWires(1)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.fixed_sig is False
+
+    def test_fixed_sig_false_for_dynamic_wire_count(self):
+        """Test that ``fixed_sig`` is ``False`` when a wire arg has unknown length."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(-1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.fixed_sig is False
+
+    def test_fixed_sig_true_after_number_type_canonicalization(self):
+        """Test that canonicalized builtin number types still yield a fixed signature."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": float, "wires": AbstractWires(2)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.fixed_sig is True
+        assert Op.arg_specs["phi"].shape_fixed is True
+
+    @pytest.mark.parametrize(
+        "extra_argnames",
+        [
+            {"static_argnames": ("label",)},
+            {"hybrid_argnames": ("ops",)},
+            {"compilable_argnames": ("n",)},
+        ],
+    )
+    def test_fixed_sig_false_with_non_dynamic_wire_args(self, extra_argnames):
+        """Test that ``fixed_sig`` is ``False`` when hybrid, static, or compilable args exist."""
+
+        attrs = {
+            "dynamic_argnames": ("phi",),
+            "arg_specs": {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            },
+            **extra_argnames,
+        }
+
+        if "static_argnames" in extra_argnames:
+            attrs["__init__"] = lambda self, phi, label, wires: Operator2.__init__(
+                self, phi, label, wires=wires
+            )
+        elif "hybrid_argnames" in extra_argnames:
+            attrs["__init__"] = lambda self, phi, ops, wires: Operator2.__init__(
+                self, phi, ops, wires=wires
+            )
+        else:
+            attrs["__init__"] = lambda self, phi, n, wires: Operator2.__init__(
+                self, phi, n, wires=wires
+            )
+
+        Op = type("Op", (Operator2,), attrs)
+        assert Op.fixed_sig is False
+
+    def test_fixed_sig_false_with_hybrid_wire_arg(self):
+        """Test that a hybrid wire argument prevents a fixed signature."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "pytree_wires")
+            hybrid_argnames = ("pytree_wires",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, pytree_wires, wires):
+                super().__init__(phi, [Wires(w) for w in pytree_wires], wires=wires)
+
+        assert Op.fixed_sig is False
 
 
 class TestOperatorInit:
@@ -512,15 +653,18 @@ class TestOperatorInit:
         assert list(q.keys())[0].obj is op
 
 
-class TestInitFixedSigValidation:
-    """Tests for runtime ``fixed_sig`` argument validation."""
+class TestInitExpectedArgtypesValidation:
+    """Tests for runtime ``arg_specs`` argument validation."""
 
-    def test_valid_fixed_sig_accepts_matching_args(self):
+    def test_valid_arg_specs_accepts_matching_args(self):
         """Test that matching dynamic and wire arguments pass validation."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -533,8 +677,24 @@ class TestInitFixedSigValidation:
         assert op1.arguments["phi"] == np.array(0.5)
         assert op1.wires == Wires([0, 1])
 
-    def test_no_validation_without_fixed_sig(self):
-        """Test that operators without ``fixed_sig`` skip type validation."""
+    def test_numpy_scalar_passes_validation(self):
+        """Test that numpy scalar dynamic arguments pass ``arg_specs`` validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(np.array(0.5), wires=[0, 1])
+        assert op.arguments["phi"] == np.array(0.5)
+
+    def test_no_validation_without_arg_specs(self):
+        """Test that operators without ``arg_specs`` skip type validation."""
 
         op = DynOp(0.5, wires=[0, 1, 2])
         assert op.wires == Wires([0, 1, 2])
@@ -544,7 +704,10 @@ class TestInitFixedSigValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((2,), float), AbstractWires(1))
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -557,7 +720,10 @@ class TestInitFixedSigValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((), int), AbstractWires(1))
+            arg_specs = {
+                "phi": AbstractArray((), int),
+                "wires": AbstractWires(1),
+            }
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -568,11 +734,14 @@ class TestInitFixedSigValidation:
             Op(0.5, wires=0)
 
     def test_weak_type_allows_python_scalar(self):
-        """Test that ``fixed_sig`` weak types accept Python scalar inputs."""
+        """Test that ``arg_specs`` weak types accept Python scalar inputs."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -585,7 +754,10 @@ class TestInitFixedSigValidation:
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((), float), AbstractWires(2))
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
 
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
@@ -594,22 +766,6 @@ class TestInitFixedSigValidation:
             ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
         ):
             Op(0.5, wires=[0])
-
-    def test_validate_arg_types_wire_length_error(self):
-        """Test the ``fixed_sig`` wire-length branch of ``__validate_arg_types`` directly."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            fixed_sig = (AbstractArray((), float), AbstractWires(2))
-
-            def __init__(self, phi, wires):
-                super().__init__(phi, wires=wires)
-
-        op = Op(0.5, wires=[0, 1])
-        op.arguments["wires"] = Wires([0])
-
-        with pytest.raises(ValueError, match=r"Expected 'wires' to have length 2"):
-            op._Operator2__validate_arg_types()
 
 
 class TestProperties:
@@ -1025,7 +1181,7 @@ class TestDunderMethods:
         op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
         assert (
             repr(op)
-            == "DynOp(phi=AbstractArray((1, 2), 'float64', weak_type=True), wires=AbstractWires(1))"
+            == "DynOp(phi=AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
         )
 
     def test_repr_with_dynamic_args(self):
