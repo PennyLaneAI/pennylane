@@ -31,10 +31,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    pow_involutory,
-    qjit_compatible_self_adjoint,
-)
+from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -370,7 +367,7 @@ def _qubitsum_to_cnots(wires: WiresLike, **__):
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
-add_decomps("Adjoint(QubitSum)", qjit_compatible_self_adjoint)
+add_decomps("Adjoint(QubitSum)", self_adjoint)
 add_decomps("Pow(QubitSum)", pow_involutory)
 
 
