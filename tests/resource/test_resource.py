@@ -1800,7 +1800,7 @@ class TestResourcePBCDepth:
             gate_sizes={1: 1, 2: 2},
             measurements={"expval(PauliZ)": 1},
             num_allocs=2,
-            pbc_depth={"depth_0": 3, "depth_1": 6},
+            pbc_depth={"any_commuting_depth": 3, "qubit_disjoint_depth": 6},
         )
 
     def test_str_pbc_depth(self, example_resource):
@@ -1816,8 +1816,8 @@ class TestResourcePBCDepth:
             Measurements:
             - expval(PauliZ): 1
             Depths:
-            - Depth (depth_0): 3
-            - Depth (depth_1): 6
+            - Any commuting depth: 3
+            - Qubit disjoint depth: 6
         """)
 
         assert str(s) == expected.strip()
@@ -1834,8 +1834,9 @@ class TestResourcePBCDepth:
             | CNOT | 2 |
             | **Measurements:** | |
             | expval(PauliZ) | 1 |
-            | **Depth (depth_0)** | 3 |
-            | **Depth (depth_1)** | 6 |
+            | **Depths:** | |
+            | Any commuting depth | 3 |
+            | Qubit disjoint depth | 6 |
         """)
         actual = example_resource._repr_markdown_()
 
@@ -1858,18 +1859,18 @@ class TestResourcePBCDepth:
             Levels:
             - 1: l1
 
-            ↓Metric    Level→ |  1
-            ----------------------
-            Wire allocations  |  2
-            Total gates       |  3
-            Gate counts:      |
-            - Hadamard        |  1
-            - CNOT            |  2
-            Measurements:     |
-            - expval(PauliZ)  |  1
-            Depths:           |
-            - Depth (depth_0) |  3
-            - Depth (depth_1) |  6
+            ↓Metric         Level→ |  1
+            ---------------------------
+            Wire allocations       |  2
+            Total gates            |  3
+            Gate counts:           |
+            - Hadamard             |  1
+            - CNOT                 |  2
+            Measurements:          |
+            - expval(PauliZ)       |  1
+            Depths:                |
+            - Any commuting depth  |  3
+            - Qubit disjoint depth |  6
         """).strip()
 
         assert str(s) == expected

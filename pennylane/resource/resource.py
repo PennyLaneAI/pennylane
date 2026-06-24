@@ -422,7 +422,9 @@ class SpecsResources:
         else:
             lines.append(f"{prefix}Depths:")
             for key, value in self.pbc_depth.items():
-                lines.append(f"{prefix}- Depth ({key}): {_count_to_str(value)}")
+                lines.append(
+                    f"{prefix}- {key.replace('_', ' ').capitalize()}: {_count_to_str(value)}"
+                )
 
         return "\n".join(lines)
 
@@ -468,8 +470,12 @@ class SpecsResources:
             )
             lines.append(f"| **Depth** | {depth_str} |")
         else:
+            lines.append(f"| **Depths:** | |")
+
             for key, value in self.pbc_depth.items():
-                lines.append(f"| **Depth ({key})** | {_count_to_str(value, markdown_safe=True)} |")
+                lines.append(
+                    f"| {key.replace('_', ' ').capitalize()} | {_count_to_str(value, markdown_safe=True)} |"
+                )
         return "\n".join(lines)
 
 
@@ -834,7 +840,7 @@ class CircuitSpecs:
             if res.pbc_depth is not None:
                 for key, value in res.pbc_depth.items():
                     all_pbc_keys[key] = True
-                    max_metric_length = max(max_metric_length, len(key) + 10)
+                    max_metric_length = max(max_metric_length, len(key) + 2)
                     max_column_size = max(
                         max_column_size,
                         len(_count_to_str(value, extra_compact=True)) + 1,
@@ -910,7 +916,7 @@ class CircuitSpecs:
             lines.append("Depths:".ljust(max_metric_length) + " |")
             for key in all_pbc_keys:
                 lines.append(
-                    f"- Depth ({key})".ljust(max_metric_length)
+                    f"- {key.replace('_', ' ').capitalize()}".ljust(max_metric_length)
                     + " |"
                     + " |".join(
                         (
@@ -1019,7 +1025,7 @@ class CircuitSpecs:
             for key in all_pbc_keys:
                 lines.append(
                     data_row(
-                        f"Depth ({key})",
+                        f"{key.replace('_', ' ').capitalize()}",
                         [
                             (
                                 _count_to_str(
