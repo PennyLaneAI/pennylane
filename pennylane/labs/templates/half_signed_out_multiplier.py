@@ -33,6 +33,19 @@ def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     :func:`~.pennylane.labs.templates.trotter_vibronic` function. Note that due to the structure
     of the circuit, there is no benefit in knowing the output wires to start out in the zero state.
 
+    **Circuit implementation**
+
+    The specific setup allows for a simple realization of the multiplication: We cache the sign
+    bit of ``y_wires`` and compute the two's complement of ``y_wires`` controlled on this cached
+    sign bit. Then we flip the output wires controlled on the same sign bit and multiply ``x_wires``
+    and ``y_wires`` into the output wires with an unsigned multiplier. This adds the product
+    of :math:`x` and the magnitude of :math:`y`, :math:`x|y|` to the output wires if the sign
+    bit is deactivated, and it subtracts :math:`x|y|` from the output if the sign bit is
+    activated. That is, overall we always add :math:`xy` as desired.
+    After the multiplier, we flip the output wires back, again controlled on the cached sign bit,
+    and we uncompute the two's complement on ``y_wires``. Finally, we uncompute the cached sign
+    bit.
+
     **Number of work wires**
 
     In principle, we would only need one work wire for this function. However, in order to
