@@ -108,7 +108,7 @@ Getting started
 -----------------------
 
 Get up and running quickly with PennyLane by following our `interactive tutorials <https://pennylane.ai/codebook/pennylane-fundamentals>`__
-and `quickstart guide <https://docs.pennylane.ai/en/stable/introduction/pennylane.html>`__,
+and `quickstart guide <https://pennylane.ai/features>`__,
 designed to introduce key features and help you start building quantum circuits right away.
 
 Whether you're exploring quantum machine learning, quantum computing, or quantum chemistry, 
