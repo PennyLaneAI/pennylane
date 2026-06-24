@@ -220,24 +220,24 @@ class AbstractArray:
 
         For shapes, the following conditions must be met to be considered compatible:
 
-            * If the ``AbstractArray`` allows any rank, i.e., ``shape = ...``, then the
-              input value can have any shape.
-            * If the ``AbstractArray`` has size ``-1`` for any of the axes, the input
-              value can have any size **for those axes**, but must have the same size
-              as the ``AbstractArray`` for the rest of the axes.
-            * If the ``AbstractArray`` has a fixed shape, then the shape of the input
-              value must match exactly.
+        * If the ``AbstractArray`` allows any rank, i.e., ``shape = ...``, then the
+          input value can have any shape.
+        * If the ``AbstractArray`` has size ``-1`` for any of the axes, the input
+          value can have any size **for those axes**, but must have the same size
+          as the ``AbstractArray`` for the rest of the axes.
+        * If the ``AbstractArray`` has a fixed shape, then the shape of the input
+          value must match exactly.
 
         For dtypes, the following conditions must be met to be considered compatible:
 
-            * If the ``AbstractArray``'s dtype is weak, i.e., it was initialized with
-              a Python builtin number type (``int``, ``float``, etc.), then any dtypes
-              that can be safely cast to the ``AbstractArray``'s dtype are compatible.
-              For example, ``np.bool`` and ``np.int32`` can be safely cast to ``np.int64``,
-              but ``np.float32`` cannot be.
-            * If the ``AbstractArray``'s dtype is not weak, i.e., it was initialized with
-              a dtype with a specific precision, then the dtype of the input value must
-              match the dtype of the ``AbstractArray`` exactly.
+        * If the ``AbstractArray``'s dtype is weak, i.e., it was initialized with
+          a Python builtin number type (``int``, ``float``, etc.), then any dtypes
+          that can be safely cast to the ``AbstractArray``'s dtype are compatible.
+          For example, ``np.bool`` and ``np.int32`` can be safely cast to ``np.int64``,
+          but ``np.float32`` cannot be.
+        * If the ``AbstractArray``'s dtype is not weak, i.e., it was initialized with
+          a dtype with a specific precision, then the dtype of the input value must
+          match the dtype of the ``AbstractArray`` exactly.
 
         If all the above conditions are met, an input value will be considered compatible.
 
