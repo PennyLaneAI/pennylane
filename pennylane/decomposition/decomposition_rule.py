@@ -462,9 +462,10 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
-            _verify_is_abstract_and_fixed(op)
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
+                op = auto_wrap(op)
+                _verify_is_abstract_and_fixed(op)
+                gate_counter.update({op: count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
