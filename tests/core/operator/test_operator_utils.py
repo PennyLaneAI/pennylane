@@ -82,7 +82,7 @@ class TestAbstractify:
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
         are hybrid arguments."""
-        op = MixedHybridOp(1.5, ops=[DynOp(2.5, 0)], pytree_wires=[1, [2, 3, 4], [5]], wires=6)
+        op = MixedHybridOp(phi=1.5, ops=[DynOp(2.5, 0)], pytree_wires=[1, [2, 3, 4], [5]], wires=6)
         result = abstractify(op)
 
         assert isinstance(result, MixedHybridOp)
@@ -178,6 +178,39 @@ class TestAbstractify:
 
         with pytest.raises(NotImplementedError, match="Cannot abstractify"):
             _ = abstractify(input)
+
+    def test_arg_specs_integration(self):
+        """Tests how abstractify plays in with arg_specs validation."""
+
+        class AnotherOp2(Operator2):
+            dynamic_argnames = ("theta",)
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"theta": Float, "wires": Wire[1]}
+
+            def __init__(self, theta, wires):
+                super().__init__(theta, wires)
+
+        class CustomOp2(Operator2):
+            dynamic_argnames = ("params",)
+
+            wire_argnames = ("wires",)
+
+            hybrid_argnames = ("inner_op",)
+
+            arg_specs = {"params": Float[...], "wires": Wire[3]}
+
+            def __init__(self, params, wires, op):
+                super().__init__(params, wires, op)
+
+        inner_op = AnotherOp2(0.5, wires=3)
+        op = CustomOp2(params=[1, 2, 3], wires=[0, 1, 2], inner_op=inner_op)
+        abs_op = abstractify(op)
+
+        assert abs_op.params == Float[3]
+        assert abs_op.wires == Wire[4]  # 3 + 1
+        assert abs_op.inner_op == abstractify(inner_op)
 
 
 if __name__ == "__main__":
