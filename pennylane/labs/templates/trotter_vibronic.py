@@ -187,8 +187,6 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
     if term == "bilinear":
         k, ell = mode_ids
         mode_mult_wires = {
-            # "x_wires": f"mode {k}",
-            # "y_wires": f"mode {ell}",
             "output_wires": "cache",
             "work_wires": "work",
         }
@@ -217,7 +215,6 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         # The signed register for half_signed_out_multiplier must be the _second_ input
         reg = {
             "x_wires": "coefficients",
-            # "y_wires": f"mode {k}",
             "output_wires": "phase gradient",
             "work_wires": "work",
         }
@@ -269,6 +266,8 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
     all_quadratic = []
     all_bilinear = []
 
+    """
+    # dynamic loops
     for fragment in fragments[:-1]:
         _coeffs = [c * first_order_time_step for c in get_position_coefficients(fragment)]
         all_constant.append(_coeffs[0])
@@ -282,14 +281,22 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         all_quadratic = qp.math.array(all_quadratic, like="jax")
         all_bilinear = qp.math.array(all_bilinear, like="jax")
         diag_keys = qp.math.array(diag_keys, like="jax")
+    """
 
     def position_fragments(i):
+        fragment = fragments[i]
+        diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
+        """
+        # dynamic loops
         diag_key = diag_keys[i]
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
-        # qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
+        """
+        all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
+        const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
+        qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
 
         def constant_term(prev_bitstrings):
             def skip_fn():
@@ -385,7 +392,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         qp.QROM(prev_bitstrings, **qrom_wires)
-        # diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
+        diagonalize_vibronic(key=diag_key, wires=registers["electronic"])
 
     def kinetic_fragment(fragment, aqft_order):
         # use time, not first_order_time_step because the kinetic fragment is the
@@ -393,8 +400,11 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         # fragments with first_order_time_step duration.
         # todo: Replace BasisState + SignedMultiplier by a classical-quantum multiplier?
         kinetic_coeffs = get_momentum_coefficients(fragment) * time
+        """
+        # dynamic loops
         if qp.compiler.active() and not catalyst.compile_without_static_loops:
             kinetic_coeffs = qp.math.array(kinetic_coeffs, like="jax")
+        """
 
         @qp.for_loop(fragment.modes)
         def kinetic_terms(k):
