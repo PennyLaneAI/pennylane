@@ -275,7 +275,7 @@ class TestOperatorAbstractInputs:
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
 
-    def test_arg_spec_canonicalizes_only_dtype_not_shape(self):
+    def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
