@@ -1363,7 +1363,7 @@ def _init_arg_types(op: Operator2) -> None:
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
         # arg_specs' spec in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
-            op.arguments[name] = AbstractArray(unbatched_shape, exp_type.dtype)
+            op.arguments[name] = AbstractArray(arg_shape, exp_type.dtype)
 
 
 # -------------------------------------------------------------------------------
