@@ -35,7 +35,7 @@ from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.typing import Float, Wire
 
-# pylint: disable=protected-access,no-name-in-module
+# pylint: disable=protected-access,no-name-in-module,too-few-public-methods,useless-parent-delegation
 
 
 class CustomOp(Operation):  # pylint: disable=too-few-public-methods
