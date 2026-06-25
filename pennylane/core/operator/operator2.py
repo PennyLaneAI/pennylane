@@ -1339,7 +1339,7 @@ def _init_arg_types(op: Operator2) -> None:
         # If the argument is batched, compare the shape other than that batch dimension
         arg_shape = argval.shape if isinstance(argval, AbstractArray) else math.shape(argval)
         either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
-        is_broadcasted = (not either_is_ellipsis) and len(arg_shape) > exp_type.ndim
+        is_broadcasted = False if either_is_ellipsis else len(arg_shape) > exp_type.ndim
         unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
 
         argval_dtype = (

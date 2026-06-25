@@ -23,10 +23,6 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-pytestmark = [
-    pytest.mark.jax,
-]
-
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
     """Operator with a dynamic parameter and wires that performs canonicalization."""
