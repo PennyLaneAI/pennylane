@@ -427,9 +427,8 @@ class TestDecompositionRule:
     def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
-        class MissingFixedSigOp(
-            Operator2
-        ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
+        class MissingFixedSigOp(Operator2):
+
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -437,15 +436,11 @@ class TestDecompositionRule:
             def __init__(self, angles, eps, wires):
                 super().__init__(angles, eps, wires)
 
-        @register_resources(
-            {
-                MissingFixedSigOp: 1,
-            }
-        )
+        @register_resources({MissingFixedSigOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
+        with pytest.raises(TypeError, match="must set 'arg_specs'"):
             _ = custom_decomp.compute_resources()
 
     @pytest.mark.parametrize(
@@ -472,9 +467,8 @@ class TestDecompositionRule:
     def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
-        class FixedSigOp(
-            Operator2
-        ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
+        class FixedSigOp(Operator2):
+
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
