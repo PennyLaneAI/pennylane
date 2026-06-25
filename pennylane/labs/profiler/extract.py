@@ -48,7 +48,7 @@ def profile(
 
     In addition to the aggregated :class:`~.pennylane.estimator.resources_base.Resources`, this function returns the
     root :class:`~.ProfileNode` of a call graph that records how each high-level operator
-    decomposes into the target gate set. This tree can be exported with
+    decomposes into the target gate set. The :class:`~.ProfileNode` tree can be exported with
     :func:`~.export_flame_graph_data` to visualize where the cost of a circuit comes from.
 
     Args:
@@ -84,7 +84,7 @@ def profile(
 
     **Example**
 
-    ``profile`` can be used in just the same way as :func:`~.pennylane.labs.estimator_beta.estimate`:
+    The ``profile()`` function can be used in just the same way as :func:`~.pennylane.labs.estimator_beta.estimate`:
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> from pennylane.labs.profiler import profile

@@ -364,8 +364,7 @@ class ProfileNode:
 def export_flame_graph_data(
     root_node: ProfileNode, group_by: str = "name", cost_func: Callable | None = None
 ):
-    r"""Summarize the resource profile into four lists of data for each operator.
-    This format is used to render `icicle/flame-graphs <https://plotly.com/python/icicle-charts/>`_.
+    r"""Converts a resource profile into a data structure compatible with `icicle/flame-graphs <https://plotly.com/python/icicle-charts/>`_ rendering.
 
     The returned data is a tuple of four parallel lists, ``(ids, names, values, parents)``,
     matching the format expected by the `icicle/flame-graph <https://plotly.com/python/icicle-charts/>`_
