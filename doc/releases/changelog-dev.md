@@ -287,6 +287,7 @@
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+  [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -304,11 +305,11 @@
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray((4,), bool)
+  AbstractArray((4,), bool, weak_type=True)
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
   >>> qp.typing.Complex[-1, 2]
-  AbstractArray((-1, 2), complex128)
+  AbstractArray((-1, 2), complex128, weak_type=True)
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
@@ -689,7 +690,7 @@
 
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
-  
+
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
