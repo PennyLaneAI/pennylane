@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.queuing import AnnotatedQueue
-from pennylane.typing import AbstractArray, AbstractWires, Float, Int, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
@@ -274,6 +274,33 @@ class TestOperatorAbstractInputs:
 
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
+
+    def test_arg_spec_canonicalizes_abstract_inputs(self):
+        """Tests that abstract inputs are canonicalized when possible."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[2, 3], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Abstract inputs get canonicalized
+        # NOTE: Can safely upcast an int to a float.
+        op = MixedArgOp(Int[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+
+        # Abstract inputs that are not compatible raise an error
+        # NOTE: Cannot downcast complex to float
+        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+            _ = MixedArgOp(Complex[2, 3], Wire[3])
+
+        # Concrete inputs go through as normal
+        op = MixedArgOp(np.ones((2, 3), int), [0, 1, 2])
+        assert np.allclose(op.dynamic_arg, np.ones((2, 3), int))
 
     def test_valid_arg_spec_with_unknown_shape(self):
         """Tests that using ... in your arg_specs works as expected."""
