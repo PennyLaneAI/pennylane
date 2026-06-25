@@ -42,7 +42,8 @@ Fragments
 
     ~NumpyFragment
     ~NumpyState
-    ~sparse_fragments
+    ~SparseFragment
+    ~SparseState
     ~vibrational_fragments
     ~vibronic_fragments
 
@@ -81,7 +82,8 @@ from .abstract import TrotterState, Fragment
 from .fragments import (
     NumpyFragment,
     NumpyState,
-    sparse_fragments,
+    SparseFragment,
+    SparseState,
     vibrational_fragments,
     vibronic_fragments,
 )
@@ -106,7 +108,8 @@ __all__ = [
     "Fragment",
     "NumpyFragment",
     "NumpyState",
-    "sparse_fragments",
+    "SparseFragment",
+    "SparseState",
     "vibrational_fragments",
     "vibronic_fragments",
     "bch_expansion",

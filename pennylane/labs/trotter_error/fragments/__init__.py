@@ -13,15 +13,15 @@
 # limitations under the License.
 """Module containing functions to generate fragments for various Hamiltonians"""
 
-from .generic_fragments import NumpyFragment, NumpyState
-from .sparse_fragments import sparse_fragments
+from .generic_fragments import NumpyFragment, NumpyState, SparseFragment, SparseState
 from .vibrational_fragments import vibrational_fragments
 from .vibronic_fragments import vibronic_fragments
 
 __all__ = [
     "NumpyFragment",
     "NumpyState",
-    "sparse_fragments",
+    "SparseFragment",
+    "SparseState",
     "vibrational_fragments",
     "vibronic_fragments",
 ]

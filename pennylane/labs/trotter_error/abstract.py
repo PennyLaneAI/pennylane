@@ -68,9 +68,9 @@ class Fragment(ABC):
 
     @abstractmethod
     def apply(self, state: TrotterState) -> TrotterState:
-        """Apply the Fragment to a state on the right. The type of ``state`` is determined by each
-        class inheriting from ``Fragment``. Implementation of this function is mandatory for
-        :func:`~.pennylane.labs.trotter_error.perturbation_error`.
+        r"""For a fragment :math:`H` and state :math:`|\psi\rangle` return the state :math:`H|\psi\rangle`
+        The type of ``state`` is determined by the implementation of :math:`H` as a ``Fragment`` object. 
+        Implementation of this function is mandatory for :func:`~.pennylane.labs.trotter_error.perturbation_error`.
 
         Args:
             state (TrotterState): an object representing a quantum state
