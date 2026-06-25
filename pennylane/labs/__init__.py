@@ -27,6 +27,7 @@ Modules
 
     dla
     estimator_beta
+    pbc
     phox
     templates
     transforms
@@ -37,6 +38,7 @@ Modules
 from pennylane.labs import dla
 from pennylane.labs import estimator_beta
 from pennylane.labs import phox
+from pennylane.labs import pbc
 from pennylane.labs import templates
 from pennylane.labs import transforms
 from pennylane.labs import trotter_error
