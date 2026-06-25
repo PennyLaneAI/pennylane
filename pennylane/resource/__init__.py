@@ -151,3 +151,4 @@ from .resource import (
 )
 from .expression import Expression
 from .specs import specs
+from .estimate import estimate
