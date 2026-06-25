@@ -659,8 +659,6 @@ def _get_base_rep_if_applicable(op: CompressedResourceOp) -> CompressedResourceO
     if op.op_type in (qp.ops.Adjoint, qp.ops.Controlled):
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params)
-    if isinstance(op, (qp.ops.Adjoint2, qp.ops.ControlledOp2)):
-        return abstractify(op.base)
     return None
 
 

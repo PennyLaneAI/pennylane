@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -33,6 +33,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
+from pennylane.typing import Float, Wire
 
 # pylint: disable=protected-access,no-name-in-module
 
@@ -65,6 +66,32 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
     @property
     def resource_params(self):
         return {}
+
+
+class CustomOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    hybrid_argnames = ("op",)
+
+    arg_specs = {"params": Float[-1], "wires": Wire[-1]}
+
+    def __init__(self, params, wires, op):
+        super().__init__(params, wires, op)
+
+
+class AnotherOp2(Operator2):
+
+    dynamic_argnames = ("theta",)
+
+    wire_argnames = ("wires",)
+
+    arg_specs = {"theta": Float, "wires": Wire[1]}
+
+    def __init__(self, theta, wires):
+        super().__init__(theta, wires)
 
 
 @pytest.mark.unit
@@ -204,6 +231,48 @@ class TestDecompositionGraph:
         # 6 edges from ops to decompositions and 2 from decompositions to ops,
         # and 3 from the dummy starting node to the target gate set.
         assert len(graph2._graph.edges()) == 11
+
+    def test_operator2_integration(self, _):
+        """Tests constructing and solving a graph from an Operator2."""
+
+        def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
+            return {qp.CNOT: 2 * len(wires), AnotherOp2: 1, qp.RX: 2 * (len(wires) - 1)}
+
+        @qp.register_resources(_resource_fn)
+        def _custom_rule(params, wires, op):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        @qp.register_resources({qp.RX: 2, qp.CNOT: 2})
+        def _another_rule(theta, wires):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        def _another_resource_fn(num_wires):
+            return {CustomOp2(Float[num_wires], Wire[num_wires], op=AnotherOp2(Float, Wire[1])): 1}
+
+        @qp.register_resources(_another_resource_fn)
+        def _another_custom_rule(*args, **kwargs):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(CustomOp2, _custom_rule)
+            qp.add_decomps(AnotherOp2, _another_rule)
+            qp.add_decomps(MultiWireOp, _another_custom_rule)
+
+            op1 = CustomOp2([1, 2, 3], wires=[0, 1, 2], op=AnotherOp2(0.5, wires=3))
+            op2 = MultiWireOp([0, 1, 2, 3], wires=[0, 1, 2, 3])
+
+            graph = DecompositionGraph(operations=[op1, op2], gate_set={qp.RX, qp.CNOT})
+            solution = graph.solve()
+
+        assert solution.is_solved_for(op1)
+        assert solution.is_solved_for(op2)
+        assert solution.decomposition(op1) is _custom_rule
+        assert solution.decomposition(op2) is _another_custom_rule
+
+        op3 = AnotherOp2(0.5, wires=3)
+        assert solution.is_solved_for(op3)
+        assert solution.decomposition(op3) is _another_rule
 
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules which are not applicable are not skipped."""
