@@ -192,44 +192,45 @@ class TestOperatorAbstractInputs:
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(
-        "hybrid_wires, base_wires, expected_wires",
+        "hybrid_wires, base_wires, exp_num_wires",
         (
             (
                 {"reg1": Wires([0, 1]), "reg2": Wires([2, 3, 4])},
-                AbstractWires(1),
-                AbstractWires(6),  # 2 + 3 + 1
+                Wire[1],
+                6,  # 2 + 3 + 1
             ),
             (
                 {"areg1": AbstractWires(2), "areg2": AbstractWires(3)},
-                AbstractWires(1),
-                AbstractWires(6),  # 2 + 3 + 1
+                Wire[1],
+                6,  # 2 + 3 + 1
             ),
             (
                 Wires([0, 1]),
-                AbstractWires(3),
-                AbstractWires(5),  # 3 + 2
+                Wire[3],
+                5,  # 3 + 2
             ),
             (
                 qp.registers({"alice": 2, "bob": 4}),
-                AbstractWires(5),
-                AbstractWires(11),  # 5 + 2 + 4
+                Wire[5],
+                11,  # 5 + 2 + 4
             ),
         ),
     )
     def test_operator_correctly_calculates_total_abstract_wires(
-        self, hybrid_wires, base_wires, expected_wires
+        self, hybrid_wires, base_wires, exp_num_wires
     ):
         """Tests that the final op.wires is the sum of all abstract wires."""
 
         class WireTrackingOp(Operator2):  # pylint: disable=too-few-public-methods
             hybrid_argnames = ("hybrid_wires",)
-            wire_argnames = ("wires", "hybrid_wires")
+            wire_argnames = ("wires", "hybrid_wires", "work_wires")
 
-            def __init__(self, hybrid_wires, wires):
-                super().__init__(hybrid_wires, wires=wires)
+            def __init__(self, hybrid_wires, wires, work_wires):
+                super().__init__(hybrid_wires, wires=wires, work_wires=work_wires)
 
-        op = WireTrackingOp(hybrid_wires, base_wires)
-        assert op.wires == expected_wires
+        op = WireTrackingOp(hybrid_wires, base_wires, work_wires=5)
+        # NOTE: 'work_wires' are not included
+        assert op.wires == Wire[exp_num_wires]
 
     def test_abstract_operator_doesnt_queue(self):
         """Ensures that an abstract operator doesn't get queued."""
