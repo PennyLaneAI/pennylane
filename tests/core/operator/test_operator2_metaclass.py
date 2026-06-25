@@ -275,6 +275,24 @@ class TestOperatorAbstractInputs:
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
 
+    def test_arg_spec_canonicalizes_only_dtype_not_shape(self):
+        """Tests that only the dtype is promoted."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[...], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Abstract inputs get canonicalized
+        # NOTE: Can safely upcast an int to a float.
+        op = MixedArgOp(Int[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+
     def test_arg_spec_canonicalizes_abstract_inputs(self):
         """Tests that abstract inputs are canonicalized when possible."""
 
