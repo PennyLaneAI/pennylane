@@ -618,7 +618,7 @@ def _measurement_qrom_inner(controls, targets, bitstrings):
     Args:
         controls: interleaved [flag, sel, work, sel2, work2, ...]
         targets: target register wires
-        bitstrings: The set of k strings to be loaded into the subtree. They do not necessarily match the QROM input values.
+        bitstrings: The set of k strings to be loaded in the decomposition. They do not necessarily match the QROM input values.
 
     """
 
