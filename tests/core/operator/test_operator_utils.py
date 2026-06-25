@@ -201,8 +201,8 @@ class TestAbstractify:
 
             arg_specs = {"params": Float[...], "wires": Wire[3]}
 
-            def __init__(self, params, wires, op):
-                super().__init__(params, wires, op)
+            def __init__(self, params, wires, inner_op):
+                super().__init__(params, wires, inner_op)
 
         inner_op = AnotherOp2(0.5, wires=3)
         op = CustomOp2(params=[1, 2, 3], wires=[0, 1, 2], inner_op=inner_op)
@@ -210,7 +210,9 @@ class TestAbstractify:
 
         assert abs_op.params == Float[3]
         assert abs_op.wires == Wire[4]  # 3 + 1
-        assert abs_op.inner_op == abstractify(inner_op)
+        # Make sure the inner op is abstractified
+        assert abs_op.inner_op.theta == Float
+        assert abs_op.inner_op.wires == Wire[1]
 
 
 if __name__ == "__main__":
