@@ -758,7 +758,10 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
         num_target_wires = base_params["num_target_wires"]
-    L = num_bitstrings
+
+    # L = num_bitstrings
+    # TODO: allowing partial QROM will reduce this term
+    L = 2 ** ceil_log2(num_bitstrings)
 
     if L <= 1:
         return {resource_rep(BasisState, num_wires=num_target_wires): 1}
@@ -821,6 +824,14 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     L = len(data)
     n_input = len(control_wires)
 
+    # TODO: allowing partial qrom will remove this padding
+    # Pad data up to the next power of 2 with all-zero bitstrings
+    next_pow2 = 1 << (L - 1).bit_length()
+    if L < next_pow2:
+        width = len(data[0])
+        data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
+        L = next_pow2
+
     if L == 1:
         BasisState(data[0], target_wires)
         return
@@ -834,7 +845,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
         return
 
     # Load base bitstring
-    qp.BasisState(data[0], target_wires)
+    BasisState(data[0], target_wires)
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
     controls = [control_wires[0], control_wires[1]]
