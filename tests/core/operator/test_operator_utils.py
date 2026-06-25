@@ -21,7 +21,7 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=useless-parent-delegation
+# pylint: disable=useless-parent-delegation,too-few-public-methods
 
 
 class TestAbstractify:
