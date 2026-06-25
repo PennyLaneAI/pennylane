@@ -834,9 +834,7 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
         return
 
     # Load base bitstring
-    for i, wire in enumerate(target_wires):
-        if data[0][i] == 1:
-            X(wire)
+    qp.BasisState(data[0], target_wires)
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
     controls = [control_wires[0], control_wires[1]]
