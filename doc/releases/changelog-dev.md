@@ -2,6 +2,50 @@
 
 <h3>New features since last release</h3>
 
+* Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
+  using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
+
+  Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
+  want to prepare, the template is simple to call. Consider the following example:
+
+  ```python
+  import pennylane as qp
+  import numpy as np
+  qp.decomposition.enable_graph()
+
+  coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+  indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  ```
+
+  Let's prepare this state on a six-qubit register. For the :math:`L=10` indices, the template
+  will use a dense state preparation on :math:`R = \lceil\log_2(L)\rceil = 4` qubits, and
+  :math:`R-1=3` auxiliary qubits:
+
+  ```python
+  wires = list(range(6))
+  work_wires = list(range(6, 9))
+
+  dev = qp.device("lightning.qubit", wires=9)
+
+  @qp.qnode(dev)
+  def circuit():
+      qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+      return qp.state()
+
+  prepared_state = circuit()[::8] # Slice out three work wires
+  ```
+
+  We can check that the correct basis states are populated with the correct amplitudes:
+
+  ```pycon
+  >>> where = np.where(np.round(prepared_state, 3))[0]
+  >>> print(tuple(where)==indices)
+  True
+  >>> print(np.allclose(prepared_state[where], coefficients))
+  True
+
+  ```
+
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
@@ -222,7 +266,7 @@
   nr_wires = 1
   rho = np.zeros((3 ** nr_wires, 3 ** nr_wires), dtype=np.complex128)
   rho[2, 2] = 1  # initialize the pure state density matrix for the |2><2| state
-  
+
   dev = qp.device("default.qutrit.mixed", wires=1)
   @qp.qnode(dev)
   def circuit():
@@ -235,13 +279,13 @@
   array([[[0.+0.j, 0.+0.j, 0.+0.j],
           [0.+0.j, 0.+0.j, 0.+0.j],
           [0.+0.j, 0.+0.j, 1.+0.j]]])
-  
+
   ```
 
 <h3>Improvements 🛠</h3>
 
-* Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive 
-  abstract type notation.  
+* Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
+  abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
 
   ```python
@@ -255,21 +299,21 @@
   Wire[-1]        # Wire sequence with dynamic size
   ```
   For example, these abstract types can be used to do type-checking on concrete values:
-  
+
   ```pycon
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray(shape=(4,), dtype=dtype('bool'))
+  AbstractArray((4,), bool)
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
-  >>> qp.typing.Complex[..., 2]
-  AbstractArray(shape=(Ellipsis, 2), dtype=dtype('complex128'))
+  >>> qp.typing.Complex[-1, 2]
+  AbstractArray((-1, 2), complex128)
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
-  AbstractWires(num_wires=2)
-  
+  AbstractWires(2)
+
   ```
 
 * `qp.draw` now has improved drawing for dynamic wire allocation with `qp.allocate`.
@@ -285,17 +329,16 @@
   decomposition when using phase-gradient based decompositions of multiplexers.
   [(#9593)](https://github.com/PennyLaneAI/pennylane/pull/9593)
 
-* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` and :class:`~.QROM` with 
+* :func:`~pennylane.draw` now renders :class:`~.SelectPauliRot` and :class:`~.QROM` with
   multiplexer selector symbols on the control wires and a Pauli rotation and a "QROM" label,
   respectively, on the target wire(s).
   [(#9604)](https://github.com/PennyLaneAI/pennylane/pull/9604)
   [(#9692)](https://github.com/PennyLaneAI/pennylane/pull/9692)
 
-* `AbstractArray` has been added to
-  `pennylane.typing`, and `AbstractWires` has been added to `pennylane.wires`.
-  These will support a new method of having compressed operators for resource estimation
-  and decomposition.
+* `AbstractArray` and `AbstractWires` have been added to `pennylane.typing`. These will support
+  a new method of having compressed operators for resource estimation and decomposition.
   [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
+  [(#9712)](https://github.com/PennyLaneAI/pennylane/pull/9712)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
@@ -403,7 +446,7 @@
   contain dynamic wire allocations.
   [(#9629)](https://github.com/PennyLaneAI/pennylane/pull/9629)
 
-* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of 
+* The function `qp.math.partial_trace()` has been changed to include a `qudit_dim` keyword argument to allow for partial traces of
   any qudit density matrices with constant qudit dimension.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
@@ -414,7 +457,7 @@
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
-  to use unary iteration in the decomposition of the used `QROM` operation for the specified 
+  to use unary iteration in the decomposition of the used `QROM` operation for the specified
   number of control wires/angles.
   [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
 
@@ -424,7 +467,7 @@
   capture _disabled_ (`qp.capture.disable()`).
   [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
-* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp` 
+* Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp`
   decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
@@ -863,7 +906,7 @@
   contain dynamic wire allocation instructions.
   [(#9625)](https://github.com/PennyLaneAI/pennylane/pull/9625)
 
-* Fixed a bug where resource decompositions and parameters were not properly resolved for nested 
+* Fixed a bug where resource decompositions and parameters were not properly resolved for nested
   symbolic operators.
   [(#9619)](https://github.com/PennyLaneAI/pennylane/pull/9619)
 
