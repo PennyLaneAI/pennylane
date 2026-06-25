@@ -259,33 +259,71 @@ class TestAbstractArray:
 
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
-
         a = _AbstractTypeFactory(int)
 
         b = a[2, 3]
         assert isinstance(b, AbstractArray)
         assert b.dtype == np.int64
         assert b.shape == (2, 3)
+        assert b._weak_type is True
 
         c = a[2]
         assert isinstance(c, AbstractArray)
         assert c.shape == (2,)
         assert c.dtype == np.int64
+        assert c._weak_type is True
 
         d = a[...]
         assert isinstance(d, AbstractArray)
         assert d.shape == Ellipsis
         assert d.dtype == np.int64
+        assert d._weak_type is True
 
         e = a[5, -1, 2]
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, -1, 2)
         assert e.dtype == np.int64
+        assert e._weak_type is True
 
         f = a[-1]
         assert isinstance(f, AbstractArray)
         assert f.dtype == np.int64
         assert f.shape == (-1,)
+        assert f._weak_type is True
+
+    def test_strong_type_factory(self):
+        """Test that type factories work as expected when strong dtypes are used."""
+        a = _AbstractTypeFactory(np.int32)
+
+        b = a[2, 3]
+        assert isinstance(b, AbstractArray)
+        assert b.dtype == np.int32
+        assert b.shape == (2, 3)
+        assert b._weak_type is False
+
+        c = a[2]
+        assert isinstance(c, AbstractArray)
+        assert c.shape == (2,)
+        assert c.dtype == np.int32
+        assert c._weak_type is False
+
+        d = a[...]
+        assert isinstance(d, AbstractArray)
+        assert d.shape == Ellipsis
+        assert d.dtype == np.int32
+        assert d._weak_type is False
+
+        e = a[5, -1, 2]
+        assert isinstance(e, AbstractArray)
+        assert e.shape == (5, -1, 2)
+        assert e.dtype == np.int32
+        assert e._weak_type is False
+
+        f = a[-1]
+        assert isinstance(f, AbstractArray)
+        assert f.dtype == np.int32
+        assert f.shape == (-1,)
+        assert f._weak_type is False
 
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
@@ -434,6 +472,7 @@ class TestAbstractWires:
         a = AbstractWires(3)
         assert a.num_wires == 3
         assert len(a) == 3
+        assert a.shape_fixed is True
 
     def test_invalid_num_wires(self):
         """Test that an error is raised if the provided ``num_wires`` is not valid."""
@@ -477,6 +516,7 @@ class TestAbstractWires:
         a = AbstractWires(-1)
         assert a.num_wires == -1
         assert a.shape == (-1,)
+        assert a.shape_fixed is False
 
         with pytest.raises(TypeError, match="len\\(\\) is undefined for"):
             _ = len(a)
