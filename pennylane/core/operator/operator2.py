@@ -23,7 +23,7 @@ from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -56,6 +56,8 @@ if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
 
 has_jax = find_spec("jax") is not None
+
+ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -147,7 +149,7 @@ class Operator2(metaclass=OperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    arg_specs: ClassVar[dict[str, type]] = None
+    arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
     validation of an operators inputs during construction. Additionally, when defining
@@ -161,7 +163,7 @@ class Operator2(metaclass=OperatorMeta):
     _sig: ClassVar[Signature]
     """The signature of the operator. Internal use only."""
 
-    fixed_sig: ClassVar[bool]
+    has_fixed_sig: ClassVar[bool]
     """Whether the expected signature of an operator is fixed. If ``True``, then the operator's
     signature will always be fully known. When defining decomposition rules for an operator,
     operator types with fixed signatures can be placed in the rules' resources without needing
@@ -932,7 +934,7 @@ class Operator2(metaclass=OperatorMeta):
             # Hybrid wire arguments
             else:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
-                leaves = [w.tolist() for w in leaves]
+                leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 res = unflatten(leaves, tree)
 
             inputs.append(f"{key}={res}")
@@ -1322,21 +1324,41 @@ def _init_arg_types(op: Operator2) -> None:
     if not op.arg_specs:
         return
 
-    for name, et in op.arg_specs.items():
+    for name, exp_type in op.arg_specs.items():
         argval = op.arguments[name]
-        if name in op.dynamic_argnames and not et.is_compatible_with(argval):
-            raise ValueError(
-                f"Expected '{name}' to have shape {et.shape} and dtype '{et.dtype.name}', "
-                f"but got {argval}."
-            )
         if name in op.wire_argnames:  # pragma: no cover
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            assert et.num_wires in (
+            assert exp_type.num_wires in (
                 -1,
                 len(argval),
-            ), f"Expected '{name}' to have length {et.num_wires}, but got {argval}."
+            ), f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
+            continue
+
+        # Dynamic argument
+        if isinstance(argval, (Number, list, tuple)):
+            argval = np.array(argval)
+        # If the argument is batched, compare the shape other than that batch dimension
+        arg_shape = math.shape(argval)
+        is_broadcasted = exp_type.shape is not Ellipsis and len(arg_shape) > exp_type.ndim
+        unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
+
+        comparison_abstract_type = AbstractArray(
+            unbatched_shape, np.dtype(math.get_dtype_name(argval))
+        )
+        if not exp_type.is_compatible_with(comparison_abstract_type):
+            actual_dtype = math.get_dtype_name(argval)
+            if is_broadcasted:
+                raise ValueError(
+                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
+                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
+                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
+                )
+            raise ValueError(
+                f"Expected '{name}' to have shape {exp_type.shape} and dtype "
+                f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
+            )
 
 
 # -------------------------------------------------------------------------------
@@ -1387,49 +1409,42 @@ def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
 
 def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
     """Set up ``arg_specs`` for ``Operator2`` subclasses."""
-    cls.fixed_sig = (
-        set((cls.arg_specs or {}).keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
-        and len(set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)) == 0
+    arg_specs = cls.arg_specs or {}
+    disallowed_argnames = cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames
+
+    if names := (set(arg_specs.keys()) & set(disallowed_argnames)):
+        raise TypeError(
+            f"{cls.__name__}.arg_specs can only contain dynamic and wire arguments, but got {names}."
+        )
+
+    cls.has_fixed_sig = (
+        set(arg_specs.keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
+        and len(disallowed_argnames) == 0
     )
-    if cls.arg_specs:
-        for name, et in cls.arg_specs.items():
-            if name in cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames:
-                raise TypeError(
-                    f"{cls.__name__}.arg_specs can only contain dynamic and "
-                    f"non-hybrid arguments, but got {name}."
-                )
 
-            canon_et = et
-            if isinstance(et, type) and issubclass(et, Number):
-                canon_et = AbstractArray((), et)
-                cls.arg_specs[name] = canon_et
+    for name, exp_type in arg_specs.items():
+        canonical_exp_type = exp_type
+        if isinstance(exp_type, type) and issubclass(exp_type, Number):
+            canonical_exp_type = AbstractArray((), exp_type)
+            cls.arg_specs[name] = canonical_exp_type
 
-            if name in cls.dynamic_argnames and not canon_et.shape_fixed:
-                cls.fixed_sig = False
-            elif name in cls.wire_argnames and canon_et.num_wires == -1:
-                cls.fixed_sig = False
+        if not canonical_exp_type.shape_fixed:
+            cls.has_fixed_sig = False
 
 
 def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
     """Set up ``wire_sizes`` for ``Operator2`` subclasses."""
+    arg_specs = cls.arg_specs or {}
 
     if cls.wire_sizes is None:
-        if cls.arg_specs:
-            cls.wire_sizes = tuple(
-                (
-                    None
-                    if name not in cls.arg_specs
-                    else (
-                        None
-                        if cls.arg_specs[name].num_wires == -1
-                        else cls.arg_specs[name].num_wires
-                    )
-                )
-                for name in cls.wire_argnames
+        cls.wire_sizes = tuple(
+            (
+                None
+                if name not in arg_specs or arg_specs[name].num_wires == -1
+                else arg_specs[name].num_wires
             )
-        else:
-            cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
-
+            for name in cls.wire_argnames
+        )
         return
 
     if not isinstance(cls.wire_sizes, Sequence):
@@ -1455,7 +1470,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if cls.arg_specs and (et := cls.arg_specs.get(wname)) is not None:
+        if (et := arg_specs.get(wname, None)) is not None:
             nwires = et.num_wires
             if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
                 cname = cls.__name__
@@ -1630,11 +1645,12 @@ def _is_hash_leaf(l) -> bool:
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
 
-    if op_type.fixed_sig:
+    if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
     raise TypeError(
-        f"Operator type '{op_type.__name__}' must define a 'fixed_sig' to be abstractified."
+        f"'{op_type.__name__}' must set 'arg_specs' and cover all dynamic and wire "
+        "arguments with fixed abstract types to be abstractified."
     )
 
 

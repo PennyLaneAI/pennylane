@@ -225,7 +225,7 @@ class QuantumScript:
 
         The circuit is created with the assumptions that:
 
-        * The ``operations`` attribute contains quantum operations and
+        * The operations attribute contains quantum operations and
           mid-circuit measurements and
         * The ``measurements`` attribute contains terminal measurements.
 
