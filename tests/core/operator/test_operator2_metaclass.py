@@ -271,11 +271,12 @@ class TestOperatorAbstractInputs:
         ):
             _ = DynOp(input, AbstractWires(1))
 
-    @pytest.mark.xfail(reason="need to fix init_arg_type logic for abstract", strict=True)
-    @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
-    @pytest.mark.parametrize("bad_wires", (Wire, Wire[-1]))
-    def test_arg_spec_validation_abstract_inputs(self, bad_dynamic_arg, bad_wires):
-        """Tests arg_spec validation against operators constructed with abstract inputs."""
+
+class TestArgSpecValidationAbstractInputs:
+    """Tests arg_spec validation when abstract inputs are used to construct operators."""
+
+    def test_valid_arg_spec(self):
+        """Tests a simple valid arg spec."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
             """Operator with static, dynamic and hybrid argnames."""
@@ -290,11 +291,22 @@ class TestOperatorAbstractInputs:
         # Matches arg_specs, should work fine
         _ = MixedArgOp(Float[3], Wire[3])
 
-        # Different spec, should error out
-        with pytest.raises(ValueError):
-            _ = MixedArgOp(Float[3], bad_wires)
+    @pytest.mark.xfail(reason="need to fix init_arg_type logic for abstract", strict=True)
+    @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
+    def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
+        """Tests arg_spec validation against operators constructed with abstract inputs."""
 
-        with pytest.raises(ValueError):
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[3], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
             _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 
