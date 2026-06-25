@@ -585,7 +585,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     )
 
 
-def auto_wrap(op_type):
+def auto_wrap(op_type) -> AbstractOperatorLike:
     """Conveniently wrap an operator type in a resource representation."""
     if isinstance(op_type, CompressedResourceOp):
         return op_type

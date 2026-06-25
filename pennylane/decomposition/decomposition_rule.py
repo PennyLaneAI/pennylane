@@ -462,9 +462,9 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
+            op = auto_wrap(op)
+            _verify_is_abstract_and_fixed(op)
             if count > 0:
-                op = auto_wrap(op)
-                _verify_is_abstract_and_fixed(op)
                 gate_counter.update({op: count})
         return Resources(dict(gate_counter))
 
@@ -1120,10 +1120,8 @@ def null_decomp(*_, **__):
 def _is_abstract_and_fixed(val):
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
-    if isinstance(val, AbstractArray):
+    if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
-    if isinstance(val, AbstractWires):
-        return val.num_wires != -1
     leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
     return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 

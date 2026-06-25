@@ -32,8 +32,10 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 from pennylane.typing import Float, Int, Wire
 
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+
+class CustomOp(Operator):
     pass
 
 
