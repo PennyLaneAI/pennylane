@@ -23,7 +23,7 @@ from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -55,6 +55,8 @@ if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
 
 has_jax = find_spec("jax") is not None
+
+ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -146,7 +148,7 @@ class Operator2(metaclass=OperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    arg_specs: ClassVar[dict[str, type]] = None
+    arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
     validation of an operators inputs during construction. Additionally, when defining
@@ -1431,24 +1433,17 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
 
 def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
     """Set up ``wire_sizes`` for ``Operator2`` subclasses."""
+    arg_specs = cls.arg_specs or {}
 
     if cls.wire_sizes is None:
-        if cls.arg_specs:
-            cls.wire_sizes = tuple(
-                (
-                    None
-                    if name not in cls.arg_specs
-                    else (
-                        None
-                        if cls.arg_specs[name].num_wires == -1
-                        else cls.arg_specs[name].num_wires
-                    )
-                )
-                for name in cls.wire_argnames
+        cls.wire_sizes = tuple(
+            (
+                None
+                if name not in arg_specs or arg_specs[name].num_wires == -1
+                else arg_specs[name].num_wires
             )
-        else:
-            cls.wire_sizes = tuple(None for _ in cls.wire_argnames)
-
+            for name in cls.wire_argnames
+        )
         return
 
     if not isinstance(cls.wire_sizes, Sequence):
@@ -1474,7 +1469,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if cls.arg_specs and (et := cls.arg_specs.get(wname)) is not None:
+        if (et := arg_specs.get(wname, None)) is not None:
             nwires = et.num_wires
             if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
                 cname = cls.__name__
