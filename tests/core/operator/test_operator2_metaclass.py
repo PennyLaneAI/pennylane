@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.queuing import AnnotatedQueue
-from pennylane.typing import AbstractArray, AbstractWires, Float, Int, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
@@ -271,10 +271,72 @@ class TestOperatorAbstractInputs:
         ):
             _ = DynOp(input, AbstractWires(1))
 
-    @pytest.mark.xfail(reason="need to fix init_arg_type logic for abstract", strict=True)
+
+class TestArgSpecValidationAbstractInputs:
+    """Tests arg_spec validation when abstract inputs are used to construct operators."""
+
+    def test_arg_spec_canonicalizes_abstract_inputs(self):
+        """Tests that abstract inputs are canonicalized when possible."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[2, 3], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Abstract inputs get canonicalized
+        # NOTE: Can safely upcast an int to a float.
+        op = MixedArgOp(Int[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+
+        # Abstract inputs that are not compatible raise an error
+        # NOTE: Cannot downcast complex to float
+        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+            _ = MixedArgOp(Complex[2, 3], Wire[3])
+
+        # Concrete inputs go through as normal
+        op = MixedArgOp(np.ones((2, 3), int), [0, 1, 2])
+        assert np.allclose(op.dynamic_arg, np.ones((2, 3), int))
+
+    def test_valid_arg_spec_with_unknown_shape(self):
+        """Tests that using ... in your arg_specs works as expected."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[...], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Arg spec is defined as unknown shape, any of these are valid.
+        _ = MixedArgOp(Float[3], Wire[3])
+        _ = MixedArgOp(Float[2, 3], Wire[3])
+        _ = MixedArgOp(Float[...], Wire[3])
+
+    def test_valid_arg_spec_with_fixed_shape(self):
+        """Tests a simple valid arg spec."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[3], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        _ = MixedArgOp(Float[3], Wire[3])
+
     @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
-    @pytest.mark.parametrize("bad_wires", (Wire, Wire[-1]))
-    def test_arg_spec_validation_abstract_inputs(self, bad_dynamic_arg, bad_wires):
+    def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
         """Tests arg_spec validation against operators constructed with abstract inputs."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
@@ -287,14 +349,7 @@ class TestOperatorAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        # Matches arg_specs, should work fine
-        _ = MixedArgOp(Float[3], Wire[3])
-
-        # Different spec, should error out
-        with pytest.raises(ValueError):
-            _ = MixedArgOp(Float[3], bad_wires)
-
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
             _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 
