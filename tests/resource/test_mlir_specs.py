@@ -309,8 +309,11 @@ class TestAnalysisPassConversion:
 
     def test_extra_depth_info(self, example_loop_analysis_pass_result):
         """Test that the depth information is correctly extracted from the analysis pass result."""
-        example_loop_analysis_pass_result["circuit"]["depth"] = {
+        example_loop_analysis_pass_result["for_loop_2"]["depth"] = {
             "any_commuting_depth": 5,
+        }
+        example_loop_analysis_pass_result["for_loop_1"]["depth"] = {
+            "any_commuting_depth": 2,
             "qubit_disjoint_depth": 3,
         }
 
@@ -324,6 +327,6 @@ class TestAnalysisPassConversion:
                 gate_sizes={1: Expression({(var,): 2, (): 9})},
                 measurements={"expval(PauliZ)": 1},
                 num_allocs=10,
-                pbc_depth={"any_commuting_depth": 5, "qubit_disjoint_depth": 3},
+                pbc_depth={"any_commuting_depth": 22, "qubit_disjoint_depth": 18},
             ),
         ]

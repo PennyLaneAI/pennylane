@@ -104,8 +104,8 @@ def _mlir_resources_to_specs_resources(
             names in the output. (modified in-place by this function)
     """
     # pylint: disable=too-many-branches
-    # This method would not be benefit by being broken up further, the parsing logic just requires
-    # serveral branches
+    # This method would not benefit from being broken up further, the parsing logic just requires
+    # several branches
 
     if focus in fn_resources:
         return
