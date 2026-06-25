@@ -1339,14 +1339,16 @@ def _init_arg_types(op: Operator2) -> None:
             argval = np.array(argval)
         # If the argument is batched, compare the shape other than that batch dimension
         arg_shape = math.shape(argval)
-        is_broadcasted = exp_type.shape is not Ellipsis and len(arg_shape) > exp_type.ndim
+        either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
+        is_broadcasted = (not either_is_ellipsis) and len(arg_shape) > exp_type.ndim
         unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
 
-        comparison_abstract_type = AbstractArray(
-            unbatched_shape, np.dtype(math.get_dtype_name(argval))
+        argval_dtype = (
+            argval.dtype if isinstance(argval, AbstractArray) else math.get_dtype_name(argval)
         )
+        comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
         if not exp_type.is_compatible_with(comparison_abstract_type):
-            actual_dtype = math.get_dtype_name(argval)
+            actual_dtype = argval_dtype
             if is_broadcasted:
                 raise ValueError(
                     f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
