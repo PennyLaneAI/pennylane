@@ -28,7 +28,7 @@ from pennylane.wires import WiresLike
 
 class LabsPhaseAdder(
     ResourceOperator
-):  # PhaseAdd_in(k, N): Inplace Classical-Quantum Modular Adder in QFT basis
+):
     r"""Resource class for the PhaseAdder gate.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -206,7 +206,7 @@ class LabsPhaseAdder(
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Modular Adder
+class LabsAdder(ResourceOperator):
     r"""Resource class for the inplace quantum-classical modular Adder gate.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -223,7 +223,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.B of
-        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure two in the reference for a
+        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 2 in the reference for a
         circuit diagram.
 
     **Example**
@@ -301,7 +301,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
 
         Resources:
             The resources are based on the quantum Fourier transform method presented in section V.B of
-            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure two in the reference for a
+            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 2 in the reference for a
             circuit diagram.
 
         Returns:
@@ -404,7 +404,7 @@ class LabsAdder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Mo
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Modular Adder
+class LabsOutAdder(ResourceOperator):
     r"""Resource class for the out-of-place quantum-quantum modular Adder gate.
 
     This operator performs the modular addition of two integers :math:`x` and :math:`y` modulo
@@ -424,7 +424,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.E of
-        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure five in the reference for a
+        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 5 in the reference for a
         circuit diagram.
 
     **Example**
@@ -533,7 +533,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
         Resources:
             The resources are based on the quantum Fourier transform method presented in section V.E of
-            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure five in the reference for a
+            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 5 in the reference for a
             circuit diagram.
 
         Returns:
@@ -567,7 +567,7 @@ class LabsOutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantu
 
 class ClassicalOutMultiplier(
     ResourceOperator
-):  # Mult_out(k, N): Out-of-place Quantum-Classical Modular Multiplier
+):
     r"""Resource class for the out-of-place quantum-classical modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
@@ -586,7 +586,7 @@ class ClassicalOutMultiplier(
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.F of
-        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure six in the reference for a
+        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 6 in the reference for a
         circuit diagram.
 
     **Example**
@@ -686,7 +686,7 @@ class ClassicalOutMultiplier(
 
         Resources:
             The resources are based on the quantum Fourier transform method presented in section V.F of
-            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure six in the reference for a
+            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 6 in the reference for a
             circuit diagram.
 
         Returns:
@@ -726,7 +726,7 @@ class ClassicalOutMultiplier(
 
 class LabsMultiplier(
     ResourceOperator
-):  # Mult_in(k, N): Inplace Quantum-Classical Modular Multiplier
+):
     r"""Resource class for the inplace quantum-classical modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
@@ -873,7 +873,7 @@ class LabsMultiplier(
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentiation
+class LabsModExp(ResourceOperator):
     r"""Resource class for the out-of-place modular exponentiation operation.
 
     This operator performs the modular exponentiation of the integer :math:`base` to the power
@@ -892,7 +892,7 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in section V.J of
-        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure nine in the reference for a
+        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 9 in the reference for a
         circuit diagram.
 
     **Example**
@@ -992,7 +992,7 @@ class LabsModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Expone
 
         Resources:
             The resources are based on the quantum Fourier transform method presented in section V.J of
-            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See figure nine in the reference for a
+            `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. See Figure 9 in the reference for a
             circuit diagram.
 
         Returns:
