@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 class PUIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
-    given computational basis states :math:`\{|\ell\rangle\}_{\ell in L}` to the first consecutive
+    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to the first consecutive
     computational basis states :math:`\{|j\rangle\}_{0\leq j < |L|}`. The state preparation
     circuit will then prepare the amplitude :math:`c_\ell` on the computational basis state that
     :math:`|\ell\rangle` was mapped to, and then runs the isometry backwards to distribute the
@@ -51,6 +51,9 @@ class PUIsometryFinder:
         to map all states :math:`|\ell\rangle = |\ell_s\rangle \otimes |\ell_r\rangle` to some
         unique subspace state :math:`|f(\ell)\rangle = |f(\ell)\rangle \otimes |0\rangle`,
         where :math:`f` is a bijection.
+        The algorithm works because it successively maps the states to the desired subspace, and
+        does so exclusively with operations that leave the subspace itself untouched, so that all
+        states that have been handled remain static when handling the next ones.
         Throughout, we will switch between integers and their bit string representation as needed,
         for example in the split of :math:`\ell` into its first :math:`n_{\text{subspace}}` bits
         :math:`\ell_s` and the remaining substring :math:`\ell_r`.
