@@ -789,14 +789,36 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
     }
 
 
-def _qrom_measurement_condition(num_bitstrings=None, num_work_wires=None, base_params=None, **_):
-    """Condition: need at least ceil_log2(L)-1 work wires."""
+def _qrom_measurement_condition(
+    num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
+):
+    """Condition for the measurement-based QROM decomposition.
+
+    Requirements:
+    - At least ``ceil_log2(L) - 1`` work wires.
+    - The control register must be minimal, i.e. exactly ``ceil_log2(L)`` wires.
+      The recursion in ``_measurement_qrom_outer`` addresses the data assuming a
+      control register of width ``ceil_log2(L)``; any surplus high-order control
+      wires are not accounted for, which would produce an incorrect state (this is
+      how ``QROM(np.eye(b), subspace_wires, ...)`` is called inside
+      ``PartialUnaryStatePreparation``). When the register is wider than needed we
+      defer to the SWAP-network decomposition, which handles surplus controls.
+    """
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
+        num_control_wires = base_params["num_control_wires"]
         num_work_wires = base_params["num_work_wires"]
+    # The control register must be minimal, i.e. exactly ceil_log2(L) wires. The
+    # recursion addresses the data assuming this width; surplus high-order control
+    # wires are not accounted for and would yield a wrong state (this is how
+    # QROM(np.eye(b), subspace_wires, ...) is called inside
+    # PartialUnaryStatePreparation). When the register is wider than needed we defer
+    # to the SWAP-network decomposition, which handles surplus controls.
+    n_input = math.ceil_log2(num_bitstrings)
+    if num_control_wires is not None and num_control_wires != n_input:
+        return False
     if num_bitstrings <= 2:
         return True
-    n_input = max(1, math.ceil_log2(num_bitstrings))
     return num_work_wires >= n_input - 1
 
 
@@ -820,6 +842,11 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
         control_wires = base.hyperparameters["control_wires"]
         target_wires = base.hyperparameters["target_wires"]
         work_wires = base.hyperparameters["work_wires"]
+
+    # Bitstrings are manipulated with integer bitwise operations (np.bitwise_xor)
+    # below, but callers may pass float data (e.g. QROM(np.eye(b), ...)). Cast to
+    # int so the XOR-relative encoding works regardless of the input dtype.
+    data = np.asarray(data).astype(int)
 
     L = len(data)
     n_input = len(control_wires)
