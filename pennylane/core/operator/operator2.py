@@ -23,7 +23,7 @@ from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -45,7 +45,7 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import AbstractArray, FlatPytree, TensorLike
+from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
@@ -55,6 +55,8 @@ if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
 
 has_jax = find_spec("jax") is not None
+
+ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -146,7 +148,7 @@ class Operator2(metaclass=OperatorMeta):
     to be implemented, but, specifying it is optional if such validation is not needed.
     """
 
-    arg_specs: ClassVar[dict[str, type]] = None
+    arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
     validation of an operators inputs during construction. Additionally, when defining
