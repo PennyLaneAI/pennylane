@@ -90,8 +90,8 @@ class TestAbstractify:
         assert inner_op.phi == Float
         assert inner_op.wires == Wire[1]
 
-    def test_operator_subclass_with_arg_specs_fixed_sig(self):
-        """Tests that an operator subclass with fixed sig works correctly."""
+    def test_operator_subclass_with_complete_arg_specs(self):
+        """Tests that an operator subclass with a complete arg_specs correctly."""
 
         class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
@@ -110,8 +110,8 @@ class TestAbstractify:
         assert result.wires == Wire[3]  # 2 + 1
         assert result.ctrl_wires == Wire[1]
 
-    def test_operator_subclass_without_fixed_sig(self):
-        """Tests that an error is raised if an operator subclass is used without a defined fixed_sig."""
+    def test_operator_subclass_with_incomplete_arg_specs(self):
+        """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
 
         class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
