@@ -16,9 +16,10 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
@@ -90,7 +91,7 @@ class SignedOutMultiplier(Operator):
                 x_wires,
                 y_wires,
                 output_wires,
-                work_wires, 
+                work_wires,
                 output_wires_zeroed=True,
             )
             return qp.sample(wires=output_wires)
@@ -469,6 +470,10 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
+
+    if compiler.active() or capture.enabled():
+        input_reg = math.array(input_reg, like="jax")
+
     # Invert all bits
     @for_loop(len(input_reg))
     def invert(w):
@@ -477,15 +482,10 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
     invert()  # pylint: disable=no-value-for-parameter
 
-    if capture.enabled():
-        input = jnp.append(input_reg, work_wires)
-    else:
-        input = input_reg + work_wires
-
     # Add one
     Controlled(
         Incrementer(
-            wires=input,
+            wires=input_reg,
             work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=aux_wire,
