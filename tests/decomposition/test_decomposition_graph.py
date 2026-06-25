@@ -253,17 +253,19 @@ class TestDecompositionGraph:
         def _another_custom_rule(*args, **kwargs):  # pylint: disable=unused-argument
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
+        op1 = CustomOp2([1, 2, 3], wires=[0, 1, 2], op=AnotherOp2(0.5, wires=3))
+        op2 = MultiWireOp([0, 1, 2, 3], wires=[0, 1, 2, 3])
 
-            qp.add_decomps(CustomOp2, _custom_rule)
-            qp.add_decomps(AnotherOp2, _another_rule)
-            qp.add_decomps(MultiWireOp, _another_custom_rule)
-
-            op1 = CustomOp2([1, 2, 3], wires=[0, 1, 2], op=AnotherOp2(0.5, wires=3))
-            op2 = MultiWireOp([0, 1, 2, 3], wires=[0, 1, 2, 3])
-
-            graph = DecompositionGraph(operations=[op1, op2], gate_set={qp.RX, qp.CNOT})
-            solution = graph.solve()
+        graph = DecompositionGraph(
+            operations=[op1, op2],
+            gate_set={qp.RX, qp.CNOT},
+            alt_decomps={
+                CustomOp2: [_custom_rule],
+                AnotherOp2: [_another_rule],
+                MultiWireOp: [_another_custom_rule],
+            },
+        )
+        solution = graph.solve()
 
         assert solution.is_solved_for(op1)
         assert solution.is_solved_for(op2)
