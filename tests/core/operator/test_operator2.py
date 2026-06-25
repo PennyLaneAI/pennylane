@@ -767,6 +767,73 @@ class TestInitExpectedArgtypesValidation:
         ):
             Op(0.5, wires=[0])
 
+
+class TestProperties:
+    """Tests for public properties of ``Operator2``."""
+
+    def test_arguments(self):
+        """Test that ``arguments`` maps all arguments to their values."""
+        op = FullOp(0.5, "info", [], wires=0)
+        assert op.arguments == {
+            "phi": 0.5,
+            "static": "info",
+            "hybrid": [],
+            "wires": Wires([0]),
+        }
+
+    def test_dynamic_args(self):
+        """Test that ``dynamic_args`` is set correctly."""
+        op = FullOp(0.5, "info", [], wires=0)
+        assert op.dynamic_args == {"phi": 0.5}
+
+    def test_static_args(self):
+        """Test that ``static_args`` is set correctly."""
+        op = FullOp(0.5, "info", [], wires=0)
+        assert op.static_args == {"static": "info"}
+
+    def test_wire_args(self):
+        """Test that ``wire_args`` is set correctly."""
+        op = FullOp(0.5, "info", [], wires=0)
+        assert op.wire_args == {"wires": Wires([0])}
+
+    def test_hybrid_args(self):
+        """Test that ``hybrid_args`` is set correctly."""
+        op = FullOp(0.5, "info", [], wires=0)
+        assert op.hybrid_args == {"hybrid": []}
+
+    def test_compilable_args(self):
+        """Test that ``compilable_args`` is set correctly."""
+
+        class Op(Operator2):
+            compilable_argnames = ("pw",)
+
+            def __init__(self, pw, wires):
+                super().__init__(pw, wires=wires)
+
+        op = Op("XY", wires=[0, 1])
+        assert op.compilable_args == {"pw": "XY"}
+
+    def test_name(self):
+        """Test that ``name`` is the same as the class name."""
+        op = DynOp(0.5, wires=0)
+        assert op.name == op.__class__.__name__
+
+    def test_wires(self):
+        """Test ``wires`` is set correctly."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires1", "wires")
+
+            def __init__(self, wires, wires1):
+                super().__init__(Wires(wires), Wires(wires1))
+
+        op = Op([0, 1], [2, 3, 4])
+        assert op.wires == Wires([2, 3, 4, 0, 1])
+
+
+class TestBroadcasting:
+    """Tests for parameter broadcasting."""
+
     def test_broadcasted_scalar_passes_validation(self):
         """Test that broadcasted scalar parameters pass ``arg_specs`` validation."""
 
@@ -852,73 +919,6 @@ class TestInitExpectedArgtypesValidation:
                 super().__init__(phi, wires=wires)
 
         _ = Op(np.ones((5, 2, 3)), wires=0)
-
-
-class TestProperties:
-    """Tests for public properties of ``Operator2``."""
-
-    def test_arguments(self):
-        """Test that ``arguments`` maps all arguments to their values."""
-        op = FullOp(0.5, "info", [], wires=0)
-        assert op.arguments == {
-            "phi": 0.5,
-            "static": "info",
-            "hybrid": [],
-            "wires": Wires([0]),
-        }
-
-    def test_dynamic_args(self):
-        """Test that ``dynamic_args`` is set correctly."""
-        op = FullOp(0.5, "info", [], wires=0)
-        assert op.dynamic_args == {"phi": 0.5}
-
-    def test_static_args(self):
-        """Test that ``static_args`` is set correctly."""
-        op = FullOp(0.5, "info", [], wires=0)
-        assert op.static_args == {"static": "info"}
-
-    def test_wire_args(self):
-        """Test that ``wire_args`` is set correctly."""
-        op = FullOp(0.5, "info", [], wires=0)
-        assert op.wire_args == {"wires": Wires([0])}
-
-    def test_hybrid_args(self):
-        """Test that ``hybrid_args`` is set correctly."""
-        op = FullOp(0.5, "info", [], wires=0)
-        assert op.hybrid_args == {"hybrid": []}
-
-    def test_compilable_args(self):
-        """Test that ``compilable_args`` is set correctly."""
-
-        class Op(Operator2):
-            compilable_argnames = ("pw",)
-
-            def __init__(self, pw, wires):
-                super().__init__(pw, wires=wires)
-
-        op = Op("XY", wires=[0, 1])
-        assert op.compilable_args == {"pw": "XY"}
-
-    def test_name(self):
-        """Test that ``name`` is the same as the class name."""
-        op = DynOp(0.5, wires=0)
-        assert op.name == op.__class__.__name__
-
-    def test_wires(self):
-        """Test ``wires`` is set correctly."""
-
-        class Op(Operator2):
-            wire_argnames = ("wires1", "wires")
-
-            def __init__(self, wires, wires1):
-                super().__init__(Wires(wires), Wires(wires1))
-
-        op = Op([0, 1], [2, 3, 4])
-        assert op.wires == Wires([2, 3, 4, 0, 1])
-
-
-class TestBroadcasting:
-    """Tests for parameter broadcasting."""
 
     @pytest.mark.parametrize("data, exp_batch_size", [(1.1, None), ([1.1, 2.2], 2)])
     def test_batch_size(self, data, exp_batch_size):
