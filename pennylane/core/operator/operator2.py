@@ -1655,9 +1655,20 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @abstractify.register(Operator2)
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    leaves, tree = flatten(op, is_leaf=_is_wires)
-    abstract_leaves = tuple(abstractify(l) for l in leaves)
-    return unflatten(abstract_leaves, tree)
+    op_cls = type(op)
+    new_args = {}
+    for name, val in op.arguments.items():
+        if name in op_cls.dynamic_argnames:
+            new_args[name] = abstractify(math.asarray(val))
+        # NOTE: Check hybrid first as hybrid args can
+        # appear in both hybrid and wires args; these arguments
+        # must be treated as hybrid.
+        elif name in op_cls.hybrid_argnames:
+            new_args[name] = abstractify(val)
+        else:
+            new_args[name] = abstractify(Wires(val))
+
+    return op_cls(**new_args)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):

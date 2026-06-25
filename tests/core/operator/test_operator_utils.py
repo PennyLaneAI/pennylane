@@ -73,7 +73,7 @@ class TestAbstractify:
         assert result.phi == Float
         assert result.wires == Wire[2]
 
-        op = DynOp([1, 2, 3], wires=[0, 1])
+        op = DynOp([1.0, 2.0, 3.0], wires=[0, 1])
         result = abstractify(op)
         assert isinstance(result, DynOp)
         assert result.phi == Float[3]
