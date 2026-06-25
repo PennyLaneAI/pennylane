@@ -275,7 +275,25 @@ class TestOperatorAbstractInputs:
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
 
-    def test_valid_arg_spec(self):
+    def test_valid_arg_spec_with_unknown_shape(self):
+        """Tests that using ... in your arg_specs works as expected."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[...], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Arg spec is defined as unknown shape, any of these are valid.
+        _ = MixedArgOp(Float[3], Wire[3])
+        _ = MixedArgOp(Float[2, 3], Wire[3])
+        _ = MixedArgOp(Float[...], Wire[3])
+
+    def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
 
         class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
@@ -288,10 +306,8 @@ class TestArgSpecValidationAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        # Matches arg_specs, should work fine
         _ = MixedArgOp(Float[3], Wire[3])
 
-    @pytest.mark.xfail(reason="need to fix init_arg_type logic for abstract", strict=True)
     @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
         """Tests arg_spec validation against operators constructed with abstract inputs."""

@@ -290,6 +290,8 @@ class AbstractArray:
         return self._shape_matches(shape)
 
     def _shape_matches(self, shape) -> bool:
+        if shape is Ellipsis:
+            return False
         if len(shape) != len(self.shape):
             return False
         return all(s2 in (s1, -1) for s1, s2 in zip(shape, self.shape, strict=True))
