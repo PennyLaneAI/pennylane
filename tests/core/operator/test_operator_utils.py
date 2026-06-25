@@ -21,7 +21,7 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=useless-parent-delegation
+# pylint: disable=useless-parent-delegation, too-few-public-methods
 
 
 class TestAbstractify:
@@ -101,7 +101,7 @@ class TestAbstractify:
     def test_operator_subclass_with_complete_arg_specs(self):
         """Tests that an operator subclass with a complete arg_specs correctly."""
 
-        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {
@@ -121,7 +121,7 @@ class TestAbstractify:
     def test_operator_subclass_with_incomplete_arg_specs(self):
         """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
 
-        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
 
