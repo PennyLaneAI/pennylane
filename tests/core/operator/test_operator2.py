@@ -2311,6 +2311,8 @@ class TestGraphDecomposition:
 
 
 class TestStatePrepBase:
+    """Unit tests for 'StatePrepBase2"""
+
     def test_state_prep_base_label(self):
         """Tests that the label is as expected."""
 
