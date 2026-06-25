@@ -26,9 +26,7 @@ from pennylane.wires import WiresLike
 # pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
 
 
-class LabsPhaseAdder(
-    ResourceOperator
-):
+class LabsPhaseAdder(ResourceOperator):
     r"""Resource class for the PhaseAdder gate.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -565,9 +563,7 @@ class LabsOutAdder(ResourceOperator):
         ]
 
 
-class ClassicalOutMultiplier(
-    ResourceOperator
-):
+class ClassicalOutMultiplier(ResourceOperator):
     r"""Resource class for the out-of-place quantum-classical modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
@@ -724,9 +720,7 @@ class ClassicalOutMultiplier(
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class LabsMultiplier(
-    ResourceOperator
-):
+class LabsMultiplier(ResourceOperator):
     r"""Resource class for the inplace quantum-classical modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
