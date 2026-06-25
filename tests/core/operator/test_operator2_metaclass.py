@@ -334,9 +334,12 @@ class TestArgSpecValidationAbstractInputs:
                 super().__init__(dynamic_arg, wires=wires)
 
         # Arg spec is defined as unknown shape, any of these are valid.
-        _ = MixedArgOp(Float[3], Wire[3])
-        _ = MixedArgOp(Float[2, 3], Wire[3])
-        _ = MixedArgOp(Float[...], Wire[3])
+        op = MixedArgOp(Float[3], Wire[3])
+        assert op.dynamic_arg == Float[3]
+        op = MixedArgOp(Float[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+        op = MixedArgOp(Float[...], Wire[3])
+        assert op.dynamic_arg == Float[...]
 
     def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
@@ -351,7 +354,8 @@ class TestArgSpecValidationAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        _ = MixedArgOp(Float[3], Wire[3])
+        op = MixedArgOp(Float[3], Wire[3])
+        assert op.dynamic_arg == Float[3]
 
     @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
