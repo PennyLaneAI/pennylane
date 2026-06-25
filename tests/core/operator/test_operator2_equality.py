@@ -433,6 +433,7 @@ class TestAbstractOperatorEquality:
         [
             (AbstractWires(1), AbstractWires(1), True),
             (AbstractWires(1), AbstractWires(2), False),
+            (AbstractWires(-1), AbstractWires(2), False),
         ],
     )
     def test_abstract_wires(self, wires1, wires2, are_equal):
@@ -472,6 +473,24 @@ class TestAbstractOperatorEquality:
         assert qp.equal(op1, op2)
         assert not qp.equal(op1, op3)
         assert not qp.equal(op1, op4)
+
+    @pytest.mark.parametrize(
+        "shape1, shape2, are_equal",
+        [
+            ((2, -1), (2, -1), True),  # Identical dynamic shapes
+            ((2, -1), (2, 3), False),  # Dynamic vs static shape
+            ((-1, 4), (2, 4), False),  # Dynamic vs static shape (leading dim)
+            ((-1, -1), (-1,), False),  # Different ranks with dynamic dims
+            (..., ..., True),  # Identical unconstrained ranks
+        ],
+    )
+    def test_abstract_arrays_symbolic_shapes(self, shape1, shape2, are_equal):
+        """Test equality when abstract arrays are defined with dynamic (-1) or unconstrained (...) shapes."""
+
+        op1 = DynOp(AbstractArray(shape1, float), 0)
+        op2 = DynOp(AbstractArray(shape2, float), 0)
+
+        assert qp.equal(op1, op2) is are_equal
 
 
 def _jit_eq_fn(phi, wires, assert_=False):
