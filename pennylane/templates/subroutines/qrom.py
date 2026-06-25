@@ -759,9 +759,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         num_bitstrings = base_params["num_bitstrings"]
         num_target_wires = base_params["num_target_wires"]
 
-    # L = num_bitstrings
+    L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
-    L = 2 ** ceil_log2(num_bitstrings)
+    # L = 2 ** ceil_log2(num_bitstrings)
 
     if L <= 1:
         return {resource_rep(BasisState, num_wires=num_target_wires): 1}
@@ -792,31 +792,12 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 def _qrom_measurement_condition(
     num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
 ):
-    """Condition for the measurement-based QROM decomposition.
 
-    Requirements:
-    - At least ``ceil_log2(L) - 1`` work wires.
-    - The control register must be minimal, i.e. exactly ``ceil_log2(L)`` wires.
-      The recursion in ``_measurement_qrom_outer`` addresses the data assuming a
-      control register of width ``ceil_log2(L)``; any surplus high-order control
-      wires are not accounted for, which would produce an incorrect state (this is
-      how ``QROM(np.eye(b), subspace_wires, ...)`` is called inside
-      ``PartialUnaryStatePreparation``). When the register is wider than needed we
-      defer to the SWAP-network decomposition, which handles surplus controls.
-    """
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
-        num_control_wires = base_params["num_control_wires"]
         num_work_wires = base_params["num_work_wires"]
-    # The control register must be minimal, i.e. exactly ceil_log2(L) wires. The
-    # recursion addresses the data assuming this width; surplus high-order control
-    # wires are not accounted for and would yield a wrong state (this is how
-    # QROM(np.eye(b), subspace_wires, ...) is called inside
-    # PartialUnaryStatePreparation). When the register is wider than needed we defer
-    # to the SWAP-network decomposition, which handles surplus controls.
-    n_input = math.ceil_log2(num_bitstrings)
-    if num_control_wires is not None and num_control_wires != n_input:
-        return False
+
+    n_input = max(1, math.ceil_log2(num_bitstrings))
     if num_bitstrings <= 2:
         return True
     return num_work_wires >= n_input - 1
@@ -853,11 +834,11 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
 
     # TODO: allowing partial qrom will remove this padding
     # Pad data up to the next power of 2 with all-zero bitstrings
-    next_pow2 = 1 << (L - 1).bit_length()
-    if L < next_pow2:
-        width = len(data[0])
-        data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
-        L = next_pow2
+    # next_pow2 = 1 << (L - 1).bit_length()
+    # if L < next_pow2:
+    #    width = len(data[0])
+    #    data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
+    #    L = next_pow2
 
     if L == 1:
         BasisState(data[0], target_wires)

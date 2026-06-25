@@ -625,13 +625,15 @@ class TestMeasurementQROM:
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
     @pytest.mark.external
-    @pytest.mark.parametrize("L", [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
+    @pytest.mark.parametrize("L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16])
     def test_no_phases_error(self, L):
         """Test that QROM introduces no relative phases on the control register."""
         rng = np.random.default_rng(42 + L)
         n_target = 3
-        n_input = math.ceil(math.log2(L))
-        n_work = n_input - 1
+
+        # Aseguramos que existan al menos 1 wire de control y 1 de trabajo para L=1 y L=2
+        n_input = max(1, math.ceil(math.log2(L)))
+        n_work = max(1, n_input - 1)
 
         bitstrings = rng.integers(0, 2, size=(L, n_target)).tolist()
 
