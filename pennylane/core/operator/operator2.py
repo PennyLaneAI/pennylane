@@ -1349,7 +1349,7 @@ def _init_arg_types(op: Operator2) -> None:
             if is_broadcasted:
                 raise ValueError(
                     f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
-                    f"for the non-broadcasting diemnsions and dtype '{exp_type.dtype.name}', but "
+                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
                     f"got input shape {arg_shape} with dtype '{actual_dtype}'."
                 )
             raise ValueError(
