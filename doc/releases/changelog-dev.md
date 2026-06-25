@@ -452,6 +452,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
+  :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
+  :class:`~.labs.estimator_beta.templates.LabsModExp`.
+  [(#9390)](https://github.com/PennyLaneAI/pennylane/pull/9390)
+
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
   to use unary iteration in the decomposition of the used `QROM` operation for the specified
@@ -565,14 +570,9 @@
       'Hadamard': 1.055E+7
 
   ```
-
-* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
-  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
-  application algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-
-* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for their
-  quantum workflows. This contains core functions and classes such as :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and :func:`~.pennylane.labs.profiler.export_flame_graph_data`.
+* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for their
+  quantum workflows. This contains core functions and classes such as :class:`~.pennylane.labs.profiler.ProfileNode`,
+  :func:`~.pennylane.labs.profiler.profile`, and :func:`~.pennylane.labs.profiler.export_flame_graph_data`.
   [(#9546)](https://github.com/PennyLaneAI/pennylane/pull/9546)
 
   ```pycon
@@ -605,6 +605,11 @@
     ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
   ```
+
+* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
+  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
+  application algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
 <h3>Breaking changes 💔</h3>
 
@@ -774,6 +779,7 @@
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
