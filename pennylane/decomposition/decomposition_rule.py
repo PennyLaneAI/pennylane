@@ -22,6 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import singledispatch
 from textwrap import dedent
 from typing import overload
 
@@ -716,6 +717,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+@singledispatch
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
