@@ -269,7 +269,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
     all_quadratic = []
     all_bilinear = []
 
-    for i, fragment in enumerate(fragments[:-1]):
+    for fragment in fragments[:-1]:
         _coeffs = [c * first_order_time_step for c in get_position_coefficients(fragment)]
         all_constant.append(_coeffs[0])
         all_linear.append(_coeffs[1])
@@ -358,20 +358,15 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
                 _coeffs = bilinear_coeffs[k, ell]
 
                 def skip_fn():
-                    print(prev_bitstrings.shape)
                     return prev_bitstrings
 
                 def actual_fn():
                     mode_mult_wires, coeff_mult_wires = _extract_registers(
                         registers, mode_registers, "bilinear", k, ell
                     )
-                    print(prev_bitstrings.shape)
                     new_bitstrings = load_coefficients(
                         _coeffs, precision, prev_bitstrings, qrom_wires
                     )
-                    print(new_bitstrings.shape)
-                    print(bilinear_coeffs.shape)
-                    print(_coeffs.shape)
                     qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                     half_signed_out_multiplier(**coeff_mult_wires)
                     qp.adjoint(qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
@@ -408,7 +403,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
             _coeffs = kinetic_coeffs[k]
 
             def skip_fn():
-                return
+                """Do nothing."""
 
             def actual_fn():
                 square_wires, mult_wires = _extract_registers(
@@ -423,7 +418,6 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
                 qp.adjoint(qp.SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 qp.adjoint(qp.AQFT)(order=aqft_order, wires=mode_registers[k])
                 qp.BasisState(bitstring, registers["coefficients"])
-                return
 
             qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
@@ -439,25 +433,23 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 def _validate_registers(registers, fragments):
     """Validate wire register sizes for vibronic algorithm. See documentation of trotter_vibronic
     for details on the expected sizes."""
-    mode_registers, other_registers = registers
     n_states = fragments[0].states
     n_modes = fragments[0].modes
 
-    # Validate mode registers
-    # assert isinstance(mode_registers, np.ndarray)
-    assert mode_registers.shape[0] == n_modes
-    k = mode_registers.shape[1]
-
     expected_register_names = {"electronic", "cache", "coefficients", "phase gradient", "work"}
-    assert isinstance(other_registers, dict)
-    assert set(other_registers) == expected_register_names
-    b = len(other_registers["coefficients"])
+    expected_register_names |= {f"mode {i}" for i in range(n_modes)}
+    assert isinstance(registers, dict)
+    assert set(registers) == expected_register_names
 
+    b = len(registers["coefficients"])
+    k = len(registers["mode 0"])
     n = qp.math.ceil_log2(n_states)
-    assert len(other_registers["electronic"]) == n
-    assert len(other_registers["cache"]) >= 2 * k
-    assert len(other_registers["phase gradient"]) >= b
-    assert len(other_registers["work"]) >= max(n - 1, 2 * k, 2 * b + 2)
+
+    assert len(registers["electronic"]) == n
+    assert len(registers["cache"]) >= 2 * k
+    assert len(registers["phase gradient"]) >= b
+    assert len(registers["work"]) >= max(n - 1, 2 * k, 2 * b + 2)
+    assert all(len(registers[f"mode {i}"]) == k for i in range(1, n_modes))
 
 
 def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aqft_order):
@@ -564,7 +556,9 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
     assert num_trotter_steps > 0
     trotter_time_step = evolution_time / num_trotter_steps
 
-    mode_registers, other_registers = registers
+    n_modes = fragments[0].modes
+    mode_registers = qp.math.array([registers.pop(f"mode {i}") for i in range(n_modes)])
+
     if aqft_order is None:
         aqft_order = mode_registers.shape[1] - 1
 
@@ -574,7 +568,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
             step_idx,
             time=trotter_time_step,
             fragments=fragments,
-            registers=other_registers,
+            registers=registers,
             mode_registers=mode_registers,
             aqft_order=aqft_order,
         )
