@@ -244,18 +244,18 @@ class OutMultiplier(Operation):
                 f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
             )
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        # if len(work_wires) != 0:
+        # if any(wire in work_wires for wire in x_wires):
+        # raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        # if any(wire in work_wires for wire in y_wires):
+        # raise ValueError("None of the wires in work_wires should be included in y_wires.")
 
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
+        # if any(wire in y_wires for wire in x_wires):
+        # raise ValueError("None of the wires in y_wires should be included in x_wires.")
+        # if any(wire in x_wires for wire in output_wires):
+        # raise ValueError("None of the wires in x_wires should be included in output_wires.")
+        # if any(wire in y_wires for wire in output_wires):
+        # raise ValueError("None of the wires in y_wires should be included in output_wires.")
 
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
@@ -652,6 +652,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     # We also need to control-flip the LSB of x_wires (last wire) to achieve addition plus one
     # (c.f. _add_plus_one). The bit flips on the LSB cancel, so that we only control-flip all _but_
     # the LSB
+    c_wire = [c_wire]
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 

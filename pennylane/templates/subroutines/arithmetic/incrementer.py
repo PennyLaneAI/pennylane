@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
+from pennylane import compiler
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
@@ -233,7 +234,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         wires = wires[::-1]
         num_controls = 0
     else:
-        if enabled() and control_wires.shape[0] > 0:
+        if compiler.active() or enabled() and control_wires.shape[0] > 0:
             wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
         else:
             wires = wires + control_wires
@@ -243,7 +244,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     def _increment():
         # Construct the wires on which the ladder will act.
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
-        if enabled():
+        if compiler.active() or enabled():
             zipped = array(zipped, like="jax")
             all_wires = jnp.concatenate([wires[:1], zipped])
         else:
@@ -252,7 +253,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            if enabled():
+            if compiler.active() or enabled():
                 TemporaryAND(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
                 TemporaryAND(all_wires[2 * k : 2 * k + 3])
@@ -263,7 +264,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            if enabled():
+            if compiler.active() or enabled():
                 adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
             else:
                 adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
@@ -322,7 +323,7 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires, **_):
 
-    if enabled():
+    if compiler.active() or enabled():
         wires = array(wires, like="jax")
 
     if len(work_wires) > 0:
@@ -357,7 +358,7 @@ def _controlled_incrementer_decomposition(
 ):
     wires = base.wires
 
-    if enabled():
+    if compiler.active() or enabled():
         wires, work_wires, control_wires = (
             array(wires, like="jax"),
             array(work_wires, like="jax"),
