@@ -73,6 +73,12 @@ class TestAbstractify:
         assert result.phi == Float
         assert result.wires == Wire[2]
 
+        op = DynOp([1, 2, 3], wires=[0, 1])
+        result = abstractify(op)
+        assert isinstance(result, DynOp)
+        assert result.phi == Float[3]
+        assert result.wires == Wire[2]
+
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
         are hybrid arguments."""
