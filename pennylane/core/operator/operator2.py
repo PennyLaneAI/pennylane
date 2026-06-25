@@ -1666,7 +1666,9 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     new_args = {}
     for name, val in op.arguments.items():
         if name in op_cls.dynamic_argnames:
-            new_args[name] = abstractify(math.asarray(val))
+            if isinstance(val, (Number, list, tuple)):
+                val = math.asarray(val)
+            new_args[name] = abstractify(val)
         # NOTE: Check hybrid first as hybrid args can
         # appear in both hybrid and wires args; these arguments
         # must be treated as hybrid.
