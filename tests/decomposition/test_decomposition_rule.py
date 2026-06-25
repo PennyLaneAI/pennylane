@@ -413,15 +413,11 @@ class TestDecompositionRule:
             def __init__(self, angles, eps, wires):
                 super().__init__(angles, eps, wires)
 
-        @register_resources(
-            {
-                MissingFixedSigOp: 1,
-            }
-        )
+        @register_resources({MissingFixedSigOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="must define a 'fixed_sig'"):
+        with pytest.raises(TypeError, match="'MissingFixedSigOp' must set 'arg_specs'"):
             _ = custom_decomp.compute_resources()
 
     @pytest.mark.parametrize(
