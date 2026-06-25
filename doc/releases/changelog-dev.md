@@ -571,7 +571,7 @@
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
-* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources of their
+* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for their
   quantum workflows. This contains core functions and classes such as :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and :func:`~.pennylane.labs.profiler.export_flame_graph_data`.
   [(#9546)](https://github.com/PennyLaneAI/pennylane/pull/9546)
 

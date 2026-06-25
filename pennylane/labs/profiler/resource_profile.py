@@ -43,10 +43,10 @@ class ProfileNode:
             default value of ``None``.
         scalar (int): the number of times ``cmpr_op`` appears at this level of the
             decomposition (the *local* multiplicity). Defaults to ``1``.
-        gate_data (dict | None): a mapping from :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`
+        gate_data (dict | None): A mapping from :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`
             to the integer number of times each gate-set operator occurs in the subtree
             rooted at this node. If ``None``, an empty ``defaultdict(int)`` is used.
-        children (list[ProfileNode] | None): the child nodes obtained by decomposing
+        children (list[ProfileNode] | None): The child nodes obtained by decomposing
             ``cmpr_op`` one level. If ``None``, an empty list is used.
 
     **Example**
@@ -254,7 +254,7 @@ class ProfileNode:
         Hadamard x1
         QFT(4) x1
 
-        The child nodes can be grouped using the ``group_by_name`` method. Note that only operators that are
+        The child nodes can be grouped using the ``group_by_type`` method. Note that only operators that are
         programmatically identical, i.e share the same type and same resource parameters, will be merged together
         (e.g ``qre.CRX(1e-9)`` vs. ``qre.CRX(1e-3)``).
 
@@ -521,7 +521,7 @@ def _recursive_export_flame_graph_by_type(
             resource profile according to some common criteria.
         cost_func (Callable): A callable that determines the weight of the node in the overall resource
             profile based on its resources.
-        grouped_data (dict): a dictionay containing all child nodes that were grouped together
+        grouped_data (dict): a dictionary containing all child nodes that were grouped together
         parent_id (str): The string uniquely identifying the parent node of this child node in the call graph.
         export_data (tuple[list]): a tuple of four parallel lists, ``(ids, names, values, parents)``
     """

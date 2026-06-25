@@ -60,12 +60,12 @@ def profile(
             decomposed into. If ``None``, the estimator's default gate set is used.
         zeroed_wires (int): the number of available auxiliary wires that are guaranteed to be
             in the zero state. Defaults to ``0``.
-        any_state_wires (int): the number of available auxiliary wires that may be in any
+        any_state_wires (int): The number of available auxiliary wires that may be in any
             state. Defaults to ``0``.
-        tight_wires_budget (bool): if ``True``, a :class:`ValueError` is raised when the
+        tight_wires_budget (bool): If ``True``, a :class:`ValueError` is raised when the
             workflow allocates more auxiliary wires than the budget specified by
             ``zeroed_wires`` and ``any_state_wires``. Defaults to ``False``.
-        config (LabsResourceConfig | None): the configuration specifying the decomposition
+        config (LabsResourceConfig | None): The configuration specifying the decomposition
             rules and precisions to use. If ``None``, a default
             :class:`~.estimator_beta.LabsResourceConfig` is used.
 
@@ -78,9 +78,9 @@ def profile(
         arguments.
 
     Raises:
-        TypeError: if ``workflow`` is not one of the supported types.
+        TypeError: if ``workflow`` is not one of the supported types
         ValueError: if ``tight_wires_budget`` is ``True`` and the allocated auxiliary wires
-            exceed the supplied budget.
+            exceed the supplied budget
 
     **Example**
 
@@ -147,7 +147,7 @@ def _profile_resources_dispatch(
 ) -> tuple[ProfileNode, Resources] | Callable:
     """Internal singledispatch function for resource profiling."""
     raise TypeError(
-        f"Could not obtain resources for workflow of type {type(workflow)}. workflow must be one of Resources, Callable, ResourceOperator, or list"
+        f"Could not obtain resources for workflow of type {type(workflow)}. workflow must be one of Resources, Callable, or ResourceOperator"
     )
 
 
