@@ -2,6 +2,50 @@
 
 <h3>New features since last release</h3>
 
+* Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
+  using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
+
+  Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
+  want to prepare, the template is simple to call. Consider the following example:
+
+  ```python
+  import pennylane as qp
+  import numpy as np
+  qp.decomposition.enable_graph()
+
+  coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+  indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  ```
+
+  Let's prepare this state on a six-qubit register. For the :math:`L=10` indices, the template
+  will use a dense state preparation on :math:`R = \lceil\log_2(L)\rceil = 4` qubits, and
+  :math:`R-1=3` auxiliary qubits:
+
+  ```python
+  wires = list(range(6))
+  work_wires = list(range(6, 9))
+
+  dev = qp.device("lightning.qubit", wires=9)
+
+  @qp.qnode(dev)
+  def circuit():
+      qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+      return qp.state()
+
+  prepared_state = circuit()[::8] # Slice out three work wires
+  ```
+
+  We can check that the correct basis states are populated with the correct amplitudes:
+
+  ```pycon
+  >>> where = np.where(np.round(prepared_state, 3))[0]
+  >>> print(tuple(where)==indices)
+  True
+  >>> print(np.allclose(prepared_state[where], coefficients))
+  True
+
+  ```
+
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
@@ -243,6 +287,7 @@
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+  [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -260,11 +305,11 @@
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray((4,), bool)
+  AbstractArray((4,), bool, weak_type=True)
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
   >>> qp.typing.Complex[-1, 2]
-  AbstractArray((-1, 2), complex128)
+  AbstractArray((-1, 2), complex128, weak_type=True)
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
@@ -680,7 +725,7 @@
 
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
-  
+
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
