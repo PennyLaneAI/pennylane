@@ -434,6 +434,7 @@ class TestAbstractWires:
         a = AbstractWires(3)
         assert a.num_wires == 3
         assert len(a) == 3
+        assert a.shape_fixed is True
 
     def test_invalid_num_wires(self):
         """Test that an error is raised if the provided ``num_wires`` is not valid."""
@@ -477,6 +478,7 @@ class TestAbstractWires:
         a = AbstractWires(-1)
         assert a.num_wires == -1
         assert a.shape == (-1,)
+        assert a.shape_fixed is False
 
         with pytest.raises(TypeError, match="len\\(\\) is undefined for"):
             _ = len(a)
