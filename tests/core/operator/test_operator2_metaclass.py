@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.queuing import AnnotatedQueue
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Int, Wire
 from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
@@ -64,7 +64,7 @@ class TestOperatorAbstractInputs:
 
         # only AbstractArray
 
-        aa = AbstractArray((1,), float)
+        aa = Float[1]
         op = DynCanonOp(phi=aa, wires=[0])
         assert isinstance(op.phi, AbstractArray)
         assert op.wires == AbstractWires(1)
@@ -78,22 +78,22 @@ class TestOperatorAbstractInputs:
     @pytest.mark.parametrize(
         "concrete_theta, abstract_theta",
         [
-            (1.0, AbstractArray((), float)),
-            (qp.numpy.ones((2, 3)), AbstractArray((2, 3), float)),
-            ([0, 1], AbstractArray((2,), int)),
+            (1.0, Float),
+            (qp.numpy.ones((2, 3)), Float[2, 3]),
+            ([0, 1], Int[2]),
         ],
     )
     @pytest.mark.parametrize(
         "concrete_wires, abstract_wires",
         [
-            (0, AbstractWires(1)),
-            (0.0, AbstractWires(1)),
-            ([0], AbstractWires(1)),
-            ([0, 1], AbstractWires(2)),
-            ({"a": 0, "b": 1}, AbstractWires(2)),
-            ("a", AbstractWires(1)),
-            ("blah", AbstractWires(1)),
-            (Wires([0, 1, 2]), AbstractWires(3)),
+            (0, Wire[1]),
+            (0.0, Wire[1]),
+            ([0], Wire[1]),
+            ([0, 1], Wire[2]),
+            ({"a": 0, "b": 1}, Wire[2]),
+            ("a", Wire[1]),
+            ("blah", Wire[1]),
+            (Wires([0, 1, 2]), Wire[3]),
         ],
     )
     def test_canonicalize_all_inputs_when_some_are_abstract(
@@ -101,7 +101,7 @@ class TestOperatorAbstractInputs:
     ):
         """Tests that it takes at least one abstract argument to skip the init and canonicalize inputs."""
 
-        aa = AbstractArray((1,), int)
+        aa = Float[1]
         op = TwoDynOp(phi=aa, theta=concrete_theta, wires=concrete_wires)
         # Phi stays the same, theta and wires are abstractified
         assert op.phi is aa
@@ -112,20 +112,20 @@ class TestOperatorAbstractInputs:
         "hybrid_in, hybrid_out",
         [
             # Standard pytrees
-            (0, AbstractArray((), int)),
-            ([0.0, 1.0], [AbstractArray((), float), AbstractArray((), float)]),
-            ((0.0, 1.0), (AbstractArray((), float), AbstractArray((), float))),
+            (0, Int),
+            ([0.0, 1.0], [Float, Float]),
+            ((0.0, 1.0), (Float, Float)),
             (
                 {"a": [0, 1], "b": 1.5},
                 {
-                    "a": [AbstractArray((), int), AbstractArray((), int)],
-                    "b": AbstractArray((), float),
+                    "a": [Int, Int],
+                    "b": Float,
                 },
             ),
             # Ensures nested arrays don't get flattened
             (
                 {"my_array": qp.math.array([[0, 1], [1, 0]], dtype=int)},
-                {"my_array": AbstractArray((2, 2), int)},
+                {"my_array": Int[2, 2]},
             ),
         ],
     )
@@ -150,7 +150,7 @@ class TestOperatorAbstractInputs:
         )
         assert op.static_arg == "blah"
         # Cast to abstract array
-        assert op.dynamic_arg == AbstractArray((2,), int)
+        assert op.dynamic_arg == Int[2]
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(
@@ -238,7 +238,7 @@ class TestOperatorAbstractInputs:
             op = DynOp(0.5, wires=AbstractWires(1))
 
         assert op.wires == AbstractWires(1)
-        assert op.phi == AbstractArray((), float)
+        assert op.phi == Float
 
         assert len(q) == 0
 
@@ -270,6 +270,32 @@ class TestOperatorAbstractInputs:
             match="sequence of types for a dynamic argument is not currently supported",
         ):
             _ = DynOp(input, AbstractWires(1))
+
+    @pytest.mark.xfail(reason="need to fix init_arg_type logic for abstract", strict=True)
+    @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
+    @pytest.mark.parametrize("bad_wires", (Wire, Wire[-1]))
+    def test_arg_spec_validation_abstract_inputs(self, bad_dynamic_arg, bad_wires):
+        """Tests arg_spec validation against operators constructed with abstract inputs."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[3], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Matches arg_specs, should work fine
+        _ = MixedArgOp(Float[3], Wire[3])
+
+        # Different spec, should error out
+        with pytest.raises(ValueError):
+            _ = MixedArgOp(Float[3], bad_wires)
+
+        with pytest.raises(ValueError):
+            _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 
 class TestOperatorAbstractInputsCapture:
