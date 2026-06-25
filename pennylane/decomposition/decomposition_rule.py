@@ -1125,7 +1125,7 @@ def _is_abstract_and_fixed(val):
     if isinstance(val, AbstractWires):
         return val.num_wires != -1
     leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
-    return all(_is_abstract_and_fixed(leaf for leaf in leaves))
+    return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 
 
 def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):

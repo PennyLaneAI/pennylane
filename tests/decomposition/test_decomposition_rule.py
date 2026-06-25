@@ -37,6 +37,28 @@ class CustomOp(Operator):  # pylint: disable=too-few-public-methods
     pass
 
 
+class CustomOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    hybrid_argnames = ("op",)
+
+    def __init__(self, params, wires, op):
+        super().__init__(params, wires, op)
+
+
+class AnotherOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    def __init__(self, params, wires):
+        super().__init__(params, wires)
+
+
 @pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
@@ -559,6 +581,25 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
+
+    @pytest.mark.parametrize(
+        "rep",
+        [
+            CustomOp2(Float[...], Wire[3], AnotherOp2(Float[3], Wire[3])),  # data is not fixed
+            CustomOp2(Float[3], Wire[-1], AnotherOp2(Float[1], Wire[1])),  # wire is not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[...], Wire[3])),  # hybrid arg not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[2], Wire[-1])),  # hybrid arg not fixed
+        ],
+    )
+    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+        """Tests that the resource function can only contain abstract and fixed Operator2."""
+
+        @qp.register_resources({rep: 1})
+        def rule():
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="abstract data of undertermined dimensions"):
+            rule.compute_resources()
 
 
 class TestDecompCollection:
