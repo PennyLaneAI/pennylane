@@ -1360,9 +1360,13 @@ def _init_arg_types(op: Operator2) -> None:
             )
 
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
-        # arg_specs' spec in order to have a single source of truth.
+        # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
-            op.arguments[name] = AbstractArray(arg_shape, exp_type.dtype)
+            new_argval = AbstractArray(arg_shape, exp_type.dtype)
+            # pylint: disable=protected-access
+            # FIX: Hacky way to set attribute of a frozen dataclass
+            object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
+            op.arguments[name] = new_argval
 
 
 # -------------------------------------------------------------------------------
