@@ -1363,7 +1363,7 @@ def _init_arg_types(op: Operator2) -> None:
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
         # arg_specs' spec in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
-            op.arguments[name] = AbstractArray(unbatched_shape, exp_type.dtype)
+            op.arguments[name] = AbstractArray(arg_shape, exp_type.dtype)
 
 
 # -------------------------------------------------------------------------------
@@ -1666,7 +1666,9 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     new_args = {}
     for name, val in op.arguments.items():
         if name in op_cls.dynamic_argnames:
-            new_args[name] = abstractify(math.asarray(val))
+            if isinstance(val, (Number, list, tuple)):
+                val = math.asarray(val)
+            new_args[name] = abstractify(val)
         # NOTE: Check hybrid first as hybrid args can
         # appear in both hybrid and wires args; these arguments
         # must be treated as hybrid.

@@ -440,7 +440,7 @@ class TestDecompositionRule:
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="must set 'arg_specs'"):
+        with pytest.raises(TypeError, match="'MissingFixedSigOp' must set 'arg_specs'"):
             _ = custom_decomp.compute_resources()
 
     @pytest.mark.parametrize(

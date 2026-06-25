@@ -275,6 +275,24 @@ class TestOperatorAbstractInputs:
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
 
+    def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
+        """Tests that only the dtype is promoted."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": Float[...], "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Abstract inputs get canonicalized
+        # NOTE: Can safely upcast an int to a float.
+        op = MixedArgOp(Int[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+
     def test_arg_spec_canonicalizes_abstract_inputs(self):
         """Tests that abstract inputs are canonicalized when possible."""
 
@@ -316,9 +334,12 @@ class TestArgSpecValidationAbstractInputs:
                 super().__init__(dynamic_arg, wires=wires)
 
         # Arg spec is defined as unknown shape, any of these are valid.
-        _ = MixedArgOp(Float[3], Wire[3])
-        _ = MixedArgOp(Float[2, 3], Wire[3])
-        _ = MixedArgOp(Float[...], Wire[3])
+        op = MixedArgOp(Float[3], Wire[3])
+        assert op.dynamic_arg == Float[3]
+        op = MixedArgOp(Float[2, 3], Wire[3])
+        assert op.dynamic_arg == Float[2, 3]
+        op = MixedArgOp(Float[...], Wire[3])
+        assert op.dynamic_arg == Float[...]
 
     def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
@@ -333,7 +354,8 @@ class TestArgSpecValidationAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        _ = MixedArgOp(Float[3], Wire[3])
+        op = MixedArgOp(Float[3], Wire[3])
+        assert op.dynamic_arg == Float[3]
 
     @pytest.mark.parametrize("bad_dynamic_arg", (Float, Float[4], Float[-1], Float[...]))
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
