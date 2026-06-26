@@ -27,12 +27,11 @@ The Trotter error of a product formula is given by the commutator terms.
 The implementation is recursive. A product formula is reduced to a sequence of
 symbols, and the expansion of that sequence is built up by repeatedly combining
 a single symbol (the *head*) with the expansion of the remainder (the *tail*).
-The base case, the BCH expansion of two symbols, read from a precomputed lookup 
-table of Hall-basis commutators and their rational coefficients (see :func:`_bch`). 
-The lookup table was originally computed by Casas and Murua and hosted at 
-https://www.ehu.eus/ccwmuura/bch.html.
+The base case, the BCH expansion of two symbols, read from a precomputed lookup
+table of Hall-basis commutators and their rational coefficients (see :func:`_bch`).
+The lookup table was generated from Casas and Murua in https://arxiv.org/abs/0810.2656.
 
-Recursive product formulas are expanded by first expanding each sub-formula and then substituting 
+Recursive product formulas are expanded by first expanding each sub-formula and then substituting
 those expansions into the outer expansion via a bilinear substitution.
 """
 
@@ -93,11 +92,11 @@ def _bch_product_formula(
     The formula is first reduced to a sequence of ``(symbol, coefficient)``
     factors whose BCH expansion is computed by :func:`_bch_symbols`.
     For a non-recursive formula, the symbol expansion is scaled by the
-    formula's ``exponent`` and returned directly. 
+    formula's ``exponent`` and returned directly.
 
-    For a recursive formula, each sub-formula is expanded once, and those 
-    sub-expansions are substituted into the outer expansion via 
-    :func:`bilinear_expansion`. 
+    For a recursive formula, each sub-formula is expanded once, and those
+    sub-expansions are substituted into the outer expansion via
+    :func:`bilinear_expansion`.
 
     Args:
         product_formula (ProductFormula): the formula to expand.

@@ -20,7 +20,7 @@ import scipy as sp
 from numpy.typing import ArrayLike
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter_error.abstract import TrotterState, Fragment
+from pennylane.labs.trotter_error.abstract import Fragment, TrotterState
 
 
 class NumpyFragment(Fragment):
@@ -78,7 +78,7 @@ class NumpyState(TrotterState):
 
     >>> from pennylane.labs.trotter_error import NumpyFragment, NumpyState
     >>> import numpy as np
-    >>> 
+    >>>
     >>> matrix = NumpyFragment(np.array([[1, 0], [0, 1]]))
     >>> vector = NumpyState(np.array([1, 0]))
     >>> matrix.apply(vector)
@@ -110,7 +110,7 @@ class SparseFragment(Fragment):
 
     >>> from pennylane.labs.trotter_error import SparseFragment
     >>> from scipy.sparse import csr_array
-    >>> 
+    >>>
     >>> matrix = csr_array([[1, 0], [0, 1]])
     >>> SparseFragment(matrix)
     SparseFragment(shape=(2, 2), dtype=int64)

@@ -23,7 +23,7 @@ from itertools import groupby
 import numpy as np
 
 from pennylane import concurrency
-from pennylane.labs.trotter_error import TrotterState, Fragment
+from pennylane.labs.trotter_error import Fragment, TrotterState
 from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.commutator import (
@@ -123,7 +123,21 @@ def _eval_commutator(commutator, coeff, fragments):
 
 @dataclass
 class ImportanceConfig:
-    """Parameters for importance sampling."""
+    """This class is used as an optional argument to :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
+    to enable the importance sampling feature. When used the perturbation error will be computed using
+    only the ``topk`` most important commutators. The importance of a commutator is induced from
+    ``weights`` which stores a user-defined importance score for each fragment label. The keys in
+    ``weights`` must be identical to the symbols used to build the :class:`~.pennylane.labs.trotter_error.product_formulas.product_formula.ProductFormula`
+    object passed into :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
+
+    Args:
+        topk (int): samples the ``topk`` most important commutators to estimate the perturbation error.
+        weights (dict[Hashable, float]): a dictionary mapping fragment labels to their importance score.
+        history (bool): tracks the convergence history of the perturbation error per commutator evaluation.
+            when true the output of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
+            is modified to include the convergence history.
+
+    """
 
     topk: int
     weights: dict[Hashable, float]

@@ -42,7 +42,7 @@ class ProductFormula:
 
     Symbols may themselves be ``ProductFormula`` instances, allowing higher-order
     formulas to be composed recursively from lower-order ones (see
-    :meth:`~ProductFormula.prod`).
+    :meth:`~.pennylane.labs.trotter_error.product_formula.ProductFormula.prod`).
 
     Args:
         symbols (Sequence[tuple[Hashable, complex]]): an ordered sequence of
@@ -57,7 +57,7 @@ class ProductFormula:
         TypeError: if any symbol is not hashable, any coefficient is not an
             ``int``, ``float``, or ``complex``, the ``exponent`` is not an
             ``int`` or ``float``, or any symbol is itself a ``ProductFormula``
-            (recursive formulas must be built with :meth:`prod`).
+            (recursive formulas must be built with :meth:`~.pennylane.labs.trotter_error.product_formula.ProductFormula.prod`).
 
     **Example**
 

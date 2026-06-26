@@ -69,7 +69,7 @@ class Fragment(ABC):
     @abstractmethod
     def apply(self, state: TrotterState) -> TrotterState:
         r"""For a fragment :math:`H` and state :math:`|\psi\rangle` return the state :math:`H|\psi\rangle`
-        The type of ``state`` is determined by the implementation of :math:`H` as a ``Fragment`` object. 
+        The type of ``state`` is determined by the implementation of :math:`H` as a ``Fragment`` object.
         Implementation of this function is mandatory for :func:`~.pennylane.labs.trotter_error.perturbation_error`.
 
         Args:
@@ -95,7 +95,7 @@ class Fragment(ABC):
         return left.dot(self.apply(right))
 
     def initialize_parallel_job(self, backend: str):
-        """Set up required for parallel compatibility. This method is called in 
+        """Set up required for parallel compatibility. This method is called in
         :func:`~.pennylane.labs.trotter_error.perturbation_error` before the parallel computations
         are called. Any required setup for parallel jobs goes into this function."""
 
@@ -184,7 +184,7 @@ class TrotterState(ABC):
         raise NotImplementedError
 
     def initialize_parallel_job(self, backend: str):
-        """Set up required for parallel compatibility. This method is called in 
+        """Set up required for parallel compatibility. This method is called in
         :func:`~.pennylane.labs.trotter_error.perturbation_error` before the parallel computations
         are called. Any required setup for parallel jobs goes into this function."""
 
