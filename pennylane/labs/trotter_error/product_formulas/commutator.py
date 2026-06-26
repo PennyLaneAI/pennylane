@@ -205,12 +205,9 @@ class CommutatorNode(ASTNode):
         return self.left.order + self.right.order
 
     def is_zero(self) -> bool:
-        """Determines if a commutator is zero, but with false negatives. The purpose of this method
-        is to prune the commutator dictionaries during BCH. Even with the false negatives enough
-        pruning occurs for a noticable impact on performance. The false negatives arise from the condition
-        self.left == self.right, which is too weak since a commutator evaluates to zero when self.left
-        is a scalar multipe of self.right, but checking this is a lot of work for a negligible performance
-        increase"""
+        """Determines if a commutator is zero, but with false negatives. The condition
+        ``self.left == self.right`` is too weak to find all zeros since all that is required is that
+        ``self.left`` is a scalar multiple of ``self.right``."""
         if isinstance(self.left, SymbolNode) and isinstance(self.right, SymbolNode):
             ratios = defaultdict(complex)
 
