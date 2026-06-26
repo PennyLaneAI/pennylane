@@ -306,7 +306,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             with queuing.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
 
-            if not eqn.outvars[0].__class__.__name__ == "DropVar":
+            if eqn.outvars[0].__class__.__name__ != "DropVar":
                 return op
 
             # _evaluate_jaxpr_decomposition should be used when graph-based

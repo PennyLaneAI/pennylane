@@ -16,7 +16,8 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -341,7 +342,7 @@ class SignedOutMultiplier(Operator):
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
 
-        for name, wires in zip(wires_name, wires_list):
+        for name, wires in zip(wires_name, wires_list, strict=True):
             self.hyperparameters[name] = Wires(wires)
 
         self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed

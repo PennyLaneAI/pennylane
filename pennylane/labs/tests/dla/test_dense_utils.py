@@ -174,7 +174,7 @@ class TestPauliDecompose:
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
-            assert all(np.isclose(op[k], expected[k]) for k in op.keys())
+            assert all(np.isclose(op[k], expected[k]) for k in op)
         else:
             assert isinstance(op, qp.operation.Operator)
             assert qp.equal(op, expected)
@@ -212,7 +212,7 @@ class TestPauliDecompose:
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
-                assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
+                assert all(np.isclose(_op[k], e[k]) for k in _op)
         else:
             for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)
@@ -240,7 +240,7 @@ class TestPauliDecompose:
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
-            assert all(np.isclose(op[k], expected[k]) for k in op.keys())
+            assert all(np.isclose(op[k], expected[k]) for k in op)
         else:
             assert isinstance(op, qp.operation.Operator)
             assert qp.equal(op, expected)
@@ -280,7 +280,7 @@ class TestPauliDecompose:
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
-                assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
+                assert all(np.isclose(_op[k], e[k]) for k in _op)
         else:
             for _op, e in zip(op, expected, strict=True):
                 assert isinstance(_op, qp.operation.Operator)

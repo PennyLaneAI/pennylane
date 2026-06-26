@@ -214,3 +214,14 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.ruff]
+# Tells ruff to only suggest/apply 3.11+ modernizations
+target-version="py311"
+
+[tool.ruff.lint]
+select = [
+    "B905", # zip without explicit strict 
+    "UP", # enforce all 'pyupgrade' rules
+    "SIM118", # Use 'if key in dict' instead of '.keys()'
+]
