@@ -34,6 +34,7 @@ from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
 from pennylane.exceptions import (
     AdjointUndefinedError,
+    CaptureError,
     DecompositionUndefinedError,
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -1204,7 +1205,7 @@ class Operator2(metaclass=OperatorMeta):
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
             op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _delete_op_eqns(filter(_is_op, op_leaves))
+            _ = pop_op_eqns(filter(_is_op, op_leaves))
 
             # Full flattening to feed the operator's dynamic data to the primitive.
             leaves, tree = flatten(self.arguments[name])
@@ -1225,6 +1226,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            adjoint=False,
             **static_args,
         )
         # If we bind the primitive outside a tracing context but with program capture enabled,
@@ -1504,51 +1506,32 @@ if has_jax:
 
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
-    AbstractOperator = _get_abstract_operator()
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,unused-argument
     @operator_p.def_impl
-    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
-        args = {name: unflatten(*value) for name, value in static_args.items()}
-        i = 0
-
-        for name in op_cls.dynamic_argnames:
-            args[name] = all_args[i]
-            i += 1
-
-        wire_lens_iter = iter(wire_lens)
-        for name in op_cls.wire_argnames:
-            if name not in op_cls.hybrid_argnames:
-                len_ = next(wire_lens_iter)
-                # We can safely cast to `int` inside the concrete impl because there
-                # there should not be any abstract values when calling the concrete impl.
-                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
-                i += len_
-
-        # Reorder hybrid args such that hybrid wire args are first
-        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
-            leaves = all_args[i : i + len_]
-            args[name] = unflatten(leaves, tree)
-            i += len_
-
-        return type.__call__(op_cls, **args)
+    def _op_impl(
+        *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
+    ):
+        raise CaptureError("Cannot bind operator primitives outside a tracing context.")
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
+        AbstractOperator = _get_abstract_operator()
         return AbstractOperator()
 
 else:  # pragma: no cover
     operator_p = None
-    AbstractOperator = None
 
 
-def _delete_op_eqns(ops: Iterable) -> None:
+def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
     These equations must be deleted because operators used as data are treated as
     pytrees wrapping dynamic data rather than instructions. Thus, the equation that
     corresponds to the operator as an instruction should be removed.
     """
+    old_eqns = []
+
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
@@ -1557,10 +1540,13 @@ def _delete_op_eqns(ops: Iterable) -> None:
 
             # for some reason the frame now wraps equations in lambdas
             eqn = op.tracer.parent
+            old_eqns.append(eqn)
             frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
 
             # delete reference to tracer after its equation has been deleted
             op.tracer = None
+
+    return old_eqns
 
 
 # -----------------------------------------------------------------------------

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Defines the base class for the adjoint of operators."""
 
 from typing_extensions import override
@@ -20,6 +19,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.core.operator import Operator2
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 
 from .symbolicop2 import SymbolicOp2
 
@@ -111,3 +111,33 @@ class Adjoint2(SymbolicOp2):
     @override
     def generator(self):
         return -1 * self.base.generator()
+
+    def _bind_primitive(self):
+        """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
+        ``Operator2`` class so that we can "edit" the original primitive."""
+        if not qp.capture.enabled():
+            return
+
+        eqns = pop_op_eqns((self.base,))
+        assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
+
+        if len(eqns) == 0:
+            # pylint: disable=protected-access
+            self.base._bind_primitive()
+            assert self.base.tracer is not None
+            eqn = self.base.tracer.parent
+            eqn.params["adjoint"] ^= True
+            res = self.base.tracer
+            self.base.tracer = None
+
+        else:
+            params = eqns[0].params
+            params["adjoint"] ^= True
+            # invars during tracing will just be tracers, not `Var`s wrapping
+            # abstract values
+            res = operator_p.bind(*eqns[0].invars, **params)
+
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res
