@@ -43,8 +43,7 @@ def vibronic_fragments(
             i mode components.
 
     Returns:
-        list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of
-            the vibronic Hamiltonian
+        list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian.
 
     **Example**
 

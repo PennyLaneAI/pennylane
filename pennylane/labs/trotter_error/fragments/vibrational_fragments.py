@@ -35,8 +35,7 @@ def vibrational_fragments(
             and ``position``
 
     Returns:
-        list[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the
-            vibrational Hamiltonian
+        list[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
 
     **Example**
 

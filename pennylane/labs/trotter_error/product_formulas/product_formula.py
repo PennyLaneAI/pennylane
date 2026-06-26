@@ -42,7 +42,7 @@ class ProductFormula:
 
     Symbols may themselves be ``ProductFormula`` instances, allowing higher-order
     formulas to be composed recursively from lower-order ones (see
-    :meth:`prod`).
+    :meth:`~ProductFormula.prod`).
 
     Args:
         symbols (Sequence[tuple[Hashable, complex]]): an ordered sequence of
@@ -240,9 +240,7 @@ class ProductFormula:
     def __pow__(self, z: float) -> ProductFormula:
         """Raise the formula to the power ``z``.
 
-        This scales the existing :attr:`exponent` by ``z`` (the powers
-        multiply), modelling repetition of the formula such as the ``r`` Trotter
-        steps in :math:`\\big(S(t/r)\\big)^r`. The original formula is not
+        This multiplies the existing :attr:`exponent` by ``z``. The original formula is not
         mutated; a deep copy is returned.
 
         Args:
