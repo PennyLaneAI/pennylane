@@ -15,9 +15,9 @@
 broadcasted tape into multiple tapes."""
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import SampleMP
 from pennylane.ops import MidMeasure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .core import transform
