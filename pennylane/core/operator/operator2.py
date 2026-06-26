@@ -360,6 +360,7 @@ class Operator2(metaclass=OperatorMeta):
 
     @property
     def num_params(self):
+        """Number of trainable parameters."""
         return len(self.dynamic_argnames)
 
     @property
