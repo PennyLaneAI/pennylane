@@ -154,7 +154,9 @@ class TestAbstractifyOperatorInstances:
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
         are hybrid arguments."""
-        op = MixedHybridOp(phi=1.5, ops=[DynOp(2.5, 0)], pytree_wires=[1, [2, 3, 4], [5]], wires=6)
+        op = MixedHybridOp(
+            phi=1.5, ops=[TwoDynOp(2.5, [0, 1], 0)], pytree_wires=[1, [2, 3, 4], [5]], wires=6
+        )
         result = abstractify(op)
 
         assert isinstance(result, MixedHybridOp)
@@ -164,8 +166,9 @@ class TestAbstractifyOperatorInstances:
 
         inner_op = result.ops[0]
         assert isinstance(result.ops, list) and len(result.ops) == 1
-        assert isinstance(inner_op, DynOp)
+        assert isinstance(inner_op, TwoDynOp)
         assert inner_op.phi == Float
+        assert inner_op.theta == Int[2]
         assert inner_op.wires == Wire[1]
 
     def test_abstract_instance_hash_stable(self):
