@@ -1653,7 +1653,6 @@ def _is_hash_leaf(l) -> bool:
 @abstractify.register(OperatorMeta)
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
-
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
