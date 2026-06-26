@@ -134,7 +134,6 @@ class Adjoint2(SymbolicOp2):
             eqn = self.base.tracer.parent
             eqn.params["adjoint"] ^= True
             res = self.base.tracer
-            self.base.tracer = None
 
         else:
             params = eqns[0].params
@@ -143,6 +142,7 @@ class Adjoint2(SymbolicOp2):
             # abstract values
             res = operator_p.bind(*eqns[0].invars, **params)
 
+        self.base.tracer = None
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
