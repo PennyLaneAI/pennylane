@@ -15,7 +15,7 @@
 
 from itertools import combinations_with_replacement
 
-import catalyst
+import jax.numpy as jnp
 import numpy as np
 
 import pennylane as qp
@@ -75,7 +75,7 @@ def get_position_coefficients(fragment: RealspaceMatrix):
     n_modes = fragment.modes
     wires = list(range(qp.math.ceil_log2(n_states)))
     diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-    M = qp.matrix(diagonalize_vibronic, wires)(key=diag_key, wires=wires)[:n_states, :n_states]
+    M = qp.matrix(_diagonalize_vibronic, wires)(key=diag_key, wires=wires)[:n_states, :n_states]
     constant = M.T @ fragment_to_dense(fragment, ()) @ M
     # constant.shape = (n_states, n_states)
     constant_diag = np.diag(constant)
@@ -122,7 +122,7 @@ def get_momentum_coefficients(fragment: RealspaceMatrix):
     return coeffs_final
 
 
-def diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
+def _diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
     r"""Diagonalize a vibronic fragment by applying Clifford operations.
     Based on Fig.2 of `Motlagh et al, arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__.
 
@@ -144,14 +144,64 @@ def diagonalize_vibronic(*, key: tuple[int], wires: WiresLike):
     and at most :math:`\lceil\log_2(N)\rceil-1` :class:`~.CNOT` gates, where :math:`N` is the
     number of electronic states the Hamiltonian acts on.
     """
+
     if key[0] == key[1]:
         # No diagonalization needed
         return
-    diagonalization_key = qp.math.int_to_binary(key[0] ^ key[1], len(wires))
+    diagonalization_key = (
+        qp.math.int_to_binary(key[0], len(wires)) + qp.math.int_to_binary(key[1], len(wires))
+    ) % 2
     support = np.where(diagonalization_key)[0][::-1]
     control = support[0]
     qp.H(wires=wires[control])
     _ = [qp.CNOT(wires=[wires[control], wires[k]]) for k in support[1:]]
+
+
+def diagonalize_vibronic(*, key, wires):
+    r"""Diagonalize a vibronic fragment by applying Clifford operations.
+
+    qjit-compatible. ``key[0]`` and ``key[1]`` may be Python ints (compile-time)
+    or traced integer scalars (runtime). The circuit structure -- whether any
+    gates are applied, which wire is the control, and which targets receive a
+    CNOT -- is expressed with ``catalyst.cond`` / ``catalyst.for_loop`` so it can
+    depend on traced values.
+
+    Args:
+        key (tuple[int]): Row and column index of the only non-zero matrix
+            element in the first row that contains a non-zero element at all.
+        wires (WiresLike): electronic wires on which the fragment acts.
+    """
+    n = len(wires)
+    wires_arr = jnp.asarray(wires)
+    k0, k1 = key[0], key[1]
+
+    # Wire w holds bit (n-1-w) (MSB-first), matching qp.math.int_to_binary.
+    # diff[w] is the XOR of the wire-w bit of k0 and k1 -- this is exactly
+    # (int_to_binary(k0) + int_to_binary(k1)) % 2 from the original.
+    shifts = jnp.arange(n - 1, -1, -1, dtype=jnp.int64)
+    diff = ((k0 >> shifts) & 1) ^ ((k1 >> shifts) & 1)  # shape (n,)
+
+    any_diff = jnp.sum(diff) > 0
+    # Original takes support = where(diff)[::-1] then control = support[0],
+    # i.e. the largest wire index whose diff bit is set.
+    control_pos = jnp.max(jnp.where(diff > 0, jnp.arange(n), -1))
+    control_wire = wires_arr[control_pos]
+
+    @qp.cond(any_diff)  # key[0] != key[1]  <=>  some bit differs
+    def apply():
+        qp.H(wires=control_wire)
+
+        @qp.for_loop(0, n, 1)
+        def loop(w):
+            @qp.cond((diff[w] > 0) & (w != control_pos))
+            def maybe_cnot():
+                qp.CNOT(wires=[control_wire, wires_arr[w]])
+
+            maybe_cnot()
+
+        loop()  # pylint: disable=no-value-for-parameter
+
+    apply()
 
 
 def load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
@@ -251,7 +301,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
       quadratic) or pairs of modes (bilinear). This latter iteration is in form of ``for_loop``\ s.
 
     """
-    # pylint: disable=no-value-for-parameter, unused-argument, too-many-statements
+    # pylint: disable=no-value-for-parameter, unused-argument, too-many-statements, too-many-arguments
 
     precision = len(registers["phase gradient"])
     first_order_time_step = time / 2
@@ -266,7 +316,6 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
     all_quadratic = []
     all_bilinear = []
 
-    """
     # dynamic loops
     for fragment in fragments[:-1]:
         _coeffs = [c * first_order_time_step for c in get_position_coefficients(fragment)]
@@ -275,27 +324,25 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         all_quadratic.append(_coeffs[2])
         all_bilinear.append(_coeffs[3])
 
-    if qp.compiler.active() and not catalyst.compile_without_static_loops:
+    if qp.compiler.active():
         all_constant = qp.math.array(all_constant, like="jax")
         all_linear = qp.math.array(all_linear, like="jax")
         all_quadratic = qp.math.array(all_quadratic, like="jax")
         all_bilinear = qp.math.array(all_bilinear, like="jax")
         diag_keys = qp.math.array(diag_keys, like="jax")
-    """
 
     def position_fragments(i):
-        fragment = fragments[i]
-        diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-        """
+        # fragment = fragments[i]
+        # diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
         # dynamic loops
         diag_key = diag_keys[i]
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
-        """
-        all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
-        const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
+
+        # all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
+        # const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
         qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
 
         def constant_term(prev_bitstrings):
@@ -330,7 +377,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
             return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        @qp.for_loop(fragment.modes)
+        @qp.for_loop(n_modes)
         def quadratic_terms(k, prev_bitstrings):
             """Run a single quadratic time evolution sub-fragment for mode ``k``.
             The currently encoded bitstrings on the coefficients register are provided in
@@ -352,7 +399,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
             return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        @qp.for_loop(fragment.modes - 1)
+        @qp.for_loop(n_modes - 1)
         def bilinear_terms(k, prev_bitstrings):
             """Run a single bilinear time evolution sub-fragment for mode ``k``.
             The currently encoded bitstrings on the coefficients register are provided in
@@ -360,7 +407,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
             # Note that k < ell matches the data structure of bilinear_coeffs, which is only
             # populated in the upper triangular part, w.r.t. the mode axes.
-            @qp.for_loop(k + 1, fragment.modes)
+            @qp.for_loop(k + 1, n_modes)
             def _inner_bilinear_terms(ell, prev_bitstrings):
                 _coeffs = bilinear_coeffs[k, ell]
 
@@ -400,13 +447,10 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         # fragments with first_order_time_step duration.
         # todo: Replace BasisState + SignedMultiplier by a classical-quantum multiplier?
         kinetic_coeffs = get_momentum_coefficients(fragment) * time
-        """
-        # dynamic loops
-        if qp.compiler.active() and not catalyst.compile_without_static_loops:
+        if qp.compiler.active():
             kinetic_coeffs = qp.math.array(kinetic_coeffs, like="jax")
-        """
 
-        @qp.for_loop(fragment.modes)
+        @qp.for_loop(n_modes)
         def kinetic_terms(k):
             """Run a single quadratic time evolution sub-fragment for mode ``k`` in momentum
             space."""
@@ -567,7 +611,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
     trotter_time_step = evolution_time / num_trotter_steps
 
     n_modes = fragments[0].modes
-    mode_registers = qp.math.array([registers.pop(f"mode {i}") for i in range(n_modes)])
+    mode_registers = qp.math.array([registers.pop(f"mode {i}") for i in range(n_modes)], like="jax")
 
     if aqft_order is None:
         aqft_order = mode_registers.shape[1] - 1
