@@ -321,7 +321,7 @@ can be created:
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @transform

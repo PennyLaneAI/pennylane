@@ -24,6 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
@@ -44,7 +45,6 @@ from pennylane.resource.resource import (
     resources_from_tape,
     substitute,
 )
-from pennylane.tape import QuantumScript
 
 
 class TestResources:

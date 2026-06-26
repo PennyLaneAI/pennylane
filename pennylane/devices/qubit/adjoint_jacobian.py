@@ -19,9 +19,9 @@ from numbers import Number
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.logging import debug_logger
 from pennylane.operation import operation_derivative
-from pennylane.tape import QuantumScript
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
