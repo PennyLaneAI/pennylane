@@ -181,3 +181,29 @@ def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> st
         counter += 1
         unique_name = f"{level_name}-{counter}"
     return unique_name
+
+
+def get_marker_level_map(compile_pipeline: "CompilePipeline") -> dict[str, int]:
+    """Helper function to get a mapping from marker names to their associated level numbers.
+
+    .. warning::
+
+        This function is intended for internal use and may be subject to change without deprecation.
+
+    """
+    marker_to_level: dict[str, int] = {}
+
+    num_tape_levels = get_last_tape_transform_level(compile_pipeline)
+    if num_tape_levels != 0:
+        # Account for the "Before Tape Transforms" tape at level 0
+        num_tape_levels += 1
+
+    for marker in compile_pipeline.markers:
+        lvl = compile_pipeline.get_marker_level(marker)
+        marker_to_level[marker] = lvl
+
+        # Account for the MLIR lowering pass if necessary
+        if 0 < num_tape_levels <= lvl:
+            marker_to_level[marker] += 1
+
+    return marker_to_level

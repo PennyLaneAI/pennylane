@@ -33,6 +33,7 @@ from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 from .utils import (
     apply_partial_args,
     get_last_tape_transform_level,
+    get_marker_level_map,
     make_level_name_unique,
     preprocess_level_input,
     unwrap_partial,
@@ -121,7 +122,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
-    # pylint: disable=too-many-branches,too-many-statements
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
@@ -132,28 +132,20 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
         # Account for the "Before Tape Transforms" tape at level 0
         num_tape_levels += 1
 
-    # Maps to convert back and forth between marker name and int level
-    marker_to_level: dict[str, int] = {}
-    for marker in compile_pipeline.markers:
-        lvl = compile_pipeline.get_marker_level(marker)
-        marker_to_level[marker] = lvl
-
-        # Account for the MLIR lowering pass if necessary
-        if 0 < num_tape_levels <= lvl:
-            marker_to_level[marker] += 1
-
-    # Multiple markers can correspond to the same level
-    level_to_markers = defaultdict(list)
+    # Map to convert back and forth between marker name and int level
+    marker_to_level = get_marker_level_map(compile_pipeline)
+    level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
 
-    # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    return_single_level = isinstance(level, (int, str)) and level not in (
+    return_single_level: bool = isinstance(level, (int, str)) and level not in (
         "all",
         "all-mlir",
     )
+
+    # Easier to assume level is always a sorted list of int levels
     level = preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
-    level_to_name: dict[int, str] = {}  # This will be a map of level to its name
+    level_to_name: dict[int, str] = {}
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl for lvl in level if lvl >= num_tape_levels]
