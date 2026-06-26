@@ -14,19 +14,20 @@
 """Code for resource estimation"""
 
 import copy
-from collections import defaultdict
 import json
-import tempfile
 import os
+import tempfile
 import time
+from collections import defaultdict
 from functools import partial
 
 import pennylane as qp
 
 from .specs import specs
-from .utils import get_last_tape_transform_level, preprocess_level_input, get_marker_level_map
+from .utils import get_last_tape_transform_level, get_marker_level_map, preprocess_level_input
 
 _RESOURCE_ESTIMATION_PREFIX = "pennylane_resource_estimation"
+
 
 def _estimate_impl(qnode, level, *args, **kwargs):
     from catalyst import QJIT
@@ -35,6 +36,28 @@ def _estimate_impl(qnode, level, *args, **kwargs):
     original_compile_pipeline = original_qnode.compile_pipeline
     new_compile_pipeline = qp.CompilePipeline()
 
+    # This value is used to determine the last level which is a transform and not an MLIR pass
+    num_tape_levels = get_last_tape_transform_level(original_compile_pipeline)
+    if num_tape_levels != 0:
+        # Account for the "Before Tape Transforms" tape at level 0
+        num_tape_levels += 1
+
+    # Map to convert back and forth between marker name and int level
+    marker_to_level = get_marker_level_map(original_compile_pipeline)
+    level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
+    for marker, lvl in marker_to_level.items():
+        level_to_markers[lvl].append(marker)
+
+    return_single_level: bool = isinstance(level, (int, str)) and level not in (
+        "all",
+        "all-mlir",
+    )
+
+    # Easier to assume level is always a sorted list of int levels
+    level = preprocess_level_input(
+        level, marker_to_level, len(original_compile_pipeline), num_tape_levels
+    )
+    # TODO: Level is now processed, but is still unused
 
     resource_fnames = []
 
