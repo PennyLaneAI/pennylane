@@ -791,7 +791,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
 
 def _qrom_measurement_condition(
     num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
-):
+):  # pylint: disable=unused-argument
 
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
