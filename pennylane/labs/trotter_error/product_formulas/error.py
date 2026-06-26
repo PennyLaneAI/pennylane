@@ -18,6 +18,7 @@ import math
 from collections import defaultdict
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
+from itertools import groupby
 
 import numpy as np
 
@@ -262,19 +263,10 @@ def perturbation_error(
     expectations = defaultdict(int)
     partial_sums = defaultdict(list)
 
-    results = zip(comms, applied_terms)
-    comm, expectation = next(results)
-    while True:
-        try:
-            current = comm
-            while current == comm:
-                expectations[comm.order] += (1j * timestep) ** comm.order * expectation
-                prev_order = comm.order
-                comm, expectation = next(results)
-            partial_sums[prev_order].append(expectations[prev_order])
-        except StopIteration:
-            partial_sums[prev_order].append(expectations[prev_order])
-            break
+    for comm, group in groupby(zip(comms, applied_terms), key=lambda x: x[0]):
+        for _, expectation in group:
+            expectations[comm.order] += (1j * timestep) ** comm.order * expectation
+        partial_sums[comm.order].append(expectations[comm.order])
 
     return _format_output(expectations, partial_sums, track_history)
 
