@@ -135,7 +135,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     for op in tape.operations:
         if isinstance(op, qp.GlobalPhase):
             has_global_phase = True
-            phi += op.parameters[0]
+            phi = phi + op.parameters[0]
         else:
             operations.append(op)
 
