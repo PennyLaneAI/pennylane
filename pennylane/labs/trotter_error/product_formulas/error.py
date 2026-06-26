@@ -130,18 +130,19 @@ class ImportanceConfig:
     ``weights`` must be identical to the symbols used to build the :class:`~.pennylane.labs.trotter_error.product_formulas.product_formula.ProductFormula`
     object passed into :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
 
-    Args:
-        topk (int): samples the ``topk`` most important commutators to estimate the perturbation error.
-        weights (dict[Hashable, float]): a dictionary mapping fragment labels to their importance score.
-        history (bool): tracks the convergence history of the perturbation error per commutator evaluation.
-            when true the output of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
-            is modified to include the convergence history.
 
     """
 
     topk: int
+    """samples the ``topk`` most important commutators to estimate the perturbation error."""
+
     weights: dict[Hashable, float]
+    """a dictionary mapping fragment labels to their importance score."""
+
     history: bool = False
+    """tracks the convergence history of the perturbation error per commutator evaluation.
+       when true the output of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
+       is modified to include the convergence history."""
 
 
 # pylint: disable=too-many-branches
