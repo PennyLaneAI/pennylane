@@ -869,5 +869,5 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-# add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
+add_decomps(QROM, _qrom_decomposition)  # , _qrom_measurement_decomposition)
 # add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
