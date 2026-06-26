@@ -17,9 +17,9 @@ from collections.abc import Sequence
 from functools import partial
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import Transform, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
