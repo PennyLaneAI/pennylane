@@ -168,7 +168,7 @@ class TestAbstractifyOperatorInstances:
         assert isinstance(result.ops, list) and len(result.ops) == 1
         assert isinstance(inner_op, TwoDynOp)
         assert inner_op.phi == Float
-        assert inner_op.phi == Int[2]
+        assert inner_op.theta == Int[2]
         assert inner_op.wires == Wire[1]
 
     def test_abstract_instance_hash_stable(self):

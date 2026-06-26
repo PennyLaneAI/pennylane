@@ -30,7 +30,11 @@ if TYPE_CHECKING:
 @singledispatch
 def abstractify(val) -> AbstractArray | AbstractWires | Operator2:
     """Convert the provided value into an abstract type."""
-    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
+    # pylint: disable-next=import-outside-toplevel
+    from .operator2 import Operator2
+
+    # NOTE: Don't flatten Operator2 instances as they can be handled by their custom dispatch.
+    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, (Wires, Operator2)))
     if tree != leaf:
         abstract_leaves = tuple(abstractify(l) for l in leaves)
         return unflatten(abstract_leaves, tree)
