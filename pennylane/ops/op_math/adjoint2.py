@@ -18,9 +18,8 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture.primitives import operator_p
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 
 from .symbolicop2 import SymbolicOp2
 
@@ -126,7 +125,12 @@ class Adjoint2(SymbolicOp2):
         if len(eqns) == 0:
             # pylint: disable=protected-access
             self.base._bind_primitive()
-            assert self.base.tracer is not None
+            if self.base.tracer is None:
+                # If the base's tracer is `None` after explicitly re-binding the primitive,
+                # it means we're not in a tracing context, so we don't need to (and cannot)
+                # do anything.
+                return
+
             eqn = self.base.tracer.parent
             eqn.params["adjoint"] ^= True
             res = self.base.tracer
