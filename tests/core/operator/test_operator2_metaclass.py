@@ -23,10 +23,6 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-jax = pytest.importorskip("jax")
-
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
     """Operator with a dynamic parameter and wires that performs canonicalization."""
@@ -37,23 +33,13 @@ class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
         super().__init__(2 * phi, wires)
 
 
-class TestOperatorConcreteInputs:
-    """Tests that the child constructor is run and the primitive is bound if inputs are concrete."""
+def test_child_constructor_runs_when_concrete():
+    """Tests a concrete input will trigger the child's constructor."""
 
-    def test_child_constructor_runs_when_concrete(self):
-        """Tests a concrete input will trigger the child's constructor."""
-
-        op = DynCanonOp(phi=2.0, wires=0)
-        # __init__ is hit so phi is doubled
-        assert op.phi == 4.0
-        assert op.wires == Wires(0)
-
-    def test_concrete_inputs_triggers_bind(self):
-        """Tests that a concrete construction under capture will bind the primitive."""
-
-        cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
-        # Make sure the operator primitive is in thie JAXPR
-        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
+    op = DynCanonOp(phi=2.0, wires=0)
+    # __init__ is hit so phi is doubled
+    assert op.phi == 4.0
+    assert op.wires == Wires(0)
 
 
 class TestOperatorAbstractInputs:
@@ -192,44 +178,45 @@ class TestOperatorAbstractInputs:
         assert op.hybrid_arg == hybrid_out
 
     @pytest.mark.parametrize(
-        "hybrid_wires, base_wires, expected_wires",
+        "hybrid_wires, base_wires, exp_num_wires",
         (
             (
                 {"reg1": Wires([0, 1]), "reg2": Wires([2, 3, 4])},
-                AbstractWires(1),
-                AbstractWires(6),  # 2 + 3 + 1
+                Wire[1],
+                6,  # 2 + 3 + 1
             ),
             (
                 {"areg1": AbstractWires(2), "areg2": AbstractWires(3)},
-                AbstractWires(1),
-                AbstractWires(6),  # 2 + 3 + 1
+                Wire[1],
+                6,  # 2 + 3 + 1
             ),
             (
                 Wires([0, 1]),
-                AbstractWires(3),
-                AbstractWires(5),  # 3 + 2
+                Wire[3],
+                5,  # 3 + 2
             ),
             (
                 qp.registers({"alice": 2, "bob": 4}),
-                AbstractWires(5),
-                AbstractWires(11),  # 5 + 2 + 4
+                Wire[5],
+                11,  # 5 + 2 + 4
             ),
         ),
     )
     def test_operator_correctly_calculates_total_abstract_wires(
-        self, hybrid_wires, base_wires, expected_wires
+        self, hybrid_wires, base_wires, exp_num_wires
     ):
         """Tests that the final op.wires is the sum of all abstract wires."""
 
         class WireTrackingOp(Operator2):  # pylint: disable=too-few-public-methods
             hybrid_argnames = ("hybrid_wires",)
-            wire_argnames = ("wires", "hybrid_wires")
+            wire_argnames = ("wires", "hybrid_wires", "work_wires")
 
-            def __init__(self, hybrid_wires, wires):
-                super().__init__(hybrid_wires, wires=wires)
+            def __init__(self, hybrid_wires, wires, work_wires):
+                super().__init__(hybrid_wires, wires=wires, work_wires=work_wires)
 
-        op = WireTrackingOp(hybrid_wires, base_wires)
-        assert op.wires == expected_wires
+        op = WireTrackingOp(hybrid_wires, base_wires, work_wires=5)
+        # NOTE: 'work_wires' are not included
+        assert op.wires == Wire[exp_num_wires]
 
     def test_abstract_operator_doesnt_queue(self):
         """Ensures that an abstract operator doesn't get queued."""
@@ -274,6 +261,26 @@ class TestOperatorAbstractInputs:
 
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
+
+    def test_weak_dtype_is_preserved(self):
+        """Tests that canonicalization preserves strength of dtype."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with static, dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+
+            arg_specs = {"dynamic_arg": float, "wires": Wire[3]}
+
+            def __init__(self, dynamic_arg, wires):
+                super().__init__(dynamic_arg, wires=wires)
+
+        # Abstract inputs get canonicalized
+        # NOTE: Can safely upcast an int to a float.
+        op = MixedArgOp(AbstractArray((), np.int32), Wire[3])
+        assert op.dynamic_arg == Float
+        # pylint: disable=protected-access
+        assert op.dynamic_arg._weak_type
 
     def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""
@@ -375,11 +382,13 @@ class TestArgSpecValidationAbstractInputs:
             _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 
+@pytest.mark.capture
 class TestOperatorAbstractInputsCapture:
     """Tests the capture of operators with abstract inputs."""
 
     def test_bind_isnt_triggered_for_abstract_wires(self):
         """Tests that no operator equation enters the jaxpr for abstract wires."""
+        import jax
 
         def f():
             MultiWireOp(AbstractWires(1), 0)
@@ -390,9 +399,19 @@ class TestOperatorAbstractInputsCapture:
     def test_bind_isnt_triggered_for_abstract_array(self):
         """Tests that no operator equation enters the jaxpr for abstract inputs."""
 
+        import jax
+
         def f():
             DynCanonOp(phi=AbstractArray((1,), float), wires=0)
 
         cjaxpr = jax.make_jaxpr(f)()
         # Empty JAXPR
         assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 0
+
+    def test_concrete_inputs_triggers_bind(self):
+        """Tests that a concrete construction under capture will bind the primitive."""
+        import jax
+
+        cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
+        # Make sure the operator primitive is in thie JAXPR
+        assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
