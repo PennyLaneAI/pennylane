@@ -81,7 +81,7 @@ upload-reports = [
 docs = [
     "jax==0.7.1",
     "jaxlib==0.7.1",
-    "mistune==0.8.4",
+    "mistune==3.2.1",
     "m2r2",
     # TODO: Remove once galois becomes compatible with latest numpy
     "numpy>=2.0,<=2.2",
