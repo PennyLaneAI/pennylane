@@ -75,7 +75,6 @@ and a reduction in unintended side effects, ``QuantumScript`` is strictly used i
 Quantum Script
 ~~~~~~~~~~~~~~
 
-``QuantumScript`` itself now lives in the ``pennylane.core`` module.
 
 .. currentmodule:: pennylane.core.qscript
 

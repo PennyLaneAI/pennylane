@@ -46,8 +46,11 @@ from .primitives import (
 FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
+
 .. code-block::
+
     MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+
 """
 
 
