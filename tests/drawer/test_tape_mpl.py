@@ -25,9 +25,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.drawer import tape_mpl
 from pennylane.ops.op_math import Controlled
-from pennylane.tape import QuantumScript
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")

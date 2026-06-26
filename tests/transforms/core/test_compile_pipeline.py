@@ -21,8 +21,8 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
     BoundTransform,
     CompilePipeline,
