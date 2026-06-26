@@ -81,6 +81,25 @@ class TestAbstractify:
         assert result.phi == Float[3]
         assert result.wires == Wire[2]
 
+    @pytest.mark.parametrize(
+        "phi_spec, wire_spec",
+        [
+            (Float[3], Wire[3]),
+            (Float[-1], Wire[-1]),
+            (Float[-1], Wire[3]),
+            (Float[3], Wire[-1]),
+        ],
+    )
+    def test_noop_on_abstract_operator(self, phi_spec, wire_spec):
+        """Tests that an already abstract operator"""
+        op = DynOp(phi_spec, wires=wire_spec)
+
+        result = abstractify(op)
+
+        assert result.phi == phi_spec
+        assert result.wires == wire_spec
+        assert abstractify(result) == result  # idempotency
+
     def test_operator_hybrid_args(self):
         """Test that ``Operator2`` instances are abstractified correctly when there
         are hybrid arguments."""
