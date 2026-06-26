@@ -20,8 +20,8 @@ import warnings
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.qscript import make_qscript
 from pennylane.queuing import QueuingManager, apply
-from pennylane.tape import make_qscript
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):

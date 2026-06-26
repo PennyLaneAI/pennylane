@@ -21,7 +21,8 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.tape import QuantumTape
 from pennylane.transforms.core import (
     BoundTransform,
     Transform,

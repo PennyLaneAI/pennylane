@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.math import binary_solve_linear_system
 from pennylane.ops import CNOT
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

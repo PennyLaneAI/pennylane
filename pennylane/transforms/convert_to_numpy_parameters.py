@@ -18,7 +18,7 @@ during execution.
 
 import pennylane as qp
 from pennylane import math
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
