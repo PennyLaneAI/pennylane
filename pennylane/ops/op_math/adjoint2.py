@@ -112,6 +112,7 @@ class Adjoint2(SymbolicOp2):
     def generator(self):
         return -1 * self.base.generator()
 
+    @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
         ``Operator2`` class so that we can "edit" the original primitive."""
