@@ -37,8 +37,8 @@ from .jacobian_products import (
 
 if TYPE_CHECKING:
     from pennylane.core.qscript import QuantumScriptBatch
+    from pennylane.core.transforms import CompilePipeline
     from pennylane.devices import Device, ExecutionConfig
-    from pennylane.transforms.core import CompilePipeline
     from pennylane.typing import ResultBatch
 
     ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]

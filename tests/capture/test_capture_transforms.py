@@ -20,6 +20,8 @@ from functools import partial
 
 import pytest
 
+from pennylane.core.transforms import CompilePipeline, TransformError
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
@@ -33,7 +35,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import CompilePipeline, TransformError, transform
+from pennylane.transforms.core import transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -70,7 +72,7 @@ def expval_z_obs_to_x_obs_plxpr(
     class ExpvalZToX(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
         """Expval Z to X plxpr implementation."""
 
-        def interpret_measurement(self, meas):
+        def interpret_measurement(self, meas):  # pylint: disable=arguments-renamed
             """Interpret measurement."""
             if isinstance(meas, qp.measurements.ExpectationMP) and isinstance(meas.obs, qp.PauliZ):
                 return qp.expval(qp.X(meas.wires))
