@@ -759,9 +759,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
         num_bitstrings = base_params["num_bitstrings"]
         num_target_wires = base_params["num_target_wires"]
 
-    L = num_bitstrings
+    # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
-    # L = 2 ** ceil_log2(num_bitstrings)
+    L = 2 ** ceil_log2(num_bitstrings)
 
     if L <= 1:
         return {resource_rep(BasisState, num_wires=num_target_wires): 1}
@@ -834,11 +834,11 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
 
     # TODO: allowing partial qrom will remove this padding
     # Pad data up to the next power of 2 with all-zero bitstrings
-    # next_pow2 = 1 << (L - 1).bit_length()
-    # if L < next_pow2:
-    #    width = len(data[0])
-    #    data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
-    #    L = next_pow2
+    next_pow2 = 1 << (L - 1).bit_length()
+    if L < next_pow2:
+        width = len(data[0])
+        data = list(data) + [np.zeros(width, dtype=int) for _ in range(next_pow2 - L)]
+        L = next_pow2
 
     if L == 1:
         BasisState(data[0], target_wires)
@@ -869,5 +869,5 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
-add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
+# add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
+# add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
