@@ -27,6 +27,18 @@ from pennylane.wires import Wires
 class TestAbstractify:
     """Tests for the ``abstractify`` helper."""
 
+    def test_abstractify_doesnt_mutated_original_op(self):
+        """Tests against accidental mutation."""
+
+        op = DynOp([1, 2, 3], 0)
+        abs_op = abstractify(op)
+
+        assert abs_op.phi == Int[3]
+        assert abs_op.wires == Wire[1]
+
+        assert op.phi == [1, 2, 3]
+        assert op.wires == Wires([0])
+
     @pytest.mark.parametrize(
         "x", [0.12, np.ones((2, 3), dtype=np.float32), [0, 1], {"w": Wires([0, 1, 2])}]
     )
@@ -200,7 +212,7 @@ class TestAbstractify:
         with pytest.raises(NotImplementedError, match="Cannot abstractify"):
             _ = abstractify(input)
 
-    def test_arg_specs_integration(self):
+    def test_arg_specs_integration_with_nested_ops(self):
         """Tests how abstractify plays in with arg_specs validation."""
 
         class AnotherOp2(Operator2):

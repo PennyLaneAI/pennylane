@@ -39,6 +39,17 @@ class _ArgType(Enum):
     HYBRID = auto()
 
 
+def _resolve_arg_kind(cls, name: str) -> _ArgType:
+    """Resolves an arguments name to what kind of argument type it is."""
+    # Check hybrid first: hybrid args can also appear in wire_argnames
+    # and must be treated as hybrid.
+    if name in cls.hybrid_argnames:
+        return _ArgType.HYBRID
+    if name in cls.wire_argnames:
+        return _ArgType.WIRES
+    return _ArgType.DYN
+
+
 def _stop_autograph(f):
     """Stop the autograph interpretation of operators by making it so that ``f`` always
     belongs to the pennylane namespace.
@@ -141,16 +152,7 @@ class OperatorMeta(ABCMeta):
 
         if any(_contains_abstract_type(arguments[name]) for name in target_args):
             for name in target_args:
-                kind = _ArgType.DYN
-
-                # NOTE: Check hybrid first as hybrid args can
-                # appear in both hybrid and wires args; these arguments
-                # must be treated as hybrid.
-                if name in cls.hybrid_argnames:
-                    kind = _ArgType.HYBRID
-                elif name in cls.wire_argnames:
-                    kind = _ArgType.WIRES
-
+                kind = _resolve_arg_kind(cls, name)
                 arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
             obj = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
