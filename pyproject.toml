@@ -13,7 +13,7 @@ dependencies = [
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
-    "autograd",
+    "autograd<1.9",
     "appdirs",
     "autoray==0.8.10",
     "cachetools",
