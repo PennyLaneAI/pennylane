@@ -457,6 +457,7 @@
   Walsh-Hadamard transform plus a ``PauliY`` phase. This reduces the cost from
   :math:`O(\text{nnz} \cdot n \cdot 2^n)` to :math:`O(\text{num\_groups} \cdot n \cdot 2^n)`,
   giving order-of-magnitude speedups for sparse and structured operators.
+  [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
