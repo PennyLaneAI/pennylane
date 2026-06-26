@@ -20,11 +20,11 @@ import copy
 
 import numpy as np
 import pytest
+from operator2_utils import DynOp, FullOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import StatePrepBase2
+from pennylane.core.operator import Operator2, StatePrepBase2
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -40,9 +40,11 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.queuing import AnnotatedQueue
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 
+# pylint: disable=too-many-public-methods
 class TestInitSubclass:
     """Tests for the validation performed in ``Operator2.__init_subclass__``."""
 
@@ -233,25 +235,225 @@ class TestInitSubclass:
                 def __init__(self, wires):
                     super().__init__(wires=wires)
 
+    @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
+    def test_arg_specs_incompatible_with_other_arg_groups(self, attr):
+        """Test that ``arg_specs`` cannot name hybrid, static, or compilable args."""
 
-class DynOp(Operator2):
-    """A simple operator with one dynamic param and wires."""
+        attrs = {
+            "dynamic_argnames": ("phi",),
+            "arg_specs": {
+                "phi": AbstractArray((), float),
+                "extra": AbstractArray((), float),
+            },
+            attr: ("extra",),
+            "__init__": lambda self, phi, extra, wires: Operator2.__init__(
+                self, phi, extra, wires=wires
+            ),
+        }
 
-    dynamic_argnames = ("phi",)
+        with pytest.raises(
+            TypeError,
+            match=r"Op\.arg_specs can only contain dynamic and wire arguments",
+        ):
+            type("Op", (Operator2,), attrs)
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
+    def test_wire_sizes_derived_from_arg_specs(self):
+        """Test that ``wire_sizes`` is inferred from ``arg_specs`` when not declared."""
 
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+                "ctrl_wires": AbstractWires(1),
+            }
 
-class FullOp(Operator2):
-    """An operator using all argname groups."""
+            def __init__(self, phi, wires, ctrl_wires):
+                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
 
-    dynamic_argnames = ("phi",)
-    static_argnames = ("static",)
-    hybrid_argnames = ("hybrid",)
+        assert Op.wire_sizes == (2, 1)
 
-    def __init__(self, phi, static, hybrid, wires):
-        super().__init__(phi, static, hybrid, wires=wires)
+    def test_arg_specs_wire_sizes_mismatch_error(self):
+        """Test that ``arg_specs`` and ``wire_sizes`` must agree on wire counts."""
+
+        with pytest.raises(
+            TypeError,
+            match="Number of wires specified for 'wires' does not match",
+        ):
+            # pylint: disable=unused-variable
+            class Op(Operator2):
+                dynamic_argnames = ("phi",)
+                wire_sizes = (3,)
+                arg_specs = {
+                    "phi": AbstractArray((), float),
+                    "wires": AbstractWires(2),
+                }
+
+                def __init__(self, phi, wires):
+                    super().__init__(phi, wires=wires)
+
+    def test_arg_specs_builtin_num_types_canonicalized(self):
+        """Test that builtin Python number types are canonicalized to ``AbstractArrays``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": float}
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires)
+
+        assert Op.arg_specs == {"phi": AbstractArray((), float)}
+
+    def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
+        are any arguments."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.has_fixed_sig is False
+
+    def test_has_fixed_sig_true_without_argnames_without_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``True`` when ``arg_specs`` is not declared and there
+        are no arguments."""
+
+        class Op(Operator2):
+            wire_argnames = ()
+
+            def __init__(self):
+                # pylint: disable=useless-parent-delegation
+                super().__init__()
+
+        assert Op.has_fixed_sig is True
+
+    def test_has_fixed_sig_true_for_fully_specified_static_types(self):
+        """Test that ``has_fixed_sig`` is ``True`` when only dynamic and wire args are fully typed."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi", "theta")
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "theta": AbstractArray((2,), float),
+                "wires": AbstractWires(2),
+                "ctrl_wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, theta, wires, ctrl_wires):
+                super().__init__(phi, theta, wires=wires, ctrl_wires=ctrl_wires)
+
+        assert Op.has_fixed_sig is True
+
+    def test_has_fixed_sig_false_for_partial_arg_specs(self):
+        """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` omits some arguments."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": AbstractArray((), float)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.has_fixed_sig is False
+
+    @pytest.mark.parametrize("phi_spec", [AbstractArray(..., float), AbstractArray((-1,), float)])
+    def test_has_fixed_sig_false_for_unknown_rank_or_axis(self, phi_spec):
+        """Test that ``has_fixed_sig`` is ``False`` for dynamic shapes that are not fully fixed."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": phi_spec, "wires": AbstractWires(1)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.has_fixed_sig is False
+
+    def test_has_fixed_sig_false_for_dynamic_wire_count(self):
+        """Test that ``has_fixed_sig`` is ``False`` when a wire arg has unknown length."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(-1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.has_fixed_sig is False
+
+    def test_has_fixed_sig_true_after_number_type_canonicalization(self):
+        """Test that canonicalized builtin number types still yield a fixed signature."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {"phi": float, "wires": AbstractWires(2)}
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        assert Op.has_fixed_sig is True
+        assert Op.arg_specs["phi"].shape_fixed is True
+
+    @pytest.mark.parametrize(
+        "extra_argnames",
+        [
+            {"static_argnames": ("label",)},
+            {"hybrid_argnames": ("ops",)},
+            {"compilable_argnames": ("n",)},
+        ],
+    )
+    def test_has_fixed_sig_false_with_non_dynamic_wire_args(self, extra_argnames):
+        """Test that ``has_fixed_sig`` is ``False`` when hybrid, static, or compilable args exist."""
+
+        attrs = {
+            "dynamic_argnames": ("phi",),
+            "arg_specs": {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            },
+            **extra_argnames,
+        }
+
+        if "static_argnames" in extra_argnames:
+            attrs["__init__"] = lambda self, phi, label, wires: Operator2.__init__(
+                self, phi, label, wires=wires
+            )
+        elif "hybrid_argnames" in extra_argnames:
+            attrs["__init__"] = lambda self, phi, ops, wires: Operator2.__init__(
+                self, phi, ops, wires=wires
+            )
+        else:
+            attrs["__init__"] = lambda self, phi, n, wires: Operator2.__init__(
+                self, phi, n, wires=wires
+            )
+
+        Op = type("Op", (Operator2,), attrs)
+        assert Op.has_fixed_sig is False
+
+    def test_has_fixed_sig_false_with_hybrid_wire_arg(self):
+        """Test that a hybrid wire argument prevents a fixed signature."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "pytree_wires")
+            hybrid_argnames = ("pytree_wires",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, pytree_wires, wires):
+                super().__init__(phi, [Wires(w) for w in pytree_wires], wires=wires)
+
+        assert Op.has_fixed_sig is False
 
 
 class TestOperatorInit:
@@ -451,6 +653,121 @@ class TestOperatorInit:
         assert list(q.keys())[0].obj is op
 
 
+class TestInitExpectedArgtypesValidation:
+    """Tests for runtime ``arg_specs`` argument validation."""
+
+    def test_valid_arg_specs_accepts_matching_args(self):
+        """Test that matching dynamic and wire arguments pass validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=[0, 1])
+        assert op.arguments["phi"] == 0.5
+        assert op.wires == Wires([0, 1])
+
+        op1 = Op(np.array(0.5), wires=[0, 1])
+        assert op1.arguments["phi"] == np.array(0.5)
+        assert op1.wires == Wires([0, 1])
+
+    def test_numpy_scalar_passes_validation(self):
+        """Test that numpy scalar dynamic arguments pass ``arg_specs`` validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(np.array(0.5), wires=[0, 1])
+        assert op.arguments["phi"] == np.array(0.5)
+
+    def test_no_validation_without_arg_specs(self):
+        """Test that operators without ``arg_specs`` skip type validation."""
+
+        op = DynOp(0.5, wires=[0, 1, 2])
+        assert op.wires == Wires([0, 1, 2])
+
+    def test_dynamic_arg_wrong_shape_error(self):
+        """Test that a dynamic argument with the wrong shape raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match=r"Expected 'phi' to have shape \(2,\)"):
+            Op(np.array([0.5]), wires=0)
+
+    def test_dynamic_arg_wrong_dtype_error(self):
+        """Test that a dynamic argument with the wrong dtype raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), int),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(
+            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype 'int64'"
+        ):
+            Op(0.5, wires=0)
+
+    def test_weak_type_allows_python_scalar(self):
+        """Test that ``arg_specs`` weak types accept Python scalar inputs."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=[0, 1])
+        assert op.arguments["phi"] == 0.5
+
+    def test_wire_arg_wrong_length_error(self):
+        """Test that a wire argument with the wrong length raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(2),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(
+            ValueError, match="Incorrect number of wires for 'Op.wires'. Expected 2 wires but got 1"
+        ):
+            Op(0.5, wires=[0])
+
+
 class TestProperties:
     """Tests for public properties of ``Operator2``."""
 
@@ -516,6 +833,92 @@ class TestProperties:
 
 class TestBroadcasting:
     """Tests for parameter broadcasting."""
+
+    def test_broadcasted_scalar_passes_validation(self):
+        """Test that broadcasted scalar parameters pass ``arg_specs`` validation."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (0,)
+            arg_specs = {
+                "phi": AbstractArray((), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op([0.5, 0.6, 0.7], wires=0)
+        assert op.arguments["phi"] == [0.5, 0.6, 0.7]
+
+    def test_broadcasted_array_shape_validation(self):
+        """Test that broadcasted parameters validate the non-broadcasting dimensions
+        against ``arg_specs``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (1,)
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        _ = Op(np.ones((4, 2)), wires=0)
+
+    def test_broadcasted_array_wrong_shape_error(self):
+        """Test that an invalid broadcasted parameter shape raises an error."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (1,)
+            arg_specs = {
+                "phi": AbstractArray((2,), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.ones((4, 3)), wires=0)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.ones((4, 1, 2)), wires=0)
+
+    def test_broadcasted_array_wrong_dtype_error(self):
+        """Test that broadcasted parameters still enforce dtype compatibility."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            ndim_params = (0,)
+            arg_specs = {
+                "phi": AbstractArray((), int),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+            _ = Op(np.array([0.5, 0.6]), wires=0)
+
+    def test_broadcasted_inferred_ndim_from_arg_specs(self):
+        """Test broadcast validation when ``ndim_params`` is inferred from ``arg_specs``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            arg_specs = {
+                "phi": AbstractArray((2, 3), float),
+                "wires": AbstractWires(1),
+            }
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        _ = Op(np.ones((5, 2, 3)), wires=0)
 
     @pytest.mark.parametrize("data, exp_batch_size", [(1.1, None), ([1.1, 2.2], 2)])
     def test_batch_size(self, data, exp_batch_size):
@@ -812,6 +1215,16 @@ class TestPytreeMethods:
         new_op = Op._unflatten(data, metadata)
         assert new_op.arguments == op.arguments
         assert new_op.wires == op.wires
+
+    def test_unflatten_does_not_queue(self):
+        """Test that reconstructing an operator via ``_unflatten`` does not queue it."""
+        op = DynOp(0.5, wires=0)
+        data, metadata = op._flatten()
+
+        with AnnotatedQueue() as q:
+            _ = DynOp._unflatten(data, metadata)
+
+        assert len(q) == 0
 
 
 class TestDynamicProperties:
@@ -1727,7 +2140,178 @@ class TestRepresentations:
         assert op.generator() == DynOp(0.5, wires=0)
 
 
+class TestGraphDecomposition:
+    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``:
+    when ``compute_decomposition`` is not overridden, ``decomposition`` falls
+    back to registered graph decomposition rules instead of immediately raising."""
+
+    def test_compute_decomposition_takes_precedence(self):
+        """An overridden ``compute_decomposition`` is used over registered graph rules."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [qp.RZ(phi, wires=wires[0])]
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
+
+    def test_registered_rule_used_as_fallback(self):
+        """Without an overridden ``compute_decomposition``, a registered rule is used."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def use_rx(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, use_rx)
+
+            decomp = Op(0.5, wires=0).decomposition()
+            assert len(decomp) == 1
+            assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_rule_receives_full_argument_model(self):
+        """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
+        captured = {}
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+            static_argnames = ("label",)
+
+            def __init__(self, phi, label, wires):
+                super().__init__(phi, label, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, label, wires, **__):
+                captured["phi"] = phi
+                captured["label"] = label
+                captured["wires"] = wires
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            decomp = Op(0.6, "spin", wires=2).decomposition()
+
+        assert captured["phi"] == 0.6
+        assert captured["label"] == "spin"
+        assert captured["wires"] == Wires([2])
+        assert [type(o).__name__ for o in decomp] == ["RX", "RY"]
+        assert qp.equal(decomp[0], qp.RX(0.6, wires=2))
+        assert qp.equal(decomp[1], qp.RY(0.6, wires=2))
+
+    def test_no_rule_raises(self):
+        """Without any registered rule, ``decomposition`` raises ``DecompositionUndefinedError``."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        op = Op(0.5, wires=0)
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_decomposition_queued_during_recording(self):
+        """Produced ops are queued when decomposition happens during active recording."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1, qp.RY: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+                qp.RY(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            with AnnotatedQueue() as q:
+                decomp = op.decomposition()
+
+        assert q.queue == decomp
+        assert [type(o).__name__ for o in q.queue] == ["RX", "RY"]
+
+    def test_decomposition_not_queued_outside_recording(self):
+        """Outside an active recording context, decomposition returns ops without queuing."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            op = Op(0.5, wires=0)
+            decomp = op.decomposition()
+
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
+
+    def test_has_decomposition_reflects_registered_rules(self):
+        """``has_decomposition`` (a class-level check) reports ``True`` once decomposition rules
+        are registered for the operator type, for both class and instance access."""
+
+        class Op(Operator2):
+            dynamic_argnames = ("phi",)
+
+            def __init__(self, phi, wires):
+                super().__init__(phi, wires=wires)
+
+        # No rules registered globally: both class and instance report False.
+        assert Op.has_decomposition is False
+        assert Op(0.5, wires=0).has_decomposition is False
+
+        with qp.decomposition.local_decomps():
+
+            @qp.register_resources({qp.RX: 1})
+            def rule(phi, wires, **__):
+                qp.RX(phi, wires=wires[0])
+
+            qp.add_decomps(Op, rule)
+
+            assert Op.has_decomposition is True
+            assert Op(0.5, wires=0).has_decomposition is True
+
+
 class TestStatePrepBase:
+    """Unit tests for StatePrepBase2"""
 
     def test_state_prep_base_label(self):
         """Tests that the label is as expected."""
@@ -1749,17 +2333,17 @@ class TestStatePrepBase:
     def test_interface_not_implemented(self):
         """Tests that an error is raised if an interface isn't implemented."""
 
+        # pylint: disable=useless-parent-delegation,abstract-method
         class BadStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            # pylint: disable=useless-parent-delegation
             def __init__(self, wires):
                 super().__init__(wires)
 
             # state_vector is not implemented!
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class BadStatePrep"):
-            BadStatePrep(0)
+            BadStatePrep(0)  # pylint: disable=abstract-class-instantiated
 
 
 class NoParamOp(Operator2):
