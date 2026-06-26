@@ -155,6 +155,9 @@ class tensor(_np.ndarray):
         # of the vectorized ufunc
         res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
 
+        if res is NotImplemented:
+            return NotImplemented
+
         if ufunc.nout == 1:
             res = (res,)
 
