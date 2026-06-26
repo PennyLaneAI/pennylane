@@ -77,6 +77,10 @@ class SymbolNode(ASTNode):
 
         tmp_symbol_list = []
         for symbol, coeff in zip(symbols, coeffs):
+
+            if np.isclose(coeff, 0):
+                continue
+
             if not isinstance(symbol, Hashable):
                 raise TypeError(f"Symbols must be hashable types, got type '{type(symbol)}'.")
             if isinstance(symbol, ASTNode):
@@ -161,7 +165,7 @@ class CommutatorNode(ASTNode):
 
     def __init__(self, left: ASTNode, right: ASTNode):
         if not isinstance(left, ASTNode) or not isinstance(right, ASTNode):
-            raise TypeError("Both left and right children must be Node instances.")
+            raise TypeError("Both left and right children must be ASTNode instances.")
         self.left = copy.deepcopy(left)
         self.right = copy.deepcopy(right)
 
@@ -201,11 +205,20 @@ class CommutatorNode(ASTNode):
         return self.left.order + self.right.order
 
     def is_zero(self) -> bool:
+        """Determines if a commutator is zero, but with false negatives. The condition
+        ``self.left == self.right`` is too weak to find all zeros since all that is required is that
+        ``self.left`` is a scalar multiple of ``self.right``."""
         if isinstance(self.left, SymbolNode) and isinstance(self.right, SymbolNode):
-            if len(self.left.symbols) == len(self.right.symbols) == 1:
-                return list(self.left.symbols)[0][0] == list(self.right.symbols)[0][0]
+            ratios = defaultdict(complex)
 
-            return self.left.symbols == self.right.symbols
+            for symbol, coeff in self.left.symbols:
+                ratios[symbol] = coeff
+
+            for symbol, coeff in self.right.symbols:
+                ratios[symbol] /= coeff
+
+            ratio_list = list(ratios.values())
+            return np.allclose(ratio_list, ratio_list[0])
 
         return self.left.is_zero() or self.right.is_zero() or self.left == self.right
 
@@ -336,7 +349,7 @@ def is_mergeable(
     [[A, B], [C, [D, E]]] and [[A, B], [D, [E, F]]] are not.
     """
     if not isinstance(node1, ASTNode) or not isinstance(node2, ASTNode):
-        raise TypeError("Only Node instances can be checked for mergeability.")
+        raise TypeError("Only ASTNode instances can be checked for mergeability.")
 
     if type(node1) is not type(node2):
         return False
@@ -358,7 +371,7 @@ def is_mergeable(
     return is_mergeable(node1.right, node2.right, index - node1.left.order)
 
 
-def merge(node1: ASTNode, node2: ASTNode, index: int):
+def merge(node1: ASTNode, node2: ASTNode, index: int) -> ASTNode:
     """
     Merge two nodes at `index`.
     """

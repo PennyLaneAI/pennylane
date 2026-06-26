@@ -39,8 +39,7 @@ def vibronic_fragments(
         freqs (ndarray): the harmonic frequencies
         taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
             Taylor expansion. The ith entry in the sequence corresponds to the ith degree Taylor coefficients
-            and has shape (states, states, modes, ..., modes) where there are two states components and
-            i mode components.
+            and has shape (states, states) + (modes)*i.
 
     Returns:
         list[RealspaceMatrix]: a list of ``RealspaceMatrix`` objects representing the fragments of the vibronic Hamiltonian.
