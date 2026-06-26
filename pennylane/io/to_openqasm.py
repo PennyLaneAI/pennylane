@@ -20,9 +20,9 @@ from functools import singledispatch, wraps
 from typing import Any, overload
 
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices.preprocess import decompose
 from pennylane.ops import Conditional, MidMeasure
-from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
 from pennylane.workflow import QNode, construct_tape

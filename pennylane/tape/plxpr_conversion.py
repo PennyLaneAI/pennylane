@@ -38,6 +38,7 @@ from pennylane.capture.primitives import (
     vjp_prim,
 )
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     MidMeasure,
@@ -48,8 +49,6 @@ from pennylane.ops.mid_measure import (
 )
 from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
-
-from .qscript import QuantumScript
 
 
 class CollectOpsandMeas(FlattenedInterpreter):

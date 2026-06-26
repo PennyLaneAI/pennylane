@@ -906,7 +906,7 @@ class CCZ(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
         0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
         \end{pmatrix}
-    
+
     .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
@@ -1314,7 +1314,7 @@ class Toffoli(ControlledOp):
         0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
         0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
-    
+
     .. note:: The first two wires provided correspond to the **control wires**. The third wire is the **target wire**.
 
     **Details:**
