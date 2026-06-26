@@ -1225,6 +1225,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            n_ctrls=0,
             adjoint=False,
             **static_args,
         )
@@ -1525,7 +1526,14 @@ if has_jax:
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
     def _op_impl(
-        *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
+        *all_args,
+        op_cls,
+        wire_lens,
+        hybrid_lens,
+        hybrid_trees,
+        n_ctrls=0,
+        adjoint=False,
+        **static_args,
     ):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
