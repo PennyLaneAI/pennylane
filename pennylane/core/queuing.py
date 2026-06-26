@@ -548,12 +548,4 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
-def __getattr__(key):
-    if key == "process_queue":
-        raise AttributeError(
-            "pennylane.queuing.process_queue has been moved to qp.tape.qscript.from_queue"
-        )
-    raise AttributeError(f"module 'pennylane.queuing' has no attribute '{key}'")
-
-
 __all__ = ["QueuingManager", "AnnotatedQueue", "apply"]
