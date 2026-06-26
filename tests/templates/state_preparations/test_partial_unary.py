@@ -94,6 +94,7 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
     num_wires = len(wires)
     num_work_wires = len(work_wires)
 
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=num_device_wires))
     @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
     def func():

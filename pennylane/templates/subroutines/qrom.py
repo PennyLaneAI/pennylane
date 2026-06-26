@@ -313,8 +313,13 @@ class QROM(Operation):
             return [BasisEmbedding(bits, wires=target_wires) for bits in data]
 
         with QueuingManager.stop_recording():
-
-            swap_wires = target_wires + work_wires
+            n_select_work_wires = _calculate_n_select_work_wires(
+                len(data), len(control_wires), len(target_wires), len(work_wires)
+            )
+            n_swap_work_wires = len(work_wires) - n_select_work_wires
+            swap_work_wires = work_wires[:n_swap_work_wires]
+            select_work_wires = work_wires[n_swap_work_wires:]
+            swap_wires = target_wires + swap_work_wires
 
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
@@ -342,7 +347,9 @@ class QROM(Operation):
 
             select_ops = []
             if control_select_wires:
-                select_ops += [Select(new_ops, control=control_select_wires)]
+                select_ops += [
+                    Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
+                ]
             else:
                 select_ops = new_ops
 
@@ -869,5 +876,5 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-add_decomps(QROM, _qrom_decomposition)  # , _qrom_measurement_decomposition)
-# add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
+add_decomps(QROM, _qrom_decomposition, _qrom_measurement_decomposition)
+add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
