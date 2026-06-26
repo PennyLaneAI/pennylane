@@ -49,7 +49,7 @@ from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLik
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
-from .meta import OperatorMeta
+from .meta import OperatorMeta, _canonicalize_abstract_type, _resolve_arg_kind
 from .utils import abstractify
 
 if TYPE_CHECKING:
@@ -1665,10 +1665,6 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @abstractify.register(Operator2)
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    from .meta import (  # pylint: disable=import-outside-toplevel
-        _canonicalize_abstract_type,
-        _resolve_arg_kind,
-    )
 
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
