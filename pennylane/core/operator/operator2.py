@@ -929,11 +929,11 @@ class Operator2(metaclass=OperatorMeta):
                 res = value
             # Non-hybrid wire arguments
             elif key not in self.hybrid_argnames:
-                res = value.tolist()
+                res = value.tolist() if isinstance(value, Wires) else value
             # Hybrid wire arguments
             else:
                 leaves, tree = flatten(value, is_leaf=_is_wires)
-                leaves = [w.tolist() for w in leaves]
+                leaves = [w.tolist() if isinstance(w, Wires) else w for w in leaves]
                 res = unflatten(leaves, tree)
 
             inputs.append(f"{key}={res}")
@@ -1272,7 +1272,8 @@ def _init_wires(op: Operator2):
 
     for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
         if wname not in op.hybrid_argnames:
-            canonical_wires = Wires(op._bound_args.arguments[wname])
+            warg = op._bound_args.arguments[wname]
+            canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
 
             if wsize is not None and len(canonical_wires) != wsize:
@@ -1288,7 +1289,7 @@ def _init_wires(op: Operator2):
         # Pytree wires handling
         else:
             leaves, _ = flatten(op._bound_args.arguments[wname], is_leaf=_is_wires)
-            if not all(isinstance(l, Wires) for l in leaves):
+            if not all(isinstance(l, (Wires, AbstractWires)) for l in leaves):
                 raise ValueError(
                     f"Hybrid wires argument '{wname}' is invalid. All leaf values must be "
                     "cast to 'qp.wires.Wires'."
@@ -1305,7 +1306,11 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    op._wires = Wires.all_wires(all_algorithmic_wires)
+    if all_algorithmic_wires and isinstance(all_algorithmic_wires[0], AbstractWires):
+        total_wires = sum(w.num_wires for w in all_algorithmic_wires)
+        op._wires = AbstractWires(total_wires)
+    else:
+        op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
@@ -1332,15 +1337,17 @@ def _init_arg_types(op: Operator2) -> None:
         if isinstance(argval, (Number, list, tuple)):
             argval = np.array(argval)
         # If the argument is batched, compare the shape other than that batch dimension
-        arg_shape = math.shape(argval)
-        is_broadcasted = exp_type.shape is not Ellipsis and len(arg_shape) > exp_type.ndim
+        arg_shape = argval.shape if isinstance(argval, AbstractArray) else math.shape(argval)
+        either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
+        is_broadcasted = False if either_is_ellipsis else len(arg_shape) > exp_type.ndim
         unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
 
-        comparison_abstract_type = AbstractArray(
-            unbatched_shape, np.dtype(math.get_dtype_name(argval))
+        argval_dtype = (
+            argval.dtype if isinstance(argval, AbstractArray) else math.get_dtype_name(argval)
         )
+        comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
         if not exp_type.is_compatible_with(comparison_abstract_type):
-            actual_dtype = math.get_dtype_name(argval)
+            actual_dtype = argval_dtype
             if is_broadcasted:
                 raise ValueError(
                     f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
@@ -1351,6 +1358,15 @@ def _init_arg_types(op: Operator2) -> None:
                 f"Expected '{name}' to have shape {exp_type.shape} and dtype "
                 f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
             )
+
+        # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
+        # spec in 'arg_specs' in order to have a single source of truth.
+        if isinstance(argval, AbstractArray):
+            new_argval = AbstractArray(arg_shape, exp_type.dtype)
+            # pylint: disable=protected-access
+            # FIX: Hacky way to set attribute of a frozen dataclass
+            object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
+            op.arguments[name] = new_argval
 
 
 # -------------------------------------------------------------------------------
