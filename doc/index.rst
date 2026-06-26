@@ -114,7 +114,7 @@ designed to introduce key features and help you start building quantum circuits 
 Whether you're exploring quantum machine learning, quantum computing, or quantum chemistry, 
 PennyLane offers a wide range of tools and resources to support your research.
 
-.. image:: https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/research.png
+.. image:: _static/readme/research.png
     :align: right
     :width: 350px
     :target: javascript:void(0);
@@ -138,7 +138,7 @@ quantum concepts alongside the latest quantum algorithm research results.
 If you would like to contribute your own demo, see our `demo submission
 guide <https://pennylane.ai/demos_submission>`__.
 
-.. image:: https://raw.githubusercontent.com/PennyLaneAI/pennylane/main/doc/_static/readme/demos.png
+.. image:: _static/readme/demos.png
     :align: center
     :width: 900px
     :target: https://pennylane.ai/demonstrations
