@@ -34,7 +34,6 @@ from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
 from pennylane.exceptions import (
     AdjointUndefinedError,
-    CaptureError,
     DecompositionUndefinedError,
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -1523,12 +1522,37 @@ if has_jax:
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments,unused-argument
+    # pylint: disable=too-many-arguments
     @operator_p.def_impl
     def _op_impl(
         *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
     ):
-        raise CaptureError("Cannot bind operator primitives outside a tracing context.")
+        args = {name: unflatten(*value) for name, value in static_args.items()}
+        i = 0
+
+        for name in op_cls.dynamic_argnames:
+            args[name] = all_args[i]
+            i += 1
+
+        wire_lens_iter = iter(wire_lens)
+        for name in op_cls.wire_argnames:
+            if name not in op_cls.hybrid_argnames:
+                len_ = next(wire_lens_iter)
+                # We can safely cast to `int` inside the concrete impl because there
+                # there should not be any abstract values when calling the concrete impl.
+                args[name] = Wires(tuple(int(w) for w in all_args[i : i + len_]))
+                i += len_
+
+        # Reorder hybrid args such that hybrid wire args are first
+        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+            leaves = all_args[i : i + len_]
+            args[name] = unflatten(leaves, tree)
+            i += len_
+
+        op = type.__call__(op_cls, **args)
+        if adjoint:
+            op = type.__call__(qp.ops.op_math.Adjoint2, op)
+        return op
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
