@@ -453,8 +453,11 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.base.tracer is None:
             # pylint: disable=protected-access
             self.base._bind_primitive()
+            # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
+            # In that case, there is nothing to do, so return early.
+            if self.base.tracer is None:
+                return
 
-        assert self.base.tracer is not None
         eqns = pop_op_eqns((self.base,))
         assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
         params = eqns[0].params
@@ -476,6 +479,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         params["n_ctrls"] += len(self.control_wires)
         res = operator_p.bind(*invars, **params)
 
+        self.base.tracer = None
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
