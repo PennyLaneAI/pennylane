@@ -19,7 +19,7 @@ This module contains the classes for placing objects into queues.
     Unless you are a PennyLane developer, you likely do not need
     to use these classes directly.
 
-.. currentmodule:: pennylane.queuing
+.. currentmodule:: pennylane.core.queuing
 
 .. autosummary::
     :toctree: api
