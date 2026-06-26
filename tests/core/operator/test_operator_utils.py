@@ -14,7 +14,7 @@
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, MixedHybridOp
+from operator2_utils import CompOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
@@ -24,20 +24,8 @@ from pennylane.wires import Wires
 # pylint: disable=useless-parent-delegation, too-few-public-methods
 
 
-class TestAbstractify:
-    """Tests for the ``abstractify`` helper."""
-
-    def test_abstractify_doesnt_mutated_original_op(self):
-        """Tests against accidental mutation."""
-
-        op = DynOp([1, 2, 3], 0)
-        abs_op = abstractify(op)
-
-        assert abs_op.phi == Int[3]
-        assert abs_op.wires == Wire[1]
-
-        assert op.phi == [1, 2, 3]
-        assert op.wires == Wires([0])
+class TestAbstractifyBasics:
+    """Tests simple inputs to 'abstractify'."""
 
     @pytest.mark.parametrize(
         "x", [0.12, np.ones((2, 3), dtype=np.float32), [0, 1], {"w": Wires([0, 1, 2])}]
@@ -78,20 +66,71 @@ class TestAbstractify:
         result = abstractify(val)
         assert result == [Wire[1], (Wire[2], Wire[1])]
 
-    def test_operator(self):
+    @pytest.mark.parametrize(
+        "input, abstract_input",
+        (
+            (float, Float),
+            (int, Int),
+            (complex, Complex),
+            (bool, Bool),
+            (np.float32, AbstractArray((), np.float32)),
+            ([float, float], [Float, Float]),
+            ([float, complex], [Float, Complex]),
+        ),
+    )
+    def test_abstractify_supported_types(self, input, abstract_input):
+        """Ensures that the abstract version of types are correct."""
+
+        assert abstractify(input) == abstract_input
+
+    @pytest.mark.parametrize("input", (str, list, tuple))
+    def test_abstractify_unsupported_types(self, input):
+        """Tests that unsupported types raise an error."""
+
+        with pytest.raises(NotImplementedError, match="Cannot abstractify"):
+            _ = abstractify(input)
+
+
+class TestAbstractifyOperatorInstances:
+    """Tests behaviour on pure instances."""
+
+    def test_abstractify_doesnt_mutated_original_op(self):
+        """Tests against accidental mutation."""
+
+        op = DynOp([1, 2, 3], 0)
+        abs_op = abstractify(op)
+
+        assert abs_op.phi == Int[3]
+        assert abs_op.wires == Wire[1]
+
+        assert op.phi == [1, 2, 3]
+        assert op.wires == Wires([0])
+
+    def test_dynamic_operator(self):
         """Test that ``Operator2`` instances are abstractified correctly."""
         op = DynOp(0.5, wires=[0, 1])
         result = abstractify(op)
-
-        assert isinstance(result, DynOp)
         assert result.phi == Float
         assert result.wires == Wire[2]
 
         op = DynOp([1.0, 2.0, 3.0], wires=[0, 1])
         result = abstractify(op)
-        assert isinstance(result, DynOp)
         assert result.phi == Float[3]
         assert result.wires == Wire[2]
+
+        op = TwoDynOp(0.5, [1, 2], wires=0)
+        result = abstractify(op)
+        assert result.phi == Float
+        assert result.theta == Int[2]
+        assert result.wires == Wire[1]
+
+    def test_multiple_wire_op(self):
+        """Tests when there are multiple wires."""
+
+        op = MultiWireOp(wires=[0, 1], ctrl_wires=[2])
+        result = abstractify(op)
+        assert result.wires == Wire[3]  # 2 + 1
+        assert result.ctrl_wires == Wire[1]
 
     @pytest.mark.parametrize(
         "phi_spec, wire_spec",
@@ -129,42 +168,6 @@ class TestAbstractify:
         assert inner_op.phi == Float
         assert inner_op.wires == Wire[1]
 
-    def test_operator_subclass_with_complete_arg_specs(self):
-        """Tests that an operator subclass with a complete arg_specs correctly."""
-
-        class FixedSigOp(Operator2):
-            dynamic_argnames = ("phi",)
-            wire_argnames = ("wires", "ctrl_wires")
-            arg_specs = {
-                "phi": Float,
-                "wires": Wire[2],
-                "ctrl_wires": Wire[1],
-            }
-
-            def __init__(self, phi, wires, ctrl_wires):
-                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
-
-        result = abstractify(FixedSigOp)
-        assert result.phi == Float
-        assert result.wires == Wire[3]  # 2 + 1
-        assert result.ctrl_wires == Wire[1]
-
-    def test_operator_subclass_with_incomplete_arg_specs(self):
-        """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
-
-        class FixedSigOp(Operator2):
-            dynamic_argnames = ("phi",)
-            wire_argnames = ("wires", "ctrl_wires")
-
-            # Incomplete arg spec
-            arg_spec = {"phi": Float}
-
-            def __init__(self, phi, wires, ctrl_wires):
-                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
-
-        with pytest.raises(TypeError, match="must set 'arg_specs'"):
-            _ = abstractify(FixedSigOp)
-
     def test_abstract_instance_hash_stable(self):
         """Ensures that we get the same hash value for equal type specifiers."""
         a = abstractify(DynOp(0.5, 0))
@@ -187,30 +190,6 @@ class TestAbstractify:
         a = abstractify(DynOp(phi1, [0]))
         b = abstractify(DynOp(phi1, [0, 1]))
         assert a != b
-
-    @pytest.mark.parametrize(
-        "input, abstract_input",
-        (
-            (float, Float),
-            (int, Int),
-            (complex, Complex),
-            (bool, Bool),
-            (np.float32, AbstractArray((), np.float32)),
-            ([float, float], [Float, Float]),
-            ([float, complex], [Float, Complex]),
-        ),
-    )
-    def test_abstractify_supported_types(self, input, abstract_input):
-        """Ensures that the abstract version of types are correct."""
-
-        assert abstractify(input) == abstract_input
-
-    @pytest.mark.parametrize("input", (str, list, tuple))
-    def test_abstractify_unsupported_types(self, input):
-        """Tests that unsupported types raise an error."""
-
-        with pytest.raises(NotImplementedError, match="Cannot abstractify"):
-            _ = abstractify(input)
 
     def test_arg_specs_integration_with_nested_ops(self):
         """Tests how abstractify plays in with arg_specs validation."""
@@ -246,6 +225,76 @@ class TestAbstractify:
         # Make sure the inner op is abstractified
         assert abs_op.inner_op.theta == Float
         assert abs_op.inner_op.wires == Wire[1]
+
+    def test_static_arg_is_passed_through(self):
+        """Tests that a static arg is properly handled."""
+
+        op = FullOp(0.5, "lbl", [1, 2], wires=0)
+
+        result = abstractify(op)
+        assert result.phi == Float
+        assert result.static == "lbl"
+        assert result.hybrid == [Int, Int]
+        assert result.wires == Wire[1]
+
+    def test_comp_op_is_passed_through(self):
+        """Tests that a compilable static arg is passed through."""
+
+        op = CompOp(5, wires=[0])
+        result = abstractify(op)
+        assert result.n == 5
+        assert result.wires == Wire[1]
+
+    @pytest.mark.parametrize(
+        "concrete, specs",
+        [
+            (DynOp(0.5, wires=[0, 1]), DynOp(Float, wires=Wire[2])),
+            (DynOp([1, 2, 3], wires=0), DynOp(Int[3], wires=Wire[1])),
+        ],
+    )
+    def test_abstractify_matches_metaclass_construction(self, concrete, specs):
+        """Ensures that abstractifying an operator is the same as constructing it with abstract inputs."""
+        assert abstractify(concrete) == specs
+
+
+class TestAbstractifyOperatorClasses:
+    """Tests the behaviour on classes."""
+
+    def test_operator_subclass_with_complete_arg_specs(self):
+        """Tests that an operator subclass with a complete arg_specs correctly."""
+
+        class FixedSigOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {
+                "phi": Float,
+                "wires": Wire[2],
+                "ctrl_wires": Wire[1],
+            }
+
+            def __init__(self, phi, wires, ctrl_wires):
+                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
+
+        result = abstractify(FixedSigOp)
+        assert result.phi == Float
+        assert result.wires == Wire[3]  # 2 + 1
+        assert result.ctrl_wires == Wire[1]
+
+    def test_operator_subclass_with_incomplete_arg_specs(self):
+        """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
+
+        class FixedSigOp(Operator2):
+            dynamic_argnames = ("phi",)
+            wire_argnames = ("wires", "ctrl_wires")
+
+            # Incomplete arg spec
+            arg_spec = {"phi": Float}
+
+            def __init__(self, phi, wires, ctrl_wires):
+                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
+
+        with pytest.raises(TypeError, match="must set 'arg_specs'"):
+            _ = abstractify(FixedSigOp)
 
 
 if __name__ == "__main__":
