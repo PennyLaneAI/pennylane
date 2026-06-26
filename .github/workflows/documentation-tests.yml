@@ -48,13 +48,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade setuptools
 
-      - name: Install Catalyst and Lightning (dev)
+      - name: Install Catalyst and Lightning
         run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps "pennylane-catalyst>=0.15.0rc0,<=0.15.0" "pennylane-lightning>=0.45.0rc0,<=0.45.0"
-
-      - name: Install dependencies of Catalyst and Lightning
-        run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+          pip install --upgrade pennylane-catalyst pennylane-lightning
 
       - name: Install PennyLane (editable)
         run: |
