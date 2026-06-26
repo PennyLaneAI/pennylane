@@ -33,6 +33,48 @@ if TYPE_CHECKING:
     from pennylane.transforms.core import CompilePipeline
 
 
+def _convert_levels_to_decompose_order(
+    level: list[int], compile_pipeline: "CompilePipeline"
+) -> list[int]:
+    """Convert a list of levels into the an indexed list of which decomposition comes immediately before them.
+
+    This effectively converts each level number into a list of how many decompositions come before it.
+
+    For example, in the following compile pipeline:
+    [1] l1
+    [2] decompose
+    [3] l2
+    [4] l3
+    [5] decompose
+    The list `[1,2,3,4,5]` would be converted to `[0,1,1,1,2]`.
+
+    .. note::
+
+        This function assumes that `level` is a sorted list of integers, and that no tape transforms are present in the list.
+
+    .. warning::
+
+        This function is intended for internal use only and may change or be removed in future releases.
+
+    Args:
+        level (list[int]): The levels to convert.
+        compile_pipeline (CompilePipeline): The compile pipeline to use for decomposition.
+
+    Returns:
+        list[int]: The number of decompositions that come immediately before each level.
+    """
+    decompose_count = 0
+    decompose_levels = []
+    if 0 in level:
+        decompose_levels.append(0)
+    for i, mlir_pass in enumerate(compile_pipeline):
+        if mlir_pass.pass_name == "graph-decomposition":
+            decompose_count += 1
+        if i in level:
+            decompose_levels.append(decompose_count)
+    return decompose_levels
+
+
 def _get_decomposition_rules(
     qnode, compile_pipeline: "CompilePipeline", level: list[int] | int, *args, **kwargs
 ) -> list[dict[str, dict[str, int]]]:
@@ -107,24 +149,36 @@ def _estimate_impl(qnode, level, *args, **kwargs):
     level = preprocess_level_input(
         level, get_marker_level_map(compile_pipeline), len(compile_pipeline), 0
     )
-    # TODO: Level is now processed, but is still unused
 
-    top_level_specs = specs(qnode, level=0)(*args, **kwargs)
+    initial_specs = specs(qnode, level=0)(*args, **kwargs)
     all_decomps = _get_decomposition_rules(qnode, compile_pipeline, level, *args, **kwargs)
 
-    resources = top_level_specs.resources.gate_types
-    for decomps in all_decomps:
+    # Convert level into the index notation used by the output from _get_decomposition_rules
+    level = _convert_levels_to_decompose_order(level, compile_pipeline)
+
+    current_resources = initial_specs.resources.gate_types
+    all_resources = []
+
+    if 0 in level:
+        all_resources.append(current_resources)
+
+    for i, decomps in enumerate(all_decomps, start=1):
         new_resources = {}
-        for gate, count in resources.items():
+        for gate, count in current_resources.items():
             if gate not in decomps:
                 raise RuntimeError(f"Gate {gate} not found in decomposition rules")
             for decomp_gate, decomp_count in decomps[gate].items():
                 if decomp_gate not in new_resources:
                     new_resources[decomp_gate] = 0
                 new_resources[decomp_gate] += count * decomp_count
-        resources = new_resources
+        current_resources = new_resources
+        if i in level:
+            all_resources.append(current_resources)
 
-    return resources
+    if return_single_level:
+        return all_resources[0]
+
+    return all_resources
 
 
 def estimate(qnode, level="user"):
