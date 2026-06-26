@@ -1338,9 +1338,9 @@ def _init_arg_types(op: Operator2) -> None:
         if isinstance(argval, (Number, list, tuple)):
             argval = np.array(argval)
         # If the argument is batched, compare the shape other than that batch dimension
-        arg_shape = math.shape(argval)
+        arg_shape = argval.shape if isinstance(argval, AbstractArray) else math.shape(argval)
         either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
-        is_broadcasted = (not either_is_ellipsis) and len(arg_shape) > exp_type.ndim
+        is_broadcasted = False if either_is_ellipsis else len(arg_shape) > exp_type.ndim
         unbatched_shape = arg_shape[1:] if is_broadcasted else arg_shape
 
         argval_dtype = (
@@ -1361,9 +1361,13 @@ def _init_arg_types(op: Operator2) -> None:
             )
 
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
-        # arg_specs' spec in order to have a single source of truth.
+        # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
-            op.arguments[name] = AbstractArray(arg_shape, exp_type.dtype)
+            new_argval = AbstractArray(arg_shape, exp_type.dtype)
+            # pylint: disable=protected-access
+            # FIX: Hacky way to set attribute of a frozen dataclass
+            object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
+            op.arguments[name] = new_argval
 
 
 # -------------------------------------------------------------------------------
