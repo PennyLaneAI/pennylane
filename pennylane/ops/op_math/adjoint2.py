@@ -18,8 +18,9 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
+from pennylane.capture.primitives import operator_p
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 
 from .symbolicop2 import SymbolicOp2
 
