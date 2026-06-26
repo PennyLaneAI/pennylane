@@ -19,6 +19,7 @@ from numbers import Number
 from warnings import warn
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
@@ -28,7 +29,6 @@ from pennylane.measurements import (
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, get_mcm_predicates
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires

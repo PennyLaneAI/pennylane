@@ -19,7 +19,7 @@ import copy
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane._grad import grad
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import construct_tape

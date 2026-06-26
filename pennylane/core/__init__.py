@@ -35,10 +35,10 @@ Operator Types
     :parts: 1
 
 
-Other
-~~~~~
+Measurements
+~~~~~~~~~~~~
 
-..currentmodule:: pennylane.core
+.. currentmodule:: pennylane.core.measurements
 .. autosummary::
     :toctree: api
 
@@ -46,9 +46,30 @@ Other
     ~StateMeasurement
     ~SampleMeasurement
     ~MeasurementTransform
+
+Shots
+~~~~~
+
+.. currentmodule:: pennylane.core.shots
+.. autosummary::
+    :toctree: api
+
     ~Shots
     ~ShotCopies
     ~ShotsLike
+
+Quantum Script
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.qscript
+.. autosummary::
+    :toctree: api
+
+    ~QuantumScript
+    ~QuantumScriptBatch
+    ~QuantumScriptOrBatch
+    ~make_qscript
+    ~process_queue
 
 
 """
@@ -72,6 +93,13 @@ from .measurements import (
     MeasurementTransform,
 )
 from .shots import Shots, ShotCopies, ShotsLike
+from .qscript import (
+    QuantumScript,
+    QuantumScriptBatch,
+    QuantumScriptOrBatch,
+    make_qscript,
+    process_queue,
+)
 
 __all__ = [
     "Operator",
@@ -91,4 +119,9 @@ __all__ = [
     "Shots",
     "ShotCopies",
     "ShotsLike",
+    "QuantumScript",
+    "QuantumScriptBatch",
+    "QuantumScriptOrBatch",
+    "make_qscript",
+    "process_queue",
 ]
