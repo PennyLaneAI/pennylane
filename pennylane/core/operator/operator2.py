@@ -1670,14 +1670,13 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     new_args = {}
     for name, val in op.arguments.items():
         if name in op_cls.dynamic_argnames:
-            if isinstance(val, (Number, list, tuple)):
+            if not isinstance(val, AbstractArray) and isinstance(val, (Number, list, tuple)):
                 val = math.asarray(val)
             new_args[name] = abstractify(val)
-        # NOTE: Check hybrid first as hybrid args can
-        # appear in both hybrid and wires args; these arguments
-        # must be treated as hybrid.
         elif name in op_cls.hybrid_argnames:
             new_args[name] = abstractify(val)
+        elif isinstance(val, AbstractWires):
+            new_args[name] = val
         else:
             new_args[name] = abstractify(Wires(val))
 
