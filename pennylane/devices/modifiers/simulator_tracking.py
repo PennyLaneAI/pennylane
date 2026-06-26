@@ -15,8 +15,8 @@
 
 from functools import wraps
 
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
-from pennylane.tape import QuantumScript
 
 from ..device_api import Device
 from ..execution_config import ExecutionConfig

@@ -25,6 +25,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
@@ -35,7 +36,6 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.resource import SpecsResources
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]

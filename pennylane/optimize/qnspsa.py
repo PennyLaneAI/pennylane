@@ -18,9 +18,9 @@ import warnings
 from scipy.linalg import sqrtm
 
 from pennylane import numpy as pnp
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import probs
 from pennylane.ops import adjoint
-from pennylane.tape import QuantumScript
 from pennylane.workflow import construct_tape, execute
 
 

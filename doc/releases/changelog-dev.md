@@ -290,6 +290,7 @@
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
+  [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -307,11 +308,11 @@
   >>> isinstance(np.array(False), qp.typing.Bool)
   True
   >>> qp.typing.Bool[4]
-  AbstractArray((4,), bool)
+  AbstractArray((4,), bool, weak_type=True)
   >>> isinstance(np.array(0+1.2j), qp.typing.Complex)
   True
   >>> qp.typing.Complex[-1, 2]
-  AbstractArray((-1, 2), complex128)
+  AbstractArray((-1, 2), complex128, weak_type=True)
   >>> isinstance(qp.wires.Wires([0, 1]), qp.typing.Wire[2])
   True
   >>> qp.typing.Wire[2]
@@ -454,6 +455,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
+  :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
+  :class:`~.labs.estimator_beta.templates.LabsModExp`.
+  [(#9390)](https://github.com/PennyLaneAI/pennylane/pull/9390)
+
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
   to use unary iteration in the decomposition of the used `QROM` operation for the specified
@@ -565,6 +571,43 @@
       'CNOT': 4.570E+8,
       'X': 7.036E+6,
       'Hadamard': 1.055E+7
+
+  ```
+
+* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
+  their quantum workflows. This contains core functions and classes such as
+  :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and
+  :func:`~.pennylane.labs.profiler.export_flame_graph_data`.
+  [(#9546)](https://github.com/PennyLaneAI/pennylane/pull/9546)
+
+  ```pycon
+    >>> import pennylane.labs.estimator_beta as qre
+    >>> from pennylane.labs.profiler import profile, export_flame_graph_data
+    >>> def circuit():
+    ...     for w in range(5):
+    ...         qre.Hadamard()
+    ...         qre.RZ(1e-9)
+    ...
+    ...     qre.QPE(qre.RX(precision=1e-3), 4)
+    ...     qre.QFT(4)
+    >>>
+    >>> gate_set = {"T", "Hadamard", "CNOT"}
+    >>> res_profile, resources = profile(circuit, gate_set)()
+    >>> print(resources)
+    --- Resources: ---
+     Total wires: 5
+       algorithmic wires: 5
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 2.041E+3
+       'T': 1.972E+3,
+       'CNOT': 44,
+       'Hadamard': 25
+    >>> extracted_info = export_flame_graph_data(res_profile)
+    >>> ids, names, values, parents = extracted_info
+    >>> print(names[:5])  # just the first 5 entries
+    ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
   ```
 
@@ -692,7 +735,7 @@
 
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
-  
+
 * The CI workflow `Documentation Tests` has been renamed to `Test Documentation Code Examples`.
   [(#9710)](https://github.com/PennyLaneAI/pennylane/pull/9710)
 
@@ -740,7 +783,9 @@
   [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
+  [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
   [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
@@ -749,7 +794,10 @@
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
   Moves `MeasurementProcess`, `StateMeasurement`, `SampleMeasurement`, `MeasurementTransform`,
-  `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`
+  `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`.
+  Moves `QuantumScript`, `QuantumScriptBatch`, `QuantumScriptOrBatch`, `make_qscript`, and `process_queue`
+  to `pennylane.core.qscript`.
+  [(#9717)](https://github.com/PennyLaneAI/pennylane/pull/9717)
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
