@@ -15,9 +15,9 @@
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

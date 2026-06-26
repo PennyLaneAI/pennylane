@@ -26,7 +26,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 .. code-block:: python
 
     from pennylane.devices import Device, ExecutionConfig
-    from pennylane.tape import QuantumScript, QuantumScriptOrBatch
+    from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
         """My Documentation."""
