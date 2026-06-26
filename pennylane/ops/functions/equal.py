@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -45,7 +46,6 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
 from pennylane.typing import AbstractArray, AbstractWires, TensorLike

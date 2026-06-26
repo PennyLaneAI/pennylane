@@ -26,6 +26,7 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.core.operator import Channel, Operator, StatePrepBase
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -44,7 +45,6 @@ from pennylane.measurements import (
 from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.pauli.utils import _binary_matrix_from_pws
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters, defer_measurements, transform
 from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch

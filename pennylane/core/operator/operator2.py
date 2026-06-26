@@ -1666,21 +1666,17 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @abstractify.register(Operator2)
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    op_cls = type(op)
-    new_args = {}
-    for name, val in op.arguments.items():
-        if name in op_cls.dynamic_argnames:
-            if isinstance(val, (Number, list, tuple)):
-                val = math.asarray(val)
-            new_args[name] = abstractify(val)
-        # NOTE: Check hybrid first as hybrid args can
-        # appear in both hybrid and wires args; these arguments
-        # must be treated as hybrid.
-        elif name in op_cls.hybrid_argnames:
-            new_args[name] = abstractify(val)
-        else:
-            new_args[name] = abstractify(Wires(val))
+    from .meta import (  # pylint: disable=import-outside-toplevel
+        _canonicalize_abstract_type,
+        _resolve_arg_kind,
+    )
 
+    op_cls = type(op)
+    target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
+    new_args = dict(op.arguments)
+    for name in target_args:
+        kind = _resolve_arg_kind(op_cls, name)
+        new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
     return op_cls(**new_args)
 
 
