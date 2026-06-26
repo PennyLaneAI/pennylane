@@ -877,6 +877,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where Pennylane crashes when using `autograd==1.9.0` due to a change in `ArrayBox.__array__ufunc__`.
+  [(#9732)](https://github.com/PennyLaneAI/pennylane/pull/9732)
+
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
 
