@@ -733,6 +733,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
 
