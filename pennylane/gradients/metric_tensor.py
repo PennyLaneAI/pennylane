@@ -25,13 +25,13 @@ import numpy as np
 import pennylane.ops as qops
 from pennylane import math
 from pennylane.circuit_graph import LayerData
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.queuing import WrappedObj
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

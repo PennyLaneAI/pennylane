@@ -41,7 +41,7 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
-    from pennylane.tape import QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScriptBatch
     from pennylane.transforms.core import Transform
     from pennylane.typing import ResultBatch
     from pennylane.workflow.qnode import SupportedDeviceAPIs
