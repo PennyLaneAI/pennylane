@@ -24,9 +24,11 @@ from numbers import Number
 
 from pennylane import math
 from pennylane.capture import enabled
-from pennylane.pytrees import flatten, unflatten
+from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
+
+from .utils import abstractify
 
 
 class _ArgType(Enum):
@@ -35,6 +37,17 @@ class _ArgType(Enum):
     WIRES = auto()
     DYN = auto()
     HYBRID = auto()
+
+
+def _resolve_arg_kind(cls, name: str) -> _ArgType:
+    """Resolves an arguments name to what kind of argument type it is."""
+    # Check hybrid first: hybrid args can also appear in wire_argnames
+    # and must be treated as hybrid.
+    if name in cls.hybrid_argnames:
+        return _ArgType.HYBRID
+    if name in cls.wire_argnames:
+        return _ArgType.WIRES
+    return _ArgType.DYN
 
 
 def _stop_autograph(f):
@@ -87,9 +100,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     match kind:
         case _ArgType.WIRES:
-            # Use Wires object to sanitize inputs
-            canonical_wires = Wires(val)
-            return AbstractWires(len(canonical_wires))
+            # abstractify expects a Wires object for wire-routing, so we sanitize it first
+            return abstractify(Wires(val))
 
         case _ArgType.DYN:
             # A sequence of types is not supported (i.e., [float, float, float])
@@ -103,26 +115,13 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "currently supported. Instead, please use the type "
                     "specifiers found in pennylane.typing."
                 )
-            canonical_arr = math.asarray(val)
-            return AbstractArray(canonical_arr.shape, canonical_arr.dtype)
+            # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            return abstractify(math.asarray(val))
 
         case _ArgType.HYBRID:
-            leaves, structure = flatten(val, is_leaf=lambda x: isinstance(x, Wires))
-            new_leaves = []
-            for leaf in leaves:
-                if isinstance(leaf, (AbstractArray, AbstractWires)):
-                    new_leaves.append(leaf)
-                elif isinstance(leaf, Wires):
-                    new_leaves.append(AbstractWires(len(leaf)))
-                elif isinstance(leaf, type) and issubclass(leaf, Number):
-                    new_leaves.append(AbstractArray((), leaf))
-                # Process arrays
-                elif hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
-                    new_leaves.append(AbstractArray(leaf.shape, leaf.dtype))
-                # Process scalars
-                else:
-                    new_leaves.append(AbstractArray((), type(leaf)))
-            return unflatten(new_leaves, structure)
+            # Since abstractify natively handles PyTree recursion and leaves,
+            # we can pass the entire structure straight through
+            return abstractify(val)
 
         case _:  # pragma: no cover
             raise ValueError(f"Unknown kind: '{kind}'")
@@ -153,16 +152,7 @@ class OperatorMeta(ABCMeta):
 
         if any(_contains_abstract_type(arguments[name]) for name in target_args):
             for name in target_args:
-                kind = _ArgType.DYN
-
-                # NOTE: Check hybrid first as hybrid args can
-                # appear in both hybrid and wires args; these arguments
-                # must be treated as hybrid.
-                if name in cls.hybrid_argnames:
-                    kind = _ArgType.HYBRID
-                elif name in cls.wire_argnames:
-                    kind = _ArgType.WIRES
-
+                kind = _resolve_arg_kind(cls, name)
                 arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
             obj = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
