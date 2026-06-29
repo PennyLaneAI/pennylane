@@ -546,7 +546,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         context.append(op)
 
     if "Operator2" in list(map(lambda base: base.__name__, op.__class__.__bases__)):
-        op._bind_primitive()
+        op._bind_primitive()  # pylint: disable=protected-access
 
     return op
 
