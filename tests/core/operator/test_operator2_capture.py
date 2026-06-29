@@ -27,6 +27,8 @@ from operator2_utils import (
 )
 
 import pennylane as qp
+from pennylane import qnode, apply, device
+from pennylane.queuing import AnnotatedQueue
 
 jax = pytest.importorskip("jax")
 
@@ -316,6 +318,20 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 0.3)
         qp.assert_equal(op, FullOp(0.3, "lbl", [1.0, 2.0], wires=0))
 
+
+class TestApply:
+
+    def test_apply_adds_eqn(self):
+        """Tests that when an Operator2 is applied, an equation is added for it."""
+
+        op = DynOp(1.0, wires=0)
+
+        def f(op):
+            with AnnotatedQueue():
+                apply(op)
+
+        jaxpr = jax.make_jaxpr(f)(op)
+        assert len(jaxpr.eqns) == 1
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
