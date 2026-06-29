@@ -114,6 +114,16 @@ expose = ["QueuingManager", "AnnotatedQueue", "apply"]
 from = ["pennylane.core.queuing"]
 
 [[modules]]
+path = "pennylane.core.transforms"
+layer = "core"
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["transform", "Transform", "BoundTransform", "CompilePipeline"]
+from = ["pennylane.core.transforms"]
+
+[[modules]]
 path = "pennylane.math"
 depends_on = ["pennylane._grad", "pennylane.numpy"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -359,10 +369,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 # and need to be parsed and fixed accordingly.
 
 # These are left temporarily to depend on ANYTHING but the closed modules at the top of this file.
-
-[[modules]]
-path = "pennylane.transforms.core"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.operation"
