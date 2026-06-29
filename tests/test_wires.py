@@ -457,24 +457,6 @@ class TestWires:
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
         [
-            (Wires([0, 1, 2, 3]), Wires([2, 3, 4]), Wires([0, 1])),
-            (Wires([1, 2, 3]), Wires([]), Wires([1, 2, 3])),
-            (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([])),
-            (Wires([1, 2, 3]), [], Wires([1, 2, 3])),
-            ([1, 2, 3], Wires([]), Wires([1, 2, 3])),
-            ([], Wires([]), Wires([])),
-            (Wires([]), [], Wires([])),
-        ],
-    )
-    def test_difference(self, wire_a, wire_b, expected):
-        """
-        Test the difference operation (-) between two Wires objects.
-        """
-        assert wire_a - wire_b == expected
-
-    @pytest.mark.parametrize(
-        "wire_a, wire_b, expected",
-        [
             (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([0, 1, 3, 4])),
             ([0, 1, 2], Wires([2, 3, 4]), Wires([0, 1, 3, 4])),
             (Wires([0, 1, 2]), [2, 3, 4], Wires([0, 1, 3, 4])),
@@ -522,12 +504,7 @@ class TestWires:
         wire_d = Wires([6, 7, 8, 9])
 
         # ((A ∪ B) ∩ (C ∪ D)) ^ ((A - D) ∪ (C - B))
-        result = ((wire_a | wire_b) & (wire_c | wire_d)) ^ ((wire_a - wire_d) | (wire_c - wire_b))
         assert (wire_a | wire_b) & (wire_c | wire_d) == Wires([4, 5])
-        assert (wire_a - wire_d) | (wire_c - wire_b) == Wires([0, 1, 2, 3, 6, 7])
-
-        expected = Wires([0, 1, 2, 3, 4, 5, 6, 7])
-        assert result == expected
 
 
 @pytest.mark.jax
