@@ -28,7 +28,6 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import apply
-from pennylane.core.queuing import AnnotatedQueue
 
 jax = pytest.importorskip("jax")
 
@@ -326,8 +325,7 @@ class TestApply:
         """Tests that when an Operator2 is applied, an equation is added for it."""
 
         def f(op):
-            with AnnotatedQueue():
-                apply(op)
+            apply(op)
 
         jaxpr = jax.make_jaxpr(f)(op2)
         assert len(jaxpr.eqns) == 1

@@ -530,6 +530,10 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         active queuing context.
 
     """
+    if hasattr(op, "_bind_primitive") and enabled():
+        op._bind_primitive()  # pylint: disable=protected-access
+        return op
+
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
@@ -545,9 +549,6 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     else:
         # append the operator directly to the relevant queuing context
         context.append(op)
-
-    if hasattr(op, "_bind_primitive") and enabled():
-        op._bind_primitive()  # pylint: disable=protected-access
 
     return op
 
