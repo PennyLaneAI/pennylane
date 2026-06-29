@@ -21,7 +21,6 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
-    register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
@@ -33,98 +32,42 @@ from pennylane.wires import Wires, WiresLike
 from .phase_adder import PhaseAdder
 
 
-def _increment_specs(wires, all_wires, control=()):
-    """Gate specs for a carry-ripple +1 (mod 2^len) on big-endian ``wires``.
+def _increment(wires, control=()):
+    """Carry-ripple ``+1`` (mod ``2**len(wires)``) on big-endian ``wires``, optionally controlled.
 
-    Each multi-controlled ``X`` borrows every uninvolved wire as a dirty ancilla, allowing
-    an ancilla-assisted decomposition while leaving those wires unchanged.
+    The bits are flipped from most to least significant so each control still sees the original
+    values of the lower bits. Every multi-controlled ``X`` borrows the higher-significance wires
+    (already processed in this ripple, hence uninvolved) as dirty work wires, which lets it use an
+    ancilla-assisted decomposition while leaving those wires unchanged.
     """
-    specs = []
-    for i, target in enumerate(wires):
-        controls = list(wires[i + 1 :]) + list(control)
-        if not controls:
-            specs.append(("X", [target], []))
-            continue
-        involved = set(controls) | {target}
-        borrowed = [w for w in all_wires if w not in involved]
-        specs.append(("MCX", controls + [target], borrowed))
-    return specs
+    wires = Wires(wires)
+    control = Wires(control)
+    n = len(wires)
+    for i in range(n):
+        controls = wires[i + 1 :] + control
+        if len(controls) == 0:
+            PauliX(wires[i])
+        else:
+            MultiControlledX(
+                wires=controls + wires[i : i + 1],
+                work_wires=wires[:i],
+                work_wire_type="borrowed",
+            )
 
 
-def _add_constant_specs(k, wires, all_wires, control=()):
-    """Gate specs adding the constant ``k`` (mod 2^len) to big-endian ``wires``."""
+def _add_constant(k, wires, control=()):
+    """Add the constant ``k`` (mod ``2**len(wires)``) to big-endian ``wires``, optionally controlled.
+
+    Each set bit of ``k`` at position ``j`` is a ``+1`` acting on the top ``len(wires) - j`` wires.
+    A subtraction is requested by passing a negative ``k`` (added as its two's complement).
+    """
+    wires = Wires(wires)
+    control = Wires(control)
     n = len(wires)
     k %= 2**n
-    specs = []
     for j in range(n):
         if (k >> j) & 1:
-            specs.extend(_increment_specs(wires[0 : n - j], all_wires, control))
-    return specs
-
-
-def _arithmetic_adder_specs(k, x_wires, mod, work_wires):
-    """Gate specs for the QFT-free modular adder. Reversing a spec sublist gives its adjoint
-    because the constituents are self-inverse."""
-    n = len(x_wires)
-    all_wires = list(x_wires) + list(work_wires)
-    if mod == 2**n:
-        return _add_constant_specs(k, list(x_wires), all_wires)
-
-    # Add a spare work wire on top of x_wires as an extra high bit, so the intermediate
-    # values x + k and x + k - mod have room to grow without wrapping around. That extra
-    # bit is the msb, and the second work wire (flag) keeps track of whether we need to
-    # correct the result by adding mod back.
-    aug = list(work_wires[:1]) + list(x_wires)
-    flag = work_wires[1]
-    msb = aug[0]
-    k %= mod
-
-    # Add the constant: aug holds x + k (msb starts at 0, so no overflow yet).
-    specs = _add_constant_specs(k, aug, all_wires)
-    # Subtract mod (adjoint of "add mod"): aug holds x + k - mod. If x + k < mod this
-    # underflows and sets the msb (two's-complement sign bit).
-    specs += _add_constant_specs(mod, aug, all_wires)[::-1]
-    # Copy that sign bit into the flag: flag == 1 exactly when x + k < mod.
-    specs.append(("CNOT", [msb, flag], []))
-    # Conditionally add mod back when flag is set, undoing the subtraction in that case.
-    #    aug now holds (x + k) mod mod for both branches.
-    specs += _add_constant_specs(mod, aug, all_wires, control=[flag])
-    # Uncompute the flag: temporarily subtract k so the msb again encodes the branch,
-    #      use it to reset flag to 0, then the work wire is clean.
-    specs += _add_constant_specs(k, aug, all_wires)[::-1]
-    specs += [("X", [msb], []), ("CNOT", [msb, flag], []), ("X", [msb], [])]
-    # Re-add k to land on the final result (x + k) mod mod with all work wires restored.
-    specs += _add_constant_specs(k, aug, all_wires)
-    return specs
-
-
-def _spec_to_op(spec):
-    kind, wires, borrowed = spec
-    if kind == "MCX":
-        return MultiControlledX(wires=wires, work_wires=borrowed, work_wire_type="borrowed")
-    if kind == "CNOT":
-        return CNOT(wires=wires)
-    return PauliX(wires[0])
-
-
-def _count_specs(specs) -> dict:
-    counts = defaultdict(int)
-    for kind, wires, borrowed in specs:
-        if kind == "MCX":
-            counts[
-                resource_rep(
-                    MultiControlledX,
-                    num_control_wires=len(wires) - 1,
-                    num_zero_control_values=0,
-                    num_work_wires=len(borrowed),
-                    work_wire_type="borrowed",
-                )
-            ] += 1
-        elif kind == "CNOT":
-            counts[resource_rep(CNOT)] += 1
-        else:
-            counts[resource_rep(PauliX)] += 1
-    return dict(counts)
+            _increment(wires[: n - j], control)
 
 
 class Adder(Operation):
@@ -137,11 +80,15 @@ class Adder(Operation):
 
         \text{Adder}(k, mod) |x \rangle = | x+k \; \text{mod} \; mod \rangle.
 
-    By default, the implementation is based on the quantum Fourier transform method presented in
-    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. A QFT-free ``method="arithmetic"``
-    decomposition built from carry-ripple incrementers is also available, which avoids the
-    arbitrarily precise rotations of the QFT approach. Its multi-controlled gates reuse the
-    remaining wires as borrowed (dirty) ancillas, enabling a more efficient decomposition.
+    Two decomposition rules are registered for this operator. The first is based on the quantum
+    Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. The second is a QFT-free arithmetic
+    rule built from carry-ripple incrementers, which avoids the arbitrarily precise rotations of the
+    QFT approach and whose multi-controlled gates reuse the remaining register wires as borrowed
+    (dirty) work wires for a cheaper decomposition. Its modular-reduction structure follows
+    Beauregard (`arXiv:quant-ph/0205095 <https://arxiv.org/abs/quant-ph/0205095>`_), adapted to the
+    computational basis. When the graph-based decomposition system is enabled (via
+    :func:`~pennylane.decomposition.enable_graph`), the cheaper rule is selected automatically.
 
     .. note::
 
@@ -158,8 +105,6 @@ class Adder(Operation):
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
             should be provided. Defaults to empty tuple.
-        method (str): the decomposition strategy to use, either ``"qft"`` (default) for the
-            QFT-based adder or ``"arithmetic"`` for the QFT-free carry-ripple adder.
 
     **Example**
 
@@ -187,18 +132,6 @@ class Adder(Operation):
     The result, :math:`[[1 1 0 1]]`, is the binary representation of
     :math:`8 + 5  \; \text{modulo} \; 15 = 13`.
 
-    The arithmetic decomposition can be selected explicitly:
-
-    .. code-block:: pycon
-
-        >>> op = qp.Adder(2, x_wires=[0, 1, 2], mod=7, work_wires=[3, 4], method="arithmetic")
-        >>> len(op.decomposition()), [gate.name for gate in op.decomposition()[:5]]
-        (31, ['MultiControlledX', 'MultiControlledX', 'PauliX', 'PauliX', 'MultiControlledX'])
-
-    For ``method="arithmetic"``, the decomposition uses reversible carry-ripple add/subtract
-    blocks and a flag qubit for conditional correction, implementing
-    :math:`x \mapsto (x + k) \bmod mod` without QFT rotations.
-
     .. details::
         :title: Usage Details
 
@@ -222,10 +155,10 @@ class Adder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "num_work_wires", "mod", "k", "method"}
+    resource_keys = {"num_x_wires", "mod"}
 
     def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), method="qft"
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         x_wires = Wires(x_wires)
@@ -239,8 +172,6 @@ class Adder(Operation):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-        if method not in ("qft", "arithmetic"):
-            raise ValueError(f"method must be 'qft' or 'arithmetic', but received {method}.")
         if num_works_wires != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -256,7 +187,6 @@ class Adder(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
-        self.hyperparameters["method"] = method
 
         super().__init__(wires=all_wires)
 
@@ -264,10 +194,7 @@ class Adder(Operation):
     def resource_params(self) -> dict:
         return {
             "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
-            "k": self.hyperparameters["k"],
-            "method": self.hyperparameters["method"],
         }
 
     @property
@@ -294,7 +221,6 @@ class Adder(Operation):
             new_dict["x_wires"],
             self.hyperparameters["mod"],
             new_dict["work_wires"],
-            self.hyperparameters["method"],
         )
 
     @classmethod
@@ -302,7 +228,7 @@ class Adder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _adder_decomposition_resources(num_x_wires, mod, **__) -> dict:
+def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
@@ -312,15 +238,6 @@ def _adder_decomposition_resources(num_x_wires, mod, **__) -> dict:
     }
 
 
-def _qft_method_condition(method="qft", **__):
-    return method == "qft"
-
-
-def _arithmetic_method_condition(method="qft", **__):
-    return method == "arithmetic"
-
-
-@register_condition(_qft_method_condition)
 @register_resources(_adder_decomposition_resources)
 def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod == 2 ** len(x_wires):
@@ -333,17 +250,84 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
     change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
 
 
-def _adder_arithmetic_resources(num_x_wires, num_work_wires, mod, k, **__) -> dict:
-    x_wires = list(range(num_x_wires))
-    work_wires = list(range(num_x_wires, num_x_wires + num_work_wires))
-    return _count_specs(_arithmetic_adder_specs(k, x_wires, mod, work_wires))
+def _increment_resources(num_wires, num_control=0):
+    """Gate counts for :func:`_increment` acting on ``num_wires`` wires."""
+    counts = defaultdict(int)
+    for i in range(num_wires):
+        num_controls = (num_wires - 1 - i) + num_control
+        if num_controls == 0:
+            counts[resource_rep(PauliX)] += 1
+        else:
+            counts[
+                resource_rep(
+                    MultiControlledX,
+                    num_control_wires=num_controls,
+                    num_zero_control_values=0,
+                    num_work_wires=i,
+                    work_wire_type="borrowed",
+                )
+            ] += 1
+    return counts
 
 
-@register_condition(_arithmetic_method_condition)
-@register_resources(_adder_arithmetic_resources)
+def _add_constant_resources(num_wires, num_control=0):
+    """Upper-bound gate counts for an ``_add_constant`` on ``num_wires`` wires.
+
+    The estimate is taken at the worst case where every bit is set, so it is independent of the
+    actual constant and covers every gate type that any constant could emit.
+    """
+    counts = defaultdict(int)
+    for size in range(1, num_wires + 1):
+        for rep, count in _increment_resources(size, num_control).items():
+            counts[rep] += count
+    return counts
+
+
+def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
+    counts = defaultdict(int)
+    if mod == 2**num_x_wires:
+        return dict(_add_constant_resources(num_x_wires))
+
+    # The general-modulus circuit augments the register with one extra high bit and uses four
+    # uncontrolled add/subtract blocks, one flag-controlled addition of ``mod``, and a little
+    # flag bookkeeping (see _adder_arithmetic_decomposition).
+    aug = num_x_wires + 1
+    for rep, count in _add_constant_resources(aug).items():
+        counts[rep] += 4 * count
+    for rep, count in _add_constant_resources(aug, num_control=1).items():
+        counts[rep] += count
+    counts[resource_rep(CNOT)] += 2
+    counts[resource_rep(PauliX)] += 2
+    return dict(counts)
+
+
+@register_resources(_adder_arithmetic_resources, exact=False)
 def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
-    for spec in _arithmetic_adder_specs(k, list(x_wires), mod, list(work_wires)):
-        _spec_to_op(spec)
+    x_wires = Wires(x_wires)
+    work_wires = Wires(work_wires)
+    n = len(x_wires)
+
+    if mod == 2**n:
+        _add_constant(k, x_wires)
+        return
+
+    # Modular reduction follows Beauregard (arXiv:quant-ph/0205095), here in the computational basis
+    # rather than the Fourier basis: augment the register with a spare high bit so x + k cannot wrap,
+    # then use a flag wire to conditionally undo an over-subtraction of ``mod``.
+    aug = work_wires[:1] + x_wires
+    flag = work_wires[1:2]
+    msb = aug[:1]
+    k %= mod
+
+    _add_constant(k, aug)  # aug <- x + k
+    _add_constant(-mod, aug)  # aug <- x + k - mod (msb is the sign bit)
+    CNOT(wires=msb + flag)  # flag = 1 iff x + k < mod
+    _add_constant(mod, aug, control=flag)  # add mod back when flag is set
+    _add_constant(-k, aug)  # re-expose the branch in msb ...
+    PauliX(msb[0])
+    CNOT(wires=msb + flag)  # ... to reset flag to 0
+    PauliX(msb[0])
+    _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
 add_decomps(Adder, _adder_decomposition, _adder_arithmetic_decomposition)

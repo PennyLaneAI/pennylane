@@ -20,17 +20,17 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("method", ["qft", "arithmetic"])
-def test_standard_validity_Adder(method):
+def test_standard_validity_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5]
-    op = qp.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires, method=method)
+    op = qp.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qp.ops.functions.assert_valid(op)
 
 
@@ -106,9 +106,8 @@ class TestAdder:
             ),
         ],
     )
-    @pytest.mark.parametrize("method", ["qft", "arithmetic"])
     def test_operation_result(
-        self, k, x_wires, mod, work_wires, x, method
+        self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qp.device("default.qubit")
@@ -117,7 +116,7 @@ class TestAdder:
         @qp.qnode(dev)
         def circuit(x):
             qp.BasisEmbedding(x, wires=x_wires)
-            qp.Adder(k, x_wires, mod, work_wires, method=method)
+            qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
         if mod is None:
@@ -199,7 +198,9 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        adder_decomposition = qp.Adder(k, x_wires, mod, work_wires).decomposition()[0].decomposition()
+        adder_decomposition = (
+            qp.Adder(k, x_wires, mod, work_wires).decomposition()[0].decomposition()
+        )
 
         op_list = []
         op_list.append(qp.QFT(work_wires[:1] + x_wires))
@@ -241,14 +242,13 @@ class TestAdder:
         assert qp.math.allclose(mat1, mat2)
 
     @pytest.mark.parametrize("mod", [7, 8])
-    @pytest.mark.parametrize("method", ["qft", "arithmetic"])
-    def test_decomposition_new(self, mod, method):
-        """Tests the decomposition rule implemented with the new system."""
+    def test_decomposition_new(self, mod):
+        """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
         work_wires = [0, 1]
-        op = qp.Adder(k, x_wires, mod, work_wires, method=method)
+        op = qp.Adder(k, x_wires, mod, work_wires)
         for rule in qp.list_decomps(qp.Adder):
             _test_decomposition_rule(op, rule)
 
@@ -262,20 +262,17 @@ class TestAdder:
         ],
     )
     def test_arithmetic_matches_qft(self, k, x_wires, mod, work_wires):
-        """The arithmetic decomposition produces the same unitary as the QFT one."""
+        """The arithmetic decomposition rule produces the same unitary as the operator."""
+        op = qp.Adder(k, x_wires, mod, work_wires)
         all_wires = x_wires + work_wires
-        mat_qft = qp.matrix(
-            qp.Adder(k, x_wires, mod, work_wires, method="qft"), wire_order=all_wires
-        )
-        mat_arith = qp.matrix(
-            qp.Adder(k, x_wires, mod, work_wires, method="arithmetic"), wire_order=all_wires
-        )
-        assert qp.math.allclose(mat_qft, mat_arith)
+        mat_op = qp.matrix(op, wire_order=all_wires)
 
-    def test_invalid_method_error(self):
-        """Test that an invalid method raises an error."""
-        with pytest.raises(ValueError, match="method must be 'qft' or 'arithmetic'"):
-            qp.Adder(1, [0, 1, 2], mod=8, method="nonsense")
+        with qp.queuing.AnnotatedQueue() as q:
+            _adder_arithmetic_decomposition(*op.data, wires=op.wires, **op.hyperparameters)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        mat_arith = qp.matrix(tape, wire_order=all_wires)
+
+        assert qp.math.allclose(mat_op, mat_arith)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
@@ -283,8 +280,7 @@ class TestAdder:
         assert wires == qp.wires.Wires([1, 2])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("method", ["qft", "arithmetic"])
-    def test_jit_compatible(self, method):
+    def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
         import jax
@@ -302,7 +298,7 @@ class TestAdder:
         @qp.qnode(dev)
         def circuit():
             qp.BasisEmbedding(x, wires=x_wires)
-            qp.Adder(k, x_wires, mod, work_wires, method=method)
+            qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
         # pylint: disable=bad-reversed-sequence
