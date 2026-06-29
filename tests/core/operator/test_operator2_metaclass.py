@@ -261,7 +261,7 @@ class TestOperatorAbstractInputs:
     def test_override_abstract_init(self):
         """Tests that an operator can override __abstract_init__."""
 
-        class CustomOp(Operator2):
+        class CustomOp(Operator2):  # pylint: disable=too-few-public-methods
 
             dynamic_argnames = ("theta",)
 
