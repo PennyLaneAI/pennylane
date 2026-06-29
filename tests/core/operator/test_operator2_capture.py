@@ -328,8 +328,8 @@ class TestApply:
             apply(op2)
 
         jaxpr = jax.make_jaxpr(f)(op2)
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].params["op_cls"] == type(op2)
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["op_cls"] == type(op2)
 
 
 if __name__ == "__main__":
