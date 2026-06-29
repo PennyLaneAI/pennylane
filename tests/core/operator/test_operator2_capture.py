@@ -33,7 +33,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from pennylane.core.operator.operator2 import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.pytrees import unflatten
 
 # ---------------------- Helpers ----------------------
