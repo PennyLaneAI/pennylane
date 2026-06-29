@@ -26,7 +26,7 @@ from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
