@@ -18,8 +18,10 @@ import pytest
 from typing_extensions import override
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 
 # pylint: disable=unused-argument,too-few-public-methods
@@ -398,3 +400,24 @@ class TestControlledOp2:
 
         generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
         qp.assert_equal(op.generator(), generator)
+
+    def test_create_abstract_op(self):
+        """Tests creating an abstract operator."""
+
+        class CustomOp(Operator2):
+
+            dynamic_argnames = ("theta",)
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"theta": Float, "wires": Wire[1]}
+
+            def __init__(self, theta, wires):
+                super().__init__(self, theta, wires)
+
+        op = ControlledOp2(CustomOp, Wire[2])
+        assert op.control_wires == Wire[2]
+        assert op.target_wires == Wire[1]
+        assert op.control_values == Bool[2]
+        assert op.work_wires == Wire[0]
+        assert op.wires == Wire[3]
