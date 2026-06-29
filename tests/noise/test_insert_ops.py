@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.noise.insert_ops import insert
-from pennylane.tape import QuantumScript
 
 
 # pylint: disable=too-few-public-methods

@@ -22,12 +22,12 @@ from itertools import product
 from pennylane import ops
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, SampleMP, expval, sample
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
 from pennylane.queuing import QueuingManager, WrappedObj
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 

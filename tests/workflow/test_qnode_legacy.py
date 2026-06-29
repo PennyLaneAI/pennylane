@@ -28,9 +28,9 @@ import pennylane as qp
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.resource import SpecsResources
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
