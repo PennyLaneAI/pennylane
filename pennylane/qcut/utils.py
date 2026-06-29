@@ -29,7 +29,7 @@ from pennylane.ops.meta import WireCut
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .ops import MeasureNode, PrepareNode
-from .tapes import WrappedObj, graph_to_tape
+from .tapes import _WrappedObj, graph_to_tape
 
 
 def _prep_zero_state(wire):
@@ -342,7 +342,7 @@ def replace_wire_cut_node(node: WireCut, graph):
     >>> graph = qp.qcut.tape_to_graph(tape)
     >>> qp.qcut.replace_wire_cut_node(wire_cut, graph)
     """
-    node_obj = WrappedObj(node)
+    node_obj = _WrappedObj(node)
     predecessors = graph.pred[node_obj]
     successors = graph.succ[node_obj]
 
@@ -371,8 +371,8 @@ def replace_wire_cut_node(node: WireCut, graph):
         # We are introducing a degeneracy in the order of the measure and prepare nodes
         # here but the order can be inferred as MeasureNode always precedes
         # the corresponding PrepareNode
-        meas_node = WrappedObj(meas)
-        prep_node = WrappedObj(prep)
+        meas_node = _WrappedObj(meas)
+        prep_node = _WrappedObj(prep)
         graph.add_node(meas_node, order=order)
         graph.add_node(prep_node, order=order)
 
@@ -496,7 +496,7 @@ def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
                 cut_graph.nodes[op]["order"] += 1
         # Add WireCut
         wire_cut = WireCut(wires=wire)
-        wire_cut_node = WrappedObj(wire_cut)
+        wire_cut_node = _WrappedObj(wire_cut)
         cut_graph.add_node(wire_cut_node, order=order)
         cut_graph.add_edge(op0, wire_cut_node, wire=wire)
         cut_graph.add_edge(wire_cut_node, op1, wire=wire)

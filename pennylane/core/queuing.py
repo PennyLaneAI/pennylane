@@ -19,7 +19,7 @@ This module contains the classes for placing objects into queues.
     Unless you are a PennyLane developer, you likely do not need
     to use these classes directly.
 
-.. currentmodule:: pennylane.queuing
+.. currentmodule:: pennylane.core.queuing
 
 .. autosummary::
     :toctree: api
@@ -546,14 +546,6 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         context.append(op)
 
     return op
-
-
-def __getattr__(key):
-    if key == "process_queue":
-        raise AttributeError(
-            "pennylane.queuing.process_queue has been moved to qp.tape.qscript.from_queue"
-        )
-    raise AttributeError(f"module 'pennylane.queuing' has no attribute '{key}'")
 
 
 __all__ = ["QueuingManager", "AnnotatedQueue", "apply"]

@@ -33,7 +33,7 @@ from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
 
 
-class WrappedObj:
+class _WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
 
     def __init__(self, obj):
@@ -43,12 +43,12 @@ class WrappedObj:
         return id(self.obj)
 
     def __eq__(self, other):
-        if not isinstance(other, WrappedObj):
+        if not isinstance(other, _WrappedObj):
             return False
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):
-        return f"Wrapped({self.obj.__repr__()})"
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def _get_wires(obj, all_wires):
@@ -88,7 +88,7 @@ def _construct_graph_from_queue(queue, all_wires):
     graph = rx.PyDiGraph(multigraph=False)
 
     for i, obj in enumerate(queue):
-        inds_for_objs[WrappedObj(obj)].append(i)
+        inds_for_objs[_WrappedObj(obj)].append(i)
         obj_node = graph.add_node(i)
         if isinstance(obj, (MidMeasure, PauliMeasure)):
             mid_measure_nodes[obj] = obj_node
@@ -264,14 +264,14 @@ class CircuitGraph:
                 "CircuitGraph.ancestors accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
             )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+        if any(len(self._inds_for_objs[_WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "Cannot calculate ancestors for an operator that occurs multiple times."
                 "Please use ancestors_of_indexes instead."
             )
         ancestors = set()
         for op in ops:
-            ind = self._inds_for_objs[WrappedObj(op)][0]
+            ind = self._inds_for_objs[_WrappedObj(op)][0]
             op_ancestors = rx.ancestors(self._graph, ind)
             ancestors.update(set(op_ancestors))
         if sort:
@@ -328,14 +328,14 @@ class CircuitGraph:
                 "CircuitGraph.descendants accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
             )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+        if any(len(self._inds_for_objs[_WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "cannot calculate decendents for an operator that occurs multiple times. "
                 "Please use descendants_of_indexes instead."
             )
         descendants = set()
         for op in ops:
-            ind = self._inds_for_objs[WrappedObj(op)][0]
+            ind = self._inds_for_objs[_WrappedObj(op)][0]
             op_descendants = rx.descendants(self._graph, ind)
             descendants.update(set(op_descendants))
         if sort:
@@ -422,7 +422,7 @@ class CircuitGraph:
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
 
-        self._inds_for_objs[WrappedObj(new)] = self._inds_for_objs.pop(WrappedObj(old))
+        self._inds_for_objs[_WrappedObj(new)] = self._inds_for_objs.pop(_WrappedObj(old))
 
         for i, op in enumerate(self._operations):
             if op is old:
@@ -499,7 +499,7 @@ class CircuitGraph:
         if a is b:
             return True
 
-        if any(len(self._inds_for_objs[WrappedObj(o)]) > 1 for o in (a, b)):
+        if any(len(self._inds_for_objs[_WrappedObj(o)]) > 1 for o in (a, b)):
             raise ValueError(
                 "CircuitGraph.has_path does not work with operations that have been repeated. "
                 "Consider using has_path_idx instead."
@@ -509,8 +509,8 @@ class CircuitGraph:
             len(
                 rx.digraph_dijkstra_shortest_paths(
                     self._graph,
-                    self._inds_for_objs[WrappedObj(a)][0],
-                    self._inds_for_objs[WrappedObj(b)][0],
+                    self._inds_for_objs[_WrappedObj(a)][0],
+                    self._inds_for_objs[_WrappedObj(b)][0],
                     weight_fn=None,
                     default_weight=1.0,
                     as_undirected=False,

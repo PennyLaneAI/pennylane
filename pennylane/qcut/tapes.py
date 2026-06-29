@@ -34,7 +34,7 @@ from pennylane.wires import Wires
 from .ops import MeasureNode, PrepareNode
 
 
-class WrappedObj:
+class _WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
 
     def __init__(self, obj):
@@ -44,12 +44,12 @@ class WrappedObj:
         return id(self.obj)
 
     def __eq__(self, other):
-        if not isinstance(other, WrappedObj):
+        if not isinstance(other, _WrappedObj):
             return False
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):
-        return f"Wrapped({self.obj.__repr__()})"
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def tape_to_graph(tape: QuantumScript):
@@ -233,7 +233,7 @@ def _add_operator_node(graph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
-    node = WrappedObj(op)
+    node = _WrappedObj(op)
     graph.add_node(node, order=order)
     for wire in op.wires:
         if wire_latest_node[wire] is not None:

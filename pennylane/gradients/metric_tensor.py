@@ -37,7 +37,7 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-class WrappedObj:
+class _WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
 
     def __init__(self, obj):
@@ -47,12 +47,12 @@ class WrappedObj:
         return id(self.obj)
 
     def __eq__(self, other):
-        if not isinstance(other, WrappedObj):
+        if not isinstance(other, _WrappedObj):
             return False
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):
-        return f"Wrapped({self.obj.__repr__()})"
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def _mt_cjac_tdot(mt, c):
@@ -603,7 +603,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     r"""Get the controlled-generator operation for a given operation.
 
     Args:
-        op (WrappedObj[Operation]): Wrapped Operation from which to extract the generator. The
+        op (_WrappedObj[Operation]): Wrapped Operation from which to extract the generator. The
             Operation needs to be wrapped for hashability in order to use the lru-cache.
         allow_nonunitary (bool): Whether non-unitary gates are allowed in the circuit
         aux_wire (int or pennylane.wires.Wires): Auxiliary wire on which to control the operation
@@ -675,12 +675,12 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
 
     # Iterate over differentiated operation in first layer
     for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds, strict=True):
-        gen_op_i = _get_gen_op(WrappedObj(diffed_op_i), allow_nonunitary, aux_wire)
+        gen_op_i = _get_gen_op(_WrappedObj(diffed_op_i), allow_nonunitary, aux_wire)
 
         # Iterate over differentiated operation in second layer
         # There will be one tape per pair of differentiated operations
         for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds, strict=True):
-            gen_op_j = _get_gen_op(WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
+            gen_op_j = _get_gen_op(_WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
 
             ops = [
                 qops.Hadamard(wires=aux_wire),
