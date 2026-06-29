@@ -22,8 +22,9 @@ from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript, make_qscript
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
     ErrorOperation,
@@ -31,7 +32,6 @@ from pennylane.resource.error import (
     _commutator_error,
     _one_norm_error,
 )
-from pennylane.tape import QuantumScript, make_qscript
 from pennylane.wires import Wires
 
 
@@ -567,8 +567,8 @@ class TrotterizedQfunc(Operation):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
-    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The 
+    :math:`m^{\text{th}}`-order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 

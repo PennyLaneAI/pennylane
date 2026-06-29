@@ -30,7 +30,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.reconstruct import get_decomp_kwargs
+from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
@@ -798,6 +798,22 @@ class TestControlledDecompositions:
             {controlled_resource_rep(qp.X, {}, num_control_wires=3): 2, qp.CRot: 1}
         )
 
+    def test_base_decomp_contains_mcms(self, _):
+        """Tests that the graph does not apply ctrl to rules that contain MCMs."""
+
+        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        def _custom_rule(wires):
+            raise NotImplementedError
+
+        op = qp.ctrl(CustomOp(0), control=1)
+        graph = DecompositionGraph(
+            operations=[op],
+            alt_decomps={CustomOp: [_custom_rule]},
+            gate_set={"PauliX", "MidMeasure"},
+        )
+        rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
+        assert all("_custom_rule" not in rule.name for rule in rules)
+
 
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
@@ -818,7 +834,7 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
-        kwargs = get_decomp_kwargs(op)
+        kwargs = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
@@ -836,7 +852,7 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 3
 
         solution = graph.solve()
-        kwargs = get_decomp_kwargs(op)
+        kwargs = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
@@ -869,7 +885,7 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.edges()) == 19
 
         solution = graph.solve()
-        kwargs = get_decomp_kwargs(op)
+        kwargs = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
@@ -898,7 +914,7 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 7
 
-        rule_params = get_decomp_kwargs(op)
+        rule_params = op.hyperparameters
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
@@ -908,7 +924,7 @@ class TestSymbolicDecompositions:
 
         op2 = qp.pow(qp.H(0), 6)
 
-        rule_params = get_decomp_kwargs(op2)
+        rule_params = op2.hyperparameters
 
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **rule_params)
@@ -925,7 +941,7 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"PauliX"})
         solution = graph.solve()
 
-        rule_params = get_decomp_kwargs(op)
+        rule_params = op.hyperparameters
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **rule_params)
 
@@ -954,10 +970,10 @@ class TestSymbolicDecompositions:
         op3 = qp.ops.Controlled(qp.H(0), control_wires=1)
         op4 = qp.adjoint(qp.RX(0.5, wires=0))
 
-        rule1_params = get_decomp_kwargs(op1)
-        rule2_params = get_decomp_kwargs(op2)
-        rule3_params = get_decomp_kwargs(op3)
-        rule4_params = get_decomp_kwargs(op4)
+        rule1_params = op1.hyperparameters
+        rule2_params = op2.hyperparameters
+        rule3_params = op3.hyperparameters
+        rule4_params = op4.hyperparameters
 
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
@@ -990,8 +1006,8 @@ class TestSymbolicDecompositions:
         op1 = qp.pow(CustomOp(0), 0)
         op2 = qp.pow(CustomOp(1), 1)
 
-        rule1_params = get_decomp_kwargs(op1)
-        rule2_params = get_decomp_kwargs(op2)
+        rule1_params = op1.hyperparameters
+        rule2_params = op2.hyperparameters
 
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
@@ -1020,8 +1036,8 @@ class TestSymbolicDecompositions:
         op1 = qp.pow(CustomOp(0), 2)
         op2 = qp.pow(qp.adjoint(CustomOp(1)), 2)
 
-        rule1_params = get_decomp_kwargs(op1)
-        rule2_params = get_decomp_kwargs(op2)
+        rule1_params = op1.hyperparameters
+        rule2_params = op2.hyperparameters
 
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
@@ -1033,3 +1049,24 @@ class TestSymbolicDecompositions:
             CustomOp(0),
             qp.adjoint(qp.pow(CustomOp(1), 2)),
         ]
+
+    def test_base_decomp_contains_mcms_or_dynamic_wires(self, _):
+        """Tests that the graph skips adjoint of rules that contain MCMs or dynamic wires."""
+
+        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        def _custom_rule(wires):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _another_rule(wires):
+            raise NotImplementedError
+
+        op = qp.adjoint(CustomOp(0))
+        graph = DecompositionGraph(
+            operations=[op],
+            alt_decomps={CustomOp: [_custom_rule, _another_rule]},
+            gate_set={"PauliX", "MidMeasure"},
+        )
+        rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
+        assert all("_custom_rule" not in rule.name for rule in rules)
+        assert all("_another_rule" not in rule.name for rule in rules)

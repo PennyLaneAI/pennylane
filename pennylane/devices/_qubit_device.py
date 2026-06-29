@@ -29,7 +29,14 @@ import numpy as np
 
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
 from pennylane.math import multiply as qpmul
 from pennylane.math import sum as qpsum
@@ -37,21 +44,16 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
 )
 from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from ._legacy_device import Device

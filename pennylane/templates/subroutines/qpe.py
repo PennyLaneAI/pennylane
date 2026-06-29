@@ -20,6 +20,7 @@ import copy
 
 from pennylane import math, ops
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -29,7 +30,6 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
-from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
@@ -298,7 +298,7 @@ class QuantumPhaseEstimation(ErrorOperation):
         # pylint: disable=arguments-differ
         op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
+        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))
         op_list.append(ops.adjoint(QFT(wires=estimation_wires)))
 
         return op_list

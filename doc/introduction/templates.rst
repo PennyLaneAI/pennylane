@@ -130,6 +130,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
     :figure: _static/templates/state_preparations/sumofslatersprep_template.png
 
+.. gallery-item::
+    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
+    :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
+
 
 .. raw:: html
 
@@ -166,6 +170,10 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
     :figure: _static/templates/arithmetic/outmultiplier.png
+
+.. gallery-item::
+    :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
+    :figure: _static/templates/arithmetic/signedoutmultiplier.png
 
 .. gallery-item::
     :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`

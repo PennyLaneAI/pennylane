@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -32,7 +33,7 @@ from pennylane.exceptions import (
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import Prod, prod
 from pennylane.ops.functions import eigvals, generator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -1278,7 +1279,7 @@ def parameter_frequencies(op: Operation | Operator2):
 
     .. code-block:: python
 
-        from pennylane.operation2 import Operator2
+        from pennylane.core.operator import Operator2
         from pennylane.wires import WiresLike
         from pennylane.gradients import parameter_frequencies
 
@@ -1333,3 +1334,9 @@ def _handle_operator2(op: Operator2):
         f"Operation {op.name} does not have parameter frequencies defined, "
         "and parameter frequencies can not be computed as no generator is defined."
     )
+
+
+@parameter_frequencies.register
+def _handle_adjoint2(op: Adjoint2):
+    """Calculates the parameter frequencies for an Adjoint2."""
+    return parameter_frequencies(op.base)

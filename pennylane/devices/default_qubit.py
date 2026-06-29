@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
@@ -27,6 +26,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
+from pennylane.core.shots import Shots
+from pennylane.core.transforms import CompilePipeline
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -34,16 +37,11 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
-    StateMeasurement,
     StateMP,
 )
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (
     broadcast_expand,
     convert_to_numpy_parameters,
@@ -53,7 +51,7 @@ from pennylane.transforms import (
     defer_measurements,
     dynamic_one_shot,
 )
-from pennylane.transforms.core import CompilePipeline, transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .device_api import Device
@@ -1189,28 +1187,6 @@ class DefaultQubit(Device):
         tangents = tuple(map(_make_zero, tangents, args))
 
         return jax.jvp(eval_wrapper, args, tangents)
-
-    # pylint :disable=import-outside-toplevel, unused-argument
-    @debug_logger
-    def jaxpr_jvp(
-        self,
-        jaxpr,
-        args: Sequence[TensorLike],
-        tangents: Sequence[TensorLike],
-        execution_config=None,
-    ) -> tuple[Sequence[TensorLike], Sequence[TensorLike]]:
-        gradient_method = getattr(execution_config, "gradient_method", "backprop")
-        if gradient_method == "backprop":
-            return self._backprop_jvp(jaxpr, args, tangents, execution_config=execution_config)
-
-        if gradient_method == "adjoint":
-            from .qubit.jaxpr_adjoint import execute_and_jvp
-
-            return execute_and_jvp(jaxpr, args, tangents, num_wires=len(self.wires))
-
-        raise NotImplementedError(
-            f"DefaultQubit does not support gradient_method={gradient_method}"
-        )
 
 
 def _simulate_wrapper(circuit, kwargs):

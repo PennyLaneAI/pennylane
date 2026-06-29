@@ -24,14 +24,15 @@ from pennylane._grad.value_and_grad import _get_value_and_grad_prim
 from pennylane._grad.vjp import _get_vjp_prim
 from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
 from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
+from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
 from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
-from pennylane.measurements.capture_measurements import _get_abstract_measurement
+from pennylane.core.operator.operator2 import operator_p  # tach-ignore
+from pennylane.core.transforms.transform import _create_transform_primitive  # tach-ignore
 from pennylane.ops.mid_measure.mid_measure import _create_mid_measure_primitive
 from pennylane.ops.mid_measure.pauli_measure import _create_pauli_measure_primitive
 from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
-from pennylane.transforms.core.transform import _create_transform_primitive
 from pennylane.workflow._capture_qnode import qnode_prim
 
 from .subroutine import quantum_subroutine_prim
@@ -65,6 +66,7 @@ __all__ = [
     "for_loop_prim",
     "while_loop_prim",
     "measure_prim",
+    "operator_p",
     "quantum_subroutine_prim",
     "pauli_measure_prim",
     "transform_prim",

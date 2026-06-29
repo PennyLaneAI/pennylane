@@ -1,0 +1,1442 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Unit tests for the QuantumScript"""
+
+import copy
+
+import numpy as np
+import pytest
+
+import pennylane as qp
+from pennylane.core.operator import Operator2
+from pennylane.core.qscript import QuantumScript, process_queue
+from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.shots import Shots
+from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.measurements import StateMP
+from pennylane.operation import _UNSET_BATCH_SIZE
+
+# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
+
+
+def test_process_queue_error_if_not_operator_or_measurement():
+    """Test that a QueuingError is raised if process queue encounters an object it can't handle."""
+    q = qp.queuing.AnnotatedQueue()
+    q.append(1)
+    with pytest.raises(ValueError, match="Encountered object 1 in queue while processing."):
+        process_queue(q)
+
+
+def test_adjoint_deprecated():
+    qs = QuantumScript([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        qs.adjoint()
+
+
+# pylint: disable=too-few-public-methods
+class Op2(Operator2):
+    """A simple ``Operator2`` subclass for testing."""
+
+    dynamic_argnames = ("phi",)
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires)
+
+
+class TestProcessQueueOperator2:
+    """Tests that ``process_queue`` correctly handles :class:`~.Operator2` instances."""
+
+    def test_operator2_collected_as_op(self):
+        """Test that an ``Operator2`` instance in the queue ends up in the ``ops`` list."""
+        with AnnotatedQueue() as q:
+            op = Op2(0.5, wires=0)
+            m = qp.expval(qp.PauliZ(0))
+
+        ops, measurements = process_queue(q)
+        assert ops == [op]
+        assert measurements == [m]
+
+    def test_operator2_after_measurement_error(self):
+        """Test that an ``Operator2`` appearing after a measurement raises an error."""
+        with AnnotatedQueue() as q:
+            qp.expval(qp.PauliZ(0))
+            Op2(0.5, wires=0)
+
+        with pytest.raises(ValueError, match="must occur prior to measurements"):
+            process_queue(q)
+
+    def test_mixed_operator_and_operator2(self):
+        """Test that legacy ``Operator`` and new ``Operator2`` instances both end up in
+        ``ops`` and preserve insertion order."""
+        with AnnotatedQueue() as q:
+            o1 = qp.PauliX(0)
+            o2 = Op2(0.5, wires=1)
+            o3 = qp.PauliY(2)
+            m = qp.expval(qp.PauliZ(0))
+
+        ops, measurements = process_queue(q)
+        assert ops == [o1, o2, o3]
+        assert measurements == [m]
+
+
+class TestInitialization:
+    """Test the non-update components of intialization."""
+
+    def test_no_update_empty_initialization(self):
+        """Test initialization if nothing is provided"""
+
+        qs = QuantumScript()
+        assert len(qs._ops) == 0
+        assert len(qs._measurements) == 0
+        assert len(qs.par_info) == 0
+        assert qs._trainable_params is None
+        assert qs.trainable_params == []
+        assert qs._trainable_params == []
+        assert qs._graph is None
+        assert qs._specs is None
+        assert qs._shots.total_shots is None
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs.batch_size is None
+        assert qs._obs_sharing_wires is None
+        assert qs._obs_sharing_wires_id is None
+        assert qs.wires == qp.wires.Wires([])
+        assert qs.num_wires == 0
+        assert qs.samples_computational_basis is False
+
+    def test_empty_sharing_wires(self):
+        """Test public sharing wires and id are empty lists if nothing is provided"""
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires == []
+
+        qs = QuantumScript()
+        assert qs.obs_sharing_wires_id == []
+
+    @pytest.mark.parametrize(
+        "ops",
+        (
+            [qp.S(0)],
+            (qp.S(0),),
+            (qp.S(i) for i in [0]),
+        ),
+    )
+    def test_provide_ops(self, ops):
+        """Test provided ops are converted to lists."""
+        qs = QuantumScript(ops)
+        assert len(qs.operations) == 1
+        assert isinstance(qs.operations, list)
+        qp.assert_equal(qs.operations[0], qp.S(0))
+
+    @pytest.mark.parametrize(
+        "m",
+        (
+            [qp.state()],
+            (qp.state(),),
+            (qp.state() for _ in range(1)),
+        ),
+    )
+    def test_provide_measurements(self, m):
+        """Test provided measurements are converted to lists."""
+        qs = QuantumScript(measurements=m)
+        assert len(qs._measurements) == 1
+        assert isinstance(qs._measurements, list)
+        assert isinstance(qs._measurements[0], StateMP)
+
+    @pytest.mark.parametrize(
+        "ops,num_preps",
+        [
+            ((qp.BasisState([1], 0),), 1),
+            ((qp.BasisState([1], 0), qp.PauliX(0)), 1),
+            ((qp.BasisState([1], 0), qp.PauliX(0), qp.BasisState([1], 1)), 1),
+            ((qp.BasisState([1], 0), qp.BasisState([1], 1), qp.PauliX(0)), 2),
+            ((qp.PauliX(0),), 0),
+            ((qp.PauliX(0), qp.BasisState([1], 0)), 0),
+        ],
+    )
+    def test_num_preps(self, ops, num_preps):
+        """Test the num_preps property."""
+        assert QuantumScript(ops).num_preps == num_preps
+
+
+sample_measurements = [
+    qp.sample(),
+    qp.counts(),
+    qp.counts(all_outcomes=True),
+    qp.classical_shadow(wires=(0, 1)),
+    qp.shadow_expval(qp.PauliX(0)),
+]
+
+
+class TestUpdate:
+    """Test the methods called by _update."""
+
+    def test_cached_graph_specs_reset(self):
+        """Test that update resets the graph and specs"""
+        qs = QuantumScript()
+        qs._graph = "hello"
+        qs._specs = "something"
+
+        qs._update()
+        assert qs._graph is None
+        assert qs._specs is None
+
+    # pylint: disable=superfluous-parens
+    def test_update_circuit_info_wires(self):
+        """Test that on construction wires and num_wires are set."""
+        prep = [qp.BasisState([1, 1], wires=(-1, -2))]
+        ops = [qp.S(0), qp.T("a"), qp.S(0)]
+        measurement = [qp.probs(wires=("a"))]
+
+        qs = QuantumScript(prep + ops, measurement)
+        assert qs.wires == qp.wires.Wires([-1, -2, 0, "a"])
+        assert qs.num_wires == 4
+
+    @pytest.mark.parametrize("sample_ms", sample_measurements)
+    def test_update_circuit_info_sampling(self, sample_ms):
+        qs = QuantumScript(measurements=[qp.expval(qp.PauliZ(0)), sample_ms])
+        shadow_mp = not isinstance(
+            sample_ms, (qp.measurements.ClassicalShadowMP, qp.measurements.ShadowExpvalMP)
+        )
+        assert qs.samples_computational_basis is shadow_mp
+
+        qs = QuantumScript(measurements=[sample_ms, sample_ms, qp.sample()])
+        assert qs.samples_computational_basis is True
+
+    def test_update_circuit_info_no_sampling(self):
+        """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
+        measurement process exists."""
+        qs = QuantumScript(measurements=[qp.expval(qp.PauliZ(0))])
+        assert qs.samples_computational_basis is False
+
+    def test_samples_computational_basis_correctly(self):
+        """Test that the samples_computational_basis property works as expected even if the script is updated."""
+        qs = QuantumScript(measurements=[qp.sample()])
+        assert qs.samples_computational_basis is True
+
+        qs._measurements = [qp.expval(qp.PauliZ(0))]
+        assert qs.samples_computational_basis is False
+
+    def test_update_par_info_update_trainable_params(self):
+        """Tests setting the parameter info dictionary.  Makes sure to include operations with
+        multiple parameters, operations with matrix parameters, and measurement of observables with
+        parameters."""
+        ops = [
+            qp.RX(1.2, wires=0),
+            qp.Rot(2.3, 3.4, 5.6, wires=0),
+            qp.QubitUnitary(np.eye(2), wires=0),
+            qp.U2(-1, -2, wires=0),
+        ]
+        m = [qp.expval(qp.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        p_i = qs.par_info
+
+        assert p_i[0] == {"op": ops[0], "op_idx": 0, "p_idx": 0}
+        assert p_i[1] == {"op": ops[1], "op_idx": 1, "p_idx": 0}
+        assert p_i[2] == {"op": ops[1], "op_idx": 1, "p_idx": 1}
+        assert p_i[3] == {"op": ops[1], "op_idx": 1, "p_idx": 2}
+        assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
+        assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
+        assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
+
+        assert qs.trainable_params == list(range(8))
+
+    def test_cached_properties(self):
+        """Test that the @cached_property gets invalidated after update"""
+        ops = [
+            qp.RX(1.2, wires=0),
+            qp.Rot(2.3, 3.4, 5.6, wires=0),
+            qp.QubitUnitary(np.eye(2), wires=0),
+            qp.U2(-1, -2, wires=0),
+        ]
+        m = [qp.expval(qp.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+        assert qs.wires == qp.wires.Wires((0,))
+        assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
+        old_hash = qs.hash
+        assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
+        qs._ops = []
+        qs._measurements = []
+        qs._update()
+        assert qs.wires == qp.wires.Wires([])
+        assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
+        assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
+
+    # pylint: disable=unbalanced-tuple-unpacking
+    def test_get_operation(self):
+        """Tests the tape method get_operation."""
+        ops = [
+            qp.RX(1.2, wires=0),
+            qp.Rot(2.3, 3.4, 5.6, wires=0),
+            qp.PauliX(wires=0),
+            qp.QubitUnitary(np.eye(2), wires=0),
+            qp.U2(-1, -2, wires=0),
+        ]
+        m = [qp.expval(qp.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        op_0, op_id_0, p_id_0 = qs.get_operation(0)
+        qp.assert_equal(op_0, ops[0])
+        assert op_id_0 == 0 and p_id_0 == 0
+
+        op_1, op_id_1, p_id_1 = qs.get_operation(1)
+        qp.assert_equal(op_1, ops[1])
+        assert op_id_1 == 1 and p_id_1 == 0
+
+        op_2, op_id_2, p_id_2 = qs.get_operation(2)
+        qp.assert_equal(op_2, ops[1])
+        assert op_id_2 == 1 and p_id_2 == 1
+
+        op_3, op_id_3, p_id_3 = qs.get_operation(3)
+        qp.assert_equal(op_3, ops[1])
+        assert op_id_3 == 1 and p_id_3 == 2
+
+        op_4, op_id_4, p_id_4 = qs.get_operation(4)
+        qp.assert_equal(op_4, ops[3])
+        assert op_id_4 == 3 and p_id_4 == 0
+
+        op_5, op_id_5, p_id_5 = qs.get_operation(5)
+        qp.assert_equal(op_5, ops[4])
+        assert op_id_5 == 4 and p_id_5 == 0
+
+        op_6, op_id_6, p_id_6 = qs.get_operation(6)
+        qp.assert_equal(op_6, ops[4])
+        assert op_id_6 == 4 and p_id_6 == 1
+
+        _, obs_id_0, p_id_0 = qs.get_operation(7)
+        assert obs_id_0 == 5 and p_id_0 == 0
+
+    def test_update_observables(self):
+        """This method needs to be more thoroughly tested, and probably even reconsidered in
+        its design. I can't find any unittests in `test_tape.py`."""
+        obs = [
+            qp.PauliX("a"),
+            qp.PauliX(0),
+            qp.PauliY(0),
+            qp.PauliX("b"),
+            qp.PauliX(0) @ qp.PauliY(1),
+        ]
+        qs = QuantumScript(measurements=[qp.expval(o) for o in obs])
+        assert qs.obs_sharing_wires == [obs[1], obs[2], obs[4]]
+        assert qs.obs_sharing_wires_id == [1, 2, 4]
+
+    def test_update_no_sharing_wires(self):
+        """Tests the case where no observables share wires"""
+        obs = [
+            qp.PauliX("a"),
+            qp.PauliX(0),
+            qp.PauliY(1),
+            qp.PauliX("b"),
+            qp.PauliX(2) @ qp.PauliY(3),
+        ]
+        qs = QuantumScript(measurements=[qp.expval(o) for o in obs])
+        assert qs.obs_sharing_wires == []
+        assert qs.obs_sharing_wires_id == []
+        # Since the public attributes were accessed already, the private ones should be empty lists not None
+        assert qs._obs_sharing_wires == []
+        assert qs._obs_sharing_wires_id == []
+
+    @pytest.mark.parametrize(
+        "x, rot, exp_batch_size",
+        [
+            (0.2, [0.1, -0.9, 2.1], None),
+            ([0.2], [0.1, -0.9, 2.1], 1),
+            ([0.2], [[0.1], [-0.9], 2.1], 1),
+            ([0.2] * 3, [0.1, [-0.9] * 3, 2.1], 3),
+        ],
+    )
+    def test_update_batch_size(self, x, rot, exp_batch_size):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size when creating a QuantumScript."""
+
+        obs = [qp.RX(x, wires=0), qp.Rot(*rot, wires=1)]
+        m = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(1))]
+        qs = QuantumScript(obs, m)
+        assert qs.batch_size == exp_batch_size
+
+    @pytest.mark.parametrize(
+        "x, rot, y",
+        [
+            (0.2, [[0.1], -0.9, 2.1], [0.1, 0.9]),
+            ([0.2], [0.1, [-0.9] * 2, 2.1], 0.1),
+        ],
+    )
+    def test_error_inconsistent_batch_sizes(self, x, rot, y):
+        """Tests that an error is raised if inconsistent batch sizes exist."""
+        ops = [qp.RX(x, wires=0), qp.Rot(*rot, 1), qp.RX(y, wires=1)]
+        tape = QuantumScript(ops)
+        with pytest.raises(
+            ValueError, match="batch sizes of the quantum script operations do not match."
+        ):
+            _ = tape.batch_size
+
+    def test_lazy_batch_size(self):
+        """Test that batch_size is computed lazily."""
+        qs = QuantumScript([qp.RX([1.1, 2.2], 0)], [qp.expval(qp.PauliZ(0))])
+        copied = qs.copy()
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        # copying did not evaluate them either
+        assert copied._batch_size is _UNSET_BATCH_SIZE
+
+        # now evaluate it
+        assert qs.batch_size == 2
+
+        copied = qs.copy()
+        assert qs._batch_size == 2
+        # copied tape has it pre-evaluated
+        assert copied._batch_size == 2
+
+
+class TestMapToStandardWires:
+    """Tests for the ``_get_standard_wire_map`` method."""
+
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qp.X(0)],
+            [qp.X(1), qp.Z(0)],
+            [qp.X(3), qp.IsingXY(0.6, [0, 2]), qp.Z(1)],
+        ],
+    )
+    def test_only_ops_do_nothing(self, ops):
+        """Test that no mapping is done if there are only operators and they act on standard wires."""
+        tape = QuantumScript(ops)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, meas",
+        [
+            ([qp.X(0)], [qp.expval(qp.Z(0))]),
+            ([qp.X(0)], [qp.expval(qp.Z(1))]),
+            ([qp.X(0)], [qp.probs(wires=[0, 1])]),
+            ([qp.X(0)], [qp.probs(wires=[1, 2])]),
+            ([qp.X(1), qp.Z(0)], [qp.expval(qp.X(0)), qp.probs(wires=[1, 2])]),
+            ([qp.X(1), qp.Z(0)], [qp.expval(qp.Y(2))]),
+            ([qp.X(1), qp.Z(0)], [qp.state()]),
+            ([qp.X(3), qp.IsingXY(0.6, [0, 2]), qp.Z(1)], [qp.probs(wires=[1])]),
+        ],
+    )
+    def test_op_and_meas_do_nothing(self, ops, meas):
+        """Test that no mapping is done if there are operators and measurements
+        and they act on standard wires.
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, meas",
+        [
+            ([qp.MultiControlledX([0, 1, 2], work_wires=[3, 4])], []),
+            ([qp.MultiControlledX([0, 2], work_wires=[3, 4]), qp.X(1)], [qp.expval(qp.Z(1))]),
+            (
+                [qp.RX(0.6, 0), qp.MultiControlledX([1, 2, 3], work_wires=[5])],
+                [qp.probs([0, 4, 2, 1])],
+            ),
+        ],
+    )
+    def test_with_work_wires_do_nothing(self, ops, meas):
+        """Test that no mapping is done if there are operators with work wires (and measurements)
+        and they act on standard wires.
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, expected",
+        [
+            ([qp.X(0), qp.RX(0.8, 2)], {0: 0, 2: 1}),
+            ([qp.X(1), qp.Z(0), qp.X("a")], {1: 0, 0: 1, "a": 2}),
+            ([qp.X(3), qp.IsingXY(0.6, ["b", 2]), qp.Z(99)], {3: 0, "b": 1, 2: 2, 99: 3}),
+        ],
+    )
+    def test_only_ops(self, ops, expected):
+        """Test that the mapping is correct if there are only operators."""
+        tape = QuantumScript(ops)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+    @pytest.mark.parametrize(
+        "ops, meas, expected",
+        [
+            ([qp.X("a")], [qp.expval(qp.Z("a"))], {"a": 0}),
+            ([qp.X(1)], [qp.expval(qp.Z(0))], {1: 0, 0: 1}),
+            ([qp.X("z")], [qp.probs(wires=[0, 1])], {"z": 0, 0: 1, 1: 2}),
+            ([qp.X(2)], [qp.probs(wires=[1, 2])], {2: 0, 1: 1}),
+            ([qp.X(1), qp.Z(2)], [qp.expval(qp.Y(0))], {1: 0, 2: 1, 0: 2}),
+            ([qp.X(1), qp.Z(3)], [qp.state()], {1: 0, 3: 1}),
+            (
+                [qp.X(3), qp.IsingXY(0.6, [4, 2]), qp.Z(1)],
+                [qp.probs()],
+                {3: 0, 4: 1, 2: 2, 1: 3},
+            ),
+        ],
+    )
+    def test_op_and_meas(self, ops, meas, expected):
+        """Test that the mapping is correct if there are operators and measurements."""
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+    @pytest.mark.parametrize(
+        "ops, meas, expected",
+        [
+            (
+                [qp.MultiControlledX([2, 3, 4], work_wires=[0, 1])],
+                [],
+                {2: 0, 3: 1, 4: 2, 0: 3, 1: 4},
+            ),
+            (
+                [qp.MultiControlledX([0, 1, 3], work_wires=[2, 4])],
+                [],
+                {0: 0, 1: 1, 3: 2, 2: 3, 4: 4},
+            ),
+            (
+                [qp.MultiControlledX([0, 2], work_wires=[3, 4])],
+                [qp.expval(qp.Z(1))],
+                {0: 0, 2: 1, 1: 2, 3: 3, 4: 4},
+            ),
+            (
+                [qp.MultiControlledX([1, 2, 3], work_wires=[5])],
+                [qp.probs([0, 4, 2, 1])],
+                {1: 0, 2: 1, 3: 2, 0: 3, 4: 4, 5: 5},
+            ),
+        ],
+    )
+    def test_with_work_wires(self, ops, meas, expected):
+        """Test that the mapping is correct if there are operators with work wires
+        (and measurements).
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+
+class TestIteration:
+    """Test the capabilities related to iterating over quantum script."""
+
+    @pytest.fixture
+    def make_qs(self):
+        ops = [
+            qp.RX(0.432, wires=0),
+            qp.Rot(0.543, 0, 0.23, wires=0),
+            qp.CNOT(wires=[0, "a"]),
+            qp.RX(0.133, wires=4),
+        ]
+        meas = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+
+        qs = QuantumScript(ops, meas)
+
+        return qs, ops, meas
+
+    def test_qscript_is_iterable(self, make_qs):
+        """Test the iterable protocol: that we can iterate over a tape because
+        an iterator object can be obtained using the iter function."""
+        qs, ops, meas = make_qs
+        expected = ops + meas
+
+        qs_iterator = iter(qs)
+
+        iterating = True
+
+        counter = 0
+
+        while iterating:
+            try:
+                next_qs_elem = next(qs_iterator)
+
+                assert next_qs_elem is expected[counter]
+                counter += 1
+
+            except StopIteration:
+                # StopIteration is raised by next when there are no more
+                # elements to iterate over
+                iterating = False
+
+        assert counter == len(expected)
+
+    def test_qscript_is_sequence(self, make_qs):
+        """Test the sequence protocol: that a quantum script is a sequence because its
+        __len__ and __getitem__ methods work as expected."""
+        tape, ops, meas = make_qs
+
+        expected = ops + meas
+
+        for idx, exp_elem in enumerate(expected):
+            assert tape[idx] is exp_elem
+
+        assert len(tape) == len(expected)
+
+    def test_qscript_as_list(self, make_qs):
+        """Test that a quantums script can be converted to a list."""
+        qs, ops, meas = make_qs
+        qs_list = list(qs)
+
+        expected = ops + meas
+        for op, exp_op in zip(qs_list, expected):
+            assert op is exp_op
+
+        assert len(qs_list) == len(expected)
+
+    def test_iteration_preserves_circuit(self):
+        """Test that iterating through a quantum scriptdoesn't change the underlying
+        list of operations and measurements in the circuit."""
+
+        ops = [
+            qp.RX(0.432, wires=0),
+            qp.Rot(0.543, 0, 0.23, wires=0),
+            qp.CNOT(wires=[0, "a"]),
+            qp.RX(0.133, wires=4),
+        ]
+        m = [
+            qp.expval(qp.PauliX(wires="a")),
+            qp.probs(wires=[0, "a"]),
+        ]
+        qs = QuantumScript(ops, m)
+
+        circuit = ops + m
+
+        # Check that the underlying circuit is as expected
+        assert qs.circuit == circuit
+        assert list(qs) == circuit
+        # Iterate over the tape
+        for op, expected in zip(qs, circuit):
+            assert op is expected
+
+        # Check that the underlying circuit is still as expected
+        assert qs.circuit == circuit
+
+
+class TestInfomationProperties:
+    """Tests the graph and specs properties."""
+
+    @pytest.fixture
+    def make_script(self):
+        ops = [
+            qp.RX(-0.543, wires=0),
+            qp.Rot(-4.3, 4.69, 1.2, wires=0),
+            qp.CNOT(wires=[0, "a"]),
+            qp.RX(0.54, wires=4),
+        ]
+        m = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+
+        return QuantumScript(ops, m)
+
+    def test_graph(self, make_script):
+        """Tests the graph is constructed the first time it's requested and then cached."""
+        qs = make_script
+
+        assert qs._graph is None
+
+        g = qs.graph
+        assert isinstance(g, qp.CircuitGraph)
+        assert g.operations == qs.operations
+        assert g.observables == qs.measurements
+
+        # test that if we request it again, we get the same object
+        assert qs.graph is g
+
+    def test_empty_qs_specs(self):
+        """Tests the specs of an script."""
+        qs = QuantumScript()
+        assert qs._specs is None
+
+        assert qs.specs["resources"] == qp.resource.SpecsResources(
+            num_allocs=0,
+            gate_types={},
+            gate_sizes={},
+            measurements={},
+            depth=0,
+        )
+
+        assert qs._specs is qs.specs
+
+    def test_specs_tape(self, make_script):
+        """Tests that regular scripts return correct specifications"""
+        qs = make_script
+
+        assert qs._specs is None
+        specs = qs.specs
+        assert qs._specs is specs
+
+        gate_types = {"RX": 2, "Rot": 1, "CNOT": 1}
+        gate_sizes = {1: 3, 2: 1}
+        expected_resources = qp.resource.SpecsResources(
+            num_allocs=3,
+            gate_types=gate_types,
+            gate_sizes=gate_sizes,
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=3,
+        )
+        assert specs["resources"] == expected_resources
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_set_shots(self, shots, total_shots, shot_vector):
+        qs = QuantumScript([], [], shots=shots)
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == total_shots
+        assert qs.shots.shot_vector == shot_vector
+
+
+class TestScriptCopying:
+    """Test for quantum script copying behaviour"""
+
+    def test_shallow_copy(self):
+        """Test that shallow copying of a script results in all
+        contained data being shared between the original tape and the copy"""
+        prep = [qp.BasisState(np.array([1, 0]), wires=(0, 1))]
+        ops = [qp.RY(0.5, wires=1), qp.CNOT((0, 1))]
+        m = [qp.expval(qp.PauliZ(0) @ qp.PauliY(1))]
+        qs = QuantumScript(prep + ops, m)
+
+        copied_qs = qs.copy()
+
+        assert copied_qs is not qs
+
+        # the operations are simply references
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+
+        # operation data is also a reference
+        assert copied_qs.operations[0].wires is qs.operations[0].wires
+        assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
+
+        # check that all tape metadata is identical
+        assert qs.get_parameters() == copied_qs.get_parameters()
+        assert qs.wires == copied_qs.wires
+        assert qs.data == copied_qs.data
+        assert qs.shots is copied_qs.shots
+
+    # pylint: disable=unnecessary-lambda
+    @pytest.mark.parametrize(
+        "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
+    )
+    def test_shallow_copy_with_operations(self, copy_fn):
+        """Test that shallow copying of a tape and operations allows
+        parameters to be set independently"""
+
+        prep = [qp.BasisState(np.array([1, 0]), wires=(0, 1))]
+        ops = [qp.RY(0.5, wires=1), qp.CNOT((0, 1))]
+        m = [qp.expval(qp.PauliZ(0) @ qp.PauliY(1))]
+        qs = QuantumScript(prep + ops, m)
+
+        copied_qs = copy_fn(qs)
+
+        assert copied_qs is not qs
+
+        # the operations are not references; they are unique objects
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+
+        # however, the underlying operation data *is still shared*
+        assert copied_qs.operations[0].wires is qs.operations[0].wires
+        # the data list is copied, but the elements of the list remain th same
+        assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
+
+        assert qs.get_parameters() == copied_qs.get_parameters()
+        assert qs.wires == copied_qs.wires
+        assert qs.data == copied_qs.data
+        assert qs.shots is copied_qs.shots
+
+    def test_deep_copy(self):
+        """Test that deep copying a tape works, and copies all constituent data except parameters"""
+        prep = [qp.BasisState(np.array([1, 0]), wires=(0, 1))]
+        ops = [qp.RY(0.5, wires=1), qp.CNOT((0, 1))]
+        m = [qp.expval(qp.PauliZ(0) @ qp.PauliY(1))]
+        qs = QuantumScript(prep + ops, m)
+
+        copied_qs = copy.deepcopy(qs)
+
+        assert copied_qs is not qs
+
+        # the operations are not references
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert copied_qs.shots is qs.shots
+
+        # The underlying operation data has also been copied
+        assert copied_qs.operations[0].wires is not qs.operations[0].wires
+
+        # however, the underlying operation *parameters* are still shared
+        # to support PyTorch, which does not support deep copying of tensors
+        assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
+
+    @pytest.mark.parametrize("shots", [50, (1000, 2000), None])
+    def test_copy_update_shots(self, shots):
+        """Test that copy with update dict behaves as expected for setting shots"""
+
+        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(shots=shots)
+        assert tape.shots == Shots(2500)
+        assert new_tape.shots == Shots(shots)
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qp.counts()]
+        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+    def test_copy_update_measurements(self):
+        """Test that copy with update dict behaves as expected for setting measurements"""
+
+        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        tape = QuantumScript(
+            ops, measurements=[qp.expval(2 * qp.X(0))], shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qp.expval(2 * qp.X(0)), qp.sample(), qp.var(3 * qp.Y(1))]
+        new_tape = tape.copy(measurements=new_measurements)
+
+        assert tape.measurements == [qp.expval(2 * qp.X(0))]
+        assert new_tape.measurements == new_measurements
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.shots == tape.shots == Shots(2500)
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [0, 1, 2]
+
+    def test_copy_update_operations(self):
+        """Test that copy with update dict behaves as expected for setting operations"""
+
+        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
+
+        new_ops = [qp.X(0)]
+        new_tape = tape.copy(operations=new_ops)
+        new_tape2 = tape.copy(ops=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+        assert new_tape2.operations == new_ops
+
+        assert new_tape.measurements == new_tape2.measurements == tape.measurements == [qp.counts()]
+        assert new_tape.shots == new_tape2.shots == tape.shots == Shots(2500)
+        assert new_tape.trainable_params == new_tape2.trainable_params == []
+
+    def test_copy_update_trainable_params(self):
+        """Test that copy with update dict behaves as expected for setting trainable parameters"""
+
+        ops = [qp.RX(1.23, "b"), qp.RX(4.56, "a")]
+        tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(trainable_params=[0])
+
+        assert tape.trainable_params == [1]
+        assert tape.get_parameters() == [4.56]
+        assert new_tape.trainable_params == [0]
+        assert new_tape.get_parameters() == [1.23]
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qp.counts()]
+        assert new_tape.shots == tape.shots == Shots(2500)
+
+    def test_copy_update_bad_key(self):
+        """Test that an unrecognized key in update dict raises an error"""
+
+        tape = QuantumScript([qp.X(0)], [qp.counts()], shots=2500)
+
+        with pytest.raises(TypeError, match="got an unexpected key"):
+            _ = tape.copy(update={"bad_kwarg": 3})
+
+    def test_batch_size_when_updating(self):
+        """Test that if the operations are updated with operations of a different batch size,
+        the original tape's batch size is not copied over"""
+
+        ops = [qp.X("b"), qp.RX([1.2, 2.3], "a")]
+        tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
+
+        assert tape.batch_size == 2
+
+        new_ops = [qp.RX([1.2, 2.3, 3.4], 0)]
+        new_tape = tape.copy(operations=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.batch_size != new_tape.batch_size
+
+    def test_cached_properties_when_updating_operations(self):
+        """Test that if the operations are updated, the cached attributes relevant
+        to operations (batch_size, output_dim) are not copied over from the original tape,
+        and trainable_params are re-calculated"""
+
+        ops = [qp.X("b"), qp.RX([1.2, 2.3], "a")]
+        tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
+
+        assert tape.batch_size == 2
+        assert tape.trainable_params == [1]
+
+        new_ops = [qp.RX([1.2, 2.3, 3.4], 0)]
+        new_tape = tape.copy(operations=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert new_tape.batch_size == 3
+        assert new_tape.trainable_params == [0]
+
+    def test_cached_properties_when_updating_measurements(self):
+        """Test that if the measurements are updated, the cached attributes relevant
+        to measurements (obs_sharing_wires, obs_sharing_wires_id, output_dim) are not
+        copied over from the original tape, and trainable_params are re-calculated"""
+
+        measurements = [qp.counts()]
+        tape = QuantumScript(
+            [qp.RY(1.2, 1), qp.RX([1.2, 2.3], 0)],
+            measurements=measurements,
+            shots=2500,
+            trainable_params=[1],
+        )
+
+        assert tape.obs_sharing_wires == []
+        assert tape.obs_sharing_wires_id == []
+        assert tape.trainable_params == [1]
+
+        new_measurements = [qp.expval(qp.X(0)), qp.var(qp.Y(0))]
+        new_tape = tape.copy(measurements=new_measurements)
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert new_tape.obs_sharing_wires == [qp.X(0), qp.Y(0)]
+        assert new_tape.obs_sharing_wires_id == [0, 1]
+        assert new_tape.trainable_params == [0, 1]
+
+    def test_setting_trainable_params_to_none(self):
+        """Test that setting trainable params to None resets the tape and calculates
+        the trainable_params for the new operations"""
+
+        tape = qp.tape.QuantumScript(
+            [qp.Hadamard(0), qp.RX(1.2, 0), qp.RY(2.3, 1)], trainable_params=[1]
+        )
+
+        assert tape.num_params == 1
+        qp.assert_equal(tape.get_operation(0)[0], qp.RY(2.3, 1))
+
+        new_tape = tape.copy(trainable_params=None)
+
+        assert new_tape.num_params == 2
+        qp.assert_equal(new_tape.get_operation(0)[0], qp.RX(1.2, 0))
+        qp.assert_equal(new_tape.get_operation(1)[0], qp.RY(2.3, 1))
+
+    def test_setting_measurements_and_trainable_params(self):
+        """Test that when explicitly setting both measurements and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        measurements = [qp.expval(2 * qp.X(0))]
+        tape = QuantumScript(
+            [qp.RX(1.2, 0)], measurements=measurements, shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qp.expval(2 * qp.X(0)), qp.var(3 * qp.Y(1))]
+        new_tape = tape.copy(
+            measurements=new_measurements, trainable_params=[1, 2]
+        )  # continue ignoring param in RX
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [1, 2]
+
+    def test_setting_operations_and_trainable_params(self):
+        """Test that when explicitly setting both operations and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        ops = [qp.RX(1.2, 0)]
+        tape = QuantumScript(
+            ops, measurements=[qp.expval(2 * qp.X(0))], shots=2500, trainable_params=[0]
+        )
+
+        new_ops = [qp.RX(1.2, 0), qp.RY(2.3, 1)]
+        new_tape = tape.copy(
+            operations=new_ops, trainable_params=[0, 1]
+        )  # continue ignoring param in 2*X(0)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.trainable_params == [0]
+        assert new_tape.trainable_params == [0, 1]
+
+
+def test_adjoint():
+    """Tests taking the adjoint of a quantum script."""
+    ops = [
+        qp.BasisState([1, 1], wires=[0, 1]),
+        qp.RX(1.2, wires=0),
+        qp.S(0),
+        qp.CNOT((0, 1)),
+        qp.T(1),
+    ]
+    m = [qp.expval(qp.PauliZ(0))]
+    qs = QuantumScript(ops, m)
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
+        with qp.queuing.AnnotatedQueue() as q:
+            adj_qs = qs.adjoint()
+
+    assert len(q.queue) == 0  # not queued
+
+    qp.assert_equal(adj_qs.operations[0], qs.operations[0])
+    assert adj_qs.measurements == qs.measurements
+    assert adj_qs.shots is qs.shots
+
+    # assumes lazy=False
+    expected_ops = [qp.adjoint(qp.T(1)), qp.CNOT((0, 1)), qp.adjoint(qp.S(0)), qp.RX(-1.2, 0)]
+    for op, expected in zip(adj_qs.operations[1:], expected_ops):
+        # update this one qp.equal works with adjoint
+        assert isinstance(op, type(expected))
+        assert op.wires == expected.wires
+        assert op.data == expected.data
+
+
+class TestHashing:
+    """Test for script hashing"""
+
+    @pytest.mark.parametrize(
+        "m",
+        [
+            qp.expval(qp.PauliZ(0)),
+            qp.state(),
+            qp.probs(wires=0),
+            qp.density_matrix(wires=0),
+            qp.var(qp.PauliY(0)),
+        ],
+    )
+    def test_identical(self, m):
+        """Tests that the circuit hash of identical circuits are identical"""
+        ops = [qp.RX(0.3, 0), qp.RY(0.2, 1), qp.CNOT((0, 1))]
+        qs1 = QuantumScript(ops, [m])
+        qs2 = QuantumScript(ops, [m])
+
+        assert qs1.hash == qs2.hash
+
+    def test_identical_numeric(self):
+        """Tests that the circuit hash of identical circuits are identical
+        even though the datatype of the arguments may differ"""
+        a = 0.3
+        b = 0.2
+
+        qs1 = QuantumScript([qp.RX(a, 0), qp.RY(b, 1)])
+        qs2 = QuantumScript([qp.RX(np.array(a), 0), qp.RY(np.array(b), 1)])
+
+        assert qs1.hash == qs2.hash
+
+    def test_different_wires(self):
+        """Tests that the circuit hash of circuits with the same operations
+        on different wires have different hashes"""
+        a = 0.3
+
+        qs1 = QuantumScript([qp.RX(a, 0)])
+        qs2 = QuantumScript([qp.RX(a, 1)])
+
+        assert qs1.hash != qs2.hash
+
+    def test_different_trainabilities(self):
+        """Tests that the circuit hash of identical circuits differ
+        if the circuits have different trainable parameters"""
+        qs1 = QuantumScript([qp.RX(1.0, 0), qp.RY(1.0, 1)])
+        qs2 = copy.copy(qs1)
+
+        qs1.trainable_params = [0]
+        qs2.trainable_params = [0, 1]
+        assert qs1.hash != qs2.hash
+
+    def test_different_parameters(self):
+        """Tests that the circuit hash of circuits with different
+        parameters differs"""
+        qs1 = QuantumScript([qp.RX(1.0, 0)])
+        qs2 = QuantumScript([qp.RX(2.0, 0)])
+
+        assert qs1.hash != qs2.hash
+
+    def test_different_operations(self):
+        """Tests that the circuit hash of circuits with different
+        operations differs"""
+        qs1 = QuantumScript([qp.S(0)])
+        qs2 = QuantumScript([qp.T(0)])
+        assert qs1.hash != qs2.hash
+
+    def test_different_measurements(self):
+        """Tests that the circuit hash of circuits with different
+        measurements differs"""
+        qs1 = QuantumScript(measurements=[qp.expval(qp.PauliZ(0))])
+        qs2 = QuantumScript(measurements=[qp.var(qp.PauliZ(0))])
+        assert qs1.hash != qs2.hash
+
+    def test_different_observables(self):
+        """Tests that the circuit hash of circuits with different
+        observables differs"""
+        A = np.diag([1.0, 2.0])
+        qs1 = QuantumScript(measurements=[qp.expval(qp.PauliZ(0))])
+        qs2 = QuantumScript(measurements=[qp.expval(qp.Hermitian(A, wires=0))])
+
+        assert qs1.hash != qs2.hash
+
+    def test_rotation_modulo_identical(self):
+        """Tests that the circuit hash of circuits with single-qubit
+        rotations differing by multiples of 2pi have identical hash"""
+        a = np.array(np.pi / 2, dtype=np.float64)
+        b = np.array(np.pi / 4, dtype=np.float64)
+
+        qs1 = QuantumScript([qp.RX(a, 0), qp.RY(b, 1)])
+        qs2 = QuantumScript([qp.RX(a - 2 * np.pi, 0), qp.RY(b + 2 * np.pi, 1)])
+
+        assert qs1.hash == qs2.hash
+
+    def test_controlled_rotation_modulo_identical(self):
+        """Tests that the circuit hash of circuits with controlled
+        rotations differing by multiples of 4pi have identical hash,
+        but those differing by 2pi are different."""
+        a = np.array(np.pi / 2, dtype=np.float64)
+        b = np.array(np.pi / 2, dtype=np.float64)
+
+        qs = QuantumScript([qp.CRX(a, (0, 1)), qp.CRY(b, (0, 1))])
+        qs_add_2pi = QuantumScript([qp.CRX(a + 2 * np.pi, (0, 1)), qp.CRY(b + 2 * np.pi, (0, 1))])
+        qs_add_4pi = QuantumScript([qp.CRX(a + 4 * np.pi, (0, 1)), qp.CRY(b + 4 * np.pi, (0, 1))])
+
+        assert qs.hash == qs_add_4pi.hash
+        assert qs.hash != qs_add_2pi.hash
+
+    def test_hash_shots(self):
+        """Test tha circuits with different shots have different hashes."""
+        qs1 = QuantumScript([qp.S(0)], [qp.sample(wires=0)], shots=10)
+        qs2 = QuantumScript([qp.T(0)], [qp.sample(wires=0)], shots=20)
+
+        assert qs1.hash != qs2.hash
+
+
+class TestQScriptDraw:
+    """Test the script draw method."""
+
+    def test_default_kwargs(self):
+        """Test quantum script's draw with default keyword arguments."""
+
+        qs = QuantumScript(
+            [qp.RX(1.23456, wires=0), qp.RY(2.3456, wires="a"), qp.RZ(3.4567, wires=1.234)]
+        )
+
+        assert qs.draw() == qp.drawer.tape_text(qs)
+        assert qs.draw(decimals=2) == qp.drawer.tape_text(qs, decimals=2)
+
+    def test_show_matrices(self):
+        """Test show_matrices keyword argument."""
+        qs = QuantumScript([qp.QubitUnitary(qp.numpy.eye(2), wires=0)])
+
+        assert qs.draw() == qp.drawer.tape_text(qs)
+        assert qs.draw(show_matrices=True) == qp.drawer.tape_text(qs, show_matrices=True)
+
+    def test_max_length_keyword(self):
+        """Test the max_length keyword argument."""
+        qs = QuantumScript([qp.PauliX(0)] * 50)
+
+        assert qs.draw() == qp.drawer.tape_text(qs)
+        assert qs.draw(max_length=20) == qp.drawer.tape_text(qs, max_length=20)
+
+
+class TestMakeQscript:
+    """Test the make_qscript method."""
+
+    def test_ops_are_recorded_to_qscript(self):
+        """Test make_qscript records operations from the quantum function passed to it."""
+
+        def qfunc():
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            qp.expval(qp.PauliX(0))
+
+        qscript = qp.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 2
+        assert len(qscript.measurements) == 1
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_make_qscript_with_shots(self, shots, total_shots, shot_vector):
+        """Test that ``make_qscript`` creates a ``QuantumScript`` correctly when
+        shots are specified."""
+
+        def qfunc():
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            qp.expval(qp.PauliX(0))
+
+        qscript = qp.tape.make_qscript(qfunc, shots=shots)()
+
+        assert len(qscript.operations) == 2
+        assert len(qscript.measurements) == 1
+        assert qscript.shots.total_shots == total_shots
+        assert qscript.shots.shot_vector == shot_vector
+
+    def test_qfunc_is_recording_during_make_qscript(self):
+        """Test that quantum functions passed to make_qscript run in a recording context."""
+
+        def assert_recording():
+            assert qp.QueuingManager.recording()
+
+        qp.tape.make_qscript(assert_recording)()
+
+    def test_ops_are_not_recorded_to_surrounding_context(self):
+        """Test that ops are not recorded to any surrounding context during make_qscript."""
+
+        def qfunc():
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+
+        with qp.queuing.AnnotatedQueue() as q:
+            recorded_op = qp.PauliX(0)
+            qscript = qp.tape.make_qscript(qfunc)()
+        assert q.queue == [recorded_op]
+        assert len(qscript.operations) == 2
+
+    def test_make_qscript_returns_callable(self):
+        """Test that make_qscript returns a callable."""
+
+        def qfunc():
+            qp.Hadamard(0)
+
+        assert callable(qp.tape.make_qscript(qfunc))
+
+    def test_non_queued_ops_are_not_recorded(self):
+        """Test that ops are not recorded to the qscript when recording is disabled."""
+
+        def qfunc():
+            qp.PauliX(0)
+            with qp.QueuingManager.stop_recording():
+                qp.Hadamard(0)
+
+        qscript = qp.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 1
+        assert qscript.operations[0].name == "PauliX"
+
+
+class TestFromQueue:
+    """Test that QuantumScript.from_queue behaves properly."""
+
+    def test_from_queue(self):
+        """Test that QuantumScript.from_queue works correctly."""
+        with qp.queuing.AnnotatedQueue() as q:
+            op = qp.PauliX(0)
+            with qp.QueuingManager.stop_recording():
+                qp.Hadamard(0)
+            qp.expval(qp.PauliZ(0))
+        qscript = QuantumScript.from_queue(q)
+        assert qscript.operations == [op]
+        assert len(qscript.measurements) == 1
+
+    def test_from_queue_child_class_preserved(self):
+        """Test that a child of QuantumScript gets its own type when calling from_queue."""
+
+        class MyScript(QuantumScript):
+            pass
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+
+        qscript = MyScript.from_queue(q)
+        assert isinstance(qscript, MyScript)
+
+    def test_from_queue_child_with_different_init_fails(self):
+        """Test that if a child class overrides init to take different arguments, from_queue will fail."""
+
+        class ScriptWithNewInit(QuantumScript):
+            """An arbitrary class that has a different constructor from QuantumScript."""
+
+            def __init__(self, ops, measurements, prep, bonus):
+                super().__init__(ops, measurements, prep)
+                self.bonus = bonus
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+
+        with pytest.raises(TypeError):
+            ScriptWithNewInit.from_queue(q)
+
+    @pytest.mark.parametrize("child", QuantumScript.__subclasses__())
+    def test_that_fails_if_a_subclass_does_not_match(self, child):
+        """
+        Makes sure that no subclasses for QuantumScript override the constructor.
+        If you have, and you stumbled onto this test, note that QuantumScript.from_queue
+        might need some modification for your PR to be complete.
+        """
+        with qp.queuing.AnnotatedQueue() as q:
+            x = qp.PauliZ(0)
+
+        assert child.from_queue(q).operations == [x]
+
+    def test_diagonalizing_gates_not_queued(self):
+        """Test that diagonalizing gates don't get added to an active queue when
+        requested."""
+        qscript = QuantumScript(ops=[qp.PauliZ(0)], measurements=[qp.expval(qp.PauliX(0))])
+
+        with qp.queuing.AnnotatedQueue() as q:
+            diag_ops = qscript.diagonalizing_gates
+
+        assert len(diag_ops) == 1
+        # Hadamard is the diagonalizing gate for PauliX
+        qp.assert_equal(diag_ops[0], qp.Hadamard(0))
+        assert len(q.queue) == 0
+
+
+class TestDiagonalizingGates:
+
+    def test_diagonalizing_gates(self):
+        """Test that diagonalizing gates works as expected"""
+        qs = QuantumScript([], [qp.expval(qp.X(0)), qp.var(qp.Y(1))])
+        assert (
+            qs.diagonalizing_gates == qp.X(0).diagonalizing_gates() + qp.Y(1).diagonalizing_gates()
+        )
+
+    def test_non_commuting_obs(self):
+        """Test that diagonalizing gates returns gates for all observables, including
+        observables that are not qubit-wise commuting"""
+        qs = QuantumScript([], [qp.expval(qp.X(0)), qp.var(qp.Y(0))])
+        assert (
+            qs.diagonalizing_gates == qp.X(0).diagonalizing_gates() + qp.Y(0).diagonalizing_gates()
+        )
+
+    def test_duplicate_obs(self):
+        """Test that duplicate observables are only checked once when getting all
+        diagonalizing gates"""
+        qs = QuantumScript([], [qp.expval(qp.X(0)), qp.var(qp.X(0))])
+        assert qs.diagonalizing_gates == qp.X(0).diagonalizing_gates()
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            (qp.X(0), qp.Y(1), qp.Y(1) + qp.X(2)),  # single obs and sum
+            (qp.X(0), qp.Y(1), qp.Y(1) @ qp.X(2)),  # single obs and prod
+            (qp.X(0) + qp.Y(1), qp.Y(1) + qp.X(2)),  # multiple CompositeOps (sum)
+            (qp.X(0) + qp.Y(1), qp.Y(1) @ qp.X(2)),  # multiple CompositeOps (with prod)
+            (qp.X(0), qp.Y(1), qp.Hamiltonian([1, 2], [qp.Y(1), qp.X(2)])),  # linearcomb
+            (2 * qp.X(0), qp.Y(1), qp.Y(1) + qp.X(2)),  # with sprod
+            (qp.X(0), qp.Y(1), (qp.Y(1) + qp.X(2)) @ qp.X(0)),  # prod of sum (nested)
+            (
+                qp.X(0),
+                qp.Y(1),
+                qp.Hamiltonian([1, 2], [qp.Y(1) @ qp.X(0), 2 * qp.X(2) + qp.Z(3)]),
+            ),  # nested linearcombination
+        ],
+    )
+    def test_duplicate_obs_composite(self, obs):
+        """Test that duplicate observables within CompositeOps and SymbolicOps are also correctly
+        identified and their diagonalizing gates are not included multiple times"""
+        qs = QuantumScript([], [qp.expval(o) for o in obs])
+
+        expected_gates = (
+            qp.X(0).diagonalizing_gates()
+            + qp.Y(1).diagonalizing_gates()
+            + qp.X(2).diagonalizing_gates()
+        )
+
+        assert qs.diagonalizing_gates == expected_gates
+
+    @pytest.mark.parametrize(
+        "obs1",  # Sum, Prod, LinearCombination
+        [qp.X(0) + qp.Y(1), qp.X(0) @ qp.Y(1), qp.Hamiltonian([1, 2], [qp.X(0), qp.Y(1)])],
+    )
+    @pytest.mark.parametrize(
+        "obs2",  # Sum, Prod, LinearCombination with overlapping obs
+        [
+            qp.X(1) + qp.Y(1),
+            qp.X(1) @ qp.Y(1),
+            qp.Hamiltonian([1, 2], [qp.X(1), qp.Y(1)]),
+            qp.Hamiltonian([1, 2], [qp.Y(1) @ qp.X(0), qp.X(2) + qp.Y(1)]),
+        ],
+    )
+    def test_obs_with_overlapping_wires(self, obs1, obs2):
+        """Test that if there are observables with overlapping wires (and therefore a
+        QubitUnitary as the diagonalizing gate that diagonalizes the entire observable as
+        a single thing), these are treated separately, even if operators within them are
+        duplicates of other observables on the tape"""
+        qs = QuantumScript([], [qp.expval(obs1), qp.var(obs2)])
+
+        expected_gates = (
+            qp.X(0).diagonalizing_gates()
+            + qp.Y(1).diagonalizing_gates()
+            + obs2.diagonalizing_gates()
+        )
+
+        assert qs.diagonalizing_gates == expected_gates
+        assert isinstance(qs.diagonalizing_gates[-1], qp.QubitUnitary)
+
+
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
+def test_flatten_unflatten(qscript_type):
+    """Test the flatten and unflatten methods."""
+    ops = [qp.RX(0.1, wires=0), qp.U3(0.2, 0.3, 0.4, wires=0)]
+    mps = [qp.expval(qp.PauliZ(0)), qp.state()]
+
+    tape = qscript_type(ops, mps, shots=100)
+    tape.trainable_params = {0}
+
+    data, metadata = tape._flatten()
+    assert all(o1 is o2 for o1, o2 in zip(ops, data[0]))
+    assert all(o1 is o2 for o1, o2 in zip(mps, data[1]))
+    assert metadata[0] == qp.measurements.Shots(100)
+    assert metadata[1] == (0,)
+    assert hash(metadata)
+
+    new_tape = qscript_type._unflatten(data, metadata)
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
+    assert new_tape.shots == qp.measurements.Shots(100)
+    assert new_tape.trainable_params == (0,)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
+def test_jax_pytree_integration(qscript_type):
+    """Test that QuantumScripts are integrated with jax pytress."""
+
+    eye_mat = np.eye(4)
+    ops = [qp.adjoint(qp.RY(0.5, wires=0)), qp.Rot(1.2, 2.3, 3.4, wires=0)]
+    mps = [
+        qp.var(qp.s_prod(2.0, qp.PauliX(0))),
+        qp.expval(qp.Hermitian(eye_mat, wires=(0, 1))),
+    ]
+
+    tape = qscript_type(ops, mps, shots=100)
+    tape.trainable_params = [2]
+
+    import jax
+
+    data, _ = jax.tree_util.tree_flatten(tape)
+    assert data[0] == 0.5
+    assert data[1] == 1.2
+    assert data[2] == 2.3
+    assert data[3] == 3.4
+    assert data[4] == 2.0
+    assert qp.math.allclose(data[5], eye_mat)
