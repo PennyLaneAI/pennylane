@@ -805,12 +805,14 @@
   to `pennylane.core.qscript`.
   Moves the `pennylane.queuing` to `pennylane.core.queuing`.
   Moves `pennylane.transforms.core` to `pennylane.core.transforms`.
+  Moves `pennylane.wires` to `pennylane.core.wires`.
   [(#9739)](https://github.com/PennyLaneAI/pennylane/pull/9739)
   [(#9719)](https://github.com/PennyLaneAI/pennylane/pull/9719)
   [(#9717)](https://github.com/PennyLaneAI/pennylane/pull/9717)
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
+  [(#9743)](https://github.com/PennyLaneAI/pennylane/pull/9743)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)

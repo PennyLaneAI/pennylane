@@ -235,6 +235,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_concurrency
    code/qp_core_operator
    code/qp_core_queuing
+   code/qp_core_wires
    code/qp_devices
    code/qp_exceptions
    code/qp_ftqc
@@ -244,5 +245,4 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_tape
    code/qp_templates_core
    code/qp_typing
-   code/qp_wires
    code/qp_workflow

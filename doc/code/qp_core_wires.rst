@@ -1,7 +1,7 @@
-qp.wires
-============
+qp.core.wires
+=============
 
-.. currentmodule:: pennylane.wires
+.. currentmodule:: pennylane.core.wires
 
 .. warning::
 
@@ -12,4 +12,8 @@ qp.wires
     :toctree: api
 
     ~Wires
+    ~WiresLike
+    ~DynamicWire
     ~AbstractQubit
+    ~is_abstract_qubit
+
