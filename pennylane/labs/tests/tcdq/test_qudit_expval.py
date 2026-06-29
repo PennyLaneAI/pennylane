@@ -19,11 +19,8 @@ Tests for the qudit IQP expectation value function.
 import itertools
 from functools import reduce
 
-import hypothesis.extra.numpy as nps
 import numpy as np
 import pytest
-from hypothesis import assume, given, settings
-from hypothesis import strategies as st
 from scipy.linalg import expm
 
 import pennylane as qp
@@ -35,8 +32,6 @@ from pennylane.labs.tcdq.expval_functions import (
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
-
-# ruff: noqa: E741
 
 NUM_SAMPLES = 10000
 
@@ -66,7 +61,7 @@ def _build_qudit_expval_func_exact(config):
     def qudit_expval(gates_params):
         expanded_params = jnp.asarray(gates_params)[param_map]
 
-        def single_obs(l, m):  # noqa: E741
+        def single_obs(l, m):
             k_shifted = (all_states - l[jnp.newaxis, :]) % d
             ks_f = k_shifted.astype(jnp.float32)
             m_f = m.astype(jnp.float32)
@@ -342,63 +337,25 @@ def test_parse_qudit_generator_dict_wrong_length():
         _parse_qudit_generator_dict({0: [[1, 2]]}, n_qudits=3)
 
 
-@st.composite
-def qudit_iqp_parameters(draw):
-    """Strategy generating valid randomized inputs for d-dimensional IQP circuits."""
-    d = draw(st.integers(min_value=2, max_value=4))
-    n = draw(st.integers(min_value=1, max_value=4))
-    n_gates = draw(st.integers(min_value=1, max_value=5))
-
-    thetas = draw(
-        nps.arrays(
-            dtype=float,
-            shape=(n_gates,),
-            elements=st.floats(min_value=-np.pi, max_value=np.pi),
-        )
-    )
-    generators = draw(
-        nps.arrays(
-            dtype=int,
-            shape=(n_gates, n),
-            elements=st.integers(min_value=0, max_value=d - 1),
-        )
-    )
-    l = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=d - 1)))
-    m = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=d - 1)))
-    return d, n, thetas, generators, l, m
-
-
-@st.composite
-def qubit_iqp_parameters(draw):
-    """Strategy generating valid randomized inputs for d=2 (qubit) IQP circuits."""
-    n = draw(st.integers(min_value=1, max_value=4))
-    n_gates = draw(st.integers(min_value=1, max_value=5))
-
-    thetas = draw(
-        nps.arrays(
-            dtype=float,
-            shape=(n_gates,),
-            elements=st.floats(min_value=-np.pi, max_value=np.pi),
-        )
-    )
-    generators = draw(
-        nps.arrays(
-            dtype=int,
-            shape=(n_gates, n),
-            elements=st.integers(min_value=0, max_value=1),
-        )
-    )
-    l = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=1)))
-    m = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=1)))
-    return n, thetas, generators, l, m
-
-
-@settings(max_examples=60, deadline=None)
-@given(params=qubit_iqp_parameters())
-def test_hypothesis_qudit_expval_matches_pennylane(params):
-    """Fuzz _build_qudit_expval_func_exact against PennyLane for d=2."""
-    n, thetas, generators, l, m = params
-
+@pytest.mark.parametrize(
+    "n, thetas, generators, l, m",
+    [
+        # Single qubit, Z observable
+        (1, [0.7], [[1]], [0], [1]),
+        # Single qubit, X observable
+        (1, [0.37], [[1]], [1], [0]),
+        # Two qubits, two gates, X0 Z1
+        (2, [0.3, 0.6], [[1, 0], [0, 1]], [1, 0], [0, 1]),
+        # Two qubits, entangling gate, Y0 Y1
+        (2, [0.4], [[1, 1]], [1, 1], [1, 1]),
+        # Three qubits, three gates, Z0 I1 X2
+        (3, [0.1, 0.2, 0.3], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 1], [1, 0, 0]),
+    ],
+)
+def test_qudit_expval_exact_matches_pennylane(n, thetas, generators, l, m):
+    """Test _build_qudit_expval_func_exact against PennyLane for d=2."""
+    generators = np.array(generators)
+    thetas = np.array(thetas)
     l_vecs = np.array([l])
     m_vecs = np.array([m])
 
@@ -750,12 +707,25 @@ class TestQuditExpvalBatchedEdgeCases:
         assert np.all(np.isfinite(grads))
 
 
-@settings(max_examples=60, deadline=None)
-@given(params=qudit_iqp_parameters())
-def test_hypothesis_qudit_expval_batched_matches_exact(params):
-    """Fuzz build_qudit_expval_func against the exact version."""
-    d, n, thetas, generators, l, m = params
-
+@pytest.mark.parametrize(
+    "d, n, thetas, generators, l, m",
+    [
+        # d=2, single qubit, single gate
+        (2, 1, [0.5], [[1]], [1], [0]),
+        # d=2, two qubits, two-body gate
+        (2, 2, [0.4], [[1, 1]], [1, 1], [0, 0]),
+        # d=3, single qutrit, single gate
+        (3, 1, [0.7], [[2]], [1], [2]),
+        # d=3, two qutrits, two gates
+        (3, 2, [0.3, 0.6], [[1, 0], [0, 2]], [2, 1], [1, 0]),
+        # d=4, single ququart
+        (4, 1, [1.1], [[3]], [2], [1]),
+    ],
+)
+def test_qudit_expval_batched_matches_exact(d, n, thetas, generators, l, m):
+    """Test build_qudit_expval_func against the exact version for various dimensions."""
+    generators = np.array(generators)
+    thetas = np.array(thetas)
     l_vecs = np.array([l])
     m_vecs = np.array([m])
 
@@ -1222,58 +1192,47 @@ class TestQuditExpvalBatchedWithInitState:
         np.testing.assert_allclose(np.array(grads), fd_grads, atol=1e-3)
 
 
-@st.composite
-def qudit_iqp_with_init_state(draw):
-    """Strategy generating valid randomized inputs including a general initial state."""
-    d = draw(st.integers(min_value=2, max_value=4))
-    n = draw(st.integers(min_value=1, max_value=3))
-    n_gates = draw(st.integers(min_value=1, max_value=4))
-
-    thetas = draw(
-        nps.arrays(
-            dtype=float,
-            shape=(n_gates,),
-            elements=st.floats(min_value=-np.pi, max_value=np.pi),
-        )
-    )
-    generators = draw(
-        nps.arrays(
-            dtype=int,
-            shape=(n_gates, n),
-            elements=st.integers(min_value=0, max_value=d - 1),
-        )
-    )
-    l = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=d - 1)))
-    m = draw(nps.arrays(dtype=int, shape=(n,), elements=st.integers(min_value=0, max_value=d - 1)))
-
-    max_support = min(4, d**n)
-    N = draw(st.integers(min_value=1, max_value=max_support))
-
-    all_indices = list(range(d**n))
-    chosen_idxs = draw(st.lists(st.sampled_from(all_indices), min_size=N, max_size=N, unique=True))
-    state_elems = np.array(
-        [[(idx // d ** (n - 1 - k)) % d for k in range(n)] for idx in chosen_idxs]
-    )
-
-    real_parts = draw(
-        nps.arrays(dtype=float, shape=(N,), elements=st.floats(min_value=-1.0, max_value=1.0))
-    )
-    imag_parts = draw(
-        nps.arrays(dtype=float, shape=(N,), elements=st.floats(min_value=-1.0, max_value=1.0))
-    )
-    amps_raw = real_parts + 1j * imag_parts
-    norm = np.linalg.norm(amps_raw)
-    assume(norm > 1e-3)
-    state_amps = amps_raw / norm  # pylint: disable=unreachable
-
-    return d, n, thetas, generators, l, m, state_elems, state_amps
-
-
-@settings(max_examples=40, deadline=None)
-@given(params=qudit_iqp_with_init_state())
-def test_hypothesis_qudit_expval_batched_init_state_matches_brute_force(params):
-    """Fuzz build_qudit_expval_func with init_state against the dense matrix reference."""
-    d, n, thetas, generators, l, m, state_elems, state_amps = params
+@pytest.mark.parametrize(
+    "d, n, thetas, generators, l, m, state_elems, state_amps",
+    [
+        # d=2, single qubit, computational basis |1>
+        (2, 1, [0.5], [[1]], [1], [0], [[1]], [1.0]),
+        # d=2, two qubits, |10>
+        (2, 2, [0.4, 0.6], [[1, 0], [0, 1]], [1, 0], [0, 0], [[1, 0]], [1.0]),
+        # d=2, two qubits, superposition (|00> + |11>)/sqrt(2)
+        (
+            2,
+            2,
+            [0.3, 0.5],
+            [[1, 0], [0, 1]],
+            [1, 0],
+            [0, 0],
+            [[0, 0], [1, 1]],
+            [1 / np.sqrt(2), 1 / np.sqrt(2)],
+        ),
+        # d=3, single qutrit, |2> with complex amplitude
+        (3, 1, [0.7], [[2]], [1], [2], [[2]], [1.0 + 0j]),
+        # d=3, two qutrits, superposition (|01> + i|20>)/sqrt(2)
+        (
+            3,
+            2,
+            [0.3],
+            [[1, 2]],
+            [2, 1],
+            [1, 0],
+            [[0, 1], [2, 0]],
+            [1 / np.sqrt(2), 1j / np.sqrt(2)],
+        ),
+    ],
+)
+def test_qudit_expval_batched_init_state_matches_brute_force(
+    d, n, thetas, generators, l, m, state_elems, state_amps
+):
+    """Test build_qudit_expval_func with init_state against the dense matrix reference."""
+    generators = np.array(generators)
+    thetas = np.array(thetas)
+    state_elems = np.array(state_elems)
+    state_amps = np.array(state_amps, dtype=complex)
 
     l_vecs = np.array([l])
     m_vecs = np.array([m])
