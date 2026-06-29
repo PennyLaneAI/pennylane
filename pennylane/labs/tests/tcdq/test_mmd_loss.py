@@ -11,49 +11,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the phox MMD loss function."""
+"""Tests for the tcdq MMD loss function."""
 
 import itertools
 
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane as qml
+from pennylane.labs.tcdq.expval_functions import CircuitConfig
+from pennylane.labs.tcdq.mmd_loss import (
+    MMDConfig,
+    _binary_ops_to_pauli_int,
+    _compute_single_mmd,
+    median_heuristic,
+    mmd_loss,
+)
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 jax.config.update("jax_enable_x64", True)
 
-try:
-    from pennylane.labs.phox.expval_functions import CircuitConfig
-    from pennylane.labs.phox.mmd_loss import (
-        MMDConfig,
-        _binary_ops_to_pauli_int,
-        _compute_single_mmd,
-        median_heuristic,
-        mmd_loss,
-    )
-
-    # Alias kept for backward-compat in exact-MMD helpers
-    # (these helpers use 'sigma' as the mathematical symbol).
-except ImportError:
-    pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
-
 
 def _iqp_probs_pennylane(generators, params, n_qubits):
     """Return the exact output probability vector of an IQP circuit."""
-    dev = qp.device("default.qubit", wires=n_qubits)
+    dev = qml.device("default.qubit", wires=n_qubits)
 
-    @qp.qnode(dev)
+    @qml.qnode(dev)
     def circuit():
         for i in range(n_qubits):
-            qp.Hadamard(i)
-        for param, gen in zip(params, generators, strict=True):
-            qp.MultiRZ(2.0 * -param, wires=gen)
+            qml.Hadamard(i)
+        for param, gen in zip(params, generators):
+            qml.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
-            qp.Hadamard(i)
-        return qp.probs()
+            qml.Hadamard(i)
+        return qml.probs()
 
     return np.asarray(circuit(), dtype=np.float64)
 
@@ -63,21 +56,21 @@ def _iqp_expval_pennylane(generators, params, obs_ints, n_qubits):
 
     ``obs_ints`` uses the convention I=0, X=1, Y=2, Z=3 per qubit.
     """
-    pauli_map = {0: qp.Identity, 1: qp.X, 2: qp.Y, 3: qp.Z}
+    pauli_map = {0: qml.Identity, 1: qml.X, 2: qml.Y, 3: qml.Z}
     ops = [pauli_map[o](i) for i, o in enumerate(obs_ints)]
-    observable = qp.prod(*ops) if len(ops) > 1 else ops[0]
+    observable = qml.prod(*ops) if len(ops) > 1 else ops[0]
 
-    dev = qp.device("default.qubit", wires=n_qubits)
+    dev = qml.device("default.qubit", wires=n_qubits)
 
-    @qp.qnode(dev)
+    @qml.qnode(dev)
     def circuit():
         for i in range(n_qubits):
-            qp.Hadamard(i)
-        for param, gen in zip(params, generators, strict=True):
-            qp.MultiRZ(2.0 * -param, wires=gen)
+            qml.Hadamard(i)
+        for param, gen in zip(params, generators):
+            qml.MultiRZ(2.0 * -param, wires=gen)
         for i in range(n_qubits):
-            qp.Hadamard(i)
-        return qp.expval(observable)
+            qml.Hadamard(i)
+        return qml.expval(observable)
 
     return float(circuit())
 
@@ -249,7 +242,7 @@ class TestExactMMDConsistency:
 
     This cross-check confirms the Fourier expansion of the Gaussian kernel
     (Eq. 2 of arXiv:2501.04776) and the U-statistic decomposition used
-    by the phox estimator.
+    by the tcdq estimator.
     """
 
     @pytest.mark.parametrize(
@@ -293,7 +286,6 @@ class TestMMDLossAPI:
         """``n_samples <= 1`` should raise ``ValueError``."""
         config = CircuitConfig(
             gates={0: [[0]]},
-            observables=[[3]],
             n_samples=1,
             key=jax.random.PRNGKey(0),
             n_qubits=1,
@@ -312,7 +304,6 @@ class TestMMDLossAPI:
         """``return_per_bandwidth=True`` returns a list of length ``len(bandwidth)``."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
-            observables=[[3, 0]],
             n_samples=100,
             key=jax.random.PRNGKey(0),
             n_qubits=2,
@@ -337,7 +328,6 @@ class TestMMDLossAPI:
         """
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
-            observables=[[3, 0]],
             n_samples=200,
             key=jax.random.PRNGKey(42),
             n_qubits=2,
@@ -358,7 +348,6 @@ class TestMMDLossAPI:
         """A single float bandwidth should produce a scalar output."""
         config = CircuitConfig(
             gates={0: [[0]]},
-            observables=[[3]],
             n_samples=100,
             key=jax.random.PRNGKey(0),
             n_qubits=1,
@@ -373,7 +362,6 @@ class TestMMDLossAPI:
         """Identical keys must yield bit-identical results."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]], 2: [[0, 1]]},
-            observables=[[3, 0]],
             n_samples=500,
             key=jax.random.PRNGKey(99),
             n_qubits=2,
@@ -397,7 +385,6 @@ class TestMMDLossAPI:
             params,
             CircuitConfig(
                 gates=gates,
-                observables=[[3, 0]],
                 n_samples=200,
                 key=jax.random.PRNGKey(0),
                 n_qubits=2,
@@ -409,7 +396,6 @@ class TestMMDLossAPI:
             params,
             CircuitConfig(
                 gates=gates,
-                observables=[[3, 0]],
                 n_samples=200,
                 key=jax.random.PRNGKey(999),
                 n_qubits=2,
@@ -426,7 +412,6 @@ class TestMMDLossAPI:
 
         config = CircuitConfig(
             gates={0: [[0, 1]]},
-            observables=[[3, 3]],
             n_samples=100,
             key=jax.random.PRNGKey(42),
             n_qubits=2,
@@ -443,12 +428,12 @@ class TestMMDLossAPI:
 
 
 class TestMMDLossStatistical:
-    """Statistical (Z-test) validation of the phox MMD estimator.
+    """Statistical (Z-test) validation of the tcdq MMD estimator.
 
     For each parametrized circuit / dataset pair we:
 
     1. Compute the *exact* MMD^2 from PennyLane probabilities and data.
-    2. Collect many stochastic phox estimates using different PRNG keys
+    2. Collect many stochastic tcdq estimates using different PRNG keys
        and random data sub-samples.
     3. Verify the sample mean is consistent with the exact value via a
        two-sided Z-test:  ``|exact - mean_est| / SE < z_threshold``.
@@ -486,7 +471,7 @@ class TestMMDLossStatistical:
         ],
     )
     def test_unbiased_z_test(self, generators, params, biases, n_data):
-        """Mean of phox estimates should be consistent with exact MMD^2."""
+        """Mean of tcdq estimates should be consistent with exact MMD^2."""
         n_qubits = len(biases)
 
         probs_p = _iqp_probs_pennylane(generators, params, n_qubits)
@@ -507,7 +492,6 @@ class TestMMDLossStatistical:
 
         config = CircuitConfig(
             gates=gates,
-            observables=[[0] * n_qubits],
             n_samples=self.N_SAMPLES,
             key=jax.random.PRNGKey(0),
             n_qubits=n_qubits,
@@ -538,15 +522,14 @@ class TestMMDLossStatistical:
         se = np.std(estimates, ddof=1) / np.sqrt(self.N_TRIALS)
 
         z = abs(exact - mean_est) / se if se > 1e-15 else 0.0
-        assert z < self.Z_THRESHOLD, (
-            f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, " f"mean={mean_est:.6f}, se={se:.6f}"
-        )
+        assert (
+            z < self.Z_THRESHOLD
+        ), f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, mean={mean_est:.6f}, se={se:.6f}"
 
     def test_wires_subset_executes(self):
         """``mmd_loss`` with a ``wires`` subset should run without error."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]], 2: [[2]], 3: [[0, 1]]},
-            observables=[[0] * 3],
             n_samples=500,
             key=jax.random.PRNGKey(0),
             n_qubits=3,
@@ -567,7 +550,6 @@ class TestMMDLossStatistical:
         """``sqrt_loss=True`` should return a non-negative scalar."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
-            observables=[[3, 0]],
             n_samples=500,
             key=jax.random.PRNGKey(77),
             n_qubits=2,
@@ -589,7 +571,6 @@ class TestMMDLossStatistical:
         """Passing ``key`` to ``mmd_loss`` should override ``config.key``."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
-            observables=[[3, 0]],
             n_samples=500,
             key=jax.random.PRNGKey(0),
             n_qubits=2,

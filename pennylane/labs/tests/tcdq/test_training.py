@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the Phox training module.
+Tests for the tcdq training module.
 """
 
 import pytest
 
-from pennylane.labs.phox.expval_functions import CircuitConfig, build_expval_func
-from pennylane.labs.phox.training import TrainingOptions, train, training_iterator
+from pennylane.labs.tcdq.expval_functions import CircuitConfig, build_expval_func
+from pennylane.labs.tcdq.training import TrainingOptions, train, training_iterator
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

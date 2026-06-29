@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Training utilities for Phox.
+Training utilities for tcdq.
 """
 
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import partial
 from inspect import signature
-from typing import Any, Callable, Iterator, NamedTuple
+from typing import Any, NamedTuple
 
 import jax
 import jax.numpy as jnp
