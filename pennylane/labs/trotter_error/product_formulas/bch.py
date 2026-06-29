@@ -65,9 +65,7 @@ def bch_expansion(product_formula: ProductFormula, max_order: int) -> dict[ASTNo
     r"""Return the Baker--Campbell--Hausdorff (BCH) expansion of a product formula.
 
     Computes the single-exponential generator equivalent to the given product
-    formula, expanded in the Hall basis and truncated at ``max_order``. The
-    result maps each Hall-basis commutator (an :class:`ASTNode`) to its scalar
-    coefficient; terms whose coefficient is numerically zero are removed.
+    formula, expanded in the Hall basis and truncated at ``max_order``.
 
     Args:
         product_formula (ProductFormula): the product formula to expand. May be a

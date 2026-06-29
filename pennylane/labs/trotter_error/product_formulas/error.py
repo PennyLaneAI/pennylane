@@ -123,15 +123,31 @@ def _eval_commutator(commutator, coeff, fragments):
 
 @dataclass
 class ImportanceConfig:
-    """Enable the importance sampling feature of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`. 
-    
+    """Enable the importance sampling feature of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
+
     This class is used as an optional argument to :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`. When used, the perturbation error will be computed using
     only the ``topk`` most important commutators. The importance of a commutator is induced from
     ``weights`` which stores a user-defined importance score for each fragment label. The keys in
     ``weights`` must be identical to the symbols used to build the :class:`~.pennylane.labs.trotter_error.product_formulas.product_formula.ProductFormula`
     object passed into :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
 
+    **Example**
+    >>> import numpy as np
+    >>> from pennylane.labs.trotter_error import NumpyFragment, NumpyState
+    >>> from pennylane.labs.trotter_error import perturbation_error, ImportanceConfig, ProductFormula
 
+    >>> frags = {"A": NumpyFragment(np.array([[1, 1], [1, 0]])), "B": NumpyFragment(np.array([[1, 1], [1, 1]]))}
+    >>> state = NumpyState(np.array([1, 0]))
+
+    >>> config = ImportanceConfig(
+    >>>     topk=3,
+    >>>     weights={"A": 0.95, "B": 0.5}
+    >>> )
+
+    >>> second_order = ProductFormula([("A", 1/2), ("B", 1), ("A", 1/2)])
+
+    >>> perturbation_error(second_order, frags, state, order=3, importance=config))
+    defaultdict(<class 'int'>, {3: -0.25j})
     """
 
     topk: int
