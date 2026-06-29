@@ -67,7 +67,6 @@ class Fragment(ABC):
         """Evaluates the commutator :math:`[A, B] = AB - BA` of two fragments"""
         return self @ other - other @ self
 
-    @abstractmethod
     def apply(self, state: TrotterState) -> TrotterState:
         r"""For a fragment :math:`H` and state :math:`|\psi\rangle` return the state :math:`H|\psi\rangle`
         The type of ``state`` is determined by the implementation of :math:`H` as a ``Fragment`` object.

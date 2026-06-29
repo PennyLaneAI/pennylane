@@ -17,6 +17,9 @@ from .generic_fragments import NumpyFragment, NumpyState, SparseFragment, Sparse
 from .vibrational_fragments import vibrational_fragments
 from .vibronic_fragments import vibronic_fragments
 
+from .gan_fragments import GanConfig, gan_fragments
+
+
 __all__ = [
     "NumpyFragment",
     "NumpyState",
@@ -24,4 +27,6 @@ __all__ = [
     "SparseState",
     "vibrational_fragments",
     "vibronic_fragments",
+    "gan_fragments",
+    "GanConfig",
 ]
