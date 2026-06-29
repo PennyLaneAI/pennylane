@@ -194,6 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane.core import Operator2
 from pennylane.exceptions import QueuingError
 
 
@@ -544,6 +545,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     else:
         # append the operator directly to the relevant queuing context
         context.append(op)
+
+    if isinstance(op, Operator2):
+        op._bind_primitive()
 
     return op
 
