@@ -33,6 +33,7 @@ from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -46,7 +47,6 @@ from pennylane.exceptions import (
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta, _canonicalize_abstract_type, _resolve_arg_kind

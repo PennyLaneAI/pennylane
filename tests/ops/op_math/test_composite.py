@@ -24,9 +24,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
-from pennylane.wires import Wires
 
 ops = (
     (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),

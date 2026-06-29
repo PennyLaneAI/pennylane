@@ -25,8 +25,8 @@ from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 

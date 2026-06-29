@@ -21,10 +21,10 @@ from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qp
 from pennylane.core import Operator2
+from pennylane.core.wires import WiresLike
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
 
 
 @pytest.mark.parametrize(

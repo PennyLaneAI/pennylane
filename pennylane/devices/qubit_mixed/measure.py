@@ -23,6 +23,7 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.measurements import (
     DensityMatrixMP,
     ExpectationMP,
@@ -31,7 +32,6 @@ from pennylane.measurements import (
 from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .apply_operation import _get_num_wires, apply_operation
 

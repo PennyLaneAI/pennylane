@@ -24,11 +24,11 @@ from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.unitary_to_rot import _recursively_decompose_qubit_unitary
-from pennylane.wires import Wires
 
 typeof_gates_zyz = (qp.RZ, qp.RY, qp.RZ)
 single_qubit_decompositions = [

@@ -154,7 +154,7 @@ class TestFromBloq:
         from qualtran import BloqBuilder, QUInt
         from qualtran.bloqs.arithmetic import Add, Product
 
-        from pennylane.wires import Wires
+        from pennylane.core.wires import Wires
 
         bb = BloqBuilder()
 
@@ -340,7 +340,7 @@ class TestFromBloq:
         from qualtran import BloqBuilder, QUInt
         from qualtran.bloqs.arithmetic import Add, Product
 
-        from pennylane.wires import Wires
+        from pennylane.core.wires import Wires
 
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qp.bloq_registers("123")

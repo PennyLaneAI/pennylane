@@ -23,11 +23,11 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import CVObservable, Operation
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.wires import WiresLike
 
 
 class Identity(CVObservable, Operation):

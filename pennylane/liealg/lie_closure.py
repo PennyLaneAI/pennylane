@@ -25,6 +25,7 @@ import numpy as np
 import pennylane.ops.functions as op_func
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.pauli import (
     PauliSentence,
     PauliVSpace,
@@ -33,7 +34,6 @@ from pennylane.pauli import (
     trace_inner_product,
 )
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 #: Tolerance for linear independence checks of Hermitian basis matrices.
 #: Note: if this value is changed, update the docstring of :func:`_hermitian_basis` accordingly.

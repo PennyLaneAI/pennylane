@@ -27,12 +27,12 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.prod import Prod
-from pennylane.wires import Wires
 
 from .resource_operator import ResourceOperator
 

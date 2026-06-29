@@ -16,11 +16,13 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -29,7 +31,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import CNOT, Controlled, PauliX
-from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier

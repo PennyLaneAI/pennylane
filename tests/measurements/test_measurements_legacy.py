@@ -23,12 +23,12 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
+from pennylane.core.wires import Wires
 from pennylane.measurements import (
     ClassicalShadowMP,
     SampleMP,
     StateMP,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument, protected-access
 

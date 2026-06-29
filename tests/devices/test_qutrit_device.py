@@ -26,6 +26,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.wires import Wires
 from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
@@ -36,7 +37,6 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.wires import Wires
 
 
 @pytest.fixture(scope="function")

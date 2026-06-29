@@ -24,9 +24,9 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.devices import LegacyDevice as Device
 from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]

@@ -17,8 +17,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.core.wires import Wires
 from pennylane.ops import MeasurementValue, PauliMeasure
-from pennylane.wires import Wires
 
 
 @pytest.mark.external

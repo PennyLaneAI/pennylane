@@ -26,13 +26,13 @@ import numpy as np
 import rustworkx as rx
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
     observables_to_binary_matrix,
 )
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .graph_colouring import recursive_largest_first
 

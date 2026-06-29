@@ -23,6 +23,7 @@ import numpy as np
 from pennylane import ops, pytrees
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.wires import Wires
 
 
 class Reflection(Operation):

@@ -20,9 +20,9 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import controlled_resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.wires import Wires
 
 
 class PUIsometryFinder:

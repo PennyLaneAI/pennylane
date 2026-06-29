@@ -29,6 +29,7 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
+from pennylane.core.wires import Wires
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
@@ -41,7 +42,6 @@ from pennylane.measurements import (
 )
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
-from pennylane.wires import Wires
 
 from .tracker import Tracker
 

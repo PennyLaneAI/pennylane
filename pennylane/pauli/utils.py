@@ -27,8 +27,8 @@ from itertools import product
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
-from pennylane.wires import Wires
 
 # Define constants that are used often within the functions in this module
 ID_MAT = np.eye(2)

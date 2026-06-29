@@ -22,9 +22,9 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operator
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import add_decomps, pow_resource_rep, register_resources, resource_rep
 from pennylane.ops import FermionicSWAP, PauliZ, pow
-from pennylane.wires import WiresLike
 
 INV_SQRT2 = 1 / math.sqrt(2)
 

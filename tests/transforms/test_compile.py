@@ -22,6 +22,7 @@ from test_optimization.utils import compare_operation_lists
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.compile import compile
 from pennylane.transforms.optimization import (
@@ -31,7 +32,6 @@ from pennylane.transforms.optimization import (
     single_qubit_fusion,
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
-from pennylane.wires import Wires
 
 
 def build_qfunc(wires):

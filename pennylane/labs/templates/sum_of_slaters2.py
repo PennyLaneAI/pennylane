@@ -17,12 +17,12 @@ wires explicitly."""
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
     _sos_state_prep_resources,
     _sos_state_prep_with_wires,
 )
-from pennylane.wires import Wires
 
 
 class SumOfSlatersPrep2(qp.SumOfSlatersPrep):

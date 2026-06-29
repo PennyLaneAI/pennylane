@@ -26,11 +26,11 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.wires import Wires
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
     qp.RX(0.123, wires=0),

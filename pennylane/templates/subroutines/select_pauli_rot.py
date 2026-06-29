@@ -20,6 +20,7 @@ from collections import defaultdict
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math import Prod
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
-from pennylane.wires import Wires
 
 
 class SelectPauliRot(Operation):

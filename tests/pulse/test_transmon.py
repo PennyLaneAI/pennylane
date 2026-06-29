@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.pulse import HardwareHamiltonian, transmon_drive, transmon_interaction
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.pulse.transmon import (
@@ -31,7 +32,6 @@ from pennylane.pulse.transmon import (
     ad,
     callable_freq_to_angular,
 )
-from pennylane.wires import Wires
 
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):

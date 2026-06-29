@@ -26,9 +26,9 @@ from gate_data import TCLOCK, TSHIFT
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.wires import Wires
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qutrit import validate_subspace
-from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
     qp.TRX(0.123, wires=0, subspace=(0, 1)),

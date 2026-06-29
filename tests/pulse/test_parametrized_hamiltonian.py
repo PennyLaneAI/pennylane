@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.pulse import ParametrizedHamiltonian
-from pennylane.wires import Wires
 
 
 def f1(p, t):

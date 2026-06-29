@@ -26,9 +26,9 @@ import scipy
 import pennylane as qp
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
+from pennylane.core.wires import Wires
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.wires import Wires
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [

@@ -22,13 +22,13 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Controlled, adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 CONTROL_BASE = {
     "CNOT": "PauliX",

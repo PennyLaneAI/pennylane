@@ -24,15 +24,16 @@ import numpy as np
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
+from pennylane.exceptions import WireError
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
-from pennylane.wires import WireError, Wires
 
 from .reflection import Reflection
 

@@ -20,6 +20,7 @@ from pennylane.core.operator import *  # pylint: disable=wildcard-import, unused
 from pennylane.core.operator.base import (  # pylint: disable=unused-import # tach-ignore
     _UNSET_BATCH_SIZE,
 )
+from pennylane.core.wires import Wires  # pylint: disable=unused-import
 from pennylane.exceptions import (  # pylint: disable=unused-import
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -34,7 +35,6 @@ from pennylane.exceptions import (  # pylint: disable=unused-import
     TermsUndefinedError,
 )
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires  # pylint: disable=unused-import
 
 
 def operation_derivative(operation: Operation) -> TensorLike:

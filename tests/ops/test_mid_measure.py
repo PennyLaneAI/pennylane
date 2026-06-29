@@ -19,9 +19,9 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as np
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 

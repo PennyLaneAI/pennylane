@@ -27,6 +27,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qp
 from pennylane.allocation import allocate
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -43,7 +44,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx

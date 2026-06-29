@@ -24,8 +24,8 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DeviceError, WireError
-from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),

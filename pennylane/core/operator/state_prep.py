@@ -17,8 +17,8 @@ This module defines StatePrepBase.
 
 import abc
 
+from pennylane.core.wires import WiresLike
 from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
 
 from .base import Operation
 

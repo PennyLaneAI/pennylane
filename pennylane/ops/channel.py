@@ -23,7 +23,7 @@ from typing import Any
 
 from pennylane import math as np
 from pennylane.core.operator import Channel
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.wires import Wires, WiresLike
 
 #: Small epsilon added to sqrt to prevent floating-point errors during qubit channel normalization.
 _SQRT_STABILITY_EPS = 1e-14

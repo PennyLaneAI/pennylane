@@ -24,6 +24,7 @@ from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.exceptions import WireError
 from pennylane.ops import (
     Adjoint,
@@ -38,7 +39,6 @@ from pennylane.ops import (
 )
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.templates import ControlledSequence
-from pennylane.wires import Wires
 
 # pylint: disable = too-many-branches
 

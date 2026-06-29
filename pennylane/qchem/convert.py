@@ -22,7 +22,7 @@ import numpy as np
 
 # pylint: disable=import-outside-toplevel
 import pennylane as qp
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 def _process_wires(wires, n_wires=None):

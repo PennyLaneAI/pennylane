@@ -24,7 +24,7 @@ from typing import Literal
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.wires import Wires, WiresLike
 
 
 class Barrier(Operation):

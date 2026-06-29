@@ -21,6 +21,7 @@ from warnings import warn
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
@@ -31,7 +32,6 @@ from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, get_mcm_pred
 from pennylane.ops.op_math import ctrl
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches, protected-access, too-many-statements
 

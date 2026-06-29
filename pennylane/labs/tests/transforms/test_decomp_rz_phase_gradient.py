@@ -20,11 +20,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import WireError
 from pennylane.labs.transforms.decomp_rz_phase_gradient import make_rz_to_phase_gradient_decomp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
-from pennylane.wires import WireError
 
 
 @pytest.mark.parametrize(

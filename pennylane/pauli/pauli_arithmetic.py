@@ -25,10 +25,10 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 I = "I"
 X = "X"

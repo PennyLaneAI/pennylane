@@ -20,8 +20,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.wires import Wires
 from pennylane.ops import Prod
-from pennylane.wires import Wires
 
 
 def build_op():

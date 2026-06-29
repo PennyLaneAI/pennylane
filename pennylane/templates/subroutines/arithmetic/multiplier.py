@@ -18,6 +18,7 @@ Contains the Multiplier template.
 import numpy as np
 
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
 

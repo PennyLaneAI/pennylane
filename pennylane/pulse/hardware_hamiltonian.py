@@ -23,8 +23,8 @@ import numpy as np
 from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops import Identity, LinearCombination, SProd, X, Y
-from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 

@@ -26,7 +26,7 @@ from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operator
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
 

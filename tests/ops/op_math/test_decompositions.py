@@ -25,13 +25,13 @@ from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 from scipy import sparse
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
     multi_qubit_decomposition,
 )
 from pennylane.transforms.decompose import DecomposeInterpreter
-from pennylane.wires import Wires
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):

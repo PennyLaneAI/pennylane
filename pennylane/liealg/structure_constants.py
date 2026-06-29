@@ -20,9 +20,9 @@ import numpy as np
 import pennylane.ops.functions as op_func
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 def _all_commutators(ops):

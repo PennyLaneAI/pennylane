@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 class TestCircuitGraphHash:

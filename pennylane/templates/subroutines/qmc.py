@@ -22,9 +22,9 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import QubitUnitary
-from pennylane.wires import Wires
 
 from .qpe import QuantumPhaseEstimation
 

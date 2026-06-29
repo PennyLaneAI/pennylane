@@ -22,9 +22,9 @@ from itertools import combinations
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.wires import Wires
 
 has_jax = True
 try:

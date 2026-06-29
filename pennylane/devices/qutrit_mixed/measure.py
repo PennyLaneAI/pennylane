@@ -21,6 +21,7 @@ from string import ascii_letters as alphabet
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.measurements import (
     ExpectationMP,
     ProbabilityMP,
@@ -29,7 +30,6 @@ from pennylane.measurements import (
 )
 from pennylane.ops import Sum
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
 from .utils import QUDIT_DIM, get_num_wires, reshape_state_as_matrix

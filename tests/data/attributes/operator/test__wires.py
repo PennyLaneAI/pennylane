@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.data.attributes.operator._wires import UnserializableWireError, wires_to_json
-from pennylane.wires import Wires
 
 pytestmark = pytest.mark.data
 

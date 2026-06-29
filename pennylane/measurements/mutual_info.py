@@ -21,9 +21,9 @@ from copy import copy
 
 from pennylane import math
 from pennylane.core.measurements import StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 class MutualInfoMP(StateMeasurement):

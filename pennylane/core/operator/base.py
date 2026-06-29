@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
+from pennylane.core.wires import Wires, WiresLike, is_abstract_qubit
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -48,7 +49,6 @@ from pennylane.exceptions import (
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed

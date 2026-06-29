@@ -23,9 +23,9 @@ from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
-from pennylane.wires import Wires, WiresLike
 
 
 class QFT(Operation):

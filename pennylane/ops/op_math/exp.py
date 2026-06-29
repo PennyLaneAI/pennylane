@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -36,7 +37,6 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
-from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
 from .sprod import SProd

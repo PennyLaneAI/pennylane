@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.wires import Wires
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.wires import Wires
 
 
 @pytest.mark.jax

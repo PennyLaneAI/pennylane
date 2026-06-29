@@ -25,6 +25,7 @@ from copy import copy
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.core.operator import Operator, StatePrepBase
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
@@ -49,7 +50,6 @@ from pennylane.transforms.decompose import (
     _operator_decomposition_gen,
 )
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 
 def null_postprocessing(results):

@@ -15,7 +15,7 @@
 This module contains the :func:`registers` function.
 """
 
-from .wires import Wires
+from pennylane.core.wires import Wires
 
 
 def registers(register_dict):

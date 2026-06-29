@@ -18,8 +18,8 @@
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops import MeasurementValue, PauliMeasure
-from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
 

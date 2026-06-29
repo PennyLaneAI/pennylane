@@ -18,8 +18,8 @@ This module contains the qp.vn_entropy measurement.
 
 from pennylane import math
 from pennylane.core.measurements import StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 class VnEntropyMP(StateMeasurement):

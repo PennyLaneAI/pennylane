@@ -23,6 +23,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -46,7 +47,6 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_many_workers_explicit,
     decompose_mcx_one_worker_explicit,
 )
-from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 

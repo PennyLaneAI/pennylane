@@ -26,6 +26,7 @@ import pennylane.ops as qops
 from pennylane import math
 from pennylane.circuit_graph import LayerData
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
@@ -34,7 +35,6 @@ from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 
 class _WrappedObj:

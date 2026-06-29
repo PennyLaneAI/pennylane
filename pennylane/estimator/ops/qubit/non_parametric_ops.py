@@ -14,6 +14,7 @@
 r"""Resource operators for non parametric single qubit operations."""
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -21,7 +22,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 

@@ -25,6 +25,7 @@ from pennylane.core.measurements import (
 )
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -42,7 +43,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
 

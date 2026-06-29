@@ -18,6 +18,7 @@ Contains templates for Quantum Signal Processing (QSP) based subroutines.
 import scipy.special as sps
 
 import pennylane.numpy as qnp
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import PCPhase
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ, Rot
@@ -27,7 +28,6 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     _dequeue,
 )
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs, too-many-arguments
 

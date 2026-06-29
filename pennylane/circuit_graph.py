@@ -26,11 +26,11 @@ import rustworkx as rx
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.resource import ResourcesOperation
-from pennylane.wires import Wires
 
 
 class _WrappedObj:

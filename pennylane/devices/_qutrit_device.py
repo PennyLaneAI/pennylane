@@ -23,8 +23,8 @@ import itertools
 import numpy as np
 
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.wires import Wires
 from pennylane.exceptions import EigvalsUndefinedError, QuantumFunctionError
-from pennylane.wires import Wires
 
 from ._qubit_device import QubitDevice
 

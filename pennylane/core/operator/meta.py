@@ -24,9 +24,9 @@ from numbers import Number
 
 from pennylane import math
 from pennylane.capture import enabled
+from pennylane.core.wires import Wires
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
-from pennylane.wires import Wires
 
 from .utils import abstractify
 

@@ -35,10 +35,10 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.qcut.tapes import _WrappedObj
 from pennylane.transforms import decompose
-from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
 

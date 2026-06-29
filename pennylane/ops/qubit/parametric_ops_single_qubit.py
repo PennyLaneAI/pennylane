@@ -30,6 +30,7 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -44,7 +45,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 

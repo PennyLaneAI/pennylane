@@ -20,9 +20,9 @@ import warnings
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
-from pennylane.wires import Wires
 
 
 class QutritUnitary(Operation):

@@ -25,6 +25,7 @@ import numpy as np
 from pennylane import math, ops
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.ops import Sum
@@ -32,7 +33,6 @@ from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
-from pennylane.wires import Wires
 
 from .gradient_transform import (
     _no_trainable_grad,

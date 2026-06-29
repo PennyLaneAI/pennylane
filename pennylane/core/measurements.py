@@ -28,6 +28,7 @@ from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
@@ -37,7 +38,6 @@ from pennylane.exceptions import (
 from pennylane.math.utils import is_abstract
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 # tach-ignore
 from ._capture_measurements import (

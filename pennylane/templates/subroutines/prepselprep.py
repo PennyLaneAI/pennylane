@@ -21,6 +21,7 @@ import copy
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -31,7 +32,6 @@ from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from pennylane.wires import Wires, WiresLike
 
 from .select import Select
 

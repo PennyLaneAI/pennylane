@@ -20,8 +20,8 @@ from functools import lru_cache
 from typing import Optional
 
 from pennylane import capture
+from pennylane.core.wires import Wires
 from pennylane.math import is_abstract
-from pennylane.wires import Wires
 
 has_jax = True
 try:

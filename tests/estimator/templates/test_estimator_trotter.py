@@ -20,9 +20,9 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_operator import CompressedResourceOp
-from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 

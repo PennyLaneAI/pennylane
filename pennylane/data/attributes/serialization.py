@@ -20,6 +20,7 @@ from collections.abc import Callable
 from typing import Any, Literal, overload
 
 from pennylane.core.shots import Shots
+from pennylane.core.wires import Wires
 from pennylane.pytrees.pytrees import (
     PyTreeStructure,
     get_typename,
@@ -28,7 +29,6 @@ from pennylane.pytrees.pytrees import (
     typename_to_type,
 )
 from pennylane.typing import JSON
-from pennylane.wires import Wires
 
 
 @overload

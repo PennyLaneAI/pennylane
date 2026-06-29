@@ -43,6 +43,7 @@ from pennylane import (
     qnode,
 )
 from pennylane.core import queuing
+from pennylane.core.wires import Wires
 from pennylane.ops import (
     Adjoint,
     Controlled,
@@ -52,7 +53,6 @@ from pennylane.ops import (
     MultiControlledX,
 )
 from pennylane.ops.op_math.pow import PowOperation
-from pennylane.wires import Wires
 
 try:
     pytest.importorskip("openqasm3")

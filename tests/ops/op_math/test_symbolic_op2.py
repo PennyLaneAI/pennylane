@@ -16,8 +16,8 @@
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.wires import Wires
 
 
 class RX2(Operator2):

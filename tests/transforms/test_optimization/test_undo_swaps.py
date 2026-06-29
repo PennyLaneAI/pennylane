@@ -20,8 +20,8 @@ from utils import compare_operation_lists
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.transforms.optimization import undo_swaps
-from pennylane.wires import Wires
 
 
 class TestUndoSwaps:

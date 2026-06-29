@@ -26,6 +26,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operator2, StatePrepBase2
 from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.wires import Wires
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -41,7 +42,6 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.typing import AbstractArray, AbstractWires
-from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-public-methods

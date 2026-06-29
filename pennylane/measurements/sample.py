@@ -23,10 +23,10 @@ from pennylane import math
 from pennylane.core.measurements import SampleMeasurement
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 from .counts import CountsMP
 from .process_samples import process_raw_samples

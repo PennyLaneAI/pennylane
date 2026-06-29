@@ -21,10 +21,10 @@ from functools import partial
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math import Controlled
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 
 @partial(transform, is_informative=True)

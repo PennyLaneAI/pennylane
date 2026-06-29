@@ -21,9 +21,9 @@ import pennylane as qp
 from pennylane import capture, math, register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import StatePrepBase
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep
 from pennylane.exceptions import WireError
-from pennylane.wires import Wires
 
 
 class CosineWindow(StatePrepBase):

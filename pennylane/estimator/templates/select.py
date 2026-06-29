@@ -18,6 +18,7 @@ from collections import defaultdict
 import numpy as np
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.compact_hamiltonian import PauliHamiltonian, THCHamiltonian
 from pennylane.estimator.resource_operator import (
@@ -27,7 +28,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
 

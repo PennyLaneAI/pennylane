@@ -14,13 +14,13 @@
 r"""Resource operators for identity and global phase operations."""
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ
 

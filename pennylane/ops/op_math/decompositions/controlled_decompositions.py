@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane import allocation, compiler, control_flow, math, ops
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -31,7 +32,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
-from pennylane.wires import Wires
 
 
 def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):

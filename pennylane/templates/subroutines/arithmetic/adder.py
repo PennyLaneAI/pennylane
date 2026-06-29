@@ -16,6 +16,7 @@ Contains the Adder template.
 """
 
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -24,7 +25,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
 

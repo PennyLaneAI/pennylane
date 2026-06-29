@@ -18,10 +18,10 @@ Contains the hardware-efficient ParticleConservingU2 template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import CNOT, CRX, RZ
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.wires import Wires, WiresLike
 
 
 def u2_ex_gate(phi, wires=None):

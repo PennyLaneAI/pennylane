@@ -20,6 +20,7 @@ import pytest
 from scipy.stats import norm
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
@@ -30,7 +31,6 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
-from pennylane.wires import Wires
 
 
 class TestProbsToUnitary:

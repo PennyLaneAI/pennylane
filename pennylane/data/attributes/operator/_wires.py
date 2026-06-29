@@ -17,7 +17,7 @@ import json
 import numbers
 from typing import Any
 
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 class UnserializableWireError(TypeError):
