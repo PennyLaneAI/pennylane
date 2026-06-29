@@ -28,7 +28,7 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import apply
-from pennylane.queuing import AnnotatedQueue
+from pennylane.core.queuing import AnnotatedQueue
 
 jax = pytest.importorskip("jax")
 
