@@ -348,7 +348,9 @@ class PauliX(Operator2):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0}  # pylint: disable=unsubscriptable-object
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -384,7 +386,9 @@ class PauliX(Operator2):
     _cached_mat = np.array([[0, 1], [1, 0]])
 
     @classmethod
-    def compute_matrix(cls, wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -412,7 +416,9 @@ class PauliX(Operator2):
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -643,7 +649,9 @@ class PauliY(Operator2):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}  # pylint: disable=unsubscriptable-object
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -679,7 +687,9 @@ class PauliY(Operator2):
     _cached_matrix = np.array([[0, -1j], [1j, 0]])
 
     @classmethod
-    def compute_matrix(cls, wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -706,7 +716,9 @@ class PauliY(Operator2):
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -908,7 +920,9 @@ class PauliZ(Operator2):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}  # pylint: disable=unsubscriptable-object
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -944,7 +958,9 @@ class PauliZ(Operator2):
     _cached_matrix = np.array([[1, 0], [0, -1]])
 
     @classmethod
-    def compute_matrix(cls, wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -971,7 +987,9 @@ class PauliZ(Operator2):
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires=None) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
