@@ -45,6 +45,30 @@ def test_child_constructor_runs_when_concrete():
 class TestOperatorAbstractInputs:
     """Tests that the metaclass canonicalizes abstract operators."""
 
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            ((Float[2], [Float, Int, Complex], Wire[1]), True),
+            ((Float[2], [np.pi, 7, 5 + 2j], Wire[1]), True),
+            ((Float[2], [np.pi, 7, 5 + 2j], (0,)), True),
+            ((np.array([1.5, 1.25]), [np.pi, 7, 5 + 2j], (0,)), False),
+        ],
+    )
+    def test_is_abstract_set(self, args, expected):
+        """Tests that is_abstract is set appropriately."""
+
+        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+            """Operator with dynamic and hybrid argnames."""
+
+            dynamic_argnames = ("dynamic_arg",)
+            hybrid_argnames = ("hybrid_arg",)
+
+            def __init__(self, dynamic_arg, hybrid_arg, wires):
+                super().__init__(dynamic_arg, hybrid_arg, wires=wires)
+
+        op = MixedArgOp(*args)
+        assert op.is_abstract == expected
+
     def test_child_init_is_skipped(self):
         """Tests that the child constructor is skipped."""
 

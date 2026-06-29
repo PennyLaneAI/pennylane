@@ -90,6 +90,16 @@ class TestAbstractifyBasics:
         with pytest.raises(NotImplementedError, match="Cannot abstractify"):
             _ = abstractify(input)
 
+    def test_abstractify_already_abstract(self):
+        """Tests that the original op is returned iff it is already abstract."""
+        op = DynOp(Float, wires=Wire[2])
+        result = abstractify(op)
+        assert result is op
+
+        op = DynOp(1.2, wires=(0, 1))
+        result = abstractify(op)
+        assert result is not op
+
 
 class TestAbstractifyOperatorInstances:
     """Tests behaviour on pure instances."""

@@ -159,6 +159,7 @@ class OperatorMeta(ABCMeta):
             from .operator2 import Operator2  # pylint: disable=import-outside-toplevel
 
             Operator2.__init__(obj, *bound.args, **bound.kwargs)
+            obj.is_abstract = True
             return obj
 
         # This method is called everytime we want to create an instance of the class.

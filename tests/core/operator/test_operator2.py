@@ -478,6 +478,7 @@ class TestOperatorInit:
 
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
+        assert op.is_abstract == False
 
     def test_wires_collected_from_wire_argnames(self):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
