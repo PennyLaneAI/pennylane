@@ -39,8 +39,7 @@ needed to add and multiply operators.
 from __future__ import annotations
 
 import math
-
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
 from enum import IntEnum
@@ -51,6 +50,7 @@ import numpy as np
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiWord
+
 
 class FuncType(IntEnum):
     """The kind of nuclear function: momentum, position, or identity.
@@ -259,7 +259,9 @@ class GanCoeff:
     """
 
     def __init__(self, monomials: dict[GanMonomial, float]):
-        self.monomials = {monomial: coeff for monomial, coeff in monomials.items() if abs(coeff) > 1e-08}
+        self.monomials = {
+            monomial: coeff for monomial, coeff in monomials.items() if abs(coeff) > 1e-08
+        }
 
     def __add__(self, other: GanCoeff):
         """Add two coefficients by summing shared monomials.
@@ -284,7 +286,7 @@ class GanCoeff:
         Returns:
             GanCoeff: the difference.
         """
-        return self + (-1)*other
+        return self + (-1) * other
 
     def __mul__(self, scalar: float):
         """Scale every monomial coefficient by ``scalar`` (dropping zeros).
@@ -369,7 +371,9 @@ class GanCoeff:
         Returns:
             float: the norm bound for the coefficient.
         """
-        return sum(abs(coeff * monomial.norm(gridpoints)) for monomial, coeff in self.monomials.items())
+        return sum(
+            abs(coeff * monomial.norm(gridpoints)) for monomial, coeff in self.monomials.items()
+        )
 
 
 class GanFragment(Fragment):
@@ -387,7 +391,11 @@ class GanFragment(Fragment):
     """
 
     def __init__(self, fragment: dict[FermiWord, GanCoeff]):
-        self.fragment = {fermi: coeff for fermi, coeff in fragment.items() if not (fermi.is_zero() or coeff.is_zero())}
+        self.fragment = {
+            fermi: coeff
+            for fermi, coeff in fragment.items()
+            if not (fermi.is_zero() or coeff.is_zero())
+        }
 
     def __add__(self, other: GanFragment):
         """Add two fragments by summing coefficients of shared fermionic strings.
@@ -417,7 +425,7 @@ class GanFragment(Fragment):
         Returns:
             GanFragment: the difference.
         """
-        return self + (-1)*other
+        return self + (-1) * other
 
     def __mul__(self, scalar: complex):
         """Scale every coefficient by ``scalar``.
@@ -516,7 +524,12 @@ def _normal_order(monomial):
                 curr -= 1
                 continue
 
-            if l_type in basis_types and r_type in basis_types and l_mode == r_mode and l_type > r_type:
+            if (
+                l_type in basis_types
+                and r_type in basis_types
+                and l_mode == r_mode
+                and l_type > r_type
+            ):
                 funcs[curr], funcs[j] = funcs[j], funcs[curr]
                 curr -= 1
                 continue

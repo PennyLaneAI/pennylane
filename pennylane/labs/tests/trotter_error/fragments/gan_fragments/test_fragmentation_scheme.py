@@ -10,27 +10,25 @@ from itertools import product
 import numpy as np
 import pytest
 
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     GanConfig,
-    gan_fragments,
     _diagonal,
-    _kinetic,
-    _mol_matching,
-    _met_matching,
-    _molecular_coupling,
     _electron_repulsion,
+    _kinetic,
+    _met_matching,
+    _mol_matching,
+    _molecular_coupling,
     _molecule_metal_transfer,
     _nuclear_reference,
+    gan_fragments,
 )
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
-    GanFragment,
-    GanCoeff,
-    GanMonomial,
     FuncSymbol,
+    GanCoeff,
+    GanFragment,
+    GanMonomial,
 )
-
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiWord, FermiOp
-
 
 N_MOL = 3
 N_MET = 6

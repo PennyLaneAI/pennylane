@@ -15,22 +15,23 @@ These were NOT verified against the source of ``_mol_matching`` /
 case raises IndexError, narrow the corresponding range.
 """
 
-import numpy as np
-import pytest
 from collections import defaultdict
 from itertools import product
 
-from pennylane.labs.trotter_error import GanConfig, effective_hamiltonian, ProductFormula
+import numpy as np
+import pytest
+
+from pennylane.labs.trotter_error import GanConfig, ProductFormula, effective_hamiltonian
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
-    _mol_matching,
-    _met_matching,
-    _molecular_coupling,
-    _molecule_metal_transfer,
     _diagonal,
     _electron_repulsion,
+    _met_matching,
+    _mol_matching,
+    _molecular_coupling,
+    _molecule_metal_transfer,
     gan_fragments,
 )
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     GanCoeff,
     GanFragment,
@@ -104,7 +105,11 @@ def config():
     repulsions = [arr1, arr2]
 
     nuclear = [np.random.random(size=n_modes), np.random.random(size=n_modes)]
-    transfer = [np.random.random(size=(n_mol, n_met)),np.random.random(size=(n_mol, n_met)),np.random.random(size=(n_mol, n_met))]
+    transfer = [
+        np.random.random(size=(n_mol, n_met)),
+        np.random.random(size=(n_mol, n_met)),
+        np.random.random(size=(n_mol, n_met)),
+    ]
     masses = np.random.random(size=n_modes)
     energies = np.random.random(size=n_met)
 
@@ -330,19 +335,47 @@ def _expected_f0_mol(s, config):
             V_pq = _electron_repulsion(p, q, config)
             U_ij = _molecular_coupling(i, j, config)
 
-            fermi1 = FermiWord([FermiOp.creation_mol(b), FermiOp.annihilation_mol(b), FermiOp.creation_mol(c), FermiOp.annihilation_mol(a)])
+            fermi1 = FermiWord(
+                [
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                    FermiOp.creation_mol(c),
+                    FermiOp.annihilation_mol(a),
+                ]
+            )
             for fermi, coeff in fermi1.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ U_ij
 
-            fermi2 = FermiWord([FermiOp.creation_mol(b), FermiOp.annihilation_mol(b), FermiOp.creation_mol(a), FermiOp.annihilation_mol(c)])
+            fermi2 = FermiWord(
+                [
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                    FermiOp.creation_mol(a),
+                    FermiOp.annihilation_mol(c),
+                ]
+            )
             for fermi, coeff in fermi2.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ U_ij
 
-            fermi3 = FermiWord([FermiOp.creation_mol(c), FermiOp.annihilation_mol(a), FermiOp.creation_mol(b), FermiOp.annihilation_mol(b)])
+            fermi3 = FermiWord(
+                [
+                    FermiOp.creation_mol(c),
+                    FermiOp.annihilation_mol(a),
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                ]
+            )
             for fermi, coeff in fermi3.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ U_ij
 
-            fermi4 = FermiWord([FermiOp.creation_mol(a), FermiOp.annihilation_mol(c), FermiOp.creation_mol(b), FermiOp.annihilation_mol(b)])
+            fermi4 = FermiWord(
+                [
+                    FermiOp.creation_mol(a),
+                    FermiOp.annihilation_mol(c),
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                ]
+            )
             for fermi, coeff in fermi4.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ U_ij
 
@@ -388,19 +421,47 @@ def _expected_f0_met(s, config):
             V_pq = _electron_repulsion(p, q, config)
             W_ia = _molecule_metal_transfer(i, a, config)
 
-            fermi1 = FermiWord([FermiOp.creation_mol(b), FermiOp.annihilation_mol(b), FermiOp.creation_mol(c), FermiOp.annihilation_met(a)])
+            fermi1 = FermiWord(
+                [
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                    FermiOp.creation_mol(c),
+                    FermiOp.annihilation_met(a),
+                ]
+            )
             for fermi, coeff in fermi1.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ W_ia
 
-            fermi2 = FermiWord([FermiOp.creation_mol(b), FermiOp.annihilation_mol(b), FermiOp.creation_met(a), FermiOp.annihilation_mol(c)])
+            fermi2 = FermiWord(
+                [
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                    FermiOp.creation_met(a),
+                    FermiOp.annihilation_mol(c),
+                ]
+            )
             for fermi, coeff in fermi2.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ W_ia
 
-            fermi3 = FermiWord([FermiOp.creation_mol(c), FermiOp.annihilation_met(a), FermiOp.creation_mol(b), FermiOp.annihilation_mol(b)])
+            fermi3 = FermiWord(
+                [
+                    FermiOp.creation_mol(c),
+                    FermiOp.annihilation_met(a),
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                ]
+            )
             for fermi, coeff in fermi3.normal_order().words.items():
                 terms[fermi] += coeff * V_pq @ W_ia
 
-            fermi4 = FermiWord([FermiOp.creation_met(a), FermiOp.annihilation_mol(c), FermiOp.creation_mol(b), FermiOp.annihilation_mol(b)])
+            fermi4 = FermiWord(
+                [
+                    FermiOp.creation_met(a),
+                    FermiOp.annihilation_mol(c),
+                    FermiOp.creation_mol(b),
+                    FermiOp.annihilation_mol(b),
+                ]
+            )
             for fermi, coeff in fermi4.normal_order().words.items():
                 terms[fermi] -= coeff * V_pq @ W_ia
 

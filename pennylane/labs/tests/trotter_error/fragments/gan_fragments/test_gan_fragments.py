@@ -9,14 +9,14 @@ import math
 
 import pytest
 
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
-    FuncType,
     FuncSymbol,
-    GanMonomial,
+    FuncType,
     GanCoeff,
     GanFragment,
+    GanMonomial,
 )
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 
 
 # --------------------------------------------------------------------------- #

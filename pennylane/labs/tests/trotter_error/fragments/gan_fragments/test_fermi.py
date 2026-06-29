@@ -12,10 +12,10 @@ import pytest
 
 from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import (
     FermiOp,
-    FermiType,
-    FermiSpace,
-    FermiWord,
     FermiSentence,
+    FermiSpace,
+    FermiType,
+    FermiWord,
 )
 
 
@@ -93,9 +93,9 @@ def test_identity_word_is_empty():
 # --------------------------------------------------------------------------- #
 def test_is_zero_on_repeated_adjacent_operator():
     c0 = FermiOp.creation_mol(0)
-    assert FermiWord([c0, c0]).is_zero()           # c_0 c_0 = 0
+    assert FermiWord([c0, c0]).is_zero()  # c_0 c_0 = 0
     assert not FermiWord([c0]).is_zero()
-    assert not FermiWord.identity().is_zero()      # empty word is the identity, not zero
+    assert not FermiWord.identity().is_zero()  # empty word is the identity, not zero
     # repeated but non-adjacent is NOT flagged zero by this (syntactic) check
     a1 = FermiOp.annihilation_mol(1)
     assert not FermiWord([c0, a1, c0]).is_zero()

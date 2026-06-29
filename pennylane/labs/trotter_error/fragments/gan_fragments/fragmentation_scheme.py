@@ -46,17 +46,18 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import product
-
 from typing import Sequence
+
 from numpy.typing import ArrayLike
 
+from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
-    GanFragment,
-    GanCoeff,
-    GanMonomial,
     FuncSymbol,
+    GanCoeff,
+    GanFragment,
+    GanMonomial,
 )
-from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiWord, FermiOp
+
 
 @dataclass
 class GanConfig:
@@ -85,15 +86,17 @@ class GanConfig:
         energies (ArrayLike): the metallic on-site energies
             :math:`\epsilon`, shape ``(n_met,)``.
     """
+
     n_modes: int
     n_met: int
     n_mol: int
-    couplings: Sequence[ArrayLike] ## U
-    repulsion: Sequence[ArrayLike] ## V
+    couplings: Sequence[ArrayLike]  ## U
+    repulsion: Sequence[ArrayLike]  ## V
     transfer: Sequence[ArrayLike]  ## W
-    nuclear: Sequence[ArrayLike]   ## U0
-    masses: ArrayLike              ## m
-    energies: ArrayLike            ## epsilon
+    nuclear: Sequence[ArrayLike]  ## U0
+    masses: ArrayLike  ## m
+    energies: ArrayLike  ## epsilon
+
 
 def gan_fragments(config: GanConfig) -> list[GanFragment]:
     """Construct the fragments of a GAN Hamiltonian from its configuration.
@@ -118,20 +121,28 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
     """
 
     if not isinstance(config.couplings, Sequence):
-        raise TypeError(f"Electron coupling coefficients must be Sequence type, got type {type(config.couplings)}.")
+        raise TypeError(
+            f"Electron coupling coefficients must be Sequence type, got type {type(config.couplings)}."
+        )
 
     if not isinstance(config.repulsion, Sequence):
-        raise TypeError(f"Electron repulsion coefficients must be Sequence type, got type {type(config.repulsion)}.")
+        raise TypeError(
+            f"Electron repulsion coefficients must be Sequence type, got type {type(config.repulsion)}."
+        )
 
     if not isinstance(config.transfer, Sequence):
-        raise TypeError(f"Electron transfer coefficients must be Sequence type, got type {type(config.nuclear)}.")
+        raise TypeError(
+            f"Electron transfer coefficients must be Sequence type, got type {type(config.nuclear)}."
+        )
 
     if not isinstance(config.nuclear, Sequence):
-        raise TypeError(f"Nuclear coordinates must be Sequence type, got type {type(config.nuclear)}.")
+        raise TypeError(
+            f"Nuclear coordinates must be Sequence type, got type {type(config.nuclear)}."
+        )
 
     for order, tensor in enumerate(config.couplings):
-        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes, ) * order)
-        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes, )
+        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes,) * order)
+        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes,)
 
         if tensor.shape == full_shape:
             continue
@@ -139,11 +150,13 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
         if tensor.shape == diag_shape:
             continue
 
-        raise ValueError(f"Electron coupling coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}.")
+        raise ValueError(
+            f"Electron coupling coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
 
     for order, tensor in enumerate(config.repulsion):
-        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes, ) * order)
-        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes, )
+        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes,) * order)
+        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes,)
 
         if tensor.shape == full_shape:
             continue
@@ -151,11 +164,13 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
         if tensor.shape == diag_shape:
             continue
 
-        raise ValueError(f"Electron repulsion coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}.")
+        raise ValueError(
+            f"Electron repulsion coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
 
     for order, tensor in enumerate(config.nuclear):
-        full_shape = (config.n_modes, ) * order
-        diag_shape = (config.n_modes, )
+        full_shape = (config.n_modes,) * order
+        diag_shape = (config.n_modes,)
 
         if tensor.shape == full_shape:
             continue
@@ -163,19 +178,27 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
         if tensor.shape == diag_shape:
             continue
 
-        raise ValueError(f"Nuclear reference coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}.")
+        raise ValueError(
+            f"Nuclear reference coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
 
     for tensor in config.transfer:
         shape = (config.n_mol, config.n_met)
 
         if tensor.shape != shape:
-            raise ValueError(f"Electron transfer coefficients for order {order} must be shape {shape}, got shape {tensor.shape}.")
+            raise ValueError(
+                f"Electron transfer coefficients for order {order} must be shape {shape}, got shape {tensor.shape}."
+            )
 
-    if config.masses.shape != (config.n_modes, ):
-        raise ValueError(f"Masses must be shape {(config.n_modes, )}, got shape {config.masses.shape}.")
+    if config.masses.shape != (config.n_modes,):
+        raise ValueError(
+            f"Masses must be shape {(config.n_modes, )}, got shape {config.masses.shape}."
+        )
 
-    if config.energies.shape != (config.n_met, ):
-        raise ValueError(f"Energies must be shape {(config.n_met, )}, got shape {config.energies.shape}.")
+    if config.energies.shape != (config.n_met,):
+        raise ValueError(
+            f"Energies must be shape {(config.n_met, )}, got shape {config.energies.shape}."
+        )
 
     fragments = []
     fragments.append(_diagonal(config))
@@ -190,6 +213,7 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
     fragments.append(_kinetic(config))
 
     return fragments
+
 
 def _diagonal(config: GanConfig) -> GanFragment:
     r"""Build the diagonal fragment of the GAN Hamiltonian.
@@ -229,6 +253,7 @@ def _diagonal(config: GanConfig) -> GanFragment:
 
     return GanFragment(terms)
 
+
 def _kinetic(config: GanConfig) -> GanFragment:
     r"""Build the kinetic fragment of the GAN Hamiltonian.
 
@@ -258,6 +283,7 @@ def _kinetic(config: GanConfig) -> GanFragment:
         terms[fermi] += coeff
 
     return GanFragment(terms)
+
 
 def _mol_matching(s: int, config: GanConfig) -> GanFragment:
     r"""Build the ``s``-th molecular matching fragment.
@@ -299,6 +325,7 @@ def _mol_matching(s: int, config: GanConfig) -> GanFragment:
 
     return GanFragment(terms)
 
+
 def _met_matching(s: int, config: GanConfig):
     r"""Build the ``s``-th metallic matching fragment.
 
@@ -332,6 +359,7 @@ def _met_matching(s: int, config: GanConfig):
 
     return GanFragment(terms)
 
+
 def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
     r"""Return the molecular coupling coefficient :math:`U_{ij}` as a polynomial.
 
@@ -352,7 +380,7 @@ def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
     monomials = defaultdict(float)
 
     for order, tensor in enumerate(config.couplings, start=1):
-        full_shape = (config.n_mol, config.n_mol) + (config.n_modes, )*order
+        full_shape = (config.n_mol, config.n_mol) + (config.n_modes,) * order
         diag_shape = (config.n_mol, config.n_mol, config.n_modes)
 
         if tensor.shape == full_shape:
@@ -369,6 +397,7 @@ def _molecular_coupling(i: int, j: int, config: GanConfig) -> GanCoeff:
                 monomials[monomial] += coeff
 
     return GanCoeff(monomials)
+
 
 def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
     r"""Return the electron repulsion coefficient :math:`V_{ij}` as a polynomial.
@@ -389,7 +418,7 @@ def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
     monomials = defaultdict(float)
 
     for order, tensor in enumerate(config.repulsion):
-        full_shape = (config.n_mol, config.n_mol) + (config.n_modes, )*order
+        full_shape = (config.n_mol, config.n_mol) + (config.n_modes,) * order
         diag_shape = (config.n_mol, config.n_mol, config.n_modes)
 
         if tensor.shape == full_shape:
@@ -406,6 +435,7 @@ def _electron_repulsion(i: int, j: int, config: GanConfig) -> GanCoeff:
                 monomials[monomial] += coeff
 
     return GanCoeff(monomials)
+
 
 def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
     r"""Return the molecule--metal transfer coefficient :math:`W_{ij}` as a polynomial.
@@ -436,6 +466,7 @@ def _molecule_metal_transfer(i: int, j: int, config: GanConfig) -> GanCoeff:
 
     return GanCoeff(monomials)
 
+
 def _nuclear_reference(config: GanConfig) -> GanCoeff:
     r"""Return the nuclear reference energy :math:`U_0` as a polynomial.
 
@@ -453,8 +484,8 @@ def _nuclear_reference(config: GanConfig) -> GanCoeff:
     monomials = defaultdict(float)
 
     for order, tensor in enumerate(config.nuclear):
-        full_shape = (config.n_modes, ) * order
-        diag_shape = (config.n_modes, )
+        full_shape = (config.n_modes,) * order
+        diag_shape = (config.n_modes,)
 
         if tensor.shape == full_shape:
             for modes in product(range(config.n_modes), repeat=order):

@@ -40,11 +40,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
 
+
 class FermiType(Enum):
     """Whether a fermionic operator is a creation (``"+"``) or annihilation (``"-"``) operator."""
 
     CREATION = "+"
     ANNIHILATION = "-"
+
 
 class FermiSpace(Enum):
     """The single-particle space a fermionic operator acts on: molecular or metallic."""
@@ -209,7 +211,11 @@ class FermiWord:
                         continue
 
                     ## {a_i, a_j} = {c_i, c_j} = 0
-                    if l_type == r_type and l_space == FermiSpace.MOLECULAR and r_space == FermiSpace.METALLIC:
+                    if (
+                        l_type == r_type
+                        and l_space == FermiSpace.MOLECULAR
+                        and r_space == FermiSpace.METALLIC
+                    ):
                         word[cur], word[j] = word[j], word[cur]
                         coeff *= -1
                         cur -= 1

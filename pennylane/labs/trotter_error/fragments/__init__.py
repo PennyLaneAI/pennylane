@@ -19,7 +19,6 @@ from .vibronic_fragments import vibronic_fragments
 
 from .gan_fragments import GanConfig, gan_fragments
 
-
 __all__ = [
     "NumpyFragment",
     "NumpyState",
