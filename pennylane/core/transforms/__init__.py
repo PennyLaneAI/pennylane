@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module containing functions for computing product formulas"""
+r"""This module contains the experimental transforms building blocks (core)."""
 
-from .bch import bch_expansion
-from .error import ImportanceConfig, effective_hamiltonian, perturbation_error
-from .product_formula import ProductFormula
+import inspect
+from .transform import (
+    Transform,
+    BoundTransform,
+)
+from .compile_pipeline import CompilePipeline
 
-__all__ = [
-    "bch_expansion",
-    "ImportanceConfig",
-    "effective_hamiltonian",
-    "perturbation_error",
-    "ProductFormula",
-]
+
+def transform(*args, **kwargs):
+    """placeholder"""
+    return Transform(*args, **kwargs)
+
+
+transform.__doc__ = Transform.__doc__
+transform.__signature__ = inspect.signature(Transform)
+
+__all__ = ["transform", "Transform", "BoundTransform", "CompilePipeline"]
