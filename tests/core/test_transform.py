@@ -22,7 +22,8 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform, TransformError
+from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform
+from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumTape
 from pennylane.typing import PostprocessingFn, TensorLike
 
