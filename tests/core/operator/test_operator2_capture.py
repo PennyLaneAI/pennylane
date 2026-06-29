@@ -324,8 +324,8 @@ class TestApply:
     def test_apply_adds_eqn(self, op2):
         """Tests that when an Operator2 is applied, an equation is added for it."""
 
-        def f(op):
-            apply(op)
+        def f():
+            apply(op2)
 
         jaxpr = jax.make_jaxpr(f)(op2)
         assert len(jaxpr.eqns) == 1
