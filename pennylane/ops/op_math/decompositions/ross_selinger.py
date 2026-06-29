@@ -17,6 +17,7 @@ import math
 
 import pennylane as qp
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine
 from pennylane.ops.op_math.decompositions.normal_forms import (
@@ -24,7 +25,6 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
     _ma_normal_form,
 )
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
-from pennylane.queuing import QueuingManager
 
 is_jax = True
 try:
