@@ -150,7 +150,7 @@ class AngleEmbedding(Operation):
         # If the leading dimension is a batch dimension, exchange the wire and batching axes.
         features = math.T(features) if batched else features
 
-        return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
+        return [rotation(features[i], wires=w) for i, w in enumerate(wires)]
 
 
 def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:

@@ -198,8 +198,8 @@ class SimplifiedTwoDesign(Operation):
         op_list = []
 
         # initial rotations
-        for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-            op_list.append(RY(initial_layer_weights[i], wires=wires[i]))
+        for i, w in enumerate(wires):
+            op_list.append(RY(initial_layer_weights[i], wires=w))
 
         for layer in range(n_layers):
             # even layer of entanglers
