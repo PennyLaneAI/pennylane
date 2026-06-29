@@ -27,7 +27,7 @@ from operator2_utils import (
 )
 
 import pennylane as qp
-from pennylane import qnode, apply, device
+from pennylane import apply, device, qnode
 from pennylane.queuing import AnnotatedQueue
 
 jax = pytest.importorskip("jax")
@@ -321,13 +321,7 @@ class TestReconstruction:
 
 class TestApply:
 
-    @pytest.mark.parametrize(
-        "op2",
-        [
-            DynOp(1.0, wires=0),
-            FullOp(0.3, "lbl", [1.0, 2.0], wires=0)
-        ]
-    )
+    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply_adds_eqn(self, op2):
         """Tests that when an Operator2 is applied, an equation is added for it."""
 
@@ -338,6 +332,7 @@ class TestApply:
         jaxpr = jax.make_jaxpr(f)(op2)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].params["op_cls"] == type(op2)
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
