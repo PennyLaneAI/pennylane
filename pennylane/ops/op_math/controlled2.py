@@ -29,7 +29,6 @@ from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import Controlled
 from .symbolicop2 import SymbolicOp2
 
 
@@ -350,7 +349,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @override
     def simplify(self):
-        if isinstance(self.base, (Controlled, Controlled2)):
+        if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
 
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
