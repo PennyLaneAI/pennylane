@@ -18,7 +18,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 
 from .base import Operation, Operator
 
