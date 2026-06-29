@@ -63,7 +63,8 @@ def _add_constant_specs(k, wires, all_wires, control=()):
 
 
 def _arithmetic_adder_specs(k, x_wires, mod, work_wires):
-    """Gate specs for the QFT-free modular adder. Reversing a spec sublist gives its adjoint."""
+    """Gate specs for the QFT-free modular adder. Reversing a spec sublist gives its adjoint
+    because the constituents are self-inverse."""
     n = len(x_wires)
     all_wires = list(x_wires) + list(work_wires)
     if mod == 2**n:
