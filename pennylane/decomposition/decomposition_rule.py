@@ -1132,5 +1132,5 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
     if any(not _is_abstract_and_fixed(val) for val in op.arguments.values()):
         raise TypeError(
             "The resources of a decomposition rule cannot contain operators with "
-            f"abstract data of undertermined dimensions, got {op}."
+            f"abstract data of undetermined dimensions, got {op}."
         )
