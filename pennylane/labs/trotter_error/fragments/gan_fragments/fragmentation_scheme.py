@@ -60,7 +60,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
 
 
 @dataclass
-class GanConfig:
+class GanConfig:  # pylint: disable=too-many-instance-attributes
     r"""Dimensions and coefficient tensors defining a GAN Hamiltonian.
 
     Collects everything needed to build the GAN fragments. The coefficient
@@ -120,85 +120,7 @@ def gan_fragments(config: GanConfig) -> list[GanFragment]:
             shape inconsistent with the declared mode counts.
     """
 
-    if not isinstance(config.couplings, Sequence):
-        raise TypeError(
-            f"Electron coupling coefficients must be Sequence type, got type {type(config.couplings)}."
-        )
-
-    if not isinstance(config.repulsion, Sequence):
-        raise TypeError(
-            f"Electron repulsion coefficients must be Sequence type, got type {type(config.repulsion)}."
-        )
-
-    if not isinstance(config.transfer, Sequence):
-        raise TypeError(
-            f"Electron transfer coefficients must be Sequence type, got type {type(config.nuclear)}."
-        )
-
-    if not isinstance(config.nuclear, Sequence):
-        raise TypeError(
-            f"Nuclear coordinates must be Sequence type, got type {type(config.nuclear)}."
-        )
-
-    for order, tensor in enumerate(config.couplings):
-        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes,) * order)
-        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes,)
-
-        if tensor.shape == full_shape:
-            continue
-
-        if tensor.shape == diag_shape:
-            continue
-
-        raise ValueError(
-            f"Electron coupling coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
-        )
-
-    for order, tensor in enumerate(config.repulsion):
-        full_shape = (config.n_mol, config.n_mol) + ((config.n_modes,) * order)
-        diag_shape = (config.n_mol, config.n_mol) + (config.n_modes,)
-
-        if tensor.shape == full_shape:
-            continue
-
-        if tensor.shape == diag_shape:
-            continue
-
-        raise ValueError(
-            f"Electron repulsion coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
-        )
-
-    for order, tensor in enumerate(config.nuclear):
-        full_shape = (config.n_modes,) * order
-        diag_shape = (config.n_modes,)
-
-        if tensor.shape == full_shape:
-            continue
-
-        if tensor.shape == diag_shape:
-            continue
-
-        raise ValueError(
-            f"Nuclear reference coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
-        )
-
-    for tensor in config.transfer:
-        shape = (config.n_mol, config.n_met)
-
-        if tensor.shape != shape:
-            raise ValueError(
-                f"Electron transfer coefficients for order {order} must be shape {shape}, got shape {tensor.shape}."
-            )
-
-    if config.masses.shape != (config.n_modes,):
-        raise ValueError(
-            f"Masses must be shape {(config.n_modes, )}, got shape {config.masses.shape}."
-        )
-
-    if config.energies.shape != (config.n_met,):
-        raise ValueError(
-            f"Energies must be shape {(config.n_met, )}, got shape {config.energies.shape}."
-        )
+    _validate_fragments(config)
 
     fragments = []
     fragments.append(_diagonal(config))
@@ -500,3 +422,89 @@ def _nuclear_reference(config: GanConfig) -> GanCoeff:
                 monomials[monomial] += coeff
 
     return GanCoeff(monomials)
+
+
+def _validate_fragments(config: GanConfig):
+    _validate_couplings(config.couplings, config.n_mol, config.n_modes)
+    _validate_repulsion(config.repulsion, config.n_mol, config.n_modes)
+    _validate_transfer(config.transfer, config.n_mol, config.n_met)
+    _validate_nuclear(config.nuclear, config.n_modes)
+    _validate_energies(config.energies, config.n_met)
+    _validate_masses(config.masses, config.n_modes)
+
+
+def _validate_couplings(couplings, n_mol, n_modes):
+    if not isinstance(couplings, Sequence):
+        raise TypeError(
+            f"Electron coupling coefficients must be Sequence type, got type {type(couplings)}."
+        )
+
+    for order, tensor in enumerate(couplings):
+        full_shape = (n_mol, n_mol) + ((n_modes,) * order)
+        diag_shape = (n_mol, n_mol) + (n_modes,)
+
+        if tensor.shape in (full_shape, diag_shape):
+            continue
+
+        raise ValueError(
+            f"Electron coupling coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
+
+
+def _validate_repulsion(repulsion, n_mol, n_modes):
+    if not isinstance(repulsion, Sequence):
+        raise TypeError(
+            f"Electron repulsion coefficients must be Sequence type, got type {type(repulsion)}."
+        )
+
+    for order, tensor in enumerate(repulsion):
+        full_shape = (n_mol, n_mol) + ((n_modes,) * order)
+        diag_shape = (n_mol, n_mol) + (n_modes,)
+
+        if tensor.shape in (full_shape, diag_shape):
+            continue
+
+        raise ValueError(
+            f"Electron repulsion coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
+
+
+def _validate_transfer(transfer, n_mol, n_met):
+    if not isinstance(transfer, Sequence):
+        raise TypeError(
+            f"Electron transfer coefficients must be Sequence type, got type {type(transfer)}."
+        )
+
+    for tensor in transfer:
+        shape = (n_mol, n_met)
+
+        if tensor.shape != shape:
+            raise ValueError(
+                f"Electron transfer coefficients must be shape {shape}, got shape {tensor.shape}."
+            )
+
+
+def _validate_nuclear(nuclear, n_modes):
+    if not isinstance(nuclear, Sequence):
+        raise TypeError(f"Nuclear coordinates must be Sequence type, got type {type(nuclear)}.")
+
+    for order, tensor in enumerate(nuclear):
+        full_shape = (n_modes,) * order
+        diag_shape = (n_modes,)
+
+        if tensor.shape in (full_shape, diag_shape):
+            continue
+
+        raise ValueError(
+            f"Nuclear reference coefficients for order {order} must be shape {full_shape} or shape {diag_shape}, got shape {tensor.shape}."
+        )
+
+
+def _validate_energies(energies, n_met):
+    if energies.shape != (n_met,):
+        raise ValueError(f"Energies must be shape {(n_met, )}, got shape {energies.shape}.")
+
+
+def _validate_masses(masses, n_modes):
+    if masses.shape != (n_modes,):
+        raise ValueError(f"Masses must be shape {(n_modes, )}, got shape {masses.shape}.")
