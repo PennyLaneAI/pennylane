@@ -25,6 +25,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.operator import Operator2, StatePrepBase2
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -39,7 +40,6 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
@@ -1260,6 +1260,15 @@ class TestDynamicProperties:
 
 class TestDunderMethods:
     """Tests for ``Operator2`` dunder methods."""
+
+    def test_repr_with_abstract_args(self):
+        """Tests that abstract wires properly render."""
+
+        op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
+        assert (
+            repr(op)
+            == "DynOp(phi=AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
+        )
 
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""

@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane.estimator.ops as qre_ops
 from pennylane._class_property import classproperty
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 

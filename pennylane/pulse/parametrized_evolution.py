@@ -22,8 +22,8 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import functions
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 
 from .hardware_hamiltonian import HardwareHamiltonian

@@ -25,7 +25,7 @@ from pennylane import transform
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 

@@ -25,7 +25,59 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients.metric_tensor import _get_aux_wire
+from pennylane.gradients.metric_tensor import _get_aux_wire, _WrappedObj
+
+
+class Test_WrappedObj:
+    """Tests for the ``_WrappedObj`` class"""
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``_WrappedObj`` is initialized correctly"""
+        wo = _WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize(
+        "obj1, obj2",
+        [(qp.PauliX(0), qp.PauliZ(0)), (qp.PauliX(0), qp.PauliX(0)), ((1,), (1, 2))],
+    )
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``_WrappedObj.__eq__`` returns False when expected."""
+        wo1 = _WrappedObj(obj1)
+        wo2 = _WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that _WrappedObj.__eq__ returns False when the object being compared is not
+        a _WrappedObj."""
+        op = qp.PauliX(0)
+        wo = _WrappedObj(op)
+        assert wo != op
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``_WrappedObj.__eq__`` returns True when expected."""
+        op = qp.PauliX(0)
+        assert _WrappedObj(op) == _WrappedObj(op)
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``_WrappedObj.__hash__`` is the object id."""
+        wo = _WrappedObj(obj)
+        assert wo.__hash__() == id(obj)  # pylint: disable=unnecessary-dunder-call
+
+    def test_wrapped_obj_repr(self):
+        """Test that the ``_WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+
+        class Dummy:  # pylint: disable=too-few-public-methods
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
+        wo = _WrappedObj(obj)
+        assert wo.__repr__() == "_Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
 
 
 class TestMetricTensor:
