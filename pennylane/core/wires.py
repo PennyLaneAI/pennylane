@@ -791,6 +791,11 @@ if jax_available:
         def _iter(self):  # pragma: no cover
             return
 
+else:
+
+    AbstractQubit = None
+    """An aval representing an abstract qubit, usually coming from an allocated qubit. Not available as jax is not installed."""
+
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
