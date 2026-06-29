@@ -17,7 +17,7 @@
 from typing_extensions import override
 
 from pennylane.core.operator import Operator2
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 
 
 class SymbolicOp2(Operator2, is_baseclass=True):

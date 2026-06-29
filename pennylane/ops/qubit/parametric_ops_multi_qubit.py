@@ -27,8 +27,9 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
-from pennylane import compiler, math, queuing
+from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
+from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,

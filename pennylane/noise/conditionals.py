@@ -23,6 +23,7 @@ from pennylane import math, measurements
 from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import WireError
 from pennylane.ops import (
     Adjoint,
@@ -36,7 +37,6 @@ from pennylane.ops import (
     measure,
 )
 from pennylane.ops.functions import map_wires, simplify
-from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
 from pennylane.wires import Wires
 

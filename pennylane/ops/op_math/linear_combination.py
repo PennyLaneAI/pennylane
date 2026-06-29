@@ -23,6 +23,7 @@ from copy import copy
 
 import pennylane as qp
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 
 from .sprod import SProd
 from .sum import Sum
@@ -147,7 +148,7 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        with qp.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             # type.__call__ valid when capture is enabled and creating an instance
             operands = tuple(
                 type.__call__(SProd, c, op) for c, op in zip(coeffs, observables, strict=True)
@@ -273,7 +274,7 @@ class LinearCombination(Sum):
         return "LinearCombination"
 
     @staticmethod
-    @qp.QueuingManager.stop_recording()
+    @QueuingManager.stop_recording()
     def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
@@ -400,7 +401,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def queue(self, context: qp.QueuingManager | qp.queuing.AnnotatedQueue = qp.QueuingManager):
+    def queue(self, context: QueuingManager | AnnotatedQueue = QueuingManager):
         """Queues a ``qp.ops.LinearCombination`` instance"""
         if qp.QueuingManager.recording():
             for o in self.ops:
