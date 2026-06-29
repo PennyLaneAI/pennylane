@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ Abstract Base Classes
 .. autosummary::
     :toctree: api
 
-    ~AbstractState
     ~Fragment
+    ~TrotterState
 
 Fragments
 ~~~~~~~~~
@@ -42,7 +42,8 @@ Fragments
 
     ~NumpyFragment
     ~NumpyState
-    ~sparse_fragments
+    ~SparseFragment
+    ~SparseState
     ~vibrational_fragments
     ~vibronic_fragments
 
@@ -77,11 +78,12 @@ Realspace Representations
 
 """
 
-from .abstract import AbstractState, Fragment
+from .abstract import TrotterState, Fragment
 from .fragments import (
     NumpyFragment,
     NumpyState,
-    sparse_fragments,
+    SparseFragment,
+    SparseState,
     vibrational_fragments,
     vibronic_fragments,
 )
@@ -102,11 +104,12 @@ from .realspace import (
 )
 
 __all__ = [
-    "AbstractState",
+    "TrotterState",
     "Fragment",
     "NumpyFragment",
     "NumpyState",
-    "sparse_fragments",
+    "SparseFragment",
+    "SparseState",
     "vibrational_fragments",
     "vibronic_fragments",
     "bch_expansion",

@@ -42,7 +42,7 @@ class ProductFormula:
 
     Symbols may themselves be ``ProductFormula`` instances, allowing higher-order
     formulas to be composed recursively from lower-order ones (see
-    :meth:`prod`).
+    :meth:`~.pennylane.labs.trotter_error.product_formula.ProductFormula.prod`).
 
     Args:
         symbols (Sequence[tuple[Hashable, complex]]): an ordered sequence of
@@ -57,7 +57,7 @@ class ProductFormula:
         TypeError: if any symbol is not hashable, any coefficient is not an
             ``int``, ``float``, or ``complex``, the ``exponent`` is not an
             ``int`` or ``float``, or any symbol is itself a ``ProductFormula``
-            (recursive formulas must be built with :meth:`prod`).
+            (recursive formulas must be built with :meth:`~.pennylane.labs.trotter_error.product_formula.ProductFormula.prod`).
 
     **Example**
 
@@ -240,9 +240,7 @@ class ProductFormula:
     def __pow__(self, z: float) -> ProductFormula:
         """Raise the formula to the power ``z``.
 
-        This scales the existing :attr:`exponent` by ``z`` (the powers
-        multiply), modelling repetition of the formula such as the ``r`` Trotter
-        steps in :math:`\\big(S(t/r)\\big)^r`. The original formula is not
+        This multiplies the existing :attr:`exponent` by ``z``. The original formula is not
         mutated; a deep copy is returned.
 
         Args:

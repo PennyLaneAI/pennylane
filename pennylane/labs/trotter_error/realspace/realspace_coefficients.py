@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from numpy import allclose, isclose, ndarray, zeros
 
 
 class RealspaceCoeffs:
-    """Lightweight representation of a tensor of coefficients.
+    """Lightweight representation of a tensor of coefficients of a real space operator.
 
     The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with an array
     and can be used to represent coefficients of a real space operator. A real space operator

@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from itertools import groupby
 import numpy as np
 
 from pennylane import concurrency
-from pennylane.labs.trotter_error import AbstractState, Fragment
+from pennylane.labs.trotter_error import Fragment, TrotterState
 from pennylane.labs.trotter_error.abstract import _AdditiveIdentity
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.commutator import (
@@ -123,18 +123,50 @@ def _eval_commutator(commutator, coeff, fragments):
 
 @dataclass
 class ImportanceConfig:
-    """Parameters for importance sampling."""
+    """Enable the importance sampling feature of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
+
+    This class is used as an optional argument to :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`. When used, the perturbation error will be computed using
+    only the ``topk`` most important commutators. The importance of a commutator is induced from
+    ``weights`` which stores a user-defined importance score for each fragment label. The keys in
+    ``weights`` must be identical to the symbols used to build the :class:`~.pennylane.labs.trotter_error.product_formulas.product_formula.ProductFormula`
+    object passed into :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`.
+
+    **Example**
+    >>> import numpy as np
+    >>> from pennylane.labs.trotter_error import NumpyFragment, NumpyState
+    >>> from pennylane.labs.trotter_error import perturbation_error, ImportanceConfig, ProductFormula
+
+    >>> frags = {"A": NumpyFragment(np.array([[1, 1], [1, 0]])), "B": NumpyFragment(np.array([[1, 1], [1, 1]]))}
+    >>> state = NumpyState(np.array([1, 0]))
+
+    >>> config = ImportanceConfig(
+    >>>     topk=3,
+    >>>     weights={"A": 0.95, "B": 0.5}
+    >>> )
+
+    >>> second_order = ProductFormula([("A", 1/2), ("B", 1), ("A", 1/2)])
+
+    >>> perturbation_error(second_order, frags, state, order=3, importance=config))
+    defaultdict(<class 'int'>, {3: -0.25j})
+    """
 
     topk: int
+    """samples the ``topk`` most important commutators to estimate the perturbation error."""
+
     weights: dict[Hashable, float]
+    """a dictionary mapping fragment labels to their importance score."""
+
     history: bool = False
+    """tracks the convergence history of the perturbation error per commutator evaluation.
+       when true the output of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
+       is modified to include the convergence history."""
 
 
 # pylint: disable=too-many-branches
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
-    state: AbstractState,
+    state: TrotterState,
     order: int | Sequence[int],
     timestep: float = 1.0,
     num_workers: int = 1,
@@ -153,7 +185,7 @@ def perturbation_error(
             the effective Hamiltonian
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
-        states (Sequence[AbstractState]): the states to compute expectation values from
+        states (Sequence[TrotterState]): the states to compute expectation values from
         order (int | Sequence[int]): Computes the perturbation error using commutators of order `order`.
         timestep (float): time step for the Trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value
@@ -202,8 +234,8 @@ def perturbation_error(
     if not all(isinstance(fragment, Fragment) for fragment in fragments.values()):
         raise TypeError("Fragments must be an instance of Fragment.")
 
-    if not isinstance(state, AbstractState):
-        raise TypeError("State must be an instance of AbstractState.")
+    if not isinstance(state, TrotterState):
+        raise TypeError("State must be an instance of TrotterState.")
 
     if not isinstance(order, Sequence):
         order = [order]
@@ -274,7 +306,7 @@ def perturbation_error(
 def _apply_single_term(
     term: tuple[SymbolNode],
     fragments: Sequence[Fragment],
-    state: AbstractState,
+    state: TrotterState,
     coeff: float,
     backend: str = None,
 ) -> float:
@@ -293,7 +325,7 @@ def _apply_single_term(
 def _compute_expectation(
     commutator: CommutatorNode,
     fragments: dict[Hashable, Fragment],
-    state: AbstractState,
+    state: TrotterState,
     coeff: float,
 ) -> tuple[CommutatorNode, float]:
     """Returns the expectation value obtained from applying ``commutator`` to ``state``."""

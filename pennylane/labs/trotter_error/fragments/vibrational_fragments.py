@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ def vibrational_fragments(
             and ``position``
 
     Returns:
-        list[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the
-            vibrational Hamiltonian
+        list[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
 
     **Example**
 

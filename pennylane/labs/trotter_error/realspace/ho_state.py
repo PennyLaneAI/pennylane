@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_array, identity, kron
 
-from pennylane.labs.trotter_error import AbstractState
+from pennylane.labs.trotter_error import TrotterState
 
 
-class HOState(AbstractState):
+class HOState(TrotterState):
     """Represent a wavefunction in the harmonic oscillator basis.
 
     Args:
