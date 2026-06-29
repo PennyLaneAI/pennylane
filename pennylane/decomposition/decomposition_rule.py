@@ -1118,6 +1118,7 @@ def null_decomp(*_, **__):
 
 
 def _is_abstract_and_fixed(val):
+    """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
@@ -1127,9 +1128,12 @@ def _is_abstract_and_fixed(val):
 
 
 def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
+    """Checks if an operator is fully abstract and contains only abstract data of fixed shapes."""
     if isinstance(op, CompressedResourceOp):
         return
-    if any(not _is_abstract_and_fixed(val) for val in op.arguments.values()):
+    target_argnames = op.dynamic_argnames + op.wire_argnames + op.hybrid_argnames
+    target_args = [val for name, val in op.arguments.items() if name in target_argnames]
+    if any(not _is_abstract_and_fixed(val) for val in target_args):
         raise TypeError(
             "The resources of a decomposition rule cannot contain operators with "
             f"abstract data of undetermined dimensions, got {op}."
