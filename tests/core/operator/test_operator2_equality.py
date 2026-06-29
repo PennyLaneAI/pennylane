@@ -478,6 +478,7 @@ class TestAbstractOperatorEquality:
         "shape1, shape2, are_equal",
         [
             ((2, -1), (2, -1), True),  # Identical dynamic shapes
+            ((-1,), (-1,), True),  # Identical dynamic shape
             ((2, -1), (2, 3), False),  # Dynamic vs static shape
             ((-1, 4), (2, 4), False),  # Dynamic vs static shape (leading dim)
             ((-1, -1), (-1,), False),  # Different ranks with dynamic dims
