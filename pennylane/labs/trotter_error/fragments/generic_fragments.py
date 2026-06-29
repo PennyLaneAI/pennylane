@@ -169,7 +169,9 @@ class SparseFragment(Fragment):
 
 class SparseState(TrotterState):
     """A wrapper class to allow scipy sparse vectors to be used in the Trotter error estimation
-    functions. This class is intended to instantiate states to be used along with
+    functions. 
+    
+    This class is intended to instantiate states to be used along with
     the `SparseFragment` class.
     """
 
