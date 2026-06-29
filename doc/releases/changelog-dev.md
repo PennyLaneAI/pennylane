@@ -363,6 +363,10 @@
   phases are purely real, i.e. :math:`\pm 1`.
   [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
 
+* Calling ``print`` on :class:`~.devices.ExecutionConfig` now displays a readable multi-line
+  output matching ``pprint``.
+  [(#9603)](https://github.com/PennyLaneAI/pennylane/pull/9603)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
