@@ -26,7 +26,7 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 from scipy.linalg import expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.tcdq.expval_functions import (
     QuditCircuitConfig,
     _parse_qudit_generator_dict,
@@ -205,38 +205,38 @@ def _pennylane_qubit_expval(generators_list, thetas_list, l_vec, m_vec):
 
     def pauli_map(l, m, n):
         if (l, m) == (0, 1):
-            return qml.X(n)
+            return qp.X(n)
 
         if (l, m) == (1, 0):
-            return qml.Z(n)
+            return qp.Z(n)
 
         if (l, m) == (1, 1):
-            return qml.Y(n)
+            return qp.Y(n)
 
-        return qml.I(n)
+        return qp.I(n)
 
     obs_list = []
     for j in range(n):
         l, m = int(l_vec[j]), int(m_vec[j])
         obs_list.append(pauli_map(l, m, j))
 
-    obs = qml.prod(*obs_list) if len(obs_list) > 1 else obs_list[0]
-    dev = qml.device("default.qubit", wires=n)
+    obs = qp.prod(*obs_list) if len(obs_list) > 1 else obs_list[0]
+    dev = qp.device("default.qubit", wires=n)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         for i in range(n):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
         for theta, gen in zip(thetas_list, generators_list):
             active = [i for i, g in enumerate(gen) if g == 1]
             if active:
-                qml.MultiRZ(2 * -theta, wires=active)
+                qp.MultiRZ(2 * -theta, wires=active)
 
         for i in range(n):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
-        return qml.expval(obs)
+        return qp.expval(obs)
 
     return float(circuit())
 
