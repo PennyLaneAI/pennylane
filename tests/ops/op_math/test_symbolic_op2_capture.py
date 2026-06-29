@@ -63,6 +63,22 @@ class TestAdjointCapture:
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         assert op == RX2(0.7, 0)
 
+    def test_multiple_adjoint_correct_capture(self):
+        """Test that creating separate adjoints using the same base operator instance
+        works as expected."""
+
+        def f(x):
+            op = RX2(x, wires=0)
+            return qp.adjoint(op).tracer, qp.adjoint(op).tracer
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        eqns = [e for e in jaxpr.jaxpr.eqns if e.primitive == operator_p]
+        assert len(eqns) == 2
+
+        ops = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+
+        assert ops == [Adjoint2(RX2(0.7, 0)), Adjoint2(RX2(0.7, 0))]
+
     def test_construction_attaches_tracer(self):
         """Test that capture returns an Adjoint2 with an attached tracer."""
 

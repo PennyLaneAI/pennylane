@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,12 +45,12 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
-from .meta import OperatorMeta
+from .meta import OperatorMeta, _canonicalize_abstract_type, _resolve_arg_kind
+from .utils import abstractify
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
@@ -1671,6 +1672,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         mod_val = None
 
     # We stringify the data because arrays are unhashable
+    if isinstance(d, AbstractArray):
+        return str(d)
     return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
 
 
@@ -1678,6 +1681,32 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+@abstractify.register(OperatorMeta)
+def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
+    """Abstractify a subclass of operator."""
+
+    if op_type.has_fixed_sig:
+        return op_type(**op_type.arg_specs)
+
+    raise TypeError(
+        f"'{op_type.__name__}' must set 'arg_specs' and cover all dynamic and wire "
+        "arguments with fixed abstract types to be abstractified."
+    )
+
+
+@abstractify.register(Operator2)
+def _abstractify_operator(op: Operator2) -> Operator2:
+    """Abstractify an operator."""
+
+    op_cls = type(op)
+    target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
+    new_args = dict(op.arguments)
+    for name in target_args:
+        kind = _resolve_arg_kind(op_cls, name)
+        new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+    return op_cls(**new_args)
 
 
 class StatePrepBase2(Operator2, is_baseclass=True):

@@ -38,8 +38,9 @@ from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, math, queuing
+from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
+from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     CompressedResourceOp,
