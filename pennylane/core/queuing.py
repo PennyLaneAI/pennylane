@@ -194,6 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane.capture import enabled
 from pennylane.exceptions import QueuingError
 
 
@@ -545,7 +546,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         # append the operator directly to the relevant queuing context
         context.append(op)
 
-    if hasattr(op, "_bind_primitive"):
+    if hasattr(op, "_bind_primitive") and enabled():
         op._bind_primitive()  # pylint: disable=protected-access
 
     return op
