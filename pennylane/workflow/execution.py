@@ -27,9 +27,9 @@ from typing import TYPE_CHECKING, Literal
 from cachetools import Cache
 
 import pennylane as qp
+from pennylane.core.transforms import CompilePipeline
 from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
-from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -42,7 +42,7 @@ logger.addHandler(logging.NullHandler())
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.core.qscript import QuantumScriptBatch
-    from pennylane.transforms.core import Transform
+    from pennylane.core.transforms import Transform
     from pennylane.typing import ResultBatch
     from pennylane.workflow.qnode import SupportedDeviceAPIs
     from pennylane.workflow.resolution import SupportedDiffMethods
