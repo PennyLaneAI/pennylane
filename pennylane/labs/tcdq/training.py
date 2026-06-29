@@ -109,7 +109,6 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
     Raises:
         ValueError: If the optimizer name is not recognized.
     """
-    # pylint: disable=import-outside-toplevel
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
     if name == "Adam":
