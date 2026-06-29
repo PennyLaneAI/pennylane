@@ -20,7 +20,8 @@ from functools import partial
 
 import pytest
 
-from pennylane.core.transforms import CompilePipeline, TransformError
+from pennylane.core.transforms import CompilePipeline
+from pennylane.exceptions import TransformError
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
