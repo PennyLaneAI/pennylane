@@ -903,7 +903,7 @@ class PauliSentence(dict):
 
         try:
             op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
-        except qp.wires.WireError as e:
+        except qp.exceptions.WireError as e:
             raise ValueError(
                 "Can't get the matrix for the specified wire order because it "
                 f"does not contain all the Pauli sentence's wires {self.wires}"

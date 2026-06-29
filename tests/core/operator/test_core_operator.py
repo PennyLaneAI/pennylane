@@ -161,7 +161,7 @@ class TestOperatorConstruction:
 
             num_wires = 1
 
-        with pytest.raises(qp.wires.WireError, match="Wires must be unique"):
+        with pytest.raises(qp.exceptions.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):

@@ -519,7 +519,7 @@ class TestDefaultGaussianDevice:
             p = U
             gaussian_dev.apply("InterferometerUnitary", wires=Wires([0]), par=[p])
 
-        with pytest.raises(qp.wires.WireError, match="Did not find some of the wires"):
+        with pytest.raises(qp.exceptions.WireError, match="Did not find some of the wires"):
             p = U2
             # dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
             gaussian_dev.apply("InterferometerUnitary", wires=Wires([0, 1, 2]), par=[p])

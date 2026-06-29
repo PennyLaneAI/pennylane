@@ -185,7 +185,7 @@ class TestValidateDeviceWires:
         """Tests for the error raised by validate_device_wires transform."""
 
         tape1 = qp.tape.QuantumScript([qp.S("a")])
-        with pytest.raises(qp.wires.WireError, match="on abc as they contain wires"):
+        with pytest.raises(qp.exceptions.WireError, match="on abc as they contain wires"):
             validate_device_wires(tape1, wires=qp.wires.Wires((0,)), name="abc")
 
     def test_null_if_no_wires_provided(self):
@@ -217,7 +217,7 @@ class TestValidateDeviceWires:
             validate_device_wires(tape_with_abstract_wires, name="fictional_device")
 
         with pytest.raises(
-            qp.wires.WireError,
+            qp.exceptions.WireError,
             match="on fictional_device as abstract wires are present in the tape",
         ):
             jax.jit(jit_wires_tape)([0, 1])
@@ -232,7 +232,7 @@ class TestValidateDeviceWires:
             validate_device_wires(QuantumScript([]), wires=wires, name="fictional_device")
 
         with pytest.raises(
-            qp.wires.WireError,
+            qp.exceptions.WireError,
             match="on fictional_device as abstract wires are present in the device",
         ):
             jax.jit(jit_wires_dev)([0, 1])

@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.wires import WireError
+from pennylane.exceptions import WireError
 from pennylane.labs.transforms.decomp_selectpaulirot_phase_gradient import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )

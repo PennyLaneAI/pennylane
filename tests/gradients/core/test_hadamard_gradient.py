@@ -170,7 +170,7 @@ class TestHadamardValidation:
         tape = qp.tape.QuantumScript.from_queue(q)
 
         _match = "The requested auxiliary wire is already in use by the circuit"
-        with pytest.raises(qp.wires.WireError, match=_match):
+        with pytest.raises(qp.exceptions.WireError, match=_match):
             qp.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
@@ -190,7 +190,7 @@ class TestHadamardValidation:
 
         tape = qp.tape.QuantumScript.from_queue(q)
         _match = "The requested auxiliary wire does not exist on the used device"
-        with pytest.raises(qp.wires.WireError, match=_match):
+        with pytest.raises(qp.exceptions.WireError, match=_match):
             qp.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
@@ -207,7 +207,7 @@ class TestHadamardValidation:
             _match = "The device has no free wire for the auxiliary wire."
         else:
             _match = "The requested auxiliary wire is already in use by the circuit."
-        with pytest.raises(qp.wires.WireError, match=_match):
+        with pytest.raises(qp.exceptions.WireError, match=_match):
             qp.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
@@ -220,7 +220,7 @@ class TestHadamardValidation:
         tape = qp.tape.QuantumScript([qp.RX(0.543, wires=[0]), qp.RY(-0.654, wires=[1])], [m])
 
         _match = "The requested auxiliary wire does not exist on the used device."
-        with pytest.raises(qp.wires.WireError, match=_match):
+        with pytest.raises(qp.exceptions.WireError, match=_match):
             qp.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires, mode=mode)
 
     @pytest.mark.parametrize("measurement", [qp.state(), qp.var(qp.Z(0))])
