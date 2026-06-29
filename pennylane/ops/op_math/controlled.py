@@ -202,7 +202,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
     if isinstance(op, Controlled2):
         ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
         ctrl_values = resolve_ctrl_values(control_values, op)
-        qp.QueuingManager.remove(op)
         return ctrl(
             op.base,
             control=control_wires + op.control_wires,
@@ -211,6 +210,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
             work_wire_type=ww_type,
         )
 
+    qp.QueuingManager.remove(op)
     return ControlledOp2(op, control_wires, control_values, work_wires, ww_type)
 
 
