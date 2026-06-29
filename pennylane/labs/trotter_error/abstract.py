@@ -30,8 +30,9 @@ class _AdditiveIdentity:
 
 
 class Fragment(ABC):
-    r"""Abstract class used to define a fragment object for product formula error estimation. For
-    Trotter error a Hamiltonian is expressed a sum of fragments :math:`H = \sum H_i`.
+    r"""Abstract class used to define a fragment object for product formula error estimation. 
+    
+    For Trotter error, a Hamiltonian is expressed a sum of fragments :math:`H = \sum H_i`.
 
     A :class:`~.Fragment` is an object that has a well-defined notion of a commutator. To ensure
     the existence of commutators, the implementation requires the following arithmetic dunder
