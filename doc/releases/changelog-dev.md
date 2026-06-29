@@ -793,6 +793,7 @@
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
   [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
+  [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
@@ -805,6 +806,8 @@
   Moves `QuantumScript`, `QuantumScriptBatch`, `QuantumScriptOrBatch`, `make_qscript`, and `process_queue`
   to `pennylane.core.qscript`.
   Moves the `pennylane.queuing` to `pennylane.core.queuing`.
+  Moves `pennylane.transforms.core` to `pennylane.core.transforms`.
+  [(#9739)](https://github.com/PennyLaneAI/pennylane/pull/9739)
   [(#9719)](https://github.com/PennyLaneAI/pennylane/pull/9719)
   [(#9717)](https://github.com/PennyLaneAI/pennylane/pull/9717)
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)

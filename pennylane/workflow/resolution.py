@@ -26,10 +26,10 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.transforms import Transform
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
-from pennylane.transforms.core import Transform
 
 SupportedDiffMethods = Literal[
     None,
