@@ -95,6 +95,15 @@ expose = ["Shots", "ShotCopies", "ShotsLike"]
 from = ["pennylane.core.shots"]
 
 [[modules]]
+path = "pennylane.core.qscript"
+layer = "core"
+depends_on = ["pennylane.core.operator", "pennylane.core.shots", "pennylane.core.measurements", "pennylane.exceptions", "pennylane.pytrees", "pennylane.queuing", "pennylane.typing", "pennylane.wires"]
+
+[[interfaces]]
+expose = ["QuantumScript", "QuantumScriptBatch", "QuantumScriptOrBatch", "make_qscript", "process_queue"]
+from = ["pennylane.core.qscript"]
+
+[[modules]]
 path = "pennylane.math"
 depends_on = ["pennylane._grad", "pennylane.numpy"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -362,7 +371,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify"]
 from = ["pennylane.core.operator"]
 
 [[modules]]

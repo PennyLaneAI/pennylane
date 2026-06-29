@@ -1310,11 +1310,11 @@ wheels = [
 
 [[package]]
 name = "docutils"
-version = "0.20"
+version = "0.22"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e6/a9/8ddfaa7a9414e42520e0041d1354ebda699e4eb1b47e2f1b6d8bda66aba6/docutils-0.20.tar.gz", hash = "sha256:f75a5a52fbcacd81b47e42888ad2b380748aaccfb3f13af0fe69deb759f01eb6", size = 2075678, upload-time = "2023-05-09T18:01:06.509Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e9/86/5b41c32ecedcfdb4c77b28b6cb14234f252075f8cdb254531727a35547dd/docutils-0.22.tar.gz", hash = "sha256:ba9d57750e92331ebe7c08a1bbf7a7f8143b86c476acd51528b042216a6aad0f", size = 2277984, upload-time = "2025-07-29T15:20:31.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/3b/11740ed0f36e408ff3d5bd259af0c3330d899c17562f9964b7fbc90756f9/docutils-0.20-py3-none-any.whl", hash = "sha256:a428f10de4de4774389734c986a01b4af2d802d26717108b0f1b9356862937c5", size = 577945, upload-time = "2023-05-09T18:01:02.091Z" },
+    { url = "https://files.pythonhosted.org/packages/44/57/8db39bc5f98f042e0153b1de9fb88e1a409a33cda4dd7f723c2ed71e01f6/docutils-0.22-py3-none-any.whl", hash = "sha256:4ed966a0e96a0477d852f7af31bdcb3adc049fbb35ccba358c2ea8a03287615e", size = 630709, upload-time = "2025-07-29T15:20:28.335Z" },
 ]
 
 [[package]]
@@ -3496,6 +3496,7 @@ doctest = [
 ]
 external-libraries = [
     { name = "antlr4-python3-runtime" },
+    { name = "kahypar" },
     { name = "openqasm3" },
     { name = "optax" },
     { name = "pennylane-qiskit" },
@@ -3525,7 +3526,7 @@ upload-reports = [
 [package.metadata]
 requires-dist = [
     { name = "appdirs" },
-    { name = "autograd" },
+    { name = "autograd", specifier = "<1.9" },
     { name = "autoray", specifier = "==0.8.10" },
     { name = "cachetools" },
     { name = "cvxopt", marker = "extra == 'kernels'" },
@@ -3575,7 +3576,7 @@ dev = [
 ]
 docs = [
     { name = "aiohttp" },
-    { name = "docutils", specifier = "==0.20" },
+    { name = "docutils", specifier = "==0.22" },
     { name = "fsspec" },
     { name = "galois" },
     { name = "h5py" },
@@ -3592,8 +3593,8 @@ docs = [
     { name = "pygments-github-lexers" },
     { name = "pyzx" },
     { name = "requests", specifier = "==2.33.0" },
-    { name = "sphinx", specifier = "==8.1" },
-    { name = "sphinx-automodapi", specifier = "==0.19" },
+    { name = "sphinx", specifier = "==9.0" },
+    { name = "sphinx-automodapi", specifier = "==0.22" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-sitemap" },
     { name = "sphinxcontrib-applehelp", specifier = "==2.0.0" },
@@ -3620,6 +3621,7 @@ doctest = [
 ]
 external-libraries = [
     { name = "antlr4-python3-runtime" },
+    { name = "kahypar", specifier = "==1.3.5" },
     { name = "openqasm3" },
     { name = "optax" },
     { name = "pennylane-qiskit", git = "https://github.com/PennyLaneAI/pennylane-qiskit.git?rev=master" },
@@ -5005,6 +5007,15 @@ wheels = [
 ]
 
 [[package]]
+name = "roman-numerals"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/f9/41dc953bbeb056c17d5f7a519f50fdf010bd0553be2d630bc69d1e022703/roman_numerals-4.1.0.tar.gz", hash = "sha256:1af8b147eb1405d5839e78aeb93131690495fe9da5c91856cb33ad55a7f1e5b2", size = 9077, upload-time = "2025-12-17T18:25:34.381Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/54/6f679c435d28e0a568d8e8a7c0a93a09010818634c3c3907fc98d8983770/roman_numerals-4.1.0-py3-none-any.whl", hash = "sha256:647ba99caddc2cc1e55a51e4360689115551bf4476d90e8162cf8c345fe233c7", size = 7676, upload-time = "2025-12-17T18:25:33.098Z" },
+]
+
+[[package]]
 name = "rpds-py"
 version = "0.30.0"
 source = { registry = "https://pypi.org/simple" }
@@ -5377,7 +5388,7 @@ wheels = [
 
 [[package]]
 name = "sphinx"
-version = "8.1.0"
+version = "9.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alabaster" },
@@ -5389,6 +5400,7 @@ dependencies = [
     { name = "packaging" },
     { name = "pygments" },
     { name = "requests" },
+    { name = "roman-numerals" },
     { name = "snowballstemmer" },
     { name = "sphinxcontrib-applehelp" },
     { name = "sphinxcontrib-devhelp" },
@@ -5397,22 +5409,22 @@ dependencies = [
     { name = "sphinxcontrib-qthelp" },
     { name = "sphinxcontrib-serializinghtml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9d/f3/e3c6fb6d015d6b0c5215d1a6e45276aa89b6685fc63a1b7ac230bcebcb4f/sphinx-8.1.0.tar.gz", hash = "sha256:109454425dbf4c78ecfdd481e56f078376d077edbda29804dba05c5161c8de06", size = 8183960, upload-time = "2024-10-10T15:57:36.611Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/43/448b5fe3c1dd02b1d5c8081ef9c47d166b34bcea1cbb83b608080f052397/sphinx-9.0.0.tar.gz", hash = "sha256:dc75216d69e00f170cb236eee17e66bcd89c4c2b5fe938ca8532fd7fe5abb23f", size = 8551885, upload-time = "2025-11-30T12:41:33.712Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/21/143e5e4666432668fbd669f89ee0abc50040787f932bd30befd0f7a42a6e/sphinx-8.1.0-py3-none-any.whl", hash = "sha256:3202bba95697b9fc4371a07d6d457239de9860244ce235283149f817c253fd2f", size = 3486829, upload-time = "2024-10-10T15:57:32.883Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/8b/76e2a1ce12b915399365873eef2b1197da9d032c99e661a71fd7e1490333/sphinx-9.0.0-py3-none-any.whl", hash = "sha256:3442bf635d378da2ba4e88aa8496f3a61b2d59ef145aeaf34353ab93fd79f1bf", size = 3762800, upload-time = "2025-11-30T12:41:31.4Z" },
 ]
 
 [[package]]
 name = "sphinx-automodapi"
-version = "0.19.0"
+version = "0.22.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/b7/25618926bb4f8a0e6409e3bb121b86cf8ec6f8270601138eb27bc8c6a278/sphinx_automodapi-0.19.0.tar.gz", hash = "sha256:c65d68269e276b440bfa5d0687b12413fd56685e9694ea266437f0f553c0413b", size = 56049, upload-time = "2025-04-17T20:50:31.281Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/9f/16c79a06f4c6772124f03f1d69a0394bc1f52c154202db5d5905cb3579c7/sphinx_automodapi-0.22.0.tar.gz", hash = "sha256:9a6745d606eb948321f0bb7bd4511dc6d8481da8819caa1604d7138910173b38", size = 56683, upload-time = "2025-12-13T00:19:52.962Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/87/14d6f100b986782ce4a6f475f80e2de24a6c15d6ee26aa4be99ae4671419/sphinx_automodapi-0.19.0-py3-none-any.whl", hash = "sha256:728ff271b7b8e4f84a45e97fb5d8b35c647e2919949710fc3eb9523cb76ab838", size = 111477, upload-time = "2025-04-17T20:50:29.21Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/a0/1a0c44070d2f7e8761ca221d51e1ce8f959b2a0add4cab13de0a677f81bc/sphinx_automodapi-0.22.0-py3-none-any.whl", hash = "sha256:8ecbe8c8ba33a1e3dbe03aea06879062567d611b543da3f33367512d45118b01", size = 111939, upload-time = "2025-12-13T00:19:51.596Z" },
 ]
 
 [[package]]

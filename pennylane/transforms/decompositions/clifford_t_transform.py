@@ -19,11 +19,11 @@ from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops import Adjoint, MeasurementValue
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,

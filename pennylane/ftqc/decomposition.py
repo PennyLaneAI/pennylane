@@ -20,6 +20,7 @@ from functools import partial, singledispatch
 import networkx as nx
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
@@ -41,7 +42,6 @@ from pennylane.ops import (
     measure,
 )
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
@@ -146,7 +146,7 @@ ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)
-    lam, theta, phi = math.decomposition.xzx_rotation_angles(mat)
+    lam, theta, phi, _ = math.decomposition.xzx_rotation_angles(mat)
     RotXZX(lam, theta, phi, wires)
 
 
