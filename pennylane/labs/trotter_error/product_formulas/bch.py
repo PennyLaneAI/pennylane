@@ -29,7 +29,7 @@ symbols, and the expansion of that sequence is built up by repeatedly combining
 a single symbol (the *head*) with the expansion of the remainder (the *tail*).
 The base case, the BCH expansion of two symbols, read from a precomputed lookup
 table of Hall-basis commutators and their rational coefficients (see :func:`_bch`).
-The lookup table was generated from Casas and Murua in https://arxiv.org/abs/0810.2656.
+The lookup tables were obtained from Tables 3 and 4 `Casas and Murua (2008) arXiv:0810.2656  <https://arxiv.org/abs/0810.2656>`_
 
 Recursive product formulas are expanded by first expanding each sub-formula and then substituting
 those expansions into the outer expansion via a bilinear substitution.
@@ -218,7 +218,8 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> dict[
     This is the base case of the recursion. The Hall-basis commutators and their
     rational coefficients are precomputed and stored in a NumPy archive next to
     this file: ``sbch.npz`` for the symmetric expansion and ``bch.npz`` for the
-    general one. The table is stored as parallel arrays:
+    general one. The precomputed data was obtained from Tables 3 and 4 of Casas and Murua (2008) arXiv:0810.2656  <https://arxiv.org/abs/0810.2656>_.
+    The table contains:
 
     * ``l_comm`` / ``r_comm``: 1-based indices into the running list of Hall
       commutators, identifying the left and right operands of each new
