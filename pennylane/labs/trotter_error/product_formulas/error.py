@@ -123,8 +123,9 @@ def _eval_commutator(commutator, coeff, fragments):
 
 @dataclass
 class ImportanceConfig:
-    """This class is used as an optional argument to :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`
-    to enable the importance sampling feature. When used the perturbation error will be computed using
+    """Enable the importance sampling feature of :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`. 
+    
+    This class is used as an optional argument to :func:`~.pennylane.labs.trotter_error.product_formulas.perturbation_error`. When used, the perturbation error will be computed using
     only the ``topk`` most important commutators. The importance of a commutator is induced from
     ``weights`` which stores a user-defined importance score for each fragment label. The keys in
     ``weights`` must be identical to the symbols used to build the :class:`~.pennylane.labs.trotter_error.product_formulas.product_formula.ProductFormula`

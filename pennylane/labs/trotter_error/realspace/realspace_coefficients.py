@@ -23,7 +23,7 @@ from numpy import allclose, isclose, ndarray, zeros
 
 
 class RealspaceCoeffs:
-    """Lightweight representation of a tensor of coefficients.
+    """Lightweight representation of a tensor of coefficients of a real space operator.
 
     The :class:`~.pennylane.labs.trotter_error.RealspaceCoeffs` object is initialized with an array
     and can be used to represent coefficients of a real space operator. A real space operator
