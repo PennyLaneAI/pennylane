@@ -771,7 +771,7 @@
   - Arithmetic can be performed with :class:`~.Operator2` instances.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
-  - Integration with :func:`qp.apply`.
+  - Integration with :func:`pennylane.apply`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
