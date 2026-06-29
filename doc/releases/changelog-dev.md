@@ -615,6 +615,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Leftover Python 3.9 support branch has been removed.
+  [(#9716)](https://github.com/PennyLaneAI/pennylane/pull/9716)
+
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
