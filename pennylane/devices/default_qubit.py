@@ -27,6 +27,8 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
+from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionUndefinedError, DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -39,14 +41,12 @@ from pennylane.measurements import (
 )
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import (
     broadcast_expand,
     convert_to_numpy_parameters,
     defer_measurements,
     dynamic_one_shot,
 )
-from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .device_api import Device

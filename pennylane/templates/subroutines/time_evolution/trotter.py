@@ -22,8 +22,9 @@ from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript, make_qscript
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
     ErrorOperation,
@@ -31,7 +32,6 @@ from pennylane.resource.error import (
     _commutator_error,
     _one_norm_error,
 )
-from pennylane.tape import QuantumScript, make_qscript
 from pennylane.wires import Wires
 
 

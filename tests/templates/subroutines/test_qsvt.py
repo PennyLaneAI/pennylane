@@ -24,7 +24,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.queuing import AnnotatedQueue
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,

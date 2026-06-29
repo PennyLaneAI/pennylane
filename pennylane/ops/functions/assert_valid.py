@@ -28,8 +28,6 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator, Operator1, Operator2
 from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.reconstruct import get_decomp_kwargs, has_reconstructor, reconstruct
-from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource_rep, resource_rep
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -157,34 +155,6 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
-def _check_reconstructor(op):
-    """Checks that the op can be reconstructed."""
-
-    op_rep = resource_rep(op.__class__, **op.resource_params)
-    if not has_reconstructor(op_rep.op_type, op_rep.params):
-        return  # skip ops that are not meant to be compatible
-
-    if isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
-        return
-
-    reconstructed_op = reconstruct(op.data, op.wires, op_rep.op_type, op_rep.params)
-    qp.assert_equal(reconstructed_op, op)
-
-    adjoint_op = qp.adjoint(op)
-    op_rep = adjoint_resource_rep(op.__class__, op.resource_params)
-    assert has_reconstructor(op_rep.op_type, op_rep.params)
-
-    reconstructed_op = reconstruct(adjoint_op.data, adjoint_op.wires, op_rep.op_type, op_rep.params)
-    qp.assert_equal(reconstructed_op, adjoint_op)
-
-    pow_op = qp.pow(op, z=2)
-    op_rep = pow_resource_rep(op.__class__, op.resource_params, z=2)
-    assert has_reconstructor(op_rep.op_type, op_rep.params)
-
-    reconstructed_op = reconstruct(pow_op.data, pow_op.wires, op_rep.op_type, op_rep.params)
-    qp.assert_equal(reconstructed_op, pow_op)
-
-
 def _assert_counts_match(counts_0, counts_1):
     if counts_0 == counts_1:
         return
@@ -228,9 +198,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
-    kwargs = get_decomp_kwargs(op)
     with qp.queuing.AnnotatedQueue() as q:
-        rule(*op.data, wires=op.wires, **kwargs)
+        rule(*op.data, wires=op.wires, **op.hyperparameters)
     tape = qp.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
@@ -754,7 +723,6 @@ def assert_valid(
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
-        _check_reconstructor(op)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)

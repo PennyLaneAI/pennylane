@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.data import Dataset, DatasetPyTree
+from pennylane.data.attributes.pytree import _storable_as_array
 from pennylane.pytrees.pytrees import (
     _register_pytree_with_pennylane,
     flatten_registrations,
@@ -106,6 +107,53 @@ class TestDatasetPyTree:
         attr = DatasetPyTree(bind=bind)
 
         assert attr == value
+
+    def test_string_leaves_preserved(self):
+        """Test that string leaves are restored as strings rather than bytes.
+
+        Homogeneous string leaves (e.g. string wire labels) were stored as an
+        array, which HDF5 reads back as ``bytes``. They must be stored as a list
+        so that they round-trip as ``str``.
+        """
+        value = CustomNode(["a", "b"], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert list(result.data) == ["a", "b"]
+        assert all(isinstance(leaf, str) for leaf in result.data)
+
+    def test_inhomogeneous_numeric_leaves(self):
+        """Test that ragged (inhomogeneous) numeric leaves round-trip.
+
+        ``np.asarray`` raises on leaves with inhomogeneous shapes (e.g. a scalar
+        coefficient alongside a matrix, as in a ``Hamiltonian`` with a ``Hermitian``
+        term), so they must fall back to being stored as a list rather than an array.
+        """
+        matrix = qp.math.array([[1.0, 2.0], [3.0, 4.0]])
+        value = CustomNode([1.0, matrix], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert result.data[0] == 1.0
+        assert qp.math.allequal(result.data[1], matrix)
+
+    def test_bytes_leaves_preserved(self):
+        """Test that ``bytes`` leaves round-trip as ``bytes`` rather than being
+        coerced to another type when stored as a list."""
+        value = CustomNode([b"abc", b"de"], {"meta": "data"})
+
+        result = DatasetPyTree(value).get_value()
+
+        assert list(result.data) == [b"abc", b"de"]
+        assert all(isinstance(leaf, bytes) for leaf in result.data)
+
+    @pytest.mark.torch
+    def test_non_numpy_leaves_do_not_raise(self):
+        """Test that the array/list decision does not call ``np.asarray`` on non-numpy
+        leaves (e.g. a ``torch`` tensor that requires grad), which would raise."""
+        leaf = qp.math.asarray([1.0, 2.0], like="torch", requires_grad=True)
+
+        assert _storable_as_array([leaf]) is False
 
 
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
