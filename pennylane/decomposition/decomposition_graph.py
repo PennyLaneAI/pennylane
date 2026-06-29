@@ -433,7 +433,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         kwargs = _get_kwargs(op_node.op)
         decomp_resource = rule.compute_resources(**kwargs)
-
         work_wire_spec = rule.get_work_wire_spec(**kwargs)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
