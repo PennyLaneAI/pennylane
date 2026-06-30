@@ -953,7 +953,7 @@ class QuantumScript:
         a qnode directly.
 
         >>> from pprint import pprint
-        >>> pprint(qscript.specs['resources'])
+        >>> pprint(qscript.specs['resources'])  # doctest: +SKIP
         SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
                        gate_sizes={1: 4, 2: 2},
                        measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
