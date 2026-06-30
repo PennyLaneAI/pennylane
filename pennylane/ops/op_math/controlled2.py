@@ -103,7 +103,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        one_controlled: bool = False,
     ):
 
         control_wires = Wires(control_wires)
@@ -121,7 +120,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         if control_values is None:
             control_values = [True] * len(control_wires)
-            one_controlled = True
 
         if isinstance(control_values, (int, bool)):
             control_values = [bool(control_values)]
@@ -136,7 +134,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._control_values = control_values
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
-        self._one_controlled = one_controlled
 
         if "control_wires" in self._init_args:
             self._init_args["control_wires"] = control_wires
@@ -146,9 +143,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         if "work_wires" in self._init_args:
             self._init_args["work_wires"] = work_wires
-
-        if "one_controlled" in self._init_args:
-            self._init_args["one_controlled"] = one_controlled
 
         super().__init__(**self._init_args)
 
@@ -236,11 +230,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     def wires(self):
         return self.control_wires + self.target_wires
-
-    @property
-    def one_controlled(self) -> bool:
-        """Whether all control_values are statically known to be ones."""
-        return self._one_controlled
 
     @staticmethod
     @override
@@ -415,8 +404,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             whereas ``"borrowed"`` work wires can be in any arbitrary state. In both cases,
             it is expected that the work wires are restored to their original states by
             the end of the decomposition. Defaults to ``"borrowed"``.
-        one_controlled (bool): Whether the operator is knowned to be controlled entirely on
-            one. This can be useful to produce a more accurate resource estimation.
 
     """
 
@@ -426,7 +413,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    compilable_argnames = ("work_wire_type", "one_controlled")
+    compilable_argnames = ("work_wire_type",)
 
     arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
@@ -441,11 +428,8 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-        one_controlled: bool = False,
     ):
-        super().__init__(
-            base, control_wires, control_values, work_wires, work_wire_type, one_controlled
-        )
+        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
 
     @override
     def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
@@ -455,12 +439,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
-        one_controlled=False,
     ):
         # Canonicalize control_values and work_wires
         if control_values is None:
             control_values = Bool[len(control_wires)]
-            one_controlled = True
         if work_wires is None:
             work_wires = Wire[0]
 
@@ -471,7 +453,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-            one_controlled=one_controlled,
         )
 
         # Update private properties
@@ -480,7 +461,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         self._control_values = self.arguments["control_values"]
         self._work_wires = self.arguments["work_wires"]
         self._work_wire_type = self.arguments["work_wire_type"]
-        self._one_controlled = self.arguments["one_controlled"]
 
     @property
     @override

@@ -217,9 +217,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
 def resolve_ctrl_values(control_values, base_ctrl_op: Controlled2):
     """Resolves the new control values."""
 
-    if control_values is None and base_ctrl_op.one_controlled:
-        return None
-
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
 
