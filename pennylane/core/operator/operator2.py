@@ -19,7 +19,6 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
-from enum import Enum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -50,7 +49,7 @@ from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLik
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
-from .meta import OperatorMeta
+from .meta import OperatorMeta, _canonicalize_abstract_type, _resolve_arg_kind
 from .utils import abstractify
 
 if TYPE_CHECKING:
@@ -203,19 +202,6 @@ class Operator2(metaclass=OperatorMeta):
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.tracer = None
-
-    def __abstract_init__(self, *args, **kwargs):
-        """Constructor for canonicalization of abstract inputs."""
-        bound_args = self._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arguments = bound_args.arguments
-
-        target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
-        for name in target_args:
-            kind = _resolve_arg_kind(type(self), name)
-            arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
-
-        Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -1240,7 +1226,6 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
-            n_ctrls=0,
             adjoint=False,
             **static_args,
         )
@@ -1541,14 +1526,7 @@ if has_jax:
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
     def _op_impl(
-        *all_args,
-        op_cls,
-        wire_lens,
-        hybrid_lens,
-        hybrid_trees,
-        n_ctrls=0,
-        adjoint=False,
-        **static_args,
+        *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
     ):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
@@ -1572,24 +1550,9 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
-        if n_ctrls:
-            control_wires = all_args[i : i + n_ctrls]
-            i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
-        else:
-            control_wires = control_values = ()
-
         op = type.__call__(op_cls, **args)
         if adjoint:
             op = type.__call__(qp.ops.op_math.Adjoint2, op)
-        if n_ctrls:
-            op = type.__call__(
-                qp.ops.op_math.ControlledOp2,
-                op,
-                control_wires=control_wires,
-                control_values=control_values,
-            )
         return op
 
     @operator_p.def_abstract_eval
@@ -1695,73 +1658,6 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
-
-
-class _ArgType(Enum):
-    """Enum to keep track of an arguments type."""
-
-    WIRES = auto()
-    DYN = auto()
-    HYBRID = auto()
-
-
-def _resolve_arg_kind(cls, name: str) -> _ArgType:
-    """Resolves an arguments name to what kind of argument type it is."""
-    # Check hybrid first: hybrid args can also appear in wire_argnames
-    # and must be treated as hybrid.
-    if name in cls.hybrid_argnames:
-        return _ArgType.HYBRID
-    if name in cls.wire_argnames:
-        return _ArgType.WIRES
-    return _ArgType.DYN
-
-
-def _canonicalize_abstract_type(val, kind: _ArgType):
-    """Canonicalizes the input into its abstract equivalent.
-
-    Args:
-        val (Any): The input value.
-        kind (_ArgType): The argument's classification.
-            - WIRES: Coerce the value to be an AbstractWires instance.
-            - DYN: Flatten into a single, unified AbstractArray
-            - HYBRID: Preserve the PyTree structure, mapping internal leaves
-                to either AbstractWires or AbstractArray.
-    """
-
-    if isinstance(val, (AbstractArray, AbstractWires)):
-        return val
-
-    if isinstance(val, type) and issubclass(val, Number):
-        return AbstractArray((), val)
-
-    match kind:
-        case _ArgType.WIRES:
-            # abstractify expects a Wires object for wire-routing, so we sanitize it first
-            return abstractify(Wires(val))
-
-        case _ArgType.DYN:
-            # A sequence of types is not supported (i.e., [float, float, float])
-            # for dynamic args. Ambiguous how to canonicalize it generally.
-            if isinstance(val, (list, tuple)) and any(_is_abstract_specifier(x) for x in val):
-                raise NotImplementedError(
-                    "A sequence of types for a dynamic argument is not "
-                    "currently supported. Instead, please use the type "
-                    "specifiers found in pennylane.typing."
-                )
-            # Ensure it behaves like a clean array/scalar leaf before abstractifying
-            return abstractify(math.asarray(val))
-
-        case _ArgType.HYBRID:
-            # Since abstractify natively handles PyTree recursion and leaves,
-            # we can pass the entire structure straight through
-            return abstractify(val)
-
-        case _:  # pragma: no cover
-            raise ValueError(f"Unknown kind: '{kind}'")
-
-
-def _is_abstract_specifier(val):
-    return isinstance(val, AbstractArray) or (isinstance(val, type) and issubclass(val, Number))
 
 
 @abstractify.register(OperatorMeta)

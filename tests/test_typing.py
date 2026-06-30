@@ -549,12 +549,3 @@ class TestAbstractWires:
 
         # non-wires
         assert not isinstance({"not": "wires"}, Wire)
-
-    def test_addition(self):
-        """Tests adding abstract wires."""
-
-        assert Wire[2] + Wire[3] == Wire[5]
-        assert Wire[-1] + Wire[3] == Wire[-1]
-
-        with pytest.raises(TypeError):
-            _ = Wire[2] + 1

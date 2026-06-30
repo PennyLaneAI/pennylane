@@ -258,30 +258,6 @@ class TestOperatorAbstractInputs:
         ):
             _ = DynOp(input, AbstractWires(1))
 
-    def test_override_abstract_init(self):
-        """Tests that an operator can override __abstract_init__."""
-
-        class CustomOp(Operator2):  # pylint: disable=too-few-public-methods
-
-            dynamic_argnames = ("theta",)
-
-            wire_argnames = ("wires", "work_wires")
-
-            arg_specs = {"theta": Float, "wires": Wire[1], "work_wires": Wire[-1]}
-
-            def __init__(self, theta, wires, work_wires=None):
-                if work_wires is None:
-                    work_wires = Wires([])
-                super().__init__(self, theta, wires, work_wires)
-
-            def __abstract_init__(self, theta, wires, work_wires=None):
-                if work_wires is None:
-                    work_wires = Wire[0]
-                super().__abstract_init__(theta, wires, work_wires)
-
-        op = CustomOp(Float, Wire[1])
-        assert op.work_wires == Wire[0]
-
 
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""

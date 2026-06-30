@@ -13,11 +13,9 @@
 # limitations under the License.
 """This file contains different PennyLane types."""
 
-# pylint: disable=import-outside-toplevel,too-few-public-methods
-
-from __future__ import annotations
-
 import contextlib
+
+# pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, field
@@ -306,7 +304,7 @@ class AbstractArray:
         return prod(self.shape)
 
     @property
-    def T(self) -> AbstractArray:
+    def T(self) -> "AbstractArray":
         """Transpose view of the array."""
         new_shape = self.shape if self.shape is Ellipsis else self.shape[::-1]
         return AbstractArray(new_shape, self.dtype)
@@ -503,13 +501,6 @@ class AbstractWires:
         if self.num_wires < 0:
             raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
         return self.num_wires
-
-    def __add__(self, other) -> AbstractWires:
-        if not isinstance(other, AbstractWires):
-            return NotImplemented
-        if not self.shape_fixed or not other.shape_fixed:
-            return AbstractWires(-1)
-        return AbstractWires(self.num_wires + other.num_wires)
 
     def __repr__(self):
         return f"AbstractWires({self.num_wires})"
