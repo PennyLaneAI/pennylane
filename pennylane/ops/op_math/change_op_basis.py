@@ -22,6 +22,7 @@ from functools import reduce
 
 from pennylane import capture, math, pytrees
 from pennylane.core import queuing
+from pennylane.core.queuing import apply
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
@@ -67,7 +68,7 @@ def _apply_op_or_func(op_or_func):
         _validate_callable(op_or_func)
         op_or_func()
     elif isinstance(op_or_func, Operator):
-        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
+        apply(op_or_func)
     elif math.is_abstract(op_or_func):
         pass
     else:
@@ -339,9 +340,9 @@ def _adjoint_change_op_basis_resources(base_params, **_):
 # pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
-    adjoint(pytrees.unflatten(*pytrees.flatten(base.operands[1])))
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    apply(base.operands[2])
+    adjoint(apply(base.operands[1]))
+    apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
@@ -359,10 +360,13 @@ def _controlled_change_op_basis_resources(
 ):  # pylint: disable=unused-argument, too-many-arguments
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
+    target = base_params["target_op"]
+    target_cls = type(target) if isinstance(target, Operator) else target.op_type
+    target_p = target.static_args if isinstance(target, Operator) else target.params
     resources[
         controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
+            target_cls,
+            target_p,
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
@@ -383,22 +387,22 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
+    apply(base.operands[2])
     ctrl(
-        pytrees.unflatten(*pytrees.flatten(base.operands[1])),
+        apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    apply(base.operands[0])
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
-        pytrees.unflatten(*pytrees.flatten(op))
+        queuing.QueuingManager.append(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

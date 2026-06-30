@@ -202,7 +202,7 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+    qp.apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
