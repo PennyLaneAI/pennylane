@@ -40,8 +40,8 @@ def _symmetric_coupling(rng):
     return (a + a.transpose(1, 0, 2)) / 2
 
 
-@pytest.fixture
-def config():
+@pytest.fixture(name="config")
+def fixture_config():
     rng = np.random.default_rng(42)
 
     couplings = [_symmetric_coupling(rng), _symmetric_coupling(rng)]
