@@ -734,6 +734,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
 
