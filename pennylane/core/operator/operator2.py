@@ -110,9 +110,10 @@ class Operator2(metaclass=OperatorMeta):
 
     .. note::
 
-        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
-        both; if **any** static arguments are not or cannot be lowered to the IR, then all
-        static arguments are assumed to not be lowerable.
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
@@ -127,9 +128,10 @@ class Operator2(metaclass=OperatorMeta):
 
     .. note::
 
-        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
-        both; if **any** static arguments cannot be lowered to the IR, then all static arguments
-        must be treated as not lowerable.
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     hybrid_argnames: ClassVar[tuple[str, ...]] = ()
@@ -139,6 +141,13 @@ class Operator2(metaclass=OperatorMeta):
     overlap with ``wire_argnames`` when those arguments contain nested structures of
     wires. Examples of hybrid arguments include collections of wires or dynamic arrays,
     operators, etc.
+
+    .. note::
+
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     wire_sizes: ClassVar[tuple[int | None, ...] | None] = None
