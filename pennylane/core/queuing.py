@@ -194,6 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane.capture import enabled  # tach-ignore
 from pennylane.exceptions import QueuingError
 
 
@@ -532,8 +533,8 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
 
     """
     if hasattr(op, "_bind_primitive"):
-        op._bind_primitive()  # pylint: disable=protected-access
-        if op.tracer is not None:
+        if enabled():
+            op._bind_primitive()  # pylint: disable=protected-access
             return op
         raise RuntimeError("Trying to use apply in a non-tracing context.")
 
