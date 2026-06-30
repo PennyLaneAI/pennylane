@@ -209,7 +209,7 @@ class Operator2(metaclass=OperatorMeta):
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
-        
+
         target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
         for name in target_args:
             kind = _resolve_arg_kind(type(self), name)
