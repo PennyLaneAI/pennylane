@@ -26,9 +26,9 @@ from pennylane.core.operator import Operator
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import Controlled
 from .symbolicop2 import SymbolicOp2
 
 
@@ -338,7 +338,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @override
     def simplify(self):
-        if isinstance(self.base, (Controlled, Controlled2)):
+        if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
 
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
@@ -414,6 +414,8 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     hybrid_argnames = ("base",)
 
     static_argnames = ("work_wire_type",)
+
+    arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
     # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
