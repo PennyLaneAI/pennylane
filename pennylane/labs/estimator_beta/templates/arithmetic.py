@@ -13,15 +13,13 @@
 # limitations under the License.
 r"""Resource operators for PennyLane arithmetic subroutines."""
 
-from typing import Dict
-
 import pennylane.labs.estimator_beta as qre
+from pennylane.core.wires import WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
-from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
 
@@ -88,7 +86,7 @@ class LabsPhaseAdder(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -259,7 +257,7 @@ class LabsAdder(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -471,7 +469,7 @@ class LabsOutAdder(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -631,7 +629,7 @@ class ClassicalOutMultiplier(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -776,7 +774,7 @@ class LabsMultiplier(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -935,7 +933,7 @@ class LabsModExp(ResourceOperator):
         super().__init__(wires=wires)
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:

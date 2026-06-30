@@ -20,6 +20,7 @@ from itertools import combinations
 
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -27,7 +28,6 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
-from pennylane.wires import Wires, WiresLike
 
 from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
 

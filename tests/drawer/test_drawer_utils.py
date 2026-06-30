@@ -18,6 +18,7 @@ Unit tests for the pennylane.drawer.utils` module.
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.drawer.utils import (
     convert_wire_order,
     cwire_connections,
@@ -25,7 +26,6 @@ from pennylane.drawer.utils import (
     default_wire_map,
     unwrap_controls,
 )
-from pennylane.wires import Wires
 
 
 class TestDefaultWireMap:

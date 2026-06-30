@@ -19,9 +19,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP
-from pennylane.wires import Wires
 
 
 class TestCounts:

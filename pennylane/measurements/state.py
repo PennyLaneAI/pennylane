@@ -19,9 +19,9 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.measurements import StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 class StateMP(StateMeasurement):

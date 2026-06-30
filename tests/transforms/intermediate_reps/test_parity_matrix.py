@@ -69,7 +69,7 @@ class TestParityMatrix:
 
     def test_WireError(self):
         """Test that WireError is raised when wires in the provided wire_order dont match the circuit wires"""
-        with pytest.raises(qp.wires.WireError, match="The provided wire_order"):
+        with pytest.raises(qp.exceptions.WireError, match="The provided wire_order"):
             _ = parity_matrix(circ1, wire_order=[1, 2, 3, 4])
 
     def test_input_validation(self):

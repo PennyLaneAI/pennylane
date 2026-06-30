@@ -19,6 +19,7 @@ from functools import lru_cache
 
 from pennylane import math, ops
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -26,7 +27,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.wires import Wires, WiresLike
 
 
 class TemporaryAND(Operation):

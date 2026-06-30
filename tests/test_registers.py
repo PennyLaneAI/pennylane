@@ -18,7 +18,7 @@ Unit tests for pennylane.registers.
 import pytest
 
 import pennylane as qp
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 class TestRegisters:

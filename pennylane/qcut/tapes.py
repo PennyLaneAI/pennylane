@@ -24,12 +24,12 @@ from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, SampleMP, expval, sample
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
 from pennylane.transforms import decompose
-from pennylane.wires import Wires
 
 from .ops import MeasureNode, PrepareNode
 

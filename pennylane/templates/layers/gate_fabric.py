@@ -21,10 +21,10 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.wires import Wires
 
 has_jax = True
 try:

@@ -14,8 +14,8 @@
 """Utility functions for circuit optimization."""
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops.identity import GlobalPhase
-from pennylane.wires import Wires
 
 
 def find_next_gate(wires, op_list):

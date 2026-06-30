@@ -23,12 +23,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph, _WrappedObj
+from pennylane.core.wires import Wires
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue
 from pennylane.ops.mid_measure.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.resource import Resources, ResourcesOperation
-from pennylane.wires import Wires
 
 
 class Test_WrappedObj:

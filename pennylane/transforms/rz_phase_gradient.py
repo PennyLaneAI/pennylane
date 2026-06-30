@@ -24,10 +24,10 @@ from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math import change_op_basis
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 
 def _rz_phase_gradient(

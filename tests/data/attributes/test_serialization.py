@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.shots import Shots
+from pennylane.core.wires import Wires
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
@@ -33,7 +34,6 @@ from pennylane.pytrees.pytrees import (
     typename_to_type,
     unflatten_registrations,
 )
-from pennylane.wires import Wires
 
 
 class CustomNode:

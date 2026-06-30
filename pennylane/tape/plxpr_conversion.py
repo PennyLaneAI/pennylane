@@ -40,6 +40,7 @@ from pennylane.capture.primitives import (
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.wires import DynamicWire
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     MidMeasure,
@@ -49,7 +50,6 @@ from pennylane.ops.mid_measure import (
     pauli_measure,
 )
 from pennylane.templates.core import CollectedSubroutine
-from pennylane.wires import DynamicWire
 
 
 class CollectOpsandMeas(FlattenedInterpreter):

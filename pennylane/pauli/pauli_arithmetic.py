@@ -25,10 +25,10 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 I = "I"
 X = "X"
@@ -903,7 +903,7 @@ class PauliSentence(dict):
 
         try:
             op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
-        except qp.wires.WireError as e:
+        except qp.exceptions.WireError as e:
             raise ValueError(
                 "Can't get the matrix for the specified wire order because it "
                 f"does not contain all the Pauli sentence's wires {self.wires}"

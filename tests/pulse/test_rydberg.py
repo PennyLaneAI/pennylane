@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.pulse import rydberg_drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
     AmplitudeAndPhase,
@@ -28,7 +29,6 @@ from pennylane.pulse.hardware_hamiltonian import (
     HardwarePulse,
 )
 from pennylane.pulse.rydberg import RydbergSettings
-from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]

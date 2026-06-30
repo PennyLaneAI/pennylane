@@ -18,6 +18,7 @@ import pytest
 import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.allocation import AllocateState
+from pennylane.core.wires import Wires
 from pennylane.estimator import GateCount, Resources
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
@@ -30,7 +31,6 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=unused-argument,too-many-arguments,arguments-differ
 

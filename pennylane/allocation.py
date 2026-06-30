@@ -21,14 +21,14 @@ from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator import Operator
+from pennylane.core.wires import DynamicWire, Wires
 from pennylane.math import is_abstract
-from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
-    from pennylane.wires import AbstractQubit
+    from pennylane.core.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False

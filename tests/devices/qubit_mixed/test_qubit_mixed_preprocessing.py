@@ -137,10 +137,10 @@ class TestPreprocessing:
         invalid_circuit = qp.tape.QuantumScript([qp.PauliZ(4)])
         program, _ = dev.preprocess()
 
-        with pytest.raises(qp.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+        with pytest.raises(qp.exceptions.WireError, match=r"Cannot run circuit\(s\) on"):
             program([invalid_circuit])
 
-        with pytest.raises(qp.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+        with pytest.raises(qp.exceptions.WireError, match=r"Cannot run circuit\(s\) on"):
             program([circuit_valid_0, invalid_circuit])
 
     @pytest.mark.parametrize(

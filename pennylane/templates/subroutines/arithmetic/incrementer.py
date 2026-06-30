@@ -16,6 +16,7 @@
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -25,7 +26,6 @@ from pennylane.decomposition import (
 )
 from pennylane.math import array
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
-from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
 

@@ -27,9 +27,9 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
-from pennylane.wires import Wires
 
 
 class TestDecompositionErrors:

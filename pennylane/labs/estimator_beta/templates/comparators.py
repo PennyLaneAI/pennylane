@@ -14,13 +14,13 @@
 r"""Resource operators for PennyLane comparison templates."""
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.core.wires import WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import WiresLike
 
 # pylint: disable= signature-differs, arguments-differ
 

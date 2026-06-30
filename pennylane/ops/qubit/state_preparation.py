@@ -28,6 +28,7 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, StatePrepBase
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -37,7 +38,6 @@ from pennylane.decomposition import (
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 

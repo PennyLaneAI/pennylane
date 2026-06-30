@@ -18,9 +18,9 @@ Contains the ``AngleEmbedding`` template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import RX, RY, RZ
-from pennylane.wires import WiresLike
 
 has_jax = True
 try:

@@ -18,7 +18,7 @@ import networkx as nx
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 from .qubit_graph import QubitGraph
 

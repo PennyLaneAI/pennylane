@@ -20,8 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
-from pennylane.wires import Wires
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods

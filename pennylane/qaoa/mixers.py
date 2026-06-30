@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING
 
 import rustworkx as rx
 
+from pennylane.core.wires import Wires
 from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
-from pennylane.wires import Wires
 
 if TYPE_CHECKING:
     from networkx import Graph as nx_Graph

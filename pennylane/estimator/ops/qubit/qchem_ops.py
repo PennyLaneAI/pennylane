@@ -14,13 +14,13 @@
 r"""Resource operators for qchem operations."""
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ
 

@@ -19,6 +19,7 @@ from collections import Counter
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import adjoint, ctrl
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
 

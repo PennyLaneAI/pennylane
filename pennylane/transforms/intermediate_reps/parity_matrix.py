@@ -84,7 +84,7 @@ def parity_matrix(
             w_order = wires
 
         if not qp.wires.Wires(w_order).contains_wires(wires):
-            raise qp.wires.WireError(
+            raise qp.exceptions.WireError(
                 f"The provided wire_order {w_order} does not contain all wires of the circuit {wires}"
             )
 

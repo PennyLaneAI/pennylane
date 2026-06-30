@@ -22,9 +22,9 @@ from pennylane import math
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .probs import probs
 from .sample import SampleMP

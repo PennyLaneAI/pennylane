@@ -23,10 +23,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
-from pennylane.wires import Wires
 
 label_data = [
     (qp.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),

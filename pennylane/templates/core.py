@@ -42,6 +42,7 @@ from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.wires import Wires, is_abstract_qubit
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -53,7 +54,6 @@ from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import ChangeOpBasis
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
-from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 

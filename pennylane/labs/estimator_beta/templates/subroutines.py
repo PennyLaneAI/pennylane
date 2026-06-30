@@ -16,10 +16,10 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.core.wires import WiresLike
 from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 from pennylane.math import ceil_log2
-from pennylane.wires import WiresLike
 
 # pylint: disable=unused-argument
 

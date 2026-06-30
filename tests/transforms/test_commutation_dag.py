@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as np
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 class TestCommutationDAG:

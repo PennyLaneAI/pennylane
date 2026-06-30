@@ -19,6 +19,7 @@ from collections import defaultdict
 from itertools import combinations
 
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -28,7 +29,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
-from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
 from .out_multiplier import _add_plus_one, _c_add_sub

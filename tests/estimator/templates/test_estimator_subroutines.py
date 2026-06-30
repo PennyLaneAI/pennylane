@@ -22,11 +22,11 @@ import pytest
 
 import pennylane as qp
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
-from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
 

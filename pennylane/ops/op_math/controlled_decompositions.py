@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.wires import Wires, WiresLike
 
 from .decompositions.controlled_decompositions import (
     _mcx_many_workers,

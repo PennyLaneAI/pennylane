@@ -19,9 +19,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DeviceError
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments, no-member
 

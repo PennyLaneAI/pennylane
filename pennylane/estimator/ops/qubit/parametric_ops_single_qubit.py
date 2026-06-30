@@ -16,13 +16,13 @@ r"""Resource operators for parametric single qubit operations."""
 import math
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ, signature-differs
 

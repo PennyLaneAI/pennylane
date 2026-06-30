@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
+from pennylane.core.wires import Wires
 from pennylane.typing import (
     AbstractArray,
     AbstractWires,
@@ -29,7 +30,6 @@ from pennylane.typing import (
     _AbstractTypeFactory,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import Wires
 
 
 class TestTensorLike:

@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -33,7 +34,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint
 from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
 
 
 class QubitCarry(Operation):

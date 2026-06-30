@@ -19,9 +19,9 @@ from operator2_utils import DynOp, MultiWireOp, TwoDynOp
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
+from pennylane.core.wires import Wires
 from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
-from pennylane.wires import Wires
 
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods

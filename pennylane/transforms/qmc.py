@@ -19,11 +19,11 @@ from copy import copy
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.ops import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 
 def _apply_controlled_z(wires, control_wire, work_wires):

@@ -24,10 +24,10 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
-from pennylane.wires import Wires
 
 
 class FABLE(Operation):

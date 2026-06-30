@@ -18,9 +18,9 @@ import pytest
 from typing_extensions import override
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.wires import Wires
 
 # pylint: disable=unused-argument,too-few-public-methods
 

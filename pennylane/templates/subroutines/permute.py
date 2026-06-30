@@ -20,9 +20,9 @@ from collections import Counter
 
 from pennylane import capture
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import SWAP
-from pennylane.wires import Wires
 
 has_jax = True
 try:

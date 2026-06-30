@@ -25,6 +25,7 @@ import numpy as np
 
 from pennylane import capture
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import is_abstract, isscalar, ndim, unwrap
@@ -32,7 +33,6 @@ from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
 from pennylane.transforms import transform
-from pennylane.wires import Wires
 
 
 @lru_cache(maxsize=1)

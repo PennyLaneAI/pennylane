@@ -17,9 +17,9 @@ Contains the ArbitraryUnitary template.
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import PauliRot
-from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
 

@@ -17,13 +17,13 @@ test of a quantum register and a classical integer."""
 from pennylane import capture, compiler, cond, for_loop, math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.ops import CNOT, X
 from pennylane.templates.subroutines import Elbow
-from pennylane.wires import Wires, WiresLike
 
 
 class LeftClassicalComparator(Operation):

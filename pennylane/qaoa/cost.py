@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING
 
 import rustworkx as rx
 
+from pennylane.core.wires import Wires
 from pennylane.ops import Identity, LinearCombination, Z
-from pennylane.wires import Wires
 
 from .cycle import (
     cycle_mixer,

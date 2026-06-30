@@ -29,6 +29,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as npp
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
@@ -42,7 +43,6 @@ from pennylane.ops.functions.equal import (
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
-from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qp.RX,

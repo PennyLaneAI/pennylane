@@ -23,6 +23,7 @@ from scipy.linalg import cossin
 
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
+from pennylane.core.wires import Wires
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
@@ -32,7 +33,6 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
-from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5

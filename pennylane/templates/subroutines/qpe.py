@@ -21,6 +21,7 @@ import copy
 from pennylane import math, ops
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -31,7 +32,6 @@ from pennylane.decomposition import (
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.resource.error import ErrorOperation, SpectralNormError
-from pennylane.wires import Wires
 
 from .qft import QFT
 

@@ -19,6 +19,7 @@ from collections import defaultdict
 import pennylane.estimator as qre
 from pennylane import math as pl_math
 from pennylane import numpy as qnp
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -29,7 +30,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
 

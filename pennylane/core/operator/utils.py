@@ -19,9 +19,9 @@ from numbers import Number
 from typing import TYPE_CHECKING
 
 from pennylane import math
+from pennylane.core.wires import Wires
 from pennylane.pytrees import flatten, leaf, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
-from pennylane.wires import Wires
 
 if TYPE_CHECKING:
     from .operator2 import Operator2

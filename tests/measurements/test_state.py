@@ -19,11 +19,11 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError, WireError
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
-from pennylane.wires import Wires
 
 
 class TestStateMP:

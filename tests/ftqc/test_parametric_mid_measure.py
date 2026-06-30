@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ftqc import (
@@ -32,7 +33,6 @@ from pennylane.ftqc import (
     measure_y,
 )
 from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.wires import Wires
 
 
 class TestParametricMidMeasure:

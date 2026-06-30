@@ -24,6 +24,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.wires import WiresLike
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
@@ -31,7 +32,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.typing import TensorLike
-from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
 I16 = np.eye(16)

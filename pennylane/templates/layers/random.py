@@ -21,8 +21,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires
 from pennylane.ops import CNOT, RX, RY, RZ
-from pennylane.wires import Wires
 
 
 class RandomLayers(Operation):

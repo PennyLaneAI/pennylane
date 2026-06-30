@@ -20,12 +20,12 @@ from dataclasses import dataclass
 import numpy as np
 
 from pennylane import math
+from pennylane.core.wires import Wires
 from pennylane.ops import X, Y
 from pennylane.ops.op_math import s_prod
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 # TODO ladder operators once there is qudit support

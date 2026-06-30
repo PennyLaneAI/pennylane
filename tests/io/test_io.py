@@ -23,9 +23,9 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.core.wires import Wires
 from pennylane.ops import RX
 from pennylane.ops.mid_measure import MeasurementValue
-from pennylane.wires import Wires
 
 has_openqasm = True
 try:

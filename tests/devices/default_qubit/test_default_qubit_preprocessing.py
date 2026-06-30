@@ -361,7 +361,7 @@ class TestPreprocessing:
         assert circuits[1].circuit == circuit_valid_1.circuit
 
         invalid_circuit = qp.tape.QuantumScript([qp.PauliX(4)])
-        with pytest.raises(qp.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+        with pytest.raises(qp.exceptions.WireError, match=r"Cannot run circuit\(s\) on"):
             program = dev.preprocess_transforms()
             program(
                 [
@@ -369,7 +369,7 @@ class TestPreprocessing:
                 ]
             )
 
-        with pytest.raises(qp.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+        with pytest.raises(qp.exceptions.WireError, match=r"Cannot run circuit\(s\) on"):
             program = dev.preprocess_transforms()
             program([circuit_valid_0, invalid_circuit])
 

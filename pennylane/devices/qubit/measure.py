@@ -21,13 +21,13 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.measurements import (
     ExpectationMP,
 )
 from pennylane.ops import LinearCombination, MeasurementValue, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .apply_operation import apply_operation
 

@@ -18,8 +18,8 @@ from collections.abc import Iterable
 
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.wires import Wires
 from pennylane.gradients.metric_tensor import metric_tensor
-from pennylane.wires import Wires
 from pennylane.workflow import QNode
 
 from .gradient_descent import GradientDescentOptimizer

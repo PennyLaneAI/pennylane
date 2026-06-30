@@ -26,9 +26,9 @@ import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
-from pennylane.wires import Wires
 
 no_mat_ops = (
     qp.Barrier,

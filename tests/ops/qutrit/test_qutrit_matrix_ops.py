@@ -23,8 +23,8 @@ from gate_data import TSWAP
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),

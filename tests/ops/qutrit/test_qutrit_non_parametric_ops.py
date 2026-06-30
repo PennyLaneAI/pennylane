@@ -22,7 +22,7 @@ import pytest
 from gate_data import TADD, TCLOCK, TH, TSHIFT, TSWAP
 
 import pennylane as qp
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qp.TShift, TSHIFT, None),

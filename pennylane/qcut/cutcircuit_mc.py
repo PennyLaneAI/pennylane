@@ -22,10 +22,10 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.measurements import SampleMP, sample
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut

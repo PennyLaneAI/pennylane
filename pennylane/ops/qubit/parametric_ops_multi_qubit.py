@@ -31,6 +31,7 @@ from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -41,7 +42,6 @@ from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.typing import FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last

@@ -12,6 +12,19 @@
 # limitations under the License.
 """The core abstractions of PennyLane.
 
+Wires
+~~~~~
+
+.. currentmodule:: pennylane.core.wires
+.. autosummary::
+    :toctree: api
+
+    Wires
+    WiresLike
+    DynamicWire
+    is_abstract_wire
+    AbstractQubit
+
 Queuing
 ~~~~~~~
 
@@ -98,6 +111,8 @@ Transforms
 
 """
 
+from .wires import Wires, DynamicWire, is_abstract_qubit, WiresLike, AbstractQubit
+
 from .queuing import QueuingManager, AnnotatedQueue, apply
 
 from .operator import (
@@ -129,6 +144,11 @@ from .qscript import (
 from .transforms import transform, Transform, BoundTransform, CompilePipeline
 
 __all__ = [
+    "Wires",
+    "DynamicWire",
+    "is_abstract_qubit",
+    "WiresLike",
+    "AbstractQubit",
     "QueuingManager",
     "AnnotatedQueue",
     "apply",

@@ -26,6 +26,7 @@ from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
+from pennylane.core.wires import is_abstract_qubit
 from pennylane.decomposition import (
     DecompositionGraph,
     GateSet,
@@ -37,7 +38,6 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-from pennylane.wires import is_abstract_qubit
 
 
 def null_postprocessing(results):

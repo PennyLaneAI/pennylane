@@ -17,6 +17,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 
 import numpy as np
 
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.compact_hamiltonian import (
     CDFHamiltonian,
     PauliHamiltonian,
@@ -37,7 +38,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
-from pennylane.wires import Wires, WiresLike
 
 from .subroutines import (
     BasisRotation,

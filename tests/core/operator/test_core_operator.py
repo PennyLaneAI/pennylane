@@ -16,7 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -25,6 +25,7 @@ from gate_data import CNOT, I, Toffoli, X
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
@@ -34,7 +35,6 @@ from pennylane.operation import (
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
@@ -161,7 +161,7 @@ class TestOperatorConstruction:
 
             num_wires = 1
 
-        with pytest.raises(qp.wires.WireError, match="Wires must be unique"):
+        with pytest.raises(qp.exceptions.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):

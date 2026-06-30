@@ -24,10 +24,10 @@ from pennylane import math
 from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
 from pennylane.core.measurements import SampleMeasurement
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .process_samples import process_raw_samples
 

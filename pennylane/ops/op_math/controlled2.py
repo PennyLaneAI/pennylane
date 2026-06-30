@@ -24,9 +24,9 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.wires import Wires, WiresLike
 
 from .controlled import Controlled
 from .symbolicop2 import SymbolicOp2

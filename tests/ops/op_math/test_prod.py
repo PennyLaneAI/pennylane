@@ -24,9 +24,9 @@ import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
-from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 

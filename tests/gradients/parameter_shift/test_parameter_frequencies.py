@@ -18,11 +18,11 @@ import pytest
 
 from pennylane import gradients, math
 from pennylane.core.operator import Operator2
+from pennylane.core.wires import WiresLike
 from pennylane.exceptions import ParameterFrequenciesUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops import Exp, Hermitian, PauliZ
 from pennylane.ops.functions import eigvals, generator
-from pennylane.wires import WiresLike
 
 # pylint: disable=too-few-public-methods
 

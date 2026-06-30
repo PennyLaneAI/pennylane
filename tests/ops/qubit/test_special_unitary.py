@@ -23,6 +23,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.ops.qubit.special_unitary import (
     TmpPauliRot,
     _pauli_letters,
@@ -31,7 +32,6 @@ from pennylane.ops.qubit.special_unitary import (
     pauli_basis_strings,
 )
 from pennylane.transforms.convert_to_numpy_parameters import _convert_op_to_numpy_data
-from pennylane.wires import Wires
 
 
 class TestPauliUtils:

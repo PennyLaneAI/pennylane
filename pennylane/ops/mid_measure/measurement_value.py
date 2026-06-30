@@ -21,7 +21,7 @@ from collections.abc import Callable, Generator
 from typing import TYPE_CHECKING
 
 from pennylane import math
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 if TYPE_CHECKING:
     from pennylane.ops.mid_measure import MidMeasure, PauliMeasure

@@ -18,8 +18,8 @@ from operator2_utils import CompOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, T
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
+from pennylane.core.wires import Wires
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
-from pennylane.wires import Wires
 
 # pylint: disable=useless-parent-delegation, too-few-public-methods
 

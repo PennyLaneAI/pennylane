@@ -17,6 +17,7 @@ from functools import partial
 
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.wires import Wires
 from pennylane.math import is_abstract
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
@@ -26,7 +27,6 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, TensorLike
-from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
 

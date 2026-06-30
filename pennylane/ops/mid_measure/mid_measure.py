@@ -22,8 +22,8 @@ from functools import lru_cache
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operator
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.wires import Wires
 
 from .measurement_value import MeasurementValue
 

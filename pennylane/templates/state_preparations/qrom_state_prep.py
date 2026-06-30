@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 #: Small constant to prevent division by zero in state preparation.
 _DIVISION_EPS = 1e-15

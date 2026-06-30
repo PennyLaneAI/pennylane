@@ -15,7 +15,7 @@
 # pylint: disable=too-few-public-methods
 
 from pennylane.core.operator import Operator2
-from pennylane.wires import Wires
+from pennylane.core.wires import Wires
 
 
 class DynOp(Operator2):

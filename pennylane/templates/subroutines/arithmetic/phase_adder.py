@@ -22,6 +22,7 @@ import numpy as np
 from pennylane import math, ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -30,7 +31,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.wires import Wires, WiresLike
 
 
 def _add_k_fourier(k, wires: WiresLike):

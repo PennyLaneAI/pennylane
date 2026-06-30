@@ -46,7 +46,7 @@ class TestInitialization:
         O = oracle([0, 2], wires=range(3))
 
         with pytest.raises(
-            qp.wires.WireError, match="work_wire must be specified if fixed_point == True."
+            qp.exceptions.WireError, match="work_wire must be specified if fixed_point == True."
         ):
             qp.AmplitudeAmplification(U, O, iters=3, fixed_point=True)
 

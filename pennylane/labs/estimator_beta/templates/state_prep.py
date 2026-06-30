@@ -16,6 +16,7 @@ r"""This module contains resource operators for state preparation templates."""
 import numpy as np
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.core.wires import WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -23,7 +24,6 @@ from pennylane.estimator.resource_operator import (
     _dequeue,
     resource_rep,
 )
-from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ, too-many-arguments
 

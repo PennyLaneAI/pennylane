@@ -18,9 +18,9 @@ import copy
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.wires import Wires
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Evolution, LinearCombination, Sum
-from pennylane.wires import Wires
 
 
 def _check_hamiltonian_type(hamiltonian):

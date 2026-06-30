@@ -16,6 +16,7 @@ r"""Resource operators for controlled operations."""
 from typing import Literal
 
 import pennylane.estimator as qre
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -24,7 +25,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
-from pennylane.wires import Wires, WiresLike
 
 # pylint: disable= arguments-differ, signature-differs
 

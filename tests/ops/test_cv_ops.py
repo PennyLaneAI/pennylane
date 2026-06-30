@@ -21,8 +21,8 @@ import numpy.testing as np_testing
 import pytest
 
 from pennylane import numpy as np
+from pennylane.core.wires import Wires
 from pennylane.ops import cv
-from pennylane.wires import Wires
 
 s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)

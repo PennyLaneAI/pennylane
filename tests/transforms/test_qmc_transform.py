@@ -20,6 +20,7 @@ import pytest
 from scipy.stats import norm, unitary_group
 
 import pennylane as qp
+from pennylane.core.wires import Wires
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.transforms.qmc import (
     _apply_controlled_v,
@@ -27,7 +28,6 @@ from pennylane.transforms.qmc import (
     apply_controlled_Q,
     quantum_monte_carlo,
 )
-from pennylane.wires import Wires
 
 
 def r_unitary(gate, alpha, control_wires, target_wire):

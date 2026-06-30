@@ -22,6 +22,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -29,7 +30,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
-from pennylane.wires import Wires, WiresLike
 
 
 class AQFT(Operation):

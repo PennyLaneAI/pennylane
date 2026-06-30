@@ -40,13 +40,13 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.wires import Wires
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.transforms import decompose
-from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=protected-access

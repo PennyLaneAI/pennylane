@@ -14,6 +14,7 @@
 r"""Resource operators for QubitUnitary operation."""
 
 import pennylane.estimator as qre
+from pennylane.core.wires import WiresLike
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -21,7 +22,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.templates import SelectPauliRot
-from pennylane.wires import WiresLike
 
 # pylint: disable=arguments-differ
 

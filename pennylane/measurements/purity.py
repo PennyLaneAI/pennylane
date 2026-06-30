@@ -17,10 +17,10 @@ This module contains the qp.purity measurement.
 """
 
 from pennylane.core.measurements import StateMeasurement
+from pennylane.core.wires import Wires
 from pennylane.math import dm_from_state_vector
 from pennylane.math import purity as math_purity
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 
 class PurityMP(StateMeasurement):

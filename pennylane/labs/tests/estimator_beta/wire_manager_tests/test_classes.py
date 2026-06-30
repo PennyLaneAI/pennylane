@@ -16,13 +16,13 @@ r"""Tests for the base classes used when tracking qubits for resource estimation
 import pytest
 
 from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.wires import Wires
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
     MarkQubits,
 )
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments
 

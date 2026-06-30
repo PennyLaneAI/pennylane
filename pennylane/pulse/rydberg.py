@@ -20,11 +20,11 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.ops import Identity, Projector, Z
 from pennylane.ops.op_math import prod
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
-from pennylane.wires import Wires
 
 
 def rydberg_interaction(

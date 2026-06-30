@@ -17,8 +17,8 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 
 import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep
+from pennylane.exceptions import WireError
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
-from pennylane.wires import WireError
 
 
 def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):

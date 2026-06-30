@@ -20,9 +20,9 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
+from pennylane.core.wires import Wires, WiresLike
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PhaseShift, SingleExcitation, cond
-from pennylane.wires import Wires, WiresLike
 
 
 def _qjit_or_capture():
