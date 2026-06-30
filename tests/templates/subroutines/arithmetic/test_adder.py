@@ -267,10 +267,9 @@ class TestAdder:
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            _adder_arithmetic_decomposition(*op.data, wires=op.wires, **op.hyperparameters)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        mat_arith = qp.matrix(tape, wire_order=all_wires)
+        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(
+            *op.data, wires=op.wires, **op.hyperparameters
+        )
 
         assert qp.math.allclose(mat_op, mat_arith)
 
