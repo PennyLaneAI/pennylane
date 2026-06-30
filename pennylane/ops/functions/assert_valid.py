@@ -50,7 +50,7 @@ def _assert_error_raised(func, error, failure_comment):
 def _resolve_dynamic_wires(ops, num_zeroed):
     """Apply the transform resolve_dynamic_wires to a list of operations or tape."""
     if unwrap := not isinstance(ops, qp.tape.QuantumScript):
-        ops = qp.tape.QuantumTape(ops)
+        ops = qp.tape.QuantumScript(ops)
     zeroed = range(len(ops.wires), len(ops.wires) + num_zeroed)
     [ops], _ = qp.transforms.resolve_dynamic_wires([ops], zeroed=zeroed)
     if unwrap:
@@ -94,7 +94,7 @@ def _check_decomposition(op, skip_wire_mapping):
 
     with qp.queuing.AnnotatedQueue() as queued_decomp:
         decomp = op.decomposition()
-    processed_queue = qp.tape.QuantumTape.from_queue(queued_decomp)
+    processed_queue = qp.tape.QuantumScript.from_queue(queued_decomp)
 
     try:
         args, kwargs = _get_signature(op)
