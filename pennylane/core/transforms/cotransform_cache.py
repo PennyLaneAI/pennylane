@@ -17,7 +17,6 @@ This submodule contains the CotransformCache for handling the classical cotransf
 
 from functools import partial
 
-import pennylane as qp  # for qp.workflow.construct_tape
 from pennylane import math
 from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
@@ -85,7 +84,12 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
-    tape = qp.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
+    # tach-ignore
+    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
+        construct_tape,
+    )
+
+    tape = construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
     return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
@@ -105,6 +109,11 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """
     import jax  # pylint: disable=import-outside-toplevel
 
+    # tach-ignore
+    from pennylane.workflow import (  # tach-ignore # pylint: disable=import-outside-toplevel
+        construct_tape,
+    )
+
     tag = jax.core.TraceTag()
     with jax.core.take_current_trace() as parent_trace:
         trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
@@ -117,7 +126,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
             for i, arg in enumerate(args)
         ]
         with jax.core.set_current_trace(trace):
-            tape = qp.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tape = construct_tape(qnode, level=0)(*args_jvp, **kwargs)
             tapes, _ = program((tape,))
 
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
