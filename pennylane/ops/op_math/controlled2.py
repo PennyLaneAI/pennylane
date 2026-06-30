@@ -413,7 +413,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    compilable_argnames = ("work_wire_type",)
+    static_argnames = ("work_wire_type",)
 
     arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
