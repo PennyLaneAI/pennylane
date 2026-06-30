@@ -2454,7 +2454,7 @@ class TestApply:
         assert len(q.queue) == 1
         assert q.queue[0] == op2
 
-    def test_raises_capture_disabled_outside_queueing_context(self):
+    def test_raises_outside_queueing_context(self):
         """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
 
         with pytest.raises(
