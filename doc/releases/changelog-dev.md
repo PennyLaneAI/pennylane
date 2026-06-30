@@ -625,6 +625,7 @@
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
   [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
+  [(#9686)](https://github.com/PennyLaneAI/pennylane/pull/9686)
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.

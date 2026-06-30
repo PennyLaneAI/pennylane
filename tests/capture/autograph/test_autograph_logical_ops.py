@@ -118,8 +118,8 @@ class TestAnd:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a, y=b)
-        assert result == -1.0 if (a and b) else 1.0
+        jaxpr = jax.make_jaxpr(run_autograph(circuit))(x=a, y=b)
+        assert "and" in str(jaxpr)
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -259,8 +259,8 @@ class TestOr:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a, y=b)
-        assert result == -1.0 if (a or b) else 1.0
+        jaxpr = make_jaxpr(run_autograph(circuit))(x=a, y=b)
+        assert "or" in str(jaxpr)
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -395,8 +395,8 @@ class TestNot:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a)
-        assert result == -1.0 if (not a) else 1.0
+        jaxpr = make_jaxpr(run_autograph(circuit))(x=a)
+        assert "not" in str(jaxpr)
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
