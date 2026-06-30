@@ -27,64 +27,6 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 from .utils import to_name
 
 
-@dataclass(frozen=False)
-class Resources:
-    r"""Stores resource estimates.
-
-    Args:
-        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-        weighted_cost (float): the cumulative weight of the gates.
-    """
-
-    gate_counts: dict[CompressedResourceOp | Operator2, int] = field(default_factory=dict)
-    weighted_cost: float = field(default=None)
-
-    def __post_init__(self):
-        """Verify that all gate counts are non-zero."""
-        assert all(v > 0 for v in self.gate_counts.values())
-        if self.weighted_cost is None:
-            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
-        assert self.weighted_cost >= 0.0
-
-    @cached_property
-    def num_gates(self) -> int:
-        """The total number of gates."""
-        return sum(self.gate_counts.values())
-
-    def __add__(self, other: Resources):
-        return Resources(
-            _combine_dict(self.gate_counts, other.gate_counts),
-            weighted_cost=self.weighted_cost + other.weighted_cost,
-        )
-
-    def __mul__(self, scalar: int):
-        return Resources(
-            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
-        )
-
-    __rmul__ = __mul__
-
-    def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
-
-
-def _combine_dict(dict1: dict, dict2: dict):
-    r"""Combines two dictionaries and adds values of common keys."""
-
-    combined_dict = dict1.copy()
-
-    for k, v in dict2.items():
-        combined_dict[k] = combined_dict.get(k, 0) + v
-
-    return combined_dict
-
-
-def _scale_dict(dict1: dict, scalar: int):
-    r"""Scales the values in a dictionary with a scalar."""
-
-    return {key: scalar * value for key, value in dict1.items()}
-
-
 class CompressedResourceOp:
     """A lightweight representation of an operator to be decomposed.
 
@@ -164,6 +106,67 @@ class CompressedResourceOp:
             return f"Controlled({repr(base_rep)}{param_str})"
         params = ", ".join(f"{k}={v}" for k, v in sorted(self.params.items()))
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
+
+
+AbstractOperatorLike = CompressedResourceOp | Operator2
+
+
+@dataclass(frozen=False)
+class Resources:
+    r"""Stores resource estimates.
+
+    Args:
+        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
+        weighted_cost (float): the cumulative weight of the gates.
+    """
+
+    gate_counts: dict[AbstractOperatorLike, int] = field(default_factory=dict)
+    weighted_cost: float = field(default=None)
+
+    def __post_init__(self):
+        """Verify that all gate counts are non-zero."""
+        assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
+        assert self.weighted_cost >= 0.0
+
+    @cached_property
+    def num_gates(self) -> int:
+        """The total number of gates."""
+        return sum(self.gate_counts.values())
+
+    def __add__(self, other: Resources):
+        return Resources(
+            _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost,
+        )
+
+    def __mul__(self, scalar: int):
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
+
+    __rmul__ = __mul__
+
+    def __repr__(self):
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
+
+
+def _combine_dict(dict1: dict, dict2: dict):
+    r"""Combines two dictionaries and adds values of common keys."""
+
+    combined_dict = dict1.copy()
+
+    for k, v in dict2.items():
+        combined_dict[k] = combined_dict.get(k, 0) + v
+
+    return combined_dict
+
+
+def _scale_dict(dict1: dict, scalar: int):
+    r"""Scales the values in a dictionary with a scalar."""
+
+    return {key: scalar * value for key, value in dict1.items()}
 
 
 def _make_hashable(d):
@@ -582,7 +585,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     )
 
 
-def auto_wrap(op_type):
+def auto_wrap(op_type) -> AbstractOperatorLike:
     """Conveniently wrap an operator type in a resource representation."""
     if isinstance(op_type, CompressedResourceOp):
         return op_type
