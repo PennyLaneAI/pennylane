@@ -16,10 +16,9 @@
 
 from collections.abc import Sequence
 from inspect import signature
-from typing import Literal
+from typing import Literal, override
 
 from scipy import sparse
-from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
@@ -413,7 +412,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    compilable_argnames = ("work_wire_type",)
+    static_argnames = ("work_wire_type",)
 
     # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is

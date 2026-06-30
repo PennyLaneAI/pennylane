@@ -1378,9 +1378,10 @@ def _init_arg_types(op: Operator2) -> None:
 
 def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
     """Validate the values inside all ``**_argnames`` for an operator class."""
-    if cls.static_argnames and cls.compilable_argnames:
+    if (cls.hybrid_argnames or cls.static_argnames) and cls.compilable_argnames:
         raise TypeError(
-            "Operators can only contain 'static_argnames' or 'compilable_argnames', not both."
+            "Operators can only contain 'static_argnames' and 'hybrid_argnames', or "
+            "'compilable_argnames', not both."
         )
 
     # dynamic/wire/static/compilable argnames must be disjoint.
