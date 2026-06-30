@@ -352,6 +352,16 @@ class TestApply:
 
         capture.enable()
 
+    def test_raises_capture_disabled_outside_queueing_context(self):
+        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
+
+        capture.disable()
+
+        with pytest.raises(RuntimeError, match="No queuing context available to append operation to"):
+            apply(DynOp(1.0, wires=0))
+
+        capture.enable()
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
