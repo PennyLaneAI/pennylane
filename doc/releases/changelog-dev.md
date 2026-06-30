@@ -734,6 +734,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
