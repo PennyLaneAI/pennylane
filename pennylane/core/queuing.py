@@ -194,6 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane.capture import enabled  # tach-ignore
 from pennylane.exceptions import QueuingError
 
 
@@ -451,6 +452,8 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
             applied to the currently active queuing context.
     Returns:
         .Operator or .MeasurementProcess: the input operator is returned for convenience
+    Raises:
+        RuntimeError: if we try to use apply in a non-queuing/non-tracing context.
 
     **Example**
 
@@ -529,6 +532,12 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         active queuing context.
 
     """
+    if hasattr(op, "_bind_primitive") and enabled():
+        op._bind_primitive()  # pylint: disable=protected-access
+        if op.tracer is not None:
+            return op
+        raise RuntimeError("Trying to use apply in a non-tracing context.")
+
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
