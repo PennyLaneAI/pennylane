@@ -202,15 +202,17 @@ def _expected_met_met(s, k, config):
             if i[0] == "mol" and n[0] == "mol":
                 fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
-            if i[0] == "mol" and n[0] == "met":
+            elif i[0] == "mol" and n[0] == "met":
                 fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
-            if i[0] == "met" and n[0] == "mol":
+            elif i[0] == "met" and n[0] == "mol":
                 fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
-            if i[0] == "met" and n[0] == "met":
+            elif i[0] == "met" and n[0] == "met":
                 fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
+            else:
+                raise ValueError(f"Unexpected spaces: {i[0]}, {i[1]}.")
 
             terms[fermi1] += g_ij @ g_mn
             terms[fermi2] -= g_ij @ g_mn
@@ -250,15 +252,17 @@ def _expected_mol_met(s, k, config):
             if i[0] == "mol" and n[0] == "mol":
                 fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_mol(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_mol(i[1])])
-            if i[0] == "mol" and n[0] == "met":
+            elif i[0] == "mol" and n[0] == "met":
                 fermi1 = FermiWord([FermiOp.creation_mol(i[1]), FermiOp.annihilation_met(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_mol(i[1])])
-            if i[0] == "met" and n[0] == "mol":
+            elif i[0] == "met" and n[0] == "mol":
                 fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_mol(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_mol(n[1]), FermiOp.annihilation_met(i[1])])
-            if i[0] == "met" and n[0] == "met":
+            elif i[0] == "met" and n[0] == "met":
                 fermi1 = FermiWord([FermiOp.creation_met(i[1]), FermiOp.annihilation_met(n[1])])
                 fermi2 = FermiWord([FermiOp.creation_met(n[1]), FermiOp.annihilation_met(i[1])])
+            else:
+                raise ValueError(f"Unexpected spaces {i[0]}, {i[1]}.")
 
             terms[fermi1] += g_ij @ g_mn
             terms[fermi2] -= g_ij @ g_mn

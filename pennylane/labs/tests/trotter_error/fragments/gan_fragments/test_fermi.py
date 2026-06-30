@@ -98,7 +98,7 @@ def test_word_matmul_concatenates():
 
 def test_identity_word_is_empty():
     """Test the identity operator"""
-    assert FermiWord.identity().ops == []
+    assert not FermiWord.identity().ops
 
 
 def test_is_zero_on_repeated_adjacent_operator():
