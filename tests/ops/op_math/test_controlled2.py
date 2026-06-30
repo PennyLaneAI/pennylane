@@ -13,9 +13,10 @@
 
 """Tests for the Controlled2 class."""
 
+from typing import override
+
 import numpy as np
 import pytest
-from typing_extensions import override
 
 import pennylane as qp
 from pennylane.core import Operator2
@@ -248,6 +249,18 @@ class TestControlled2:
         qp.assert_equal(simplified_op, qp.ctrl(qp.MultiRZ(0.5, [0, 1, 2]), control=[3, 4, 5]))
 
 
+class CustomOp(Operator2):
+
+    dynamic_argnames = ("theta",)
+
+    wire_argnames = ("wires",)
+
+    arg_specs = {"theta": Float, "wires": Wire[1]}
+
+    def __init__(self, theta, wires):
+        super().__init__(theta, wires)
+
+
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
 
@@ -404,20 +417,16 @@ class TestControlledOp2:
     def test_create_abstract_op(self):
         """Tests creating an abstract operator."""
 
-        class CustomOp(Operator2):
-
-            dynamic_argnames = ("theta",)
-
-            wire_argnames = ("wires",)
-
-            arg_specs = {"theta": Float, "wires": Wire[1]}
-
-            def __init__(self, theta, wires):
-                super().__init__(self, theta, wires)
-
         op = ControlledOp2(CustomOp, Wire[2])
         assert op.control_wires == Wire[2]
         assert op.target_wires == Wire[1]
         assert op.control_values == Bool[2]
         assert op.work_wires == Wire[0]
         assert op.wires == Wire[3]
+
+    def test_create_controlled_op2(self):
+        """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
+
+        op = CustomOp(0.5, wires=[0])
+        op = qp.ctrl(CustomOp(0.5, wires=[0]), control=[1], control_values=0)
+        assert isinstance(op, ControlledOp2)
