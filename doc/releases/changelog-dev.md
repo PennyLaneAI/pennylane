@@ -774,6 +774,7 @@
   - Symbolic operators with :class:`~.Operator2` instances as the base.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
+  - Integration with :func:`pennylane.apply`.
   - Integration with the graph-based decomposition system.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -795,8 +796,10 @@
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
   [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
   [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
