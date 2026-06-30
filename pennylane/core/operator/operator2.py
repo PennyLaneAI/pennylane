@@ -214,10 +214,6 @@ class Operator2(metaclass=OperatorMeta):
         """Whether the operator has abstract args."""
         return self._is_abstract
 
-    @is_abstract.setter
-    def is_abstract(self, is_abstract: bool) -> None:
-        self._is_abstract = is_abstract
-
     @property
     def arguments(self) -> dict[str, Any]:
         """Dictionary mapping argument names to their values."""
