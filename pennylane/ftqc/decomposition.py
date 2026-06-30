@@ -20,6 +20,8 @@ from functools import partial, singledispatch
 import networkx as nx
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
@@ -40,8 +42,6 @@ from pennylane.ops import (
     cond,
     measure,
 )
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure

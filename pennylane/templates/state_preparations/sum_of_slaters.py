@@ -654,7 +654,8 @@ class SumOfSlatersPrep(Operation):
     .. seealso::
 
         :func:`~.select_sos_rows` and :func:`~.compute_sos_encoding` for the required
-        classical coprocessing.
+        classical coprocessing, as well as :class:`~.PartialUnaryStatePreparation` for another
+        sparse state preparation technique.
 
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should

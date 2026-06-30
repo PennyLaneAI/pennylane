@@ -23,11 +23,11 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
+from pennylane.core.transforms import CompilePipeline
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device

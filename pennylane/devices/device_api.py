@@ -22,11 +22,11 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.shots import Shots
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.transforms import CompilePipeline, Transform
+from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
 from pennylane.ops import H, X, Y, Z
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,
@@ -35,7 +35,6 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -308,7 +307,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import QuantumScriptBatch
+                from pennylane.core.qscript import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
                 @qp.transform
@@ -411,7 +410,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            from pennylane.tape import QuantumScriptBatch
+            from pennylane.core.qscript import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
             @qp.transform

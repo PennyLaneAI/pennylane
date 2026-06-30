@@ -21,10 +21,10 @@ import pdb
 import sys
 from contextlib import contextmanager
 
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import QueuingManager
 from pennylane.devices.preprocess import validate_device_wires
 from pennylane.measurements import expval, probs, state
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript
 
 
 class PLDB(pdb.Pdb):

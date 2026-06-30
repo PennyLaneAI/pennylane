@@ -290,6 +290,8 @@ class AbstractArray:
         return self._shape_matches(shape)
 
     def _shape_matches(self, shape) -> bool:
+        if shape is Ellipsis:
+            return False
         if len(shape) != len(self.shape):
             return False
         return all(s2 in (s1, -1) for s1, s2 in zip(shape, self.shape, strict=True))
@@ -378,21 +380,24 @@ class _AbstractTypeFactory(AbstractArray):
         Returns:
             An instance of AbstractArray with the desired shape.
         """
-        if shape is Ellipsis:
-            return AbstractArray(shape, self.dtype)
-
         if isinstance(shape, int):
             shape = (shape,)
-        if not isinstance(shape, tuple) or not all(isinstance(n, int) and n >= -1 for n in shape):
+
+        if shape is not Ellipsis and (
+            not isinstance(shape, tuple) or not all(isinstance(n, int) and n >= -1 for n in shape)
+        ):
             raise TypeError(
                 "AbstractTypeFactories can only be subscripted with integers and ellipsis."
             )
-        return AbstractArray(shape, self.dtype)
+
+        res = AbstractArray(shape, self.dtype)
+        object.__setattr__(res, "_weak_type", self._weak_type)
+        return res
 
 
 Int = _AbstractTypeFactory(int)
-"""An :class:`~.AbstractArray` of ``dtype=np.int64``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+"""An :class:`~.AbstractArray` of ``dtype=int``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
 >>> isinstance(np.array(2), qp.typing.Int)
 True
@@ -405,8 +410,8 @@ AbstractArray((-1, 10), int64, weak_type=True)
 
 
 Float = _AbstractTypeFactory(float)
-"""An :class:`~.AbstractArray` of ``dtype=np.float64``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+"""An :class:`~.AbstractArray` of ``dtype=float``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
 >>> isinstance(np.array(2.0), qp.typing.Float)
 True
@@ -418,13 +423,13 @@ AbstractArray((-1, 10), float64, weak_type=True)
 """
 
 Bool = _AbstractTypeFactory(bool)
-"""An :class:`~.AbstractArray` of ``dtype=np.bool``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+"""An :class:`~.AbstractArray` of ``dtype=bool``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
 >>> isinstance(np.array(False), qp.typing.Bool)
 True
->>> qp.typing.Bool[4]
-AbstractArray((4,), bool, weak_type=True)
+>>> qp.typing.Bool[4, 2]
+AbstractArray((4, 2), bool, weak_type=True)
 >>> qp.typing.Bool[-1, 10]
 AbstractArray((-1, 10), bool, weak_type=True)
 
@@ -432,13 +437,15 @@ AbstractArray((-1, 10), bool, weak_type=True)
 
 
 Complex = _AbstractTypeFactory(complex)
-"""An :class:`~.AbstractArray` of ``dtype=np.complex128``. On it's own, it corresponds to a single scalar, but
-can be indexed into to create the :class:`~.AbstractArray` for arbitrary dimensions.
+"""An :class:`~.AbstractArray` of ``dtype=complex``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
 >>> isinstance(np.array(0 + 1.2j), qp.typing.Complex)
 True
->>> qp.typing.Complex[-1, 2]
-AbstractArray((-1, 2), complex128, weak_type=True)
+>>> qp.typing.Complex[4, 2]
+AbstractArray((4, 2), complex128, weak_type=True)
+>>> qp.typing.Complex[-1, 10]
+AbstractArray((-1, 10), complex128, weak_type=True)
 
 """
 
@@ -453,6 +460,7 @@ class AbstractWires:
     """
 
     num_wires: int
+    shape_fixed: bool = field(init=False)
 
     def __post_init__(self):
         if not isinstance(self.num_wires, int):
@@ -464,6 +472,7 @@ class AbstractWires:
                 f"'num_wires' must be a non-negative integer or -1, but got {self.num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
+        object.__setattr__(self, "shape_fixed", self.num_wires != -1)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
