@@ -25,7 +25,7 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument,too-few-public-methods
+# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
 
 
 class TestControlled2:
