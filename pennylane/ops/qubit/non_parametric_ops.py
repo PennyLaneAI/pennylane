@@ -389,6 +389,21 @@ class PauliX(Operator2):
         """Resource parameters."""
         return {}
 
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
+
     _cached_mat = np.array([[0, 1], [1, 0]])
 
     @classmethod
@@ -695,6 +710,21 @@ class PauliY(Operator2):
         """Resource parameters."""
         return {}
 
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
+
     _cached_matrix = np.array([[0, -1j], [1j, 0]])
 
     @classmethod
@@ -970,6 +1000,21 @@ class PauliZ(Operator2):
     def resource_params(self) -> dict:
         """Resource parameters."""
         return {}
+
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     _cached_matrix = np.array([[1, 0], [0, -1]])
 
