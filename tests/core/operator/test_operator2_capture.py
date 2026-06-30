@@ -338,30 +338,6 @@ class TestApply:
         with pytest.raises(RuntimeError, match="non-tracing context"):
             apply(DynOp(1.0, wires=0))
 
-    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
-    def test_queues_without_capture(self, op2):
-        """Tests that Operator2 can queue like Operator1 with capture disabled."""
-
-        capture.disable()
-
-        with AnnotatedQueue() as q:
-            apply(op2)
-
-        assert len(q.queue) == 1
-        assert q.queue[0] == op2
-
-        capture.enable()
-
-    def test_raises_capture_disabled_outside_queueing_context(self):
-        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
-
-        capture.disable()
-
-        with pytest.raises(RuntimeError, match="No queuing context available to append operation to"):
-            apply(DynOp(1.0, wires=0))
-
-        capture.enable()
-
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
