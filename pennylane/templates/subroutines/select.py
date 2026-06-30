@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -836,9 +836,10 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
     num_work_wires = num_work_wires - unary_control_wires
     for op in op_reps:
+        op_cls, op_p = (type(op), op.static_args) if isinstance(op, Operator2) else (op.op_type, op.params)
         counts[
             controlled_resource_rep(
-                op.op_type, op.params, num_control_wires=1, num_work_wires=num_work_wires
+                op_cls, op_p, num_control_wires=1, num_work_wires=num_work_wires
             )
         ] += 1
 
