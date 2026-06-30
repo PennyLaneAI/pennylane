@@ -65,20 +65,30 @@ class TestInitSubclass:
         assert Op.wire_argnames == ("wires",)
         assert Op.compilable_argnames == ()
 
-    def test_static_and_compilable_both_set_error(self):
-        """Test that declaring both ``static_argnames`` and ``compilable_argnames``
-        is not allowed."""
+    @pytest.mark.parametrize(
+        "other_argnames",
+        [
+            {"hybrid_argnames": ("y", "z")},
+            {"static_argnames": ("y", "z")},
+            {"hybrid_argnames": ("y",), "static_argnames": ("z",)},
+        ],
+    )
+    def test_static_hybrid_and_compilable_both_set_error(self, other_argnames):
+        """Test that declaring both ``static_argnames``/``hybrid_argnames`` and
+        ``compilable_argnames`` is not allowed."""
+
+        def __init__(self, x, y, z, wires):
+            Operator2.__init__(self, x, y, z, wires=wires)
+
+        attrs = {"__init__": __init__, "compilable_argnames": ("x",), **other_argnames}
 
         with pytest.raises(
-            TypeError, match="only contain 'static_argnames' or 'compilable_argnames'"
+            TypeError,
+            match="contain 'static_argnames' and 'hybrid_argnames', or 'compilable_argnames'",
         ):
-            # pylint: disable=unused-variable
-            class Op(Operator2):
-                static_argnames = ("a",)
-                compilable_argnames = ("b",)
-
-                def __init__(self, a, b, wires):
-                    super().__init__(a, b, wires=wires)
+            # This creates a class while allowing us to parametrize the attributes
+            # that we want to test.
+            type("Op", (Operator2,), attrs)
 
     @pytest.mark.parametrize(
         "first, second",
@@ -119,9 +129,7 @@ class TestInitSubclass:
 
         assert Op.hybrid_argnames == ("wires",)
 
-    @pytest.mark.parametrize(
-        "other_group", ["dynamic_argnames", "static_argnames", "compilable_argnames"]
-    )
+    @pytest.mark.parametrize("other_group", ["dynamic_argnames", "static_argnames"])
     def test_hybrid_overlap_with_non_wire_error(self, other_group):
         """Test that ``hybrid_argnames`` may not overlap with dynamic, static,
         or compilable argnames."""
