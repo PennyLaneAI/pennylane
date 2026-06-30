@@ -406,9 +406,11 @@
 * Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
-* :class:`~.Adder` now accepts a ``method`` argument to select its decomposition strategy. The new
-  ``method="arithmetic"`` option provides a QFT-free, carry-ripple adder that avoids the arbitrarily
-  precise rotations of the default ``method="qft"`` decomposition and supports an arbitrary modulus.
+* :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
+  the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
+  modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
+  cheaper decomposition, and the graph-based decomposition system
+  (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
