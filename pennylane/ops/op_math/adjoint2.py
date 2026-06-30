@@ -19,7 +19,7 @@ from typing import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -165,6 +165,7 @@ class Adjoint2(SymbolicOp2):
 
 @list_decomps.register
 def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
+    op = abstractify(op)
     if isinstance(op.base, Adjoint2):
         return DecompCollection([cancel_adjoint])
     custom_rules = list_decomps.dispatch(object)(op)

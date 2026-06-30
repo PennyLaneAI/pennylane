@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -45,6 +46,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 
 # pylint: disable=no-name-in-module
+from tests.core.operator.operator2_utils import OneWireDynOp
 from tests.decomposition.conftest import to_resources
 
 
@@ -148,6 +150,27 @@ class TestAdjointDecompositionRules:
                 adjoint_resource_rep(qp.H): 1,
             }
         )
+
+    def test_adjoint2_general(self):
+        """Tests the rules populated for Adjoint2."""
+
+        @register_resources({qp.RX: 1, qp.H: 1, qp.T: 1})
+        def custom_rule(phi, wires):
+            qp.H(wires)
+            qp.RX(phi, wires)
+            qp.T(wires)
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(OneWireDynOp, custom_rule)
+
+            op = qp.adjoint(OneWireDynOp(0.5, wires=0))
+            [rule] = qp.list_decomps(op)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        assert q.queue == [qp.adjoint(qp.T)(0), qp.adjoint(qp.RX)(0.5, 0), qp.adjoint(qp.H(0))]
 
     def test_adjoint_rotation(self):
         """Tests the adjoint_rotation decomposition."""

@@ -581,7 +581,7 @@ class TestDecompDictionary:
         assert not qp.decomposition.has_decomp(CustomOp)
         assert custom_decomp not in qp.list_decomps(qp.CRX)
 
-    def test_list_decomps_adjoint(self):
+    def test_list_decomps_adjoint2(self):
         """Tests that list_decomps populate the adjoint decomposition rules."""
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
