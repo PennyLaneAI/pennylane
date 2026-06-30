@@ -18,8 +18,14 @@ import pytest
 import pennylane as qp
 from pennylane.resource.utils import (
     get_last_tape_transform_level,
+    get_marker_level_map,
     preprocess_level_input,
 )
+
+
+@qp.transform
+def dummy_transform(qnode):
+    return qnode, lambda res: res
 
 
 @pytest.mark.parametrize(
@@ -94,10 +100,6 @@ def test_preprocess_levels_invalid():
 def test_get_last_tape_transform_level():
     """Test that _get_last_tape_transform_level works correctly"""
 
-    @qp.transform
-    def dummy_transform(tape):
-        return (tape,), lambda res: res[0]
-
     # If there are no transforms, the last transform level should be 0
     assert get_last_tape_transform_level(qp.CompilePipeline()) == 0
     # If there are *any* tape transforms, this should return the number of tape transforms
@@ -112,3 +114,29 @@ def test_get_last_tape_transform_level():
         )
         == 1
     )
+
+
+def test_get_marker_level_map():
+    """Test that the marker to level mapping is correct"""
+    pipeline = qp.CompilePipeline()
+
+    pipeline.add_marker("m0")
+    pipeline += dummy_transform
+    pipeline.add_marker("m1")
+    pipeline += qp.transform(pass_name="cancel_inverses")
+    pipeline.add_marker("m2")
+    pipeline.add_marker("m3")
+    pipeline += qp.transform(pass_name="cancel_inverses")
+    pipeline += qp.transform(pass_name="cancel_inverses")
+    pipeline.add_marker("m4")
+
+    expected_mapping = {
+        "m0": 0,
+        "m1": 1,
+        # MLIR happens at level 2
+        "m2": 3,
+        "m3": 3,
+        "m4": 5,
+    }
+
+    assert get_marker_level_map(pipeline) == expected_mapping

@@ -616,6 +616,10 @@
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
+* Performance of the Trotter error module is improved by introducing a novel algorithm for
+  computing the Baker-Campbell-Hausdorff formula.
+  [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
+
 <h3>Breaking changes 💔</h3>
 
 * Plxpr transforms have been removed.
@@ -736,6 +740,9 @@
 * Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
   [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
 
+* CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
 
@@ -768,11 +775,12 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
-  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
-    when ``compute_decomposition`` is not overridden.
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
   - Arithmetic can be performed with :class:`~.Operator2` instances.
+  - Symbolic operators with :class:`~.Operator2` instances as the base.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
+  - Integration with the graph-based decomposition system.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -793,6 +801,13 @@
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
+  [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+
+* Added an internal `abstractify` utility function that is able to convert various objects
+  to their abstract versions.
+  [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -800,6 +815,10 @@
   `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`.
   Moves `QuantumScript`, `QuantumScriptBatch`, `QuantumScriptOrBatch`, `make_qscript`, and `process_queue`
   to `pennylane.core.qscript`.
+  Moves the `pennylane.queuing` to `pennylane.core.queuing`.
+  Moves `pennylane.transforms.core` to `pennylane.core.transforms`.
+  [(#9739)](https://github.com/PennyLaneAI/pennylane/pull/9739)
+  [(#9719)](https://github.com/PennyLaneAI/pennylane/pull/9719)
   [(#9717)](https://github.com/PennyLaneAI/pennylane/pull/9717)
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
@@ -980,6 +999,7 @@ Diksha Dhawan,
 Marcus Edwards,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,

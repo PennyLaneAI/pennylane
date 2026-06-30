@@ -25,7 +25,7 @@ from functools import partial, wraps
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pennylane.transforms.core import CompilePipeline
+    from pennylane.core.transforms import CompilePipeline
 
 
 def unwrap_partial(fn):

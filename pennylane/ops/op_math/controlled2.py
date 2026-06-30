@@ -24,6 +24,7 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.wires import Wires, WiresLike
@@ -441,3 +442,45 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
+
+    @override
+    def _bind_primitive(self):
+        """Bind the operator primitive. ``ControlledOp2`` has to override the method of
+        the base ``Operator2`` class so that we can "edit" the original primitive."""
+        if not qp.capture.enabled():
+            return
+
+        if self.base.tracer is None:
+            # pylint: disable=protected-access
+            self.base._bind_primitive()
+            # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
+            # In that case, there is nothing to do, so return early.
+            if self.base.tracer is None:
+                return
+
+        eqns = pop_op_eqns((self.base,))
+        assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
+        params = eqns[0].params
+        n_ctrls = params["n_ctrls"]
+
+        # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
+        # be tracers, not `Var`s wrapping abstract values.
+        if n_ctrls == 0:
+            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+        else:
+            # invars are ordered as (*other_args, *control_wires, *control_values), so we
+            # need to insert the new control wires before the old control values.
+            invars = (
+                eqns[0].invars[:-n_ctrls]
+                + self.control_wires.tolist()
+                + eqns[0].invars[-n_ctrls:]
+                + self.control_values
+            )
+        params["n_ctrls"] += len(self.control_wires)
+        res = operator_p.bind(*invars, **params)
+
+        self.base.tracer = None
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res
