@@ -205,13 +205,16 @@ class Operator2(metaclass=OperatorMeta):
         self.tracer = None
 
     def __abstract_init__(self, *args, **kwargs):
+        """Constructor for canonicalization of abstract inputs."""
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         arguments = bound_args.arguments
+        
         target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
         for name in target_args:
             kind = _resolve_arg_kind(type(self), name)
             arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
+
         Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
 
     # ------------------------------------------------------------------------
