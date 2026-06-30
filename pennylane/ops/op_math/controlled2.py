@@ -82,8 +82,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     """
 
-    # initialized in __new__, declared here for type checking purposes.
-    _init_args: tuple[tuple, dict]
+    _init_args: dict  # initialized in __new__, declared here for type checking purposes.
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
@@ -92,7 +91,10 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
         obj = super().__new__(cls)
-        obj._init_args = (args, kwargs)
+        sig = signature(cls)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        obj._init_args = bound_args.arguments
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -134,22 +136,16 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
 
-        args, kwargs = self._init_args
-        sig = signature(type(self))
-        bound_args = sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        init_kwargs = bound_args.arguments
+        if "control_wires" in self._init_args:
+            self._init_args["control_wires"] = control_wires
 
-        if "control_wires" in init_kwargs:
-            init_kwargs["control_wires"] = control_wires
+        if "control_values" in self._init_args:
+            self._init_args["control_values"] = control_values
 
-        if "control_values" in init_kwargs:
-            init_kwargs["control_values"] = control_values
+        if "work_wires" in self._init_args:
+            self._init_args["work_wires"] = work_wires
 
-        if "work_wires" in init_kwargs:
-            init_kwargs["work_wires"] = work_wires
-
-        super().__init__(**init_kwargs)
+        super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
 
