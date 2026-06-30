@@ -32,9 +32,33 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 from pennylane.typing import Float, Int, Wire
 
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+
+class CustomOp(Operator):
     pass
+
+
+class CustomOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    hybrid_argnames = ("op",)
+
+    def __init__(self, params, wires, op):
+        super().__init__(params, wires, op)
+
+
+class AnotherOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    def __init__(self, params, wires):
+        super().__init__(params, wires)
 
 
 @pytest.mark.unit
@@ -403,9 +427,8 @@ class TestDecompositionRule:
     def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
-        class MissingFixedSigOp(
-            Operator2
-        ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
+        class MissingFixedSigOp(Operator2):
+
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -444,9 +467,8 @@ class TestDecompositionRule:
     def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
-        class FixedSigOp(
-            Operator2
-        ):  # pylint: disable=too-few-public-methods, useless-parent-delegation
+        class FixedSigOp(Operator2):
+
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -555,6 +577,25 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
+
+    @pytest.mark.parametrize(
+        "rep",
+        [
+            CustomOp2(Float[...], Wire[3], AnotherOp2(Float[3], Wire[3])),  # data is not fixed
+            CustomOp2(Float[3], Wire[-1], AnotherOp2(Float[1], Wire[1])),  # wire is not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[...], Wire[3])),  # hybrid arg not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[2], Wire[-1])),  # hybrid arg not fixed
+        ],
+    )
+    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+        """Tests that the resource function can only contain abstract and fixed Operator2."""
+
+        @qp.register_resources({rep: 1})
+        def rule():
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
+            rule.compute_resources()
 
 
 class TestDecompCollection:
