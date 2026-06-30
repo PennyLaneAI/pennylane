@@ -532,9 +532,9 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         active queuing context.
 
     """
-    if hasattr(op, "_bind_primitive"):
-        if enabled():
-            op._bind_primitive()  # pylint: disable=protected-access
+    if hasattr(op, "_bind_primitive") and enabled():
+        op._bind_primitive()  # pylint: disable=protected-access
+        if op.tracer is not None:
             return op
         raise RuntimeError("Trying to use apply in a non-tracing context.")
 

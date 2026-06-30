@@ -27,7 +27,8 @@ from operator2_utils import (
 )
 
 import pennylane as qp
-from pennylane import apply
+from pennylane import apply, capture
+from pennylane.core import AnnotatedQueue
 
 jax = pytest.importorskip("jax")
 
@@ -336,6 +337,20 @@ class TestApply:
 
         with pytest.raises(RuntimeError, match="non-tracing context"):
             apply(DynOp(1.0, wires=0))
+
+    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
+    def test_queues_without_capture(self, op2):
+        """Tests that Operator2 can queue like Operator1 with capture disabled."""
+
+        capture.disable()
+
+        with AnnotatedQueue() as q:
+            apply(op2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == op2
+
+        capture.enable()
 
 
 if __name__ == "__main__":
