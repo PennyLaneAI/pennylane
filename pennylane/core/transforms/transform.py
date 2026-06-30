@@ -29,9 +29,9 @@ from pennylane.capture import autograph
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
 
 
@@ -80,7 +80,7 @@ def _create_plxpr_fallback_transform(tape_transform):
     try:
         import jax
 
-        from pennylane.tape import plxpr_to_tape
+        from pennylane.tape import plxpr_to_tape  # tach-ignore
     except ImportError:
         return None
 

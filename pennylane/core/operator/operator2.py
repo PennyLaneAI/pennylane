@@ -19,6 +19,7 @@ TODO: [sc-120453] Fill docstring
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
+from enum import Enum, auto
 from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -32,6 +33,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,12 +46,11 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
-from .meta import OperatorMeta, _canonicalize_abstract_type, _resolve_arg_kind
+from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
@@ -202,6 +203,16 @@ class Operator2(metaclass=OperatorMeta):
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.tracer = None
+
+    def __abstract_init__(self, *args, **kwargs):
+        bound_args = self._sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        arguments = bound_args.arguments
+        target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
+        for name in target_args:
+            kind = _resolve_arg_kind(type(self), name)
+            arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
+        Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
@@ -1205,7 +1216,7 @@ class Operator2(metaclass=OperatorMeta):
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
             op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _delete_op_eqns(filter(_is_op, op_leaves))
+            _ = pop_op_eqns(filter(_is_op, op_leaves))
 
             # Full flattening to feed the operator's dynamic data to the primitive.
             leaves, tree = flatten(self.arguments[name])
@@ -1226,6 +1237,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            adjoint=False,
             **static_args,
         )
         # If we bind the primitive outside a tracing context but with program capture enabled,
@@ -1521,11 +1533,12 @@ if has_jax:
 
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
-    AbstractOperator = _get_abstract_operator()
 
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
-    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
+    def _op_impl(
+        *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
+    ):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1548,24 +1561,29 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
-        return type.__call__(op_cls, **args)
+        op = type.__call__(op_cls, **args)
+        if adjoint:
+            op = type.__call__(qp.ops.op_math.Adjoint2, op)
+        return op
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
+        AbstractOperator = _get_abstract_operator()
         return AbstractOperator()
 
 else:  # pragma: no cover
     operator_p = None
-    AbstractOperator = None
 
 
-def _delete_op_eqns(ops: Iterable) -> None:
+def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
     These equations must be deleted because operators used as data are treated as
     pytrees wrapping dynamic data rather than instructions. Thus, the equation that
     corresponds to the operator as an instruction should be removed.
     """
+    old_eqns = []
+
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
@@ -1574,10 +1592,13 @@ def _delete_op_eqns(ops: Iterable) -> None:
 
             # for some reason the frame now wraps equations in lambdas
             eqn = op.tracer.parent
+            old_eqns.append(eqn)
             frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
 
             # delete reference to tracer after its equation has been deleted
             op.tracer = None
+
+    return old_eqns
 
 
 # -----------------------------------------------------------------------------
@@ -1648,6 +1669,73 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+class _ArgType(Enum):
+    """Enum to keep track of an arguments type."""
+
+    WIRES = auto()
+    DYN = auto()
+    HYBRID = auto()
+
+
+def _resolve_arg_kind(cls, name: str) -> _ArgType:
+    """Resolves an arguments name to what kind of argument type it is."""
+    # Check hybrid first: hybrid args can also appear in wire_argnames
+    # and must be treated as hybrid.
+    if name in cls.hybrid_argnames:
+        return _ArgType.HYBRID
+    if name in cls.wire_argnames:
+        return _ArgType.WIRES
+    return _ArgType.DYN
+
+
+def _canonicalize_abstract_type(val, kind: _ArgType):
+    """Canonicalizes the input into its abstract equivalent.
+
+    Args:
+        val (Any): The input value.
+        kind (_ArgType): The argument's classification.
+            - WIRES: Coerce the value to be an AbstractWires instance.
+            - DYN: Flatten into a single, unified AbstractArray
+            - HYBRID: Preserve the PyTree structure, mapping internal leaves
+                to either AbstractWires or AbstractArray.
+    """
+
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val
+
+    if isinstance(val, type) and issubclass(val, Number):
+        return AbstractArray((), val)
+
+    match kind:
+        case _ArgType.WIRES:
+            # abstractify expects a Wires object for wire-routing, so we sanitize it first
+            return abstractify(Wires(val))
+
+        case _ArgType.DYN:
+            # A sequence of types is not supported (i.e., [float, float, float])
+            # for dynamic args. Ambiguous how to canonicalize it generally.
+            if isinstance(val, (list, tuple)) and any(_is_abstract_specifier(x) for x in val):
+                raise NotImplementedError(
+                    "A sequence of types for a dynamic argument is not "
+                    "currently supported. Instead, please use the type "
+                    "specifiers found in pennylane.typing."
+                )
+            # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            return abstractify(math.asarray(val))
+
+        case _ArgType.HYBRID:
+            # Since abstractify natively handles PyTree recursion and leaves,
+            # we can pass the entire structure straight through
+            return abstractify(val)
+
+        case _:  # pragma: no cover
+            raise ValueError(f"Unknown kind: '{kind}'")
+
+
+def _is_abstract_specifier(val):
+    return isinstance(val, AbstractArray) or (isinstance(val, type) and issubclass(val, Number))
 
 
 @abstractify.register(OperatorMeta)
