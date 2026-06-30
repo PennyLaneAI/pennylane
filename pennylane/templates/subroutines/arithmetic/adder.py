@@ -37,8 +37,7 @@ def _increment(wires, control=()):
 
     The bits are flipped from most to least significant so each control still sees the original
     values of the lower bits. Every multi-controlled ``X`` borrows the higher-significance wires
-    (already processed in this ripple, hence uninvolved) as dirty work wires, which lets it use an
-    ancilla-assisted decomposition while leaving those wires unchanged.
+    (already processed in this ripple, hence uninvolved) as dirty work wires, which are left unchanged.
     """
     wires = Wires(wires)
     control = Wires(control)
