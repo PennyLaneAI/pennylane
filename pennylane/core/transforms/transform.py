@@ -80,7 +80,7 @@ def _create_plxpr_fallback_transform(tape_transform):
     try:
         import jax
 
-        from pennylane.tape import plxpr_to_tape
+        from pennylane.tape import plxpr_to_tape  # tach-ignore
     except ImportError:
         return None
 
