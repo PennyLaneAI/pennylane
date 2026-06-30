@@ -18,9 +18,9 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import AllocationError
 from pennylane.ops import measure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .core import transform

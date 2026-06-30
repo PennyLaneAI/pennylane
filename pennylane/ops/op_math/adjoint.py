@@ -25,9 +25,9 @@ from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.queuing import QueuingManager
 
 from .adjoint2 import Adjoint2
 from .symbolicop import SymbolicOp

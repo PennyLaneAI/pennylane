@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,15 @@
 # limitations under the License.
 """Module containing functions to generate fragments for various Hamiltonians"""
 
-from .generic_fragments import GenericFragment, generic_fragments
+from .generic_fragments import NumpyFragment, NumpyState, SparseFragment, SparseState
 from .vibrational_fragments import vibrational_fragments
 from .vibronic_fragments import vibronic_fragments
-from .sparse_fragments import sparse_fragments
+
+__all__ = [
+    "NumpyFragment",
+    "NumpyState",
+    "SparseFragment",
+    "SparseState",
+    "vibrational_fragments",
+    "vibronic_fragments",
+]
