@@ -31,6 +31,7 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import (
     FermiWord,
 )
 
+
 def test_fermiop_factories_set_type_space_mode():
     """Test that the FermiSpace is set correctly"""
     cm = FermiOp.creation_mol(2)

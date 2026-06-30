@@ -21,7 +21,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pennylane.labs.trotter_error import GanConfig, ProductFormula, effective_hamiltonian
+from pennylane.labs.trotter_error import GanConfig
 from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, FermiWord
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     _diagonal,
@@ -30,7 +30,6 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme i
     _mol_matching,
     _molecular_coupling,
     _molecule_metal_transfer,
-    gan_fragments,
 )
 from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
     GanCoeff,
@@ -40,42 +39,8 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.gan_fragments import (
 from pennylane.labs.trotter_error.product_formulas.commutator import CommutatorNode, SymbolNode
 
 
-# --------------------------------------------------------------------------- #
-# Test helpers (edge generators used to build the expected fragments).
-# --------------------------------------------------------------------------- #
-def _mol_edges(s: int, config: GanConfig):
-    t = config.n_mol % 2
-    k = (config.n_mol + t) // 2
-
-    edges = set()
-
-    for i in range(1, k):
-        u = (s + i) % (config.n_mol + t - 1)
-        v = (s - i) % (config.n_mol + t - 1)
-        edges.add((("mol", u), ("mol", v)))
-
-    if t == 0:
-        edges.add((("mol", s), ("mol", config.n_mol - 1)))
-
-    return edges
-
-
-def _met_edges(s: int, config: GanConfig):
-    edges = set()
-
-    for i in range(config.n_mol):
-        u = i
-        v = (i + s) % config.n_met
-        edges.add((("mol", u), ("met", v)))
-
-    return edges
-
-
-# --------------------------------------------------------------------------- #
-# Fixtures: deterministic configuration and reusable fragments.
-# --------------------------------------------------------------------------- #
-@pytest.fixture
-def config():
+@pytest.fixture(name="config")
+def fixture_config():
     """Deterministic GanConfig built from a fixed random seed."""
     np.random.seed(42)
 
@@ -126,8 +91,8 @@ def config():
     )
 
 
-@pytest.fixture
-def feps(config):
+@pytest.fixture(name="feps")
+def fixture_feps(config):
     """The energy (epsilon) fragment F_eps = sum_i eps_i c_i^dag c_i (metal)."""
     terms = defaultdict(GanCoeff.identity)
     for i, energy in enumerate(config.energies):
@@ -138,11 +103,38 @@ def feps(config):
     return GanFragment(terms)
 
 
-# --------------------------------------------------------------------------- #
-# Expected-fragment builders. Each mirrors the corresponding identity and is
-# reused by the parametrized test wrappers below.
-# --------------------------------------------------------------------------- #
+def _mol_edges(s: int, config: GanConfig):
+    """Returns the edges of the mol matching for mode s"""
+    t = config.n_mol % 2
+    k = (config.n_mol + t) // 2
+
+    edges = set()
+
+    for i in range(1, k):
+        u = (s + i) % (config.n_mol + t - 1)
+        v = (s - i) % (config.n_mol + t - 1)
+        edges.add((("mol", u), ("mol", v)))
+
+    if t == 0:
+        edges.add((("mol", s), ("mol", config.n_mol - 1)))
+
+    return edges
+
+
+def _met_edges(s: int, config: GanConfig):
+    """Returns the edges of the met/mol matching for mode s"""
+    edges = set()
+
+    for i in range(config.n_mol):
+        u = i
+        v = (i + s) % config.n_met
+        edges.add((("mol", u), ("met", v)))
+
+    return edges
+
+
 def _expected_mol_mol(s, k, config):
+    """Returns the expected evaluation of [F_s, F_k] where s and k are in the mol space"""
     terms = defaultdict(GanCoeff.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _mol_edges(k, config):
@@ -175,6 +167,7 @@ def _expected_mol_mol(s, k, config):
 
 
 def _expected_met_met(s, k, config):
+    """Returns the expected evluation of [F_s, F_k] where s and k are in the met space"""
     terms = defaultdict(GanCoeff.identity)
     for e1 in _met_edges(s, config):
         for e2 in _met_edges(k, config):
@@ -225,6 +218,7 @@ def _expected_met_met(s, k, config):
 
 
 def _expected_mol_met(s, k, config):
+    """Returns the expected evaluation of [F_s, F_k] where s is in the mol space and k is in the met space"""
     terms = defaultdict(GanCoeff.identity)
     for e1 in _mol_edges(s, config):
         for e2 in _met_edges(k, config):
@@ -272,6 +266,7 @@ def _expected_mol_met(s, k, config):
 
 
 def _expected_feps_met(s, config):
+    """Returns the expected evaluation of [F_eps, F_s] where s is in the met space"""
     terms = defaultdict(GanCoeff.identity)
     for i, a in _met_edges(s, config):
 
@@ -284,13 +279,13 @@ def _expected_feps_met(s, config):
         fermi1 = FermiWord([FermiOp.creation_mol(mol_index), FermiOp.annihilation_met(met_index)])
         fermi2 = FermiWord([FermiOp.creation_met(met_index), FermiOp.annihilation_mol(mol_index)])
 
-        ## Emelia's notes are negated
         terms[fermi1] -= e_a * g_ia
         terms[fermi2] += e_a * g_ia
     return GanFragment(terms)
 
 
 def _expected_f0_mol(s, config):
+    """Returns the expected evaluation of [F_0, F_s] where s is in the mol space"""
     n_mol = config.n_mol
     terms = defaultdict(GanCoeff.identity)
     for r in range(n_mol):
@@ -383,6 +378,7 @@ def _expected_f0_mol(s, config):
 
 
 def _expected_f0_met(s, config):
+    """Returns the expected evaluation of [F_0, F_s] where s is in the met space"""
     n_mol = config.n_mol
     terms = defaultdict(GanCoeff.identity)
     for r in range(n_mol):
@@ -468,12 +464,9 @@ def _expected_f0_met(s, config):
     return GanFragment(terms)
 
 
-# --------------------------------------------------------------------------- #
-# Tests.
-# --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 2), (2, 0), (0, 2), (1, 0)])
 def test_commutator_mol_mol(s, k, config):
-    ### [F_s, F_k] for mols
+    """Test [F_s, F_k] evaluates correctly where s and k are in the mol space"""
     Fs = _mol_matching(s, config)
     Fk = _mol_matching(k, config)
 
@@ -488,7 +481,7 @@ def test_commutator_mol_mol(s, k, config):
 
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 3), (2, 5), (0, 3), (4, 2)])
 def test_commutator_met_met(s, k, config):
-    ### [F_s, F_k] for mets
+    """Test [F_s, F_k] evaluates correctly where s and k are in the met space"""
     Fs = _met_matching(s, config)
     Fk = _met_matching(k, config)
 
@@ -503,7 +496,7 @@ def test_commutator_met_met(s, k, config):
 
 @pytest.mark.parametrize("s, k", [(0, 1), (1, 2), (2, 4), (0, 5), (1, 0)])
 def test_commutator_mol_met(s, k, config):
-    ## [F_s, F_k] s=mol, k=met
+    """Test [F_s, F_k] evaluates correclty where s is in the mol space and k is in the met space"""
     Fs = _mol_matching(s, config)
     Fk = _met_matching(k, config)
 
@@ -517,7 +510,7 @@ def test_commutator_mol_met(s, k, config):
 
 
 def test_commutator_feps_f0_vanishes(config, feps):
-    ## [F_eps, F_0] = 0
+    """Test [F_eps, F_0] evaulates correctly"""
     F0 = _diagonal(config)
 
     comm = CommutatorNode(SymbolNode("Feps"), SymbolNode("F0"))
@@ -531,7 +524,7 @@ def test_commutator_feps_f0_vanishes(config, feps):
 
 @pytest.mark.parametrize("s", [0, 1, 2, 3, 4, 5])
 def test_commutator_feps_met(s, config, feps):
-    ## [F_eps, F_s] s=met
+    """Test [F_eps, F_s] evaluates correclty where s is in the met space"""
     Fs = _met_matching(s, config)
 
     comm = CommutatorNode(SymbolNode("Feps"), SymbolNode("Fs"))
@@ -545,6 +538,7 @@ def test_commutator_feps_met(s, config, feps):
 
 @pytest.mark.parametrize("s", [0, 1, 2])
 def test_commutator_f0_mol(s, config):
+    """Test [F_0, F_s] evaluates correctly where s is in the mol space"""
     ## [F_0, F_s] s=mol
     F0 = _diagonal(config)
     Fs = _mol_matching(s, config)
@@ -560,7 +554,7 @@ def test_commutator_f0_mol(s, config):
 
 @pytest.mark.parametrize("s", [0, 1, 2, 3, 4, 5])
 def test_commutator_f0_met(s, config):
-    ## [F_0, F_s] s=met
+    """Test [F_0, F_s] evaluates correctly where s is in the met space"""
     F0 = _diagonal(config)
     Fs = _met_matching(s, config)
 
