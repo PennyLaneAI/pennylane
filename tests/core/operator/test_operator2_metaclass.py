@@ -14,7 +14,7 @@
 
 import numpy as np
 import pytest
-from operator2_utils import DynOp, MultiWireOp, TwoDynOp
+from operator2_utils import DynOp, FullOp, MultiWireOp, TwoDynOp
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
@@ -44,6 +44,20 @@ def test_child_constructor_runs_when_concrete():
 
 class TestOperatorAbstractInputs:
     """Tests that the metaclass canonicalizes abstract operators."""
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            ((Float, Float[2], [Float, Int, Complex], Wire[1]), True),
+            ((np.pi, Float[2], [np.pi, 7, 5 + 2j], Wire[1]), True),
+            ((Float, Float[2], [np.pi, 7, 5 + 2j], (0,)), True),
+            ((np.pi, np.array([1.5, 1.25]), [np.pi, 7, 5 + 2j], (0,)), False),
+        ],
+    )
+    def test_is_abstract_set(self, args, expected):
+        """Tests that is_abstract is set appropriately."""
+        op = FullOp(*args)
+        assert op.is_abstract == expected
 
     def test_child_init_is_skipped(self):
         """Tests that the child constructor is skipped."""
