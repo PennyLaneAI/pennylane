@@ -16,7 +16,8 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
