@@ -22,8 +22,8 @@ from functools import reduce
 
 from pennylane import capture, math, pytrees
 from pennylane.core import queuing
-from pennylane.core.queuing import apply
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import apply
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
