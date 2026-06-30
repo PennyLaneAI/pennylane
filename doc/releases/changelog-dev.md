@@ -772,11 +772,12 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
-  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
-    when ``compute_decomposition`` is not overridden.
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
   - Arithmetic can be performed with :class:`~.Operator2` instances.
+  - Symbolic operators with :class:`~.Operator2` instances as the base.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
+  - Integration with the graph-based decomposition system.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -797,7 +798,9 @@
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
   [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
