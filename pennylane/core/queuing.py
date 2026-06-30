@@ -453,7 +453,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     Returns:
         .Operator or .MeasurementProcess: the input operator is returned for convenience
     Raises:
-        RuntimeError: if we try to use apply in a non-queuing/non-capture context.
+        RuntimeError: if we try to use apply in a non-queuing/non-tracing context.
 
     **Example**
 
@@ -536,7 +536,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         if enabled():
             op._bind_primitive()  # pylint: disable=protected-access
             return op
-        raise RuntimeError("Trying to use apply with capture disabled.")
+        raise RuntimeError("Trying to use apply in a non-tracing context.")
 
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")

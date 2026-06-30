@@ -27,7 +27,7 @@ from operator2_utils import (
 )
 
 import pennylane as qp
-from pennylane import apply, capture
+from pennylane import apply
 
 jax = pytest.importorskip("jax")
 
@@ -331,16 +331,11 @@ class TestApply:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["op_cls"] == type(op2)
 
-
     def test_raises(self):
-        """Tests that apply() raises with capture disabled."""
+        """Tests that apply() raises outside of a tracing context."""
 
-        capture.disable()
-
-        with pytest.raises(RuntimeError, match="capture disabled"):
+        with pytest.raises(RuntimeError, match="non-tracing context"):
             apply(DynOp(1.0, wires=0))
-
-        capture.enable()
 
 
 if __name__ == "__main__":
