@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.qscript import QuantumScript
 from pennylane.drawer import tape_text
 from pennylane.drawer._add_obj import (
     _add_cond_grouping_symbols,
@@ -35,7 +36,6 @@ from pennylane.drawer._add_obj import (
     _add_subroutine_mcm_grouping_symbols,
 )
 from pennylane.drawer.tape_text import _Config
-from pennylane.tape import QuantumScript
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_wire_layers = {i: [[-1, 10]] for i in range(4)}

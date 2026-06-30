@@ -16,89 +16,21 @@
 
 import numpy as np
 import pytest
+from operator2_utils import (
+    CompOp,
+    DynOp,
+    FullOp,
+    HybridOp,
+    HybridWireOp,
+    MultiWireOp,
+    StaticOp,
+    TwoDynOp,
+)
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operator2
-from pennylane.wires import Wires
-
-# ---------------- Operator2 subclasses for testing ----------------
-
-
-class DynOp(Operator2):
-    """Operator with one dynamic parameter and wires."""
-
-    dynamic_argnames = ("phi",)
-
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
-
-
-class TwoDynOp(Operator2):
-    """Operator with two dynamic parameters."""
-
-    dynamic_argnames = ("phi", "theta")
-
-    def __init__(self, phi, theta, wires):
-        super().__init__(phi, theta, wires=wires)
-
-
-class StaticOp(Operator2):
-    """Operator with a static argument."""
-
-    static_argnames = ("label",)
-
-    def __init__(self, label, wires):
-        super().__init__(label, wires=wires)
-
-
-class CompOp(Operator2):
-    """Operator with a compilable static argument."""
-
-    compilable_argnames = ("n",)
-
-    def __init__(self, n, wires):
-        super().__init__(n, wires=wires)
-
-
-class MultiWireOp(Operator2):
-    """Operator with two wire arguments."""
-
-    wire_argnames = ("wires", "ctrl_wires")
-
-    def __init__(self, wires, ctrl_wires):
-        super().__init__(wires=wires, ctrl_wires=ctrl_wires)
-
-
-class HybridOp(Operator2):
-    """Operator with a hybrid argument that can contain Operator2 leaves."""
-
-    hybrid_argnames = ("ops",)
-
-    def __init__(self, ops, wires):
-        super().__init__(ops, wires=wires)
-
-
-class HybridWireOp(Operator2):
-    """Operator with a wire argument that is also a hybrid argument."""
-
-    wire_argnames = ("pytree_wires",)
-    hybrid_argnames = ("pytree_wires",)
-
-    def __init__(self, pytree_wires):
-        super().__init__([Wires(w) for w in pytree_wires])
-
-
-class FullOp(Operator2):
-    """Operator with all argname groups."""
-
-    dynamic_argnames = ("phi",)
-    static_argnames = ("label",)
-    hybrid_argnames = ("hybrid",)
-
-    def __init__(self, phi, label, hybrid, wires):
-        super().__init__(phi, label, hybrid, wires=wires)
-
+from pennylane.typing import AbstractArray, AbstractWires
 
 # ---------------------- Tests ----------------------
 
@@ -398,31 +330,31 @@ class TestHybridArgs:
 
     def test_numeric_leaves_different_interfaces_not_equal(self):
         """Test that operators with the same value but different interfaces are unequal."""
-        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
-        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        op1 = FullOp(0.5, static="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="different interfaces for 'hybrid'"):
             qp.assert_equal(op1, op2)
 
     def test_numeric_leaves_different_interfaces_equal_when_disabled(self):
         """Test that ``check_interface=False`` ignores interface differences."""
-        op1 = FullOp(0.5, label="", hybrid=[np.array(0.5)], wires=0)
-        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        op1 = FullOp(0.5, static="", hybrid=[np.array(0.5)], wires=0)
+        op2 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
         assert qp.equal(op1, op2, check_interface=False) is True
         qp.assert_equal(op1, op2, check_interface=False)
 
     def test_numeric_leaves_different_trainability_not_equal(self):
         """Test that operators differing only in trainability are unequal."""
-        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
-        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        op1 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="differ in trainability for 'hybrid'"):
             qp.assert_equal(op1, op2)
 
     def test_numeric_leaves_different_trainability_equal_when_disabled(self):
         """Test that ``check_trainability=False`` ignores trainability differences."""
-        op1 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
-        op2 = FullOp(0.5, label="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
+        op1 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=True)], wires=0)
+        op2 = FullOp(0.5, static="", hybrid=[pnp.array(0.5, requires_grad=False)], wires=0)
         assert qp.equal(op1, op2, check_trainability=False) is True
         qp.assert_equal(op1, op2, check_trainability=False)
 
@@ -466,7 +398,7 @@ class TestEqualFullOperator:
 
     def test_all_equal(self):
         """Test that operators with matching arguments across all groups are equal."""
-        args = {"phi": 0, "label": "a", "hybrid": [], "wires": 0}
+        args = {"phi": 0, "static": "a", "hybrid": [], "wires": 0}
         op1 = FullOp(**args)
         op2 = FullOp(**args)
         assert qp.equal(op1, op2) is True
@@ -475,14 +407,14 @@ class TestEqualFullOperator:
         "diff, match",
         [
             ({"phi": 1.5}, "different values for 'phi'"),
-            ({"label": "b"}, "different values for 'label'"),
+            ({"static": "b"}, "different values for 'static'"),
             ({"hybrid": [DynOp(0.5, wires=2)]}, "different values for 'hybrid'"),
             ({"wires": 1}, "different wires"),
         ],
     )
     def test_each_group_difference_detected(self, diff, match):
         """Test that a difference in any single argument group is detected correctly."""
-        args = {"phi": 0, "label": "a", "hybrid": [], "wires": 0}
+        args = {"phi": 0, "static": "a", "hybrid": [], "wires": 0}
         op1 = FullOp(**args)
 
         args.update(diff)
@@ -491,6 +423,75 @@ class TestEqualFullOperator:
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match=match):
             qp.assert_equal(op1, op2)
+
+
+class TestAbstractOperatorEquality:
+    """Tests the equality of abstract operators."""
+
+    @pytest.mark.parametrize(
+        "wires1, wires2, are_equal",
+        [
+            (AbstractWires(1), AbstractWires(1), True),
+            (AbstractWires(1), AbstractWires(2), False),
+            (AbstractWires(-1), AbstractWires(2), False),
+        ],
+    )
+    def test_abstract_wires(self, wires1, wires2, are_equal):
+        """Test that operators with abstract wires are detected correctly."""
+
+        # pylint: disable=useless-parent-delegation
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(wires1)
+        op2 = SimpleOp(wires2)
+
+        assert qp.equal(op1, op2) is are_equal
+
+    def test_comparing_abstract_and_concrete_wires(self):
+        """Assert that an abstract type specifier is not the same as an operator instance."""
+
+        # pylint: disable=useless-parent-delegation
+        class SimpleOp(Operator2):
+            def __init__(self, wires) -> None:
+                super().__init__(wires)
+
+        op1 = SimpleOp(AbstractWires(1))
+        op2 = SimpleOp([0])
+
+        assert qp.equal(op1, op2) is False
+
+    def test_comparing_dynamic_args(self):
+        """Tests that abstract dynamic args behave correctly."""
+
+        op1 = DynOp(AbstractArray((1, 2), float), 0)
+        op2 = DynOp(AbstractArray((1, 2), float), 0)
+        op3 = DynOp(AbstractArray((2, 1), int), 0)
+        op4 = DynOp(3.14, 0)
+
+        assert qp.equal(op1, op2)
+        assert not qp.equal(op1, op3)
+        assert not qp.equal(op1, op4)
+
+    @pytest.mark.parametrize(
+        "shape1, shape2, are_equal",
+        [
+            ((2, -1), (2, -1), True),  # Identical dynamic shapes
+            ((-1,), (-1,), True),  # Identical dynamic shape
+            ((2, -1), (2, 3), False),  # Dynamic vs static shape
+            ((-1, 4), (2, 4), False),  # Dynamic vs static shape (leading dim)
+            ((-1, -1), (-1,), False),  # Different ranks with dynamic dims
+            (..., ..., True),  # Identical unconstrained ranks
+        ],
+    )
+    def test_abstract_arrays_symbolic_shapes(self, shape1, shape2, are_equal):
+        """Test equality when abstract arrays are defined with dynamic (-1) or unconstrained (...) shapes."""
+
+        op1 = DynOp(AbstractArray(shape1, float), 0)
+        op2 = DynOp(AbstractArray(shape2, float), 0)
+
+        assert qp.equal(op1, op2) is are_equal
 
 
 def _jit_eq_fn(phi, wires, assert_=False):

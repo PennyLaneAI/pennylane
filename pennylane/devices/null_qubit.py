@@ -26,7 +26,9 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScriptOrBatch
 from pennylane.core.shots import Shots
+from pennylane.core.transforms import CompilePipeline
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
@@ -37,8 +39,6 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.ops import MeasurementValue
-from pennylane.tape import QuantumScriptOrBatch
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
