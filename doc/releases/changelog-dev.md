@@ -734,6 +734,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fixed some more randomness seeds in the test suite.
+  [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
+
 * CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
