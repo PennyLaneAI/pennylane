@@ -83,6 +83,19 @@ Quantum Script
     ~process_queue
 
 
+Transforms
+~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.transforms
+.. autosummary::
+    :toctree: api
+
+    ~Transform
+    ~transform
+    ~BoundTransform
+    ~CompilePipeline
+
+
 """
 
 from .queuing import QueuingManager, AnnotatedQueue, apply
@@ -113,6 +126,7 @@ from .qscript import (
     make_qscript,
     process_queue,
 )
+from .transforms import transform, Transform, BoundTransform, CompilePipeline
 
 __all__ = [
     "QueuingManager",
@@ -140,4 +154,8 @@ __all__ = [
     "QuantumScriptOrBatch",
     "make_qscript",
     "process_queue",
+    "transform",
+    "Transform",
+    "BoundTransform",
+    "CompilePipeline",
 ]

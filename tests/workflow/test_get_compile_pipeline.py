@@ -18,9 +18,8 @@ import re
 import pytest
 
 import pennylane as qp
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.devices.execution_config import ExecutionConfig
-from pennylane.transforms.core.compile_pipeline import CompilePipeline
-from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow import get_compile_pipeline
 
 

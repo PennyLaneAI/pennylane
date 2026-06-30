@@ -24,7 +24,8 @@ from typing import overload
 
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.shots import Shots
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.transforms import CompilePipeline, Transform
+from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
 from pennylane.ops import H, X, Y, Z
 from pennylane.transforms import (
     broadcast_expand,
@@ -34,7 +35,6 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
