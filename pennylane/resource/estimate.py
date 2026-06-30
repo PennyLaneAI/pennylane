@@ -70,7 +70,7 @@ def _convert_levels_to_decompose_order(
     for i, mlir_pass in enumerate(compile_pipeline):
         if mlir_pass.pass_name == "graph-decomposition":
             decompose_count += 1
-        if i in level:
+        if i+1 in level:
             decompose_levels.append(decompose_count)
     return decompose_levels
 
