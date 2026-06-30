@@ -423,6 +423,8 @@ class DecompositionRule:
 
         self.name = name or func.__name__
 
+        self.name = func.__name__
+
         if isinstance(resources, dict):
 
             def resource_fn(*_, **__):
