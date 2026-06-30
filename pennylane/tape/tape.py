@@ -23,10 +23,10 @@ from threading import RLock
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, process_queue
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):

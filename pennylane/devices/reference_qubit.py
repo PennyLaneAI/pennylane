@@ -21,13 +21,13 @@ import numpy as np
 from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,
     diagonalize_measurements,
     split_non_commuting,
 )
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result
 
 from .device_api import Device

@@ -33,7 +33,7 @@ from .mlir_specs import make_level_name_unique, resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 if TYPE_CHECKING:
-    from pennylane.transforms.core import CompilePipeline
+    from pennylane.core.transforms import CompilePipeline
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"

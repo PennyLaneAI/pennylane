@@ -25,6 +25,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.operator import Operator2, StatePrepBase2
+from pennylane.core.queuing import AnnotatedQueue, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -39,7 +40,6 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.queuing import AnnotatedQueue
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
@@ -1261,6 +1261,15 @@ class TestDynamicProperties:
 class TestDunderMethods:
     """Tests for ``Operator2`` dunder methods."""
 
+    def test_repr_with_abstract_args(self):
+        """Tests that abstract wires properly render."""
+
+        op = DynOp(AbstractArray((1, 2), float), AbstractWires(1))
+        assert (
+            repr(op)
+            == "DynOp(phi=AbstractArray((1, 2), float64, weak_type=True), wires=AbstractWires(1))"
+        )
+
     def test_repr_with_dynamic_args(self):
         """Test that __repr__ includes dynamic parameters if present."""
         op = DynOp(0.5, wires=[0, 1])
@@ -2431,3 +2440,24 @@ class TestLegacyCompatibilityViews:
         assert "phi" not in op.hyperparameters
         assert "wires" not in op.hyperparameters
         assert "aux_wires" not in op.hyperparameters
+
+
+class TestApply:
+
+    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
+    def test_apply(self, op2):
+        """Tests that Operator2 can queue like Operator1 using ``qp.apply``."""
+
+        with AnnotatedQueue() as q:
+            apply(op2)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] == op2
+
+    def test_raises_outside_queueing_context(self):
+        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
+
+        with pytest.raises(
+            RuntimeError, match="No queuing context available to append operation to"
+        ):
+            apply(DynOp(1.0, wires=0))

@@ -19,7 +19,8 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qp
-from pennylane import allocation, compiler, control_flow, math, ops, queuing
+from pennylane import allocation, compiler, control_flow, math, ops
+from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     adjoint_resource_rep,
