@@ -19,10 +19,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator2
 from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.typing import Bool, Float, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import OneWireDynOp
 
