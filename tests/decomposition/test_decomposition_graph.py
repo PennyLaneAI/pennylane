@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from conftest import decompositions, to_resources  # pylint: disable=no-name-in-module
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     DecompositionGraph,
     adjoint_resource_rep,
@@ -67,32 +67,6 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
     @property
     def resource_params(self):
         return {}
-
-
-class CustomOp2(Operator2):
-
-    dynamic_argnames = ("params",)
-
-    wire_argnames = ("wires",)
-
-    hybrid_argnames = ("op",)
-
-    arg_specs = {"params": Float[-1], "wires": Wire[-1]}
-
-    def __init__(self, params, wires, op):
-        super().__init__(params, wires, op)
-
-
-class AnotherOp2(Operator2):
-
-    dynamic_argnames = ("theta",)
-
-    wire_argnames = ("wires",)
-
-    arg_specs = {"theta": Float, "wires": Wire[1]}
-
-    def __init__(self, theta, wires):
-        super().__init__(theta, wires)
 
 
 @pytest.mark.unit
