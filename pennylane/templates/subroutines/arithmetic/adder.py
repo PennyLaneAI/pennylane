@@ -85,10 +85,12 @@ class Adder(Operation):
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. The second is a QFT-free arithmetic
     rule built from carry-ripple incrementers, which avoids the arbitrarily precise rotations of the
     QFT approach and whose multi-controlled gates reuse the remaining register wires as borrowed
-    (dirty) work wires for a cheaper decomposition. Its modular-reduction structure follows
-    Beauregard (`arXiv:quant-ph/0205095 <https://arxiv.org/abs/quant-ph/0205095>`_), adapted to the
-    computational basis. When the graph-based decomposition system is enabled (via
-    :func:`~pennylane.decomposition.enable_graph`), the cheaper rule is selected automatically.
+    (dirty) work wires for a cheaper decomposition. Its modular-reduction structure follows the
+    modular adder of Beauregard, §2.2
+    (`arXiv:quant-ph/0205095 <https://arxiv.org/abs/quant-ph/0205095>`_), with the Fourier additions
+    replaced by computational-basis incrementers. When the graph-based decomposition system is
+    enabled (via :func:`~pennylane.decomposition.enable_graph`), the cheaper rule is selected
+    automatically.
 
     .. note::
 
@@ -311,9 +313,10 @@ def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: Wire
         _add_constant(k, x_wires)
         return
 
-    # Modular reduction follows Beauregard (arXiv:quant-ph/0205095), here in the computational basis
-    # rather than the Fourier basis: augment the register with a spare high bit so x + k cannot wrap,
-    # then use a flag wire to conditionally undo an over-subtraction of ``mod``.
+    # Modular reduction follows the modular adder of Beauregard, sec. 2.2 (arXiv:quant-ph/0205095),
+    # with the Fourier additions replaced by computational-basis incrementers: augment the register
+    # with a spare high bit so x + k cannot wrap, then use a flag wire to conditionally undo an
+    # over-subtraction of ``mod`` (the flag is uncomputed via his identity (a+k) mod m >= k <=> a+k < m).
     aug = work_wires[:1] + x_wires
     flag = work_wires[1:2]
     msb = aug[:1]
