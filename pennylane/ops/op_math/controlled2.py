@@ -459,10 +459,12 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
+        one_controlled=False,
     ):
         # Canonicalize control_values and work_wires
         if control_values is None:
             control_values = Bool[len(control_wires)]
+            one_controlled = True
         if work_wires is None:
             work_wires = Wire[0]
 
@@ -473,6 +475,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
+            one_controlled=one_controlled,
         )
 
         # Update private properties
