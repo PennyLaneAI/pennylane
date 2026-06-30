@@ -24,8 +24,8 @@ import numpy as np
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.queuing import QueuingManager
 
 from .composite import handle_recursion_error
 

@@ -16,10 +16,11 @@
 
 from textwrap import dedent
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -29,10 +30,35 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.typing import Float, Int, Wire
+
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(Operator):
     pass
+
+
+class CustomOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    hybrid_argnames = ("op",)
+
+    def __init__(self, params, wires, op):
+        super().__init__(params, wires, op)
+
+
+class AnotherOp2(Operator2):
+
+    dynamic_argnames = ("params",)
+
+    wire_argnames = ("wires",)
+
+    def __init__(self, params, wires):
+        super().__init__(params, wires)
 
 
 @pytest.mark.unit
@@ -332,7 +358,6 @@ class TestDecompositionRule:
             qp.RY(theta, wires=wires[0])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(CustomOp, custom_decomp)
             qp.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
             qp.add_decomps(qp.CRX, custom_decomp)
@@ -369,7 +394,6 @@ class TestDecompositionRule:
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
         @register_resources({DummyOp: 1})
@@ -389,11 +413,88 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
+    @pytest.mark.parametrize(
+        "my_arg_specs",
+        (
+            pytest.param(
+                {"angles": Float[-1], "eps": Float, "wires": Wire[1]},
+                id="full_signature_with_dynamic_axis",
+            ),
+            pytest.param({"angles": Float[3]}, id="partial_signature"),
+            pytest.param(None, id="no_signature"),
+        ),
+    )
+    def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
+        """Tests that if an operator type without a fixed_sig is used, an error is raised."""
+
+        class MissingFixedSigOp(Operator2):
+
+            dynamic_argnames = ("angles", "eps")
+
+            arg_specs = my_arg_specs
+
+            def __init__(self, angles, eps, wires):
+                super().__init__(angles, eps, wires)
+
+        @register_resources({MissingFixedSigOp: 1})
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="'MissingFixedSigOp' must set 'arg_specs'"):
+            _ = custom_decomp.compute_resources()
+
+    @pytest.mark.parametrize(
+        "abstract_sig, concrete_sig",
+        [
+            (
+                {
+                    "phi": Float,
+                    "matrix": Float[2, 2],
+                    "wires": Wire[1],
+                },
+                {"phi": 1.5, "matrix": np.ones((2, 2), dtype=float), "wires": 5},
+            ),
+            (
+                {
+                    "phi": Int,
+                    "matrix": Int[2, 2],
+                    "wires": Wire[1],
+                },
+                {"phi": 5, "matrix": np.ones((2, 2), dtype=int), "wires": 5},
+            ),
+        ],
+    )
+    def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
+        """Tests that abstract operators can be used as keys."""
+
+        class FixedSigOp(Operator2):
+
+            dynamic_argnames = ("phi", "matrix")
+
+            arg_specs = abstract_sig
+
+            def __init__(self, phi, matrix, wires):
+                super().__init__(phi, matrix, wires)
+
+        @register_resources(
+            {
+                # all three represent the same abstract operator
+                FixedSigOp: 1,
+                FixedSigOp(**abstract_sig): 2,
+                FixedSigOp(**concrete_sig): 3,
+            }
+        )
+        def custom_decomp(*_, **__):
+            raise NotImplementedError
+
+        # Gets grouped together
+        exp_dict = {FixedSigOp(**abstract_sig): 6}  # 1 + 2 + 3
+        assert custom_decomp.compute_resources().gate_counts == exp_dict
+
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
         class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1})
@@ -476,6 +577,25 @@ class TestDecompositionRule:
             gate_counts={CompressedResourceOp(qp.RZ): 1, CompressedResourceOp(qp.CNOT): 4},
         )
         assert multi_rz_decomposition.exact_resources is not exact_resources
+
+    @pytest.mark.parametrize(
+        "rep",
+        [
+            CustomOp2(Float[...], Wire[3], AnotherOp2(Float[3], Wire[3])),  # data is not fixed
+            CustomOp2(Float[3], Wire[-1], AnotherOp2(Float[1], Wire[1])),  # wire is not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[...], Wire[3])),  # hybrid arg not fixed
+            CustomOp2(Float[3], Wire[3], AnotherOp2(Float[2], Wire[-1])),  # hybrid arg not fixed
+        ],
+    )
+    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+        """Tests that the resource function can only contain abstract and fixed Operator2."""
+
+        @qp.register_resources({rep: 1})
+        def rule():
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
+            rule.compute_resources()
 
 
 class TestDecompCollection:
@@ -610,7 +730,6 @@ class TestInspectDecomps:
 
         @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1})
         def general_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 1)
             def _loop(i):
                 qp.CZ(wires=[wires[i], wires[i + 1]])
@@ -638,7 +757,6 @@ class TestInspectDecomps:
             name="with-aux",
         )
         def another_decomp(theta, wires, **_):
-
             @qp.for_loop(len(wires) - 2)
             def _loop(i):
                 qp.Toffoli(wires=[wires[i], wires[i + 1], wires[i + 2]])

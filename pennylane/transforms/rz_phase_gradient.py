@@ -23,8 +23,8 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.op_math import change_op_basis
-from pennylane.queuing import QueuingManager
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires

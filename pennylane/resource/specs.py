@@ -30,6 +30,7 @@ import pennylane as qp
 
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
+<<<<<<< HEAD
 from .utils import (
     apply_partial_args,
     get_last_tape_transform_level,
@@ -38,6 +39,11 @@ from .utils import (
     preprocess_level_input,
     unwrap_partial,
 )
+=======
+
+if TYPE_CHECKING:
+    from pennylane.core.transforms import CompilePipeline
+>>>>>>> main
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
