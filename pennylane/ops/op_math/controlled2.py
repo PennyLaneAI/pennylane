@@ -431,6 +431,37 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     ):
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
 
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        base,
+        control_wires,
+        control_values=None,
+        work_wires=None,
+        work_wire_type="borrowed",
+    ):
+        # Canonicalize control_values and work_wires
+        if control_values is None:
+            control_values = Bool[len(control_wires)]
+        if work_wires is None:
+            work_wires = Wire[0]
+
+        # Use default implementation for __abstract_init__
+        super().__abstract_init__(
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+        # Update private properties
+        self._base = self.arguments["base"]
+        self._control_wires = self.arguments["control_wires"]
+        self._control_values = self.arguments["control_values"]
+        self._work_wires = self.arguments["work_wires"]
+        self._work_wire_type = self.arguments["work_wire_type"]
+
     @property
     @override
     def name(self):
