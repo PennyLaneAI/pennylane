@@ -262,7 +262,7 @@ class TestAdder:
         ],
     )
     def test_arithmetic_matches_qft(self, k, x_wires, mod, work_wires):
-        """The arithmetic decomposition rule produces the same unitary as the operator."""
+        """The arithmetic decomposition rule produces the same unitary as the QFT-based rule."""
         op = qp.Adder(k, x_wires, mod, work_wires)
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
