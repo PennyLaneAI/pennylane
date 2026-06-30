@@ -801,6 +801,7 @@
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
+* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
   [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
