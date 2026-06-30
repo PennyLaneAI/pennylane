@@ -190,8 +190,7 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self.is_abstract = kwargs.get("is_abstract", False)
-
+        self.is_abstract = False
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
