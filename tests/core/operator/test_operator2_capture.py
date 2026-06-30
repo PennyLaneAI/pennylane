@@ -327,7 +327,7 @@ class TestApply:
         def f():
             apply(op2)
 
-        jaxpr = jax.make_jaxpr(f)(op2)
+        jaxpr = jax.make_jaxpr(f)()
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["op_cls"] == type(op2)
 
