@@ -594,7 +594,7 @@ class TestDecompositionRule:
         def rule():
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="abstract data of undertermined dimensions"):
+        with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
             rule.compute_resources()
 
 

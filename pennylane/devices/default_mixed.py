@@ -26,12 +26,12 @@ from dataclasses import replace
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.transforms import CompilePipeline
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.math import Interface
 from pennylane.ops.channel import __qubit_channels__ as channels
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device

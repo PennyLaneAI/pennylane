@@ -50,7 +50,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.11 is tested against, instead of 3.11, 3.12, 3.13
+          - Only Python 3.12 is tested against, instead of 3.12, 3.13, 3.14
         required: false
         type: boolean
         default: false
@@ -142,30 +142,30 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.11"]
+            "default": ["3.12"]
           }
           EOF
           elif [ "${{ inputs.python_warning_level }}" == "error" ];
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.11"]
+            "default": ["3.12"]
           }
           EOF
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.11", "3.12", "3.13", "3.14"],
-            "torch-tests": ["3.11", "3.14"],
-            "jax-tests": ["3.11", "3.14"],
-            "capture-jax-tests": ["3.11", "3.14"],
-            "all-interfaces-tests": ["3.11"],
-            "external-libraries-tests": ["3.11"],
-            "qcut-tests": ["3.11"],
-            "qchem-tests": ["3.11"],
-            "gradients-tests": ["3.11"],
-            "data-tests": ["3.11", "3.14"],
-            "device-tests": ["3.11"]
+            "default": ["3.12", "3.13", "3.14"],
+            "torch-tests": ["3.12", "3.14"],
+            "jax-tests": ["3.12", "3.14"],
+            "capture-jax-tests": ["3.12", "3.14"],
+            "all-interfaces-tests": ["3.12"],
+            "external-libraries-tests": ["3.12"],
+            "qcut-tests": ["3.12"],
+            "qchem-tests": ["3.12"],
+            "gradients-tests": ["3.12"],
+            "data-tests": ["3.12", "3.14"],
+            "device-tests": ["3.12"]
           }
           EOF
           fi

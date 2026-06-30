@@ -17,7 +17,7 @@ from typing import TypeVar
 
 import numpy as np
 
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.data.attributes import DatasetArray, DatasetList, serialization
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
