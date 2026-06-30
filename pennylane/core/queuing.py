@@ -535,7 +535,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
         op._bind_primitive()  # pylint: disable=protected-access
         if op.tracer is not None:
             return op
-        raise RuntimeError("Trying to use apply in a non-tracing context.")  # pragma: no cover
+        raise RuntimeError("Trying to use apply in a non-tracing context.")
 
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")

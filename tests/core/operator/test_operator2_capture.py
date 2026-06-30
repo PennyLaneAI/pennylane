@@ -331,6 +331,12 @@ class TestApply:
         eqn = _single_op_eqn(jaxpr)
         assert eqn.params["op_cls"] == type(op2)
 
+    def test_raises(self):
+        """Tests that apply() raises outside of a tracing context."""
+
+        with pytest.raises(RuntimeError, match="non-tracing context"):
+            apply(DynOp(1.0, wires=0))
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
