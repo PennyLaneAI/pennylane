@@ -1236,6 +1236,7 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            n_ctrls=0,
             adjoint=False,
             **static_args,
         )
@@ -1536,7 +1537,14 @@ if has_jax:
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
     def _op_impl(
-        *all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, adjoint=False, **static_args
+        *all_args,
+        op_cls,
+        wire_lens,
+        hybrid_lens,
+        hybrid_trees,
+        n_ctrls=0,
+        adjoint=False,
+        **static_args,
     ):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
@@ -1560,9 +1568,24 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        if n_ctrls:
+            control_wires = all_args[i : i + n_ctrls]
+            i += n_ctrls
+            control_values = all_args[i:]
+            assert len(control_wires) == len(control_values)
+        else:
+            control_wires = control_values = ()
+
         op = type.__call__(op_cls, **args)
         if adjoint:
             op = type.__call__(qp.ops.op_math.Adjoint2, op)
+        if n_ctrls:
+            op = type.__call__(
+                qp.ops.op_math.ControlledOp2,
+                op,
+                control_wires=control_wires,
+                control_values=control_values,
+            )
         return op
 
     @operator_p.def_abstract_eval
