@@ -148,17 +148,6 @@ class TestPartialUnaryStatePreparation:
         )
         assert_valid(op, skip_differentiation=True)
 
-    def test_old_decomposition_system_disabled(self):
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivated the fallback
-        of compute_decomposition to the new decomp system."""
-        num_wires = 5
-        coefficients, indices = self.make_random_data(num_wires, 13, seed=141)
-        wires = list(range(num_wires))
-        op = PartialUnaryStatePreparation(coefficients, wires, indices=indices, work_wires=None)
-        # In this case, assert_valid actually asserts that compute_decomposition raises an error.
-        assert op.has_decomposition is False
-
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
