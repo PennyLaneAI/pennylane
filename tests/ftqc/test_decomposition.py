@@ -595,13 +595,13 @@ def test_ppr_to_mbqc_conversion_to_mlir(seed):
 
 @pytest.mark.catalyst
 @pytest.mark.external
-def test_ppr_to_mbqc_without_qjit_raises_error(seed):
+def test_ppr_to_mbqc_without_qjit_raises_error():
     """Test that trying to apply the transform without QJIT raises an error"""
 
     pytest.importorskip("catalyst")
 
     @ppr_to_mbqc
-    @qp.qnode(qp.device("lightning.qubit", wires=3, seed=seed), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
     def circ():
         qp.H(0)
         qp.S(0)
