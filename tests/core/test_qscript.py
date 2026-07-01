@@ -1439,4 +1439,5 @@ def test_jax_pytree_integration(qscript_type):
     assert data[2] == 2.3
     assert data[3] == 3.4
     assert data[4] == 2.0
-    assert qp.math.allclose(data[5], eye_mat)
+    assert data[5] == 0
+    assert qp.math.allclose(data[6], eye_mat)

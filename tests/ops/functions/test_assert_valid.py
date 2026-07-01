@@ -299,7 +299,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():
+        def compute_eigvals(wires=None):  # pylint: disable=unused-argument
             return [-1, 1]
 
     with pytest.raises(
