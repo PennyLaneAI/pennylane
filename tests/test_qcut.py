@@ -36,7 +36,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.decomposition import gate_sets
-from pennylane.queuing import WrappedObj
+from pennylane.qcut.tapes import _WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
@@ -181,8 +181,8 @@ frag_edge_data = [
         1,
         {
             "pair": (
-                WrappedObj(frag0.operations[4]),
-                WrappedObj(frag1.operations[0]),
+                _WrappedObj(frag0.operations[4]),
+                _WrappedObj(frag1.operations[0]),
             )
         },
     ),
@@ -191,8 +191,8 @@ frag_edge_data = [
         0,
         {
             "pair": (
-                WrappedObj(frag1.operations[2]),
-                WrappedObj(frag0.operations[5]),
+                _WrappedObj(frag1.operations[2]),
+                _WrappedObj(frag0.operations[5]),
             )
         },
     ),
@@ -201,8 +201,8 @@ frag_edge_data = [
         1,
         {
             "pair": (
-                WrappedObj(frag0.operations[8]),
-                WrappedObj(frag1.operations[4]),
+                _WrappedObj(frag0.operations[8]),
+                _WrappedObj(frag1.operations[4]),
             )
         },
     ),
@@ -211,8 +211,8 @@ frag_edge_data = [
         0,
         {
             "pair": (
-                WrappedObj(frag1.operations[6]),
-                WrappedObj(frag0.operations[9]),
+                _WrappedObj(frag1.operations[6]),
+                _WrappedObj(frag0.operations[9]),
             )
         },
     ),
@@ -301,6 +301,58 @@ def test_node_ids(monkeypatch):
         assert pn.node_uid == "some_string"
 
 
+class Test_WrappedObj:
+    """Tests for the ``_WrappedObj`` class"""
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``_WrappedObj`` is initialized correctly"""
+        wo = _WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize(
+        "obj1, obj2",
+        [(qp.PauliX(0), qp.PauliZ(0)), (qp.PauliX(0), qp.PauliX(0)), ((1,), (1, 2))],
+    )
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``_WrappedObj.__eq__`` returns False when expected."""
+        wo1 = _WrappedObj(obj1)
+        wo2 = _WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that _WrappedObj.__eq__ returns False when the object being compared is not
+        a _WrappedObj."""
+        op = qp.PauliX(0)
+        wo = _WrappedObj(op)
+        assert wo != op
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``_WrappedObj.__eq__`` returns True when expected."""
+        op = qp.PauliX(0)
+        assert _WrappedObj(op) == _WrappedObj(op)
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``_WrappedObj.__hash__`` is the object id."""
+        wo = _WrappedObj(obj)
+        assert wo.__hash__() == id(obj)  # pylint: disable=unnecessary-dunder-call
+
+    def test_wrapped_obj_repr(self):
+        """Test that the ``_WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+
+        class Dummy:  # pylint: disable=too-few-public-methods
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
+        wo = _WrappedObj(obj)
+        assert wo.__repr__() == "_Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
+
+
 @pytest.mark.parametrize("cls", [qcut.MeasureNode, qcut.PrepareNode])
 class TestMeasurePrepareNodes:
     """Tests for the MeasureNode and PrepareNode classes."""
@@ -368,15 +420,15 @@ class TestTapeToGraph:
         ops = no_cut_tape.operations
 
         expected_edge_connections = [
-            (WrappedObj(ops[0]), WrappedObj(ops[2]), 0),
-            (WrappedObj(ops[1]), WrappedObj(ops[2]), 0),
-            (WrappedObj(ops[2]), WrappedObj(ops[3]), 0),
-            (WrappedObj(ops[2]), WrappedObj(ops[3]), 1),
-            (WrappedObj(ops[3]), WrappedObj(ops[4]), 0),
-            (WrappedObj(ops[3]), WrappedObj(ops[5]), 0),
+            (_WrappedObj(ops[0]), _WrappedObj(ops[2]), 0),
+            (_WrappedObj(ops[1]), _WrappedObj(ops[2]), 0),
+            (_WrappedObj(ops[2]), _WrappedObj(ops[3]), 0),
+            (_WrappedObj(ops[2]), _WrappedObj(ops[3]), 1),
+            (_WrappedObj(ops[3]), _WrappedObj(ops[4]), 0),
+            (_WrappedObj(ops[3]), _WrappedObj(ops[5]), 0),
             (
-                WrappedObj(ops[4]),
-                WrappedObj(no_cut_tape.measurements[0]),
+                _WrappedObj(ops[4]),
+                _WrappedObj(no_cut_tape.measurements[0]),
                 0,
             ),
         ]
@@ -1872,8 +1924,8 @@ class TestExpandFragmentTapesMC:
 
         edge_data = {
             "pair": (
-                WrappedObj(tape0.operations[2]),
-                WrappedObj(tape1.operations[0]),
+                _WrappedObj(tape0.operations[2]),
+                _WrappedObj(tape1.operations[0]),
             )
         }
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
@@ -3201,7 +3253,7 @@ class TestContractTensors:
     m = [[qcut.MeasureNode(wires=0)], []]
     p = [[], [qcut.PrepareNode(wires=0)]]
     m_copy, p_copy = copy.copy(m), copy.copy(p)
-    edge_dict = {"pair": (WrappedObj(m_copy[0][0]), WrappedObj(p_copy[1][0]))}
+    edge_dict = {"pair": (_WrappedObj(m_copy[0][0]), _WrappedObj(p_copy[1][0]))}
     g = MultiDiGraph([(0, 1, edge_dict)])
     expected_result = np.dot(*t)
 
@@ -3390,13 +3442,13 @@ class TestContractTensors:
             ],
         ]
         edges = [
-            (0, 0, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[0][2]))}),
-            (0, 1, 0, {"pair": (WrappedObj(m[0][1]), WrappedObj(p[1][0]))}),
-            (0, 1, 1, {"pair": (WrappedObj(m[0][2]), WrappedObj(p[1][1]))}),
-            (0, 2, 0, {"pair": (WrappedObj(m[0][4]), WrappedObj(p[2][0]))}),
-            (0, 2, 1, {"pair": (WrappedObj(m[0][3]), WrappedObj(p[2][1]))}),
-            (1, 0, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[0][0]))}),
-            (1, 0, 1, {"pair": (WrappedObj(m[1][1]), WrappedObj(p[0][1]))}),
+            (0, 0, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[0][2]))}),
+            (0, 1, 0, {"pair": (_WrappedObj(m[0][1]), _WrappedObj(p[1][0]))}),
+            (0, 1, 1, {"pair": (_WrappedObj(m[0][2]), _WrappedObj(p[1][1]))}),
+            (0, 2, 0, {"pair": (_WrappedObj(m[0][4]), _WrappedObj(p[2][0]))}),
+            (0, 2, 1, {"pair": (_WrappedObj(m[0][3]), _WrappedObj(p[2][1]))}),
+            (1, 0, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[0][0]))}),
+            (1, 0, 1, {"pair": (_WrappedObj(m[1][1]), _WrappedObj(p[0][1]))}),
         ]
         g = MultiDiGraph(edges)
 
@@ -3685,8 +3737,8 @@ class TestQCutProcessingFn:
         m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
         edges = [
-            (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-            (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
+            (0, 1, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[1][0]))}),
+            (1, 2, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[2][0]))}),
         ]
         g = MultiDiGraph(edges)
 
@@ -3713,8 +3765,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-                (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
+                (0, 1, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[1][0]))}),
+                (1, 2, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[2][0]))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3750,8 +3802,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-                (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
+                (0, 1, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[1][0]))}),
+                (1, 2, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[2][0]))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3788,8 +3840,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-                (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
+                (0, 1, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[1][0]))}),
+                (1, 2, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[2][0]))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3829,8 +3881,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-                (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
+                (0, 1, 0, {"pair": (_WrappedObj(m[0][0]), _WrappedObj(p[1][0]))}),
+                (1, 2, 0, {"pair": (_WrappedObj(m[1][0]), _WrappedObj(p[2][0]))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -5038,10 +5090,10 @@ class TestKaHyPar:
         wire_cuts = [n for n in cut_graph.nodes if isinstance(n.obj, qp.WireCut)]
 
         assert len(wire_cuts) == len(cut_edges)
-        assert list(cut_graph.pred[wire_cuts[0]]) == [WrappedObj(op0)]
-        assert list(cut_graph.succ[wire_cuts[0]]) == [WrappedObj(op1)]
-        assert list(cut_graph.pred[wire_cuts[1]]) == [WrappedObj(op1)]
-        assert list(cut_graph.succ[wire_cuts[1]]) == [WrappedObj(op2)]
+        assert list(cut_graph.pred[wire_cuts[0]]) == [_WrappedObj(op0)]
+        assert list(cut_graph.succ[wire_cuts[0]]) == [_WrappedObj(op1)]
+        assert list(cut_graph.pred[wire_cuts[1]]) == [_WrappedObj(op1)]
+        assert list(cut_graph.succ[wire_cuts[1]]) == [_WrappedObj(op2)]
 
         # check if order is unique and also if there's enough nodes.
         assert list({i for _, i in cut_graph.nodes.data("order")}) == list(

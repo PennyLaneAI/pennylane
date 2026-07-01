@@ -26,10 +26,19 @@ from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
-from .resources import Resources, auto_wrap, resource_rep
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    auto_wrap,
+    resource_rep,
+)
 from .utils import to_name
 
 
@@ -453,8 +462,10 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
+            op = auto_wrap(op)
+            _verify_is_abstract_and_fixed(op)
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
+                gate_counter.update({op: count})
         return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
@@ -1104,3 +1115,26 @@ def null_decomp(*_, **__):
 
     """
     return
+
+
+def _is_abstract_and_fixed(val):
+    """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
+    # We don't actually need to check whether val is abstract, since the Resources class
+    # already abstractifies everything. We only need to make sure that it's fixed.
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val.shape_fixed
+    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
+    return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
+
+
+def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
+    """Checks if an operator is fully abstract and contains only abstract data of fixed shapes."""
+    if isinstance(op, CompressedResourceOp):
+        return
+    target_argnames = op.dynamic_argnames + op.wire_argnames + op.hybrid_argnames
+    target_args = [val for name, val in op.arguments.items() if name in target_argnames]
+    if any(not _is_abstract_and_fixed(val) for val in target_args):
+        raise TypeError(
+            "The resources of a decomposition rule cannot contain operators with "
+            f"abstract data of undetermined dimensions, got {op}."
+        )

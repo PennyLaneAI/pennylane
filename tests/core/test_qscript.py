@@ -21,11 +21,11 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.qscript import QuantumScript, process_queue
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
 

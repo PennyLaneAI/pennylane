@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -44,7 +45,6 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -110,9 +110,10 @@ class Operator2(metaclass=OperatorMeta):
 
     .. note::
 
-        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
-        both; if **any** static arguments are not or cannot be lowered to the IR, then all
-        static arguments are assumed to not be lowerable.
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     compilable_argnames: ClassVar[tuple[str, ...]] = ()
@@ -127,9 +128,10 @@ class Operator2(metaclass=OperatorMeta):
 
     .. note::
 
-        An operator can only specify ``static_argnames`` or ``compilable_argnames``, but not
-        both; if **any** static arguments cannot be lowered to the IR, then all static arguments
-        must be treated as not lowerable.
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     hybrid_argnames: ClassVar[tuple[str, ...]] = ()
@@ -139,6 +141,13 @@ class Operator2(metaclass=OperatorMeta):
     overlap with ``wire_argnames`` when those arguments contain nested structures of
     wires. Examples of hybrid arguments include collections of wires or dynamic arrays,
     operators, etc.
+
+    .. note::
+
+        An operator can only specify ``static_argnames`` and ``hybrid_argnames``, or
+        ``compilable_argnames``, but not both; if **any** static or hybrid arguments are not
+        or cannot be lowered to the IR, then all static and hybrid arguments are assumed to
+        not be lowerable.
     """
 
     wire_sizes: ClassVar[tuple[int | None, ...] | None] = None
@@ -190,6 +199,8 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
+        self._is_abstract = False
+
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
@@ -206,6 +217,11 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
     # ------------------------------------------------------------------------
+
+    @property
+    def is_abstract(self) -> bool:
+        """Whether the operator has abstract args."""
+        return self._is_abstract
 
     @property
     def arguments(self) -> dict[str, Any]:
@@ -1205,7 +1221,7 @@ class Operator2(metaclass=OperatorMeta):
             # Partial flattening to extract operators used as data so their
             # equations can be deleted from the jaxpr.
             op_leaves, _ = flatten(self.arguments[name], is_leaf=_is_op)
-            _delete_op_eqns(filter(_is_op, op_leaves))
+            _ = pop_op_eqns(filter(_is_op, op_leaves))
 
             # Full flattening to feed the operator's dynamic data to the primitive.
             leaves, tree = flatten(self.arguments[name])
@@ -1226,6 +1242,8 @@ class Operator2(metaclass=OperatorMeta):
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
             hybrid_trees=hybrid_trees,
+            n_ctrls=0,
+            adjoint=False,
             **static_args,
         )
         # If we bind the primitive outside a tracing context but with program capture enabled,
@@ -1377,9 +1395,10 @@ def _init_arg_types(op: Operator2) -> None:
 
 def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
     """Validate the values inside all ``**_argnames`` for an operator class."""
-    if cls.static_argnames and cls.compilable_argnames:
+    if (cls.hybrid_argnames or cls.static_argnames) and cls.compilable_argnames:
         raise TypeError(
-            "Operators can only contain 'static_argnames' or 'compilable_argnames', not both."
+            "Operators can only contain 'static_argnames' and 'hybrid_argnames', or "
+            "'compilable_argnames', not both."
         )
 
     # dynamic/wire/static/compilable argnames must be disjoint.
@@ -1521,11 +1540,19 @@ if has_jax:
 
     operator_p = QpPrimitive("operator")
     operator_p.prim_type = "operator"
-    AbstractOperator = _get_abstract_operator()
 
     # pylint: disable=too-many-arguments
     @operator_p.def_impl
-    def _op_impl(*all_args, op_cls, wire_lens, hybrid_lens, hybrid_trees, **static_args):
+    def _op_impl(
+        *all_args,
+        op_cls,
+        wire_lens,
+        hybrid_lens,
+        hybrid_trees,
+        n_ctrls=0,
+        adjoint=False,
+        **static_args,
+    ):
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1548,24 +1575,44 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
-        return type.__call__(op_cls, **args)
+        if n_ctrls:
+            control_wires = all_args[i : i + n_ctrls]
+            i += n_ctrls
+            control_values = all_args[i:]
+            assert len(control_wires) == len(control_values)
+        else:
+            control_wires = control_values = ()
+
+        op = type.__call__(op_cls, **args)
+        if adjoint:
+            op = type.__call__(qp.ops.op_math.Adjoint2, op)
+        if n_ctrls:
+            op = type.__call__(
+                qp.ops.op_math.ControlledOp2,
+                op,
+                control_wires=control_wires,
+                control_values=control_values,
+            )
+        return op
 
     @operator_p.def_abstract_eval
     def _op_aval(*_, **__):
+        AbstractOperator = _get_abstract_operator()
         return AbstractOperator()
 
 else:  # pragma: no cover
     operator_p = None
-    AbstractOperator = None
 
 
-def _delete_op_eqns(ops: Iterable) -> None:
+def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
     These equations must be deleted because operators used as data are treated as
     pytrees wrapping dynamic data rather than instructions. Thus, the equation that
     corresponds to the operator as an instruction should be removed.
     """
+    old_eqns = []
+
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
@@ -1574,10 +1621,13 @@ def _delete_op_eqns(ops: Iterable) -> None:
 
             # for some reason the frame now wraps equations in lambdas
             eqn = op.tracer.parent
+            old_eqns.append(eqn)
             frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
 
             # delete reference to tracer after its equation has been deleted
             op.tracer = None
+
+    return old_eqns
 
 
 # -----------------------------------------------------------------------------
@@ -1653,6 +1703,7 @@ def _is_hash_leaf(l) -> bool:
 @abstractify.register(OperatorMeta)
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
+
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
@@ -1665,6 +1716,8 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @abstractify.register(Operator2)
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
+    if op.is_abstract:
+        return op
 
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
