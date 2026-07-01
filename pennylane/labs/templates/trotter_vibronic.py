@@ -328,7 +328,11 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         all_constant = qp.math.array(all_constant, like="jax")
         all_linear = qp.math.array(all_linear, like="jax")
         all_quadratic = qp.math.array(all_quadratic, like="jax")
-        all_bilinear = qp.math.array(all_bilinear, like="jax")
+        # Reshape the bilinear data into a flattened structure with respect to mode pairs
+        # Note that k < ell matches the data structure of bilinear_coeffs, which is only
+        # populated in the upper triangular part, w.r.t. the mode axes.
+        bilinear_indices = qp.math.array(np.triu_indices(n_modes, 1), like="jax")
+        all_bilinear = qp.math.array(all_bilinear, like="jax")[:, *bilinear_indices]
         diag_keys = qp.math.array(diag_keys, like="jax")
 
     def position_fragments(i):
@@ -399,37 +403,29 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
             return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        @qp.for_loop(n_modes - 1)
+        @qp.for_loop(len(bilinear_indices))
         def bilinear_terms(k, prev_bitstrings):
-            """Run a single bilinear time evolution sub-fragment for mode ``k``.
+            """Run a single bilinear time evolution sub-fragment for mode pair ``bilinear_indices[k]``.
             The currently encoded bitstrings on the coefficients register are provided in
             ``prev_bitstrings``."""
 
-            # Note that k < ell matches the data structure of bilinear_coeffs, which is only
-            # populated in the upper triangular part, w.r.t. the mode axes.
-            @qp.for_loop(k + 1, n_modes)
-            def _inner_bilinear_terms(ell, prev_bitstrings):
-                _coeffs = bilinear_coeffs[k, ell]
+            _coeffs = bilinear_coeffs[k]
+            ids = bilinear_indices[:, k]
 
-                def skip_fn():
-                    return prev_bitstrings
+            def skip_fn():
+                return prev_bitstrings
 
-                def actual_fn():
-                    mode_mult_wires, coeff_mult_wires = _extract_registers(
-                        registers, mode_registers, "bilinear", k, ell
-                    )
-                    new_bitstrings = load_coefficients(
-                        _coeffs, precision, prev_bitstrings, qrom_wires
-                    )
-                    qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
-                    half_signed_out_multiplier(**coeff_mult_wires)
-                    qp.adjoint(qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
-                    return new_bitstrings
+            def actual_fn():
+                mode_mult_wires, coeff_mult_wires = _extract_registers(
+                    registers, mode_registers, "bilinear", *ids
+                )
+                new_bitstrings = load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
+                qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
+                half_signed_out_multiplier(**coeff_mult_wires)
+                qp.adjoint(qp.SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
+                return new_bitstrings
 
-                return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
-
-            prev_bitstrings = _inner_bilinear_terms(prev_bitstrings)
-            return prev_bitstrings
+            return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
         prev_bitstrings = np.zeros((n_states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
@@ -445,7 +441,6 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         # use time, not first_order_time_step because the kinetic fragment is the
         # middle one in second-order Trotter, so we immediately merge the two neighbouring
         # fragments with first_order_time_step duration.
-        # todo: Replace BasisState + SignedMultiplier by a classical-quantum multiplier?
         kinetic_coeffs = get_momentum_coefficients(fragment) * time
         if qp.compiler.active():
             kinetic_coeffs = qp.math.array(kinetic_coeffs, like="jax")
@@ -464,7 +459,6 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
                     registers, mode_registers, "quadratic", k
                 )
                 bitstring = qp.math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
-                qp.I(0)
                 qp.BasisState(bitstring, registers["coefficients"])
                 qp.AQFT(order=aqft_order, wires=mode_registers[k])
                 qp.SignedOutSquare(**square_wires, output_wires_zeroed=True)
