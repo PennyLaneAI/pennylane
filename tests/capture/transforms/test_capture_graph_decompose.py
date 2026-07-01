@@ -569,8 +569,8 @@ class TestDecomposeInterpreterGraphEnabled:
             qp.Y(0),
             qp.X(0),
             qp.Z(0),
-            qp.adjoint(qp.X(0)),
-            qp.adjoint(qp.Y(0)),
+            qp.X(0),
+            qp.Y(0),
         ]
 
     def test_minimize_work_wires(self):
