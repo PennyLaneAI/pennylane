@@ -988,6 +988,10 @@
   restored as ``bytes``.
   [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
+* `default.clifford` now returns a scalar for `qml.expval(qml.Projector(...))` when
+  `tableau=False`, instead of the full probability vector.
+  [(#9670)](https://github.com/PennyLaneAI/pennylane/issues/9670)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1015,4 +1019,5 @@ Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
 Jake Zaia,
+Leen,
 Zinan Zhou.
