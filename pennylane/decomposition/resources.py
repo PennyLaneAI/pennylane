@@ -454,7 +454,7 @@ def change_op_basis_resource_rep(
     """
     compute_op = auto_wrap(compute_op)
     target_op = auto_wrap(target_op)
-    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
+    uncompute_op = uncompute_op or adjoint_resource_rep(*_op_type_and_params(compute_op))
     uncompute_op = auto_wrap(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,

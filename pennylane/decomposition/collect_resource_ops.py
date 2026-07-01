@@ -27,7 +27,12 @@ from pennylane.capture.primitives import (
     qnode_prim,
 )
 
-from .resources import adjoint_resource_rep, controlled_resource_rep, resource_rep
+from .resources import (
+    _op_type_and_params,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    resource_rep,
+)
 
 
 class CollectResourceOps(FlattenedInterpreter):
@@ -87,7 +92,7 @@ def _adjoint_transform_prim(
     child = CollectResourceOps()
     child.eval(jaxpr, consts, *args)
     for op in child.state["ops"]:
-        self.state["ops"].add(adjoint_resource_rep(op.op_type, op.params))
+        self.state["ops"].add(adjoint_resource_rep(*_op_type_and_params(op)))
     return []
 
 
@@ -110,9 +115,10 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 
     # Create resource reps
     for op in child.state["ops"]:
+        op_type, op_params = _op_type_and_params(op)
         self.state["ops"].add(
             controlled_resource_rep(
-                op.op_type, op.params, num_control_wires, num_zero_control_values, num_work_wires
+                op_type, op_params, num_control_wires, num_zero_control_values, num_work_wires
             )
         )
 

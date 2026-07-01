@@ -28,6 +28,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import pow as qp_pow
 from pennylane.resource.error import ErrorOperation, SpectralNormError
@@ -305,6 +306,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
 
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
+    base_class, base_params = _op_type_and_params(base_resource_rep)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
         adjoint_resource_rep(QFT, {"num_wires": num_estimation_wires}): 1,
@@ -314,8 +316,8 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
             controlled_resource_rep(
                 ops.Pow,
                 {
-                    "base_class": base_resource_rep.op_type,
-                    "base_params": base_resource_rep.params,
+                    "base_class": base_class,
+                    "base_params": base_params,
                     "z": 2**i,
                 },
                 num_control_wires=1,

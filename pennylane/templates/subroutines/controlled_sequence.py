@@ -25,6 +25,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     register_resources,
 )
+from pennylane.decomposition.resources import _op_type_and_params
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
@@ -220,9 +221,10 @@ def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires
 
     for z in powers_of_two[::-1]:
         controlled_rep = controlled_resource_rep(base_class, base_params, 1)
+        controlled_type, controlled_params = _op_type_and_params(controlled_rep)
         rep = pow_resource_rep(
-            base_class=controlled_rep.op_type,
-            base_params=controlled_rep.params,
+            base_class=controlled_type,
+            base_params=controlled_params,
             z=z,
         )
         resources[rep] = 1

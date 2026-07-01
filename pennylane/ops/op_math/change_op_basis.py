@@ -30,7 +30,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import adjoint_resource_rep
+from pennylane.decomposition.resources import _op_type_and_params, adjoint_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -333,7 +333,7 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[adjoint_resource_rep(*_op_type_and_params(target_op))] += 1
     return resources
 
 
@@ -361,8 +361,7 @@ def _controlled_change_op_basis_resources(
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     target = base_params["target_op"]
-    target_cls = type(target) if isinstance(target, Operator) else target.op_type
-    target_p = target.static_args if isinstance(target, Operator) else target.params
+    target_cls, target_p = _op_type_and_params(target)
     resources[
         controlled_resource_rep(
             target_cls,
