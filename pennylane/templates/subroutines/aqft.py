@@ -245,36 +245,13 @@ def _AQFT_decomposition(wires, order):
     @for_loop(len(circuit_data))
     def loop(k):
         def hadamard(wire0, *_):
-            Hadamard(wire0)
+            Hadamard(wire0.astype(int))
 
         def cphase(wire0, wire1, angle):
-            ControlledPhaseShift(angle, wires=[wire0, wire1])
+            ControlledPhaseShift(angle, wires=[wire0.astype(int), wire1.astype(int)])
 
         wire0, wire1, angle = circuit_data[k]
-        cond(wire1 == np.inf, hadamard, cphase)(wire0.astype(int), wire1.astype(int), angle)
-
-    """
-    @for_loop(n_wires)
-    def wire_loop(i):
-        wire = wires[i]
-        Hadamard(wire)
-
-        @for_loop(n_wires - 1 - i)
-        def wires_limited_shift_loop(j):
-            shift = shifts[j]
-            control_wire = wires[i + 1 + j]
-
-            ControlledPhaseShift(shift, wires=[control_wire, wire])
-
-        @for_loop(order)
-        def order_limited_shift_loop(j):
-            shift = shifts[j]
-            control_wire = wires[i + 1 + j]
-
-            ControlledPhaseShift(shift, wires=[control_wire, wire])
-
-        cond(n_wires - 1 - i < order, wires_limited_shift_loop, order_limited_shift_loop)()
-    """
+        cond(wire1 == np.inf, hadamard, cphase)(wire0, wire1, angle)
 
     loop()  # pylint: disable=no-value-for-parameter
 

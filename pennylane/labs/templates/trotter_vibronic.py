@@ -15,7 +15,6 @@
 
 from itertools import combinations_with_replacement
 
-import jax.numpy as jnp
 import numpy as np
 
 import pennylane as qp
@@ -172,30 +171,34 @@ def diagonalize_vibronic(*, key, wires):
         wires (WiresLike): electronic wires on which the fragment acts.
     """
     n = len(wires)
-    wires_arr = jnp.asarray(wires)
     k0, k1 = key[0], key[1]
 
     # Wire w holds bit (n-1-w) (MSB-first), matching qp.math.int_to_binary.
     # diff[w] is the XOR of the wire-w bit of k0 and k1 -- this is exactly
     # (int_to_binary(k0) + int_to_binary(k1)) % 2 from the original.
-    shifts = jnp.arange(n - 1, -1, -1, dtype=jnp.int64)
+    shifts = np.arange(n - 1, -1, -1, dtype=np.int64)
     diff = ((k0 >> shifts) & 1) ^ ((k1 >> shifts) & 1)  # shape (n,)
 
-    any_diff = jnp.sum(diff) > 0
+    any_diff = np.sum(diff) > 0
     # Original takes support = where(diff)[::-1] then control = support[0],
     # i.e. the largest wire index whose diff bit is set.
-    control_pos = jnp.max(jnp.where(diff > 0, jnp.arange(n), -1))
-    control_wire = wires_arr[control_pos]
+    control_pos = qp.math.max(qp.math.where(diff > 0, qp.math.arange(n), -1))
+    if qp.compiler.active():
+        any_diff = qp.math.array(any_diff, like="jax")
+        diff = qp.math.array(diff, like="jax")
+        wires = qp.math.array(wires, like="jax")
+
+    control_wire = wires[control_pos]
 
     @qp.cond(any_diff)  # key[0] != key[1]  <=>  some bit differs
     def apply():
-        qp.H(wires=control_wire)
+        qp.H(wires=[control_wire])
 
         @qp.for_loop(0, n, 1)
         def loop(w):
             @qp.cond((diff[w] > 0) & (w != control_pos))
             def maybe_cnot():
-                qp.CNOT(wires=[control_wire, wires_arr[w]])
+                qp.CNOT(wires=[control_wire, wires[w]])
 
             maybe_cnot()
 
@@ -324,6 +327,8 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         all_quadratic.append(_coeffs[2])
         all_bilinear.append(_coeffs[3])
 
+    bilinear_indices = np.array(np.triu_indices(n_modes, 1))
+    all_bilinear = [x[*bilinear_indices] for x in all_bilinear]
     if qp.compiler.active():
         all_constant = qp.math.array(all_constant, like="jax")
         all_linear = qp.math.array(all_linear, like="jax")
@@ -331,22 +336,17 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
         # Reshape the bilinear data into a flattened structure with respect to mode pairs
         # Note that k < ell matches the data structure of bilinear_coeffs, which is only
         # populated in the upper triangular part, w.r.t. the mode axes.
-        bilinear_indices = qp.math.array(np.triu_indices(n_modes, 1), like="jax")
-        all_bilinear = qp.math.array(all_bilinear, like="jax")[:, *bilinear_indices]
+        bilinear_indices = qp.math.array(bilinear_indices, like="jax")
+        all_bilinear = qp.math.array(all_bilinear, like="jax")
         diag_keys = qp.math.array(diag_keys, like="jax")
 
     def position_fragments(i):
-        # fragment = fragments[i]
-        # diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-        # dynamic loops
         diag_key = diag_keys[i]
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
 
-        # all_coeffs = (c * first_order_time_step for c in get_position_coefficients(fragment))
-        # const_coeffs, linear_coeffs, quadratic_coeffs, bilinear_coeffs = all_coeffs
         qp.adjoint(diagonalize_vibronic, lazy=False)(key=diag_key, wires=registers["electronic"])
 
         def constant_term(prev_bitstrings):
