@@ -29,6 +29,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.wires import Wires
@@ -368,17 +369,19 @@ def _controlled_two_qubit_unitary_resource(
     **__,
 ):
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
-    gate_counts = {
-        controlled_resource_rep(
-            base_class=base_op_rep.op_type,
-            base_params=base_op_rep.params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        ): count
-        for base_op_rep, count in base_resources.gate_counts.items()
-    }
+    gate_counts = {}
+    for base_op_rep, count in base_resources.gate_counts.items():
+        base_class, base_params = _op_type_and_params(base_op_rep)
+        gate_counts[
+            controlled_resource_rep(
+                base_class=base_class,
+                base_params=base_params,
+                num_control_wires=num_control_wires,
+                num_zero_control_values=0,
+                num_work_wires=num_work_wires,
+                work_wire_type=work_wire_type,
+            )
+        ] = count
     gate_counts[ops.X] = num_zero_control_values * 2
     return gate_counts
 

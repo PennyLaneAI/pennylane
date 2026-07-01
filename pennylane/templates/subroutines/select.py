@@ -32,6 +32,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.wires import Wires
 
@@ -565,9 +566,10 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
+    target_type, target_params = _op_type_and_params(target_rep)
     return controlled_resource_rep(
-        base_class=target_rep.op_type,
-        base_params=target_rep.params,
+        base_class=target_type,
+        base_params=target_params,
         num_control_wires=num_control_wires,
         num_work_wires=num_work_wires,
         num_zero_control_values=num_control_wires - sum(ctrl_state),
@@ -743,10 +745,11 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
 
     if c == 1:
         for i, target_rep in enumerate(op_reps):
+            target_type, target_params = _op_type_and_params(target_rep)
             resources[
                 controlled_resource_rep(
-                    base_class=target_rep.op_type,
-                    base_params=target_rep.params,
+                    base_class=target_type,
+                    base_params=target_params,
                     num_control_wires=1,
                     num_zero_control_values=(1 - i),
                     num_work_wires=num_work_wires,
@@ -781,9 +784,10 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
         )
     ] += more_than_a_quarter
     for op_rep in op_reps:
+        op_type, op_params = _op_type_and_params(op_rep)
         resources[
             controlled_resource_rep(
-                op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
+                op_type, op_params, num_control_wires=1, num_work_wires=num_work_wires
             )
         ] += 1
 
@@ -805,8 +809,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     if num_ops == 2:
         return {
             controlled_resource_rep(
-                op_rep.op_type,
-                op_rep.params,
+                *_op_type_and_params(op_rep),
                 num_control_wires=1,
                 num_work_wires=num_work_wires,
                 num_zero_control_values=1 - i,
@@ -836,9 +839,10 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
     num_work_wires = num_work_wires - unary_control_wires
     for op in op_reps:
+        op_cls, op_p = _op_type_and_params(op)
         counts[
             controlled_resource_rep(
-                op.op_type, op.params, num_control_wires=1, num_work_wires=num_work_wires
+                op_cls, op_p, num_control_wires=1, num_work_wires=num_work_wires
             )
         ] += 1
 

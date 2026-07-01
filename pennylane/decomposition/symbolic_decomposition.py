@@ -22,9 +22,17 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core.operator import Operator2
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+
+
+def _get_op_type_and_params(op):
+    """Extract (op_type, params) from a CompressedResourceOp or an abstract Operator2."""
+    if isinstance(op, Operator2):
+        return type(op), op.static_args
+    return op.op_type, op.params
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -36,7 +44,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
+            adjoint_resource_rep(*_get_op_type_and_params(decomp_op)): count
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
@@ -194,7 +202,7 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+    qp.apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
@@ -212,8 +220,8 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             controlled_resource_rep(
-                base_class=base_op_rep.op_type,
-                base_params=base_op_rep.params,
+                base_class=_get_op_type_and_params(base_op_rep)[0],
+                base_params=_get_op_type_and_params(base_op_rep)[1],
                 num_control_wires=num_control_wires,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
@@ -329,7 +337,7 @@ def _flip_control_adjoint_resource(
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-    return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
+    return {adjoint_resource_rep(*_get_op_type_and_params(inner_rep)): 1}
 
 
 # pylint: disable=too-many-arguments

@@ -423,10 +423,28 @@ def _check_pytree(op):
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     if isinstance(op, Operator1):
-        for d1, d2 in zip(op.data, leaves, strict=True):
-            assert qp.math.allclose(
-                d1, d2
-            ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+        if len(op.data) == len(leaves):
+            for d1, d2 in zip(op.data, leaves, strict=True):
+                assert qp.math.allclose(
+                    d1, d2
+                ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
+            return
+
+        leaf_iter = iter(leaves)
+        for data_item in op.data:
+            for leaf_item in leaf_iter:
+                try:
+                    data_matches_leaf = qp.math.allclose(data_item, leaf_item)
+                except (AttributeError, TypeError, ValueError):
+                    data_matches_leaf = False
+
+                if data_matches_leaf:
+                    break
+            else:
+                raise AssertionError(
+                    "data must be present among the terminal leaves of the pytree in order. "
+                    f"Could not find {data_item} in {leaves}."
+                )
 
 
 def _check_capture(op):
