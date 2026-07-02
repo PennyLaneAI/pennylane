@@ -25,6 +25,7 @@ from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ig
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
+    _decomp_contains_mcm,
     list_decomps,
     register_condition,
     register_resources,
@@ -33,7 +34,6 @@ from pennylane.decomposition.resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     adjoint_resource_rep,
-    resource_rep,
 )
 
 from .symbolicop2 import SymbolicOp2
@@ -181,13 +181,6 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
         ]
     )
     return custom_rules + wrapped_rules
-
-
-def _decomp_contains_mcm(rule, params):
-    resources = rule.compute_resources(**params).gate_counts
-    mcm = resource_rep(qp.ops.MidMeasure)
-    ppm = resource_rep(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
 
 
 def _make_adjoint_decomp(base_rule: DecompositionRule):

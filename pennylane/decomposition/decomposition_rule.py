@@ -1140,3 +1140,10 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
             "The resources of a decomposition rule cannot contain operators with "
             f"abstract data of undetermined dimensions, got {op}."
         )
+
+
+def _decomp_contains_mcm(rule, params):
+    resources = rule.compute_resources(**params).gate_counts
+    mcm = resource_rep(qp.ops.MidMeasure)
+    ppm = resource_rep(qp.ops.PauliMeasure)
+    return mcm in resources or ppm in resources
