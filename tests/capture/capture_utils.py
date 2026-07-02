@@ -39,7 +39,8 @@ def extract_all_primitives(jaxpr):
     for eqn in jaxpr.eqns:
         primitives.add(eqn.primitive)
 
-        # NOTE: Must go through nested jaxpr inside HOP like Qnode, cond, etc
+        # NOTE: Seach through potentially nested higher order primitives (like qnode, cond, etc).
+        # Avoid looking for specific keys in the params (like 'qfunc_jaxpr') to ensure maintainability.
         for val in eqn.params.values():
             if isinstance(val, Jaxpr):
                 primitives.update(extract_all_primitives(val))
