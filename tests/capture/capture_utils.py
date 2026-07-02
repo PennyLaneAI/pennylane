@@ -15,6 +15,12 @@
 Utility functions for capture-related tests.
 """
 
+import pytest
+
+# pylint: disable=wrong-import-position
+jax = pytest.importorskip("jax")
+from jax._src.core import ClosedJaxpr, Jaxpr
+
 
 def extract_ops_and_meas_prims(jaxpr):
     """Extract the primitives that are operators and measurements."""
@@ -24,3 +30,26 @@ def extract_ops_and_meas_prims(jaxpr):
         if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
         or getattr(eqn.primitive, "name", "") == "measure"
     ]
+
+
+def extract_all_primitives(jaxpr):
+    """Extract all primitives."""
+    primitives = set()
+
+    for eqn in jaxpr.eqns:
+        primitives.add(eqn.primitive)
+
+        # NOTE: Must go through nested jaxpr inside HOP like Qnode, cond, etc
+        for val in eqn.params.values():
+            if isinstance(val, Jaxpr):
+                primitives.update(extract_all_primitives(val))
+            elif isinstance(val, ClosedJaxpr):
+                primitives.update(extract_all_primitives(val.jaxpr))
+            elif isinstance(val, (list, tuple)):
+                for item in val:
+                    if isinstance(item, Jaxpr):
+                        primitives.update(extract_all_primitives(item))
+                    elif isinstance(val, ClosedJaxpr):
+                        primitives.update(extract_all_primitives(item.jaxpr))
+
+    return primitives

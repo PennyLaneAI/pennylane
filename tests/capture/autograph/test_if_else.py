@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import cond, measure
+from pennylane.capture.primitives import cond_prim
 
 pytestmark = pytest.mark.capture
 
@@ -31,6 +32,7 @@ from jax.core import eval_jaxpr
 
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.exceptions import AutoGraphError
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -91,7 +93,7 @@ class TestConditionals:
         # with autograph we can convert to jaxpr
         circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
@@ -120,7 +122,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -146,7 +148,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -170,7 +172,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
     def test_nested_cond(self):
         """Test that a nested conditional is converted as expected"""
@@ -188,7 +190,7 @@ class TestConditionals:
 
         ag_fn = run_autograph(fn)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -211,7 +213,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -224,7 +226,6 @@ class TestConditionals:
         the conditional works as expected."""
 
         def f(x: float):
-
             if x:
                 return x  # converted to cond_fn with no else_fn
 
@@ -248,7 +249,6 @@ class TestConditionals:
         """Test if Autograph works when applied to a function explicitly decorated with cond"""
 
         def f(n):
-
             @cond(n > 4)
             def cond_fn():
                 return n**2
@@ -313,7 +313,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond[" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
 
 if __name__ == "__main__":
