@@ -812,6 +812,7 @@
   [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
   [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
   [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
@@ -886,6 +887,9 @@
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
+
+* Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
+  [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
 * A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
   [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)

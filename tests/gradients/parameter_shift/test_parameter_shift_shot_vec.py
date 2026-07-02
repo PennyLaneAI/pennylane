@@ -103,7 +103,7 @@ class TestParamShift:
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
@@ -130,7 +130,7 @@ class TestParamShift:
             assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
