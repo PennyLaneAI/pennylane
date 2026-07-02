@@ -18,6 +18,8 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
+from pennylane.core.transforms import CompilePipeline
 from pennylane.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
@@ -25,8 +27,6 @@ from pennylane.devices.capabilities import (
     OperatorProperties,
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
@@ -808,7 +808,7 @@ class TestProvidingDerivatives:
 
 @pytest.mark.jax
 def test_capture_methods_not_implemented():
-    """Test that the eval_jaxpr and jaxpr_jvp methods are not implemented by default."""
+    """Test that the eval_jaxpr is not implemented by default."""
 
     import jax
 
@@ -824,6 +824,3 @@ def test_capture_methods_not_implemented():
     jaxpr = jax.make_jaxpr(f)(2)
     with pytest.raises(NotImplementedError):
         NormalDevice().eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, execution_config=None)
-
-    with pytest.raises(NotImplementedError):
-        NormalDevice().jaxpr_jvp(jaxpr.jaxpr, (3,), (0,), execution_config=None)

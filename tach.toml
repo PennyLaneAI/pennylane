@@ -77,7 +77,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.core.measurements"
 layer = "core"
-depends_on = ["pennylane.capture",  "pennylane.math", "pennylane.wires", "pennylane.exceptions",  "pennylane.operation2", "pennylane.core.operator", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+depends_on = ["pennylane.capture",  "pennylane.math", "pennylane.wires", "pennylane.exceptions",  "pennylane.operation2", "pennylane.core.operator", "pennylane.core.queuing", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
@@ -95,6 +95,35 @@ expose = ["Shots", "ShotCopies", "ShotsLike"]
 from = ["pennylane.core.shots"]
 
 [[modules]]
+path = "pennylane.core.qscript"
+layer = "core"
+depends_on = ["pennylane.core.operator", "pennylane.core.shots", "pennylane.core.measurements", "pennylane.exceptions", "pennylane.pytrees", "pennylane.core.queuing", "pennylane.typing", "pennylane.wires"]
+
+[[interfaces]]
+expose = ["QuantumScript", "QuantumScriptBatch", "QuantumScriptOrBatch", "make_qscript", "process_queue"]
+from = ["pennylane.core.qscript"]
+
+[[modules]]
+path = "pennylane.core.queuing"
+depends_on = ["pennylane.exceptions"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+layer = "core"
+
+[[interfaces]]
+expose = ["QueuingManager", "AnnotatedQueue", "apply"]
+from = ["pennylane.core.queuing"]
+
+[[modules]]
+path = "pennylane.core.transforms"
+layer = "core"
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["transform", "Transform", "BoundTransform", "CompilePipeline"]
+from = ["pennylane.core.transforms"]
+
+[[modules]]
 path = "pennylane.math"
 depends_on = ["pennylane._grad", "pennylane.numpy"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -102,7 +131,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.pytrees"
-depends_on = ["pennylane.queuing"]
+depends_on = ["pennylane.core.queuing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -136,11 +165,7 @@ depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
-[[modules]]
-path = "pennylane.queuing"
-depends_on = []
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
+
 
 [[modules]]
 path = "pennylane.configuration"
@@ -184,7 +209,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.measurements"
 layer = "core"
-depends_on = ["pennylane.core.measurements", "pennylane.core.shots", "pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.operation2", "pennylane.core.operator", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
+depends_on = ["pennylane.core.measurements", "pennylane.core.shots", "pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.core.operator", "pennylane.ops", "pennylane.core.queuing", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## AUXILIARY module(s)
@@ -346,10 +371,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 # These are left temporarily to depend on ANYTHING but the closed modules at the top of this file.
 
 [[modules]]
-path = "pennylane.transforms.core"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.operation"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -362,7 +383,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify"]
 from = ["pennylane.core.operator"]
 
 [[modules]]

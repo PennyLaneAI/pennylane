@@ -28,9 +28,9 @@ from typing import Any
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
-from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
 from .expression import Expression, convert_int_vals_to_expression
@@ -950,16 +950,29 @@ class CircuitSpecs:
             )
         return "\n".join(lines)
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self, collapsible: bool = True) -> str:
         """
         Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
+
+        Args:
+            collapsible (bool): Whether to display the resources in collapsible sections.
+
+        Returns:
+            str: A Markdown representation of this object for Jupyter notebooks.
 
         .. seealso::
 
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
+        # pylint: disable=too-many-branches
+        # Ignore pylint on this one, this is not better served by splitting into even
+        # smaller functions than it already has
         lines = []
-        lines.append("**Circuit Specs:**")
+        if collapsible:
+            lines.append("<details open>")
+            lines.append("<summary>Circuit Specs</summary>")
+        else:
+            lines.append("**Circuit Specs:**")
         lines.append("")
         lines.append("| Metric | Value |")
         lines.append("| :--- | ---: |")
@@ -974,19 +987,35 @@ class CircuitSpecs:
             lines.append(f"| **Level** | {self.level} |")
 
         lines.append("")
-        lines.append("**Resources:**")
+
+        if collapsible:
+            lines.append("</details>")
+            lines.append("<details open>")
+            lines.append("<summary>Resources</summary>")
+        else:
+            lines.append("**Resources:**")
         lines.append("")
 
         if isinstance(self.resources, SpecsResources):
             lines.append(self.resources._repr_markdown_())  # pylint: disable=protected-access
         elif isinstance(self.resources, list):
             for i, r in enumerate(self.resources):
-                lines.append(f"**Batched tape {num_to_letters(i)}:**")
+                if collapsible:
+                    lines.append("<details open>")
+                    lines.append(f"<summary>Batched tape {num_to_letters(i)}</summary>")
+                else:
+                    lines.append(f"**Batched tape {num_to_letters(i)}:**")
                 lines.append("")
                 lines.append(r._repr_markdown_())  # pylint: disable=protected-access
                 lines.append("")
+                if collapsible:
+                    lines.append("</details>")
         elif isinstance(self.resources, dict):
             lines.append(self._to_markdown_tabular())
+
+        if collapsible:
+            lines.append("")
+            lines.append("</details>")
 
         return "\n".join(lines)
 

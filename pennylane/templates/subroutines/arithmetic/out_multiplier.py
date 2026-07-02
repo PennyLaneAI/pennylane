@@ -18,6 +18,7 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -37,7 +38,6 @@ from pennylane.ops import (
     ctrl,
     prod,
 )
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence

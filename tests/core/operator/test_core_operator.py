@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
+from typing import Callable
 
 import numpy as np
 import pytest
@@ -31,7 +32,9 @@ from pennylane.operation import (
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.wires import Wires
+from pennylane.ops.op_math.pow import PowOperation
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
@@ -1586,19 +1589,6 @@ class TestOperationDerivative:
         ):
             operation_derivative(op)
 
-    def test_multiparam_raise(self):
-        """Test if the function raises a ValueError if the input operation is composed of multiple
-        parameters"""
-
-        class RotWithGen(qp.Rot):
-            def generator(self):
-                return qp.Hermitian(np.zeros((2, 2)), wires=self.wires)
-
-        op = RotWithGen(0.1, 0.2, 0.3, wires=0)
-
-        with pytest.raises(ValueError, match="Operation RotWithGen is not written in terms of"):
-            operation_derivative(op)
-
     def test_rx(self):
         """Test if the function correctly returns the derivative of RX"""
         p = 0.3
@@ -1759,13 +1749,56 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
+# pylint: disable=too-few-public-methods
+class MultiRot(Operator2):
+    """MultiRot class used for testing purposes."""
+
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("wires",)
+    static_argnames = ("string",)
+
+    def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
+        """
+        A simple MultiRot operator based on Operator2.
+
+        Args:
+            angles: The angles of each rotation.
+            wires: The wires each rotation applies to.
+            string: The type ("X", "Y", "Z") of each rotation.
+        """
+        assert len(angles) == len(string) == len(wires)
+        for letter in string:
+            assert letter in ("X", "Y", "Z")
+        super().__init__(angles, wires, string)
+
+    def compute_decomposition(self, angles: TensorLike, wires: WiresLike, string: str):
+        decomp = []
+        for angle, wire, letter in zip(angles, wires, string, strict=True):
+            if letter == "X":
+                decomp.append(qp.RX(angle, wire))
+            elif letter == "Y":
+                decomp.append(qp.RY(angle, wire))
+            else:
+                decomp.append(qp.RZ(angle, wire))
+
+        return decomp
+
+
 pairs_of_ops = [
     (qp.S(0), qp.T(0)),
     (qp.S(0), qp.PauliX(0)),
     (qp.PauliX(0), qp.S(0)),
     (qp.PauliX(0), qp.PauliY(0)),
     (qp.PauliZ(0), qp.prod(qp.PauliX(0), qp.PauliY(1))),
+    (qp.CNOT((0, 1)), MultiRot([np.pi / 4, np.pi / 2], [0, 1], "XX")),
+    (
+        MultiRot([np.pi / 8, np.pi / 16], [0, 1], "YY"),
+        MultiRot([np.pi / 4, np.pi / 2], [0, 1], "XX"),
+    ),
+    (MultiRot([np.pi / 4, np.pi / 2], [0, 1], "ZX"), qp.CNOT((0, 1))),
 ]
+
+X2 = lambda w: MultiRot([np.pi], [w], "X")
 
 
 class TestNewOpMath:
@@ -1792,14 +1825,21 @@ class TestNewOpMath:
             assert op[1].scalar == -1
             qp.assert_equal(op[1].base, op1)
 
-        def test_sub_with_unknown_not_supported(self):
+        @pytest.mark.parametrize("op", [X2(0), qp.S(0)])
+        def test_sub_with_unknown_not_supported(self, op):
             """Test subtracting an unexpected type from an Operator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
-                _ = qp.S(0) - "foo"
+                _ = op - "foo"
 
-        def test_op_with_scalar(self):
+        @pytest.mark.parametrize(
+            "x0, x1",
+            [
+                (X2(0), X2(1)),
+                (qp.PauliX(0), qp.PauliX(1)),
+            ],
+        )
+        def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
-            x0 = qp.PauliX(0)
             for op in [x0 + 1, 1 + x0]:
                 assert isinstance(op, Sum)
                 qp.assert_equal(op[0], x0)
@@ -1807,7 +1847,6 @@ class TestNewOpMath:
                 assert op[1].scalar == 1
                 qp.assert_equal(op[1].base, qp.Identity(0))
 
-            x1 = qp.PauliX(1)
             op = x1 - 1.1
             assert isinstance(op, Sum)
             qp.assert_equal(op[0], x1)
@@ -1824,9 +1863,13 @@ class TestNewOpMath:
             assert op[1].scalar == 1.1
             qp.assert_equal(op[1].base, qp.Identity(1))
 
+            op = x1 + 0
+            qp.assert_equal(op, x1)
+            assert op is x1
+
         def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
-            op0, op1, op2 = qp.S(0), qp.T(0), qp.PauliZ(0)
+            op0, op1, op2 = qp.S(0), qp.T(0), X2(0)
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
             assert len(op) == 3
@@ -1834,34 +1877,90 @@ class TestNewOpMath:
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
 
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = base + "carrot stew"
+
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
 
-        @pytest.mark.parametrize("scalar", [0, 1, 1.1, 1 + 2j, [3, 4j]])
-        def test_mul(self, scalar):
+        @pytest.mark.parametrize(
+            "operand, base",
+            [
+                (0, qp.PauliX(0)),
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                ([3, 4j], qp.PauliX(0)),
+                (0, X2(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                ([3, 4j], X2(0)),
+                (lambda x: x, X2(0)),
+            ],
+        )
+        def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
-            base = qp.PauliX(0)
-            for op in [scalar * base, base * scalar]:
-                assert isinstance(op, SProd)
-                assert qp.math.allequal(op.scalar, scalar)
-                qp.assert_equal(op.base, base)
+            for op in [operand * base, base * operand]:
+                if isinstance(operand, Callable):
+                    assert isinstance(op, qp.pulse.ParametrizedHamiltonian)
+                else:
+                    assert isinstance(op, SProd)
+                    assert qp.math.allequal(op.scalar, operand)
+                    qp.assert_equal(op.base, base)
 
-        @pytest.mark.parametrize("scalar", [1, 1.1, 1 + 2j, qp.numpy.array([3, 4j])])
-        def test_div(self, scalar):
+        @pytest.mark.parametrize(
+            "scalar, base",
+            [
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                (qp.numpy.array([3, 4j]), qp.PauliX(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                (qp.numpy.array([3, 4j]), X2(0)),
+            ],
+        )
+        def test_div(self, scalar, base):
             """Tests diviing an operator by a scalar coefficient works as expected."""
-            base = qp.PauliX(0)
             op = base / scalar
             assert isinstance(op, SProd)
             assert qp.math.allequal(op.scalar, 1 / scalar)
             qp.assert_equal(op.base, base)
 
-        def test_mul_does_auto_simplify(self):
+        @pytest.mark.parametrize("op", [X2(0), qp.PauliX(0)])
+        def test_mul_does_auto_simplify(self, op):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
-            op = 2 * qp.PauliX(0)
-            nested = 0.5 * op
+            _op = 2 * op
+            nested = 0.5 * _op
             assert isinstance(nested, SProd)
             assert nested.scalar == 1.0
-            qp.assert_equal(nested.base, qp.X(0))
+            qp.assert_equal(nested.base, op)
+
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="non-int of type"):
+                _ = base * "science..."
+
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = base / "rules"
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -1880,13 +1979,49 @@ class TestNewOpMath:
 
         def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
-            op0, op1, op2 = qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)
+            op0, op1, op2 = qp.PauliX(0), qp.PauliY(1), X2(0)
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
             assert len(op) == 3
             qp.assert_equal(op[0], op0)
             qp.assert_equal(op[1], op1)
             qp.assert_equal(op[2], op2)
+
+    class TestPow:
+
+        @pytest.mark.parametrize(
+            "power, base",
+            [
+                (0, qp.PauliX(0)),
+                (1, qp.PauliX(0)),
+                (1.1, qp.PauliX(0)),
+                (1 + 2j, qp.PauliX(0)),
+                ([3, 4j], qp.PauliX(0)),
+                (0, X2(0)),
+                (1, X2(0)),
+                (1.1, X2(0)),
+                (1 + 2j, X2(0)),
+                ([3, 4j], X2(0)),
+            ],
+        )
+        def test_pow(self, power, base):
+            """Tests multiplying an operator by a scalar coefficient works as expected."""
+            op = base**power
+            assert isinstance(op, PowOperation)
+            qp.assert_equal(op.base, base)
+            assert op.z == power
+
+        @pytest.mark.parametrize(
+            "base",
+            [
+                qp.PauliY(0),
+                MultiRot([np.pi], [0], "Y"),
+            ],
+        )
+        def test_raises(self, base):
+            """Tests that the dunder raises with incompatible types."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = base ** "potato"
 
 
 class TestHamiltonianLinearCombinationAlias:

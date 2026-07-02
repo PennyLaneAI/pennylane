@@ -24,6 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
@@ -44,7 +45,6 @@ from pennylane.resource.resource import (
     resources_from_tape,
     substitute,
 )
-from pennylane.tape import QuantumScript
 
 
 class TestResources:
@@ -1449,7 +1449,7 @@ class TestIPythonDisplays:
             level=2,
             resources=example_specs_resource,
         )
-        actual = s._repr_markdown_()
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 
@@ -1476,6 +1476,47 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
+    def test_single_level_circuit_specs_ipython_display_collapsible(self, example_specs_resource):
+        """Test the IPython display of a single-level CircuitSpecs instance."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=example_specs_resource,
+        )
+        actual = s._repr_markdown_(collapsible=True)
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Level** | 2 |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+
+            </details>
+        """)
+
+        assert actual.strip() == expected.strip()
+
     def test_batched_circuit_specs_ipython_display(self, example_specs_resource):
         """Test the IPython display of a single-level CircuitSpecs instance."""
         s = CircuitSpecs(
@@ -1485,7 +1526,7 @@ class TestIPythonDisplays:
             level=2,
             resources=[example_specs_resource, example_specs_resource],
         )
-        actual = s._repr_markdown_()
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 
@@ -1527,6 +1568,67 @@ class TestIPythonDisplays:
 
         assert actual.strip() == expected.strip()
 
+    def test_batched_circuit_specs_ipython_display_collapsible(self, example_specs_resource):
+        """Test the IPython display of a single-level CircuitSpecs instance."""
+        s = CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level=2,
+            resources=[example_specs_resource, example_specs_resource],
+        )
+        actual = s._repr_markdown_(collapsible=True)
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Level** | 2 |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            <details open>
+            <summary>Batched tape a</summary>
+
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+
+            </details>
+            <details open>
+            <summary>Batched tape b</summary>
+
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Wire allocations** | 2 |
+            | **Total gates** | 1.000E+5 |
+            | **Gate counts:** | |
+            | Hadamard | 1 |
+            | CNOT | 1.000E+5 |
+            | **Measurements:** | |
+            | expval(PauliZ) | 1 |
+            | **Depth** | 2 |
+
+            </details>
+
+            </details>
+            """)
+
+        assert actual.strip() == expected.strip()
+
     def test_multi_level_circuit_specs_ipython_display(
         self, example_symbolic_specs_resource, example_specs_resource
     ):
@@ -1541,7 +1643,7 @@ class TestIPythonDisplays:
                 1: [example_specs_resource, example_specs_resource],
             },
         )
-        actual = s._repr_markdown_()
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 

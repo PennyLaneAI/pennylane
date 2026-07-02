@@ -22,11 +22,11 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.shots import Shots
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.transforms import CompilePipeline, Transform
+from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
 from pennylane.ops import H, X, Y, Z
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,
@@ -35,7 +35,6 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -308,7 +307,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.tape import QuantumScriptBatch
+                from pennylane.core.qscript import QuantumScriptBatch
                 from pennylane.typing import PostprocessingFn
 
                 @qp.transform
@@ -411,7 +410,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            from pennylane.tape import QuantumScriptBatch
+            from pennylane.core.qscript import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
             @qp.transform
@@ -959,51 +958,6 @@ class Device(abc.ABC):
 
         """
         raise NotImplementedError
-
-    def jaxpr_jvp(
-        self,
-        jaxpr: "jax.extend.core.Jaxpr",
-        args,
-        tangents,
-        execution_config: ExecutionConfig | None = None,
-    ):
-        """An **experimental** method for computing the results and jvp for PLXPR.
-        See the ``capture`` module for more details.
-
-        Args:
-            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
-                and measurements
-            args (Sequence[TensorLike]): the ``consts`` followed by the normal   arguments
-            tangents (Sequence[TensorLike]): the tangents corresponding to ``args``.
-                May contain ``jax.interpreters.ad.Zero``.
-
-        Keyword Args:
-            execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
-
-        Returns:
-            Sequence[TensorLike], Sequence[TensorLike]: the results and jacobian vector products
-
-        >>> qp.capture.enable()
-        >>> import jax
-        >>> closure_var = jax.numpy.array(0.5)
-        >>> def f(x):
-        ...     qp.RX(closure_var, 0)
-        ...     qp.RX(x, 1)
-        ...     return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-        >>> jaxpr = jax.make_jaxpr(f)(1.2)
-        >>> args = (closure_var, 1.2)
-        >>> zero = jax.interpreters.ad.Zero(jax.core.ShapedArray((), float))
-        >>> tangents = (zero, 1.0)
-        >>> config = qp.devices.ExecutionConfig(gradient_method="adjoint")
-        >>> dev = qp.device('default.qubit', wires=2)
-        >>> res, jvps = dev.jaxpr_jvp(jaxpr.jaxpr, args, tangents, execution_config=config)
-        >>> res
-        [Array(0.87758256, dtype=float64), Array(0.36235775, dtype=float64)]
-        >>> jvps
-        [Array(0., dtype=float64), Array(-0.93203909, dtype=float64)]
-
-        """
-        raise NotImplementedError(f"device {self} does not yet support PLXPR jvps.")
 
 
 def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
