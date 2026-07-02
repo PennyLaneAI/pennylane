@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pure function implementations for the expectation value functions.
+Implementations for the qubit and qudit expectation value functions
 """
 
 import itertools

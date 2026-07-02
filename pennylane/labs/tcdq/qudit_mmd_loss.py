@@ -48,12 +48,6 @@ Operationally, the helpers in this file do four things:
 4. combine them into an unbiased estimate of ``MMD^2`` using U-statistic
     corrections for the data-data and model-model terms.
 
-If you are reading this alongside ``iqpopt_notes.tex``, this file implements
-the ``Loss functions via graph-Fourier kernels`` section, especially the
-``Estimating from a dataset`` and ``Unbiased estimators`` subsections. The
-code uses the same high-level objects as the notes: sampled Fourier indices
-``l ~ P``, data moments ``mu_p(l)``, model moments ``mu_q(l)``, and the
-per-observable ``PP``, ``PQ``, and ``QQ`` terms of the unbiased estimator.
 """
 
 from collections.abc import Callable, Sequence
