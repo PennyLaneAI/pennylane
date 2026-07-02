@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Phase optimization with JAX (PHOX)
+Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.phox
+.. currentmodule:: pennylane.labs.tcdq
 
 .. autosummary::
     :toctree: api
 
     ~CircuitConfig
+    ~QuditCircuitConfig
     ~MMDConfig
+    ~QuditMMDConfig
     ~build_expval_func
+    ~build_qudit_expval_func
+    ~build_qudit_mmd_loss
     ~bitflip_expval
     ~mmd_loss
     ~median_heuristic
@@ -36,7 +40,7 @@ Phase optimization with JAX (PHOX)
 Circuit construction utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.phox
+.. currentmodule:: pennylane.labs.tcdq
 
 .. autosummary::
     :toctree: api
@@ -50,21 +54,21 @@ Circuit construction utilities
 Workflow
 ~~~~~~~~
 
-``pennylane.labs.phox`` provides a compact toolkit for constructing and
+``pennylane.labs.tcdq`` provides a compact toolkit for constructing and
 simulating phase optimization circuits with JAX. The usual workflow is:
 
-#. Use helpers in :mod:`pennylane.labs.phox.utils` to assemble gates and
+#. Use helpers in :mod:`pennylane.labs.tcdq.utils` to assemble gates and
    observables.
-#. Configure the circuit with :class:`~pennylane.labs.phox.CircuitConfig`.
+#. Configure the circuit with :class:`~pennylane.labs.tcdq.CircuitConfig`.
 #. Build an expectation-value function with
-   :func:`~pennylane.labs.phox.build_expval_func` and evaluate it for
+   :func:`~pennylane.labs.tcdq.build_expval_func` and evaluate it for
    different parameter sets.
 
 .. code-block:: python
 
    import jax
 
-   from pennylane.labs.phox import (
+   from pennylane.labs.tcdq import (
        CircuitConfig,
        build_expval_func,
        create_lattice_gates,
@@ -103,7 +107,7 @@ compiled ``expval_fn`` from above.
 
    import jax.numpy as jnp
 
-   from pennylane.labs.phox import TrainingOptions, train
+   from pennylane.labs.tcdq import TrainingOptions, train
 
    def loss_fn(current_params):
        expvals, _ = expval_fn(current_params)
@@ -127,13 +131,13 @@ Maximum Mean Discrepancy (MMD) Loss
 
 To train a circuit to reproduce a target probability distribution (e.g., a dataset
 of bitstrings), you can use the built-in MMD loss utilities. This integrates
-seamlessly with the ``train`` function using the :class:`~pennylane.labs.phox.MMDConfig`
+seamlessly with the ``train`` function using the :class:`~pennylane.labs.tcdq.MMDConfig`
 dataclass.
 
 .. code-block:: python
 
    import numpy as np
-   from pennylane.labs.phox import MMDConfig, mmd_loss, median_heuristic
+   from pennylane.labs.tcdq import MMDConfig, mmd_loss, median_heuristic
 
    np.random.seed(42)
    target_data = np.random.binomial(1, 0.5, size=(500, n_qubits))
@@ -161,7 +165,15 @@ dataclass.
 
 """
 
-from .expval_functions import CircuitConfig, bitflip_expval, build_expval_func
+from .expval_functions import (
+    CircuitConfig,
+    QuditCircuitConfig,
+    bitflip_expval,
+    build_expval_func,
+    build_qudit_expval_func,
+)
+from .mmd_loss import MMDConfig, median_heuristic, mmd_loss
+from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -169,14 +181,17 @@ from .utils import (
     create_random_gates,
     generate_pauli_observables,
 )
-from .mmd_loss import MMDConfig, mmd_loss, median_heuristic
 
 __all__ = [
     "CircuitConfig",
+    "QuditCircuitConfig",
     "MMDConfig",
+    "QuditMMDConfig",
     "bitflip_expval",
     "build_expval_func",
+    "build_qudit_expval_func",
     "mmd_loss",
+    "build_qudit_mmd_loss",
     "median_heuristic",
     "BatchResult",
     "TrainingOptions",
