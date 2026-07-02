@@ -460,8 +460,6 @@ class TestIntegration:
             return qp.probs()
 
         ag_fn = run_autograph(circ)
-        phi = np.pi / 2
-        _ = jax.make_jaxpr(ag_fn)(phi)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
@@ -484,7 +482,6 @@ class TestIntegration:
             return qp.probs()
 
         ag_fn = run_autograph(circ)
-        _ = jax.make_jaxpr(ag_fn)(np.pi)
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
         assert check_cache(inner)
@@ -651,9 +648,6 @@ class TestCodePrinting:
             return inner(x)
 
         fn = run_autograph(fn)
-        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
-        # and we can't get the source for the inner function
-        _ = jax.make_jaxpr(fn)(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner(x" in autograph_source(inner)
@@ -675,9 +669,6 @@ class TestCodePrinting:
             return inner1(x) + inner2(x)
 
         fn = run_autograph(fn)
-        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
-        # and we can't get the source for the inner function
-        _ = jax.make_jaxpr(fn)(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner1(x" in autograph_source(inner1)
