@@ -412,6 +412,7 @@ class TestExpvalVar:
     def test_capture_operator2(self, m_type, defined_outside):
         """Test that the expectation value of an observable can be captured."""
 
+        # pylint: disable=too-few-public-methods
         class PauliX(qp.core.Operator2):
             """operator2 version of x"""
 
