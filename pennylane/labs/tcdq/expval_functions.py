@@ -90,7 +90,7 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
     Returns:
         tuple[jnp.ndarray, jnp.ndarray]: Tuple containing:
             - Binary matrix of generators.
-            - Integer array mapping parameters to generators.
+            - Integer array mapping each generator to its parameter index.
     """
     flat_gates = []
     param_indices = []
