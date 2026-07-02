@@ -117,7 +117,7 @@ def test_nested_pl_object():
     )
 
     data, structure = flatten(tape)
-    assert data == [0.1, 2, None]
+    assert data == [0.1, 2, 0, None]
 
     wires0 = qp.wires.Wires(0)
     op_structure = PyTreeStructure(
@@ -125,8 +125,19 @@ def test_nested_pl_object():
     )
     list_op_struct = PyTreeStructure(list, None, (op_structure,))
 
+    x_structure = PyTreeStructure(
+        qp.X,
+        (),
+        (
+            PyTreeStructure(list, None, ()),
+            PyTreeStructure(list, None, (PyTreeStructure(qp.wires.Wires, (), (leaf,)),)),
+            PyTreeStructure(list, None, ()),
+        ),
+    )
     sprod_structure = PyTreeStructure(
-        qp.ops.SProd, (), (leaf, PyTreeStructure(qp.X, (wires0, ()), ()))
+        qp.ops.SProd,
+        (),
+        (leaf, x_structure),
     )
     meas_structure = PyTreeStructure(
         qp.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
@@ -140,7 +151,7 @@ def test_nested_pl_object():
 
     assert structure == tape_structure
 
-    new_tape = unflatten([3, 4, None], structure)
+    new_tape = unflatten([3, 4, 0, None], structure)
     expected_new_tape = qp.tape.QuantumScript(
         [qp.adjoint(qp.RX(3, wires=0))],
         [qp.expval(4 * qp.X(0))],

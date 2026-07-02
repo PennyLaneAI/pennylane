@@ -35,6 +35,7 @@ from pennylane.decomposition import (
     controlled_resource_rep,
     resource_rep,
 )
+from pennylane.decomposition.resources import _op_type_and_params
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -505,10 +506,11 @@ def _ctrl_prod_resources(
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
+        rep_type, rep_params = _op_type_and_params(rep)
         resources[
             controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
+                base_class=rep_type,
+                base_params=rep_params,
                 num_control_wires=1,
                 num_zero_control_values=0,
                 num_work_wires=0,
@@ -555,10 +557,11 @@ def _ctrl_prod_resources_with_one_work_wire(
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
+        rep_type, rep_params = _op_type_and_params(rep)
         resources[
             controlled_resource_rep(
-                base_class=rep.op_type,
-                base_params=rep.params,
+                base_class=rep_type,
+                base_params=rep_params,
                 num_control_wires=1,
                 num_zero_control_values=0,
                 num_work_wires=0,

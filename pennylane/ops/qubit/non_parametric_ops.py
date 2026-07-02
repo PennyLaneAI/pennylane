@@ -349,13 +349,8 @@ class PauliX(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {
-                    qp.pauli.PauliWord(
-                        {self.wires[0]: "X"}
-                    ): 1.0  # pylint: disable=unsubscriptable-object
-                }
-            )
+            wire = self.wires[0]  # pylint: disable=unsubscriptable-object
+            self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({wire: "X"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -373,7 +368,7 @@ class PauliX(Operator2):
     def __repr__(self) -> str:
         """String representation."""
         if isinstance(self.wires, AbstractWires):
-            return f"PauliX"
+            return "PauliX"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"X('{wire}')"
@@ -388,6 +383,23 @@ class PauliX(Operator2):
     def resource_params(self) -> dict:
         """Resource parameters."""
         return {}
+
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        """Control wires of the operator."""
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        """Single-qubit rotation angles."""
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     _cached_mat = np.array([[0, 1], [1, 0]])
 
@@ -655,13 +667,8 @@ class PauliY(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {
-                    qp.pauli.PauliWord(
-                        {self.wires[0]: "Y"}
-                    ): 1.0  # pylint: disable=unsubscriptable-object
-                }
-            )
+            wire = self.wires[0]  # pylint: disable=unsubscriptable-object
+            self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({wire: "Y"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -670,7 +677,7 @@ class PauliY(Operator2):
     def __repr__(self) -> str:
         """String representation."""
         if isinstance(self.wires, AbstractWires):
-            return f"PauliY"
+            return "PauliY"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Y('{wire}')"
@@ -694,6 +701,23 @@ class PauliY(Operator2):
     def resource_params(self) -> dict:
         """Resource parameters."""
         return {}
+
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        """Control wires of the operator."""
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        """Single-qubit rotation angles."""
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     _cached_matrix = np.array([[0, -1j], [1j, 0]])
 
@@ -931,13 +955,8 @@ class PauliZ(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {
-                    qp.pauli.PauliWord(
-                        {self.wires[0]: "Z"}
-                    ): 1.0  # pylint: disable=unsubscriptable-object
-                }
-            )
+            wire = self.wires[0]  # pylint: disable=unsubscriptable-object
+            self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({wire: "Z"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -946,7 +965,7 @@ class PauliZ(Operator2):
     def __repr__(self) -> str:
         """String representation."""
         if isinstance(self.wires, AbstractWires):
-            return f"PauliZ"
+            return "PauliZ"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Z('{wire}')"
@@ -970,6 +989,23 @@ class PauliZ(Operator2):
     def resource_params(self) -> dict:
         """Resource parameters."""
         return {}
+
+    grad_recipe = None
+    grad_method = None
+
+    @property
+    def control_wires(self):
+        """Control wires of the operator."""
+        return Wires([])
+
+    def single_qubit_rot_angles(self):
+        """Single-qubit rotation angles."""
+        warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     _cached_matrix = np.array([[1, 0], [0, -1]])
 
