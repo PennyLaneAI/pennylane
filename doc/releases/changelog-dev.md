@@ -632,6 +632,7 @@
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
   [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
+  [(#9686)](https://github.com/PennyLaneAI/pennylane/pull/9686)
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
@@ -740,6 +741,9 @@
 * The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
 
 <h3>Internal changes ⚙️</h3>
+
+* Fixed some more randomness seeds in the test suite.
+  [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
 * Unblock the decomposition of :class:`~.SumOfSlaterPrep` in the old decomposition system.
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
@@ -884,6 +888,9 @@
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
 <h3>Documentation 📝</h3>
+
+* Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
+  [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
 * A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
   [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)
