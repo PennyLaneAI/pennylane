@@ -452,6 +452,15 @@
 * Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* The sparse Pauli decomposition used by :func:`~.pauli_decompose` for SciPy sparse inputs is now
+  significantly faster. Instead of expanding every nonzero matrix entry into :math:`2^n` Pauli-word
+  contributions, nonzero entries are grouped by their ``row ^ col`` XOR-difference (which fixes the
+  X-part of the contributing Pauli words) and each group is resolved with a single fast
+  Walsh-Hadamard transform plus a ``PauliY`` phase. This reduces the cost from
+  :math:`O(\text{nnz} \cdot n \cdot 2^n)` to :math:`O(\text{num\_groups} \cdot n \cdot 2^n)`,
+  giving order-of-magnitude speedups for sparse and structured operators.
+  [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
@@ -1002,6 +1011,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell
