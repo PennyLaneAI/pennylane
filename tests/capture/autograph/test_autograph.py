@@ -35,6 +35,7 @@ from pennylane.capture.autograph.transformer import (
     disable_autograph,
     run_autograph,
 )
+from pennylane.capture.primitives import cond_prim, for_loop_prim
 
 pytestmark = pytest.mark.capture
 
@@ -44,6 +45,7 @@ from jax import make_jaxpr
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.exceptions import AutoGraphError
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -711,9 +713,9 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
-        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
-        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert cond_prim not in extract_all_primitives(g_ag_jaxpr.jaxpr)
         assert g_ag(1, 3) == 13  # 1 + 4 * 3
 
     def test_disable_autograph_context_manager(self):
@@ -735,8 +737,8 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
-        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
-        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert cond_prim not in extract_all_primitives(g_ag_jaxpr.jaxpr)
 
         assert g_ag(1, 3) == 13  # 1 + 4 * 3
