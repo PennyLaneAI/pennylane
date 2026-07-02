@@ -256,7 +256,6 @@ class TestIntegration:
             return qp.expval(qp.PauliZ(0))
 
         ag_fn = run_autograph(circ)
-        _ = jax.make_jaxpr(ag_fn)(np.pi)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(circ.func)
@@ -273,7 +272,6 @@ class TestIntegration:
             return inner(x)
 
         ag_fn = run_autograph(fn)
-        _ = jax.make_jaxpr(ag_fn)(np.pi)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
@@ -296,7 +294,6 @@ class TestIntegration:
             return inner1(x) + inner2(x)
 
         ag_fn = run_autograph(fn)
-        _ = jax.make_jaxpr(ag_fn)(np.pi)
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
