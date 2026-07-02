@@ -28,7 +28,11 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from jax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-import-order
+# pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
+from jax import numpy as jnp
+
+from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from tests.capture.capture_utils import extract_all_primitives
 
 
 def test_error_is_raised_with_capture_disabled():
@@ -147,8 +151,8 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(2)
 
         # the plxpr includes a representation of a `cond` function
-        assert "cond[" in str(plxpr1)
-        assert "cond[" in str(plxpr2)
+        assert cond_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert cond_prim in extract_all_primitives(plxpr2.jaxpr)
 
     def test_while_loop(self):
         """Test that a while loop is converted to a jaxpr with a ``while_loop`` function, and
@@ -168,8 +172,8 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(0)
 
         # the plxpr includes a representation of a `while_loop` function
-        assert "while_loop[" in str(plxpr1)
-        assert "while_loop[" in str(plxpr2)
+        assert while_loop_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert while_loop_prim in extract_all_primitives(plxpr2.jaxpr)
 
     def test_for_loop(self):
         """Test that a for loop is converted to a jaxpr with a ``for_loop`` function, and
@@ -188,5 +192,5 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
 
         # the plxpr includes a representation of a `for_loop` function
-        assert "for_loop[" in str(plxpr1)
-        assert "for_loop[" in str(plxpr2)
+        assert for_loop_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert for_loop_prim in extract_all_primitives(plxpr2.jaxpr)
