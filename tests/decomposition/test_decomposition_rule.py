@@ -253,9 +253,6 @@ class TestDecompositionRule:
             assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
             assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
 
-            op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
-            assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
-
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
@@ -610,6 +607,9 @@ class TestDecompDictionary:
 
             rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
             assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+            
+        op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
+        assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed"""
