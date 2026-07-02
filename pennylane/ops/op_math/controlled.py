@@ -1146,12 +1146,6 @@ class ControlledOp(Controlled, Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        if cls is ControlledOp and issubclass(subclass, qp.ops.op_math.Controlled2):
-            return True
-        return NotImplemented
-
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
