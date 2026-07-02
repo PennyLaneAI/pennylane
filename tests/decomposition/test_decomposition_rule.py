@@ -32,7 +32,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import Float, Int, Wire
-from tests.core.operator.operator2_utils import DynOp, ParametrizedHybridOp
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
 # pylint: disable=too-few-public-methods,useless-parent-delegation
 
@@ -244,11 +244,16 @@ class TestDecompositionRule:
             qp.RX(theta, wires=wires[0])
             qp.RZ(theta, wires=wires[1])
 
-        qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
-        assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
-        assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
+            assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
+            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+            assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
+            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+
+            op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
+            assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
