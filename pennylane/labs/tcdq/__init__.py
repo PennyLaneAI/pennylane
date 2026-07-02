@@ -167,9 +167,11 @@ dataclass.
 
 from .expval_functions import (
     CircuitConfig,
-    QuditCircuitConfig,
     bitflip_expval,
     build_expval_func,
+)
+from .qudit_expval_functions import (
+    QuditCircuitConfig,
     build_qudit_expval_func,
 )
 from .mmd_loss import MMDConfig, median_heuristic, mmd_loss

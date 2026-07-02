@@ -58,7 +58,7 @@ import jax
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 
-from .expval_functions import QuditCircuitConfig, build_qudit_expval_func
+from .qudit_expval_functions import QuditCircuitConfig, build_qudit_expval_func
 
 
 @dataclass(frozen=True)

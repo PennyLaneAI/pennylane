@@ -19,7 +19,7 @@ import itertools
 import numpy as np
 import pytest
 
-from pennylane.labs.tcdq.expval_functions import QuditCircuitConfig
+from pennylane.labs.tcdq.qudit_expval_functions import QuditCircuitConfig
 from pennylane.labs.tcdq.qudit_mmd_loss import (
     QuditMMDConfig,
     _complete_marginal_probs,

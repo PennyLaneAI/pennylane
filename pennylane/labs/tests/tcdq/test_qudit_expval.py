@@ -24,7 +24,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
-from pennylane.labs.tcdq.expval_functions import (
+from pennylane.labs.tcdq.qudit_expval_functions import (
     QuditCircuitConfig,
     _parse_qudit_generator_dict,
     build_qudit_expval_func,
