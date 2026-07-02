@@ -1167,7 +1167,7 @@ class TestQNodeAutographIntegration:
                     r"dynamic variable \(a function input\)"
                 ),
             ):
-                jax.make_jaxpr(circuit)(3)
+                _ = jax.make_jaxpr(circuit)(3)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_while_loop(self, autograph):
@@ -1194,7 +1194,7 @@ class TestQNodeAutographIntegration:
                     r"dynamic variable \(a function input\)"
                 ),
             ):
-                jax.make_jaxpr(circuit)(3)
+                _ = jax.make_jaxpr(circuit)(3)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_conditionals(self, autograph):
@@ -1221,7 +1221,7 @@ class TestQNodeAutographIntegration:
                     r"dynamic variable \(a function input\)"
                 ),
             ):
-                jax.make_jaxpr(circuit)(0)
+                _ = jax.make_jaxpr(circuit)(0)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_for_loop(self, autograph):
