@@ -988,6 +988,10 @@
   restored as ``bytes``.
   [(#9687)](https://github.com/PennyLaneAI/pennylane/pull/9687)
 
+* Fixed a bug where :func:`~pennylane.equal` incorrectly returned ``True`` when comparing a leaf
+  operator with a strict subclass of it that had identical data and wires.
+  [(#9568)](https://github.com/PennyLaneAI/pennylane/issues/9568)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
