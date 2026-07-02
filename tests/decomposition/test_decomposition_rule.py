@@ -30,6 +30,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
+from pennylane.ops.mid_measure.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
@@ -609,6 +610,24 @@ class TestDecompDictionary:
 
             rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
             assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+
+    def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
+        """Tests that rules containing MCMs and wire allocations can't be adjointed"""
+
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        def custom_rule(theta, wires):
+            raise NotImplementedError
+
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        def custom_rule2(theta, wires, **__):
+            raise NotImplementedError
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(DynOp, custom_rule)
+            qp.add_decomps(DynOp, custom_rule2)
+
+            assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
 
 
 class TestDecompCollection:
