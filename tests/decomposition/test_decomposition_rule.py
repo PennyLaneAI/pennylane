@@ -607,7 +607,7 @@ class TestDecompDictionary:
 
             rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
             assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
-            
+
         op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
         assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
 
