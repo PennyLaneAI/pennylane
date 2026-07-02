@@ -475,14 +475,14 @@ class DefaultClifford(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ) -> tuple[CompilePipeline, ExecutionConfig]:
-        """This function defines the device compile pileline to be applied and an updated device configuration.
+        """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pileline that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -492,38 +492,38 @@ class DefaultClifford(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        compile_pileline = CompilePipeline()
+        compile_pipeline = CompilePipeline()
 
-        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
-        compile_pileline.add_transform(defer_measurements, allow_postselect=False)
+        compile_pipeline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pipeline.add_transform(defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
-            compile_pileline.add_transform(
+            compile_pipeline.add_transform(
                 decompose,
                 target_gates=set(_OPERATIONS_MAP.keys()),
                 stopping_condition=operation_stopping_condition,
                 name=self.name,
             )
-            compile_pileline.add_transform(_validate_channels, name=self.name)
-        compile_pileline.add_transform(
+            compile_pipeline.add_transform(_validate_channels, name=self.name)
+        compile_pipeline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pipeline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        compile_pileline.add_transform(validate_adjoint_trainable_params)
+        compile_pipeline.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
             config = replace(config, gradient_method=None)
 
-        return compile_pileline, config
+        return compile_pipeline, config
 
     def execute(
         self,

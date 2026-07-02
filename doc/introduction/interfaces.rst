@@ -558,9 +558,9 @@ At the moment, it takes into account the following parameters:
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
 6. Not supported. The adjoint differentiation algorithm is only implemented for analytic simulation. See
-   :ref:`Adjoint differentation <Adjoint differentation>` for details.
+   :ref:`Adjoint differentiation <Adjoint differentiation>` for details.
 7. Supported. Raises error when ``shots>0`` since the gradient is always computed analytically. See
-   :ref:`Adjoint differentation <Adjoint differentation>` for details.
+   :ref:`Adjoint differentiation <Adjoint differentiation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
