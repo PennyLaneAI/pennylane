@@ -770,7 +770,7 @@ class DefaultClifford(Device):
         return math.reduce_dm(math.einsum("i, j->ij", state_vector, state_vector), wires)
 
     def _measure_state(self, _, tableau_simulator, **kwargs):
-        """Measure the state of the simualtor device."""
+        """Measure the state of the simulator device."""
         wires = kwargs.get("circuit").wires
         global_phase = kwargs.get("global_phase", ops.GlobalPhase(0.0))
         if self._tableau:
@@ -873,7 +873,7 @@ class DefaultClifford(Device):
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
 
-        Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described
+        Computes the Rényi entanglement entropy :math:`S_A` for a subsystem described
         by :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |A|`,
         where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
         described in Appendix A.1.d of `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
@@ -893,7 +893,7 @@ class DefaultClifford(Device):
         if len(wires) == num_qubits:
             return 0.0
 
-        # Build a binary matrix desribing the stabilizers using the Pauli words
+        # Build a binary matrix describing the stabilizers using the Pauli words
         pauli_dict = {0: "I", 1: "X", 2: "Y", 3: "Z"}
         terms = [
             PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)}) for row in stabilizer
@@ -988,7 +988,7 @@ class DefaultClifford(Device):
                     cgc_states.append(list(state[meas_wires]))
             tgt_states = np.array(cgc_states)
 
-        # Maintain a representaiton of basis states to build a visit-array
+        # Maintain a representation of basis states to build a visit-array
         tgt_integs = np.array([int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states])
 
         # Iterate over the required basis states and for each of them compute the probability
