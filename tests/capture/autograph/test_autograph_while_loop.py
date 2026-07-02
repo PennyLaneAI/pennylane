@@ -29,7 +29,9 @@ jax = pytest.importorskip("jax")
 from jax.core import eval_jaxpr
 
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.exceptions import AutoGraphError
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -51,7 +53,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
         assert result == expected
@@ -69,7 +71,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
@@ -88,7 +90,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_whileloop_temporary_variable(self):
         """Test that temporary (local) variables can be initialized inside a while loop."""
@@ -103,7 +105,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
@@ -120,8 +122,8 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
-        assert "for_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
@@ -139,8 +141,8 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
-        assert "cond[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == sum([1, 1, 2, 2])
 
