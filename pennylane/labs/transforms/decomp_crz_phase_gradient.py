@@ -19,7 +19,7 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition import change_op_basis_resource_rep
+from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
 from pennylane.ops import Prod
 
 from .decomp_rz_phase_gradient import validate_phase_gradient_wires
@@ -121,10 +121,10 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             num_y_wires=precision,
             num_work_wires=len(work_wires),
         )
-        fanout_angle = qp.controlled_resource_rep(
+        fanout_angle = controlled_resource_rep(
             qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=0
         )
-        fanout_addsub = qp.controlled_resource_rep(
+        fanout_addsub = controlled_resource_rep(
             qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=1
         )
         compute_op = uncompute_op = qp.resource_rep(
