@@ -621,6 +621,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
