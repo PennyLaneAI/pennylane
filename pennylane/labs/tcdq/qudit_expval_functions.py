@@ -140,15 +140,11 @@ def _compute_trigonometric_building_blocks(
     )
 
 
-def _expand_angle_addition(  # pylint: disable=too-many-arguments
+def _expand_angle_addition(
     state_cos: jnp.ndarray,
     state_sin: jnp.ndarray,
     obs_cos: jnp.ndarray,
     obs_sin: jnp.ndarray,
-    n_gates: int,
-    num_samples: int,
-    n_obs: int,
-    omega: int,
 ) -> tuple[list[jnp.ndarray], list[jnp.ndarray]]:
     """
     For each of the 2**omega ways to assign cos or sin to each of the omega active
@@ -162,6 +158,8 @@ def _expand_angle_addition(  # pylint: disable=too-many-arguments
     The all-cos combination (every choice = cos) is always the first entry and
     equals Φ_g(z) itself.
     """
+    n_gates, omega, num_samples = state_cos.shape
+    n_obs = obs_cos.shape[2]
     state_factors = [state_cos, state_sin]
     obs_factors = [obs_cos, obs_sin]
     samples_list: list[jnp.ndarray] = []
@@ -177,15 +175,12 @@ def _expand_angle_addition(  # pylint: disable=too-many-arguments
     return samples_list, obs_list
 
 
-def _build_weight_group(  # pylint: disable=too-many-arguments
+def _build_weight_group(
     generators_w: np.ndarray,
     param_indices: jnp.ndarray,
     samples: jnp.ndarray,
     l_vecs: jnp.ndarray,
     d: int,
-    num_samples: int,
-    n_obs: int,
-    omega: int,
 ) -> WeightGroupData:
     """
     Precomputes the static samples_matrices and obs_matrices factor matrices for a group of gates
@@ -198,6 +193,9 @@ def _build_weight_group(  # pylint: disable=too-many-arguments
       4. Enumerate all 2**omega cos/sin combinations to build samples_matrices and obs_matrices.
     """
     n_gates = len(generators_w)
+    num_samples = samples.shape[0]
+    n_obs = l_vecs.shape[0]
+    omega = int(np.count_nonzero(generators_w[0]))
     supports = np.array([np.where(g != 0)[0] for g in generators_w])  # (n_gates, omega)
     gate_vals = np.array([g[s] for g, s in zip(generators_w, supports)])  # (n_gates, omega)
 
@@ -207,15 +205,134 @@ def _build_weight_group(  # pylint: disable=too-many-arguments
     state_cos, state_sin, obs_cos, obs_sin = _compute_trigonometric_building_blocks(
         gate_vals, z_at_support, l_at_support, d
     )
-    samples_matrices, obs_matrices = _expand_angle_addition(
-        state_cos, state_sin, obs_cos, obs_sin, n_gates, num_samples, n_obs, omega
-    )
+    samples_matrices, obs_matrices = _expand_angle_addition(state_cos, state_sin, obs_cos, obs_sin)
     return WeightGroupData(
         param_indices=param_indices, samples_matrices=samples_matrices, obs_matrices=obs_matrices
     )
 
 
-def build_qudit_expval_func(  # pylint: disable=too-many-statements
+class _PrecomputedObsData(NamedTuple):
+    """Bundled precomputed observable data from the factory."""
+
+    l_vecs: jnp.ndarray
+    n_obs: int
+    l_f: jnp.ndarray
+    m_f: jnp.ndarray
+    weight_data: list
+    obs_phase_matrix: jnp.ndarray
+
+
+def _obs_phase_matrix(
+    samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, d: int
+) -> jnp.ndarray:
+    """Compute the observable phase matrix: [i, j] = exp(iπ/d · m_i · (2z_j − l_i))."""
+    s_f = samples.astype(jnp.float32)
+    return jnp.exp(
+        (1j * jnp.pi / d) * (2 * m_f @ s_f.T - jnp.sum(m_f * l_f, axis=1, keepdims=True))
+    )
+
+
+# pylint: disable=too-many-arguments
+def _build_all_weight_groups(
+    gen_np: np.ndarray,
+    pm_np: np.ndarray,
+    gate_weights: np.ndarray,
+    samples: jnp.ndarray,
+    l_vecs: jnp.ndarray,
+    d: int,
+) -> list[WeightGroupData]:
+    """Build :class:`WeightGroupData` for each non-zero gate weight."""
+    weight_data: list[WeightGroupData] = []
+    for omega in sorted(set(gate_weights)):
+        if omega == 0:
+            continue
+        gate_indices = np.where(gate_weights == omega)[0]
+        weight_data.append(
+            _build_weight_group(
+                generators_w=gen_np[gate_indices],
+                param_indices=jnp.array(pm_np[gate_indices]),
+                samples=samples,
+                l_vecs=l_vecs,
+                d=d,
+            )
+        )
+    return weight_data
+
+
+def _accumulate_phase_diffs(
+    gates_params: ArrayLike,
+    weight_data: list[WeightGroupData],
+    n_obs: int,
+    n_samples: int,
+) -> jnp.ndarray:
+    """Assemble E_ω = θ·B̃ − Σ_σ C_σᵀ diag(θ) B_σ."""
+    accumulated = jnp.zeros((n_obs, n_samples))
+    for group in weight_data:
+        theta_w = jnp.asarray(gates_params)[group.param_indices]
+        accumulated = accumulated + (theta_w @ group.samples_matrices[0])[jnp.newaxis, :]
+        for B_sigma, C_sigma in zip(group.samples_matrices, group.obs_matrices):
+            accumulated = accumulated - (C_sigma.T * theta_w) @ B_sigma
+    return accumulated
+
+
+def _compute_initial_state_correction(
+    samples: jnp.ndarray,
+    l_f: jnp.ndarray,
+    state_elems: ArrayLike,
+    state_amps: ArrayLike,
+    d: int,
+) -> jnp.ndarray:
+    """Compute the initial-state correction factor *H* for non-computational-basis input states."""
+    s_f = samples.astype(jnp.float32)
+    X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
+    Psi = jnp.asarray(state_amps)  # (N,)
+
+    # ω^{Z·X^T} where ω = exp(2πi/d) — shape (s, N)
+    omega_ZX = jnp.exp(2j * jnp.pi * (s_f @ X_state.T) / d)
+
+    # Ψ̃^(2) = ω^{Z·X^T} · Ψ — shape (s,)
+    psi_tilde_2 = omega_ZX @ Psi
+
+    # F = Ψ* · 1_{1×s} ⊙ ω^{-X·Z^T} — shape (N, s)
+    F_mat = Psi.conj()[:, jnp.newaxis] * omega_ZX.conj().T
+
+    # Ψ̃^(1) = ω^{L·X^T} · F — shape (l, s)
+    omega_LX = jnp.exp(2j * jnp.pi * (l_f @ X_state.T) / d)  # (l, N)
+    psi_tilde_1 = omega_LX @ F_mat
+
+    # H = Ψ̃^(1) ⊙ (1_{l×1} · (Ψ̃^(2))^T) — shape (l, s)
+    return psi_tilde_1 * psi_tilde_2[jnp.newaxis, :]
+
+
+def _compute_mc_statistics(
+    integrand: jnp.ndarray, n_samples: int
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """Compute Monte Carlo statistics from the integrand.
+
+    Returns ``(expvals, cov, mean_y_sq)`` where *cov* is the per-observable
+    covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
+    """
+    expvals = jnp.mean(integrand, axis=1)
+    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
+
+    re = jnp.real(integrand)
+    im = jnp.imag(integrand)
+    re_centered = re - jnp.mean(re, axis=1, keepdims=True)
+    im_centered = im - jnp.mean(im, axis=1, keepdims=True)
+    var_re = jnp.sum(re_centered**2, axis=1) / (n_samples - 1) / n_samples
+    var_im = jnp.sum(im_centered**2, axis=1) / (n_samples - 1) / n_samples
+    cov_re_im = jnp.sum(re_centered * im_centered, axis=1) / (n_samples - 1) / n_samples
+    cov = jnp.stack(
+        [
+            jnp.stack([var_re, cov_re_im], axis=-1),
+            jnp.stack([cov_re_im, var_im], axis=-1),
+        ],
+        axis=-2,
+    )  # (n_obs, 2, 2)
+    return expvals, cov, mean_y_sq
+
+
+def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
     """
@@ -254,52 +371,26 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     pm_np = np.array(param_map)
     gate_weights = np.sum(gen_np != 0, axis=1)
 
-    def _obs_phase_matrix(samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray) -> jnp.ndarray:
-        # [i, j] = exp(iπ/d · m_i · (2z_j − l_i))  — observable phase matrix.
-        s_f = samples.astype(jnp.float32)
-        return jnp.exp(
-            (1j * jnp.pi / d) * (2 * m_f @ s_f.T - jnp.sum(m_f * l_f, axis=1, keepdims=True))
-        )  # (|O|, |Z|)
-
     if config.observables is not None:
-        default_l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
-        default_m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
-        default_n_obs = default_l_vecs.shape[0]
-        default_l_f = default_l_vecs.astype(jnp.float32)
-        default_m_f = default_m_vecs.astype(jnp.float32)
-
-        # (eq:factored_E): decompose accumulated_phase_diffs = Σ_ω E_ω by gate weight ω = |S(g)|.
-        # Because the shift is z − l (not z + l), the angle-addition expansion of
-        # Φ_g(z − l) carries no alternating sign, so every σ-term enters accumulated_phase_diffs
-        # with the same (negative) sign: E_ω = θ·B̃ − Σ_σ C_σᵀ diag(θ) B_σ.
-        default_weight_data: list[WeightGroupData] = []
-        for omega in sorted(set(gate_weights)):
-            if omega == 0:  # identity gates contribute no phase shift
-                continue
-            gate_indices = np.where(gate_weights == omega)[0]
-            default_weight_data.append(
-                _build_weight_group(
-                    generators_w=gen_np[gate_indices],
-                    param_indices=jnp.array(pm_np[gate_indices]),
-                    samples=default_samples,
-                    l_vecs=default_l_vecs,
-                    d=d,
-                    num_samples=config.n_samples,
-                    n_obs=default_n_obs,
-                    omega=omega,
-                )
-            )
-        default_obs_phase_matrix = _obs_phase_matrix(default_samples, default_m_f, default_l_f)
+        l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
+        m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
+        l_f = l_vecs.astype(jnp.float32)
+        m_f = m_vecs.astype(jnp.float32)
+        n_obs = l_vecs.shape[0]
+        defaults = _PrecomputedObsData(
+            l_vecs=l_vecs,
+            n_obs=n_obs,
+            l_f=l_f,
+            m_f=m_f,
+            weight_data=_build_all_weight_groups(
+                gen_np, pm_np, gate_weights, default_samples, l_vecs, d
+            ),
+            obs_phase_matrix=_obs_phase_matrix(default_samples, m_f, l_f, d),
+        )
     else:
-        default_l_vecs = None
-        default_m_vecs = None
-        default_n_obs = None
-        default_l_f = None
-        default_m_f = None
-        default_weight_data = None
-        default_obs_phase_matrix = None
+        defaults = None
 
-    def qudit_expval_batched(  # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+    def qudit_expval_batched(
         gates_params: ArrayLike,
         key: ArrayLike | None = None,
         n_samples: int | None = None,
@@ -307,7 +398,9 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
         return_mean_y_sq: bool = False,
-    ) -> tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    ) -> (
+        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
+    ):  # pylint: disable=too-many-arguments
         """
         Compute batched Monte Carlo expectation values for the qudit IQP circuit.
 
@@ -341,20 +434,16 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         """
         if observables is not None:
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
-            m_vecs = jnp.array(observables[1], dtype=jnp.int32)
             n_obs = l_vecs.shape[0]
             l_f = l_vecs.astype(jnp.float32)
-            m_f = m_vecs.astype(jnp.float32)
+            m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
+        elif defaults is not None:
+            l_vecs, n_obs, l_f, m_f = defaults.l_vecs, defaults.n_obs, defaults.l_f, defaults.m_f
         else:
-            if default_l_vecs is None:
-                raise ValueError(
-                    "No observables specified. Provide them in QuditCircuitConfig "
-                    "or pass at call time via the observables argument."
-                )
-            l_vecs = default_l_vecs
-            n_obs = default_n_obs
-            l_f = default_l_f
-            m_f = default_m_f
+            raise ValueError(
+                "No observables specified. Provide them in QuditCircuitConfig "
+                "or pass at call time via the observables argument."
+            )
 
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
@@ -364,87 +453,27 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             _n = config.n_samples
             samples = default_samples
 
-        if key is not None or n_samples is not None or observables is not None:
-            obs_phase_matrix = _obs_phase_matrix(samples, m_f, l_f)
-            weight_data: list[WeightGroupData] = []
-            for omega in sorted(set(gate_weights)):
-                if omega == 0:
-                    continue
-                gate_indices = np.where(gate_weights == omega)[0]
-                weight_data.append(
-                    _build_weight_group(
-                        generators_w=gen_np[gate_indices],
-                        param_indices=jnp.array(pm_np[gate_indices]),
-                        samples=samples,
-                        l_vecs=l_vecs,
-                        d=d,
-                        num_samples=_n,
-                        n_obs=n_obs,
-                        omega=omega,
-                    )
-                )
+        use_cached = (
+            key is None and n_samples is None and observables is None and defaults is not None
+        )
+        if use_cached:
+            obs_pm = defaults.obs_phase_matrix
+            w_data = defaults.weight_data
         else:
-            obs_phase_matrix = default_obs_phase_matrix
-            weight_data = default_weight_data
+            obs_pm = _obs_phase_matrix(samples, m_f, l_f, d)
+            w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, d)
 
-        # Assemble E_ω = θ·B̃ − Σ_σ C_σᵀ diag(θ) B_σ   (eq:factored_E)
-        accumulated_phase_diffs = jnp.zeros((n_obs, _n))
-
-        for group in weight_data:
-            theta_w = jnp.asarray(gates_params)[group.param_indices]
-            accumulated_phase_diffs = (
-                accumulated_phase_diffs + (theta_w @ group.samples_matrices[0])[jnp.newaxis, :]
-            )  # B̃ = B_{σ=0}
-            for B_sigma, C_sigma in zip(group.samples_matrices, group.obs_matrices):
-                accumulated_phase_diffs = accumulated_phase_diffs - (C_sigma.T * theta_w) @ B_sigma
+        accumulated_phase_diffs = _accumulate_phase_diffs(gates_params, w_data, n_obs, _n)
 
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        if state_elems is None or state_amps is None:
-            # {⟨O(l,m)⟩} = mean_1[ obs_phase_matrix ⊙ exp(i·accumulated_phase_diffs) ]
-            integrand = obs_phase_matrix * jnp.exp(1j * accumulated_phase_diffs)
-        else:
-            s_f = samples.astype(jnp.float32)
-            X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
-            Psi = jnp.asarray(state_amps)  # (N,)
+        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
+        if state_elems is not None and state_amps is not None:
+            H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, d)
+            integrand = integrand * H
 
-            # ω^{Z·X^T} where ω = exp(2πi/d) — shape (s, N)
-            omega_ZX = jnp.exp(2j * jnp.pi * (s_f @ X_state.T) / d)
-
-            # Ψ̃^(2) = ω^{Z·X^T} · Ψ — shape (s,)
-            psi_tilde_2 = omega_ZX @ Psi
-
-            # F = Ψ* · 1_{1×s} ⊙ ω^{-X·Z^T} — shape (N, s)
-            F_mat = Psi.conj()[:, jnp.newaxis] * omega_ZX.conj().T
-
-            # Ψ̃^(1) = ω^{L·X^T} · F — shape (l, s)
-            omega_LX = jnp.exp(2j * jnp.pi * (l_f @ X_state.T) / d)  # (l, N)
-            psi_tilde_1 = omega_LX @ F_mat
-
-            # H = Ψ̃^(1) ⊙ (1_{l×1} · (Ψ̃^(2))^T) — shape (l, s)
-            H = psi_tilde_1 * psi_tilde_2[jnp.newaxis, :]
-
-            integrand = obs_phase_matrix * jnp.exp(1j * accumulated_phase_diffs) * H
-        expvals = jnp.mean(integrand, axis=1)
-        mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
-
-        # Covariance of the mean estimate: sample (co)variances of the per-sample real
-        # and imaginary parts (ddof=1), divided by _n for the variance of the mean.
-        re = jnp.real(integrand)
-        im = jnp.imag(integrand)
-        re_centered = re - jnp.mean(re, axis=1, keepdims=True)
-        im_centered = im - jnp.mean(im, axis=1, keepdims=True)
-        var_re = jnp.sum(re_centered**2, axis=1) / (_n - 1) / _n
-        var_im = jnp.sum(im_centered**2, axis=1) / (_n - 1) / _n
-        cov_re_im = jnp.sum(re_centered * im_centered, axis=1) / (_n - 1) / _n
-        cov = jnp.stack(
-            [
-                jnp.stack([var_re, cov_re_im], axis=-1),
-                jnp.stack([cov_re_im, var_im], axis=-1),
-            ],
-            axis=-2,
-        )  # (n_obs, 2, 2)
+        expvals, cov, mean_y_sq = _compute_mc_statistics(integrand, _n)
 
         if return_mean_y_sq:
             return expvals, cov, mean_y_sq
