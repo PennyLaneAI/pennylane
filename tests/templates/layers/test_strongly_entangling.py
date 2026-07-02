@@ -275,7 +275,7 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jax.make_jaxpr(circuit)(weights, wires=wires)
+        _ = jax.make_jaxpr(circuit)(weights, wires=wires)
 
 
 class TestInputs:
