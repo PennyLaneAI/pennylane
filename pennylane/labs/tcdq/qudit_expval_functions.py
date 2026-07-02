@@ -318,7 +318,7 @@ def _compute_initial_state_correction(
     state_amps: ArrayLike,
     d: int,
 ) -> jnp.ndarray:
-    """Compute the initial-state correction factor ``H`` (see ``notes.md`` §3.2)."""
+    """Compute the initial-state correction factor ``H`` (see ``notes.md`` §3)."""
     s_f = samples.astype(jnp.float32)
     X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
     Psi = jnp.asarray(state_amps)  # (N,)

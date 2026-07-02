@@ -18,7 +18,9 @@ $\oplus$ denotes componentwise addition modulo $d$ on $\mathbb{Z}_d^n$.
 The qubit IQP circuit has the form $F D(\boldsymbol{\theta}) F^\dagger |0\rangle$,
 where $F$ is the $n$-fold Hadamard (the QFT over $\mathbb{Z}_2^n$) and
 $D(\boldsymbol{\theta})$ is a diagonal unitary built from Pauli-$Z$ tensor
-products.  The key property that makes classical training possible is that
+products.
+
+The key property that makes classical training possible is that
 the Fourier-conjugated observable $F Z_{\mathbf{a}} F^\dagger = X_{\mathbf{a}}$
 acts as a *permutation* in the computational basis, collapsing a double sum
 over $4^n$ terms into a single sum over $2^n$ terms — an expectation value
@@ -96,13 +98,14 @@ acts on the input state $|0\rangle$.  By conjugating through the QFT and
 inserting resolutions of the identity, the expectation value of
 $\mathcal{O}(\mathbf{l}, \mathbf{m})$ reduces to a single sum:
 
-$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\!\left[\exp\!\left(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\!\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\,\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \oplus \mathbf{l})\big)\right)\right]$$
+$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\!\left[\exp\!\left(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\!\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\,\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})\big)\right)\right]$$
 
-where $\mathbf{z}$ is drawn uniformly from $\mathbb{Z}_d^n$.  The two
+where $\mathbf{z}$ is drawn uniformly from $\mathbb{Z}_d^n$ and
+$\ominus$ denotes componentwise subtraction modulo $d$.  The two
 exponential factors are:
 
 1. **The observable phase** $J = \exp\!\big(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\big)$, determined by the choice of observable (computed by `_obs_phase_matrix`).
-2. **The accumulated phase difference** $e^{iE}$ where $E = \sum_{\mathbf{g}} \theta_{\mathbf{g}}(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \oplus \mathbf{l}))$, determined by the circuit parameters (assembled by `_accumulate_phase_diffs`).
+2. **The accumulated phase difference** $e^{iE}$ where $E = \sum_{\mathbf{g}} \theta_{\mathbf{g}}(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l}))$, determined by the circuit parameters (assembled by `_accumulate_phase_diffs`).
 
 Since this is an expectation of a bounded integrand, it can be estimated to
 inverse polynomial precision via a sample mean over $s$ uniformly random
@@ -121,7 +124,7 @@ over the sample axis (columns).
 ### 2.3 The Angle-Addition Expansion
 
 The computational bottleneck is building $E$.  A naïve approach would
-evaluate $\Phi_{\mathbf{g}}(\mathbf{z} \oplus \mathbf{l})$ for every
+evaluate $\Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})$ for every
 gate–sample–observable triple, but the **angle-addition identity** enables
 a factored matrix formulation.
 
@@ -135,9 +138,9 @@ so that $\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j \in S_{\mathbf{g}}} c(g_j, z_j
 
 #### Expanding the shifted eigenvalue
 
-Applying the angle-addition formula $c(v, u+l) = c(v,u)\cos\alpha - \bar{s}(v,u)\sin\alpha$ (with $\alpha = 2\pi v l/d$) to each factor and expanding the product gives $2^\omega$ terms:
+Applying the angle-addition formula $c(v, u-l) = c(v,u)\cos\alpha + \bar{s}(v,u)\sin\alpha$ (with $\alpha = 2\pi v l/d$) to each factor and expanding the product gives $2^\omega$ terms:
 
-$$\Phi_{\mathbf{g}}(\mathbf{z} \oplus \mathbf{l}) = \sum_{\boldsymbol{\sigma} \in \{0,1\}^\omega} (-1)^{|\boldsymbol{\sigma}|} \prod_{k=1}^\omega T_{\sigma_k}(g_k, z_k) \cdot A_{\sigma_k}(g_k, l_k)$$
+$$\Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l}) = \sum_{\boldsymbol{\sigma} \in \{0,1\}^\omega} \prod_{k=1}^\omega T_{\sigma_k}(g_k, z_k) \cdot A_{\sigma_k}(g_k, l_k)$$
 
 where $\omega = |S_{\mathbf{g}}|$ is the **weight** of the gate (number of active qudits), and
 
@@ -153,13 +156,17 @@ weight $\omega$, define the **factor matrices**:
 
 $$[\mathbf{B}^\omega_{\boldsymbol{\sigma}}]_{\mathbf{g},\mathbf{z}} = \prod_{k=1}^\omega T_{\sigma_k}(g_k, z_k), \qquad [\mathbf{C}^\omega_{\boldsymbol{\sigma}}]_{\mathbf{g},\mathbf{l}} = \prod_{k=1}^\omega A_{\sigma_k}(g_k, l_k)$$
 
-These are stored in the `WeightGroupData` named tuple: $\mathbf{B}_\sigma$
-as `samples_matrices` and $\mathbf{C}_\sigma$ as `obs_matrices`.  The
-accumulated phase-difference matrix for weight group $\omega$ is then:
+These are stored in the `WeightGroupData` named tuple — `samples_matrices`
+for the sample-side factors and `obs_matrices` for the observable-side
+factors.  The accumulated phase-difference matrix for weight group $\omega$
+is then:
 
-$$E_\omega = \boldsymbol{\theta}_\omega \cdot \tilde{\mathbf{B}}_\omega + \sum_{\boldsymbol{\sigma}} (-1)^{|\boldsymbol{\sigma}|+1}\,\mathbf{C}_{\boldsymbol{\sigma}}^T\,\text{diag}(\boldsymbol{\theta}_\omega)\,\mathbf{B}_{\boldsymbol{\sigma}}$$
+$$E_\omega = \boldsymbol{\theta}_\omega \cdot \tilde{\mathbf{B}}_\omega - \sum_{\boldsymbol{\sigma}}\,\mathbf{C}_{\boldsymbol{\sigma}}^T\,\text{diag}(\boldsymbol{\theta}_\omega)\,\mathbf{B}_{\boldsymbol{\sigma}}$$
 
-where $\tilde{\mathbf{B}}_\omega$ is the all-cos entry ($\boldsymbol{\sigma} = \mathbf{0}$), equal to $\Phi_{\mathbf{g}}(\mathbf{z})$ itself.  The total is $E = \sum_\omega E_\omega$.
+The first term uses $\tilde{\mathbf{B}}_\omega$, the all-cos entry
+($\boldsymbol{\sigma} = \mathbf{0}$), which equals the gate eigenvalue
+$\Phi_{\mathbf{g}}(\mathbf{z})$ itself.
+The total is $E = \sum_\omega E_\omega$.
 
 For $\omega = 1$ (single-qudit gates) this is 2 matrix products; for $\omega = 2$ (two-qudit gates) it is 4; in general $2^\omega$ per weight group.  The per-group pipeline is orchestrated by `_build_weight_group`; `_accumulate_phase_diffs` sums $E_\omega$ over all weight groups.
 
@@ -261,7 +268,7 @@ $$\mathcal{P}_1(k) = \frac{e^{-4t\sin^2(\pi k/d)}}{Z_1}, \qquad Z_1 = \sum_{k=0}
 **Complete graph $K_d$** (`_complete_marginal_probs`)**:**  The Laplacian has
 eigenvalue 0 for $k=0$ and $d$ for all $k \neq 0$:
 
-$$\mathcal{P}_1(k) = \begin{cases} \pi_0 & k = 0 \\ (1 - \pi_0)/(d-1) & k \neq 0\end{cases}, \qquad \pi_0 = \frac{1}{1 + (d-1)e^{-td}}.$$
+$$\mathcal{P}_1(0) = \pi_0, \qquad \mathcal{P}_1(k \neq 0) = \frac{1 - \pi_0}{d - 1}, \qquad \pi_0 = \frac{1}{1 + (d-1)e^{-td}}.$$
 
 To estimate the loss, we sample a batch of $|\mathcal{L}|$ Fourier indices
 $\mathbf{l} \sim \mathcal{P}$ by drawing each component independently from
@@ -314,5 +321,3 @@ This combination is assembled by `_unbiased_mmd_squared`; the public entry
 point `build_qudit_mmd_loss` returns a loss function that orchestrates the
 full pipeline — sampling Fourier indices, estimating moments, and combining
 the PP/PQ/QQ terms — for one or more heat-kernel bandwidths.
-| $t$ | `bandwidth` | Heat-kernel diffusion time |
-| $\mathcal{P}$ | `marginal` | Spectral sampling distribution |
