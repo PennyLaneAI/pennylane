@@ -648,6 +648,9 @@ class TestCodePrinting:
             return inner(x)
 
         fn = run_autograph(fn)
+        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = fn(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner(x" in autograph_source(inner)
@@ -669,6 +672,9 @@ class TestCodePrinting:
             return inner1(x) + inner2(x)
 
         fn = run_autograph(fn)
+        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = fn(2)
 
         assert "def ag__fn(x" in autograph_source(fn)
         assert "def ag__inner1(x" in autograph_source(inner1)
