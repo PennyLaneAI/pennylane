@@ -14,7 +14,8 @@
 """Defines the base class for the adjoint of operators."""
 
 from textwrap import dedent
-from typing import override
+
+from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
