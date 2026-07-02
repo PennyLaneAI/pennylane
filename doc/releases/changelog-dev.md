@@ -4,6 +4,8 @@
 
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
+  [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
+  [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -452,6 +454,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
+  decompositions of :class:`~.CRZ`, as described 
+  [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
+  [(#9750)](https://github.com/PennyLaneAI/pennylane/pull/9750)
+
 * Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
   :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
   :class:`~.labs.estimator_beta.templates.LabsModExp`.
@@ -737,6 +744,9 @@
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
+* Unblock the decomposition of :class:`~.SumOfSlaterPrep` in the old decomposition system.
+  [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
+
 * CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
 
@@ -802,12 +812,15 @@
   [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
   [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
   [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
+* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+  [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -901,6 +914,9 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+  [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
