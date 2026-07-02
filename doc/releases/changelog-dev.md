@@ -478,6 +478,7 @@
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
   ```python
   import pennylane as qp
