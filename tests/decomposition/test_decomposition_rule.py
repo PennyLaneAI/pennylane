@@ -384,11 +384,13 @@ class TestDecompositionRule:
             qp.RX(theta, wires=wires[0])
             qp.RZ(theta, wires=wires[1])
 
-        qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
-        assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
-        assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
-        assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
+            assert qp.decomposition.has_decomp("Adjoint(CustomOp)")
+            assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
+            assert qp.decomposition.has_decomp(qp.adjoint(CustomOp(wires=[0, 1])))
+            assert list(qp.list_decomps("Adjoint(CustomOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""

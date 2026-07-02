@@ -319,7 +319,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # instead of creating a new one. Now when we see an operator with a different work
         # wire budget from the one already in the graph, whether we need to create a new
         # node for this operator is determined by whether this operator's decomposition is
-        # work-wire dependent. We have overriden __hash__ and __eq__ of the node class so
+        # work-wire dependent. We have overridden __hash__ and __eq__ of the node class so
         # that when we have a work-wire-independent operator with a different work wire
         # budget from the existing one in the graph, the difference is ignored.
         known_work_wire_dependent = op in self._work_wire_dependent_ops
