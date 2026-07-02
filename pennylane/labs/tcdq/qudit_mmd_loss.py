@@ -14,40 +14,9 @@
 """Estimate graph-kernel MMD losses for qudit circuits on ``Z_d^n``.
 
 This module builds a stochastic estimate of the squared Maximum Mean
-Discrepancy between
-
-* an empirical dataset on ``Z_d^n``, and
-* a model distribution defined by a qudit circuit whose Fourier moments are
-  estimated with ``build_qudit_expval_func``.
-
-The kernel is a heat kernel on a Cartesian-product graph whose single-site
-graph is either the cycle ``C_d`` or the complete graph ``K_d``. For those
-vertex-transitive graphs, the kernel spectrum defines a probability
-distribution over Fourier index vectors ``l``, and the loss can be written as
-an average of squared differences between data-side and model-side moments of
-the ``Z``-type Heisenberg-Weyl observables ``O(l, 0)``.
-
-For a fixed sampled observable ``l``, the key algebraic step is the expansion
-
-    |mu_p(l) - mu_q(l)|^2
-        = |mu_p(l)|^2 - 2 Re(mu_p(l)^* mu_q(l)) + |mu_q(l)|^2.
-
-This file estimates those three pieces separately and unbiasedly:
-
-* ``PP`` estimates ``|mu_p(l)|^2`` from the dataset,
-* ``PQ`` estimates ``2 Re(mu_p(l)^* mu_q(l))`` from the data-model overlap,
-  and
-* ``QQ`` estimates ``|mu_q(l)|^2`` from circuit Monte Carlo samples.
-
-Operationally, the helpers in this file do four things:
-
-1. build the single-site spectral sampling distributions for the chosen graph,
-2. sample a batch of Fourier indices ``l`` from that distribution,
-3. compute data-side empirical moments and model-side Monte Carlo moments for
-    those sampled observables, and
-4. combine them into an unbiased estimate of ``MMD^2`` using U-statistic
-    corrections for the data-data and model-model terms.
-
+Discrepancy between an empirical dataset and a model distribution defined
+by a qudit circuit.  See ``notes.md`` §5 for the full theoretical
+background.
 """
 
 from collections.abc import Callable, Sequence
@@ -65,25 +34,13 @@ from .qudit_expval_functions import QuditCircuitConfig, build_qudit_expval_func
 class QuditMMDConfig:
     """Configuration for the graph-kernel MMD estimator.
 
-    These fields control how the Fourier observables are sampled and how the
-    resulting Monte Carlo loss values are aggregated.
-
-    If you are reading this alongside ``iqpopt_notes.tex``:
-
-    * ``bandwidth`` is the heat-kernel diffusion time ``t``,
-    * ``n_ops`` is the observable-batch size ``|L|``,
-    * ``graph_type`` chooses the single-site graph whose spectrum defines the
-      sampling distribution ``P(l)``, and
-    * ``wires`` selects which qudits participate in the observed Fourier
-      moments.
+    See ``notes.md`` §5.2 for the spectral sampling distributions.
 
     Args:
-        bandwidth: Heat-kernel diffusion time or a sequence of diffusion times.
-            Larger values emphasize lower graph frequencies. If a sequence is
-            supplied, the loss is estimated once per bandwidth and the results
-            are either averaged or returned separately.
-        n_ops: Number of Fourier index vectors sampled per bandwidth.
-        graph_type: Single-site graph used to define the heat-kernel spectrum.
+        bandwidth: Heat-kernel diffusion time ``t`` or a sequence of diffusion
+            times.  Larger values emphasize lower graph frequencies.
+        n_ops: Number of Fourier index vectors ``|L|`` sampled per bandwidth.
+        graph_type: Single-site graph for the heat-kernel spectrum.
             ``"cycle"`` means ``C_d`` and ``"complete"`` means ``K_d``.
         wires: Optional subset of qudit indices to include in the loss. If
             ``None``, use all qudits.
@@ -102,21 +59,9 @@ class QuditMMDConfig:
 
 
 def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
-    """Return the single-site spectral sampling distribution for the cycle graph.
+    """Return the cycle-graph spectral sampling distribution (see ``notes.md`` §5.2).
 
-    For the heat kernel on ``C_d``, the single-site Laplacian eigenvalue at
-    Fourier index ``k`` is ``4 sin^2(pi k / d)``. The resulting normalized
-    sampling probability is therefore
-
-        P_1(k) propto exp(-4 t sin^2(pi k / d)).
-
-    This helper produces the categorical distribution used to sample each
-    visible component of ``l`` independently when ``graph_type == "cycle"``.
-
-    In ``iqpopt_notes.tex``, this is the per-site cycle-graph heat-kernel
-    marginal
-
-        P_1(k) = exp(-4 t sin^2(pi k / d)) / Z_1.
+    ``P_1(k) ∝ exp(-4 t sin²(π k / d))``.
     """
     k = jnp.arange(d)
     log_p = -4.0 * t * jnp.sin(jnp.pi * k / d) ** 2
@@ -125,26 +70,10 @@ def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
 
 
 def _complete_marginal_probs(d: int, t: float) -> jnp.ndarray:
-    """Return the single-site spectral sampling distribution for the complete graph.
+    """Return the complete-graph spectral sampling distribution (see ``notes.md`` §5.2).
 
-    For the heat kernel on ``K_d``, the zero Fourier mode has Laplacian
-    eigenvalue ``0`` and every nonzero mode has eigenvalue ``d``. The
-    resulting normalized probabilities are
-
-        P_1(0) = 1 / (1 + (d - 1) exp(-t d))
-        P_1(k) = exp(-t d) / (1 + (d - 1) exp(-t d))    for k != 0.
-
-    All nonzero modes therefore share the same probability mass. This helper
-    returns the categorical distribution used to sample each visible component
-    of ``l`` independently when ``graph_type == "complete"``.
-
-    In ``iqpopt_notes.tex``, this is the same complete-graph marginal written
-    in piecewise form using
-
-        pi_0 = 1 / (1 + (d - 1) exp(-t d)),
-
-    so that ``P_1(0) = pi_0`` and ``P_1(k) = (1 - pi_0) / (d - 1)`` for
-    ``k != 0``. The two forms are algebraically identical.
+    ``P_1(0) = π_0``, ``P_1(k≠0) = (1 − π_0)/(d − 1)`` with
+    ``π_0 = 1 / (1 + (d − 1) exp(−td))``.
     """
     log_unnorm = jnp.zeros(d).at[1:].set(-t * d)
     p = jnp.exp(log_unnorm)
@@ -162,18 +91,9 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
 ) -> jnp.ndarray:
     """Sample a batch of Fourier index vectors from the graph-kernel spectrum.
 
-    The loss in this module averages over observables of the form ``O(l, 0)``,
-    where ``l`` is drawn from a product distribution ``P(l) = prod_i P_1(l_i)``
-    defined by the chosen single-site heat kernel. This helper draws ``n_ops``
-    such index vectors.
-
-    Only the wires listed in ``wire_tuple`` are active in the loss. Components
-    outside that subset are filled with zeros so that the returned array still
-    has shape ``(n_ops, n_qudits)`` and can be passed directly to the circuit
-    expectation-value code.
-
-    In ``iqpopt_notes.tex``, this is the code-level realization of sampling the
-    observable batch ``L = {l_j ~ P}`` used in the MMD estimator.
+    Draws ``n_ops`` vectors ``l ~ P(l) = ∏_i P_1(l_i)`` from the product
+    distribution defined by the chosen heat kernel (see ``notes.md`` §5.2).
+    Components outside ``wire_tuple`` are zero-filled.
 
     Returns:
         Integer array of shape ``(n_ops, n_qudits)`` with entries in
@@ -199,27 +119,10 @@ def _empirical_fourier_moments(
     X_data: jnp.ndarray,
     d: int,
 ) -> jnp.ndarray:
-    """Return the data-side empirical moment of ``O(l, 0)`` for each sampled observable.
+    """Return the data-side empirical Fourier moment for each sampled observable.
 
-    For each row ``l`` of ``L_visible``, this computes the sample mean
-
-        mu_p_hat(l) = (1 / m) * sum_i omega ** (l . x_i),
-        omega = exp(2 pi i / d),
-
-    where the rows ``x_i`` of ``X_data`` are dataset samples on the visible
-    wires and ``m = X_data.shape[0]``. For the ``Z``-type Heisenberg-Weyl
-    observable family used by this loss, this sample mean is exactly the
-    data-side expectation of ``O(l, 0)``. The result is a complex-valued batch
-    of empirical moments, one per sampled Fourier index vector.
-
-    In the MMD estimator, these are the data-side moments paired with the model
-    estimates ``mu_q_hat``. If you are reading this alongside
-    ``iqpopt_notes.tex``, this is the dataset-side estimator
-
-        <hat{O}(l, 0)>_{p_X} = (1 / |X|) * sum_{x_i in X} omega ** (l . x_i),
-
-    and it is the empirical version of the ``mu_p(l)`` term used in the
-    unbiased decomposition.
+    Computes ``μ̂_p(l) = (1/m) Σ_i ω^{l·x_i}`` for each row ``l`` of
+    ``L_visible``.  See ``notes.md`` §5.3 (PP term).
 
     Args:
         L_visible: Integer array of shape ``(n_obs, n_visible)`` whose rows are
@@ -237,30 +140,14 @@ def _empirical_fourier_moments(
 
 
 def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
-    """Return the per-observable data-data term in the unbiased MMD estimator.
+    """Return the unbiased data–data U-statistic ``PP(l)`` (see ``notes.md`` §5.3).
 
-    For a fixed sampled observable ``l``, let
+    Removes the diagonal self-pairs from ``|μ̂_p(l)|²``:
 
-        mu_p_hat(l) = (1 / m) * sum_i f_p(l, x_i)
+        ``PP(l) = (m |μ̂_p(l)|² − 1) / (m − 1)``.
 
-    with ``f_p(l, x_i) = omega ** (l . x_i)``. The naive plug-in estimate
-    ``|mu_p_hat(l)|^2`` includes diagonal pairs ``i = i``. This helper removes
-    those self-pairs and renormalizes the remainder, yielding the U-statistic
-
-        PP(l) = (m * |mu_p_hat(l)|^2 - 1) / (m - 1).
-
-    The subtraction is exactly ``1`` because every data sample has unit
-    modulus: ``|f_p(l, x_i)|^2 = 1``. The returned vector therefore gives an
-    unbiased estimate of the data-data term ``mu_p(l)^* mu_p(l)`` for each
-    sampled observable before the outer average over Fourier indices.
-
-    In ``iqpopt_notes.tex``, this is the per-observable data-data contribution
-    to the decomposition
-
-        |mu_p(l) - mu_q(l)|^2
-            = |mu_p(l)|^2 - 2 Re(mu_p(l)^* mu_q(l)) + |mu_q(l)|^2,
-
-    written as a U-statistic over distinct data pairs.
+    The subtraction is ``1`` because ``|f_p(l, x_i)|² = 1`` for all data
+    samples.
 
     Args:
         mu_p_hat: Complex array of shape ``(n_obs,)`` containing the empirical
@@ -279,31 +166,17 @@ def _qq_term(
     mean_y_sq: jnp.ndarray,
     s: int,
 ) -> jnp.ndarray:
-    """Return the per-observable model-model term in the unbiased MMD estimator.
+    """Return the unbiased model–model U-statistic ``QQ(l)`` (see ``notes.md`` §5.3).
 
-    For a fixed sampled observable ``l``, the Monte Carlo circuit evaluator
-    produces raw sample values ``y_r(l)`` over ``s`` random draws together with
+    Removes the diagonal self-pairs from ``|μ̂_q(l)|²``:
 
-        mu_q_hat(l) = (1 / s) * sum_r y_r(l)
-        mean_y_sq(l) = (1 / s) * sum_r |y_r(l)|^2.
+        ``QQ(l) = (s |μ̂_q(l)|² − mean_y_sq(l)) / (s − 1)``.
 
-    This helper removes the diagonal ``r = r'`` contribution from the naive
-    square ``|mu_q_hat(l)|^2`` and returns the corresponding U-statistic
+    Unlike the data term, per-sample values may not have unit modulus
+    (especially with non-trivial input states), so the diagonal correction
+    uses ``mean_y_sq`` rather than the constant ``1``.
 
-        QQ(l) = (s * |mu_q_hat(l)|^2 - mean_y_sq(l)) / (s - 1).
-
-    Unlike the data term, the raw circuit sample values need not have unit
-    modulus, especially for arbitrary initial states. The diagonal correction
-    is therefore the observed average ``mean_y_sq``, not the constant ``1``.
-    The returned vector is an unbiased estimate of the model-model term
-    ``mu_q(l)^* mu_q(l)`` for each sampled observable before the outer average
-    over Fourier indices.
-
-    Gradients are stopped through ``mean_y_sq`` so optimization differentiates
-    through the estimated mean, not through the variance correction.
-
-    In ``iqpopt_notes.tex``, this is the per-observable model-model term,
-    written there as the U-statistic over distinct circuit-sample pairs.
+    Gradients are stopped through ``mean_y_sq``.
 
     Args:
         mu_q_hat: Complex array of shape ``(n_obs,)`` containing the estimated
@@ -324,28 +197,10 @@ def _pq_cross_term(
     mu_p_hat: jnp.ndarray,
     mu_q_hat: jnp.ndarray,
 ) -> jnp.ndarray:
-    """Return the per-observable data-model cross term in the unbiased MMD estimator.
+    """Return the data–model cross term ``PQ(l)`` (see ``notes.md`` §5.3).
 
-    For each sampled observable ``l``, this computes
-
-        PQ(l) = 2 * Re(mu_p_hat(l)^* * mu_q_hat(l)),
-
-    which is the middle term in the identity
-
-        |mu_p(l) - mu_q(l)|^2
-            = |mu_p(l)|^2 - 2 * Re(mu_p(l)^* mu_q(l)) + |mu_q(l)|^2.
-
-    The multiplication is elementwise across the observable batch, so the
-    returned array contains one cross-term value per sampled Fourier index.
-    No diagonal correction is needed because the data batch and the circuit
-    Monte Carlo batch are independent.
-
-    In ``iqpopt_notes.tex``, this is the cross term from
-
-        |mu_p(l) - mu_q(l)|^2
-            = |mu_p(l)|^2 - 2 Re(mu_p(l)^* mu_q(l)) + |mu_q(l)|^2,
-
-    estimated from independent data and circuit batches.
+    ``PQ(l) = 2 Re(μ̂_p(l)* μ̂_q(l))``.  No diagonal correction is needed
+    because the data and circuit batches are independent.
 
     Args:
         mu_p_hat: Complex array of shape ``(n_obs,)`` containing the empirical
@@ -370,26 +225,7 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
-    """Combine per-observable PP, PQ, and QQ terms into unbiased MMD^2.
-
-    This function builds the data-side empirical moments ``mu_p_hat`` from the
-    dataset, forms the per-observable data-data, data-model, and model-model
-    terms, and then averages
-
-        PP(l) - PQ(l) + QQ(l)
-
-    over the sampled Fourier indices in ``L_visible``.
-
-    In ``iqpopt_notes.tex``, this is the code realization of the decomposition
-
-        |mu_p(l) - mu_q(l)|^2
-            = |mu_p(l)|^2 - 2 Re(mu_p(l)^* mu_q(l)) + |mu_q(l)|^2,
-
-    together with the unbiased estimator obtained by replacing each of those
-    three pieces with its U-statistic form and averaging over the sampled
-    observables. If ``sqrt_loss`` is true, the function returns
-    ``sqrt(abs(MMD^2_u))`` instead of ``MMD^2_u``.
-    """
+    """Combine PP, PQ, and QQ into the unbiased MMD² estimator (see ``notes.md`` §5.3)."""
     m = X_data.shape[0]
 
     mu_p_hat = _empirical_fourier_moments(L_visible, X_data, d)
@@ -432,21 +268,7 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     expval_func: Callable,
     graph_type: str,
 ) -> jnp.ndarray:
-    """Estimate one unbiased MMD loss value for a fixed heat-kernel bandwidth.
-
-    This helper is the per-bandwidth core of the loss estimator. It
-
-    1. samples a batch of Fourier indices ``l`` from the graph-kernel spectrum,
-    2. fixes ``m = 0`` so the observables are the ``Z``-type moments
-       ``O(l, 0)`` used by the MMD,
-    3. asks ``expval_func`` for the model-side moment estimates ``mu_q_hat``
-       and the raw second-moment correction ``mean_y_sq``, and
-    4. combines those model-side estimates with the data-side empirical moments
-       into an unbiased estimate of ``MMD^2``.
-
-    In ``iqpopt_notes.tex``, this corresponds to one Monte Carlo evaluation of
-    the heat-kernel MMD at a fixed diffusion time ``t``.
-    """
+    """Estimate one unbiased MMD loss value for a fixed bandwidth (see ``notes.md`` §5)."""
     l_obs = _sample_fourier_indices(obs_key, n_ops, n_qudits, d, bandwidth, graph_type, wire_tuple)
     m_obs = jnp.zeros_like(l_obs)
 
@@ -472,17 +294,7 @@ def build_qudit_mmd_loss(
 ) -> Callable:
     """Build a reusable qudit MMD loss function from circuit and loss configs.
 
-    This factory validates the MMD configuration, constructs the underlying
-    expectation-value function once, and returns a closure that can be called
-    repeatedly during training. Each call to the returned function will sample
-    a fresh observable batch for each requested bandwidth, estimate the
-    corresponding data-side and model-side Fourier moments, and combine them
-    into one or more unbiased MMD loss values.
-
-    If you are reading this alongside ``iqpopt_notes.tex``, the returned
-    closure is a code implementation of the empirical estimator described in
-    the ``Estimating from a dataset`` and ``Unbiased estimators`` subsections,
-    specialized to the cycle-graph and complete-graph heat kernels.
+    See ``notes.md`` §5 for the theoretical background.
 
     Args:
         circuit_config: Configuration for the underlying qudit expectation-value

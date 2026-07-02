@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Implementations for the qudit expectation value functions
+Implementations for the qudit expectation value functions.
+
+See ``notes.md`` for the full theoretical derivation and a notation
+cross-reference table mapping math symbols to code variables.
 """
 
 import itertools
@@ -110,17 +113,14 @@ def _compute_qudit_samples(key: ArrayLike, num_samples: int, n_qudits: int, d: i
 class WeightGroupData(NamedTuple):
     """Precomputed factor matrices for gates that share the same weight (number of active qudits).
 
-    The expectation-value integrand depends on the gate parameters ``θ`` through
-    a phase term ``Φ_g(z − l)`` for each gate *g*.  Using an angle-addition
-    expansion, each ``Φ_g`` is decomposed into ``2^ω`` products of cos/sin
-    factors, where ``ω`` is the gate weight.  Because all gates in a weight
-    group share the same ``ω``, the expansion can be vectorised over gates.
+    Gates are grouped by weight ``ω`` (number of active qudits) so that
+    the ``2^ω``-term angle-addition expansion of the phase difference
+    ``Φ_g(z) − Φ_g(z ⊕ l)`` can be vectorised over gates.  See
+    ``notes.md`` §2.3 for the full derivation.
 
-    ``samples_matrices[σ]`` (shape ``(n_gates, n_samples)``) and
-    ``obs_matrices[σ]`` (shape ``(n_gates, n_obs)``) store the cos/sin product
-    for the ``σ``-th term of the expansion, evaluated over the Monte Carlo
-    samples and the observable ``l``-vectors respectively.  The first entry
-    (``σ = (0,…,0)``, all-cos) equals ``Φ_g(z)`` itself.
+    ``samples_matrices[σ]`` and ``obs_matrices[σ]`` store the ``B`` and
+    ``C`` factor matrices for the ``σ``-th expansion term.  The first
+    entry (``σ = 0…0``, all-cos) equals ``Φ_g(z)`` itself.
 
     Args:
         param_indices: Maps each gate in this group to its parameter index in the
@@ -169,7 +169,11 @@ def _gather_support_values(
 def _compute_trigonometric_building_blocks(
     gate_vals: np.ndarray, z_at_support: jnp.ndarray, l_at_support: jnp.ndarray, d: int
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Returns (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support."""
+    """Returns (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support.
+
+    Computes the ``c(v, u)`` and ``s̄(v, u)`` building blocks from
+    ``notes.md`` §2.3 for each active qudit position.
+    """
     g = jnp.array(gate_vals, dtype=jnp.float32)[:, :, jnp.newaxis]
     angle_z = 2 * jnp.pi * g * z_at_support.astype(jnp.float32) / d + jnp.pi / 4
     angle_l = 2 * jnp.pi * g * l_at_support.astype(jnp.float32) / d
@@ -187,17 +191,11 @@ def _expand_angle_addition(
     obs_cos: jnp.ndarray,
     obs_sin: jnp.ndarray,
 ) -> tuple[list[jnp.ndarray], list[jnp.ndarray]]:
-    """
-    For each of the 2**omega ways to assign cos or sin to each of the omega active
-    qudit positions, computes the corresponding gate-vs-sample matrix (samples_matrices entry)
-    and gate-vs-observable matrix (obs_matrices entry).
+    """Enumerate all ``2^ω`` angle-addition terms to build the ``B`` and ``C`` factor matrices.
 
-    These terms come from expanding the product Φ_g(z - l) = Π_k T_k(z_k, l_k)
-    using the angle-addition identity, where each factor T_k can independently
-    contribute either a cos or sin term.
-
-    The all-cos combination (every choice = cos) is always the first entry and
-    equals Φ_g(z) itself.
+    Each term corresponds to a choice ``σ ∈ {0,1}^ω`` of cos (0) or sin (1)
+    at each active qudit position.  The all-cos entry (``σ = 0…0``) equals
+    ``Φ_g(z)`` itself.  See ``notes.md`` §2.3 for the derivation.
     """
     n_gates, omega, num_samples = state_cos.shape
     n_obs = obs_cos.shape[2]
@@ -223,15 +221,9 @@ def _build_weight_group(
     l_vecs: jnp.ndarray,
     d: int,
 ) -> WeightGroupData:
-    """
-    Precomputes the static samples_matrices and obs_matrices factor matrices for a group of gates
-    that all act on exactly omega qudits.
+    """Precompute the ``B`` and ``C`` factor matrices for a weight-``ω`` gate group.
 
-    Steps:
-      1. Find the active (non-zero) qudit positions for each gate.
-      2. Restrict samples and observable vectors to those positions.
-      3. Compute cos/sin factors at each active position.
-      4. Enumerate all 2**omega cos/sin combinations to build samples_matrices and obs_matrices.
+    See ``notes.md`` §2.3 for the full pipeline and matrix definitions.
     """
     n_gates = len(generators_w)
     num_samples = samples.shape[0]
@@ -266,7 +258,10 @@ class _PrecomputedObsData(NamedTuple):
 def _obs_phase_matrix(
     samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, d: int
 ) -> jnp.ndarray:
-    """Compute the observable phase matrix: [i, j] = exp(iπ/d · m_i · (2z_j − l_i))."""
+    """Compute the observable phase matrix ``J`` (see ``notes.md`` §2.1).
+
+    ``J[i, j] = exp(iπ/d · m_i · (2z_j − l_i))``.
+    """
     s_f = samples.astype(jnp.float32)
     return jnp.exp(
         (1j * jnp.pi / d) * (2 * m_f @ s_f.T - jnp.sum(m_f * l_f, axis=1, keepdims=True))
@@ -306,7 +301,7 @@ def _accumulate_phase_diffs(
     n_obs: int,
     n_samples: int,
 ) -> jnp.ndarray:
-    """Assemble E_ω = θ·B̃ − Σ_σ C_σᵀ diag(θ) B_σ."""
+    """Assemble the accumulated phase-difference matrix ``E`` (see ``notes.md`` §2.3)."""
     accumulated = jnp.zeros((n_obs, n_samples))
     for group in weight_data:
         theta_w = jnp.asarray(gates_params)[group.param_indices]
@@ -323,7 +318,7 @@ def _compute_initial_state_correction(
     state_amps: ArrayLike,
     d: int,
 ) -> jnp.ndarray:
-    """Compute the initial-state correction factor *H* for non-computational-basis input states."""
+    """Compute the initial-state correction factor ``H`` (see ``notes.md`` §3.2)."""
     s_f = samples.astype(jnp.float32)
     X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
     Psi = jnp.asarray(state_amps)  # (N,)
@@ -348,7 +343,7 @@ def _compute_initial_state_correction(
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo statistics from the integrand.
+    """Compute Monte Carlo statistics from the integrand (see ``notes.md`` §4).
 
     Returns ``(expvals, cov, mean_y_sq)`` where *cov* is the per-observable
     covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
@@ -376,30 +371,21 @@ def _compute_mc_statistics(
 def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
-    """
-    Factory that returns an expectation-value function for a qudit tcdq circuit.
+    """Factory that returns an expectation-value function for a qudit circuit.
 
-    The returned function estimates ``<D(l, m)>`` for each displacement-operator
-    observable specified in ``config.observables`` via a Monte Carlo method whose
-    precision is controlled by ``config.n_samples``.
+    The returned function estimates ``⟨O(l, m)⟩`` for each displacement-operator
+    observable via a Monte Carlo method.  See ``notes.md`` §2 for the full
+    derivation of the estimator.
 
     Args:
         config (QuditCircuitConfig): Circuit configuration.
 
     Returns:
         Callable: ``qudit_expval_batched(gates_params, key=None, n_samples=None)``
-        returning ``(expvals, cov)`` by default, where ``expvals`` has shape
-        ``(n_obs,)`` and ``cov`` has shape ``(n_obs, 2, 2)``. For each
-        observable, ``cov`` is the covariance matrix of the estimated expectation
-        value: the diagonal holds the variances of the real and imaginary parts
-        and the off-diagonal holds their covariance.
-
-        When the returned callable is invoked with
-        ``return_mean_y_sq=True``, it instead returns
-        ``(expvals, cov, mean_y_sq)`` where ``mean_y_sq`` is the per-observable
-        mean of ``|y_r|^2`` over the Monte Carlo samples. This is the quantity
-        used by the qudit MMD loss to write the QQ U-statistic correction in the
-        direct form from the notes.
+        returning ``(expvals, cov)`` by default (shapes ``(n_obs,)`` and
+        ``(n_obs, 2, 2)``).  With ``return_mean_y_sq=True``, also returns
+        ``mean_y_sq`` (shape ``(n_obs,)``), needed for the QQ U-statistic
+        correction in the MMD loss (see ``notes.md`` §5.3).
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
