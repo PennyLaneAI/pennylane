@@ -621,7 +621,7 @@ class Controlled(SymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if issubclass(subclass, qp.ops.op_math.Controlled2):
+        if cls in (Controlled, ControlledOp) and issubclass(subclass, qp.ops.op_math.Controlled2):
             return True
         return NotImplemented
 
