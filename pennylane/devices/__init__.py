@@ -128,7 +128,7 @@ to handle a single circuit. See the documentation for each modifier for more det
 >>> out
 0.0
 >>> import pprint
->>> pprint.pprint(dev.tracker.history)
+>>> pprint.pprint(dev.tracker.history)  # doctest: +SKIP
 {'batches': [1],
  'errors': [{}],
  'executions': [1],

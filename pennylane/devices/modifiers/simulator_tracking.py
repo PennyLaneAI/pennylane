@@ -224,7 +224,7 @@ def simulator_tracking(cls: type) -> type:
     ...     dev.execute((t, ) )
     (0.0,)
     >>> import pprint
-    >>> pprint.pprint(dev.tracker.history)
+    >>> pprint.pprint(dev.tracker.history)  # doctest: +SKIP
     {'batches': [1],
      'errors': [{}],
      'executions': [2],

@@ -286,6 +286,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Pauli-Based Computation (PBC) depth data can now be returned from :func:`~.specs`.
+  [(#9703)](https://github.com/PennyLaneAI/pennylane/pull/9703)
+
 * Type aliases `Int`, `Float`, `Complex`, `Bool`, and `Wire` have been introduced to allow for intuitive
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
@@ -324,8 +327,8 @@
 
 * Data from :func:`~.specs` now have markdown formatting for IPython, improving their readability;
   particularly :class:`~.resource.CircuitSpecs` and :class:`~.resource.SpecsResources`.
-  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
   [(#9585)](https://github.com/PennyLaneAI/pennylane/pull/9585)
+  [(#9679)](https://github.com/PennyLaneAI/pennylane/pull/9679)
 
 * Added a decomposition of `DiagonalQubitUnitary` into a single `RZ` multiplexer, i.e.
   `SelectPauliRot(..., rot_axis="Z")`, onto an auxiliary qubit. This is a particularly favourable

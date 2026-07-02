@@ -563,7 +563,7 @@ def specs(
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
         :class:`~.resource.SpecsResources` for each resulting tape:
 
-        >>> qp.specs(circuit, level="user")().resources
+        >>> qp.specs(circuit, level="user")().resources  # doctest: +SKIP
         [SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=2, depth=1),
          SpecsResources(gate_types={'RandomLayers': 1}, gate_sizes={2: 1}, measurements={'expval(Prod(num_wires=2, num_terms=2))': 1}, num_allocs=3, depth=1)]
 

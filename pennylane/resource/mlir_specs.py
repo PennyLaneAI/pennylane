@@ -68,6 +68,13 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
     return display_names[var]
 
 
+def _update_resource_dict(
+    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+) -> None:
+    for label, value in fn_resources.items():
+        result_dict[label] += call_count * value
+
+
 def _mlir_resources_to_specs_resources(
     all_data: dict[str, Any],
     focus: str,
@@ -96,6 +103,9 @@ def _mlir_resources_to_specs_resources(
         display_names (dict[str, str]): a mapping from symbolic variable names to their display
             names in the output. (modified in-place by this function)
     """
+    # pylint: disable=too-many-branches
+    # This method would not benefit from being broken up further, the parsing logic just requires
+    # several branches
 
     if focus in fn_resources:
         return
@@ -112,6 +122,10 @@ def _mlir_resources_to_specs_resources(
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
     num_allocs = resources["num_qubits"]
+
+    pbc_depth = None
+    if depths := resources.get("depth"):
+        pbc_depth = dict(depths)
 
     if resources.get("auto_qubit_management", False):
         warnings.warn(
@@ -153,12 +167,16 @@ def _mlir_resources_to_specs_resources(
             continue
 
         num_allocs += call_count * called_fn_resources.num_allocs
-        for gate, gate_count in called_fn_resources.gate_types.items():
-            gate_types[gate] += call_count * gate_count
-        for size, size_count in called_fn_resources.gate_sizes.items():
-            gate_sizes[size] += call_count * size_count
-        for meas, meas_count in called_fn_resources.measurements.items():
-            measurements[meas] += call_count * meas_count
+        _update_resource_dict(gate_types, call_count, called_fn_resources.gate_types)
+        _update_resource_dict(gate_sizes, call_count, called_fn_resources.gate_sizes)
+        _update_resource_dict(measurements, call_count, called_fn_resources.measurements)
+
+        if called_fn_resources.pbc_depth is not None:
+            if pbc_depth is None:
+                pbc_depth = {k: call_count * v for k, v in called_fn_resources.pbc_depth.items()}
+            else:
+                for k, v in called_fn_resources.pbc_depth.items():
+                    pbc_depth[k] = pbc_depth.get(k, 0) + call_count * v
 
     # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
     # which is helpful for testing and readability
@@ -167,7 +185,8 @@ def _mlir_resources_to_specs_resources(
         gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
         measurements={k: measurements[k] for k in sorted(measurements.keys())},
         num_allocs=num_allocs,
-        depth=None,  # Can't get depth from MLIR pass results
+        depth=None,  # Can't get circuit depth from MLIR pass results
+        pbc_depth=pbc_depth,
     )
 
 
