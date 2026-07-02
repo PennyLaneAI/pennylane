@@ -108,7 +108,28 @@ def _compute_qudit_samples(key: ArrayLike, num_samples: int, n_qudits: int, d: i
 
 
 class WeightGroupData(NamedTuple):
-    """Precomputed static data for a group of gates sharing the same weight."""
+    """Precomputed factor matrices for gates that share the same weight (number of active qudits).
+
+    The expectation-value integrand depends on the gate parameters ``θ`` through
+    a phase term ``Φ_g(z − l)`` for each gate *g*.  Using an angle-addition
+    expansion, each ``Φ_g`` is decomposed into ``2^ω`` products of cos/sin
+    factors, where ``ω`` is the gate weight.  Because all gates in a weight
+    group share the same ``ω``, the expansion can be vectorised over gates.
+
+    ``samples_matrices[σ]`` (shape ``(n_gates, n_samples)``) and
+    ``obs_matrices[σ]`` (shape ``(n_gates, n_obs)``) store the cos/sin product
+    for the ``σ``-th term of the expansion, evaluated over the Monte Carlo
+    samples and the observable ``l``-vectors respectively.  The first entry
+    (``σ = (0,…,0)``, all-cos) equals ``Φ_g(z)`` itself.
+
+    Args:
+        param_indices: Maps each gate in this group to its parameter index in the
+            global ``gates_params`` array, shape ``(n_gates,)``.
+        samples_matrices: ``2^ω`` matrices of shape ``(n_gates, n_samples)``
+            giving the sample-side factor for each angle-addition term.
+        obs_matrices: ``2^ω`` matrices of shape ``(n_gates, n_obs)`` giving the
+            observable-side factor for each angle-addition term.
+    """
 
     param_indices: jnp.ndarray
     samples_matrices: list[jnp.ndarray]
@@ -118,7 +139,27 @@ class WeightGroupData(NamedTuple):
 def _gather_support_values(
     vectors: ArrayLike, supports: np.ndarray, target_dim: int, n_gates: int, omega: int
 ) -> jnp.ndarray:
-    """Gathers values at support positions and reshapes to (n_gates, omega, target_dim)."""
+    """Extract values at the active qudit positions for every gate, for every vector.
+
+    Each gate acts on ``omega`` qudits (its *support*).  Given a batch of
+    full-length vectors (e.g. Monte Carlo samples or observable ``l``-vectors),
+    this function selects only the entries at each gate's support positions and
+    arranges them into shape ``(n_gates, omega, target_dim)`` so downstream
+    trigonometric computations can be vectorised over gates and positions.
+
+    Args:
+        vectors (ArrayLike): Input array of shape ``(target_dim, n_qudits)`` —
+            either the Monte Carlo samples (``target_dim = n_samples``) or the
+            observable ``l``-vectors (``target_dim = n_obs``).
+        supports (np.ndarray): Active qudit indices for each gate, shape
+            ``(n_gates, omega)``.
+        target_dim (int): Number of vectors (rows in ``vectors``).
+        n_gates (int): Number of gates in this weight group.
+        omega (int): Number of active qudits per gate.
+
+    Returns:
+        jnp.ndarray: Values at support positions, shape ``(n_gates, omega, target_dim)``.
+    """
     flat_supports = supports.reshape(-1)
     return (
         jnp.array(vectors)[:, flat_supports].reshape(target_dim, n_gates, omega).transpose(1, 2, 0)
