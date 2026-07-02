@@ -227,7 +227,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
         else:
             nots[wire_map[control_index]] = 1
 
-    for _ in range(len(nots.keys())):
+    for _ in nots:
         resources[resource_rep(CNOT)] += 1
 
     resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))

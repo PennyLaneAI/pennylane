@@ -194,14 +194,14 @@ class BasicEntanglerLayers(Operation):
 
         op_list = []
         for layer in range(repeat):
-            for i in range(len(wires)):
+            for i, _ in enumerate(wires):
                 op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
 
             if len(wires) == 2:
                 op_list.append(CNOT(wires=wires))
 
             elif len(wires) > 2:
-                for i in range(len(wires)):
+                for i, _ in enumerate(wires):
                     w = wires.subset([i, i + 1], periodic_boundary=True)
                     op_list.append(CNOT(wires=w))
 
@@ -251,9 +251,9 @@ def _basic_entangler_decomposition(weights, wires, rotation):
         wires_loop()  # pylint: disable=no-value-for-parameter
 
         def elif_body():
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                j = (i + 1) % len(wires)
-                CNOT(wires=[wires[i], wires[j]])
+            for j, wire in enumerate(wires):
+                k = (j + 1) % len(wires)
+                CNOT(wires=[wire, wires[k]])
 
         def true_body():
             CNOT(wires=wires)

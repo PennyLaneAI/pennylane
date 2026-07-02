@@ -302,16 +302,16 @@ class QAOAEmbedding(Operation):
                 )
                 op_list.extend(multirz_gates)
                 local_field_gates = (
-                    local_field(weights[l][len(wires) + i], wires=wires[i])
-                    for i in range(len(wires))
+                    local_field(weights[l][len(wires) + i], wires=w)
+                    for i, w in enumerate(wires)
                 )
                 op_list.extend(local_field_gates)
 
         # repeat the feature encoding once more at the end
         for i in range(n_features):
             op_list.append(RX(features[i], wires=wires[i]))
-        for i in range(n_features, len(wires)):
-            op_list.append(H(wires=wires[i]))
+        for _, w in enumerate(wires[n_features:]):
+            op_list.append(H(wires=w))
 
         return op_list
 

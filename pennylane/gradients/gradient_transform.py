@@ -108,7 +108,7 @@ def assert_no_trainable_tape_batching(tape, transform_name):
         return
 
     # Iterate over trainable parameters and check the affiliated operations for batching
-    for idx in range(len(tape.trainable_params)):
+    for idx, _ in enumerate(tape.trainable_params):
         if tape.get_operation(idx)[0].batch_size is not None:
             raise NotImplementedError(
                 "Computing the gradient of broadcasted tapes with respect to the broadcasted "
@@ -293,13 +293,13 @@ def _no_trainable_grad(tape):
         if len(tape.measurements) == 1:
             return [], lambda _: tuple(math.zeros([0]) for _ in range(tape.shots.num_copies))
         return [], lambda _: tuple(
-            tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
+            tuple(math.zeros([0]) for _ in tape.measurements)
             for _ in range(tape.shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
         return [], lambda _: math.zeros([0])
-    return [], lambda _: tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
+    return [], lambda _: tuple(math.zeros([0]) for _ in tape.measurements)
 
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):

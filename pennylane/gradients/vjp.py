@@ -519,7 +519,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
         if nums is None:
             nums = [None] * len(tapes)
 
-        for t_idx in range(len(tapes)):
+        for t_idx, _ in enumerate(tapes):
             # extract the correct results from the flat list
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
