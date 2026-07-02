@@ -615,7 +615,7 @@ class DefaultQubit(Device):
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
     ) -> CompilePipeline:
-        """This function defines the device compile pileline to be applied and an updated device configuration.
+        """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:
             execution_config (ExecutionConfig | None): A data structure describing the
@@ -631,16 +631,16 @@ class DefaultQubit(Device):
         target_gate_set = ALL_DQ_GATES
 
         if config.interface == math.Interface.JAX_JIT:
-            compile_pileline.add_transform(no_counts)
+            compile_pipeline.add_transform(no_counts)
 
         if config.mcm_config.mcm_method == "deferred":
-            compile_pileline.add_transform(defer_measurements, allow_postselect=True)
+            compile_pipeline.add_transform(defer_measurements, allow_postselect=True)
             _stopping_condition = no_mcms_stopping_condition
         else:
             _stopping_condition = allow_mcms_stopping_condition
             target_gate_set = ALL_DQ_GATES_PLUS_MCM
 
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(
             decompose,
             stopping_condition=_stopping_condition,
             device_wires=self.wires,
@@ -648,40 +648,40 @@ class DefaultQubit(Device):
             name=self.name,
         )
         _allow_resets = config.mcm_config.mcm_method != "deferred"
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(
             device_resolve_dynamic_wires, wires=self.wires, allow_resets=_allow_resets
         )
-        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pipeline.add_transform(
             validate_measurements,
             analytic_measurements=accepted_analytic_measurement,
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
-        compile_pileline.add_transform(_conditional_broadcast_expand)
+        compile_pipeline.add_transform(_conditional_broadcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
-            compile_pileline.add_transform(broadcast_expand)
+            compile_pipeline.add_transform(broadcast_expand)
 
         if config.mcm_config.mcm_method == "one-shot":
-            compile_pileline.add_transform(
+            compile_pipeline.add_transform(
                 dynamic_one_shot, postselect_mode=config.mcm_config.postselect_mode
             )
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pipeline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         if config.gradient_method == "backprop":
-            compile_pileline.add_transform(no_sampling, name="backprop + default.qubit")
+            compile_pipeline.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
             _add_adjoint_transforms(
-                compile_pileline,
+                compile_pipeline,
                 device_vjp=config.use_device_jacobian_product,
                 device_wires=self.wires,
                 target_gates=target_gate_set,
             )
-        return compile_pileline
+        return compile_pipeline
 
     @debug_logger
     def setup_execution_config(
@@ -967,7 +967,7 @@ class DefaultQubit(Device):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentation for.
+            circuit (None, QuantumTape): A specific circuit to check differentiation for.
 
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
