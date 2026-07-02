@@ -28,6 +28,9 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
+from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
+    extract_all_primitives,
+)
 
 
 class TestCaptureWhileLoop:
@@ -126,7 +129,7 @@ class TestCaptureCircuitsWhileLoop:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
-        assert "while_loop" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_args(self):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
@@ -152,7 +155,7 @@ class TestCaptureCircuitsWhileLoop:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)(1.2)
-        assert "while_loop" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.parametrize("arg, expected", [(3, 5), (11, 21)])
     def test_circuit_closure_vars(self, arg, expected):
@@ -215,7 +218,7 @@ class TestCaptureCircuitsWhileLoop:
 
         args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        assert "while_loop" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.xfail(strict=False)  # mcms only sometimes give the right answer
     @pytest.mark.parametrize("upper_bound, arg", [(3, 0.5), (2, 12)])

@@ -32,7 +32,11 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import cond_prim
+from tests.capture.capture_utils import (
+    extract_all_primitives,
+)
 
 
 @pytest.fixture
@@ -292,7 +296,6 @@ def test_convert_predicate_to_bool():
     """Test that predicates are all converted to bools."""
 
     def w(pred0, pred1):
-
         @qp.cond(pred0)
         def f(i):
             return i + 1
@@ -322,7 +325,6 @@ def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
     def f(pred, x):
-
         @qp.cond(pred)
         def b(*, x):
             qp.RX(x, 0)
@@ -619,14 +621,14 @@ class TestCondCircuits:
 
         args = [pred]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_branches(self):
         """Test circuit with true, false, and elif branches."""
 
         args = [1, 0.5, 0.6]
         jaxpr = jax.make_jaxpr(circuit_branches)(*args)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_cond_on_operator_jaxpr_check(self):
         """Test that the cond has no output when the functions are an operator type."""
@@ -647,21 +649,21 @@ class TestCondCircuits:
 
         args = [1, 0.5, 0.6]
         jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_multiple_cond(self):
         """Test circuit with returned operators in the branches."""
 
         args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_multiple_cond)(*args)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_consts(self):
         """Test circuit with jaxpr constants."""
 
         args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
     @pytest.mark.parametrize("reset", [True, False])
@@ -868,7 +870,6 @@ class TestPytree:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapeValidation:
-
     def test_different_outval_types(self):
         """Test an error is raised if the outvals have different types."""
 
@@ -947,7 +948,6 @@ class TestDynamicShapeValidation:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
-
     def test_cond_no_returns(self):
         """Test that cond can have empty returns when dynamic shapes are enabled."""
 
