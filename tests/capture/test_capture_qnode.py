@@ -30,8 +30,15 @@ jnp = jax.numpy
 from pennylane.capture.autograph import run_autograph
 
 # must be below jax importorskip
-from pennylane.capture.primitives import qnode_prim, transform_prim
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    qnode_prim,
+    transform_prim,
+    while_loop_prim,
+)
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from tests.capture.capture_utils import extract_all_primitives
 
 
 def get_qnode_output_eqns(jaxpr):
@@ -1151,7 +1158,7 @@ class TestQNodeAutographIntegration:
         if autograph:
             circuit = run_autograph(circuit)
             jaxpr = jax.make_jaxpr(circuit)(3)
-            assert "for_loop[" in str(jaxpr)
+            assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
         else:
             with pytest.raises(
                 CaptureError,
@@ -1178,7 +1185,7 @@ class TestQNodeAutographIntegration:
         if autograph:
             circuit = run_autograph(circuit)
             jaxpr = jax.make_jaxpr(circuit)(3)
-            assert "while_loop[" in str(jaxpr)
+            assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
         else:
             with pytest.raises(
                 CaptureError,
@@ -1205,7 +1212,7 @@ class TestQNodeAutographIntegration:
         if autograph:
             circuit = run_autograph(circuit)
             jaxpr = jax.make_jaxpr(circuit)(0)
-            assert "cond[" in str(jaxpr)
+            assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
         else:
             with pytest.raises(
                 CaptureError,
@@ -1232,7 +1239,7 @@ class TestQNodeAutographIntegration:
 
         circuit = run_autograph(circuit) if autograph else circuit
         jaxpr = jax.make_jaxpr(circuit)(2)
-        assert "for_loop[" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_while_loop_lambda(self, autograph):
@@ -1254,7 +1261,7 @@ class TestQNodeAutographIntegration:
 
         circuit = run_autograph(circuit) if autograph else circuit
         jaxpr = jax.make_jaxpr(circuit)(2)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_while_loop(self, autograph):
@@ -1276,7 +1283,7 @@ class TestQNodeAutographIntegration:
 
         circuit = run_autograph(circuit) if autograph else circuit
         jaxpr = jax.make_jaxpr(circuit)(2)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_pennylane_conditional_statements(self, autograph):
@@ -1293,7 +1300,7 @@ class TestQNodeAutographIntegration:
 
         circuit = run_autograph(circuit) if autograph else circuit
         jaxpr = jax.make_jaxpr(circuit)()
-        assert "cond[" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
 
 class TestStaticArgnums:

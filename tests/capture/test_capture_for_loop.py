@@ -30,7 +30,9 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import for_loop_prim
+from tests.capture.capture_utils import extract_all_primitives
 
 
 class TestCaptureForLoop:
@@ -658,7 +660,7 @@ class TestCaptureCircuitsForLoop:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)()
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_args(self):
         """Test that a for loop with arguments is correctly captured into a jaxpr."""
@@ -681,7 +683,7 @@ class TestCaptureCircuitsForLoop:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)(2)
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_consts(self):
         """Test that a for loop with jaxpr constants is correctly captured into a jaxpr."""
@@ -709,7 +711,7 @@ class TestCaptureCircuitsForLoop:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(circuit)(2)
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_dynamic_circuit_arg(self):
         """Test that a for loop with dynamic bounds and argument is correctly captured into a jaxpr."""
@@ -733,7 +735,7 @@ class TestCaptureCircuitsForLoop:
 
         args = [0, 10, 1, 10.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_for_loop_nested(self):
         """Test that a nested for loop is correctly captured into a jaxpr."""
@@ -771,7 +773,7 @@ class TestCaptureCircuitsForLoop:
 
         args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_nested_for_and_while_loop(self):
         """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
@@ -808,7 +810,7 @@ class TestCaptureCircuitsForLoop:
 
         args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        assert "for_loop" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_closure_var_has_shape_property_that_isnt_a_shape(self):
         """Test an edge case that a closure variable can have an attribute shape that isn't a tuple of ints.
