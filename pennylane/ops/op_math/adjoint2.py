@@ -166,18 +166,18 @@ class Adjoint2(SymbolicOp2):
 
 @list_decomps.register
 def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
-    op = abstractify(op)
-    if isinstance(op.base, Adjoint2):
+    abs_op = abstractify(op)
+    if isinstance(abs_op.base, Adjoint2):
         return DecompCollection([cancel_adjoint])
-    custom_rules = list_decomps.dispatch(object)(op)
+    custom_rules = list_decomps.dispatch(object)(abs_op)
     wrapped_rules = DecompCollection(
         [
             _make_adjoint_decomp(rule)
-            for rule in list_decomps(op.base)
+            for rule in list_decomps(abs_op.base)
             # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
             # does not dynamically allocate wires and does not contain mid-circuit measurements.
-            if rule.get_work_wire_spec(**op.base.arguments).total == 0
-            and not _decomp_contains_mcm(rule, op.base.arguments)
+            if rule.get_work_wire_spec(**abs_op.base.arguments).total == 0
+            and not _decomp_contains_mcm(rule, abs_op.base.arguments)
         ]
     )
     return custom_rules + wrapped_rules
