@@ -1076,22 +1076,6 @@ def _sos_state_prep_with_wires(
         work_wires=qrom_work_wires,
     )
 
-    if not identity_encoding:
-        # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
-        # register. Note that we skip this step if identity_encoding=True, because the encoding
-        # is trivial in this case. This is an additional optimization compared to the paper.
-        @for_loop(data.m)
-        def encoding(i):
-            u = data.u_bits[i]
-
-            @for_loop(data.r)
-            def inner_loop(j):
-                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
-
-            inner_loop()
-
-        encoding()
-
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
@@ -1107,6 +1091,28 @@ def _sos_state_prep_with_wires(
         b_bits = qp.math.array(b_bits, like="jax")
         mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
         elbow_triples = qp.math.array(elbow_triples, like="jax")
+
+    if not identity_encoding:
+        u_bits = data.u_bits
+        if qp.compiler.active() or qp.capture.enabled():
+            u_bits = qp.math.array(u_bits, like="jax")
+            selected_wires = qp.math.array(selected_wires, like="jax")
+            identification_wires = qp.math.array(identification_wires, like="jax")
+
+        # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
+        # register. Note that we skip this step if identity_encoding=True, because the encoding
+        # is trivial in this case. This is an additional optimization compared to the paper.
+        @for_loop(data.m)
+        def encoding(i):
+            u = u_bits[i]
+
+            @for_loop(data.r)
+            def inner_loop(j):
+                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
+
+            inner_loop()
+
+        encoding()
 
     @for_loop(data.m - 1)
     def left_elbow_ladder(i):
