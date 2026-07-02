@@ -20,7 +20,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees
+from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import apply
