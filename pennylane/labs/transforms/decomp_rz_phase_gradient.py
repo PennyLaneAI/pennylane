@@ -18,12 +18,38 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
-from pennylane.wires import WireError
+from pennylane.wires import WireError, Wires
+
+
+def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
+    """Validate three wire registers to be valid for phase gradient decompositions.
+
+    Args:
+        angle_wires (Wires): wires that encode the binary representation of the rotation angle
+        phase_grad_wires (Wires): wires that carry a phase gradient state.
+        work_wires (Wires): work wires for :class:`~.SemiAdder` (and possibly :class:`~.QROM`)
+            decomposition.
+
+    """
+    angle_wires = Wires(angle_wires)
+    phase_grad_wires = Wires(phase_grad_wires)
+    work_wires = Wires(work_wires)
+    if len(angle_wires) != len(phase_grad_wires):
+        raise WireError(
+            "angle_wires and phase_grad wires must be of same size, but received "
+            f"{len(angle_wires)} angle_wires and {len(phase_grad_wires)} phase_grad_wires."
+        )
+    if len(phase_grad_wires) - 1 > len(work_wires):
+        raise WireError(
+            f"work_wires need to be at least of size len(phase_grad_wires) - 1, but received "
+            f"{len(work_wires)} work_wires and {len(phase_grad_wires)-1=}"
+        )
+    return angle_wires, phase_grad_wires, work_wires
 
 
 def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     r"""
-    Custom decomposition rule for :class:`~.RZ` gates
+    Create a custom decomposition rule for :class:`~.RZ` gates.
 
     This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
     Here, we explicitly provide the necessary wires for the `phase gradient decomposition of RZ <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
@@ -92,14 +118,9 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤ ╰State
 
     """
-    if len(angle_wires) != len(phase_grad_wires):
-        raise WireError(
-            f"angle_wires and phase_grad wires must be of same size, received {len(angle_wires)} and {len(phase_grad_wires - 1)}"
-        )
-    if len(phase_grad_wires) - 1 > len(work_wires):
-        raise WireError(
-            f"work_wires need to be at least of size phase_grad_wires - 1, received {len(work_wires)} but require {len(phase_grad_wires - 1)}"
-        )
+    angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
+        angle_wires, phase_grad_wires, work_wires
+    )
 
     def _resource_fn():
         # rz decomposition costs, using information about angle_wires etc from the outer scope
