@@ -1075,7 +1075,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1109,7 +1109,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1126,7 +1126,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1142,7 +1142,7 @@ class TestHadamardGrad:
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_no_trainable_params_tape(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1245,7 +1245,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1].shape == ()
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 
