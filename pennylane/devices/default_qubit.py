@@ -627,7 +627,7 @@ class DefaultQubit(Device):
         """
         config = execution_config or ExecutionConfig()
 
-        compile_pileline = CompilePipeline()
+        compile_pipeline = CompilePipeline()
         target_gate_set = ALL_DQ_GATES
 
         if config.interface == math.Interface.JAX_JIT:
