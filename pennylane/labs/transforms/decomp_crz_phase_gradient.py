@@ -58,54 +58,50 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.transforms import make_selectpaulirot_to_phase_gradient_decomp
+        from pennylane.labs.transforms import make_crz_to_phase_gradient_decomp
         import numpy as np
 
         qp.decomposition.enable_graph()
 
         prec = 3
-        np.random.seed(35)
-        angles = np.random.rand(2**3)
+        phi = (1/2 + 1/4 + 1/8) * 2 * np.pi # binary rep is (111)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
-        custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        custom_decomp = make_crz_to_phase_gradient_decomp(
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.decompose(
-            gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
-            fixed_decomps={qp.SelectPauliRot: custom_decomp}
+        @qp.transforms.decompose(
+            gate_set={"C(BasisState)", "SemiAdder"},
+            fixed_decomps={qp.CRZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
-        def circuit(angles):
-            qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
+        def circuit():
+            qp.CRZ(phi, [0, 1])
             return qp.state()
 
-        specs = qp.specs(circuit)(angles)["resources"].gate_types
+        specs = qp.specs(circuit)()["resources"].gate_types
 
     The resulting circuit corresponds to the phase gradient decomposition
     of ``CRZ``, containing four fanouts corresponding to the binary representation
     of the angle (111 in this case), the :class:`~.SemiAdder`, and a :class:`~.GlobalPhase`.
 
     >>> specs
-    {'QROM': 2, 'MultiControlledX': 6, 'SemiAdder': 1}
-    >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
-    >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
-         0: ─╭◑────────────────────────────╭◑─────────────────┤ ╭State
-         1: ─├◑────────────────────────────├◑─────────────────┤ ├State
-         2: ─├◑────────────────────────────├◑─────────────────┤ ├State
-         3: ─│─────────╭○─╭○─╭○────────────│─────────╭○─╭○─╭○─┤ ├State
-     aux_0: ─├QROM(M0)─│──│──│──╭SemiAdder─├QROM(M0)─│──│──│──┤ ├State
-     aux_1: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
-     aux_2: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
-     qft_0: ─│─────────╰X─│──│──├SemiAdder─│─────────╰X─│──│──┤ ├State
-     qft_1: ─│────────────╰X─│──├SemiAdder─│────────────╰X─│──┤ ├State
-     qft_2: ─│───────────────╰X─├SemiAdder─│───────────────╰X─┤ ├State
-    work_0: ─├work──────────────├SemiAdder─├work──────────────┤ ├State
-    work_1: ─╰work──────────────╰SemiAdder─╰work──────────────┤ ╰State
+    {'C(BasisState)': 4, 'SemiAdder': 1}
+    >>> print(qp.draw(circuit, wire_order=[0, 1])())
+         0: ─╭●───────────────────╭●────────┤ ╭State
+         1: ─│────╭○──────────────│────╭○───┤ ├State
+     aux_0: ─├|Ψ⟩─│────╭SemiAdder─├|Ψ⟩─│────┤ ├State
+     aux_1: ─├|Ψ⟩─│────├SemiAdder─├|Ψ⟩─│────┤ ├State
+     aux_2: ─╰|Ψ⟩─│────├SemiAdder─╰|Ψ⟩─│────┤ ├State
+     qft_0: ──────├|Ψ⟩─├SemiAdder──────├|Ψ⟩─┤ ├State
+     qft_1: ──────├|Ψ⟩─├SemiAdder──────├|Ψ⟩─┤ ├State
+     qft_2: ──────╰|Ψ⟩─├SemiAdder──────╰|Ψ⟩─┤ ├State
+    work_0: ───────────├SemiAdder───────────┤ ├State
+    work_1: ───────────╰SemiAdder───────────┤ ╰State
 
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(

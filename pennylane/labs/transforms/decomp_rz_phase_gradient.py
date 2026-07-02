@@ -90,10 +90,9 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.transforms.decompose(
-                gate_set={"C(BasisState)", "SemiAdder", "CNOT", "GlobalPhase"},
-                fixed_decomps={qp.RZ: custom_decomp}
-        )
+        gate_set = {"C(BasisState)", "SemiAdder", "GlobalPhase"}
+
+        @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
             qp.RZ(phi, 0)
