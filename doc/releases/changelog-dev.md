@@ -742,6 +742,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fixed some more randomness seeds in the test suite.
+  [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
+
 * Unblock the decomposition of :class:`~.SumOfSlaterPrep` in the old decomposition system.
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
 
