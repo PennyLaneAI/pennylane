@@ -16,9 +16,10 @@
 
 from collections.abc import Sequence
 from inspect import signature
-from typing import Literal, override
+from typing import Literal
 
 from scipy import sparse
+from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
