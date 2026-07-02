@@ -330,6 +330,10 @@ def _equal_operators(
         # should be created for them.
         return f"op1 and op2 have arithmetic depth > 0. Got arithmetic depth {op1.arithmetic_depth}"
 
+    # Symbolic operators that compare equal across subclasses have their own dispatches.
+    if type(op1) is not type(op2):
+        return f"op1 and op2 have different types.  Got {type(op1)} and {type(op2)}."
+
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
 
