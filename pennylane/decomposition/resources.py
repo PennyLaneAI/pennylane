@@ -214,6 +214,9 @@ def _validate_resource_rep(op_type, params):
         )
 
 
+AbstractOperatorLike = CompressedResourceOp | Operator2
+
+
 def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 

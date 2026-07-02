@@ -13,13 +13,27 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
-from typing_extensions import override
+from textwrap import dedent
+from typing import override
 
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
+    DecompositionRule,
+    list_decomps,
+    register_condition,
+    register_resources,
+)
+from pennylane.decomposition.resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    adjoint_resource_rep,
+    resource_rep,
+)
 
 from .symbolicop2 import SymbolicOp2
 
@@ -147,3 +161,82 @@ class Adjoint2(SymbolicOp2):
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
+
+
+@list_decomps.register
+def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
+    op = abstractify(op)
+    if isinstance(op.base, Adjoint2):
+        return DecompCollection([cancel_adjoint])
+    custom_rules = list_decomps.dispatch(object)(op)
+    wrapped_rules = DecompCollection(
+        [
+            _make_adjoint_decomp(rule)
+            for rule in list_decomps(op.base)
+            # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
+            # does not dynamically allocate wires and does not contain mid-circuit measurements.
+            if rule.get_work_wire_spec(**op.base.arguments).total == 0
+            and not _decomp_contains_mcm(rule, op.base.arguments)
+        ]
+    )
+    return custom_rules + wrapped_rules
+
+
+def _decomp_contains_mcm(rule, params):
+    resources = rule.compute_resources(**params).gate_counts
+    mcm = resource_rep(qp.ops.MidMeasure)
+    ppm = resource_rep(qp.ops.PauliMeasure)
+    return mcm in resources or ppm in resources
+
+
+def _make_adjoint_decomp(base_rule: DecompositionRule):
+    """Wraps a decomposition rule with adjoint."""
+
+    def _condition_fn(base):
+        return base_rule.is_applicable(**base.arguments)
+
+    def _resource_fn(base):
+        base_res = base_rule.compute_resources(**base.arguments)
+        base_gates = base_res.gate_counts
+        return {_adjoint(op): count for op, count in base_gates.items()}
+
+    base_source = base_rule._source
+
+    # pylint: disable=protected-access
+    @register_condition(_condition_fn)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_rule._work_wire_spec,
+        exact=base_rule.exact_resources,
+        name=f"adjoint({base_rule.name})",
+    )
+    def _impl(base):
+        # pylint: disable=protected-access
+        qp.adjoint(base_rule._impl)(**base.arguments)
+
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
+        + dedent(base_source).strip()
+    )
+
+    return _impl
+
+
+def _adjoint(op: AbstractOperatorLike):
+    if isinstance(op, CompressedResourceOp):
+        return adjoint_resource_rep(op.op_type, op.params)
+    return Adjoint2(op)
+
+
+def _cancel_adjoint_resources(base):
+    assert isinstance(base, Adjoint2)
+    inner_base = base.base
+    return {inner_base: 1}
+
+
+@register_resources(_cancel_adjoint_resources)
+def cancel_adjoint(base):
+    """Decompose the adjoint of the adjoint of an operator."""
+    assert isinstance(base, Adjoint2)
+    type(base.base)(**base.base.arguments)
