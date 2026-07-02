@@ -224,7 +224,7 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jax.make_jaxpr(circuit)(wires=wires)
+        _ = jax.make_jaxpr(circuit)(wires=wires)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
