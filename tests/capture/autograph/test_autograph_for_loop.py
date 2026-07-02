@@ -36,6 +36,8 @@ from malt.operators import py_builtins as ag_py_builtins
 
 from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.primitives import cond_prim, for_loop_prim
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -681,7 +683,7 @@ class TestPennyLaneForLoops:
 
         ag_fn = run_autograph(loop)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "for_loop[" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
 
@@ -721,8 +723,8 @@ class TestPennyLaneForLoops:
 
         ag_fn = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "for_loop[" in str(jaxpr)
-        assert "cond[" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 18
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0] == 0
