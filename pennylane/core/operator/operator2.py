@@ -227,6 +227,7 @@ class Operator2(metaclass=OperatorMeta):
             arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
 
         Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
+        self._is_abstract = True
 
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
