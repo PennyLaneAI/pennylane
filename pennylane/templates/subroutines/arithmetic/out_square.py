@@ -27,12 +27,17 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
+from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.wires import Wires, WiresLike
 
-from .incrementer import Incrementer
-from .out_multiplier import _add_plus_one, _c_add_sub
-from .semi_adder import SemiAdder, _semiadder_resources
+from .out_multiplier import _c_add_sub, _c_add_sub_resources
+from .semi_adder import (
+    SemiAdder,
+    _left_block,
+    _left_block_zeroed,
+    _right_block,
+    _right_block_zeroed,
+)
 from .temporary_and import TemporaryAND
 
 
@@ -400,63 +405,116 @@ def _out_square_with_caddsub_resources(
 ) -> dict:
     # pylint: disable=unused-argument
     n = num_x_wires
-    m = num_output_wires + 1
+    m = num_output_wires
+    p = min(n - 1, m // 2)
+
     resources = defaultdict(int)
 
-    cnot_rep = resource_rep(CNOT)
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
-
     # Controlled add-subtract loop
-    loop_size = min(m, n)
-    # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
-    if n > 1:
-        c_flips = controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": n - 1},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        )
-        resources[c_flips] += 2 * loop_size
-
-    # Caching of bit in x onto c_wire, to control on it.
-    resources[cnot_rep] += 2 * loop_size
-    # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
-    resources[cnot_on_0_rep] += 2 * loop_size
-    # Bit flip on LSB work wire, controlled on |0>: one per ctrl-add-subtract that has work wires
-    c_add_subs_with_work_wires = min(n, m - 1)
-    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
-
-    # SemiAdder of x_wires onto output_wires: One per ctrl-add-subtract, varying size
-    for i in range(loop_size):
-        size = min(m - i, n + 1) if output_wires_zeroed else m - i
-        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=size)
-        for key, value in adder_resources.items():
+    for i in range(p):
+        size = min(n - i, m - 2 * i - 1) if output_wires_zeroed else m - 2 * i - 1
+        for key, value in _c_add_sub_resources(n - i - 1, size).items():
             resources[key] += value
 
-    # Subtract 2^(2n)
-    if num_output_wires + 1 > 2 * n:
-        resources[
-            adjoint_resource_rep(
-                Incrementer,
-                base_params={"num_wires": m - 2 * n, "num_work_wires": num_work_wires - 1},
-            )
-        ] = 1
-
-    # Add (2^n-1-x) + 1
-    resources[x_rep] += 6 + 2 * n
-    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
-    for key, value in adder_resources.items():
+    for key, value in _sparse_adder_resources(n, m, [1] + [2 * j for j in range(1, n)]).items():
         resources[key] += value
 
-    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if m > n + 1:
+    # Subtract 2 x_{[1:]}
+    resources[resource_rep(X)] += 2 * (m - 1)
+    resources[
+        resource_rep(SemiAdder, num_x_wires=n - 1, num_y_wires=m - 1, num_work_wires=num_work_wires)
+    ] += 1
+
+    if m > n:
+        # Shifted addition
+        resources[resource_rep(X)] += 2 * (m - n + n - 1)
         resources[
-            resource_rep(SemiAdder, num_x_wires=n, num_y_wires=m - n - 1, num_work_wires=m - n - 2)
+            resource_rep(
+                SemiAdder, num_x_wires=n - 1, num_y_wires=m - n, num_work_wires=num_work_wires
+            )
         ] += 1
 
     return dict(resources)
+
+
+def _effective_zeros(num_x_wires, num_y_wires, zeroed):
+    used_x = 0
+    new_zeroed = []
+    for i in range(num_y_wires):
+        if i in zeroed or used_x >= num_x_wires:
+            new_zeroed.append(i)
+        else:
+            used_x += 1
+    return new_zeroed
+
+
+def _sparse_adder_resources(num_x_wires, num_y_wires, zeroed):
+    if num_y_wires == 1:
+        return {CNOT: 1}
+
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
+    num_elbows = num_y_wires - 1
+    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
+    num_nonzeroed_blocks = (num_y_wires - 2) - num_zeroed_blocks
+    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
+    # each _right_block uses 3 CNOTs, each _right_block_zeroed just 1 CNOT
+    # the remaining construction uses 2 + int(num_y_wires-1 not in zeroed) CNOTs
+    return {
+        resource_rep(TemporaryAND): num_elbows,
+        adjoint_resource_rep(TemporaryAND, {}): num_elbows,
+        CNOT: num_zeroed_blocks + 6 * num_nonzeroed_blocks + 2 + int(num_y_wires - 1 not in zeroed),
+    }
+
+
+def _sparse_adder(x_wires, y_wires, work_wires, zeroed):
+    """Perform sparse addition, i.e., addition of ``x_wires`` interlaced with zeroed bits
+    specified by ``zeroed``. It is assumed that 0 is not in ``zeroed``.
+    This function assumes little endian ordering!
+    """
+    num_y_wires = len(y_wires)
+    if num_y_wires == 1:
+        CNOT([x_wires[0], y_wires[0]])
+        return
+    assert zeroed[0] != 0
+
+    num_x_wires = len(x_wires)
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
+    work_wires = work_wires[: num_y_wires - 1]
+
+    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+
+    x_pos = 1
+    for i in range(1, num_y_wires - 1):
+        if i in zeroed:
+            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos += 1
+
+    CNOT([work_wires[-1], y_wires[-1]])
+
+    if num_y_wires - 1 not in zeroed:
+        CNOT([x_wires[x_pos], y_wires[-1]])
+
+    x_pos -= 1
+    for i in range(num_y_wires - 2, 0, -1):
+        if i in zeroed:
+            _right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _right_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos -= 1
+
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    CNOT([x_wires[0], y_wires[0]])
+
+
+def _shifted_adder(x_wires, output_wires, work_wires):
+    """Perform shifted addition y -> y + x - 2^n + 1."""
+    _ = [X(w) for w in x_wires]
+    _ = [X(w) for w in output_wires]
+    SemiAdder(x_wires[::-1], output_wires[::-1], work_wires)
+    _ = [X(w) for w in output_wires]
+    _ = [X(w) for w in x_wires]
 
 
 @register_condition(_out_square_with_caddsub_condition)
@@ -488,40 +546,30 @@ def _out_square_with_caddsub(
     LSB in the beginning (we do not have to do anything for this in code).
     This qubit is guaranteed to be zeroed because we computed an even number before.
     """
-    # First work wire is used for caching control bits
-    c_wire = work_wires[0]
-    # Second work wire is used to augment the output wires because we compute
-    # twice the desired output at first, and then divide by 2.
-    output_wires = output_wires + [work_wires[1]]
-    work_wires = work_wires[2:]
+    x_wires = x_wires[::-1]
+    output_wires = output_wires[::-1]
     n = len(x_wires)
     m = len(output_wires)
+    p = min(n - 1, m // 2)
 
-    for i, x_wire in enumerate(x_wires[::-1][:m]):
-        output_msb = max(0, m - (n + 1 + i)) if output_wires_zeroed else 0
-        output = output_wires[output_msb : m - i]
-        CNOT([x_wire, c_wire])
-        _c_add_sub(c_wire, x_wires, output, work_wires)
-        CNOT([x_wire, c_wire])
+    for i, x_wire in enumerate(x_wires[:p]):
+        _in_reg = x_wires[i + 1 :]
+        _out_reg = (
+            output_wires[2 * i + 1 : n + 1 + i]
+            if output_wires_zeroed
+            else output_wires[2 * i + 1 :]
+        )
+        _c_add_sub(x_wire, _in_reg[::-1], _out_reg[::-1], work_wires)
 
-    # Corrections - no need for control wire any more
-    work_wires = [c_wire] + work_wires
+    _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
 
-    # Subtract 2^(2n)
-    if len(output_wires) > 2 * n:
-        _output = output_wires[: m - 2 * n]
-        adjoint(Incrementer, lazy=False)(_output, work_wires)
+    _ = [X(w) for w in output_wires[1:]]
+    SemiAdder(x_wires[1:][::-1], output_wires[1:][::-1], work_wires)
+    _ = [X(w) for w in output_wires[1:]]
 
-    # Add (2^n-1-x) + 1. This is done by flipping the x_wires (transforming x-> 2^n-1-x), performing
-    # addition plus one (so we transform the output with +(2^n-1-x)+1), and flipping the x_wires
-    # back to the original value (2^n-1-x -> 2^n-1-(2^n-1-x)=x).
-    _ = [X(w) for w in x_wires]
-    _add_plus_one(x_wires, output_wires, work_wires)
-    _ = [X(w) for w in x_wires]
-
-    # Add 2^(n+1) x if 2^m > 2^(n+1) (otherwise it just vanishes in the modulus)
-    if m > n + 1:
-        SemiAdder(x_wires, output_wires[: m - n - 1], work_wires[: m - n - 2])
+    # shifted addition
+    if m > n:
+        _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
 
 
 add_decomps(OutSquare, _out_square_with_adder, _out_square_with_caddsub)
