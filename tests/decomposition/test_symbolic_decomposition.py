@@ -46,6 +46,8 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
@@ -814,6 +816,18 @@ class TestControlledDecomposition:
                     },
                 ): 1
             }
+        )
+
+    def test_flip_control_adjoint2(self):
+        """Tests the flip_control_adjoint decomposition."""
+
+        op = qp.ctrl(qp.adjoint(DynOp(0.5, wires=[0, 1])), control=2)
+        with queuing.AnnotatedQueue() as q:
+            flip_control_adjoint2(**op.arguments)
+
+        assert q.queue == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
+        assert flip_control_adjoint2.compute_resources(**op.arguments) == Resources(
+            {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
         )
 
     def test_flip_zero_control(self):
