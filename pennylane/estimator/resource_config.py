@@ -325,7 +325,7 @@ class ResourceConfig:
         """Sets a custom function to override the default resource decomposition.
 
         Args:
-            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overriden.
+            op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class whose decomposition is being overridden.
             decomp_func (Callable): the new resource decomposition function to be set as default.
             decomp_type (None | DecompositionType): the decomposition type to override. Options are
                 ``"adj"``, ``"pow"``, ``"ctrl"``, and ``"base"``. Default is ``"base"``.
@@ -337,7 +337,7 @@ class ResourceConfig:
 
             The new decomposition function ``decomp_func`` should have the same signature as the one it replaces.
             Specifically, the signature should match the :code:`resource_keys` of the base resource
-            operator class being overriden.
+            operator class being overridden.
 
         **Example**
 

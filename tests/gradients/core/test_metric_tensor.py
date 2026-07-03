@@ -725,7 +725,7 @@ class TestMetricTensor:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     def test_no_trainable_params_qnode_autograd(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -743,7 +743,7 @@ class TestMetricTensor:
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     def test_no_trainable_params_qnode_torch(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -762,7 +762,7 @@ class TestMetricTensor:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto"])
     def test_no_trainable_params_qnode_tf(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -781,7 +781,7 @@ class TestMetricTensor:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_no_trainable_params_qnode_jax(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -797,7 +797,7 @@ class TestMetricTensor:
             qp.metric_tensor(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=3)
 

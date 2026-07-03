@@ -16,9 +16,10 @@
 
 from collections.abc import Sequence
 from inspect import signature
-from typing import Literal, override
+from typing import Literal
 
 from scipy import sparse
+from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
@@ -413,13 +414,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    compilable_argnames = ("work_wire_type",)
+    static_argnames = ("work_wire_type",)
 
     arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
     # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
-    # overriden with a different signature, we must override __init__ so that the signature
+    # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
     def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
         self,
@@ -430,6 +431,37 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        base,
+        control_wires,
+        control_values=None,
+        work_wires=None,
+        work_wire_type="borrowed",
+    ):
+        # Canonicalize control_values and work_wires
+        if control_values is None:
+            control_values = Bool[len(control_wires)]
+        if work_wires is None:
+            work_wires = Wire[0]
+
+        # Use default implementation for __abstract_init__
+        super().__abstract_init__(
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+        # Update private properties
+        self._base = self.arguments["base"]
+        self._control_wires = self.arguments["control_wires"]
+        self._control_values = self.arguments["control_values"]
+        self._work_wires = self.arguments["work_wires"]
+        self._work_wire_type = self.arguments["work_wire_type"]
 
     @property
     @override
