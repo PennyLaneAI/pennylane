@@ -269,7 +269,7 @@ class TestControlledCapture:
         assert len(jaxpr.eqns) == 0
 
 
-def test_public_symbolic_op_binding():
+def test_public_s_prod_binding():
     """Tests that the public API for symbolic op captures properly."""
 
     def f():
@@ -287,6 +287,31 @@ def test_public_symbolic_op_binding():
 
     # SProd primitive consumes the op
     assert eqns[0].outvars[0] == eqns[1].invars[1]
+
+
+def test_public_prod_binding():
+    """Tests that the public API for symbolic op captures properly."""
+
+    def f():
+        qp.prod(NonParametricOp(1), NonParametricOp(0))
+
+    cjaxpr = jax.make_jaxpr(f)()
+
+    eqns = cjaxpr.eqns
+
+    assert len(eqns) == 3  # op, op and sprod
+    assert eqns[0].primitive.name == "operator"
+    assert eqns[0].params["op_cls"] is NonParametricOp
+    assert eqns[1].primitive.name == "operator"
+    assert eqns[1].params["op_cls"] is NonParametricOp
+
+    assert eqns[2].primitive.name == "Prod"
+
+    # Prod primitive consumes the ops
+    assert eqns[0].outvars[0] == eqns[2].invars[0]
+    assert eqns[0].outvars[0] == eqns[2].invars[0]
+    assert eqns[1].outvars[0] == eqns[2].invars[1]
+    assert eqns[1].outvars[0] == eqns[2].invars[1]
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.capture]
 from tests.core.operator.operator2_utils import NonParametricOp
 
 
-def test_public_api_binding():
+def test_public_dot_binding():
     """Tests that the public API for composite op captures properly."""
 
     def f():
@@ -55,6 +55,31 @@ def test_public_api_binding():
     assert eqns[4].primitive.name == "Sum"
     assert eqns[4].invars[0] == eqns[2].outvars[0]
     assert eqns[4].invars[1] == eqns[3].outvars[0]
+
+
+def test_public_sum_binding():
+    """Tests that the public API for composite op captures properly."""
+
+    def f():
+        qp.sum(NonParametricOp(0), NonParametricOp(1))
+
+    cjaxpr = jax.make_jaxpr(f)()
+
+    eqns = cjaxpr.eqns
+
+    assert len(eqns) == 3  # op, op and sum
+    assert eqns[0].primitive.name == "operator"
+    assert eqns[0].params["op_cls"] is NonParametricOp
+    assert eqns[1].primitive.name == "operator"
+    assert eqns[1].params["op_cls"] is NonParametricOp
+
+    assert eqns[2].primitive.name == "Sum"
+
+    # Sum primitive consumes the ops
+    assert eqns[0].outvars[0] == eqns[2].invars[0]
+    assert eqns[0].outvars[0] == eqns[2].invars[0]
+    assert eqns[1].outvars[0] == eqns[2].invars[1]
+    assert eqns[1].outvars[0] == eqns[2].invars[1]
 
 
 @pytest.mark.xfail(reason="adjoint is not being captured in the jaxpr for some reason", strict=True)
