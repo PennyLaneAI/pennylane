@@ -195,6 +195,68 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
 
 
 class ResourceQfunc(ResourceOperator):
+    r"""Resource class for a quantum function (qfunc) promoted to a resource operator.
+
+    This symbolic class can be used to represent a subroutine defined as a quantum function. All of the
+    operators defined in the quantum function represent the resources of the subroutine. This allows users
+    to quickly define and track the resources at higher levels of abstraction.
+
+    Args:
+        name (str): the name used to track the counts of the subroutine
+        resource_decomp_fn (Callable): the quantum function representing the subroutine
+        *resource_args: positional arguments of the ``resource_decomp_fn``
+        **resource_kwargs: keyword arguments of the ``resource_decomp_fn``
+
+    Resources:
+        The resources are defined trivially as each operation called within the quantum function.
+
+    Raises:
+        TypeError: if the quantum function calls a :class:`~.pennylane.labs.estimator_beta.MarkQubits`
+            instance, which is not currently supported inside a ``ResourceQfunc``.
+
+    .. seealso:: The decorator :func:`~.pennylane.labs.estimator_beta.mark_subroutine`.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane.labs.estimator_beta as qre
+
+        def SubroutineA(num_iter, op_type="Z"):
+            for _ in range(num_iter):
+                if op_type == "Z":
+                    qre.Z()
+                else:
+                    qre.X()
+
+    We obtain the expected resources when a suitable gate set is chosen:
+
+    >>> op = qre.ResourceQfunc(
+    ...     name = "SubA",
+    ...     resource_decomp_fn = SubroutineA,
+    ...     num_iter = 3,
+    ...     op_type = "X",
+    ... )
+    >>> print(qre.estimate(op, {"X", "Z"}))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 3
+       'X': 3
+    >>> print(qre.estimate(op, {"SubA"}))
+    --- Resources: ---
+     Total wires: 1
+       algorithmic wires: 1
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 1
+       'SubA': 1
+
+    """
 
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
@@ -239,7 +301,18 @@ class ResourceQfunc(ResourceOperator):
         self.queue()
 
     @property
-    def resource_params(self):
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * name (str): the name used to track the counts of the subroutine
+                * num_wires (int): the number of wires the subroutine acts upon
+                * cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+                  tuple containing the operations queued by the subroutine, in the compressed
+                  representation, corresponding to the factors of the product.
+
+        """
         return {
             "name": self.name,
             "num_wires": self.num_wires,
@@ -248,6 +321,19 @@ class ResourceQfunc(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, name, num_wires, cmpr_ops):
+        r"""Returns a compressed representation containing only the parameters of
+        the operator that are needed to compute a resource estimation.
+
+        Args:
+            name (str): the name used to track the counts of the subroutine
+            num_wires (int): the number of wires the subroutine acts upon
+            cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+                tuple containing the operations queued by the subroutine, in the compressed
+                representation, corresponding to the factors of the product.
+
+        Returns:
+            :class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
+        """
         params = {
             "name": name,
             "num_wires": num_wires,
@@ -256,10 +342,29 @@ class ResourceQfunc(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params, name=name)
 
     @classmethod
-    def resource_decomp(cls, name, num_wires, cmpr_ops):
+    def resource_decomp(cls, name, num_wires, cmpr_ops):  # pylint: disable=unused-argument
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            name (str): the name used to track the counts of the subroutine
+            num_wires (int): the number of wires the subroutine acts upon
+            cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+                tuple containing the operations queued by the subroutine, in the compressed
+                representation, corresponding to the factors of the product.
+
+        Resources:
+            The resources are defined trivially as each operation called within the quantum function.
+
+        Returns:
+            list[:class:`~.pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
+            where each object represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
         return [GateCount(cmpr_op) for cmpr_op in cmpr_ops]
 
     @staticmethod
-    def tracking_name(name, num_wires, cmpr_ops) -> str:
+    def tracking_name(name, num_wires, cmpr_ops) -> str:  # pylint: disable=unused-argument
         r"""Returns the tracking name built with the operator's parameters."""
         return name
