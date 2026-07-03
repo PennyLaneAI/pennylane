@@ -91,10 +91,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
         obj = super().__new__(cls)
-        sig = signature(cls)
-        bound_args = sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        obj._init_args = bound_args.arguments
+        if args or kwargs:
+            sig = signature(cls)
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            obj._init_args = bound_args.arguments
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments

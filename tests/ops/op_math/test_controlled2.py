@@ -13,6 +13,7 @@
 
 """Tests for the Controlled2 class."""
 
+import copy
 from typing import override
 
 import numpy as np
@@ -23,7 +24,7 @@ from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import OneWireDynOp
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 # pylint: disable=unused-argument,too-few-public-methods
 
@@ -418,3 +419,11 @@ class TestControlledOp2:
         op = OneWireDynOp(0.5, wires=[0])
         op = qp.ctrl(OneWireDynOp(0.5, wires=[0]), control=[1], control_values=0)
         assert isinstance(op, ControlledOp2)
+
+    @pytest.mark.parametrize("copy_fn", (copy.copy, copy.deepcopy))
+    def test_copy_roundtrip(self, copy_fn):
+        """Test to make sure that copy roundtrips are sastisfied."""
+
+        op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
+
+        assert op == copy_fn(op)
