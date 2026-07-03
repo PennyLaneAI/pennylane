@@ -142,7 +142,7 @@ def test_recursive_nested_commutator(A, B, alpha, final_op):
 
 
 @pytest.mark.parametrize(
-    "order, num_ops, t, expected_indicies_and_coeffs",
+    "order, num_ops, t, expected_indices_and_coeffs",
     (
         (1, 2, 1, ([0, 1], [1, 1])),
         (1, 3, 0.25, ([0, 1, 2], [0.25, 0.25, 0.25])),
@@ -159,12 +159,12 @@ def test_recursive_nested_commutator(A, B, alpha, final_op):
         ),
     ),
 )
-def test_recursive_flatten(order, num_ops, t, expected_indicies_and_coeffs):
-    computed_indicies, computed_coeffs = _recursive_flatten(order, num_ops, t)
-    expected_indicies, expected_coeffs = expected_indicies_and_coeffs
+def test_recursive_flatten(order, num_ops, t, expected_indices_and_coeffs):
+    computed_indices, computed_coeffs = _recursive_flatten(order, num_ops, t)
+    expected_indices, expected_coeffs = expected_indices_and_coeffs
 
     assert computed_coeffs == expected_coeffs
-    assert computed_indicies == expected_indicies
+    assert computed_indices == expected_indices
 
 
 @pytest.mark.parametrize(
@@ -192,7 +192,7 @@ def test_simplify_flatten(index_lst, coeffs_lst, simplified_index_lst, simplifie
 
 
 @pytest.mark.parametrize(
-    "order, num_ops, expected_indicies_and_coeffs",
+    "order, num_ops, expected_indices_and_coeffs",
     (
         (1, 3, ([0, 1, 2], [1] * 3)),
         (2, 3, ([0, 1, 2, 1, 0], [0.5, 0.5, 1, 0.5, 0.5])),
@@ -219,12 +219,12 @@ def test_simplify_flatten(index_lst, coeffs_lst, simplified_index_lst, simplifie
         ),
     ),
 )
-def test_flatten_trotter(order, num_ops, expected_indicies_and_coeffs):
-    computed_indicies, computed_coeffs = _flatten_trotter(num_ops, order)
-    expected_indicies, expected_coeffs = expected_indicies_and_coeffs
+def test_flatten_trotter(order, num_ops, expected_indices_and_coeffs):
+    computed_indices, computed_coeffs = _flatten_trotter(num_ops, order)
+    expected_indices, expected_coeffs = expected_indices_and_coeffs
 
     assert qnp.allclose(computed_coeffs, expected_coeffs)
-    assert computed_indicies == expected_indicies
+    assert computed_indices == expected_indices
 
 
 class TestErrorFunctions:
