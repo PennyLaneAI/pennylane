@@ -597,7 +597,7 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         @register_resources({qp.RY: 2, qp.CNOT: 1})
-        def custom_rule2(theta, wires, **__):
+        def custom_rule2(theta, wires):
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
@@ -611,6 +611,49 @@ class TestDecompDictionary:
 
         op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
         assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
+
+    def test_list_decomps_controlled2(self):
+        """Tests that list_decomps populate the adjoint decomposition rules."""
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def _controlled_rule(base, control_wires, control_values, **_):
+            raise NotImplementedError
+
+        @register_resources({qp.RX: 2, qp.CZ: 1})
+        def custom_rule(theta, wires):
+            raise NotImplementedError
+
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        def custom_rule2(theta, wires):
+            raise NotImplementedError
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps("Controlled(DynOp)", _controlled_rule)
+            qp.add_decomps(DynOp, custom_rule)
+            qp.add_decomps(DynOp, custom_rule2)
+
+            op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {
+                "_controlled_rule",
+                "controlled(custom_rule)",
+                "controlled(custom_rule2)",
+            }
+
+            class DynOpWithMatrix(DynOp):  # pylint: disable=too-few-public-methods
+                has_matrix = True
+                name = "DynOp"
+
+            op = qp.ctrl(DynOpWithMatrix(Float, Wire[1]), control=Wire[4])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {
+                "_controlled_rule",
+                "controlled(custom_rule)",
+                "controlled(custom_rule2)",
+                "ctrl_single_work_wire",
+                "to_controlled_qubit_unitary",
+            }
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""

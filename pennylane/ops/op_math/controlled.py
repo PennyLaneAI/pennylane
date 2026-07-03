@@ -195,10 +195,12 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
 def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type):
     """New implementation of qp.ctrl that works better with Operator2."""
 
-    control_wires = Wires(control_wires)
+    if not isinstance(control_wires, AbstractWires):
+        control_wires = Wires(control_wires)
     if work_wires is None:
         work_wires = []
-    work_wires = Wires(work_wires)
+    if not isinstance(work_wires, AbstractWires):
+        work_wires = Wires(work_wires)
 
     if isinstance(op, Controlled2):
         ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
