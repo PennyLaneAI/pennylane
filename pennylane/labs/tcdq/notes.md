@@ -44,7 +44,7 @@ $$\mathcal{O}(l, m) = Z^l X^m \, e^{-i\pi l m / d},$$
 
 and its action on a computational basis state is:
 
-$$\mathcal{O}(l, m)|z\rangle = \exp\!\left(\frac{i\pi}{d} l(2z + m)\right) |z \oplus m\rangle.$$
+$$\mathcal{O}(l, m)|z\rangle = \exp\left(\frac{i\pi}{d} l(2z + m)\right) |z \oplus m\rangle.$$
 
 Under the QFT, displacement operators conjugate as
 $F\,\mathcal{O}(l,m)\,F^\dagger = \mathcal{O}(m, -l)$, so the Fourier
@@ -77,11 +77,11 @@ Its eigenvalues on a computational basis state $|\mathbf{z}\rangle$ are
 $D(\boldsymbol{\theta})|\mathbf{z}\rangle = \gamma_{\mathbf{z}}(\boldsymbol{\theta})|\mathbf{z}\rangle$,
 where
 
-$$\gamma_{\mathbf{z}}(\boldsymbol{\theta}) = \exp\!\left(i \sum_{\mathbf{g} \in \mathcal{G}} \theta_{\mathbf{g}}\,\Phi_{\mathbf{g}}(\mathbf{z})\right)$$
+$$\gamma_{\mathbf{z}}(\boldsymbol{\theta}) = \exp\left(i \sum_{\mathbf{g} \in \mathcal{G}} \theta_{\mathbf{g}}\,\Phi_{\mathbf{g}}(\mathbf{z})\right)$$
 
 with the **gate eigenvalue function**
 
-$$\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j=1}^n \sqrt{2}\,\cos\!\left(\frac{2\pi g_j z_j}{d} + \frac{\pi}{4}\right).$$
+$$\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j=1}^n \sqrt{2}\,\cos\left(\frac{2\pi g_j z_j}{d} + \frac{\pi}{4}\right).$$
 
 The gate set $\mathcal{G}$ is specified via `QuditCircuitConfig.gates`;
 `_parse_qudit_generator_dict` flattens this into the generator and
@@ -98,13 +98,13 @@ acts on the input state $|0\rangle$.  By conjugating through the QFT and
 inserting resolutions of the identity, the expectation value of
 $\mathcal{O}(\mathbf{l}, \mathbf{m})$ reduces to a single sum:
 
-$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\!\left[\exp\!\left(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\!\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\,\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})\big)\right)\right]$$
+$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\,\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})\big)\right)\right]$$
 
 where $\mathbf{z}$ is drawn uniformly from $\mathbb{Z}_d^n$ and
 $\ominus$ denotes componentwise subtraction modulo $d$.  The two
 exponential factors are:
 
-1. **The observable phase** $J = \exp\!\big(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\big)$, determined by the choice of observable (computed by `_obs_phase_matrix`).
+1. **The observable phase** $J = \exp\big(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\big)$, determined by the choice of observable (computed by `_obs_phase_matrix`).
 2. **The accumulated phase difference** $e^{iE}$ where $E = \sum_{\mathbf{g}} \theta_{\mathbf{g}}(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l}))$, determined by the circuit parameters (assembled by `_accumulate_phase_diffs`).
 
 Since this is an expectation of a bounded integrand, it can be estimated to
@@ -116,7 +116,7 @@ dit-strings.
 To estimate a batch of $|\mathcal{O}|$ observables simultaneously, we
 construct $|\mathcal{O}| \times s$ matrices $J$ and $E$ and combine them:
 
-$$\{\langle \mathcal{O}(\mathbf{l}_i, \mathbf{m}_i) \rangle\}_i = \text{mean}_1\!\big[J \odot e^{iE}\big]$$
+$$\{\langle \mathcal{O}(\mathbf{l}_i, \mathbf{m}_i) \rangle\}_i = \text{mean}_1\big[J \odot e^{iE}\big]$$
 
 where $\odot$ is elementwise multiplication and $\text{mean}_1$ averages
 over the sample axis (columns).
@@ -132,7 +132,7 @@ a factored matrix formulation.
 
 Define the cos/sin factors:
 
-$$c(v, u) = \sqrt{2}\cos\!\left(\frac{2\pi v u}{d} + \frac{\pi}{4}\right), \qquad \bar{s}(v, u) = \sqrt{2}\sin\!\left(\frac{2\pi v u}{d} + \frac{\pi}{4}\right)$$
+$$c(v, u) = \sqrt{2}\cos\left(\frac{2\pi v u}{d} + \frac{\pi}{4}\right), \qquad \bar{s}(v, u) = \sqrt{2}\sin\left(\frac{2\pi v u}{d} + \frac{\pi}{4}\right)$$
 
 so that $\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j \in S_{\mathbf{g}}} c(g_j, z_j)$ where $S_{\mathbf{g}} = \{j : g_j \neq 0\}$ is the **support** (set of active qudits) of gate $\mathbf{g}$.  These are computed by `_compute_trigonometric_building_blocks`.
 
@@ -185,7 +185,7 @@ resolutions of the identity and using the character homomorphism
 $\omega^{(\mathbf{z} \oplus \mathbf{l}) \cdot \mathbf{x}} = \omega^{\mathbf{z} \cdot \mathbf{x}}\,\omega^{\mathbf{l} \cdot \mathbf{x}}$),
 the expectation value becomes:
 
-$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\!\left[\exp\!\left(\frac{i\pi}{d}\mathbf{m}\cdot(2\mathbf{z} - \mathbf{l})\right) e^{i\Delta_{\boldsymbol{\theta}}^{\mathbf{l}}(\mathbf{z})} \left(\sum_{\mathbf{x}} \psi_{\mathbf{x}}^* \omega^{(\mathbf{l} - \mathbf{z})\cdot\mathbf{x}}\right)\!\left(\sum_{\mathbf{y}} \psi_{\mathbf{y}}\,\omega^{\mathbf{z}\cdot\mathbf{y}}\right)\right]$$
+$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\mathbf{m}\cdot(2\mathbf{z} - \mathbf{l})\right) e^{i\Delta_{\boldsymbol{\theta}}^{\mathbf{l}}(\mathbf{z})} \left(\sum_{\mathbf{x}} \psi_{\mathbf{x}}^* \omega^{(\mathbf{l} - \mathbf{z})\cdot\mathbf{x}}\right)\left(\sum_{\mathbf{y}} \psi_{\mathbf{y}}\,\omega^{\mathbf{z}\cdot\mathbf{y}}\right)\right]$$
 
 The two bracketed sums form the **initial-state correction factor** $H$,
 which multiplies the default-input-state integrand element-wise.
@@ -247,7 +247,7 @@ $$\tilde{p}(\mathbf{l}) \propto \mathbb{E}_{\mathbf{x} \sim p}[\omega^{\mathbf{l
 The squared MMD then diagonalises into a mixture of squared moment
 differences:
 
-$$\text{MMD}^2(p, q) = \mathbb{E}_{\mathbf{l} \sim \mathcal{P}}\!\left[|\langle \mathcal{O}(\mathbf{l}, 0)\rangle_p - \langle \mathcal{O}(\mathbf{l}, 0)\rangle_q|^2\right]$$
+$$\text{MMD}^2(p, q) = \mathbb{E}_{\mathbf{l} \sim \mathcal{P}}\left[|\langle \mathcal{O}(\mathbf{l}, 0)\rangle_p - \langle \mathcal{O}(\mathbf{l}, 0)\rangle_q|^2\right]$$
 
 where $\mathcal{P}(\mathbf{l}) \propto \hat{\kappa}(\mathbf{l})$ is a
 probability distribution over Fourier indices.  This is the key equation:
@@ -295,7 +295,7 @@ $$\text{PP}(\mathbf{l}) = \frac{m\,|\hat{\mu}_p(\mathbf{l})|^2 - 1}{m - 1}$$
 Since data and circuit samples are independent, no diagonal correction is
 needed (`_pq_cross_term`):
 
-$$\text{PQ}(\mathbf{l}) = 2\,\text{Re}\!\left(\hat{\mu}_p(\mathbf{l})^*\,\hat{\mu}_q(\mathbf{l})\right)$$
+$$\text{PQ}(\mathbf{l}) = 2\,\text{Re}\left(\hat{\mu}_p(\mathbf{l})^*\,\hat{\mu}_q(\mathbf{l})\right)$$
 
 #### QQ term (model–model)
 
