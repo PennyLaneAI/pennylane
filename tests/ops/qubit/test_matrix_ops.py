@@ -562,10 +562,10 @@ class TestQubitUnitary:
     def test_qubit_unitary_correct_global_phase(self, U):
         """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
 
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(U, wires=[0, 1])
 
         assert qp.math.allclose(
-            U, qp.matrix(qp.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
+            U, qp.matrix(qp.prod(*ops_decomposition[::-1]), wire_order=[0, 1]), atol=1e-7
         )
 
     def test_operations_correctly_queued(self):
@@ -574,7 +574,7 @@ class TestQubitUnitary:
         dev = qp.device("default.qubit")
 
         matrix = qp.matrix(qp.QFT(wires=[0, 1]))
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
 
         @qp.qnode(dev)
         def circuit():
@@ -582,7 +582,7 @@ class TestQubitUnitary:
             return qp.state()
 
         tape = qp.workflow.construct_tape(circuit)()
-        for op1, op2 in zip(tape.operations, ops_decompostion):
+        for op1, op2 in zip(tape.operations, ops_decomposition):
             qp.assert_equal(op1, op2)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
@@ -606,10 +606,10 @@ class TestQubitUnitary:
     def test_correctness_decomposition(self, U, wires):
         """Tests that the decomposition is correct"""
 
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(U, wires=wires)
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(U, wires=wires)
 
         assert qp.math.allclose(
-            U, qp.matrix(qp.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
+            U, qp.matrix(qp.prod(*ops_decomposition[::-1]), wire_order=wires), atol=1e-7
         )
 
     @pytest.mark.parametrize(

@@ -1189,7 +1189,7 @@ class TestUnimplemented:
     """Tests for class methods that aren't implemented
 
     These tests are for reaching 100% coverage of :class:`pennylane.devices.QutritDevice`, as the
-    methods/properties being tested here have been overriden from :class:`pennylane.devices.QubitDevice`
+    methods/properties being tested here have been overridden from :class:`pennylane.devices.QubitDevice`
     to avoid unexpected behaviour, but do not yet have working implementations.
     """
 
