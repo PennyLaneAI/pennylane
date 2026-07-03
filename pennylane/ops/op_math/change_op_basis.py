@@ -191,8 +191,9 @@ def change_op_basis(
             _apply_op_or_func(uncompute_op)
         elif isinstance(compute_op, Operator2):
             # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
-            # and will therefore pop its jaxpr equation. To prevent this from happening,
-            # we can effectively detach the compute_op with a dummy copy and feed that to the adjoint
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can effectively feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
             dummy = copy.copy(compute_op)
             dummy.tracer = None
             _apply_op_or_func(adjoint(dummy))
