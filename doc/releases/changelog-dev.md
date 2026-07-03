@@ -749,6 +749,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
+  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -827,8 +830,9 @@
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
-* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+
+* Added an `is_abstract` property to `Operator2` in order to improve abstractification efficiency.
   [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
 * Adds a new `pennylane/core` module.
