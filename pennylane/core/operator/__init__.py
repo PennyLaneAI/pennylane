@@ -187,6 +187,7 @@ from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .cv import CV, CVObservable, CVOperation
 from .state_prep import StatePrepBase
+from .utils import abstractify
 
 __all__ = [
     "Operator",
@@ -199,4 +200,5 @@ __all__ = [
     "StatePrepBase",
     "Operator1",
     "StatePrepBase2",
+    "abstractify",
 ]

@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
-from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call

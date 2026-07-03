@@ -25,7 +25,9 @@ from dataclasses import replace
 
 from pennylane import math, ops
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
+from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
@@ -37,9 +39,7 @@ from pennylane.exceptions import (
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP
 from pennylane.ops import MidMeasure
-from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
-from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.wires import Wires
 
 from ._legacy_device import Device as LegacyDevice

@@ -27,13 +27,14 @@ from operator2_utils import (
 )
 
 import pennylane as qp
+from pennylane import apply
 
 jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from pennylane.core.operator.operator2 import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.pytrees import unflatten
 
 # ---------------------- Helpers ----------------------
@@ -315,6 +316,26 @@ class TestReconstruction:
         jaxpr = jax.make_jaxpr(lambda x: FullOp(x, "lbl", [1.0, 2.0], wires=0).tracer)(0.5)
         [op] = _eval(jaxpr, 0.3)
         qp.assert_equal(op, FullOp(0.3, "lbl", [1.0, 2.0], wires=0))
+
+
+class TestApply:
+
+    @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
+    def test_apply_adds_eqn(self, op2):
+        """Tests that when an Operator2 is applied, an equation is added for it."""
+
+        def f():
+            apply(op2)
+
+        jaxpr = jax.make_jaxpr(f)()
+        eqn = _single_op_eqn(jaxpr)
+        assert eqn.params["op_cls"] == type(op2)
+
+    def test_raises(self):
+        """Tests that apply() raises outside of a tracing context."""
+
+        with pytest.raises(RuntimeError, match="non-tracing context"):
+            apply(DynOp(1.0, wires=0))
 
 
 if __name__ == "__main__":
