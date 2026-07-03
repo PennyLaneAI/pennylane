@@ -27,6 +27,8 @@ from pennylane.labs.estimator_beta import (
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
+# pylint: disable=arguments-differ
+
 
 def _generate_name(
     func_name: str,
@@ -34,7 +36,7 @@ def _generate_name(
     include_params: Iterable[str] | None = None,
     *args,
     **kwargs,
-):
+):  # pylint: disable=keyword-arg-before-vararg
     r"""Format a string representing the name of a function from its signature.
 
     Args:
@@ -78,16 +80,13 @@ def _generate_name(
 
         param_kind = str(func_sig.parameters[param_name].kind)
         param_index = list(func_sig.parameters.keys()).index(param_name)
-        if (param_kind == "KEYWORD_ONLY") or (param_kind == "POSITIONAL_OR_KEYWORD"):
-            if param_name in kwargs:
-                param_value = kwargs[param_name]
-            else:
-                param_value = args[param_index]
+        if param_kind in ("KEYWORD_ONLY", "POSITIONAL_OR_KEYWORD"):
+            param_value = kwargs.get(param_name, args[param_index])
 
         if param_kind == "VAR_POSITIONAL":
             param_value = args[param_index:]
 
-        if param_kind == "VAR_KEYWORD":
+        else:  # param_kind == "VAR_KEYWORD"
             param_value = {k: v for k, v in kwargs.items() if k not in func_sig.parameters}
 
         param_str = param_name + "=" + str(param_value)
@@ -260,7 +259,9 @@ class ResourceQfunc(ResourceOperator):
 
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
-    def __init__(self, name, resource_decomp_fn, *resource_args, **resource_kwargs):
+    def __init__(
+        self, name, resource_decomp_fn, *resource_args, **resource_kwargs
+    ):  # pylint: disable=super-init-not-called
         self.name = name
 
         with QueuingManager.stop_recording():

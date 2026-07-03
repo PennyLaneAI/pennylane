@@ -32,6 +32,7 @@ Resource Estimation
     ~estimate
     ~LabsResourceConfig
     ~mark_subroutine
+    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,7 +103,6 @@ Templates
     ~LabsPhaseAdder
     ~LabsQROM
     ~SelectCopyQROM
-    ~ResourceQfunc
 
 """
 
