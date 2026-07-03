@@ -24,6 +24,8 @@ from typing_extensions import override
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.allocation import Allocate, Deallocate
+from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.core.operator.operator2 import abstractify, operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
@@ -552,8 +554,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
         [
             _make_controlled_decomp(rule)
             for rule in list_decomps(op.base)
-            if rule.get_work_wire_spec(**op.base.arguments).total == 0
-            and not _decomp_contains_mcm(rule, op.base.arguments)
+            if not _decomp_contains_mcm(rule, op.base.arguments)
         ]
     )
     return custom_rules + wrapped_rules + general_rules
@@ -738,6 +739,10 @@ ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
 def _ctrl(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+
+    if _is_allocation(op):
+        return op
+
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
             op.op_type,
@@ -747,6 +752,7 @@ def _ctrl(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         )
+
     return qp.ctrl(
         op,
         control=control_wires,
@@ -754,3 +760,13 @@ def _ctrl(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
+
+
+def _is_allocation(op: AbstractOperatorLike) -> bool:
+
+    if isinstance(op, Operator2):
+        # TODO: this branch is added for safety right now but it won't be hit
+        #       until Allocate and Deallocate are Operator2.
+        return isinstance(op, (Allocate, Deallocate))  # pragma: no cover
+
+    return op.op_type in (Allocate, Deallocate)
