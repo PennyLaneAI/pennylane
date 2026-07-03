@@ -452,6 +452,13 @@
 * Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
+  the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
+  modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
+  cheaper decomposition, and the graph-based decomposition system
+  (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
+  [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
@@ -1018,6 +1025,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell
