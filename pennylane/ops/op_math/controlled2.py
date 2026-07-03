@@ -592,10 +592,12 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
 def _make_controlled_decomp(base_rule: DecompositionRule):
 
-    def _condition(base, **_):
+    def _condition_fn(base, **_):
         return base_rule.is_applicable(**base.arguments)
 
-    def _resource(base, control_wires, control_values, work_wires, work_wire_type, _one_controlled):
+    def _resource_fn(
+        base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+    ):
         base_res = base_rule.compute_resources(**base.arguments)
         gate_counts = {
             _ctrl(op, control_wires, work_wires, work_wire_type): count
@@ -606,9 +608,9 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             gate_counts |= {qp.X: len(control_values)}
         return gate_counts
 
-    @register_condition(_condition)
+    @register_condition(_condition_fn)
     @register_resources(
-        _resource,
+        _resource_fn,
         work_wires=base_rule._work_wire_spec,
         exact=base_rule.exact_resources,
         name=f"controlled({base_rule.name})",
