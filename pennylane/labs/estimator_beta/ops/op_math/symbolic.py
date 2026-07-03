@@ -18,12 +18,12 @@ from inspect import Signature, signature
 from typing import Callable, Iterable
 
 import pennylane.labs.estimator_beta as qre
+from pennylane.core.operator import Operator
 from pennylane.labs.estimator_beta import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
-from pennylane.core.operator import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
