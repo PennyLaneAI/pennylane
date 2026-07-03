@@ -921,7 +921,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in :class:~.OutMultiplier` for very small output registers.
-  [(#9___)](https://github.com/PennyLaneAI/pennylane/pull/9___)
+  [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
 
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
