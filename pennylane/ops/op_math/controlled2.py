@@ -589,7 +589,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(control_values[i], qp.X)()
+            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
         _x_flips()
         qp.ctrl(
@@ -687,7 +687,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(control_values[i], qp.X)()
+            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
         _x_flips()
         rule(

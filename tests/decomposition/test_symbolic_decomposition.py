@@ -47,6 +47,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.typing import Float, Wire
 
@@ -908,6 +909,28 @@ class TestControlledDecomposition:
         mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
         expected_mat = qp.matrix(op @ qp.Projector([0], wires=3), wire_order=[0, 1, 2, 3])
         assert qp.math.allclose(mat, expected_mat)
+
+    @pytest.mark.unit
+    def test_controlled_decomp_with_work_wire2(self):
+        """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
+
+        op = qp.ctrl(DynOp(0.5, [0]), control=[1, 2, 3], control_values=[1, 0, 1])
+
+        with queuing.AnnotatedQueue() as q:
+            qp.Projector([0], wires=4)
+            ctrl_single_work_wire2(**op.arguments)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
+
+        assert tape.operations == [
+            qp.Projector([0], wires=4),
+            qp.X(2),
+            qp.ctrl(qp.X(4), control=[1, 2, 3]),
+            qp.ctrl(DynOp(0.5, [0]), control=[4]),
+            qp.ctrl(qp.X(4), control=[1, 2, 3]),
+            qp.X(2),
+        ]
 
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire_not_applicable(self):
