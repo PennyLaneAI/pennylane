@@ -641,18 +641,18 @@ class TestDecompDictionary:
                 "controlled(custom_rule2)",
             }
 
-            class DynOpWithMatrix(DynOp):  # pylint: disable=too-few-public-methods
+            class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
                 has_matrix = True
                 name = "DynOp"
 
-            op = qp.ctrl(DynOpWithMatrix(Float, Wire[1]), control=Wire[4])
+            op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
             rule_names = {rule.name for rule in qp.list_decomps(op)}
             assert rule_names == {
                 "_controlled_rule",
                 "controlled(custom_rule)",
                 "controlled(custom_rule2)",
                 "ctrl_single_work_wire",
-                "to_controlled_qubit_unitary",
+                "to_controlled_unitary",
             }
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):

@@ -551,7 +551,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     custom_rules = list_decomps.dispatch(object)(op)
     general_rules = DecompCollection([])
     if op.base.has_matrix and len(op.base.wires) == 1:
-        general_rules.append(to_controlled_qubit_unitary)
+        general_rules.append(to_controlled_unitary)
     if len(op.control_wires) > 2:
         general_rules.append(ctrl_single_work_wire)
     wrapped_rules = DecompCollection(
@@ -645,7 +645,7 @@ def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, 
             num_control_wires=len(control_wires),
             # TODO: again assuming that half the control values are 0s, fix
             #       when we have a better solution here.
-            num_zero_control_values=len(control_wires),
+            num_zero_control_values=len(control_wires) // 2,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 1
@@ -653,7 +653,7 @@ def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, 
 
 
 @register_resources(_to_controlled_qu_resource)
-def to_controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type):
+def to_controlled_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
     qp.ControlledQubitUnitary(
         base.matrix(),

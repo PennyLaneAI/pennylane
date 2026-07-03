@@ -49,10 +49,11 @@ from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
+from pennylane.ops.op_math.controlled2 import to_controlled_unitary
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
-from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
+from tests.core.operator.operator2_utils import DynOp, DynOpWithMatrix, OneWireDynOp
 from tests.decomposition.conftest import to_resources
 
 
@@ -961,6 +962,31 @@ class TestControlledDecomposition:
                     num_target_wires=1,
                     num_control_wires=3,
                     num_zero_control_values=0,
+                    num_work_wires=2,
+                    work_wire_type="borrowed",
+                ): 1
+            }
+        )
+
+    def test_decompose_to_controlled_unitary2(self):
+        """Tests the decomposition to controlled qubit unitary."""
+
+        op = qp.ctrl(DynOpWithMatrix(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
+        with queuing.AnnotatedQueue() as q:
+            to_controlled_unitary(**op.arguments)
+
+        assert q.queue == [
+            qp.ControlledQubitUnitary(
+                qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
+            )
+        ]
+        assert to_controlled_unitary.compute_resources(**op.arguments) == Resources(
+            {
+                resource_rep(
+                    qp.ControlledQubitUnitary,
+                    num_target_wires=1,
+                    num_control_wires=3,
+                    num_zero_control_values=1,
                     num_work_wires=2,
                     work_wire_type="borrowed",
                 ): 1
