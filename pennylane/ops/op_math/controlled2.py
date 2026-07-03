@@ -181,7 +181,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             "control_values",
             "work_wires",
             "work_wire_type",
-            "one_cotrolled",
+            "_one_controlled",
         }
         if set(signature(cls).parameters.keys()) == base_argnames:
             return
