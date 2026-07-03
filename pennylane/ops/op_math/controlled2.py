@@ -713,6 +713,14 @@ def _ctrl_single_work_wire_resource(
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1,
+        controlled_resource_rep(
+            qp.X,
+            {},
+            num_control_wires=len(control_wires),
+            num_zero_control_values=0,
+            num_work_wires=len(work_wires),
+            work_wire_type=work_wire_type,
+        ): 2,
     }
 
 
