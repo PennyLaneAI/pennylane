@@ -750,9 +750,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
-  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
-
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -801,6 +798,7 @@
   - Integration with :mod:`pennylane.capture`.
   - Integration with :func:`pennylane.apply`.
   - Integration with the graph-based decomposition system.
+  - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -829,6 +827,7 @@
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
   [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
