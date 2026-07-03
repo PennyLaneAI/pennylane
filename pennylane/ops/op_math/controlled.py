@@ -42,6 +42,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -204,9 +205,9 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
         ctrl_values = resolve_ctrl_values(control_values, op)
         return ctrl(
             op.base,
-            control=control_wires + op.control_wires,
+            control=_concat_wires(control_wires, op.control_wires),
             control_values=ctrl_values,
-            work_wires=work_wires + op.work_wires,
+            work_wires=_concat_wires(work_wires, op.work_wires),
             work_wire_type=ww_type,
         )
 
@@ -214,11 +215,22 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
     return ControlledOp2(op, control_wires, control_values, work_wires, ww_type)
 
 
+def _concat_wires(wire1, wire2):
+
+    if isinstance(wire2, AbstractWires):
+        return Wire[len(wire1) + len(wire2)]
+
+    return wire1 + wire2
+
+
 def resolve_ctrl_values(control_values, base_ctrl_op: Controlled2):
     """Resolves the new control values."""
 
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
+
+    if base_ctrl_op.is_abstract:
+        return Bool[len(control_values) + len(base_ctrl_op.control_values)]
 
     return math.concatenate([control_values, base_ctrl_op.control_values])
 
