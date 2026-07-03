@@ -15,6 +15,7 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
+import copy
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
@@ -22,7 +23,7 @@ from functools import reduce
 
 from pennylane import capture, math, pytrees
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -188,6 +189,10 @@ def change_op_basis(
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:

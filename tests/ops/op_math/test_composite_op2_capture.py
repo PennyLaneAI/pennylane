@@ -90,7 +90,6 @@ def test_public_sum_binding():
     assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
-@pytest.mark.xfail(reason="adjoint is not being captured in the jaxpr for some reason", strict=True)
 def test_change_op_basis():
     """Tests that change_op_basis captures correctly."""
 
@@ -102,3 +101,15 @@ def test_change_op_basis():
     eqns = cjaxpr.eqns
 
     assert len(eqns) == 3  # Op1 + Op2 + Adjoint(Op1)
+
+    assert eqns[0].primitive.name == "operator"
+    assert eqns[0].params["op_cls"] is NonParametricOp
+    assert eqns[0].params["adjoint"] is False
+
+    assert eqns[1].primitive.name == "operator"
+    assert eqns[1].params["op_cls"] is NonParametricOp
+    assert eqns[1].params["adjoint"] is False
+
+    assert eqns[2].primitive.name == "operator"
+    assert eqns[2].params["op_cls"] is NonParametricOp
+    assert eqns[2].params["adjoint"] is True
