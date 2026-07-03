@@ -122,6 +122,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+        _one_controlled: bool = False,
     ):
 
         control_wires = Wires(control_wires)
@@ -139,6 +140,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         if control_values is None:
             control_values = [True] * len(control_wires)
+            _one_controlled = True
 
         if isinstance(control_values, (int, bool)):
             control_values = [bool(control_values)]
@@ -153,6 +155,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         self._control_values = control_values
         self._work_wires = work_wires
         self._work_wire_type = work_wire_type
+        self._one_controlled = _one_controlled
 
         if "control_wires" in self._init_args:
             self._init_args["control_wires"] = control_wires
@@ -163,13 +166,23 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if "work_wires" in self._init_args:
             self._init_args["work_wires"] = work_wires
 
+        if "_one_controlled" in self._init_args:
+            self._init_args["_one_controlled"] = _one_controlled
+
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
 
         super().__init_subclass__(is_baseclass)
 
-        base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
+        base_argnames = {
+            "base",
+            "control_wires",
+            "control_values",
+            "work_wires",
+            "work_wire_type",
+            "one_cotrolled",
+        }
         if set(signature(cls).parameters.keys()) == base_argnames:
             return
 
@@ -432,7 +445,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    static_argnames = ("work_wire_type",)
+    compilable_argnames = ("work_wire_type", "_one_controlled")
 
     arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
@@ -447,8 +460,16 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+        _one_controlled: bool = False,
     ):
-        super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+        super().__init__(
+            base,
+            control_wires,
+            control_values,
+            work_wires,
+            work_wire_type,
+            _one_controlled,
+        )
 
     @override
     def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
@@ -458,10 +479,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         control_values=None,
         work_wires=None,
         work_wire_type="borrowed",
+        _one_controlled=False,
     ):
         # Canonicalize control_values and work_wires
         if control_values is None:
             control_values = Bool[len(control_wires)]
+            _one_controlled = True
+
         if work_wires is None:
             work_wires = Wire[0]
 
@@ -472,6 +496,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
+            _one_controlled=_one_controlled,
         )
 
         # Update private properties
@@ -480,6 +505,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         self._control_values = self.arguments["control_values"]
         self._work_wires = self.arguments["work_wires"]
         self._work_wire_type = self.arguments["work_wire_type"]
+        self._one_controlled = _one_controlled
 
     @property
     @override
@@ -566,39 +592,45 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
 def _make_controlled_decomp(base_rule: DecompositionRule):
 
-    def _condition_fn(base, **_):
+    def _condition(base, **_):
         return base_rule.is_applicable(**base.arguments)
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
+    def _resource(base, control_wires, control_values, work_wires, work_wire_type, _one_controlled):
         base_res = base_rule.compute_resources(**base.arguments)
-        # TODO: we need a better startegy for control values, but for now
-        #       we're assuming that half the control values are 0s
-        return {
+        gate_counts = {
             _ctrl(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_res.gate_counts.items()
-        } | {qp.X: len(control_values)}
+        }
+        if not _one_controlled:
+            # assume that half the control values are 0s unless control values are not specified.
+            gate_counts |= {qp.X: len(control_values)}
+        return gate_counts
 
-    @register_condition(_condition_fn)
+    @register_condition(_condition)
     @register_resources(
-        _resource_fn,
+        _resource,
         work_wires=base_rule._work_wire_spec,
         exact=base_rule.exact_resources,
         name=f"controlled({base_rule.name})",
     )
-    def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+    def _impl(base, control_wires, control_values, work_wires, work_wire_type, _one_controlled):
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
             qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
-        _x_flips()
+        if not _one_controlled:
+            _x_flips()
+
         qp.ctrl(
             base_rule._impl,  # pylint: disable=protected-access
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )(**base.arguments)
-        _x_flips()
+
+        if not _one_controlled:
+            _x_flips()
 
     _impl._source = (
         dedent(_impl._source).strip()
@@ -608,13 +640,15 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _flip_control_adjoint_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _flip_control_adjoint_resource(
+    base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+):
     return {
         Adjoint2(
             qp.ctrl(
                 base.base,
                 control=control_wires,
-                control_values=control_values,
+                control_values=None if _one_controlled else control_values,
                 work_wires=work_wires,
                 work_wire_type=work_wire_type,
             )
@@ -623,29 +657,31 @@ def _flip_control_adjoint_resource(base, control_wires, control_values, work_wir
 
 
 @register_resources(_flip_control_adjoint_resource)
-def flip_control_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
+def flip_control_adjoint(
+    base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     qp.adjoint(
         qp.ctrl(
             base.base,
             control=control_wires,
-            control_values=control_values,
+            control_values=None if _one_controlled else control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
     )
 
 
-def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _to_controlled_qu_resource(
+    base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+):
     return {
         resource_rep(
             qp.ControlledQubitUnitary,
             num_target_wires=1,
             num_control_wires=len(control_wires),
-            # TODO: again assuming that half the control values are 0s, fix
-            #       when we have a better solution here.
-            num_zero_control_values=len(control_wires) // 2,
+            num_zero_control_values=0 if _one_controlled else len(control_wires) // 2,
             num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): 1
@@ -653,12 +689,14 @@ def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, 
 
 
 @register_resources(_to_controlled_qu_resource)
-def to_controlled_unitary(base, control_wires, control_values, work_wires, work_wire_type):
+def to_controlled_unitary(
+    base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+):
     """Convert a controlled operator to a controlled qubit unitary."""
     qp.ControlledQubitUnitary(
         base.matrix(),
         wires=control_wires + base.wires,
-        control_values=control_values,
+        control_values=None if _one_controlled else control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -670,10 +708,13 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     def _condition_fn(*args, **kwargs):
         return rule.is_applicable(*args, **kwargs)
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
-        #       gates for no reason. It'll be like this until we have a better solution.
-        return rule.compute_resources(**base.arguments).gate_counts | {qp.X: len(control_wires)}
+    def _resource_fn(
+        base, control_wires, control_values, work_wires, work_wire_type, _one_controlled
+    ):
+        gate_counts = rule.compute_resources(**base.arguments).gate_counts
+        if not _one_controlled:
+            gate_counts |= {qp.X: len(control_wires)}
+        return gate_counts
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
@@ -683,13 +724,15 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         exact=rule.exact_resources,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
-    def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+    def _impl(base, control_wires, control_values, work_wires, work_wire_type, _one_controlled):
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
             qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
-        _x_flips()
+        if not _one_controlled:
+            _x_flips()
+
         rule(
             base,
             control_wires=control_wires,
@@ -697,7 +740,9 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        _x_flips()
+
+        if not _one_controlled:
+            _x_flips()
 
     base_source = rule._source
     _impl._source = (
