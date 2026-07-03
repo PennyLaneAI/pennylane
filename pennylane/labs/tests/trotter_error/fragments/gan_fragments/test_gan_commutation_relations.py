@@ -16,7 +16,7 @@ case raises IndexError, narrow the corresponding range.
 """
 
 from collections import defaultdict
-from itertools import product
+from itertools import combinations
 
 import numpy as np
 import pytest
@@ -63,9 +63,9 @@ def fixture_config():
     arr2 = np.random.random(size=(n_mol, n_mol, n_modes))
     arr2 = (arr2 + arr2.transpose(1, 0, 2)) / 2
 
-    for i, j in product(range(n_mol), repeat=2):
-        arr1[i, j] = 0
-        arr2[i, j] = 0
+    for i in range(n_mol):
+        arr1[i, i] = 0
+        arr2[i, i] = 0
 
     repulsions = [arr1, arr2]
 
@@ -285,14 +285,20 @@ def _expected_feps_met(s, config):
 
         terms[fermi1] -= e_a * g_ia
         terms[fermi2] += e_a * g_ia
+
     return GanFragment(terms)
 
 
 def _expected_f0_mol(s, config):
     """Returns the expected evaluation of [F_0, F_s] where s is in the mol space"""
-    n_mol = config.n_mol
+    F0 = _diagonal(config)
+    Fs = _mol_matching(s, config)
+
+    comm = CommutatorNode(SymbolNode("F0"), SymbolNode("Fs"))
+    comm = comm.eval({"F0": F0, "Fs": Fs})
+
     terms = defaultdict(GanCoeff.identity)
-    for r in range(n_mol):
+    for r in range(config.n_mol):
         for i, j in _mol_edges(s, config):
 
             i, j = i[1], j[1]
@@ -312,11 +318,7 @@ def _expected_f0_mol(s, config):
             terms[fermi1] += g_rr @ U_ij
             terms[fermi2] -= g_rr @ U_ij
 
-    for p, q in product(range(n_mol), repeat=2):
-
-        if p == q:
-            continue
-
+    for p, q in combinations(range(config.n_mol), r=2):
         for i, j in _mol_edges(s, config):
 
             i, j = i[1], j[1]
@@ -383,9 +385,9 @@ def _expected_f0_mol(s, config):
 
 def _expected_f0_met(s, config):
     """Returns the expected evaluation of [F_0, F_s] where s is in the met space"""
-    n_mol = config.n_mol
+
     terms = defaultdict(GanCoeff.identity)
-    for r in range(n_mol):
+    for r in range(config.n_mol):
         for i, a in _met_edges(s, config):
 
             i, a = i[1], a[1]
@@ -402,13 +404,12 @@ def _expected_f0_met(s, config):
             terms[fermi1] += g_rr @ W_ia
             terms[fermi2] -= g_rr @ W_ia
 
-    for p, q in product(range(n_mol), repeat=2):
+    for p, q in combinations(range(config.n_mol), r=2):
 
         if p == q:
             continue
 
         for i, a in _met_edges(s, config):
-
             i, a = i[1], a[1]
             pq = {p, q}
 
@@ -543,7 +544,6 @@ def test_commutator_feps_met(s, config, feps):
 @pytest.mark.parametrize("s", [0, 1, 2])
 def test_commutator_f0_mol(s, config):
     """Test [F_0, F_s] evaluates correctly where s is in the mol space"""
-    ## [F_0, F_s] s=mol
     F0 = _diagonal(config)
     Fs = _mol_matching(s, config)
 

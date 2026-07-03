@@ -160,7 +160,7 @@ def _num_op(mode=0):
 
 
 def test_fragment_prunes_zero_fermi_and_zero_coeff():
-    """"Test GanFragment drops negligible terms"""
+    """ "Test GanFragment drops negligible terms"""
     c0 = FermiOp.creation_mol(0)
     # zero fermionic word (c_0 c_0) -> dropped
     frag = GanFragment({FermiWord([c0, c0]): GanCoeff({_mono(0): 1.0})})
