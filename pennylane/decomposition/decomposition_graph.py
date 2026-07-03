@@ -39,7 +39,13 @@ from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
-from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
+from .decomposition_rule import (
+    DecompositionRule,
+    WorkWireSpec,
+    _decomp_contains_mcm,
+    list_decomps,
+    null_decomp,
+)
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
@@ -670,13 +676,6 @@ def _validate_rule(rule):
             "decorated with @qp.register_resources to be used as a decomposition rule."
         )
     return rule
-
-
-def _decomp_contains_mcm(rule, params):
-    resources = rule.compute_resources(**params).gate_counts
-    mcm = resource_rep(qp.ops.MidMeasure)
-    ppm = resource_rep(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
 
 
 class DecompGraphSolution:

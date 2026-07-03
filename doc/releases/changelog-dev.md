@@ -490,6 +490,7 @@
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
   ```python
   import pennylane as qp
@@ -824,7 +825,8 @@
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
-  [(#)]()
+  [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+  [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
