@@ -40,14 +40,14 @@ $$X|j\rangle = |j + 1 \bmod d\rangle, \qquad Z|j\rangle = \omega^j |j\rangle.$$
 
 The **displacement operator** is
 
-$$\mathcal{O}(l, m) = Z^l X^m \, e^{-i\pi l m / d},$$
+$$\mathcal{O}(l, m) = Z^l X^m  e^{-i\pi l m / d},$$
 
 and its action on a computational basis state is:
 
 $$\mathcal{O}(l, m)|z\rangle = \exp\left(\frac{i\pi}{d} l(2z + m)\right) |z \oplus m\rangle.$$
 
 Under the QFT, displacement operators conjugate as
-$F\,\mathcal{O}(l,m)\,F^\dagger = \mathcal{O}(m, -l)$, so the Fourier
+$F\mathcal{O}(l,m)F^\dagger = \mathcal{O}(m, -l)$, so the Fourier
 transform swaps the $l$ and $m$ indices (up to a sign).
 
 On $n$ qudits, we use the tensor product
@@ -61,7 +61,7 @@ Observables are specified as `(l_vecs, m_vecs)` arrays in
 
 The Hermitian generator for a single qudit is
 
-$$\mathcal{Q}(l, 0) = \chi\,\mathcal{O}(l, 0) + \chi^*\,\mathcal{O}^\dagger(l, 0), \qquad \chi = (1+i)/\sqrt{2}.$$
+$$\mathcal{Q}(l, 0) = \chi\mathcal{O}(l, 0) + \chi^*\mathcal{O}^\dagger(l, 0), \qquad \chi = (1+i)/\sqrt{2}.$$
 
 For commutativity, we restrict to $m = 0$ (pure $Z$-power gates).  On $n$
 qudits, a generator vector $\mathbf{g} = (g_1, \dots, g_n) \in \mathbb{Z}_d^n$
@@ -71,17 +71,17 @@ $$\mathcal{Q}_{\mathbf{g}} = \bigotimes_{i=1}^n \mathcal{Q}(g_i, 0),$$
 
 and the full diagonal unitary is
 
-$$D(\boldsymbol{\theta}) = \prod_{\mathbf{g} \in \mathcal{G}} \exp(i\,\theta_{\mathbf{g}}\,\mathcal{Q}_{\mathbf{g}}).$$
+$$D(\boldsymbol{\theta}) = \prod_{\mathbf{g} \in \mathcal{G}} \exp(i\theta_{\mathbf{g}}\mathcal{Q}_{\mathbf{g}}).$$
 
 Its eigenvalues on a computational basis state $|\mathbf{z}\rangle$ are
 $D(\boldsymbol{\theta})|\mathbf{z}\rangle = \gamma_{\mathbf{z}}(\boldsymbol{\theta})|\mathbf{z}\rangle$,
 where
 
-$$\gamma_{\mathbf{z}}(\boldsymbol{\theta}) = \exp\left(i \sum_{\mathbf{g} \in \mathcal{G}} \theta_{\mathbf{g}}\,\Phi_{\mathbf{g}}(\mathbf{z})\right)$$
+$$\gamma_{\mathbf{z}}(\boldsymbol{\theta}) = \exp\left(i \sum_{\mathbf{g} \in \mathcal{G}} \theta_{\mathbf{g}}\Phi_{\mathbf{g}}(\mathbf{z})\right)$$
 
 with the **gate eigenvalue function**
 
-$$\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j=1}^n \sqrt{2}\,\cos\left(\frac{2\pi g_j z_j}{d} + \frac{\pi}{4}\right).$$
+$$\Phi_{\mathbf{g}}(\mathbf{z}) = \prod_{j=1}^n \sqrt{2}\cos\left(\frac{2\pi g_j z_j}{d} + \frac{\pi}{4}\right).$$
 
 The gate set $\mathcal{G}$ is specified via `QuditCircuitConfig.gates`;
 `_parse_qudit_generator_dict` flattens this into the generator and
@@ -93,18 +93,18 @@ parameter-map arrays used by the rest of the module.
 
 ### 2.1 The Core Identity
 
-The circuit $U(\boldsymbol{\theta}) = F^{\otimes n\,\dagger} D(\boldsymbol{\theta}) F^{\otimes n}$
+The circuit $U(\boldsymbol{\theta}) = F^{\otimes n\dagger} D(\boldsymbol{\theta}) F^{\otimes n}$
 acts on the input state $|0\rangle$.  By conjugating through the QFT and
 inserting resolutions of the identity, the expectation value of
 $\mathcal{O}(\mathbf{l}, \mathbf{m})$ reduces to a single sum:
 
-$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\,\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})\big)\right)\right]$$
+$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\right) \exp\left(i \sum_{\mathbf{g}} \theta_{\mathbf{g}}\big(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l})\big)\right)\right]$$
 
 where $\mathbf{z}$ is drawn uniformly from $\mathbb{Z}_d^n$ and
 $\ominus$ denotes componentwise subtraction modulo $d$.  The two
 exponential factors are:
 
-1. **The observable phase** $J = \exp\big(\frac{i\pi}{d}\,\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\big)$, determined by the choice of observable (computed by `_obs_phase_matrix`).
+1. **The observable phase** $J = \exp\big(\frac{i\pi}{d}\mathbf{m} \cdot (2\mathbf{z} - \mathbf{l})\big)$, determined by the choice of observable (computed by `_obs_phase_matrix`).
 2. **The accumulated phase difference** $e^{iE}$ where $E = \sum_{\mathbf{g}} \theta_{\mathbf{g}}(\Phi_{\mathbf{g}}(\mathbf{z}) - \Phi_{\mathbf{g}}(\mathbf{z} \ominus \mathbf{l}))$, determined by the circuit parameters (assembled by `_accumulate_phase_diffs`).
 
 Since this is an expectation of a bounded integrand, it can be estimated to
@@ -161,7 +161,7 @@ for the sample-side factors and `obs_matrices` for the observable-side
 factors.  The accumulated phase-difference matrix for weight group $\omega$
 is then:
 
-$$E_\omega = \boldsymbol{\theta}_\omega \cdot \tilde{\mathbf{B}}_\omega - \sum_{\boldsymbol{\sigma}}\,\mathbf{C}_{\boldsymbol{\sigma}}^T\,\text{diag}(\boldsymbol{\theta}_\omega)\,\mathbf{B}_{\boldsymbol{\sigma}}$$
+$$E_\omega = \boldsymbol{\theta}_\omega \cdot \tilde{\mathbf{B}}_\omega - \sum_{\boldsymbol{\sigma}}\mathbf{C}_{\boldsymbol{\sigma}}^T\text{diag}(\boldsymbol{\theta}_\omega)\mathbf{B}_{\boldsymbol{\sigma}}$$
 
 The first term uses $\tilde{\mathbf{B}}_\omega$, the all-cos entry
 ($\boldsymbol{\sigma} = \mathbf{0}$), which equals the gate eigenvalue
@@ -182,10 +182,10 @@ $$|\psi_{\text{in}}\rangle = \sum_{\mathbf{x} \in \mathcal{X}} \psi_{\mathbf{x}}
 where $\mathcal{X} \subset \mathbb{Z}_d^n$ is the support and $N = |\mathcal{X}|$
 must not be exponentially large.  Following the same derivation (inserting
 resolutions of the identity and using the character homomorphism
-$\omega^{(\mathbf{z} \oplus \mathbf{l}) \cdot \mathbf{x}} = \omega^{\mathbf{z} \cdot \mathbf{x}}\,\omega^{\mathbf{l} \cdot \mathbf{x}}$),
+$\omega^{(\mathbf{z} \oplus \mathbf{l}) \cdot \mathbf{x}} = \omega^{\mathbf{z} \cdot \mathbf{x}}\omega^{\mathbf{l} \cdot \mathbf{x}}$),
 the expectation value becomes:
 
-$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\mathbf{m}\cdot(2\mathbf{z} - \mathbf{l})\right) e^{i\Delta_{\boldsymbol{\theta}}^{\mathbf{l}}(\mathbf{z})} \left(\sum_{\mathbf{x}} \psi_{\mathbf{x}}^* \omega^{(\mathbf{l} - \mathbf{z})\cdot\mathbf{x}}\right)\left(\sum_{\mathbf{y}} \psi_{\mathbf{y}}\,\omega^{\mathbf{z}\cdot\mathbf{y}}\right)\right]$$
+$$\langle \mathcal{O}(\mathbf{l}, \mathbf{m}) \rangle = \mathbb{E}_{\mathbf{z} \sim U}\left[\exp\left(\frac{i\pi}{d}\mathbf{m}\cdot(2\mathbf{z} - \mathbf{l})\right) e^{i\Delta_{\boldsymbol{\theta}}^{\mathbf{l}}(\mathbf{z})} \left(\sum_{\mathbf{x}} \psi_{\mathbf{x}}^* \omega^{(\mathbf{l} - \mathbf{z})\cdot\mathbf{x}}\right)\left(\sum_{\mathbf{y}} \psi_{\mathbf{y}}\omega^{\mathbf{z}\cdot\mathbf{y}}\right)\right]$$
 
 The two bracketed sums form the **initial-state correction factor** $H$,
 which multiplies the default-input-state integrand element-wise.
@@ -235,7 +235,7 @@ product graph $G = G_1 \square \cdots \square G_n$ has joint eigenvalues
 $\Lambda_{\mathbf{l}} = \sum_i \lambda_{l_i}^{(i)}$.  A spectral kernel
 $K = f(L)$ with $f(\lambda) = e^{-t\lambda}$ (heat kernel) gives
 
-$$K(\mathbf{x}, \mathbf{y}) = \sum_{\mathbf{l}} \hat{\kappa}(\mathbf{l})\,u_{\mathbf{l}}(\mathbf{x})\,u_{\mathbf{l}}(\mathbf{y}), \qquad \hat{\kappa}(\mathbf{l}) = e^{-t\Lambda_{\mathbf{l}}} \geq 0.$$
+$$K(\mathbf{x}, \mathbf{y}) = \sum_{\mathbf{l}} \hat{\kappa}(\mathbf{l})u_{\mathbf{l}}(\mathbf{x})u_{\mathbf{l}}(\mathbf{y}), \qquad \hat{\kappa}(\mathbf{l}) = e^{-t\Lambda_{\mathbf{l}}} \geq 0.$$
 
 When each $G_i$ is **vertex-transitive** (e.g. cycle $C_d$ or complete
 graph $K_d$), its Laplacian is diagonalised by the characters of
@@ -276,7 +276,7 @@ the $d$-way categorical marginal (`_sample_fourier_indices`).
 
 ### 5.3 Unbiased MMD Estimator
 
-Expanding $|\mu_p - \mu_q|^2 = |\mu_p|^2 - 2\,\text{Re}(\mu_p^* \mu_q) + |\mu_q|^2$, each term is estimated separately.
+Expanding $|\mu_p - \mu_q|^2 = |\mu_p|^2 - 2\text{Re}(\mu_p^* \mu_q) + |\mu_q|^2$, each term is estimated separately.
 
 #### PP term (data–data)
 
@@ -288,14 +288,14 @@ The naive $|\hat{\mu}_p|^2$ includes diagonal ($i = i'$) self-pairs.  Since
 $|\omega^{\mathbf{l}\cdot\mathbf{x}}| = 1$, the U-statistic correction
 (`_pp_term`) is:
 
-$$\text{PP}(\mathbf{l}) = \frac{m\,|\hat{\mu}_p(\mathbf{l})|^2 - 1}{m - 1}$$
+$$\text{PP}(\mathbf{l}) = \frac{m|\hat{\mu}_p(\mathbf{l})|^2 - 1}{m - 1}$$
 
 #### PQ term (data–model cross)
 
 Since data and circuit samples are independent, no diagonal correction is
 needed (`_pq_cross_term`):
 
-$$\text{PQ}(\mathbf{l}) = 2\,\text{Re}\left(\hat{\mu}_p(\mathbf{l})^*\,\hat{\mu}_q(\mathbf{l})\right)$$
+$$\text{PQ}(\mathbf{l}) = 2\text{Re}\left(\hat{\mu}_p(\mathbf{l})^*\hat{\mu}_q(\mathbf{l})\right)$$
 
 #### QQ term (model–model)
 
@@ -305,7 +305,7 @@ per-sample values may not have unit modulus (especially with non-trivial
 input states), so the diagonal correction uses the observed second moment
 (`_qq_term`):
 
-$$\text{QQ}(\mathbf{l}) = \frac{s\,|\hat{\mu}_q(\mathbf{l})|^2 - \bar{|y|^2}(\mathbf{l})}{s - 1}$$
+$$\text{QQ}(\mathbf{l}) = \frac{s|\hat{\mu}_q(\mathbf{l})|^2 - \bar{|y|^2}(\mathbf{l})}{s - 1}$$
 
 where $\bar{|y|^2} = \frac{1}{s}\sum_r |y_r|^2$.  Gradients are stopped
 through $\bar{|y|^2}$ so that optimisation differentiates through the mean,
