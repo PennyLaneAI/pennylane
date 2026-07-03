@@ -269,11 +269,15 @@ class TestControlledCapture:
         assert len(jaxpr.eqns) == 0
 
 
-def test_public_s_prod_binding():
+@pytest.mark.parametrize("defined_outside", (True, False))
+def test_public_s_prod_binding(defined_outside):
     """Tests that the public API for symbolic op captures properly."""
 
+    outside_op = NonParametricOp(0) if defined_outside else None
+
     def f():
-        qp.s_prod(2.0, NonParametricOp(0))
+        op = outside_op if defined_outside else NonParametricOp(0)
+        qp.s_prod(2.0, op)
 
     cjaxpr = jax.make_jaxpr(f)()
 
@@ -292,8 +296,12 @@ def test_public_s_prod_binding():
 def test_public_prod_binding():
     """Tests that the public API for symbolic op captures properly."""
 
+    # NOTE: Have one op be outside trace context to
+    # cover the tracer-is-none fallback
+    outside_op = NonParametricOp(1)
+
     def f():
-        qp.prod(NonParametricOp(1), NonParametricOp(0))
+        qp.prod(outside_op, NonParametricOp(0))
 
     cjaxpr = jax.make_jaxpr(f)()
 
@@ -308,10 +316,10 @@ def test_public_prod_binding():
     assert eqns[2].primitive.name == "Prod"
 
     # Prod primitive consumes the ops
-    assert eqns[0].outvars[0] == eqns[2].invars[0]
-    assert eqns[0].outvars[0] == eqns[2].invars[0]
-    assert eqns[1].outvars[0] == eqns[2].invars[1]
-    assert eqns[1].outvars[0] == eqns[2].invars[1]
+    assert eqns[1].outvars[0] == eqns[2].invars[0]
+    assert eqns[1].outvars[0] == eqns[2].invars[0]
+    assert eqns[0].outvars[0] == eqns[2].invars[1]
+    assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
 if __name__ == "__main__":

@@ -30,8 +30,12 @@ from tests.core.operator.operator2_utils import NonParametricOp
 def test_public_dot_binding():
     """Tests that the public API for composite op captures properly."""
 
+    # NOTE: Have one op be outside trace context to
+    # cover the tracer-is-none fallback
+    outside_op = NonParametricOp(0)
+
     def f():
-        qp.dot([2.0, 3.0], [NonParametricOp(0), NonParametricOp(1)])
+        qp.dot([2.0, 3.0], [outside_op, NonParametricOp(1)])
 
     cjaxpr = jax.make_jaxpr(f)()
 
@@ -47,9 +51,9 @@ def test_public_dot_binding():
 
     # Check sprods consume both operators
     assert eqns[2].primitive.name == "SProd"
-    assert eqns[2].invars[1] == eqns[0].outvars[0]
+    assert eqns[2].invars[1] == eqns[1].outvars[0]
     assert eqns[3].primitive.name == "SProd"
-    assert eqns[3].invars[1] == eqns[1].outvars[0]
+    assert eqns[3].invars[1] == eqns[0].outvars[0]
 
     # Check sum consumes both sprods
     assert eqns[4].primitive.name == "Sum"
@@ -60,8 +64,12 @@ def test_public_dot_binding():
 def test_public_sum_binding():
     """Tests that the public API for composite op captures properly."""
 
+    # NOTE: Have one op be outside trace context to
+    # cover the tracer-is-none fallback
+    outside_op = NonParametricOp(0)
+
     def f():
-        qp.sum(NonParametricOp(0), NonParametricOp(1))
+        qp.sum(outside_op, NonParametricOp(1))
 
     cjaxpr = jax.make_jaxpr(f)()
 
@@ -76,10 +84,10 @@ def test_public_sum_binding():
     assert eqns[2].primitive.name == "Sum"
 
     # Sum primitive consumes the ops
-    assert eqns[0].outvars[0] == eqns[2].invars[0]
-    assert eqns[0].outvars[0] == eqns[2].invars[0]
-    assert eqns[1].outvars[0] == eqns[2].invars[1]
-    assert eqns[1].outvars[0] == eqns[2].invars[1]
+    assert eqns[1].outvars[0] == eqns[2].invars[0]
+    assert eqns[1].outvars[0] == eqns[2].invars[0]
+    assert eqns[0].outvars[0] == eqns[2].invars[1]
+    assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
 @pytest.mark.xfail(reason="adjoint is not being captured in the jaxpr for some reason", strict=True)
