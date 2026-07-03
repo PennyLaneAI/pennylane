@@ -24,7 +24,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.queuing import AnnotatedQueue
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -103,7 +103,7 @@ class TestQSVTBasics:
         with qp.queuing.AnnotatedQueue() as q:
             decomp = op.decomposition()
 
-        ops, _ = qp.queuing.process_queue(q)
+        ops = qp.tape.QuantumScript.from_queue(q).operations
         for op1, op2 in zip(ops, decomp):
             qp.assert_equal(op1, op2)
 

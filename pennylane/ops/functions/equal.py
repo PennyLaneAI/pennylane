@@ -19,15 +19,17 @@ This module contains the qp.equal function.
 
 from collections.abc import Iterable
 from functools import singledispatch
+from typing import Any
 
 import pennylane as qp
 from pennylane import math
-from pennylane.measurements import MeasurementProcess
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator, Operator2
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.operation import Operator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -40,12 +42,13 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
+from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -229,7 +232,8 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool | str:
-    if not isinstance(op2, type(op1)):
+
+    if not isinstance(op2, type(op1)) and not isinstance(op1, type(op2)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
     dispatch_result = _equal_dispatch(
@@ -370,6 +374,243 @@ def _equal_operators(
 
 
 @_equal_dispatch.register
+def _equal_operator2(
+    op1: Operator2,
+    op2: Operator2,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check equality between Operator2 instances."""
+    if type(op1) is not type(op2):
+        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
+
+    # Check static arguments
+    for (sname, sval1), (_, sval2) in zip(
+        op1.static_args.items(), op2.static_args.items(), strict=True
+    ):
+        if sval1 != sval2:
+            return f"op1 and op2 have different values for '{sname}'.\nGot {sval1} and {sval2}."
+
+    # Check static compilable arguments
+    for (cname, cval1), (_, cval2) in zip(
+        op1.compilable_args.items(), op2.compilable_args.items(), strict=True
+    ):
+        if cval1 != cval2:
+            return f"op1 and op2 have different values for '{cname}'.\nGot {cval1} and {cval2}."
+
+    # Check wire arguments
+    for (wname, wval1), (_, wval2) in zip(
+        op1.wire_args.items(), op2.wire_args.items(), strict=True
+    ):
+        if wname in op1.hybrid_argnames:
+            leaves1, tree1 = flatten(wval1, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
+            leaves2, tree2 = flatten(wval2, is_leaf=lambda w: isinstance(w, qp.wires.Wires))
+
+            if len(leaves1) != len(leaves2) or tree1 != tree2:
+                return f"op1 and op2 have different wires for '{wname}'.\nGot {wval1} and {wval2}."
+            for l1, l2 in zip(leaves1, leaves2, strict=True):
+                res = _check_wire_value(wname, l1, l2)
+                if isinstance(res, str):
+                    return res
+
+        else:
+            res = _check_wire_value(wname, wval1, wval2)
+            if isinstance(res, str):
+                return res
+
+    # Check dynamic arguments
+    # Expensive: array comparison via math.allclose.
+    for (dname, dval1), (_, dval2) in zip(
+        op1.dynamic_args.items(), op2.dynamic_args.items(), strict=True
+    ):
+        res = _check_dynamic_value(
+            dname,
+            dval1,
+            dval2,
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        )
+        if isinstance(res, str):
+            return res
+
+    # Check hybrid arguments
+    # Most expensive: pytree flatten + recursive _equal.
+    for (hname, hval1), (_, hval2) in zip(
+        op1.hybrid_args.items(), op2.hybrid_args.items(), strict=True
+    ):
+        if hname in op1.wire_argnames:
+            continue
+        res = _check_pytree_value(
+            hname,
+            hval1,
+            hval2,
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        )
+        if isinstance(res, str):
+            return res
+
+    return True
+
+
+def _check_wire_value(wname: str, wval1: Any, wval2: Any):
+    """Check for equality of a wire argument of an Operator2 instance."""
+
+    is_aw1 = isinstance(wval1, AbstractWires)
+    is_aw2 = isinstance(wval2, AbstractWires)
+
+    if is_aw1 and is_aw2:
+        if wval1 == wval2:
+            return True
+        return f"op1 and op2 have different AbstractWires type specifiers for {wname}: Got {wval1} and {wval2}."
+
+    if is_aw1 != is_aw2:
+        return f"Mismatched wire representations for {wname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {wval1} and {wval2}."
+
+    unequal_wires = False
+    abstract_wires = False
+
+    if len(wval1) != len(wval2):
+        unequal_wires = True
+
+    else:
+        for w1, w2 in zip(wval1, wval2, strict=True):
+            if math.is_abstract(w1) or math.is_abstract(w2):
+                unequal_wires = True
+                abstract_wires = True
+                break
+            if w1 != w2:
+                unequal_wires = True
+                break
+
+    if unequal_wires:
+        if abstract_wires:
+            return (
+                f"At least one of op1 or op2 has one or more tracer values for '{wname}'. "
+                "Abstract tracers are assumed to be unique."
+            )
+        return f"op1 and op2 have different wires for '{wname}'.\nGot {wval1} and {wval2}."
+
+    return True
+
+
+def _check_dynamic_value(
+    dname: str,
+    dval1: TensorLike,
+    dval2: TensorLike,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check for equality of a dynamic argument of an Operator2 instance."""
+    is_aa1 = isinstance(dval1, AbstractArray)
+    is_aa2 = isinstance(dval2, AbstractArray)
+
+    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
+    # execution because Operator2's metaclass ensures abstract operators are fully abstract
+    # and so the wires check would fail first
+    if is_aa1 and is_aa2:
+        if dval1 == dval2:
+            return True
+        return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
+
+    if math.is_abstract(dval1) or math.is_abstract(dval2):
+        return (
+            f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
+            "tracers are assumed to be unique."
+        )
+
+    # Need to check shape along with math.allclose to handle the case where one
+    # value is broadcasted. math.allclose might pass in that case.
+    if math.shape(dval1) != math.shape(dval2) or not math.allclose(
+        dval1, dval2, atol=atol, rtol=rtol
+    ):
+        return f"op1 and op2 have different values for '{dname}'.\nGot {dval1} and {dval2}."
+
+    if check_interface:
+        interface1 = math.get_interface(dval1)
+        interface2 = math.get_interface(dval2)
+        if interface1 != interface2:
+            return (
+                f"op1 and op2 have different interfaces for '{dname}'.\n"
+                f"op1.{dname}'s interface is {interface1} and op2.{dname}'s "
+                f"interface is {interface2}."
+            )
+
+    if check_trainability:
+        grad1 = "trainable" if math.requires_grad(dval1) else "not trainable"
+        grad2 = "trainable" if math.requires_grad(dval2) else "not trainable"
+        if grad1 != grad2:
+            return (
+                f"op1 and op2 differ in trainability for '{dname}'.\n"
+                f"op1.{dname} is {grad1} and op2.{dname} is {grad2}."
+            )
+
+    return True
+
+
+def _check_pytree_value(
+    hname: str,
+    hval1: Any,
+    hval2: Any,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Check for equality of a hybrid argument of an Operator2 instance."""
+    unequal_str = f"op1 and op2 have different values for '{hname}'.\nGot {hval1} and {hval2}."
+    leaves1, tree1 = flatten(hval1, is_leaf=lambda v: isinstance(v, Operator2))
+    leaves2, tree2 = flatten(hval2, is_leaf=lambda v: isinstance(v, Operator2))
+    if len(leaves1) != len(leaves2) or tree1 != tree2:
+        return unequal_str
+
+    for l1, l2 in zip(leaves1, leaves2, strict=True):
+        # Case 1: Both leaf values are operators
+        if isinstance(l1, Operator2) and isinstance(l2, Operator2):
+            ops_equal = _equal(
+                l1,
+                l2,
+                check_interface=check_interface,
+                check_trainability=check_trainability,
+                atol=atol,
+                rtol=rtol,
+            )
+            if isinstance(ops_equal, str):
+                return (
+                    f"op1 and op2 have different values for '{hname}'. "
+                    f"The operator arguments do not match:\n{ops_equal}"
+                )
+
+        # Case 2: One leaf value is an operator and the other is not. Not valid
+        elif isinstance(l1, Operator2) or isinstance(l2, Operator2):
+            return unequal_str
+
+        # Case 3: Neither leaf value is an operator. l1 and l2 are assumed to be numbers or arrays
+        else:
+            res = _check_dynamic_value(
+                hname,
+                l1,
+                l2,
+                check_interface=check_interface,
+                check_trainability=check_trainability,
+                atol=atol,
+                rtol=rtol,
+            )
+            if isinstance(res, str):
+                return res
+
+    return True
+
+
+@_equal_dispatch.register
 def _equal_pauliword(
     op1: PauliWord,
     op2: PauliWord,
@@ -446,7 +687,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     if len(op1.operands) != len(op2.operands):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
-    # organizes by wire indicies while respecting commutation relations
+    # organizes by wire indices while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
@@ -532,7 +773,7 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 
 
 @_equal_dispatch.register
-def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
+def _equal_adjoint(op1: Adjoint | Adjoint2, op2: Adjoint | Adjoint2, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
     base_equal_check = _equal(op1.base, op2.base, **kwargs)

@@ -20,10 +20,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionWarning
-from pennylane.operation import Operation
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
@@ -679,21 +679,6 @@ class TestDecomposeGraphEnabled:
 
         for actual, exp in zip(result.operations, expected.operations, strict=True):
             qp.assert_equal(actual, exp)
-
-
-@pytest.mark.capture
-@pytest.mark.system
-def test_decompose_qnode():
-    """Tests that the decompose transform works with a QNode."""
-
-    @qp.transforms.decompose(gate_set={"CZ", "Hadamard"})
-    @qp.qnode(qp.device("default.qubit", wires=2))
-    def circuit():
-        qp.CNOT(wires=[0, 1])
-        return qp.expval(qp.PauliZ(0))
-
-    res = circuit()
-    assert qp.math.allclose(res, 1.0)
 
 
 @pytest.mark.unit

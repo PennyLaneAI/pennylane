@@ -16,6 +16,8 @@ Integration tests for the draw transform
 """
 
 # pylint: disable=import-outside-toplevel
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -30,6 +32,59 @@ def circuit(x, y, z):
     qp.RY(y, wires="a")
     qp.RZ(z, wires=1.234)
     return qp.expval(qp.PauliZ(0))
+
+
+class TestPartial:
+    """Test partial-wrapped callables."""
+
+    def test_qnode_positional_partial(self):
+        """Test drawing a QNode with a positional argument bound by partial."""
+        fixed = partial(circuit, 1.234)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(2.345, 3.456) == expected
+
+    def test_qnode_keyword_partial(self):
+        """Test drawing a QNode with keyword arguments bound by partial."""
+        fixed = partial(circuit, y=2.345, z=3.456)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(1.234) == expected
+
+    def test_nested_qnode_partial(self):
+        """Test drawing a QNode wrapped by nested partials."""
+        fixed = partial(partial(circuit, 1.234), z=3.456)
+
+        expected = "\n".join(
+            (
+                "    0: ──RX(1.23)─┤  <Z>",
+                "    a: ──RY(2.35)─┤     ",
+                "1.234: ──RZ(3.46)─┤     ",
+            )
+        )
+        assert draw(fixed)(2.345) == expected
+
+    def test_qfunc_partial(self):
+        """Test drawing a quantum function wrapped by partial."""
+
+        def qfunc(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+
+        expected = "0: ──RX(1.23)─┤  \n1: ──RY(2.35)─┤  "
+        assert draw(partial(qfunc, x=1.234))(y=2.345) == expected
 
 
 class TestLabelling:
@@ -408,7 +463,9 @@ class TestMidCircuitMeasurements:
         # Stripping to remove trailing white-space because length of white-space at the
         # end of the drawing depends on the length of each individual line
         drawing = qp.draw(func)().strip()
-        expected_drawing = f"0: ──X──┤↗├──X─┤  {label}\n1: ──X───║───║─┤  {label}\n         ╚═══╝"
+        # Issue #7807: multi-wire all-wires measurements now render with
+        # grouping brackets even when ``m.wires`` is implicitly empty.
+        expected_drawing = f"0: ──X──┤↗├──X─┤ ╭{label}\n1: ──X───║───║─┤ ╰{label}\n         ╚═══╝"
 
         assert drawing == expected_drawing
 
@@ -1008,10 +1065,10 @@ class TestPauliMeasure:
             return qp.probs()
 
         expected = (
-            "0: ──H─╭┤↗Y├────┤  Probs\n"
-            "1: ──H─│──────X─┤  Probs\n"
-            "2: ────├┤↗Z├────┤  Probs\n"
-            "3: ────╰┤↗X├────┤  Probs"
+            "0: ──H─╭┤↗Y├────┤ ╭Probs\n"
+            "1: ──H─│──────X─┤ ├Probs\n"
+            "2: ────├┤↗Z├────┤ ├Probs\n"
+            "3: ────╰┤↗X├────┤ ╰Probs"
         )
         assert draw(circ)() == expected
 
@@ -1029,11 +1086,11 @@ class TestPauliMeasure:
             return qp.probs()
 
         expected = (
-            "0: ──H─╭┤↗Y├────┤  Probs\n"
-            "1: ──H─│──────X─┤  Probs\n"
-            "2: ──H─├┤↗Z├──║─┤  Probs\n"
-            "3: ──H─╰┤↗X├──║─┤  Probs\n"
-            "4: ──H───║────║─┤  Probs\n"
+            "0: ──H─╭┤↗Y├────┤ ╭Probs\n"
+            "1: ──H─│──────X─┤ ├Probs\n"
+            "2: ──H─├┤↗Z├──║─┤ ├Probs\n"
+            "3: ──H─╰┤↗X├──║─┤ ├Probs\n"
+            "4: ──H───║────║─┤ ╰Probs\n"
             "         ╚════╝         "
         )
         assert draw(circ)() == expected
@@ -1155,6 +1212,280 @@ class TestLevelExpansionStrategy:
 
         expected = "0: ──RX(0.20)──RX(0.20)─┤  State"
         assert qp.draw(c, level="my_level")() == expected
+
+
+class TestWireAllocation:
+
+    def test_allocation_with_mcm(self):
+        """Test that a dynamic wire operation can depend on a mcm."""
+
+        def f():
+            m = qp.measure(0)
+            with qp.allocate(1) as wires:
+                qp.cond(m, qp.X)(wires)
+            qp.cond(m, qp.X)(0)
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ──┤↗├───────────X─┤  \n"
+            "      ║|0>├──X──┤  ║    \n"
+            "      ╚══════╩═════╝    "
+        )
+        assert out == expected
+
+    def test_multiple_dynamic_wire_only_ops(self):
+        """Test that when the dynamic wires have multiple ops that are only on the dynamic wires
+        before interacting with algorithmic wires look ok."""
+
+        def f():
+            qp.X(0)
+
+            with qp.allocate(2) as wires:
+                qp.CNOT(wires)
+                qp.CZ(wires)
+                qp.CH((0, wires[1]))
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ──X──────────╭●────┤  \n"
+            "     |0>├─╭●─╭●─│───┤    \n"
+            "     |0>├─╰X─╰Z─╰H──┤    "
+        )
+        assert out == expected
+
+    def test_multiple_allocations_with_dynamic_only_preops(self):
+        """Test that we can have multiple allocations that have allocation-wire-only ops on them."""
+
+        def f():
+            with qp.allocate(1, state="any") as wire:
+                qp.H(wire)
+                qp.CNOT((0, wire[0]))
+
+            with qp.allocate(1, state="any") as wire:
+                qp.T(wire)
+                qp.CNOT((0, wire[0]))
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ───────╭●────╭●────┤  \n"
+            "     ├──H─╰X──┤ │        \n"
+            "           ├──T─╰X──┤    "
+        )
+        assert out == expected
+
+    def test_multiple_allocations_waiting_at_the_same_time(self):
+        """Note that this is a case I think we could improve in the future, but is good enough
+        for the a simpler implementation. I'd like to delay drawing the second register till later,
+        but it's much easier to just trigger insertion of both wire and wire2 at the same time."""
+
+        def f():
+            with qp.allocate(1, state="any") as wire:
+                qp.H(wire)
+                with qp.allocate(1) as wire2:
+                    qp.CNOT((wire[0], wire2[0]))
+                    qp.CZ((0, wire2[0]))  # this op triggers the drawing
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ─────────────╭●────┤  \n"
+            "     ├─────H─╭●─│───┤    \n"
+            "     |0>├────╰X─╰Z──┤    "
+        )
+        assert out == expected
+
+    def test_line_reuse(self):
+        """Test that the same horizontal line can be used for multiple allocations."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.X(0)
+            qp.X(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.CZ((0, wires[0]))
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ────╭●──X──X─╭●────┤  \n"
+            "     ├─╰X──┤  ├─╰Z──┤    "
+        )
+        assert out == expected
+
+    def test_line_wrapping(self):
+        """Test that lines can wrap with allocations."""
+
+        def f():
+            for _ in range(3):
+                with qp.allocate(1, state="any") as wires:
+                    qp.CNOT((0, wires[0]))
+
+                qp.X(0)
+                qp.X(0)
+
+        out = qp.draw(f, max_length=30)()
+        expected = (
+            "0: ────╭●──X──X─╭●──X──X ···\n"
+            "     ├─╰X──┤  ├─╰X──┤  ├ ···\n\n"
+            "0: ··· ─╭●──X──X─┤  \n"
+            "   ··· ─╰X──┤       "
+        )
+        assert out == expected
+
+    def test_allocation_only(self):
+        """Test a circuit with only a dynamic wire."""
+
+        def f():
+            with qp.allocate(1) as wires:
+                qp.X(wires[0])
+
+        assert qp.draw(f)() == "  |0>├──X──┤    "
+
+    def test_empty_allocation(self):
+        """Test an allocation with no operators in it."""
+
+        def f():
+            with qp.allocate(1) as _:
+                pass
+
+        assert qp.draw(f)() == "  |0>├──┤    "
+
+    def test_mcm_with_dynamic_wire_reuse(self):
+        """Test that we can have mcm's and conditionals with dynamic wire reuse."""
+
+        def f():
+            m = qp.measure(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.cond(m, qp.CNOT)((wires[0], 0))
+
+            qp.H(0)
+            qp.H(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.cond(m, qp.CZ)((wires[0], 0))
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ──┤↗├─╭X──H──H─╭Z────┤  \n"
+            "      ║├─╰●──┤  ├─╰●──┤    \n"
+            "      ╚═══╩════════╝       "
+        )
+        assert out == expected
+
+    def test_identity_global_phase_dynamic_wires(self):
+        """Test that global phase and identity on all wires can be drawn with active dynamic wires.
+        Make sure to hit both:
+        1) blank space between active wires
+        2) Reused line.
+        """
+
+        def f():
+            qp.I()
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.I()
+
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.I()
+
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+                qp.GlobalPhase(0.5)
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ──I─╭●─╭I────╭●─╭I────╭●─╭GlobalPhase(0.50)────┤  \n"
+            "     ├─╰X─╰I──┤ │  │   ├─╰X─╰GlobalPhase(0.50)──┤    \n"
+            "              ├─╰X─╰I──┤                             "
+        )
+        assert out == expected
+
+    def test_measurement_on_all_wires(self):
+        """Test that a measurement on all wires works with line reuse for dynamic wires."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.H(0)
+            qp.H(0)
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.X(1)
+
+            qp.probs()
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ────╭●──H──H─╭●────┤ ╭Probs\n"
+            "1: ────│────────│───X─┤ ╰Probs\n"
+            "     ├─╰X──┤  ├─╰X──┤         "
+        )
+        assert out == expected
+
+    def test_barrier_before_allocation(self):
+        """Test placing a barrier between wire allocations."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+
+            qp.Barrier()
+            with qp.allocate(1, state="any") as wires:
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ────╭●─────||─────╭●────┤  \n"
+            "     ├─╰X──┤  ||├──X─╰X──┤    "
+        )
+        assert out == expected
+
+    def test_barrier_in_allocation_waiting_wires(self):
+        """Test that a barrier can occur when there are waiting wires. It should trigger the insertion
+        of layers, and still get its own layer."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.CNOT((0, wires[0]))
+            with qp.allocate(1, state="any") as wires:
+                qp.Barrier()
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+
+        out = qp.draw(f)()
+        expected = (
+            "0: ────╭●─────||────╭●────┤  \n"
+            "     ├─╰X──┤  ||    │        \n"
+            "           ├──||──X─╰X──┤    "
+        )
+        assert out == expected
+
+    def test_barrier_middle_of_allocation_region(self):
+        """Test barrier placed in the middle of an allocation region."""
+
+        def f():
+            with qp.allocate(1, state="any") as wires:
+                qp.X(wires[0])
+                qp.CNOT((0, wires[0]))
+                qp.Barrier()
+                qp.X(wires[0])
+
+        out = qp.draw(f)()
+        # fmt: off
+        expected = (
+            "0: ───────╭●──||───────┤  \n"
+            "     ├──X─╰X──||──X──┤    "
+        )
+        assert out == expected
 
 
 def test_draw_batch_transform():

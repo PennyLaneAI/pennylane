@@ -24,25 +24,28 @@ from pennylane.labs.transforms.decomp_selectpaulirot_phase_gradient import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import WireError
 
 
-@pytest.mark.parametrize(
-    "n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match",
-    [
-        [5, 3, 2, "angle_wires and phase_grad wires must be of same size"],
-        [3, 4, 2, "angle_wires and phase_grad wires must be of same size"],
-        [4, 4, 2, "work_wires need to be at least of size phase_grad_wires - 1"],
-    ],
-)
-def test_wires_error(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
-    """Test WireError is raised correctly"""
-    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
-
-    with pytest.raises(WireError, match=msg_match):
-        _ = make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+def test_wires_error_decomp_fun():
+    """Test WireError is raised correctly when calling the decomposition function on a large
+    SelectPauliRot that needs more work wires for its QROM than are available."""
+    registers = {
+        "angle_wires": 3,
+        "phase_grad_wires": 3,
+        "work_wires": 2,
+        "control_wires": 4,
+        "target_wires": 1,
+    }
+    registers = qp.registers(registers)
+    control_wires = registers.pop("control_wires")
+    target_wire = registers.pop("target_wires")[0]
+    rule = make_selectpaulirot_to_phase_gradient_decomp(**registers)
+    angles = np.random.random(2**4)
+    with pytest.raises(WireError, match=r"work_wires need to be at least of size len\(control"):
+        rule(angles, control_wires, target_wire, "X")
 
 
 @pytest.mark.parametrize("prec", [2, 3, 5])
@@ -83,7 +86,6 @@ def test_as_fixed_decomps(prec, num_controls):
     with qp.decomposition.toggle_graph_ctx(
         True
     ):  # safe alternative to avoid enabling graph globally on the labs test runner
-
         angles = (
             np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
             @ np.array([1 / 2, 1 / 4, 1 / 8])
@@ -106,7 +108,6 @@ def test_as_fixed_decomps(prec, num_controls):
         @qp.transforms.decompose(
             gate_set={
                 "QROM",
-                "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
                 "X",
@@ -122,8 +123,7 @@ def test_as_fixed_decomps(prec, num_controls):
 
         specs = qp.specs(circuit)(angles)["resources"].gate_types
         expected_specs = {
-            "QROM": 1,
-            "Adjoint(QROM)": 1,
+            "QROM": 2,
             "CNOT": 2 * prec,
             "PauliX": 2 * prec,
             "SemiAdder": 1,
@@ -165,7 +165,6 @@ def test_integration_multi_wire(seed):
         @qp.transforms.decompose(
             gate_set={
                 "QROM",
-                "Adjoint(QROM)",
                 "SemiAdder",
                 "CNOT",
                 "X",
@@ -203,3 +202,68 @@ def test_integration_multi_wire(seed):
         out_state_expected = np.kron(zeros, out_state_expected)
 
         assert np.allclose(out_state, out_state_expected)
+
+
+@pytest.mark.jax
+def test_capture_compatibility():
+    """Ensures capture compatibility."""
+
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    qp.capture.enable()
+    try:
+        with qp.decomposition.toggle_graph_ctx(True):
+            prec = 3
+            num_controls = 2
+            control_wires = list(range(num_controls))
+            target_wire = num_controls
+            first_aux = num_controls + 1
+
+            angle_wires = list(range(first_aux, first_aux + prec))
+            phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
+            num_work_wires = max(prec, num_controls + 1) - 1
+            work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
+
+            angles = np.array(
+                [
+                    (1 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+                    (1 / 2 + 1 / 4 + 0 / 8) * 4 * np.pi,
+                    (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi,
+                    (0 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi,
+                ]
+            )
+
+            custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+                angle_wires, phase_grad_wires, work_wires
+            )
+
+            gate_set = {
+                "QROM",
+                "SemiAdder",
+                "CNOT",
+                "PauliX",
+                "GlobalPhase",
+            }
+
+            @DecomposeInterpreter(
+                gate_set=gate_set, fixed_decomps={qp.SelectPauliRot: custom_decomp}
+            )
+            def f(angles):
+                qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
+                return qp.state()
+
+            cjaxpr = jax.make_jaxpr(f)(angles)
+
+            collector = CollectOpsandMeas()
+            collector.eval(cjaxpr.jaxpr, cjaxpr.consts, angles)
+
+            op_names = {op.name for op in collector.state["ops"]}
+            # NOTE: Because `adjoint` is lazy in ChangeOpBasis,
+            # unsimplified operators will be collected.
+            gate_set |= {"Adjoint(CNOT)", "Adjoint(PauliX)"}
+            assert op_names.issubset(
+                gate_set
+            ), f"Following ops are present but not in gateset: {op_names - gate_set}"
+    finally:
+        qp.capture.disable()

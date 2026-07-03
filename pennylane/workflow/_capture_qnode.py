@@ -94,7 +94,6 @@ from pennylane import math
 from pennylane.capture import FlatFn, QpPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
-from pennylane.measurements import Shots
 from pennylane.typing import TensorLike
 
 from .construct_execution_config import construct_execution_config
@@ -182,79 +181,11 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=unused-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
-
-    warn(
-        "Executing PennyLane programs with capture enabled should be done inside ``qp.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
-        UserWarning,
-    )
-
-    execution_config = device.setup_execution_config(execution_config)
-
-    if shots_len == 0:
-        shots = None
-        non_shots_args = args
-    else:
-        shots, non_shots_args = args[:shots_len], args[shots_len:]
-
-    consts = non_shots_args[:n_consts]
-    non_const_args = non_shots_args[n_consts:]
-
-    device_program = device.preprocess_transforms(execution_config)
-    if batch_dims is not None:
-        temp_all_args = []
-        for a, d in zip(args, batch_dims, strict=True):
-            if d is not None:
-                slices = [slice(None)] * math.ndim(a)
-                slices[d] = 0
-                temp_all_args.append(a[tuple(slices)])
-            else:
-                temp_all_args.append(a)
-        temp_consts = temp_all_args[shots_len : (n_consts + shots_len)]
-        temp_args = temp_all_args[(n_consts + shots_len) :]
-    else:
-        temp_consts = consts
-        temp_args = non_const_args
-
-    # Expand user transforms applied to the qfunc
-    if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
-        transformed_func = qp.capture.expand_plxpr_transforms(
-            partial(qp.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
-        )
-
-        qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
-        temp_consts = qfunc_jaxpr.consts
-        qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.compile_pipeline(qfunc_jaxpr, temp_consts, *temp_args)
-    temp_consts = qfunc_jaxpr.consts
-    qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    # Apply device preprocessing transforms
-    graph_enabled = qp.decomposition.enabled_graph()
-    try:
-        qp.decomposition.disable_graph()
-        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
-    finally:
-        if graph_enabled:
-            qp.decomposition.enable_graph()
-    consts = qfunc_jaxpr.consts
-    qfunc_jaxpr = qfunc_jaxpr.jaxpr
-
-    partial_eval = partial(
-        device.eval_jaxpr,
-        qfunc_jaxpr,
-        consts,
-        execution_config=execution_config,
-        shots=Shots(shots),
-    )
-    if batch_dims is None:
-        return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
+def _(*args, **kwargs):
+    raise NotImplementedError
 
 
 def custom_staging_rule(
@@ -360,41 +291,8 @@ def _qnode_batching_rule(
 
 
 @debug_logger
-def _finite_diff(args, tangents, **impl_kwargs):
-    if not jax.config.jax_enable_x64:
-        warn(
-            "Detected 32 bits precision with finite differences. This can lead to incorrect results."
-            " Recommend enabling jax.config.update('jax_enable_x64', True).",
-            UserWarning,
-        )
-    f = partial(qnode_prim.bind, **impl_kwargs)
-    return qp.gradients.finite_diff_jvp(
-        f, args, tangents, **impl_kwargs["execution_config"].gradient_keyword_arguments
-    )
-
-
-diff_method_map = {"finite-diff": _finite_diff}
-
-
-@debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
-    execution_config = device.setup_execution_config(execution_config)
-    if execution_config.use_device_gradient:
-        return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
-
-    if execution_config.gradient_method not in diff_method_map:
-        raise NotImplementedError(
-            f"diff_method {execution_config.gradient_method} not yet implemented."
-        )
-
-    return diff_method_map[execution_config.gradient_method](
-        args,
-        tangents,
-        execution_config=execution_config,
-        device=device,
-        qfunc_jaxpr=qfunc_jaxpr,
-        **impl_kwargs,
-    )
+    raise NotImplementedError
 
 
 ### END JVP CALCULATION #######################################################

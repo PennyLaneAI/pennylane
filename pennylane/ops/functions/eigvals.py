@@ -22,8 +22,8 @@ import scipy
 
 import pennylane as qp
 from pennylane import transform
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
 

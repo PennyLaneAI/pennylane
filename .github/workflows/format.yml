@@ -37,7 +37,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -53,8 +53,8 @@ jobs:
 
       - name: Run Black
         run: |
-          black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
-          black -t py311 -t py312 -t py313 -l 100 tests/ --check
+          black -t py312 -t py313 -t py314 -l 100 pennylane/ --check
+          black -t py312 -t py313 -t py314 -l 100 tests/ --check
 
       - name: Run isort
         run: |

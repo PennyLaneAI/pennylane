@@ -737,6 +737,11 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires(set(_process(other)) ^ set(self.labels))
 
+    def __class_getitem__(cls, item):
+        raise TypeError(
+            f"'{cls.__name__}[{item}]' is not supported syntax. Did you mean: 'pennylane.typing.Wire[{item}]'?"
+        )
+
 
 WiresLike = Wires | Iterable[Hashable] | Hashable
 

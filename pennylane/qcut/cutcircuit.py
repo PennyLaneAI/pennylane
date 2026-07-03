@@ -19,8 +19,8 @@ from collections.abc import Callable
 from functools import partial
 
 from pennylane import ops, transforms
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import ExpectationMP
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -410,8 +410,11 @@ def cut_circuit(
 
     # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+    # In the following we have strict=False because there may be more device wires than wires
+    # in a given fragment tape
     fragment_tapes = [
-        ops.functions.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+        ops.functions.map_wires(t, dict(zip(t.wires, device_wires, strict=False)))[0][0]
+        for t in fragment_tapes
     ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 

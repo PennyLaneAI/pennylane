@@ -14,13 +14,13 @@
 """Contains the LeftQuantumComparator template for performing inequality test of two quantum registers."""
 
 from pennylane import capture, compiler, for_loop, math
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, X
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.templates.subroutines import Elbow
 from pennylane.wires import Wires, WiresLike
 

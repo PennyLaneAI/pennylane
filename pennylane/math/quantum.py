@@ -250,17 +250,19 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def partial_trace(matrix, indices, c_dtype="complex128"):
+def partial_trace(matrix, indices, c_dtype="complex128", qudit_dim=2):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
         matrix (tensor_like): 2D or 3D density matrix tensor. For a 2D tensor, the size is assumed to be
-            ``(2**n, 2**n)``, for some integer number of wires ``n``. For a 3D tensor, the first dimension is assumed to be the batch dimension, ``(batch_dim, 2**N, 2**N)``.
+            ``(qudit_dim**n, qudit_dim**n)``, for some integer number of wires ``n``. For a 3D tensor, the first dimension is assumed to be the batch dimension, ``(batch_dim, qudit_dim**N, qudit_dim**N)``.
 
         indices (list(int)): List of indices to be traced.
 
+        qudit_dim (int): The dimension of the qudit for the input matrix. Default is 2 (qubit)
+
     Returns:
-        tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (reduced) Density matrix of size ``(qudit_dim**len(wires), qudit_dim**len(wires))``
 
     .. seealso:: :func:`pennylane.math.reduce_dm`, and :func:`pennylane.math.reduce_statevector`
 
@@ -296,13 +298,15 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         batch_dim, dim = matrix.shape[:2]
 
     if math.get_interface(matrix) in ["autograd", "tensorflow"]:
-        return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
+        return _batched_partial_trace_nonrep_indices(
+            matrix, is_batched, indices, batch_dim, dim, qudit_dim
+        )
 
     # Dimension and reshape
-    num_indices = int(np.log2(dim))
+    num_indices = int(np.round(np.log(dim) / np.log(qudit_dim)))
     rho_dim = 2 * num_indices
 
-    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [qudit_dim] * 2 * num_indices)
     indices = np.sort(indices)
 
     # For loop over wires
@@ -320,23 +324,26 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, qudit_dim**number_wires_sub, qudit_dim**number_wires_sub)
     )
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
-def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim, qudit_dim=2):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
 
-    num_indices = int(np.log2(dim))
+    num_indices = (
+        int(np.log2(dim)) if qudit_dim == 2 else int(np.round(np.log(dim) / np.log(qudit_dim)))
+    )
     rho_dim = 2 * num_indices
-    matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
+    matrix = np.reshape(matrix, [batch_dim] + [qudit_dim] * 2 * num_indices)
 
-    kraus = math.cast(np.eye(2), matrix.dtype)
+    kraus = math.cast(np.eye(qudit_dim), matrix.dtype)
 
-    kraus = np.reshape(kraus, (2, 1, 2))
+    kraus = np.reshape(kraus, (qudit_dim, 1, qudit_dim))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
     kraus = math.convert_like(kraus, matrix)
@@ -376,7 +383,7 @@ def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        matrix, (batch_dim, 2**number_wires_sub, 2**number_wires_sub)
+        matrix, (batch_dim, qudit_dim**number_wires_sub, qudit_dim**number_wires_sub)
     )
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 

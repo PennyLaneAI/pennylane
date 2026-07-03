@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
@@ -197,7 +197,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     **Example:**
 
-    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
+    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifying
     the Pauli word and the wires it acts on.
 
     .. code-block:: python

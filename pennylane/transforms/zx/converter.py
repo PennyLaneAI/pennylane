@@ -22,11 +22,11 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
-from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
@@ -115,10 +115,9 @@ def to_zx(tape, expand_measurements=False):
             rotations will be added to the operations.
 
     Returns:
-        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-
-        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
-        will provide the ZX graph in the form of a PyZX graph.
+        pyzx.Graph or QNode or quantum function (Callable) or tuple[List[QuantumTape], function]:
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
+            will provide the ZX graph in the form of a PyZX graph.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.

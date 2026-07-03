@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
-from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -461,9 +461,15 @@ class TestWrappedObj:
         assert wo.__repr__() == "Wrapped(test_repr)"
 
 
-def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object it cant handle."""
-    q = AnnotatedQueue()
-    q.append(1)
-    with pytest.raises(QueuingError, match="Encountered object 1 in queue while processing."):
-        qp.queuing.process_queue(q)
+def test_error_on_process_queue():
+    """Test that an informative error is raised indicating that process_queue has moved."""
+
+    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
+        _ = qp.queuing.process_queue
+
+
+def test_error_on_nonexistent_item():
+    """Test an AttributeError is raised if an object does not exist."""
+
+    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+        _ = qp.queuing.thing

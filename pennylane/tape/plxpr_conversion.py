@@ -20,7 +20,7 @@ from copy import copy
 import jax
 import numpy as np
 
-from pennylane import ops, queuing
+from pennylane import ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -37,7 +37,9 @@ from pennylane.capture.primitives import (
     value_and_grad_prim,
     vjp_prim,
 )
-from pennylane.operation import Operator
+from pennylane.core import queuing
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     MidMeasure,
@@ -48,8 +50,6 @@ from pennylane.ops.mid_measure import (
 )
 from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
-
-from .qscript import QuantumScript
 
 
 class CollectOpsandMeas(FlattenedInterpreter):
@@ -162,7 +162,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
             )
         conditions = get_mcm_predicates(mcm_conditions)
 
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = all_args[slice(*const_slice)]
         if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
