@@ -22,10 +22,11 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.pytrees import flatten, unflatten
 
 from .composite import handle_recursion_error
 
@@ -53,8 +54,22 @@ class SymbolicOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_args, new_kwargs = unflatten(new_leaves, structure)
+
         # has no wires, so doesn't need any wires processing
-        return cls._primitive.bind(*args, **kwargs)
+        return cls._primitive.bind(*new_args, **new_kwargs)
 
     @handle_recursion_error
     def __copy__(self):
