@@ -24,7 +24,7 @@ from operator2_utils import DynOp, FullOp
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, StatePrepBase2
+from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -40,7 +40,7 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -1066,6 +1066,13 @@ class TestHash:
         """Test the hash-equality invariant: ``a == b`` implies ``hash(a) == hash(b)``."""
         op1 = DynOp(0.5, wires=0)
         op2 = DynOp(0.5, wires=0)
+        assert op1 == op2
+        assert hash(op1) == hash(op2)
+
+    def test_abstract_op_hash(self):
+        """Tests that an abstract op and abstractified op have the same hash."""
+        op1 = DynOp(Float, Wire[2])
+        op2 = abstractify(DynOp(0.5, [0, 1]))
         assert op1 == op2
         assert hash(op1) == hash(op2)
 
