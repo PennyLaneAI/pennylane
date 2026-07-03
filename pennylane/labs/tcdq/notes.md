@@ -17,7 +17,7 @@ $\oplus$ denotes componentwise addition modulo $d$ on $\mathbb{Z}_d^n$.
 
 The qubit IQP circuit has the form $F D(\boldsymbol{\theta}) F^\dagger |0\rangle$,
 where $F$ is the $n$-fold Hadamard (the QFT over $\mathbb{Z}_2^n$) and
-$D(\boldsymbol{\theta})$ is a diagonal unitary built from Pauli-$Z$ tensor
+$D(\boldsymbol{\theta})$ is a diagonal unitary built from Pauli $Z$ tensor
 products.
 
 The key property that makes classical training possible is that
@@ -163,10 +163,9 @@ is then:
 
 $$E_\omega = \boldsymbol{\theta}_\omega \cdot \tilde{\mathbf{B}}_\omega - \sum_{\boldsymbol{\sigma}}\mathbf{C}_{\boldsymbol{\sigma}}^T\text{diag}(\boldsymbol{\theta}_\omega)\mathbf{B}_{\boldsymbol{\sigma}}$$
 
-The first term uses $\tilde{\mathbf{B}}_\omega$, the all-cos entry
+The first term uses the all-cos entry
 ($\boldsymbol{\sigma} = \mathbf{0}$), which equals the gate eigenvalue
-$\Phi_{\mathbf{g}}(\mathbf{z})$ itself.
-The total is $E = \sum_\omega E_\omega$.
+itself. The total is $E = \sum_\omega E_\omega$.
 
 For $\omega = 1$ (single-qudit gates) this is 2 matrix products; for $\omega = 2$ (two-qudit gates) it is 4; in general $2^\omega$ per weight group.  The per-group pipeline is orchestrated by `_build_weight_group`; `_accumulate_phase_diffs` sums $E_\omega$ over all weight groups.
 
