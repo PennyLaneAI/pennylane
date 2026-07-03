@@ -14,7 +14,6 @@ from pennylane.labs.trotter_error.fragments.gan_fragments.fermi import FermiOp, 
 from pennylane.labs.trotter_error.fragments.gan_fragments.fragmentation_scheme import (
     GanConfig,
     _diagonal,
-    _electron_repulsion,
     _kinetic,
     _met_matching,
     _mol_matching,
@@ -166,8 +165,7 @@ def test_molecular_coupling_matches_manual_sum(config):
 
 
 def test_molecule_metal_transfer_constant_term(config):
-    # With only a zeroth-order transfer tensor, the coefficient is a single
-    # identity monomial carrying transfer[0][i, j].
+    """Test that the constant term is the identity monomial"""
     i, j = 1, 2
     coeff = _molecule_metal_transfer(i, j, config)
     const_mono = GanMonomial([FuncSymbol.identity()])
@@ -177,12 +175,13 @@ def test_molecule_metal_transfer_constant_term(config):
 
 
 def test_diagonal_contains_identity_nuclear_reference(config):
+    """Test that the diagonal contains the nuclear reference"""
     frag = _diagonal(config)
-    # The nuclear reference energy sits on the identity fermionic word.
     assert FermiWord.identity() in frag.fragment
 
 
 def test_kinetic_has_metallic_number_terms(config):
+    """Test that kinetic term contains the correct number of terms"""
     frag = _kinetic(config)
     for i in range(config.n_met):
         num = FermiWord([FermiOp.creation_met(i), FermiOp.annihilation_met(i)])
