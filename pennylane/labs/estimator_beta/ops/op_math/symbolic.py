@@ -81,9 +81,10 @@ def _generate_name(
         param_kind = str(func_sig.parameters[param_name].kind)
         param_index = list(func_sig.parameters.keys()).index(param_name)
         if param_kind in ("KEYWORD_ONLY", "POSITIONAL_OR_KEYWORD"):
-            param_value = kwargs.get(param_name, args[param_index])
+            default_val = args[param_index] if param_index < len(args) else None
+            param_value = kwargs.get(param_name, default_val)
 
-        if param_kind == "VAR_POSITIONAL":
+        elif param_kind == "VAR_POSITIONAL":
             param_value = args[param_index:]
 
         else:  # param_kind == "VAR_KEYWORD"
