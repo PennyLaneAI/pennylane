@@ -35,11 +35,17 @@ def _estimation_array_primitive():
     def _estimation_p_abstract_eval(shape, dtype):
         return jax.core.ShapedArray(shape, dtype)
 
+    @estimation_p.def_impl
+    def _estimation_p_impl(shape, dtype):
+        raise NotImplementedError(
+            "estimation_arrays can only be produced for abstract evaluation and cannot be executed."
+        )
+
     return estimation_p
 
 
 def estimation_array(shape: tuple[int, ...], dtype: type):
-    """Creates a dummy array that can be used in resource dry-runs with catalyst.
+    """**EXPERIMENTAL** Creates a dummy array that can be used in resource dry-runs with catalyst.
 
     Args:
         shape (tuple[int,...]): the shape of the array
@@ -49,6 +55,9 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
         A jax tracer with the specified shape and dtype.
 
     .. warning::
+
+        This function is **EXPERIMENTAL**.
+
 
         This function can only be used with ``qjit`` with capture turned on.
 
@@ -69,19 +78,20 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
     Even though we do not have actual values for ``x`` and ``y``, we can still see
     the effect of the ``merge_rotations`` pass on the resources.
 
-    >>> qp.specs(c, level=0)().resources.gate_types
+    >>> qp.specs(c, level=0)().resources.gate_types # doctest: +SKIP
     {'RX': 2}
-    >>> qp.specs(c, level=1)().resources.gate_types
+    >>> qp.specs(c, level=1)().resources.gate_types # doctest: +SKIP
     {'RX': 1}
 
     Trying to execute or calculate specs at ``level="device"`` will result in errors.
 
-    >>> c()
+    >>> c() # doctest: +SKIP
     CompileError: catalyst failed with error code 1: Failed to run pipeline: BufferizationStage
     ...
 
     """
     if not enabled():
         raise NotImplementedError("estimation_array requires program capture to be enabled.")
+    from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
-    return _estimation_array_primitive().bind(shape=shape, dtype=dtype)
+    return _estimation_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
