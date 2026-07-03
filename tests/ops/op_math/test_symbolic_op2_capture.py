@@ -26,6 +26,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
+from tests.core.operator.operator2_utils import NonParametricOp
 
 
 def _single_op_eqn(jaxpr):
@@ -266,6 +267,26 @@ class TestControlledCapture:
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
         assert len(jaxpr.eqns) == 0
+
+
+def test_public_symbolic_op_binding():
+    """Tests that the public API for symbolic op captures properly."""
+
+    def f():
+        qp.s_prod(2.0, NonParametricOp(0))
+
+    cjaxpr = jax.make_jaxpr(f)()
+
+    eqns = cjaxpr.eqns
+
+    assert len(eqns) == 2  # operator and sprod
+    assert eqns[0].primitive.name == "operator"
+    assert eqns[0].params["op_cls"] is NonParametricOp
+
+    assert eqns[1].primitive.name == "SProd"
+
+    # SProd primitive consumes the op
+    assert eqns[0].outvars[0] == eqns[1].invars[1]
 
 
 if __name__ == "__main__":
