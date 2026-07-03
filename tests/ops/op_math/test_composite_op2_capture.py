@@ -113,3 +113,29 @@ def test_change_op_basis():
     assert eqns[2].primitive.name == "operator"
     assert eqns[2].params["op_cls"] is NonParametricOp
     assert eqns[2].params["adjoint"] is True
+
+
+def test_linear_combination():
+    """Tests that LinearCombination captures correctly."""
+
+    def f():
+        qp.Hamiltonian([1, 2], [NonParametricOp(0), NonParametricOp(1)])
+
+    cjaxpr = jax.make_jaxpr(f)()
+
+    eqns = cjaxpr.eqns
+
+    assert len(eqns) == 3  # Op1 + Op2 + Adjoint(Op1)
+
+    assert eqns[0].primitive.name == "operator"
+    assert eqns[0].params["op_cls"] is NonParametricOp
+
+    assert eqns[1].primitive.name == "operator"
+    assert eqns[1].params["op_cls"] is NonParametricOp
+
+    assert eqns[2].primitive.name == "LinearCombination"
+    # Invars 0 and 1 are the coefficients
+    assert eqns[0].outvars[0] == eqns[2].invars[2]
+    assert eqns[0].outvars[0] == eqns[2].invars[2]
+    assert eqns[1].outvars[0] == eqns[2].invars[3]
+    assert eqns[1].outvars[0] == eqns[2].invars[3]
