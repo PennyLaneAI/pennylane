@@ -57,7 +57,7 @@ def test_public_api_binding():
     assert eqns[4].invars[1] == eqns[3].outvars[0]
 
 
-@pytest.xfail(reason="adjoint is not being captured in the jaxpr for some reason", strict=True)
+@pytest.mark.xfail(reason="adjoint is not being captured in the jaxpr for some reason", strict=True)
 def test_change_op_basis():
     """Tests that change_op_basis captures correctly."""
 
