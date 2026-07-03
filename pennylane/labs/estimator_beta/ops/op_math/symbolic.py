@@ -22,7 +22,6 @@ from pennylane.labs.estimator_beta import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    MarkQubits,
 )
 from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -196,7 +195,6 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
 
 
 class ResourceQfunc(ResourceOperator):
-    """A class which generates ResourceOperator instances from quantum functions"""
 
     resource_keys = {"name", "num_wires", "cmpr_ops"}
 
@@ -213,9 +211,11 @@ class ResourceQfunc(ResourceOperator):
                     decomp.append(op)
                 elif isinstance(op, Operator):
                     decomp.append(qre._map_to_resource_op(op))
-                elif isinstance(op, MarkQubits):  # TODO: @Jaybsoni to add support for this eventually
+                elif isinstance(
+                    op, qre.MarkQubits
+                ):  # TODO: @Jaybsoni to add support for this eventually
                     raise TypeError(
-                        "Marking qubits is currently not supported with mark_subroutine and ResourceQfunc. " \
+                        "Marking qubits is currently not supported with mark_subroutine and ResourceQfunc. "
                         "Instead, instantiate MarkQubit instances within the main Qnode or qfunc directly."
                     )
                 else:
