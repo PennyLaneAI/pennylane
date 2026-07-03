@@ -22,6 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import singledispatch
 from textwrap import dedent
 from typing import overload
 
@@ -716,6 +717,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+@singledispatch
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
@@ -1138,3 +1140,10 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
             "The resources of a decomposition rule cannot contain operators with "
             f"abstract data of undetermined dimensions, got {op}."
         )
+
+
+def _decomp_contains_mcm(rule, params):
+    resources = rule.compute_resources(**params).gate_counts
+    mcm = resource_rep(qp.ops.MidMeasure)
+    ppm = resource_rep(qp.ops.PauliMeasure)
+    return mcm in resources or ppm in resources
