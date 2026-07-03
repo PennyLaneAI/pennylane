@@ -566,8 +566,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
 def _make_controlled_decomp(base_rule: DecompositionRule):
 
-    def _condition_fn(*args, **kwargs):
-        return base_rule.is_applicable(*args, **kwargs)
+    def _condition_fn(base, **_):
+        return base_rule.is_applicable(**base.arguments)
 
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
         base_res = base_rule.compute_resources(**base.arguments)

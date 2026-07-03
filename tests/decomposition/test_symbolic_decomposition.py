@@ -47,6 +47,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
@@ -794,6 +795,53 @@ class TestControlledDecomposition:
                     qp.Z, {}, num_control_wires=4, num_work_wires=1
                 ): 1,
             }
+        )
+
+    def test_make_controlled_decomp2(self):
+        """Tests the controlled decomp wrapper for ControlledOp2."""
+
+        def _condition_fn(phi, wires):  # pylint: disable=unused-argument
+            return len(wires) > 2
+
+        def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+            return {OneWireDynOp: len(wires), qp.CNOT: len(wires) - 1}
+
+        @qp.register_condition(_condition_fn)
+        @qp.register_resources(_resource_fn)
+        def _custom_decomp(phi, wires):
+
+            @qp.for_loop(0, len(wires))
+            def _loop(i):
+                OneWireDynOp(phi, wires[i])
+
+            @qp.for_loop(0, len(wires) - 1)
+            def _loop2(i):
+                qp.CNOT([i, i + 1])
+
+            _loop()
+            _loop2()
+
+        ctrl_rule = make_controlled_decomp2(_custom_decomp)
+
+        op = qp.ctrl(DynOp(0.5, [0]), control=[1])
+        assert not ctrl_rule.is_applicable(**op.arguments)
+
+        op = qp.ctrl(DynOp(0.5, [0, 1, 2]), control=[3])
+        assert ctrl_rule.is_applicable(**op.arguments)
+
+        with queuing.AnnotatedQueue() as q:
+            ctrl_rule(**op.arguments)
+
+        assert q.queue == [
+            ControlledOp2(OneWireDynOp(0.5, 0), control_wires=[3]),
+            ControlledOp2(OneWireDynOp(0.5, 1), control_wires=[3]),
+            ControlledOp2(OneWireDynOp(0.5, 2), control_wires=[3]),
+            qp.Toffoli([3, 0, 1]),
+            qp.Toffoli([3, 1, 2]),
+        ]
+
+        assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
+            {ControlledOp2(OneWireDynOp, control_wires=Wire[1]): 3, qp.Toffoli: 2, qp.X: 1}
         )
 
     def test_flip_control_adjoint(self):
