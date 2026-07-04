@@ -17,13 +17,14 @@ from functools import lru_cache
 
 from pennylane import math, templates
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import make_qscript
+from pennylane.core.transforms import BoundTransform
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions import equal
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import make_qscript
-from pennylane.transforms.core import BoundTransform, transform
+from pennylane.transforms.core import transform
 from pennylane.workflow import construct_execution_config, resolution
 from pennylane.workflow.qnode import _make_execution_config
 

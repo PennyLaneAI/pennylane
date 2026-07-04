@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.allocation import DynamicWire
-from pennylane.tape import make_qscript
+from pennylane.core.qscript import make_qscript
 from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl

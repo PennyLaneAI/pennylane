@@ -12,6 +12,17 @@
 # limitations under the License.
 """The core abstractions of PennyLane.
 
+Queuing
+~~~~~~~
+
+.. currentmodule:: pennylane.core.queuing
+.. autosummary::
+    :toctree: api
+
+    ~QueuingManager
+    ~AnnotatedQueue
+    ~apply
+
 Operator Types
 ~~~~~~~~~~~~~~
 
@@ -35,10 +46,10 @@ Operator Types
     :parts: 1
 
 
-Other
-~~~~~
+Measurements
+~~~~~~~~~~~~
 
-..currentmodule:: pennylane.core
+.. currentmodule:: pennylane.core.measurements
 .. autosummary::
     :toctree: api
 
@@ -46,12 +57,48 @@ Other
     ~StateMeasurement
     ~SampleMeasurement
     ~MeasurementTransform
+
+Shots
+~~~~~
+
+.. currentmodule:: pennylane.core.shots
+.. autosummary::
+    :toctree: api
+
     ~Shots
     ~ShotCopies
     ~ShotsLike
 
+Quantum Script
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.qscript
+.. autosummary::
+    :toctree: api
+
+    ~QuantumScript
+    ~QuantumScriptBatch
+    ~QuantumScriptOrBatch
+    ~make_qscript
+    ~process_queue
+
+
+Transforms
+~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.transforms
+.. autosummary::
+    :toctree: api
+
+    ~Transform
+    ~transform
+    ~BoundTransform
+    ~CompilePipeline
+
 
 """
+
+from .queuing import QueuingManager, AnnotatedQueue, apply
 
 from .operator import (
     CV,
@@ -72,8 +119,19 @@ from .measurements import (
     MeasurementTransform,
 )
 from .shots import Shots, ShotCopies, ShotsLike
+from .qscript import (
+    QuantumScript,
+    QuantumScriptBatch,
+    QuantumScriptOrBatch,
+    make_qscript,
+    process_queue,
+)
+from .transforms import transform, Transform, BoundTransform, CompilePipeline
 
 __all__ = [
+    "QueuingManager",
+    "AnnotatedQueue",
+    "apply",
     "Operator",
     "Operator1",
     "Operator2",
@@ -91,4 +149,13 @@ __all__ = [
     "Shots",
     "ShotCopies",
     "ShotsLike",
+    "QuantumScript",
+    "QuantumScriptBatch",
+    "QuantumScriptOrBatch",
+    "make_qscript",
+    "process_queue",
+    "transform",
+    "Transform",
+    "BoundTransform",
+    "CompilePipeline",
 ]

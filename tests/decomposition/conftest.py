@@ -33,16 +33,12 @@ from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _contro
 decompositions = defaultdict(list)
 
 
-def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources(
-        {auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
-        (
-            sum(count for gate, count in gate_count.items())
-            if weighted_cost is None
-            else weighted_cost
-        ),
-    )
+    if weighted_cost is None:
+        weighted_cost = sum(count for count in gate_count.values())
+    gate_count = {auto_wrap(op): count for op, count in gate_count.items() if count >= 0}
+    return Resources(gate_count, weighted_cost=weighted_cost)
 
 
 @qp.register_resources({qp.Hadamard: 2, qp.CNOT: 1})
