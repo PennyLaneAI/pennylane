@@ -25,16 +25,7 @@ import scipy.sparse as sps
 import pennylane as qp
 from pennylane import math
 from pennylane.math.utils import is_abstract
-from pennylane.ops import (
-    Identity,
-    LinearCombination,
-    PauliX,
-    PauliY,
-    PauliZ,
-    Prod,
-    SProd,
-    Sum,
-)
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -53,9 +44,7 @@ _I_POWERS = np.array([1, 1j, -1, -1j], dtype=complex)
 _COEFF_TOLERANCE = 1e-8
 
 
-def _validate_and_normalize_decomposition_inputs(
-    shape, wire_order=None, is_sparse=False
-):
+def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_sparse=False):
     """Validate matrix shape and wire order for Pauli decomposition.
 
     Args:
@@ -220,9 +209,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     for idx in range(shape[0] - 1):
         indices.append(math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
     term_mat = math.cast(
-        math.stack(
-            [math.gather(matrix[idx], indice) for idx, indice in enumerate(indices)]
-        ),
+        math.stack([math.gather(matrix[idx], indice) for idx, indice in enumerate(indices)]),
         complex,
     )
 
@@ -244,9 +231,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     # Obtain the coefficients for each Pauli word
     coeffs, obs = [], []
     for pauli_rep in product("IXYZ", repeat=num_qubits):
-        bit_array = math.array(
-            [[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int
-        ).T
+        bit_array = math.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
         if not is_abstract(matrix) and math.allclose(coefficient, 0):
@@ -265,9 +250,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
     if not pauli:
         with qp.QueuingManager.stop_recording():
-            obs = [
-                reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs
-            ]
+            obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs]
 
     return (coeffs, obs)
 
@@ -405,9 +388,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         values = np.zeros(dim, dtype=complex)
         values[rows[start:end]] = data[start:end]
         transformed = _fast_walsh_hadamard_transform(values)
-        phase = _I_POWERS[
-            np.bitwise_count(z_indices & d) & 3
-        ]  # i ** (number of Y factors)
+        phase = _I_POWERS[np.bitwise_count(z_indices & d) & 3]  # i ** (number of Y factors)
         group_coeffs = inv_dim * phase * transformed
         for z in np.flatnonzero(np.abs(group_coeffs) > _COEFF_TOLERANCE):
             coeffs.append(group_coeffs[z])
@@ -422,14 +403,10 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         ]
         if hide_identity and not all(char == I for char in chars):
             observables = [
-                (char, wire)
-                for wire, char in zip(wire_order, chars, strict=True)
-                if char != I
+                (char, wire) for wire, char in zip(wire_order, chars, strict=True) if char != I
             ]
         else:
-            observables = [
-                (char, wire) for wire, char in zip(wire_order, chars, strict=True)
-            ]
+            observables = [(char, wire) for wire, char in zip(wire_order, chars, strict=True)]
         obs_terms.append(observables)
 
     if not coeffs:
@@ -439,9 +416,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
 
     if not pauli:
         with qp.QueuingManager.stop_recording():
-            obs_terms = [
-                reduce(matmul, [op_map[o](w) for o, w in term]) for term in obs_terms
-            ]
+            obs_terms = [reduce(matmul, [op_map[o](w) for o, w in term]) for term in obs_terms]
 
     return (coeffs, obs_terms)
 
@@ -600,9 +575,7 @@ def pauli_decompose(
 
     if check_hermitian:
         if shape != (N, N):
-            raise ValueError(
-                "The matrix should have shape (2**n, 2**n), for any qubit number n>=1"
-            )
+            raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
         if not is_abstract(H):
             if is_sparse:
@@ -612,9 +585,7 @@ def pauli_decompose(
                     raise ValueError("The matrix is not Hermitian")
 
     _pauli_decompose = (
-        _generalized_pauli_decompose_sparse
-        if is_sparse
-        else _generalized_pauli_decompose
+        _generalized_pauli_decompose_sparse if is_sparse else _generalized_pauli_decompose
     )
     coeffs, obs = _pauli_decompose(
         H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
@@ -670,9 +641,7 @@ def is_pauli_sentence(op):
 @singledispatch
 def _pauli_sentence(op):
     """Private function to dispatch"""
-    raise ValueError(
-        f"Op must be a linear combination of Pauli operators only, got: {op}"
-    )
+    raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
 
 @_pauli_sentence.register
@@ -712,9 +681,7 @@ def _(op: SProd):
 @_pauli_sentence.register(LinearCombination)
 def _(op: LinearCombination):
     if not all(is_pauli_word(o) for o in op.ops):
-        raise ValueError(
-            f"Op must be a linear combination of Pauli operators only, got: {op}"
-        )
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     return op._build_pauli_rep()  # pylint: disable=protected-access
 
