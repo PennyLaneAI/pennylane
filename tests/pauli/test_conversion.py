@@ -381,6 +381,39 @@ class TestDecomposition:
         expected = np.array([[3.0, 0.0], [0.0, 3.0]])
         assert np.allclose(reconstructed, expected)
 
+    def test_sparse_duplicate_entries_summed_not_overwritten(self):
+        """Regression test that duplicate COO entries are summed rather than overwritten.
+
+        The sparse decomposition scatters entry values into a dense work vector
+        (``values[rows] = data``), which would silently keep only the last duplicate
+        if the input were not canonicalized with ``sum_duplicates()`` first.
+        """
+        sps = pytest.importorskip("scipy.sparse")
+
+        # Duplicates at off-diagonal positions, including a pair that cancels to zero.
+        rows = np.array([0, 0, 1, 2, 2, 3, 3])
+        cols = np.array([1, 1, 0, 3, 3, 2, 2])
+        data = np.array([1.0, 2.0, 3.0, 0.5, -0.5, 4.0, 1.0])
+        sparse_dup = sps.coo_matrix((data, (rows, cols)), shape=(4, 4))
+        assert sparse_dup.nnz == 7  # duplicates really present in the input
+
+        result = qp.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
+        reconstructed = result.to_mat(range(2))
+        assert np.allclose(reconstructed, sparse_dup.toarray())
+
+        # The caller's matrix must not be mutated by the internal canonicalization.
+        assert sparse_dup.nnz == 7
+
+        # The padding path rebuilds the COO matrix; duplicates must survive it too.
+        sparse_dup_5x5 = sps.coo_matrix((data, (rows, cols)), shape=(5, 5))
+        coeffs, obs = _generalized_pauli_decompose_sparse(sparse_dup_5x5, padding=True, pauli=True)
+        padded = np.zeros((8, 8), dtype=complex)
+        padded[:5, :5] = sparse_dup_5x5.toarray()
+        reconstructed_padded = PauliSentence(
+            {PauliWord({w: o for o, w in term}): coeff for coeff, term in zip(coeffs, obs)}
+        ).to_mat(range(3))
+        assert np.allclose(reconstructed_padded, padded)
+
     def test_sparse_non_hermitian_check_count_nonzero(self, monkeypatch):
         """Test that sparse non-Hermitian check uses count_nonzero() when nnz attribute is missing."""
         sps = pytest.importorskip("scipy.sparse")
