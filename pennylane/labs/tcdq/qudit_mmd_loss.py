@@ -324,14 +324,14 @@ def build_qudit_mmd_loss(
     the Maximum Mean Discrepancy (MMD) with a graph-based kernel. At each
     evaluation it:
 
-    1. Samples a fresh batch of Fourier index vectors from the heat-kernel
-       spectral distribution (controlled by ``mmd_config.bandwidth`` and
-       ``mmd_config.graph_type``).
-    2. Estimates the circuit's complex moments for those indices via
-       :func:`~pennylane.labs.tcdq.build_qudit_expval_func`.
-    3. Computes the matching empirical moments from ``target_data``.
-    4. Combines the data–data (PP), data–model (PQ), and model–model (QQ)
-       terms into an unbiased MMD² estimator.
+    * Samples a fresh batch of Fourier index vectors from the heat-kernel
+      spectral distribution (controlled by ``mmd_config.bandwidth`` and
+      ``mmd_config.graph_type``).
+    * Estimates the circuit's complex moments for those indices via
+      :func:`~pennylane.labs.tcdq.build_qudit_expval_func`.
+    * Computes the matching empirical moments from ``target_data``.
+    * Combines the data–data (PP), data–model (PQ), and model–model (QQ)
+      terms into an unbiased MMD² estimator.
 
     The result is differentiable with respect to circuit parameters via JAX
     autodiff.

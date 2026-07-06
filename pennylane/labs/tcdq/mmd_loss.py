@@ -221,12 +221,12 @@ def mmd_loss(
     This function estimates how far the circuit's output distribution is from
     the empirical distribution defined by ``target_data``. At each call it:
 
-    1. Samples ``n_ops`` random Pauli-Z observables according to the RBF
-       kernel defined by ``mmd_config.bandwidth``.
-    2. Estimates the circuit's expectation values for those observables
-       (via :func:`~pennylane.labs.tcdq.build_expval_func`).
-    3. Computes the matching empirical averages directly from ``target_data``.
-    4. Combines these into an unbiased MMD² estimator.
+    * Samples ``n_ops`` random Pauli-Z observables according to the RBF
+      kernel defined by ``mmd_config.bandwidth``.
+    * Estimates the circuit's expectation values for those observables
+      (via :func:`~pennylane.labs.tcdq.build_expval_func`).
+    * Computes the matching empirical averages directly from ``target_data``.
+    * Combines these into an unbiased MMD² estimator.
 
     The result is differentiable with respect to ``params`` via JAX
     autodiff, making it suitable as a training objective.
