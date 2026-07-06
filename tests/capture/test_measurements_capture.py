@@ -414,7 +414,7 @@ class TestExpvalVar:
 
         # pylint: disable=too-few-public-methods
         class PauliX(qp.core.Operator2):
-            """operator2 version of x"""
+            """Operator2 version of X."""
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
