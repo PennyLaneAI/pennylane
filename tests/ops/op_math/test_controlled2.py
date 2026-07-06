@@ -14,6 +14,7 @@
 """Tests for the Controlled2 class."""
 
 import copy
+import pickle
 from typing import override
 
 import numpy as np
@@ -420,7 +421,9 @@ class TestControlledOp2:
         op = qp.ctrl(OneWireDynOp(0.5, wires=[0]), control=[1], control_values=0)
         assert isinstance(op, ControlledOp2)
 
-    @pytest.mark.parametrize("copy_fn", (copy.copy, copy.deepcopy))
+    @pytest.mark.parametrize(
+        "copy_fn", (copy.copy, copy.deepcopy, lambda obj: pickle.loads(pickle.dumps(obj)))
+    )
     def test_copy_roundtrip(self, copy_fn):
         """Test to make sure that copy roundtrips are sastisfied."""
 
