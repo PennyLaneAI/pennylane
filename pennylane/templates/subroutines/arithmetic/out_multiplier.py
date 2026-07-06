@@ -18,6 +18,7 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -37,7 +38,6 @@ from pennylane.ops import (
     ctrl,
     prod,
 )
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -543,13 +543,14 @@ def _out_multiplier_with_caddsub_resources(
             resources[key] += value
 
     # Add 2^m(x+1)
-    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=k - m)
-    for key, value in adder_resources.items():
-        resources[key] += value
-    # bit flips corresponding to input carry activated. Accounts for the fact that
-    # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
-    has_work_wires = int(k > m + 1)
-    resources[x_rep] += 4 + 2 * has_work_wires
+    if k > m:
+        adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=k - m)
+        for key, value in adder_resources.items():
+            resources[key] += value
+        # bit flips corresponding to input carry activated. Accounts for the fact that
+        # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
+        has_work_wires = int(k > m + 1)
+        resources[x_rep] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
@@ -725,7 +726,8 @@ def _out_multiplier_with_caddsub(
         _c_add_sub(x_wire, y_wires, output, work_wires)
 
     # Add 2^m(x+1)
-    _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+    if k > m:
+        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
 
     # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
     # - Negate z: |y> |z> -> |y> |2^k-1-z>

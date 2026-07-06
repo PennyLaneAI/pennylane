@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -32,7 +33,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND

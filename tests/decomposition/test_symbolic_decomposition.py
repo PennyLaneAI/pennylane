@@ -19,7 +19,8 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
-from pennylane import queuing
+from pennylane.core import queuing
+from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
@@ -43,8 +44,12 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
+from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.decomposition.conftest import to_resources
 
 
@@ -73,6 +78,17 @@ class TestAdjointDecompositionRules:
         assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources(
             {resource_rep(CustomOp, key=0): 1}
         )
+
+    def test_cancel_adjoint2(self):
+        """Tests the cancel_adjoint rule written for Operator2."""
+
+        op = qp.adjoint(qp.adjoint(OneWireDynOp(0.5, wires=[0])))
+
+        with qp.queuing.AnnotatedQueue() as q:
+            cancel_adjoint2(**op.arguments)
+
+        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert cancel_adjoint2.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
     @pytest.mark.capture
     def test_cancel_adjoint_capture(self):
@@ -150,6 +166,47 @@ class TestAdjointDecompositionRules:
                 adjoint_resource_rep(qp.H): 1,
             }
         )
+
+    def test_adjoint2_general(self):
+        """Tests the rules populated for Adjoint2."""
+
+        @register_condition(lambda phi, wires: len(wires) == 1)
+        @register_resources({qp.RX: 1, qp.H: 1, qp.T: 1, OneWireDynOp: 1})
+        def custom_rule(phi, wires):
+            qp.H(wires)
+            qp.RX(phi, wires)
+            qp.T(wires)
+            OneWireDynOp(phi, wires)
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(DynOp, custom_rule)
+
+            op = qp.adjoint(DynOp(0.5, wires=0))
+            [rule] = qp.list_decomps(op)
+
+            op2 = qp.adjoint(DynOp(0.5, wires=[0, 1]))
+            [rule2] = qp.list_decomps(op2)
+            assert not rule2.is_applicable(**op2.arguments)
+
+        assert rule.compute_resources(**op.arguments) == to_resources(
+            {
+                adjoint_resource_rep(qp.T, {}): 1,
+                adjoint_resource_rep(qp.RX, {}): 1,
+                adjoint_resource_rep(qp.H, {}): 1,
+                Adjoint2(OneWireDynOp(Float, Wire[1])): 1,
+            }
+        )
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        assert q.queue == [
+            qp.adjoint(OneWireDynOp(0.5, wires=0)),
+            qp.adjoint(qp.T)(0),
+            qp.adjoint(qp.RX)(0.5, 0),
+            qp.adjoint(qp.H(0)),
+        ]
 
     def test_adjoint_rotation(self):
         """Tests the adjoint_rotation decomposition."""

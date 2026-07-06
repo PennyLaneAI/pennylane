@@ -33,8 +33,10 @@ from pennylane.decomposition import (
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError, DecompositionWarning
+from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp, ParametrizedHybridOp
 
-# pylint: disable=protected-access,no-name-in-module
+# pylint: disable=protected-access,no-name-in-module,too-few-public-methods,useless-parent-delegation
 
 
 class CustomOp(Operation):  # pylint: disable=too-few-public-methods
@@ -204,6 +206,61 @@ class TestDecompositionGraph:
         # 6 edges from ops to decompositions and 2 from decompositions to ops,
         # and 3 from the dummy starting node to the target gate set.
         assert len(graph2._graph.edges()) == 11
+
+    def test_operator2_integration(self, _):
+        """Tests constructing and solving a graph from an Operator2."""
+
+        def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
+            return {qp.CNOT: 2 * len(wires), OneWireDynOp: 1, qp.RX: 2 * (len(wires) - 1)}
+
+        @qp.register_resources(_resource_fn)
+        def _custom_rule(params, wires, op):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        @qp.register_resources({qp.RX: 2, qp.CNOT: 2})
+        def _another_rule(theta, wires):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        def _another_resource_fn(num_wires):
+            return {
+                ParametrizedHybridOp(
+                    Float[num_wires], Wire[num_wires], op=OneWireDynOp(Float, Wire[1])
+                ): 1
+            }
+
+        @qp.register_resources(_another_resource_fn)
+        def _another_custom_rule(*args, **kwargs):  # pylint: disable=unused-argument
+            raise NotImplementedError
+
+        @qp.register_resources(lambda num_wires: {DynOp(Float, Wire[1]): num_wires})
+        def _second_rule(*args, **kwargs):
+            raise NotImplementedError
+
+        op1 = ParametrizedHybridOp([1, 2, 3], wires=[0, 1, 2], op=OneWireDynOp(0.5, wires=3))
+        op2 = MultiWireOp([0, 1, 2, 3], wires=[0, 1, 2, 3])
+
+        graph = DecompositionGraph(
+            operations=[op1, op2],
+            gate_set={qp.RX, qp.CNOT},
+            alt_decomps={
+                ParametrizedHybridOp: [_custom_rule],
+                OneWireDynOp: [_another_rule],
+                MultiWireOp: [_another_custom_rule, _second_rule],
+            },
+        )
+        solution = graph.solve()
+
+        assert solution.is_solved_for(op1)
+        assert solution.is_solved_for(op2)
+        assert solution.decomposition(op1) is _custom_rule
+        assert solution.decomposition(op2) is _another_custom_rule
+
+        op3 = OneWireDynOp(0.5, wires=3)
+        assert solution.is_solved_for(op3)
+        assert solution.decomposition(op3) is _another_rule
+
+        op4 = DynOp(0.5, wires=1)
+        assert not solution.is_solved_for(op4)
 
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules which are not applicable are not skipped."""

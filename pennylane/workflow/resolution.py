@@ -26,10 +26,10 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.transforms import Transform
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
-from pennylane.transforms.core import Transform
 
 SupportedDiffMethods = Literal[
     None,
@@ -47,9 +47,9 @@ SupportedDiffMethods = Literal[
 ]
 
 if TYPE_CHECKING:
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.devices.device_api import Device
     from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
 
 
 def _get_jax_interface_name() -> Interface:
