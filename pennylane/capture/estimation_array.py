@@ -93,4 +93,8 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
         raise NotImplementedError("estimation_array requires program capture to be enabled.")
     from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
+    if not all(isinstance(s, int) and s > 0 for s in shape):
+        raise ValueError(
+            f"All shape dimensions must be integers greater than zero. Got shape {shape}."
+        )
     return _estimation_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))

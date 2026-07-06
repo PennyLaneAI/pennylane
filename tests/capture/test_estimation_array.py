@@ -23,7 +23,9 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.capture.primitives import estimation_array_p  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
+    estimation_array_prim,
+)
 
 
 def test_error_without_capture():
@@ -41,6 +43,17 @@ def test_error_if_execute():
         NotImplementedError, match="estimation_arrays can only be produced for abstract evaluation"
     ):
         qp.capture.estimation_array((), float)
+
+
+@pytest.mark.parametrize("bad_dimension", (..., -1, 0, 3.0))
+def test_error_if_bad_dimesion(bad_dimension):
+    """Test that a ValueError is raised if a dimension is invalid."""
+
+    def f():
+        qp.capture.estimation_array((2, bad_dimension), float)
+
+    with pytest.raises(ValueError, match="must be integers greater than zero"):
+        jax.make_jaxpr(f)()
 
 
 @pytest.mark.parametrize("shape", [(), (4, 3), (5, 2, 1)])
@@ -61,7 +74,7 @@ def test_capturing_estimation_array(shape, dtype, converted_dtype):
 
     jaxpr = jax.make_jaxpr(f)()
 
-    assert jaxpr.eqns[0].primitive == estimation_array_p
+    assert jaxpr.eqns[0].primitive == estimation_array_prim
     assert jaxpr.eqns[0].params["shape"] == shape
     assert jaxpr.eqns[0].params["dtype"] == converted_dtype
 

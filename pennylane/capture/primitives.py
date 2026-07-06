@@ -52,14 +52,14 @@ while_loop_prim = _get_while_loop_qfunc_prim()
 measure_prim = _create_mid_measure_primitive()
 pauli_measure_prim = _create_pauli_measure_primitive()
 transform_prim = _create_transform_primitive()
-estimation_array_p = _estimation_array_primitive()
+estimation_array_prim = _estimation_array_primitive()
 
 __all__ = [
     "AbstractOperator",
     "AbstractMeasurement",
     "adjoint_transform_prim",
     "ctrl_transform_prim",
-    "estimation_array_p",
+    "estimation_array_prim",
     "jacobian_prim",
     "vjp_prim",
     "jvp_prim",
