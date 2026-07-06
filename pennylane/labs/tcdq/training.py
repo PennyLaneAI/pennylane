@@ -261,9 +261,13 @@ def training_iterator(
 
     **Example**
 
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import training_iterator, TrainingOptions
+    >>> def quadratic(params):
+    ...     return jnp.sum(params ** 2)
     >>> iterator = training_iterator(
-    ...     optimizer="Adam", loss=my_loss, stepsize=0.01,
-    ...     loss_kwargs={"params": init_params},
+    ...     optimizer="Adam", loss=quadratic, stepsize=0.01,
+    ...     loss_kwargs={"params": jnp.ones(3)},
     ...     options=TrainingOptions(unroll_steps=10),
     ... )
     >>> batch = next(iterator)
