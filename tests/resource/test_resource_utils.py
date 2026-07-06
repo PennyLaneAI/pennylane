@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qp
-from pennylane.resource.utils import (
+from pennylane.resource._utils import (
     get_last_tape_transform_level,
     get_marker_level_map,
     preprocess_level_input,

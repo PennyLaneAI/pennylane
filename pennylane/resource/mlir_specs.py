@@ -27,9 +27,9 @@ from typing import Any
 
 import pennylane as qp
 
+from ._utils import make_level_name_unique
 from .expression import Expression
 from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
-from .utils import make_level_name_unique
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
