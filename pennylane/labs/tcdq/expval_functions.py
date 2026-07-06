@@ -46,8 +46,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
             :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate
             these automatically.
         n_samples (int): Number of random bitstrings drawn for the
-            estimation. Larger values reduce statistical noise.
-        key (ArrayLike): JAX PRNG key used to generate the random bitstrings.
+            estimation.
+        key (ArrayLike): JAX PRNG key for random bitstring generation.
         n_qubits (int): Total number of qubits in the circuit.
         observables (ArrayLike | None): Integer array of shape
             ``(n_observables, n_qubits)`` encoding Pauli operators (I=0, X=1,

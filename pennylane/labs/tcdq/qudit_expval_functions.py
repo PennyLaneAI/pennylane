@@ -30,7 +30,7 @@ of the technical notes.
 
 import itertools
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import NamedTuple
 
 import jax
@@ -60,15 +60,14 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             :math:`Z^1 \\otimes Z^1` on both.
         observables (tuple[ArrayLike, ArrayLike] | None): A pair
             ``(l_vecs, m_vecs)`` specifying the Heisenberg–Weyl displacement
-            operators :math:`\\mathcal{O}(\\mathbf{l}, \\mathbf{m})` to measure.
+            operators :math:`O(\\mathbf{l}, \\mathbf{m})` to measure.
             Each is an integer array of shape ``(n_obs, n_qudits)`` with entries
             in :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be
             supplied at call time (e.g., when used inside
             :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`).
         n_samples (int): Number of random dit-strings drawn for the
-            estimation. Defaults to ``10000``.
+            estimation.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
-            Defaults to ``jax.random.PRNGKey(0)``.
         init_state_elems (ArrayLike | None): Support of a custom initial state.
             Integer array of shape ``(N, n_qudits)`` with entries in
             :math:`\\{0, \\ldots, d-1\\}`, where ``N`` is the number of non-zero
@@ -103,9 +102,9 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     d: int
     n_qudits: int
     gates: dict[int, list[list[int]]]
+    n_samples: int
+    key: ArrayLike
     observables: tuple[ArrayLike, ArrayLike] | None = None
-    n_samples: int = 10000
-    key: ArrayLike = field(default_factory=lambda: jax.random.PRNGKey(0))
     init_state_elems: ArrayLike | None = None
     init_state_amps: ArrayLike | None = None
 
@@ -409,7 +408,7 @@ def build_qudit_expval_func(
 
     Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
     related JAX transforms) that estimates the complex expectation value
-    :math:`\\langle \\mathcal{O}(\\mathbf{l}, \\mathbf{m}) \\rangle` for each
+    :math:`\\langle O(\\mathbf{l}, \\mathbf{m}) \\rangle` for each
     observable by averaging over randomly sampled dit-strings.
 
     The returned function captures precomputed data from ``config`` (generator
