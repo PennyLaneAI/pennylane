@@ -406,8 +406,7 @@ def build_qudit_expval_func(
 ) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
 
-    Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
-    related JAX transforms) that estimates the complex expectation value
+    Returns a pure function that estimates the complex expectation value
     :math:`\\langle O(\\mathbf{l}, \\mathbf{m}) \\rangle` for each
     observable by averaging over randomly sampled dit-strings.
 

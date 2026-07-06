@@ -249,8 +249,7 @@ def build_expval_func(
 ) -> Callable:
     """Build an estimator for Pauli expectation values of a qubit IQP circuit.
 
-    Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
-    related JAX transforms) that estimates the expectation value of each Pauli
+    Returns a pure function that estimates the expectation value of each Pauli
     observable specified in ``config.observables`` or passed at call time.
 
     The returned function captures precomputed data from ``config`` (generator
