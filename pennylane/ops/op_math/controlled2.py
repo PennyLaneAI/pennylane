@@ -581,7 +581,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     @register_resources(
         _resource_fn,
         work_wires=base_rule._work_wire_spec,
-        exact=base_rule.exact_resources,
+        exact=False,  # TODO:: no reliable way to tell whether control values has 0s.
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
@@ -685,7 +685,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     @register_resources(
         _resource_fn,
         work_wires=rule._work_wire_spec,
-        exact=rule.exact_resources,
+        exact=False,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
