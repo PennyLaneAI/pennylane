@@ -573,7 +573,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         # TODO: we need a better startegy for control values, but for now
         #       we're assuming that half the control values are 0s
         return {
-            _ctrl(op, control_wires, work_wires, work_wire_type): count
+            _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_res.gate_counts.items()
         } | {qp.X: len(control_values)}
 
@@ -717,7 +717,7 @@ def _ctrl_single_work_wire_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     return {
-        _ctrl(
+        _ctrl_abstract(
             base,
             control_wires=Wire[1],
             work_wires=work_wires,
@@ -747,7 +747,7 @@ def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
 
 
-def _ctrl(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
