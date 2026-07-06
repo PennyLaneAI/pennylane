@@ -35,29 +35,26 @@ class MMDConfig:
     """Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
 
     The MMD measures how well the circuit's output distribution matches a
-    target dataset. This configuration controls the RBF (Radial Basis Function) kernel bandwidth,
-    the number of random Pauli-Z observables sampled per evaluation, and other options.
+    target dataset.
 
     Args:
-        bandwidth (float | Sequence[float]): Length-scale of the RBF kernel.
-            Controls how sensitive the MMD is to differences at various
-            distance scales. A good starting point is the median pairwise
+        bandwidth (float | Sequence[float]): Width of the Gaussian kernel
+            used to compare distributions. Small values make the loss
+            sensitive to fine-grained differences; large values emphasize
+            broad structure. A good starting point is the median pairwise
             distance of the target data (see :func:`median_heuristic`). If a
             sequence is provided, the loss is computed independently for each
             bandwidth and the results are averaged (or returned individually
             when ``return_per_bandwidth=True``).
-        n_ops (int): Number of random Pauli-Z observables sampled to
-            approximate the MMD. Larger values reduce estimator variance at
-            the cost of more computation.
+        n_ops (int): Number of sampled observables per bandwidth. Larger
+            values reduce estimator variance.
         wires (Sequence[int] | None): Subset of qubit indices to include in
-            the loss. If ``None`` (default), all qubits in the circuit are
-            used.
+            the loss. If ``None`` (default), all qubits are used.
         sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
-            ``MMD²``. This can stabilize gradients when the loss is small.
+            ``MMD²``. Defaults to ``False``.
+        return_per_bandwidth (bool): If ``True``, return a list of
+            per-bandwidth loss values instead of their scalar average.
             Defaults to ``False``.
-        return_per_bandwidth (bool): If ``True``, return a list of individual
-            loss values, one per bandwidth entry, instead of their scalar
-            average. Defaults to ``False``.
 
     **Example**
 

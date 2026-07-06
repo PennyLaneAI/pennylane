@@ -164,9 +164,10 @@ dataset of bitstrings, use the built-in Maximum Mean Discrepancy (MMD)
 loss. The MMD is a kernel-based distance between probability distributions.
 Smaller values mean the circuit output is closer to the target data.
 
-The ``bandwidth`` parameter controls the length-scale of the radial basis
-function (RBF) kernel used in the MMD. A good default is the median pairwise
-distance of the dataset, computed with :func:`~median_heuristic`.
+The ``bandwidth`` parameter controls how sensitive the loss is to
+fine-grained versus broad differences between distributions. A good
+default is the median pairwise distance of the dataset, computed with
+:func:`~median_heuristic`.
 
 For more detail on how the loss is constructed, see
 `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_

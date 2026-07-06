@@ -458,6 +458,7 @@ def build_qudit_expval_func(
     ...         jnp.zeros((2, 2), dtype=jnp.int32),
     ...     ),
     ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
     ... )
     >>> expval_fn = build_qudit_expval_func(config)
     >>> params = jnp.array([0.2, -0.1])

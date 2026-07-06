@@ -48,11 +48,12 @@ class QuditMMDConfig:
     visible wire.
 
     Args:
-        bandwidth (float | Sequence[float]): Heat-kernel diffusion time
-            :math:`t`. Larger values make the kernel smoother and put more
-            weight on coarse features of the distribution. If a sequence is
-            provided, the loss is evaluated for each value and then averaged,
-            unless ``return_per_bandwidth=True``.
+        bandwidth (float | Sequence[float]): Width of the graph heat
+            kernel. Small values make the loss sensitive to fine-grained
+            differences between distributions; large values emphasize broad
+            structure. If a sequence is provided, the loss is evaluated for
+            each value and then averaged, unless
+            ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger
             values reduce estimator variance.
         graph_type (str): Graph whose spectrum defines the kernel.
@@ -366,6 +367,7 @@ def build_qudit_mmd_loss(
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
     ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
     ... )
     >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
     >>> loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
