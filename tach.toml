@@ -415,28 +415,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-[[interfaces]]
-expose = [
-    "AlgorithmicError",
-    "ErrorOperation",
-    "SpectralNormError",
-    "algo_error",
-    "Resources",
-    "ResourcesOperation",
-    "SpecsResources",
-    "SymbolicSpecsResources",
-    "CircuitSpecs",
-    "add_in_series",
-    "add_in_parallel",
-    "mul_in_series",
-    "mul_in_parallel",
-    "resources_from_tape",
-    "substitute",
-    "Expression",
-    "specs",
-]
-from = ["pennylane.resource"]
-
 [[modules]]
 path = "pennylane.decomposition"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
