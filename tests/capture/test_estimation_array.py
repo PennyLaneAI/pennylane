@@ -29,7 +29,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
 
 
 def test_error_without_capture():
-    """Test a NotImplementedError is raised if capture is not turned on."""
+    """Test a ``NotImplementedError`` is raised if capture is not turned on."""
     qp.capture.disable()
 
     with pytest.raises(NotImplementedError, match="estimation_array requires program capture"):
