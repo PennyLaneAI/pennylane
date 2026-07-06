@@ -19,6 +19,13 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
+class NonParametricOp(Operator2):
+    """Non parametric operator2."""
+
+    def __init__(self, wires):
+        super().__init__(wires)
+
+
 class DynOp(Operator2):
     """Operator with one dynamic parameter and wires."""
 

@@ -1254,7 +1254,7 @@ class TestDynamicProperties:
         assert op.hybrid == []
 
     def test_explicit_class_attribute_not_overridden(self):
-        """Test that attributes present in the class are not overriden by dynamic properties."""
+        """Test that attributes present in the class are not overridden by dynamic properties."""
 
         class Op(Operator2):
             dynamic_argnames = ("phi",)
