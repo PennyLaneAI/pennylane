@@ -118,8 +118,12 @@ def test_change_op_basis():
 def test_linear_combination():
     """Tests that LinearCombination captures correctly."""
 
+    # NOTE: Have one op be outside trace context to
+    # cover the tracer-is-none fallback
+    outside_op = NonParametricOp(0)
+
     def f():
-        qp.Hamiltonian([1, 2], [NonParametricOp(0), NonParametricOp(1)])
+        qp.Hamiltonian([1, 2], [outside_op, NonParametricOp(1)])
 
     cjaxpr = jax.make_jaxpr(f)()
 
@@ -135,7 +139,7 @@ def test_linear_combination():
 
     assert eqns[2].primitive.name == "LinearCombination"
     # Invars 0 and 1 are the coefficients
-    assert eqns[0].outvars[0] == eqns[2].invars[2]
-    assert eqns[0].outvars[0] == eqns[2].invars[2]
-    assert eqns[1].outvars[0] == eqns[2].invars[3]
-    assert eqns[1].outvars[0] == eqns[2].invars[3]
+    assert eqns[1].outvars[0] == eqns[2].invars[2]
+    assert eqns[1].outvars[0] == eqns[2].invars[2]
+    assert eqns[0].outvars[0] == eqns[2].invars[3]
+    assert eqns[0].outvars[0] == eqns[2].invars[3]
