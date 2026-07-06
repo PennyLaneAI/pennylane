@@ -152,3 +152,24 @@ from .resource import (
 from .expression import Expression
 from .specs import specs
 from .estimate import estimate
+
+__all__ = [
+    "AlgorithmicError",
+    "ErrorOperation",
+    "SpectralNormError",
+    "algo_error",
+    "Resources",
+    "ResourcesOperation",
+    "SpecsResources",
+    "SymbolicSpecsResources",
+    "CircuitSpecs",
+    "add_in_series",
+    "add_in_parallel",
+    "mul_in_series",
+    "mul_in_parallel",
+    "resources_from_tape",
+    "substitute",
+    "Expression",
+    "specs",
+    "estimate",
+]

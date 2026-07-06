@@ -280,7 +280,7 @@ def _(op: qtemps.subroutines.QROM):
     hadamard = qt_gates.Hadamard()
     num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
 
-    square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and cloumns
+    square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and columns
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
     num_swap_wires = math.floor(math.log2(num_parallel_computations))

@@ -28,9 +28,7 @@ from pathlib import Path
 
 import pennylane as qp
 
-from .mlir_specs import resources_from_analysis_pass
-from .resource import CircuitSpecs, SpecsResources, resources_from_tape
-from .utils import (
+from ._utils import (
     apply_partial_args,
     get_last_tape_transform_level,
     get_marker_level_map,
@@ -38,6 +36,8 @@ from .utils import (
     preprocess_level_input,
     unwrap_partial,
 )
+from .mlir_specs import resources_from_analysis_pass
+from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 # Used for device-level qjit resource tracking
 _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
