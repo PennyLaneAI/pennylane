@@ -58,7 +58,6 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
 
         This function is **EXPERIMENTAL**.
 
-
         This function can only be used with ``qjit`` with capture turned on.
 
         It can also be used for inspecting the specs and MLIR, but not execution.
