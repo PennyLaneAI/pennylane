@@ -88,11 +88,15 @@ def test_public_sum_binding():
     assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
-def test_change_op_basis():
+@pytest.mark.parametrize("defined_outside", (True, False))
+def test_change_op_basis(defined_outside):
     """Tests that change_op_basis captures correctly."""
 
+    outside_op = NonParametricOp(0) if defined_outside else None
+
     def f():
-        qp.change_op_basis(NonParametricOp(0), NonParametricOp(1))
+        op = outside_op if defined_outside else NonParametricOp(0)
+        qp.change_op_basis(op, NonParametricOp(1))
 
     cjaxpr = jax.make_jaxpr(f)()
 

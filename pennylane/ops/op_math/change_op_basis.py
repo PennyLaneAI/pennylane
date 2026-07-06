@@ -67,6 +67,12 @@ def _apply_op_or_func(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            # pylint: disable-next=protected-access
+            op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
     elif math.is_abstract(op_or_func):
