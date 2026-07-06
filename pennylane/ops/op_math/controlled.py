@@ -198,12 +198,11 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
 
     if not isinstance(control_wires, AbstractWires):
         control_wires = Wires(control_wires)
+    if not isinstance(work_wires, AbstractWires):
+        work_wires = Wires([] if work_wires is None else work_wires)
+
     if control_values is None:
         control_values = [True] * len(control_wires)
-    if work_wires is None:
-        work_wires = []
-    if not isinstance(work_wires, AbstractWires):
-        work_wires = Wires(work_wires)
 
     if isinstance(op, Controlled2):
         _ = pop_op_eqns((op,))

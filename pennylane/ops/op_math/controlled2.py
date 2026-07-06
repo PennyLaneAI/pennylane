@@ -490,12 +490,14 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         return f"C({self.base.name})"
 
     def __repr__(self):
-        ctrl_wires = self.control_wires
-        if isinstance(self.control_wires, Wires):
-            ctrl_wires = ctrl_wires.tolist()
-        work_wires = self.work_wires
-        if isinstance(self.work_wires, Wires):
-            work_wires = work_wires.tolist()
+        ctrl_wires = (
+            self.control_wires.tolist()
+            if isinstance(self.control_wires, Wires)
+            else self.control_wires
+        )
+        work_wires = (
+            self.work_wires.tolist() if isinstance(self.work_wires, Wires) else self.work_wires
+        )
         params = [f"control_wires={ctrl_wires}"]
         if self.work_wires:
             params.append(f"work_wires={work_wires}")
@@ -548,14 +550,24 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 @list_decomps.register
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     op = abstractify(op)
+
+    # Special case for flipping the order of control and adjoint. We prefer to have adjoint
+    # wrapping a controlled operator instead of the other way around because there is more
+    # likely custom decomposition rules registered for the controlled version.
     if isinstance(op.base, Adjoint2):
         return DecompCollection([flip_control_adjoint])
+
+    # Get custom rules registered for this controlled operator.
     custom_rules = list_decomps.dispatch(object)(op)
+
+    # Get general fallback rules.
     general_rules = DecompCollection([])
     if op.base.has_matrix and len(op.base.wires) == 1:
         general_rules.append(to_controlled_unitary)
     if len(op.control_wires) > 2:
         general_rules.append(ctrl_single_work_wire)
+
+    # Populate controlled versions of the base decomposition rules.
     wrapped_rules = DecompCollection(
         [
             _make_controlled_decomp(rule)
@@ -563,6 +575,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
             if not _decomp_contains_mcm(rule, op.base.arguments)
         ]
     )
+
     return custom_rules + wrapped_rules + general_rules
 
 
@@ -572,13 +585,16 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         return base_rule.is_applicable(**base.arguments)
 
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        base_res = base_rule.compute_resources(**base.arguments)
+        base_counts = base_rule.compute_resources(**base.arguments).gate_counts
         # TODO: we need a better startegy for control values, but for now
         #       we're assuming that half the control values are 0s
-        return {
+        gate_counts = {
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
-            for op, count in base_res.gate_counts.items()
-        } | {qp.X: len(control_values)}
+            for op, count in base_counts.items()
+        }
+        base_x_count = gate_counts.get(resource_rep(qp.X), 0)
+        gate_counts[resource_rep(qp.X)] = base_x_count + len(control_values)
+        return gate_counts
 
     @register_condition(_condition_fn)
     @register_resources(
@@ -673,15 +689,18 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         return rule.is_applicable(*args, **kwargs)
 
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
-        #       gates for no reason. It'll be like this until we have a better solution.
-        return rule.compute_resources(
+        gate_counts = rule.compute_resources(
             base=base,
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-        ).gate_counts | {qp.X: len(control_wires)}
+        ).gate_counts
+        # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
+        #       gates for no reason. It'll be like this until we have a better solution.
+        base_x_count = gate_counts.get(resource_rep(qp.X), 0)
+        gate_counts[resource_rep(qp.X)] = base_x_count + len(control_values)
+        return gate_counts
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
