@@ -91,7 +91,21 @@ def test_custom_operator_with_matrix():
 
 
 def test_controlledop2_dispatch_not_ambiguous():
-    """Test that generic Operator2 controlled ops do not dispatch as concrete gates."""
+    """Regression test: a generic ControlledOp2 must not trigger ambiguous singledispatch.
+
+    ``apply_operation`` is a ``functools.singledispatch`` function with separate
+    registrations for ``ops.CNOT`` and ``ops.MultiControlledX``.  Before the
+    ``__subclasshook__`` fix, ``isinstance(ControlledOp2(...), CNOT)`` and
+    ``isinstance(ControlledOp2(...), MultiControlledX)`` were both ``True``
+    (because the hook was inherited by concrete subclasses of ``Controlled``),
+    causing singledispatch to find two equally-specific handlers and raise::
+
+        RuntimeError: Ambiguous dispatch: <class '...CNOT'>
+                      or <class '...MultiControlledX'>
+
+    If the type ambiguity regresses, this call will raise before producing any
+    result, so the assertion below is unreachable in the failing case.
+    """
 
     op = ControlledOp2(qp.X(1), control_wires=[0])
     state = np.zeros((2, 2))
