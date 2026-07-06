@@ -24,8 +24,8 @@ from typing import TYPE_CHECKING
 
 import pennylane as qp
 
+from ._utils import get_last_tape_transform_level, get_marker_level_map, preprocess_level_input
 from .specs import specs
-from .utils import get_last_tape_transform_level, get_marker_level_map, preprocess_level_input
 
 _RESOURCE_ESTIMATION_PREFIX = "pennylane_resource_estimation"
 
