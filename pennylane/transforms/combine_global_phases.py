@@ -19,7 +19,7 @@ Provides a transform to combine all ``qp.GlobalPhase`` gates in a circuit into a
 from functools import partial
 
 import pennylane as qp
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

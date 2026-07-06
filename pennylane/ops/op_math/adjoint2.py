@@ -11,21 +11,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Defines the base class for the adjoint of operators."""
+
+from textwrap import dedent
 
 from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
+    DecompositionRule,
+    _decomp_contains_mcm,
+    list_decomps,
+    register_condition,
+    register_resources,
+)
+from pennylane.decomposition.resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    adjoint_resource_rep,
+)
 
 from .symbolicop2 import SymbolicOp2
 
 
 class Adjoint2(SymbolicOp2):
     """The adjoint of an operator."""
+
+    wire_argnames = ()
+
+    hybrid_argnames = ("base",)
 
     def __init__(self, base: Operator2):
         super().__init__(base)
@@ -107,3 +126,111 @@ class Adjoint2(SymbolicOp2):
     @override
     def generator(self):
         return -1 * self.base.generator()
+
+    @override
+    def _bind_primitive(self):
+        """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
+        ``Operator2`` class so that we can "edit" the original primitive."""
+        if not qp.capture.enabled():
+            return
+
+        eqns = pop_op_eqns((self.base,))
+        assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
+
+        if len(eqns) == 0:
+            # pylint: disable=protected-access
+            self.base._bind_primitive()
+            if self.base.tracer is None:
+                # If the base's tracer is `None` after explicitly re-binding the primitive,
+                # it means we're not in a tracing context, so we don't need to (and cannot)
+                # do anything.
+                return
+
+            eqn = self.base.tracer.parent
+            eqn.params["adjoint"] ^= True
+            res = self.base.tracer
+
+        else:
+            params = eqns[0].params
+            params["adjoint"] ^= True
+            # invars during tracing will just be tracers, not `Var`s wrapping
+            # abstract values
+            res = operator_p.bind(*eqns[0].invars, **params)
+
+        self.base.tracer = None
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res
+
+
+@list_decomps.register
+def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
+    abs_op = abstractify(op)
+    if isinstance(abs_op.base, Adjoint2):
+        return DecompCollection([cancel_adjoint])
+    custom_rules = list_decomps.dispatch(object)(abs_op)
+    wrapped_rules = DecompCollection(
+        [
+            _make_adjoint_decomp(rule)
+            for rule in list_decomps(abs_op.base)
+            # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
+            # does not dynamically allocate wires and does not contain mid-circuit measurements.
+            if rule.get_work_wire_spec(**abs_op.base.arguments).total == 0
+            and not _decomp_contains_mcm(rule, abs_op.base.arguments)
+        ]
+    )
+    return custom_rules + wrapped_rules
+
+
+def _make_adjoint_decomp(base_rule: DecompositionRule):
+    """Wraps a decomposition rule with adjoint."""
+
+    def _condition_fn(base):
+        return base_rule.is_applicable(**base.arguments)
+
+    def _resource_fn(base):
+        base_res = base_rule.compute_resources(**base.arguments)
+        base_gates = base_res.gate_counts
+        return {_adjoint(op): count for op, count in base_gates.items()}
+
+    base_source = base_rule._source
+
+    # pylint: disable=protected-access
+    @register_condition(_condition_fn)
+    @register_resources(
+        _resource_fn,
+        work_wires=base_rule._work_wire_spec,
+        exact=base_rule.exact_resources,
+        name=f"adjoint({base_rule.name})",
+    )
+    def _impl(base):
+        # pylint: disable=protected-access
+        qp.adjoint(base_rule._impl)(**base.arguments)
+
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere base_decomposition is defined as:\n\n"
+        + dedent(base_source).strip()
+    )
+
+    return _impl
+
+
+def _adjoint(op: AbstractOperatorLike):
+    if isinstance(op, CompressedResourceOp):
+        return adjoint_resource_rep(op.op_type, op.params)
+    return Adjoint2(op)
+
+
+def _cancel_adjoint_resources(base):
+    assert isinstance(base, Adjoint2)
+    inner_base = base.base
+    return {inner_base: 1}
+
+
+@register_resources(_cancel_adjoint_resources)
+def cancel_adjoint(base):
+    """Decompose the adjoint of the adjoint of an operator."""
+    assert isinstance(base, Adjoint2)
+    type(base.base)(**base.base.arguments)

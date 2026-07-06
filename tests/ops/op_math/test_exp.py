@@ -163,7 +163,7 @@ class TestProperties:
             _ = op.batch_size
 
 
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test the matrix method."""
 
     def test_base_batching_support(self):
@@ -297,6 +297,66 @@ class TestMatrix:
         with pytest.warns(UserWarning, match="The autograd matrix for "):
             mat = op.matrix()
         expected = qp.math.expm(coeff * base.matrix())
+        assert qp.math.allclose(mat, expected)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_composite_base(self, requires_grad):
+        """Test the autograd matrix for a composite (Sum) base with scalar
+        coefficients. The autograd branch reconstructs the matrix from the base
+        eigendecomposition; diagonalizing a Sum constructs intermediate operators
+        that must not pollute the diagonalizing matrix (see issue #6514)."""
+        phi = np.array(0.123, requires_grad=requires_grad)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+        op = Exp(base, -1j * phi)
+        # op.matrix() triggers the autograd eigendecomposition → diagonalizing_gates() path
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
+        assert qp.math.allclose(op.matrix(), expected)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_base_in_recording(self):
+        """The autograd matrix for a composite base must be correct even when
+        computed inside an active recording context, which previously caused the
+        intermediate diagonalization operators to be queued and corrupt the
+        result (silently, without raising)."""
+        phi = np.array(0.123, requires_grad=True)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
+
+        with qp.queuing.AnnotatedQueue() as q:
+            mat = Exp(base, -1j * phi).matrix()
+
+        assert qp.math.allclose(mat, expected)
+        # Only the Exp op itself is queued; the intermediate Sum/QubitUnitary operators
+        # created during diagonalization must not appear.
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], Exp)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_diagonal_base(self):
+        """A composite base that is already diagonal has empty diagonalizing gates,
+        so the autograd matrix takes the eigenvalue-only branch. It must still match
+        `expm` (guards the `len(diagonalizing_gates) == 0` branch for composites)."""
+        phi = np.array(0.37, requires_grad=True)
+        base = 1.0 * qp.Z(0) + 0.5 * qp.Z(1)
+        assert len(base.diagonalizing_gates()) == 0
+
+        op = Exp(base, -1j * phi)
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0, 1]))
+        assert qp.math.allclose(op.matrix(), expected)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_base_batched(self):
+        """A broadcasted (batched) trainable scalar with a composite base must take
+        the `math.ndim(scalar) > 0` branch and match the stacked `expm`."""
+        coeffs = np.array([-0.1j, -0.2j, -0.33j], requires_grad=True)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+
+        mat = Exp(base, coeffs).matrix()
+        expected = qp.math.stack(
+            [qp.math.expm(c * qp.matrix(base, wire_order=[0])) for c in coeffs]
+        )
+        assert qp.math.shape(mat) == (3, 2, 2)
         assert qp.math.allclose(mat, expected)
 
     @pytest.mark.torch

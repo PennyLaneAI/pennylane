@@ -17,11 +17,12 @@ from typing import TypeVar
 
 import numpy as np
 
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.data.attributes import DatasetArray, DatasetList, serialization
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
+from pennylane.math import get_interface
 from pennylane.pytrees import flatten, unflatten
 
 T = TypeVar("T")
@@ -48,11 +49,31 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
 
         bind["treedef"] = np.void(serialization.pytree_structure_dump(treedef, decode=False))
 
-        try:
-            # Attempt to store leaves as an array, which will be more efficient
-            # but will fail if the leaves are not homogenous
+        if _storable_as_array(leaves):
             DatasetArray(leaves, parent_and_key=(bind, "leaves"))
-        except (ValueError, TypeError):
+        else:
             DatasetList(leaves, parent_and_key=(bind, "leaves"))
 
         return bind
+
+
+def _storable_as_array(leaves: list) -> bool:
+    """Whether ``leaves`` can be stored as a single array, which is more efficient than a
+    list; otherwise they are stored leaf-by-leaf as a list.
+
+    Returns ``False`` for unicode-string leaves (e.g. string wire labels), which an HDF5 array
+    reads back as ``bytes``; for ragged, mixed, or object leaves, which cannot be stacked into
+    one array; and for non-numpy leaves such as ``torch``/``jax`` tensors, which ``DatasetArray``
+    does not handle. That interface check also guards the ``np.asarray`` calls below, which would
+    otherwise raise on e.g. a ``torch`` tensor that requires grad. Numeric and ``bytes`` leaves
+    use the array path, as they did before string leaves were special-cased. ``"biufcS"`` are the
+    numpy dtype ``kind`` codes that round-trip safely through an HDF5 array: boolean, signed and
+    unsigned integer, float, complex, and byte string.
+    """
+    if any(get_interface(leaf) not in ("numpy", "autograd") for leaf in leaves):
+        return False
+
+    leaf_arrays = [np.asarray(leaf) for leaf in leaves]
+    return all(arr.dtype.kind in "biufcS" for arr in leaf_arrays) and (
+        len({arr.shape for arr in leaf_arrays}) <= 1
+    )

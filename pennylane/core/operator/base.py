@@ -31,6 +31,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -46,7 +47,6 @@ from pennylane.exceptions import (
 )
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 

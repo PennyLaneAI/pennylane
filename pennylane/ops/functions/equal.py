@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -41,13 +42,13 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -231,7 +232,8 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool | str:
-    if not isinstance(op2, type(op1)):
+
+    if not isinstance(op2, type(op1)) and not isinstance(op1, type(op2)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
     dispatch_result = _equal_dispatch(
@@ -459,6 +461,18 @@ def _equal_operator2(
 
 def _check_wire_value(wname: str, wval1: Any, wval2: Any):
     """Check for equality of a wire argument of an Operator2 instance."""
+
+    is_aw1 = isinstance(wval1, AbstractWires)
+    is_aw2 = isinstance(wval2, AbstractWires)
+
+    if is_aw1 and is_aw2:
+        if wval1 == wval2:
+            return True
+        return f"op1 and op2 have different AbstractWires type specifiers for {wname}: Got {wval1} and {wval2}."
+
+    if is_aw1 != is_aw2:
+        return f"Mismatched wire representations for {wname}. One operator has an abstract wires type specifier while the other has concrete or traced wires. Got {wval1} and {wval2}."
+
     unequal_wires = False
     abstract_wires = False
 
@@ -496,6 +510,17 @@ def _check_dynamic_value(
     atol=1e-9,
 ):
     """Check for equality of a dynamic argument of an Operator2 instance."""
+    is_aa1 = isinstance(dval1, AbstractArray)
+    is_aa2 = isinstance(dval2, AbstractArray)
+
+    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
+    # execution because Operator2's metaclass ensures abstract operators are fully abstract
+    # and so the wires check would fail first
+    if is_aa1 and is_aa2:
+        if dval1 == dval2:
+            return True
+        return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
+
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
@@ -662,7 +687,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     if len(op1.operands) != len(op2.operands):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
-    # organizes by wire indicies while respecting commutation relations
+    # organizes by wire indices while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
@@ -748,7 +773,7 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 
 
 @_equal_dispatch.register
-def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
+def _equal_adjoint(op1: Adjoint | Adjoint2, op2: Adjoint | Adjoint2, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
