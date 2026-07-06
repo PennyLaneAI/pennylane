@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Monte Carlo expectation-value estimator for qudit IQP circuits.
+"""Expectation-value estimator for qudit IQP circuits.
 
 This module extends :mod:`~pennylane.labs.tcdq.expval_functions` from qubits
 to qudits. It estimates Heisenberg-Weyl moments without building the full
@@ -65,7 +65,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             in :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be
             supplied at call time (e.g., when used inside
             :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`).
-        n_samples (int): Number of random dit-strings drawn for the Monte Carlo
+        n_samples (int): Number of random dit-strings drawn for the
             estimation. Defaults to ``10000``.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
             Defaults to ``jax.random.PRNGKey(0)``.
@@ -405,7 +405,7 @@ def _compute_mc_statistics(
 def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
-    """Build a Monte Carlo estimator for Heisenberg–Weyl displacement-operator moments.
+    """Build an estimator for Heisenberg–Weyl displacement-operator moments.
 
     Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
     related JAX transforms) that estimates the complex expectation value
@@ -513,14 +513,14 @@ def build_qudit_expval_func(
     ) -> (
         tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
     ):  # pylint: disable=too-many-arguments
-        """Compute batched Monte Carlo expectation values for the configured circuit.
+        """Compute batched expectation values for the configured circuit.
 
         Args:
             gates_params (ArrayLike): 1-D array of gate parameters.
             key (ArrayLike | None, optional): Runtime override for the JAX PRNG key
                 used for sampling. Defaults to None.
             n_samples (int | None, optional): Runtime override for the number of
-                Monte Carlo samples. Defaults to None.
+                samples. Defaults to None.
             observables (tuple[ArrayLike, ArrayLike] | None, optional): Runtime override
                 for the displacement-operator observables ``(l_vecs, m_vecs)``.
                 Defaults to None.
@@ -531,7 +531,7 @@ def build_qudit_expval_func(
                 complex amplitudes of the initial state. Array of shape ``(N,)``.
                 Defaults to None.
             return_mean_y_sq (bool, optional): If ``True``, also return the
-                per-observable Monte Carlo mean of ``|y_r|^2``. Defaults to ``False``.
+                per-observable mean of ``|y_r|^2``. Defaults to ``False``.
 
         Returns:
             tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:

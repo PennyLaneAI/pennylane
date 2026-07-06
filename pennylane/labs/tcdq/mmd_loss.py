@@ -226,8 +226,8 @@ def mmd_loss(
 
     1. Samples ``n_ops`` random Pauli-Z observables according to the RBF
        kernel defined by ``mmd_config.bandwidth``.
-    2. Estimates the circuit's expectation values for those observables using
-       Monte Carlo (via :func:`~pennylane.labs.tcdq.build_expval_func`).
+    2. Estimates the circuit's expectation values for those observables
+       (via :func:`~pennylane.labs.tcdq.build_expval_func`).
     3. Computes the matching empirical averages directly from ``target_data``.
     4. Combines these into an unbiased MMD² estimator.
 
@@ -237,7 +237,7 @@ def mmd_loss(
     Args:
         params (ArrayLike): Trainable circuit parameters, shape ``(n_params,)``.
         circuit_config (CircuitConfig): Circuit description specifying the gate
-            structure, number of qubits, and Monte Carlo sample count. See
+            structure, number of qubits, and sample count. See
             :class:`~pennylane.labs.tcdq.CircuitConfig` for how to construct one.
         mmd_config (MMDConfig): Hyperparameters for the MMD computation,
             including the RBF bandwidth and number of observables. See

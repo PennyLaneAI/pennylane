@@ -210,7 +210,7 @@ def _qq_term(
             Carlo moment estimates.
         mean_y_sq: Real array of shape ``(n_obs,)`` — mean squared magnitude
             of the per-sample integrand values.
-        s: Number of Monte Carlo circuit samples.
+        s: Number of circuit samples.
 
     Returns:
         Real array of shape ``(n_obs,)``.
@@ -337,7 +337,7 @@ def build_qudit_mmd_loss(
 
     Args:
         circuit_config (QuditCircuitConfig): Qudit circuit description
-            specifying gate structure, qudit dimension, and Monte Carlo sample
+            specifying gate structure, qudit dimension, and sample
             count. See :class:`~pennylane.labs.tcdq.QuditCircuitConfig`.
         mmd_config (QuditMMDConfig): MMD hyperparameters including the
             heat-kernel bandwidth, number of observables, and graph type. See

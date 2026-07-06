@@ -24,7 +24,7 @@ Train Classically, Deploy Quantum (TCDQ).
 
 This module provides tools for training a restricted but useful family of
 quantum circuits — Instantaneous Quantum Polynomial (IQP) circuits — with
-classical Monte Carlo estimates instead of full statevector simulation.
+classical estimates instead of full statevector simulation.
 The intended workflow is:
 
 1. describe a qubit or qudit circuit,

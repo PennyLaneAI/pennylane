@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Monte Carlo expectation-value estimator for qubit IQP circuits.
+"""Expectation-value estimator for qubit IQP circuits.
 
 This module estimates Pauli expectation values for IQP circuits without
-simulating the full quantum state. It provides a configurable Monte Carlo
+simulating the full quantum state. It provides a configurable stochastic
 estimator and a small analytical reference model for bitflip noise.
 """
 
@@ -33,7 +33,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
 
     This dataclass bundles all the information needed to build an expectation-value
     estimator via :func:`build_expval_func`: the gate structure, the observables to
-    measure, Monte Carlo sampling parameters, and an optional non-standard initial state.
+    measure, sampling parameters, and an optional non-standard initial state.
 
     Args:
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
@@ -45,7 +45,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
             :func:`~pennylane.labs.tcdq.create_local_gates` or
             :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate
             these automatically.
-        n_samples (int): Number of random bitstrings drawn for the Monte Carlo
+        n_samples (int): Number of random bitstrings drawn for the
             estimation. Larger values reduce statistical noise.
         key (ArrayLike): JAX PRNG key used to generate the random bitstrings.
         n_qubits (int): Total number of qubits in the circuit.
@@ -101,7 +101,7 @@ def bitflip_expval(
     This is an analytical (non-stochastic) estimator for the expectation values
     of the IQP circuit when each gate is followed by a bitflip channel. The
     survival probability for each gate is :math:`\\cos(2\theta)`. Useful for
-    benchmarking against the Monte Carlo estimator or studying noise effects.
+    benchmarking against the stochastic estimator or studying noise effects.
 
     Args:
         generators (ArrayLike): Binary generator matrix of shape
@@ -247,7 +247,7 @@ def _core_expval_execution(
 def build_expval_func(
     config: CircuitConfig,
 ) -> Callable:
-    """Build a Monte Carlo estimator for Pauli expectation values of a qubit IQP circuit.
+    """Build an estimator for Pauli expectation values of a qubit IQP circuit.
 
     Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
     related JAX transforms) that estimates the expectation value of each Pauli
@@ -345,7 +345,7 @@ def build_expval_func(
             key (ArrayLike | None, optional): Runtime override for the JAX PRNG key
                 used for sampling. Defaults to None.
             n_samples (int | None, optional): Runtime override for the number of
-                Monte Carlo samples. Defaults to None.
+                samples. Defaults to None.
             init_state_elems (ArrayLike | None, optional): Runtime override for the
                 discrete elements of the initial state (X). Defaults to None.
             init_state_amps (ArrayLike | None, optional): Runtime override for the
