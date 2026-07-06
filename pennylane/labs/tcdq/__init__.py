@@ -56,7 +56,6 @@ Core classes and functions
     ~build_expval_func
     ~build_qudit_expval_func
     ~build_qudit_mmd_loss
-    ~bitflip_expval
     ~mmd_loss
     ~median_heuristic
     ~train
@@ -255,7 +254,6 @@ qudit.
 
 from .expval_functions import (
     CircuitConfig,
-    bitflip_expval,
     build_expval_func,
 )
 from .qudit_expval_functions import (
@@ -277,7 +275,6 @@ __all__ = [
     "QuditCircuitConfig",
     "MMDConfig",
     "QuditMMDConfig",
-    "bitflip_expval",
     "build_expval_func",
     "build_qudit_expval_func",
     "mmd_loss",

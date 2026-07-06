@@ -14,8 +14,7 @@
 """Expectation-value estimator for qubit IQP circuits.
 
 This module estimates Pauli expectation values for IQP circuits without
-simulating the full quantum state. It provides a configurable stochastic
-estimator and a small analytical reference model for bitflip noise.
+simulating the full quantum state.
 """
 
 from collections.abc import Callable
@@ -91,52 +90,6 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_elems: ArrayLike | None = None
     init_state_amps: ArrayLike | None = None
     phase_fn: Callable | None = None
-
-
-def bitflip_expval(
-    generators: ArrayLike, params: ArrayLike, ops: ArrayLike
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """Compute exact Pauli-Z expectation values under a bitflip noise model.
-
-    This is an analytical (non-stochastic) estimator for the expectation values
-    of the IQP circuit when each gate is followed by a bitflip channel. The
-    survival probability for each gate is :math:`\\cos(2\theta)`. Useful for
-    benchmarking against the stochastic estimator or studying noise effects.
-
-    Args:
-        generators (ArrayLike): Binary generator matrix of shape
-            ``(n_generators, n_qubits)``. Each row is a gate's qubit support
-            (1 on active qubits, 0 elsewhere).
-        params (ArrayLike): Gate parameters :math:`\\theta`, shape ``(n_generators,)``.
-            The effective bitflip survival probability for each gate is
-            :math:`\\cos(2\\theta)`.
-        ops (ArrayLike): Binary matrix of shape ``(n_observables, n_qubits)``
-            where 1 indicates a Pauli-Z on that qubit (0 = identity).
-
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: A tuple ``(expvals, std_errs)`` where
-        ``expvals`` has shape ``(n_observables,)`` and ``std_errs`` is
-        identically zero (since the result is analytical, not stochastic).
-
-    **Example**
-
-    >>> import jax.numpy as jnp
-    >>> from pennylane.labs.tcdq import bitflip_expval
-    >>> generators = jnp.array([[1, 1, 0], [0, 1, 1]])  # ZZ on (0,1), ZZ on (1,2)
-    >>> params = jnp.array([0.1, 0.2])
-    >>> ops = jnp.array([[1, 0, 0], [0, 1, 0]])  # Z on qubit 0, Z on qubit 1
-    >>> expvals, _ = bitflip_expval(generators, params, ops)
-    >>> expvals.shape
-    (2,)
-    """
-    probs = jnp.cos(2 * params)
-
-    indicator = (ops @ generators.T) % 2
-    X = probs * indicator
-
-    result = jnp.prod(jnp.where(X == 0, 1.0, X), axis=1)
-
-    return result, jnp.zeros(ops.shape[0])
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
