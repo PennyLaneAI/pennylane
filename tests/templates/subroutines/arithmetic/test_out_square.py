@@ -20,10 +20,9 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import Adjoint, Controlled
+from pennylane.ops.op_math import Adjoint
 from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
-    _out_square_with_adder_not_zeroed,
     _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
 )
@@ -199,20 +198,20 @@ class TestOutSquare:
         [
             ([0, 1, 2, 3], [4, 5, 6], [9], True, [0]),
             ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [1]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 2]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [1, 2]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [1]),
             ([0, 1], [3, 5], [], True, [0]),
             ([0, 1], [3, 5], [9, 10], False, [1]),
-            ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 2]),
-            ([0, 1], [3, 5], [9, 10, 11, 12], False, [1, 2]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 1]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], False, [1]),
             ([0, 1], [3, 4, 5, 6], [9], True, [0]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 2]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
             ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [1]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [1, 2]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [1]),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11], True, [0]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 2]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 1]),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [1]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1, 2]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1]),
         ],
     )
     @pytest.mark.parametrize(
@@ -247,78 +246,23 @@ class TestOutSquare:
             [7, 8, 9, 10],
         )
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder_zeroed(
-                x_wires, output_wires, work_wires, output_wires_zeroed=True
-            )
+            _out_square_with_adder_zeroed(x_wires, output_wires, work_wires)
 
         expected = [
             # controlled copy
+            qp.TemporaryAND(wires=[2, 1, 4]),
+            qp.TemporaryAND(wires=[2, 0, 3]),
+            qp.TemporaryAND(wires=[1, 4, 7]),
+            qp.MultiControlledX(
+                wires=[1, 7, 3],
+                control_values=[True, True],
+                work_wires=[8, 9, 10, 6, 5],
+                work_wire_type="zeroed",
+            ),
+            Adjoint(qp.TemporaryAND(wires=[1, 4, 7])),
+            qp.CNOT(wires=[1, 4]),
             qp.CNOT([2, 6]),
-            qp.TemporaryAND([2, 1, 5]),
-            qp.TemporaryAND([2, 0, 4]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
         ]
-        assert q.queue == expected
-
-    def test_adder_decomposition_output_wires_not_zeroed(self):
-        """Test that the controlled adder decomposition has the expected structure with
-        ``output_wires_zeroed=False``."""
-        x_wires, output_wires, work_wires = (
-            [0, 1, 2],
-            [3, 4, 5, 6],
-            [7, 8, 9, 10],
-        )
-        with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder_not_zeroed(
-                x_wires, output_wires, work_wires, output_wires_zeroed=False
-            )
-
-        expected = [
-            # controlled copy (="zeroth" CNOT-wrapped controlled adder)
-            qp.CNOT([2, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5, 6], [8, 9, 10]),
-                control_wires=[7],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([2, 7]),
-            # First CNOT-wrapped controlled adder, shifted by 1
-            qp.CNOT([1, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4, 5], [8, 9]),
-                control_wires=[7],
-                work_wires=[10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([1, 7]),
-            # Second CNOT-wrapped controlled adder, shifted by 2
-            qp.CNOT([0, 7]),
-            Controlled(
-                qp.SemiAdder([0, 1, 2], [3, 4], [8]),
-                control_wires=[7],
-                work_wires=[9, 10],
-                work_wire_type="zeroed",
-            ),
-            qp.CNOT([0, 7]),
-        ]
-
         assert q.queue == expected
 
     def test_caddsub_decomposition_output_wires_zeroed(self):
