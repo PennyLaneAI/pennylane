@@ -8,6 +8,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms.transpile import transpile
 
 
@@ -295,7 +296,7 @@ class TestTranspile:
         tape = qp.tape.QuantumScript(ops, [qp.probs()], shots=50)
 
         [new_tape], _ = transpile(tape, [(0, 1), (1, 2)])
-        expected_ops = [qp.SWAP((1, 2)), qp.CNOT((0, 1))] + ops[1:]
+        expected_ops = [qp.SWAP((1, 2)), ControlledOp2(qp.X(1), control_wires=[0])] + ops[1:]
         assert new_tape.operations == expected_ops
         assert new_tape.shots == tape.shots
 
