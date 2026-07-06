@@ -201,6 +201,55 @@ of the technical notes.
 
    print("Final MMD loss:", float(mmd_result.losses[-1]))
 
+
+Qudit circuits
+~~~~~~~~~~~~~~
+
+The same workflow applies to qudit circuits (``d > 2``). Replace
+:class:`~CircuitConfig` with :class:`~QuditCircuitConfig` and
+:func:`~build_expval_func` with :func:`~build_qudit_expval_func`.
+Gate vectors now have length ``n_qudits`` with entries in
+:math:`\{0, \ldots, d-1\}` specifying the power of :math:`Z` on each
+qudit.
+
+.. code-block:: python
+
+   import jax
+   import jax.numpy as jnp
+
+   from pennylane.labs.tcdq import QuditCircuitConfig, build_qudit_expval_func
+
+   d = 3  # qutrit
+   n_qudits = 4
+
+   # Single-qudit and nearest-neighbour two-qudit gates
+   gates = {
+       0: [[1, 0, 0, 0]],
+       1: [[0, 1, 0, 0]],
+       2: [[0, 0, 1, 0]],
+       3: [[0, 0, 0, 1]],
+       4: [[1, 1, 0, 0]],
+       5: [[0, 1, 1, 0]],
+       6: [[0, 0, 1, 1]],
+   }
+
+   # Observables: displacement operators O(l, m) with m = 0
+   l_vecs = jnp.array([[1, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0]], dtype=jnp.int32)
+   m_vecs = jnp.zeros_like(l_vecs)
+
+   config = QuditCircuitConfig(
+       d=d,
+       n_qudits=n_qudits,
+       gates=gates,
+       observables=(l_vecs, m_vecs),
+       n_samples=5000,
+       key=jax.random.PRNGKey(0),
+   )
+
+   expval_fn = build_qudit_expval_func(config)
+   params = jnp.zeros(len(gates))
+   expvals, cov = expval_fn(params)
+
 """
 
 from .expval_functions import (

@@ -405,7 +405,7 @@ def _compute_mc_statistics(
 def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
-    """Build an estimator for Heisenberg–Weyl displacement-operator moments.
+    """Build an estimator for expectation values of a qudit IQP circuit.
 
     Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
     related JAX transforms) that estimates the complex expectation value
