@@ -4,6 +4,8 @@
 
 * Added a new template :class:`~.PartialUnaryStatePreparation` for sparse state preparation
   using partial unary iteration. It is based on [Rupprecht & Wölk, arXiv:2601.09388](https://arxiv.org/abs/2601.09388).
+  [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
+  [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -450,7 +452,19 @@
 * Device `default.qutrit.mixed` now implements state preparation operations with batched initial states.
   [(#9538)](https://github.com/PennyLaneAI/pennylane/pull/9538)
 
+* :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
+  the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
+  modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
+  cheaper decomposition, and the graph-based decomposition system
+  (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
+  [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
+  decompositions of :class:`~.CRZ`, as described 
+  [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
+  [(#9750)](https://github.com/PennyLaneAI/pennylane/pull/9750)
 
 * Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
   :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
@@ -476,6 +490,7 @@
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
   ```python
   import pennylane as qp
@@ -613,6 +628,10 @@
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
 
+* Performance of the Trotter error module is improved by introducing a novel algorithm for
+  computing the Baker-Campbell-Hausdorff formula.
+  [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
+
 <h3>Breaking changes 💔</h3>
 
 * Plxpr transforms have been removed.
@@ -621,6 +640,7 @@
 * Support for executing PLxPR without qjit has been removed.
   [(#9678)](https://github.com/PennyLaneAI/pennylane/pull/9678)
   [(#9682)](https://github.com/PennyLaneAI/pennylane/pull/9682)
+  [(#9686)](https://github.com/PennyLaneAI/pennylane/pull/9686)
 
 * :class:`~.IQP` no longer accepts `num_wires`. Instead, `wires` should be passed
   explicitly, to match the behaviour of all other `Operator` classes.
@@ -730,6 +750,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Fixed some more randomness seeds in the test suite.
+  [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
+
+* Unblock the decomposition of :class:`~.SumOfSlaterPrep` in the old decomposition system.
+  [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
+
+* CI workflows dropped all Python 3.11 test jobs and started to use 3.12 instead.
+  [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
+
 * Upgrade Sphinx to version 9.0.
   [(#9663)](https://github.com/PennyLaneAI/pennylane/pull/9663)
 
@@ -762,11 +791,13 @@
   integrated into the PennyLane ecosystem. Supported functionality so far:
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
-  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules
-    when ``compute_decomposition`` is not overridden.
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
   - Arithmetic can be performed with :class:`~.Operator2` instances.
+  - Symbolic operators with :class:`~.Operator2` instances as the base.
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
+  - Integration with :func:`pennylane.apply`.
+  - Integration with the graph-based decomposition system.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -787,10 +818,20 @@
   [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
   [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
+  [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
+  [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+  [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+  [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
+  [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
+  [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+  [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
+* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+  [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -798,6 +839,10 @@
   `Shots`, `ShotCopies`, and `ShotsLike` to `pennylane.core`.
   Moves `QuantumScript`, `QuantumScriptBatch`, `QuantumScriptOrBatch`, `make_qscript`, and `process_queue`
   to `pennylane.core.qscript`.
+  Moves the `pennylane.queuing` to `pennylane.core.queuing`.
+  Moves `pennylane.transforms.core` to `pennylane.core.transforms`.
+  [(#9739)](https://github.com/PennyLaneAI/pennylane/pull/9739)
+  [(#9719)](https://github.com/PennyLaneAI/pennylane/pull/9719)
   [(#9717)](https://github.com/PennyLaneAI/pennylane/pull/9717)
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
@@ -853,6 +898,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
+  [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
+
 * A rendering issue was fixed in the docstring for :class:`~.TrotterizedQfunc`.
   [(#9697)](https://github.com/PennyLaneAI/pennylane/pull/9697)
 
@@ -880,6 +928,9 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+  [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
   [(#9626)](https://github.com/PennyLaneAI/pennylane/pull/9626)
@@ -976,8 +1027,10 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,

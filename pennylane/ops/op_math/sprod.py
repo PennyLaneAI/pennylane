@@ -19,10 +19,10 @@ computing the scalar product of operations.
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
-from pennylane.queuing import QueuingManager
 
 from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp

@@ -21,7 +21,6 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import controlled_resource_rep
-from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
 
@@ -552,22 +551,6 @@ class PartialUnaryStatePreparation(Operation):
         super().__init__(coefficients, wires=wires)
         self.hyperparameters["indices"] = indices
         self.hyperparameters["work_wires"] = Wires(work_wires)
-
-    @property
-    def has_decomposition(self):
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivate the fallback
-        of ``compute_decomposition`` to the new decomp system that is implemented in
-        ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
-        return False
-
-    @staticmethod
-    def compute_decomposition(*_, **__):  # pylint: disable=arguments-differ
-        """We are using ``qp.allocate`` in the decomposition, so the validation for
-        decomposition in the old system breaks. Hence we manually deactivate the fallback
-        of ``compute_decomposition`` to the new decomp system that is implemented in
-        ``Operator.compute_decomposition``."""
-        raise DecompositionUndefinedError
 
 
 def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):

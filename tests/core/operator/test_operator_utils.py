@@ -21,7 +21,7 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=useless-parent-delegation, too-few-public-methods
+# pylint: disable=useless-parent-delegation,too-few-public-methods
 
 
 class TestAbstractifyBasics:
@@ -89,6 +89,16 @@ class TestAbstractifyBasics:
 
         with pytest.raises(NotImplementedError, match="Cannot abstractify"):
             _ = abstractify(input)
+
+    def test_abstractify_already_abstract_op(self):
+        """Tests that the original op is returned iff it is already abstract."""
+        op = DynOp(Float, wires=Wire[2])
+        result = abstractify(op)
+        assert result is op
+
+        op = DynOp(1.2, wires=(0, 1))
+        result = abstractify(op)
+        assert result is not op
 
 
 class TestAbstractifyOperatorInstances:

@@ -28,10 +28,10 @@ from typing import Any, ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.core.shots import Shots, ShotsLike
 from pennylane.exceptions import DiagGatesUndefinedError, PennyLaneDeprecationWarning
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
