@@ -452,6 +452,8 @@ def build_qudit_expval_func(
     ...     d=3,
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
     ...     observables=(
     ...         jnp.array([[1, 0], [0, 1]], dtype=jnp.int32),
     ...         jnp.zeros((2, 2), dtype=jnp.int32),
