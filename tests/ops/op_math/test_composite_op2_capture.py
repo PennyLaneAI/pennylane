@@ -85,8 +85,6 @@ def test_public_sum_binding():
 
     # Sum primitive consumes the ops
     assert eqns[1].outvars[0] == eqns[2].invars[0]
-    assert eqns[1].outvars[0] == eqns[2].invars[0]
-    assert eqns[0].outvars[0] == eqns[2].invars[1]
     assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
@@ -140,6 +138,4 @@ def test_linear_combination():
     assert eqns[2].primitive.name == "LinearCombination"
     # Invars 0 and 1 are the coefficients
     assert eqns[1].outvars[0] == eqns[2].invars[2]
-    assert eqns[1].outvars[0] == eqns[2].invars[2]
-    assert eqns[0].outvars[0] == eqns[2].invars[3]
     assert eqns[0].outvars[0] == eqns[2].invars[3]
