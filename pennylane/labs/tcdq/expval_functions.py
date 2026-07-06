@@ -11,8 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Implementations for the qubit expectation value functions
+"""Monte Carlo expectation-value estimator for qubit IQP circuits.
+
+This module estimates Pauli expectation values for IQP circuits without
+simulating the full quantum state. It provides a configurable Monte Carlo
+estimator and a small analytical reference model for bitflip noise.
 """
 
 from collections.abc import Callable
@@ -26,20 +29,58 @@ from jax.typing import ArrayLike
 
 @dataclass
 class CircuitConfig:  # pylint: disable=too-many-instance-attributes
-    """
-    Configuration data for an IQP circuit simulation.
+    """Description of a qubit IQP circuit for classical expectation-value estimation.
+
+    This dataclass bundles all the information needed to build an expectation-value
+    estimator via :func:`build_expval_func`: the gate structure, the observables to
+    measure, Monte Carlo sampling parameters, and an optional non-standard initial state.
 
     Args:
-        gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
-        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
-        key (ArrayLike): Random key for JAX.
-        n_qubits (int): Number of qubits.
-        observables (ArrayLike | None): List of Pauli observables mapped to integers
-            (I=0, X=1, Y=2, Z=3). If ``None``, observables must be supplied at call time
-            via the returned function's ``observables`` keyword argument.
-        init_state_elems (ArrayLike | None): Elements of the initial state (X)
-        init_state_amps (ArrayLike | None): Amplitudes of the initial state (P)
-        phase_fn (Callable | None): Optional phase layer function.
+        gates (dict[int, list[list[int]]]): Circuit structure mapping each
+            trainable parameter index to a list of gates. Each gate is itself a
+            list of qubit indices that participate in a Pauli-Z tensor-product
+            generator. For example, ``{0: [[0, 1]], 1: [[2]]}`` defines two
+            parameters: parameter 0 drives a ZZ gate on qubits 0 and 1, and
+            parameter 1 drives a Z gate on qubit 2. Use
+            :func:`~pennylane.labs.tcdq.create_local_gates` or
+            :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate
+            these automatically.
+        n_samples (int): Number of random bitstrings drawn for the Monte Carlo
+            estimation. Larger values reduce statistical noise.
+        key (ArrayLike): JAX PRNG key used to generate the random bitstrings.
+        n_qubits (int): Total number of qubits in the circuit.
+        observables (ArrayLike | None): Integer array of shape
+            ``(n_observables, n_qubits)`` encoding Pauli operators (I=0, X=1,
+            Y=2, Z=3). Each row is one observable. If ``None``, observables must
+            be passed at call time to the function returned by
+            :func:`build_expval_func`.
+        init_state_elems (ArrayLike | None): Binary array of shape ``(N, n_qubits)``
+            listing the computational-basis states with non-zero amplitude in a
+            custom initial state. Use together with ``init_state_amps``. If
+            ``None`` (default), the circuit starts in the uniform superposition
+            state :math:`H^{\\otimes n}|0\\rangle`.
+        init_state_amps (ArrayLike | None): Complex array of shape ``(N,)`` with
+            the amplitudes corresponding to ``init_state_elems``.
+        phase_fn (Callable | None): Optional custom phase function
+            ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
+            Defaults to ``None``.
+
+    **Example**
+
+    >>> import jax
+    >>> from pennylane.labs.tcdq import CircuitConfig, create_local_gates
+    >>> gates = create_local_gates(n_qubits=4, max_weight=2)
+    >>> config = CircuitConfig(
+    ...     gates=gates,
+    ...     n_samples=2000,
+    ...     key=jax.random.PRNGKey(42),
+    ...     n_qubits=4,
+    ...     observables=[[3, 3, 0, 0], [0, 0, 3, 3]],  # ZZ on (0,1) and ZZ on (2,3)
+    ... )
+
+    .. seealso::
+
+        `Section 1, Circuit Architecture <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#1-circuit-architecture>`_
     """
 
     gates: dict[int, list[list[int]]]
@@ -55,18 +96,38 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
 def bitflip_expval(
     generators: ArrayLike, params: ArrayLike, ops: ArrayLike
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """
-    Compute expectation value for the Bitflip noise model.
+    """Compute exact Pauli-Z expectation values under a bitflip noise model.
+
+    This is an analytical (non-stochastic) estimator for the expectation values
+    of the IQP circuit when each gate is followed by a bitflip channel. The
+    survival probability for each gate is :math:`\\cos(2\theta)`. Useful for
+    benchmarking against the Monte Carlo estimator or studying noise effects.
 
     Args:
-        generators (ArrayLike): Binary matrix of shape ``(n_generators, n_qubits)``.
-        params (ArrayLike): Error probabilities/parameters $\theta$.
-        ops (ArrayLike): Binary matrix representing Pauli Z operators.
+        generators (ArrayLike): Binary generator matrix of shape
+            ``(n_generators, n_qubits)``. Each row is a gate's qubit support
+            (1 on active qubits, 0 elsewhere).
+        params (ArrayLike): Gate parameters :math:`\\theta`, shape ``(n_generators,)``.
+            The effective bitflip survival probability for each gate is
+            :math:`\\cos(2\\theta)`.
+        ops (ArrayLike): Binary matrix of shape ``(n_observables, n_qubits)``
+            where 1 indicates a Pauli-Z on that qubit (0 = identity).
 
     Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
-            - Expectation values.
-            - A zero array for standard error (since this is analytical).
+        tuple[jnp.ndarray, jnp.ndarray]: A tuple ``(expvals, std_errs)`` where
+        ``expvals`` has shape ``(n_observables,)`` and ``std_errs`` is
+        identically zero (since the result is analytical, not stochastic).
+
+    **Example**
+
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import bitflip_expval
+    >>> generators = jnp.array([[1, 1, 0], [0, 1, 1]])  # ZZ on (0,1), ZZ on (1,2)
+    >>> params = jnp.array([0.1, 0.2])
+    >>> ops = jnp.array([[1, 0, 0], [0, 1, 0]])  # Z on qubit 0, Z on qubit 1
+    >>> expvals, _ = bitflip_expval(generators, params, ops)
+    >>> expvals.shape
+    (2,)
     """
     probs = jnp.cos(2 * params)
 
@@ -79,8 +140,7 @@ def bitflip_expval(
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
-    """
-    Converts dictionary circuit definition into matrices.
+    """Convert a gate dictionary into a binary generator matrix and parameter map.
 
     Args:
         circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to
@@ -111,7 +171,7 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
 
 
 def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarray:
-    """Generates the stochastic sample matrix."""
+    """Generate the random bitstrings used by the Monte Carlo estimator."""
     n_bytes = (n_qubits + 7) // 8
     random_bytes = jax.random.bits(key, shape=(n_samples, n_bytes), dtype=jnp.uint8)
     unpacked_bits = jnp.unpackbits(random_bytes, axis=-1)
@@ -119,10 +179,7 @@ def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarr
 
 
 def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """
-    Converts integer observables (I=0, X=1, Y=2, Z=3)
-    into precomputed bitmasks and y_phases.
-    """
+    """Precompute masks and phase factors for integer-encoded Pauli observables."""
     obs_arr = jnp.asarray(observables_int, dtype=jnp.int32)
 
     is_X = obs_arr == 1
@@ -150,7 +207,7 @@ def _core_expval_execution(
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """The pure mathematical core of the expectation value computation."""
+    """Evaluate the Monte Carlo integrand and return means with standard errors."""
     bitflips, mask_XY, y_phase = obs_data
 
     s_f = samples.astype(jnp.float32)
@@ -190,9 +247,61 @@ def _core_expval_execution(
 def build_expval_func(
     config: CircuitConfig,
 ) -> Callable:
-    """
-    Factory that returns a flexible pure function for computing expectation values.
-    The returned closure can optionally take runtime overrides for key, observables, etc.
+    """Build a Monte Carlo estimator for Pauli expectation values of a qubit IQP circuit.
+
+    Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
+    related JAX transforms) that estimates the expectation value of each Pauli
+    observable specified in ``config.observables`` or passed at call time.
+
+    The returned function captures precomputed data from ``config`` (generator
+    matrices, default samples, preprocessed observables) so that repeated
+    evaluations with different parameters are fast.
+
+    Args:
+        config (CircuitConfig): Full circuit description including gate
+            structure, observables, and sampling parameters. See
+            :class:`CircuitConfig` for details on how to construct one.
+
+    Returns:
+        Callable: A function with signature::
+
+            expval_fn(
+                gates_params,
+                phase_fn_params=None,
+                observables=None,
+                key=None,
+                n_samples=None,
+                init_state_elems=None,
+                init_state_amps=None,
+            ) -> (expvals, std_errs)
+
+        where ``expvals`` is a real array of shape ``(n_observables,)`` and
+        ``std_errs`` is the estimated standard error of each expectation value.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import CircuitConfig, build_expval_func, create_local_gates
+    >>> n_qubits = 4
+    >>> gates = create_local_gates(n_qubits, max_weight=2)
+    >>> config = CircuitConfig(
+    ...     gates=gates,
+    ...     n_samples=5000,
+    ...     key=jax.random.PRNGKey(0),
+    ...     n_qubits=n_qubits,
+    ...     observables=[[3, 3, 0, 0], [0, 0, 3, 3]],  # ZZ on (0,1) and (2,3)
+    ... )
+    >>> expval_fn = jax.jit(build_expval_func(config))
+    >>> params = jnp.zeros(len(gates))
+    >>> expvals, std_errs = expval_fn(params)
+    >>> expvals.shape
+    (2,)
+
+    .. seealso::
+
+        :class:`~pennylane.labs.tcdq.CircuitConfig`,
+        `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_
     """
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
@@ -221,8 +330,7 @@ def build_expval_func(
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
     ) -> tuple[jnp.ndarray, jnp.ndarray]:
-        """
-        Executes the expectation value computation with optional runtime overrides.
+        """Execute the estimator with optional runtime overrides.
 
         This closure captures the precomputed matrices and defaults from the
         CircuitConfig, while allowing dynamic injection of new parameters,
@@ -244,9 +352,8 @@ def build_expval_func(
                 continuous amplitudes of the initial state (P). Defaults to None.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
-                - Array of estimated expectation values.
-                - Array of standard errors for the estimates.
+            tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and
+            their standard errors.
         """
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key

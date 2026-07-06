@@ -11,8 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Training utilities for tcdq.
+"""Training helpers for the TCDQ workflow.
+
+This module provides a high-level training loop and a lower-level iterator for
+users who want more control over logging, stopping criteria, or validation.
+
+Supported optimizers (via `jaxopt <https://jaxopt.github.io/>`_):
+
+- ``"Adam"``
+- ``"GradientDescent"``
+- ``"BFGS"``
 """
 
 import time
@@ -35,18 +43,29 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @dataclass
 class TrainingOptions:
-    """
-    Configuration options for training.
+    """Options controlling the behaviour of :func:`train` and :func:`training_iterator`.
 
     Args:
-        unroll_steps (int): How many optimization steps to run on the GPU before yielding
-            control back to Python. Higher = Faster. Lower = More interactive/granular logging.
-            Defaults to 1 (slow, good for debugging).
-        val_kwargs (dict[str, Any] | None): Arguments for the loss function to be used during validation.
-        convergence_interval (int): Number of steps over which to check for convergence.
-            Defaults to 100.
-        random_state (int): Seed for PRNGKey.
-        opt_jit (bool): Whether to JIT the optimizer creation (usually False is fine).
+        unroll_steps (int): Number of optimization steps fused into a single
+            ``jax.lax.scan`` call. Higher values reduce Python overhead and
+            speed up training, but produce less frequent progress updates.
+            Defaults to ``1``.
+        val_kwargs (dict[str, Any] | None): Keyword arguments passed to the loss
+            function when evaluating validation loss. If ``None`` (the default),
+            no validation loss is computed.
+        convergence_interval (int): The training loop compares the mean loss over
+            the most recent ``convergence_interval`` steps against the preceding
+            interval. If the improvement is smaller than half the standard error,
+            training stops early. Defaults to ``100``.
+        random_state (int): Integer seed used to create the JAX PRNG key for
+            stochastic loss functions. Defaults to ``666``.
+        opt_jit (bool): Whether to JIT-compile the optimizer's internal update
+            step. Usually ``False`` is sufficient because the outer scan is
+            already JIT-compiled. Defaults to ``False``.
+
+    **Example**
+
+    >>> options = TrainingOptions(unroll_steps=20, convergence_interval=50)
     """
 
     unroll_steps: int = 1
@@ -57,7 +76,25 @@ class TrainingOptions:
 
 
 class TrainingResult(NamedTuple):
-    """Container for final training results."""
+    """Results returned by :func:`train` after the optimization loop completes.
+
+    Attributes:
+        final_params (jnp.ndarray): Optimized circuit parameters after training.
+        losses (jnp.ndarray): Training loss recorded at every optimization step,
+            shape ``(n_steps,)``.
+        val_losses (jnp.ndarray): Validation loss at every step (all zeros if no
+            ``val_kwargs`` was provided), shape ``(n_steps,)``.
+        run_time (float): Wall-clock time of the training loop in seconds.
+
+    **Example**
+
+    >>> result = train(optimizer="Adam", loss=my_loss, stepsize=0.01,
+    ...               n_iters=100, loss_kwargs={"params": params})
+    >>> result.final_params.shape
+    (10,)
+    >>> len(result.losses)
+    100
+    """
 
     final_params: jnp.ndarray
     losses: jnp.ndarray
@@ -66,7 +103,21 @@ class TrainingResult(NamedTuple):
 
 
 class BatchResult(NamedTuple):
-    """Result from a single batch (unrolled chunk) of training steps."""
+    """Intermediate result yielded by :func:`training_iterator` after each unrolled batch.
+
+    Each ``BatchResult`` covers ``unroll_steps`` consecutive optimization steps
+    that were fused into a single ``jax.lax.scan`` call.
+
+    Attributes:
+        params (jnp.ndarray): Circuit parameters at the end of this batch.
+        state (jnp.ndarray): Internal optimizer state (e.g., Adam moments).
+        key (jax.Array): Updated PRNG key for the next training batch.
+        key_val (jax.Array): Updated PRNG key for the next validation evaluation.
+        losses (jnp.ndarray): Training loss values for each step in this batch,
+            shape ``(unroll_steps,)``.
+        val_losses (jnp.ndarray): Validation loss values for each step in this
+            batch (zeros if validation is disabled), shape ``(unroll_steps,)``.
+    """
 
     params: jnp.ndarray
     state: jnp.ndarray
@@ -77,15 +128,13 @@ class BatchResult(NamedTuple):
 
 
 def _prepare_loss_function(loss: Callable) -> Callable:
-    """
-    Wraps the loss function to ensure it accepts a 'key' argument.
-    If the original function doesn't accept 'key', we consume and ignore it.
+    """Wrap a loss function so it always accepts a ``key`` argument.
 
     Args:
         loss (Callable): The original loss function.
 
     Returns:
-        Callable: A wrapped loss function that accepts a ``key`` argument, regardless of whether the original did.
+        Callable: Wrapped loss function with a uniform call signature.
     """
     if "key" in signature(loss).parameters:
         return loss
@@ -94,8 +143,7 @@ def _prepare_loss_function(loss: Callable) -> Callable:
 
 
 def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bool):
-    """
-    Create the JAX optimizer instance.
+    """Create the requested JAX optimizer.
 
     Args:
         name (str): The name of the optimizer to create ('GradientDescent', 'Adam', 'BFGS').
@@ -122,8 +170,7 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
 
 
 def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
-    """
-    Check for convergence based on loss history.
+    """Check convergence by comparing two recent windows of loss values.
 
     Args:
         losses (jnp.ndarray): Array of recorded loss values.
@@ -148,8 +195,7 @@ def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
 
 def _update_step_scan(carry, _, opt, loss_fn, loss_kwargs, val_kwargs, validation, optimizer_name):
     # pylint: disable=too-many-arguments
-    """
-    Single step update logic to be scanned.
+    """Run one optimizer step inside the scanned training loop.
 
     Args:
         carry (list): List of carried state [params, state, key, key_val].
@@ -189,18 +235,40 @@ def training_iterator(
     loss_kwargs: dict[str, Any],
     options: TrainingOptions | None = None,
 ) -> Iterator[BatchResult]:
-    """
-    Generator that yields training results in batches of size 'unroll_steps'.
+    """Create an infinite iterator that yields optimization results one batch at a time.
+
+    This is the lower-level interface for users who need custom convergence
+    logic, logging, or early-stopping criteria. Each iteration advances the
+    optimizer by ``unroll_steps`` steps (fused via ``jax.lax.scan``) and
+    yields a :class:`BatchResult` containing the updated parameters and
+    per-step losses.
 
     Args:
-        optimizer (str): Name of the optimizer to use. Options are "GradientDescent", "Adam", or "BFGS".
-        loss (Callable): The loss function.
-        stepsize (float): The learning rate.
-        loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
-        options (TrainingOptions | None): Configuration options for training. See :class:`TrainingOptions` for further details.
+        optimizer (str): Name of the optimizer. One of ``"Adam"``,
+            ``"GradientDescent"``, or ``"BFGS"``.
+        loss (Callable): Loss function with signature
+            ``loss(params, **loss_kwargs)`` or
+            ``loss(params, key=..., **loss_kwargs)`` for stochastic losses.
+        stepsize (float): Learning rate (step size) for the optimizer.
+        loss_kwargs (dict[str, Any]): Keyword arguments forwarded to ``loss``
+            at every step. Must include ``"params"`` as the initial parameter
+            array.
+        options (TrainingOptions | None): Training configuration. Uses
+            defaults if ``None``.
 
     Yields:
-        Iterator[BatchResult]: An iterator over batch results. See :class:`BatchResult` for further details.
+        BatchResult: One result per ``unroll_steps`` optimization steps.
+
+    **Example**
+
+    >>> iterator = training_iterator(
+    ...     optimizer="Adam", loss=my_loss, stepsize=0.01,
+    ...     loss_kwargs={"params": init_params},
+    ...     options=TrainingOptions(unroll_steps=10),
+    ... )
+    >>> batch = next(iterator)
+    >>> batch.losses.shape
+    (10,)
     """
     options = options or TrainingOptions()
     unroll_steps = max(1, options.unroll_steps)
@@ -265,21 +333,47 @@ def train(
     options: TrainingOptions | None = None,
 ) -> TrainingResult:
     # pylint: disable=too-many-arguments
-    """
-    Main training function.
-    Manages the loop, accumulation of history, and convergence checks.
+    """Run a complete optimization loop with automatic convergence detection.
+
+    This is the high-level training entry point. It internally uses
+    :func:`training_iterator` and adds progress-bar display (via ``tqdm``),
+    loss history accumulation, and an automatic early-stopping check based on
+    the ``convergence_interval`` setting in :class:`TrainingOptions`.
 
     Args:
-        optimizer (str): Name of the optimizer to use. Options are "GradientDescent", "Adam", or "BFGS".
-        loss (Callable): The loss function.
-        stepsize (float): The learning rate.
-        n_iters (int): Total number of training iterations.
-        loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
-        options (TrainingOptions | None): Configuration options for training. See :class:`TrainingOptions` for further details.
+        optimizer (str): Name of the optimizer. One of ``"Adam"``,
+            ``"GradientDescent"``, or ``"BFGS"``.
+        loss (Callable): Loss function with signature
+            ``loss(params, **loss_kwargs)`` or
+            ``loss(params, key=..., **loss_kwargs)`` for stochastic losses.
+        stepsize (float): Learning rate (step size) for the optimizer.
+        n_iters (int): Maximum number of optimization steps. Training may
+            stop earlier if convergence is detected.
+        loss_kwargs (dict[str, Any]): Keyword arguments forwarded to ``loss``.
+            Must include ``"params"`` as the initial parameter array.
+        options (TrainingOptions | None): Training configuration. Uses
+            defaults if ``None``.
 
     Returns:
-        TrainingResult: The results of the training process, including final parameters and loss history.
-            See :class:`TrainingResult` for further details.
+        TrainingResult: A named tuple containing the optimized parameters,
+        full loss history, validation loss history, and wall-clock runtime.
+
+    **Example**
+
+    >>> import jax, jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import train, TrainingOptions
+    >>> def quadratic(params):
+    ...     return jnp.sum(params ** 2)
+    >>> result = train(
+    ...     optimizer="Adam",
+    ...     loss=quadratic,
+    ...     stepsize=0.1,
+    ...     n_iters=50,
+    ...     loss_kwargs={"params": jnp.ones(3)},
+    ...     options=TrainingOptions(unroll_steps=10),
+    ... )
+    >>> result.final_params.shape
+    (3,)
     """
 
     options = options or TrainingOptions()

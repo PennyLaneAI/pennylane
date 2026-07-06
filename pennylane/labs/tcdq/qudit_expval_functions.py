@@ -11,20 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Implementations for the qudit expectation value functions.
+"""Monte Carlo expectation-value estimator for qudit IQP circuits.
 
-If you read this module as a software engineer, the main execution path is:
+This module extends :mod:`~pennylane.labs.tcdq.expval_functions` from qubits
+to qudits. It estimates Heisenberg-Weyl moments without building the full
+quantum state.
 
-1. Draw random dit-strings ``z`` from ``Z_d^n``.
-2. Build the observable-dependent phase matrix ``J`` for each requested
-    displacement operator.
-3. Build the circuit-dependent phase-difference matrix ``E`` without
-    materializing the full statevector.
-4. Average ``J * exp(iE)`` over the sampled dit-strings, optionally with an
-    extra initial-state correction.
+The estimator samples random dit-strings, evaluates an observable-dependent
+phase, evaluates a circuit-dependent phase difference, and averages the
+resulting complex integrand.
 
-The public entry point is ``build_qudit_expval_func``. See ``notes.md`` §2 for
-the derivation and Appendix A for the notation-to-code glossary.
+For further information, see
+`Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_,
+`Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_,
+and `Section 4, Monte Carlo Statistics <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#4-monte-carlo-statistics>`_
+of the technical notes.
 """
 
 import itertools
@@ -40,27 +41,63 @@ from jax.typing import ArrayLike
 
 @dataclass
 class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
-    """
-    Configuration data for a qudit IQP circuit simulation.
+    """Description of a qudit IQP circuit for classical expectation-value estimation.
+
+    This dataclass collects the circuit data needed by
+    :func:`build_qudit_expval_func`. It is the qudit analogue of
+    :class:`~pennylane.labs.tcdq.CircuitConfig`.
 
     Args:
-        d (int): Qudit dimension (e.g. 2 for qubits, 3 for qutrits).
-        n_qudits (int): Number of qudits.
-        gates (dict[int, list[list[int]]]): Circuit structure mapping parameter indices to lists
-            of generator vectors. Each generator vector has length ``n_qudits`` with integer
-            entries in ``{0, ..., d-1}``, representing the Z-power on each qudit.
-        observables (tuple[ArrayLike, ArrayLike] | None): Pair ``(l_vecs, m_vecs)`` specifying
-            the displacement operators ``O(l, m)`` from ``notes.md`` to measure. Each array
-            has shape ``(n_obs, n_qudits)`` with integer entries in ``{0, ..., d-1}``.  If
-            ``None``, observables must be supplied when constructing the expectation-value
-            function (e.g. via ``build_qudit_mmd_loss``, which generates its own observables).
-        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
-        key (ArrayLike): Random key for JAX.
-        init_state_elems (ArrayLike | None): Support elements of the initial state. Array of
-            shape ``(N, n_qudits)`` with integer entries in ``{0, ..., d-1}``, where ``N`` is
-            the number of non-zero amplitudes. Each row is a dit-string in ``Z_d^n``.
-        init_state_amps (ArrayLike | None): Complex amplitudes of the initial state. Array of
-            shape ``(N,)`` corresponding to the support elements.
+        d (int): Local qudit dimension (e.g., 2 for qubits, 3 for qutrits).
+        n_qudits (int): Number of qudits in the circuit.
+        gates (dict[int, list[list[int]]]): Circuit structure mapping each
+            trainable-parameter index to a list of generator vectors. Each
+            generator vector has length ``n_qudits`` with integer entries in
+            :math:`\\{0, \\ldots, d-1\\}` that specify the power of :math:`Z` on
+            each qudit. For example, with ``d=3`` and ``n_qudits=2``,
+            ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
+            :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
+            :math:`Z^1 \\otimes Z^1` on both.
+        observables (tuple[ArrayLike, ArrayLike] | None): A pair
+            ``(l_vecs, m_vecs)`` specifying the Heisenberg–Weyl displacement
+            operators :math:`\\mathcal{O}(\\mathbf{l}, \\mathbf{m})` to measure.
+            Each is an integer array of shape ``(n_obs, n_qudits)`` with entries
+            in :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be
+            supplied at call time (e.g., when used inside
+            :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`).
+        n_samples (int): Number of random dit-strings drawn for the Monte Carlo
+            estimation. Defaults to ``10000``.
+        key (ArrayLike): JAX PRNG key for random dit-string generation.
+            Defaults to ``jax.random.PRNGKey(0)``.
+        init_state_elems (ArrayLike | None): Support of a custom initial state.
+            Integer array of shape ``(N, n_qudits)`` with entries in
+            :math:`\\{0, \\ldots, d-1\\}`, where ``N`` is the number of non-zero
+            amplitudes. Defaults to ``None`` (uniform superposition via QFT).
+        init_state_amps (ArrayLike | None): Complex amplitudes of shape ``(N,)``
+            for the custom initial state. Must be provided together with
+            ``init_state_elems``.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import QuditCircuitConfig
+    >>> config = QuditCircuitConfig(
+    ...     d=3,
+    ...     n_qudits=4,
+    ...     gates={0: [[1, 0, 0, 0]], 1: [[0, 1, 0, 0]], 2: [[1, 1, 0, 0]]},
+    ...     observables=(
+    ...         jnp.array([[1, 0, 0, 0], [0, 1, 0, 0]], dtype=jnp.int32),
+    ...         jnp.zeros((2, 4), dtype=jnp.int32),
+    ...     ),
+    ...     n_samples=5000,
+    ...     key=jax.random.PRNGKey(42),
+    ... )
+
+    .. seealso::
+
+        `Section 1, Circuit Architecture <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#1-circuit-architecture>`_,
+        `Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_
     """
 
     d: int
@@ -74,8 +111,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
-    """
-    Converts a qudit circuit definition dict into generator matrix and parameter map.
+    """Convert a qudit gate dictionary into a generator matrix and parameter map.
 
     Unlike the qubit version, generator vectors are provided explicitly (not as wire
     indices), so each inner list must already have length ``n_qudits`` with integer entries
@@ -120,24 +156,21 @@ def _compute_qudit_samples(key: ArrayLike, num_samples: int, n_qudits: int, d: i
 
 
 class WeightGroupData(NamedTuple):
-    """Precomputed factor matrices for gates that share the same weight (number of active qudits).
+    """Precomputed factor matrices for gates sharing the same weight (number of active qudits).
 
-    Gates are grouped by weight ``ω`` (number of active qudits) so that
-    the ``2^ω``-term angle-addition expansion of the phase difference
-    ``Φ_g(z) − Φ_g(z ⊖ l)`` can be vectorised over gates.  See
-    ``notes.md`` §2.3 for the full derivation.
-
-    ``samples_matrices[σ]`` and ``obs_matrices[σ]`` store the ``B`` and
-    ``C`` factor matrices for the ``σ``-th expansion term.  The first
-    entry (``σ = 0…0``, all-cos) equals ``Φ_g(z)`` itself.
+    Gates are grouped by weight :math:`\\omega` (number of non-zero entries in
+    the generator vector) so that the :math:`2^\\omega`-term angle-addition
+    expansion can be vectorised over gates within each group.
 
     Args:
-        param_indices: Maps each gate in this group to its parameter index in the
-            global ``gates_params`` array, shape ``(n_gates,)``.
-        samples_matrices: ``2^ω`` matrices of shape ``(n_gates, n_samples)``
-            giving the sample-side factor for each angle-addition term.
-        obs_matrices: ``2^ω`` matrices of shape ``(n_gates, n_obs)`` giving the
-            observable-side factor for each angle-addition term.
+        param_indices: Maps each gate in this group to its parameter index in
+            the global ``gates_params`` array, shape ``(n_gates,)``.
+        samples_matrices: :math:`2^\\omega` matrices of shape
+            ``(n_gates, n_samples)`` giving the sample-side factor for each
+            angle-addition term.
+        obs_matrices: :math:`2^\\omega` matrices of shape
+            ``(n_gates, n_obs)`` giving the observable-side factor for each
+            angle-addition term.
     """
 
     param_indices: jnp.ndarray
@@ -178,11 +211,7 @@ def _gather_support_values(
 def _compute_trigonometric_building_blocks(
     gate_vals: np.ndarray, z_at_support: jnp.ndarray, l_at_support: jnp.ndarray, d: int
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Returns (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support.
-
-    Computes the ``c(v, u)`` and ``s̄(v, u)`` building blocks from
-    ``notes.md`` §2.3 for each active qudit position.
-    """
+    """Compute (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support."""
     g = jnp.array(gate_vals, dtype=jnp.float32)[:, :, jnp.newaxis]
     angle_z = 2 * jnp.pi * g * z_at_support.astype(jnp.float32) / d + jnp.pi / 4
     angle_l = 2 * jnp.pi * g * l_at_support.astype(jnp.float32) / d
@@ -200,11 +229,10 @@ def _expand_angle_addition(
     obs_cos: jnp.ndarray,
     obs_sin: jnp.ndarray,
 ) -> tuple[list[jnp.ndarray], list[jnp.ndarray]]:
-    """Enumerate all ``2^ω`` angle-addition terms to build the ``B`` and ``C`` factor matrices.
+    """Enumerate all :math:`2^\\omega` angle-addition terms to build the factor matrices.
 
-    Each term corresponds to a choice ``σ ∈ {0,1}^ω`` of cos (0) or sin (1)
-    at each active qudit position.  The all-cos entry (``σ = 0…0``) equals
-    ``Φ_g(z)`` itself.  See ``notes.md`` §2.3 for the derivation.
+    Each term corresponds to a binary choice (cos or sin) at each active
+    qudit position, producing paired sample-side and observable-side factors.
     """
     n_gates, omega, num_samples = state_cos.shape
     n_obs = obs_cos.shape[2]
@@ -230,10 +258,7 @@ def _build_weight_group(
     l_vecs: jnp.ndarray,
     d: int,
 ) -> WeightGroupData:
-    """Precompute the ``B`` and ``C`` factor matrices for a weight-``ω`` gate group.
-
-    See ``notes.md`` §2.3 for the full pipeline and matrix definitions.
-    """
+    """Precompute the factor matrices for a group of gates with the same weight."""
     n_gates = len(generators_w)
     num_samples = samples.shape[0]
     n_obs = l_vecs.shape[0]
@@ -267,9 +292,9 @@ class _PrecomputedObsData(NamedTuple):
 def _obs_phase_matrix(
     samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, d: int
 ) -> jnp.ndarray:
-    """Compute the observable phase matrix ``J`` (see ``notes.md`` §2.1).
+    """Compute the observable phase matrix.
 
-    ``J[i, j] = exp(iπ/d · m_i · (2z_j − l_i))``.
+    :math:`J[i, j] = \\exp(i\\pi / d \\cdot \\mathbf{m}_i \\cdot (2\\mathbf{z}_j - \\mathbf{l}_i))`.
     """
     s_f = samples.astype(jnp.float32)
     return jnp.exp(
@@ -310,7 +335,7 @@ def _accumulate_phase_diffs(
     n_obs: int,
     n_samples: int,
 ) -> jnp.ndarray:
-    """Assemble the accumulated phase-difference matrix ``E`` (see ``notes.md`` §2.3)."""
+    """Assemble the accumulated phase-difference matrix from all weight groups."""
     accumulated = jnp.zeros((n_obs, n_samples))
     for group in weight_data:
         theta_w = jnp.asarray(gates_params)[group.param_indices]
@@ -327,7 +352,7 @@ def _compute_initial_state_correction(
     state_amps: ArrayLike,
     d: int,
 ) -> jnp.ndarray:
-    """Compute the initial-state correction factor ``H`` (see ``notes.md`` §3)."""
+    """Compute the correction factor for a non-standard initial state."""
     s_f = samples.astype(jnp.float32)
     X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
     Psi = jnp.asarray(state_amps)  # (N,)
@@ -352,9 +377,9 @@ def _compute_initial_state_correction(
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo statistics from the integrand (see ``notes.md`` §4).
+    """Compute Monte Carlo mean, covariance, and mean squared magnitude from the integrand.
 
-    Returns ``(expvals, cov, mean_y_sq)`` where *cov* is the per-observable
+    Returns ``(expvals, cov, mean_y_sq)`` where ``cov`` is the per-observable
     covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
     """
     expvals = jnp.mean(integrand, axis=1)
@@ -380,33 +405,51 @@ def _compute_mc_statistics(
 def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
-    """Factory that returns a batched Monte Carlo estimator for qudit observables.
+    """Build a Monte Carlo estimator for Heisenberg–Weyl displacement-operator moments.
 
-    Conceptually, the returned callable evaluates many Fourier-like
-    observables on the same batch of randomly sampled dit-strings, so one call
-    produces a vector of complex moment estimates. Internally it constructs the
-    observable phase ``J``, the circuit phase-difference matrix ``E``, and an
-    optional initial-state correction ``H``, then averages the resulting
-    integrand over the Monte Carlo samples.
+    Returns a pure function (suitable for ``jax.jit``, ``jax.grad``, and
+    related JAX transforms) that estimates the complex expectation value
+    :math:`\\langle \\mathcal{O}(\\mathbf{l}, \\mathbf{m}) \\rangle` for each
+    observable by averaging over randomly sampled dit-strings.
 
-    The returned function estimates ``⟨O(l, m)⟩`` for each displacement-operator
-    observable via a Monte Carlo method.  See ``notes.md`` §2 for the full
-    derivation of the estimator and Appendix A for notation.
+    The returned function captures precomputed data from ``config`` (generator
+    matrices, default samples, preprocessed observables) so that repeated
+    evaluations with different parameters are fast.
 
     Args:
-        config (QuditCircuitConfig): Circuit configuration.
+        config (QuditCircuitConfig): Full circuit description including gate
+            structure, observables, and sampling parameters. See
+            :class:`QuditCircuitConfig` for details on how to construct one.
 
     Returns:
-        Callable: ``qudit_expval_batched(``
-        ``gates_params, key=None, n_samples=None, observables=None,``
-        ``init_state_elems=None, init_state_amps=None, return_mean_y_sq=False)``
-        returning ``(expvals, cov)`` by default (shapes ``(n_obs,)`` and
-        ``(n_obs, 2, 2)``). With ``return_mean_y_sq=True``, it also returns
-        ``mean_y_sq`` (shape ``(n_obs,)``), needed for the QQ U-statistic
-        correction in the MMD loss (see ``notes.md`` §5.3).
+        Callable: A function with signature::
+
+            expval_fn(
+                gates_params,
+                key=None,
+                n_samples=None,
+                observables=None,
+                init_state_elems=None,
+                init_state_amps=None,
+                return_mean_y_sq=False,
+            ) -> (expvals, cov) or (expvals, cov, mean_y_sq)
+
+        where ``expvals`` is a complex array of shape ``(n_obs,)`` containing
+        the estimated moments, and ``cov`` has shape ``(n_obs, 2, 2)``
+        providing the real/imaginary covariance matrix of the mean estimator
+        for each observable. When ``return_mean_y_sq=True``, also returns the
+        per-observable mean of :math:`|y|^2` (needed internally by the MMD
+        loss).
+
+    Raises:
+        ValueError: If no observables are provided either in ``config`` or at
+            call time.
 
     **Example**
 
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import QuditCircuitConfig, build_qudit_expval_func
     >>> config = QuditCircuitConfig(
     ...     d=3,
     ...     n_qudits=2,
@@ -422,6 +465,12 @@ def build_qudit_expval_func(
     >>> expvals, cov = expval_fn(params)
     >>> expvals.shape, cov.shape
     ((2,), (2, 2, 2))
+
+    .. seealso::
+
+        `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_,
+        `Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_,
+        `Section 4, Monte Carlo Statistics <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#4-monte-carlo-statistics>`_
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
@@ -464,8 +513,7 @@ def build_qudit_expval_func(
     ) -> (
         tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
     ):  # pylint: disable=too-many-arguments
-        """
-        Compute batched Monte Carlo expectation values for the qudit IQP circuit.
+        """Compute batched Monte Carlo expectation values for the configured circuit.
 
         Args:
             gates_params (ArrayLike): 1-D array of gate parameters.
@@ -488,8 +536,9 @@ def build_qudit_expval_func(
         Returns:
             tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
             By default returns ``(expvals, cov)`` where ``expvals`` are the estimated
-            complex expectation values, shape ``(n_obs,)``, and ``cov`` are the
-            covariance matrices of the mean estimator, shape ``(n_obs, 2, 2)``.
+            complex expectation values, shape ``(n_obs,)``, and ``cov`` stores the
+            real-imaginary covariance matrices of the mean estimator, shape
+            ``(n_obs, 2, 2)``.
 
             When ``return_mean_y_sq=True``, also returns ``mean_y_sq`` with shape
             ``(n_obs,)``. This equals 1 when the per-sample integrand has unit

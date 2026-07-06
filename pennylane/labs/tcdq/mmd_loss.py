@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""MMD loss utilities for tcdq."""
+"""Maximum Mean Discrepancy (MMD) loss for qubit IQP circuits.
+
+This module compares the output of a qubit IQP circuit to a dataset of
+bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) kernel distribution,
+estimates their expectation values, and combines the results into an MMD loss.
+"""
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -27,22 +32,44 @@ from .expval_functions import CircuitConfig, build_expval_func
 
 @dataclass(frozen=True)
 class MMDConfig:
-    """Hyperparameters for Maximum Mean Discrepancy (MMD) loss calculation.
+    """Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
+
+    The MMD measures how well the circuit's output distribution matches a
+    target dataset. This configuration controls the RBF (Radial Basis Function) kernel bandwidth,
+    the number of random Pauli-Z observables sampled per evaluation, and other options.
 
     Args:
-        bandwidth (float | Sequence[float]): RBF kernel bandwidth(s) for the MMD calculation.
-            If a sequence is provided, the loss will be computed for each bandwidth and either
-            averaged or returned as a list depending on ``return_per_bandwidth``.
-        n_ops (int): The number of binary operators (observables) to sample when approximating
-            the MMD loss.
-        wires (Sequence[int] | None, optional): The specific wires (qubits) to evaluate the
-            MMD over. If ``None``, the calculation defaults to using all available qubits.
-            Defaults to ``None``.
-        sqrt_loss (bool, optional): If ``True``, computes the square root of the absolute
-            reduced MMD loss. Defaults to ``False``.
-        return_per_bandwidth (bool, optional): If ``True``, returns a list containing the
-            individual loss estimates for each bandwidth. If ``False``, returns the scalar
-            average across all specified bandwidths. Defaults to ``False``.
+        bandwidth (float | Sequence[float]): Length-scale of the RBF kernel.
+            Controls how sensitive the MMD is to differences at various
+            distance scales. A good starting point is the median pairwise
+            distance of the target data (see :func:`median_heuristic`). If a
+            sequence is provided, the loss is computed independently for each
+            bandwidth and the results are averaged (or returned individually
+            when ``return_per_bandwidth=True``).
+        n_ops (int): Number of random Pauli-Z observables sampled to
+            approximate the MMD. Larger values reduce estimator variance at
+            the cost of more computation.
+        wires (Sequence[int] | None): Subset of qubit indices to include in
+            the loss. If ``None`` (default), all qubits in the circuit are
+            used.
+        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
+            ``MMD²``. This can stabilize gradients when the loss is small.
+            Defaults to ``False``.
+        return_per_bandwidth (bool): If ``True``, return a list of individual
+            loss values, one per bandwidth entry, instead of their scalar
+            average. Defaults to ``False``.
+
+    **Example**
+
+    >>> from pennylane.labs.tcdq import MMDConfig, median_heuristic
+    >>> import numpy as np
+    >>> target_data = np.random.binomial(1, 0.5, size=(200, 6))
+    >>> bw = median_heuristic(target_data)
+    >>> config = MMDConfig(bandwidth=bw, n_ops=64)
+
+    .. seealso::
+
+        `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
     """
 
     bandwidth: float | Sequence[float]
@@ -53,17 +80,32 @@ class MMDConfig:
 
 
 def median_heuristic(samples: ArrayLike) -> float:
-    """Compute a robust median-distance heuristic for RBF bandwidth selection.
+    """Compute a bandwidth for the RBF kernel using the median pairwise distance heuristic.
+
+    This is a widely used data-driven method for selecting the bandwidth
+    (length-scale) of a radial basis function (RBF) kernel: set the bandwidth
+    equal to the median of all non-zero pairwise Euclidean distances in the
+    dataset. This ensures the kernel is sensitive at the typical inter-sample
+    scale.
 
     Args:
-        samples (ArrayLike): Dataset with shape ``(n_samples, n_features)``.
+        samples (ArrayLike): Dataset array of shape ``(n_samples, n_features)``.
+            For qubit circuits, this is typically a binary matrix of bitstrings.
 
     Returns:
-        float: Median non-zero pairwise Euclidean distance. Returns ``1.0`` when all
-        pairwise distances are zero.
+        float: The median non-zero pairwise Euclidean distance. Returns ``1.0``
+        if all pairwise distances are zero (e.g., identical samples).
 
     Raises:
         ValueError: If fewer than two samples are provided.
+
+    **Example**
+
+    >>> import numpy as np
+    >>> from pennylane.labs.tcdq import median_heuristic
+    >>> data = np.array([[0, 1, 0], [1, 0, 1], [1, 1, 0], [0, 0, 1]])
+    >>> median_heuristic(data)
+    1.4142135623730951
     """
     arr = np.asarray(samples, dtype=float)
     if len(arr) < 2:
@@ -81,6 +123,7 @@ def median_heuristic(samples: ArrayLike) -> float:
 
 @jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
+    """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3)."""
     ops = jnp.asarray(binary_ops, dtype=jnp.int32)
     return jnp.where(ops == 1, 3, 0).astype(jnp.int32)
 
@@ -176,21 +219,67 @@ def mmd_loss(
     target_data: ArrayLike,
     key: ArrayLike | None = None,
 ) -> jnp.ndarray | list[jnp.ndarray]:
-    """Estimate MMD loss using configuration dataclasses.
+    """Compute the MMD loss between a qubit IQP circuit and a target dataset.
+
+    This function estimates how far the circuit's output distribution is from
+    the empirical distribution defined by ``target_data``. At each call it:
+
+    1. Samples ``n_ops`` random Pauli-Z observables according to the RBF
+       kernel defined by ``mmd_config.bandwidth``.
+    2. Estimates the circuit's expectation values for those observables using
+       Monte Carlo (via :func:`~pennylane.labs.tcdq.build_expval_func`).
+    3. Computes the matching empirical averages directly from ``target_data``.
+    4. Combines these into an unbiased MMD² estimator.
+
+    The result is differentiable with respect to ``params`` via JAX
+    autodiff, making it suitable as a training objective.
 
     Args:
-        params (ArrayLike): Trainable circuit parameters.
-        circuit_config (CircuitConfig): Circuit configuration used to build the expval function.
-        mmd_config (MMDConfig): Hyperparameters for the MMD computation.
-        target_data (ArrayLike): Binary target samples with shape ``(m, n_qubits)``.
-        key (ArrayLike | None): Optional runtime PRNG key override for the training loop.
+        params (ArrayLike): Trainable circuit parameters, shape ``(n_params,)``.
+        circuit_config (CircuitConfig): Circuit description specifying the gate
+            structure, number of qubits, and Monte Carlo sample count. See
+            :class:`~pennylane.labs.tcdq.CircuitConfig` for how to construct one.
+        mmd_config (MMDConfig): Hyperparameters for the MMD computation,
+            including the RBF bandwidth and number of observables. See
+            :class:`MMDConfig`.
+        target_data (ArrayLike): Binary dataset of shape ``(m, n_qubits)``
+            where each row is a bitstring sample from the target distribution.
+        key (ArrayLike | None): Optional JAX PRNG key. If ``None``, uses the
+            key stored in ``circuit_config``.
 
     Returns:
-        jnp.ndarray | list[jnp.ndarray]: Scalar average across ``sigma`` values by default,
-        or list of per-sigma estimates when ``return_per_bandwidth=True``.
+        jnp.ndarray | list[jnp.ndarray]: A scalar MMD² estimate averaged over
+        all bandwidths by default, or a list of per-bandwidth estimates when
+        ``mmd_config.return_per_bandwidth=True``.
 
     Raises:
-        ValueError: If effective ``n_samples <= 1``.
+        ValueError: If ``circuit_config.n_samples <= 1``.
+
+    **Example**
+
+    >>> import jax
+    >>> import numpy as np
+    >>> from pennylane.labs.tcdq import (
+    ...     CircuitConfig, MMDConfig, mmd_loss, create_local_gates, median_heuristic
+    ... )
+    >>> n_qubits = 4
+    >>> gates = create_local_gates(n_qubits, max_weight=2)
+    >>> config = CircuitConfig(
+    ...     gates=gates, n_samples=1000, key=jax.random.PRNGKey(0), n_qubits=n_qubits
+    ... )
+    >>> target = np.random.binomial(1, 0.5, size=(100, n_qubits))
+    >>> bw = median_heuristic(target)
+    >>> mmd_cfg = MMDConfig(bandwidth=bw, n_ops=50)
+    >>> import jax.numpy as jnp
+    >>> params = jnp.zeros(len(gates))
+    >>> loss_val = mmd_loss(params, config, mmd_cfg, target)
+    >>> loss_val.shape
+    ()
+
+    .. seealso::
+
+        :func:`~pennylane.labs.tcdq.build_expval_func`,
+        `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
     """
     effective_samples = circuit_config.n_samples
     if effective_samples <= 1:

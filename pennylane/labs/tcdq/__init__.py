@@ -12,10 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Train Classically, Deploy Quantum (TCDQ).
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.labs.tcdq
+
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+This module provides tools for training a restricted but useful family of
+quantum circuits — Instantaneous Quantum Polynomial (IQP) circuits — with
+classical Monte Carlo estimates instead of full statevector simulation.
+The intended workflow is:
+
+1. describe a qubit or qudit circuit,
+2. build an expectation-value estimator or a Maximum Mean Discrepancy
+   (MMD) loss, and
+3. optimize the circuit parameters with standard JAX optimizers.
+
+The package supports both qubit circuits and qudit circuits of arbitrary local
+dimension. The public APIs fall into two groups:
+
+1. expectation-value estimators for observables of the circuit output, and
+2. loss functions for matching the circuit distribution to a dataset.
+
+For the mathematical background, we recommend reading `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_
+and `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
+of the technical notes.
+
+
+Core classes and functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -40,8 +69,6 @@ Phase optimization with JAX: Train Classically Deploy Quantum (TCDQ)
 Circuit construction utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.labs.tcdq
-
 .. autosummary::
     :toctree: api
 
@@ -54,15 +81,18 @@ Circuit construction utilities
 Workflow
 ~~~~~~~~
 
-``pennylane.labs.tcdq`` provides a compact toolkit for constructing and
-simulating phase optimization circuits with JAX. The usual workflow is:
+The typical workflow is:
 
-#. Use helpers in :mod:`pennylane.labs.tcdq.utils` to assemble gates and
-   observables.
-#. Configure the circuit with :class:`~pennylane.labs.tcdq.CircuitConfig`.
-#. Build an expectation-value function with
-   :func:`~pennylane.labs.tcdq.build_expval_func` and evaluate it for
-   different parameter sets.
+#. Define the circuit structure (which qubits interact via which gates)
+   using the helper functions in this module.
+#. Wrap the circuit description in a :class:`~CircuitConfig` (qubit) or
+   :class:`~QuditCircuitConfig` (qudit) dataclass.
+#. Build an expectation-value estimator with
+   :func:`~build_expval_func` or :func:`~build_qudit_expval_func`.
+#. Optionally, build an MMD loss function for distribution matching with
+   :func:`~mmd_loss` or :func:`~build_qudit_mmd_loss`.
+#. Train the circuit parameters with :func:`~train` or a custom
+   optimization loop.
 
 .. code-block:: python
 
@@ -96,11 +126,11 @@ simulating phase optimization circuits with JAX. The usual workflow is:
    expvals, std_errs = expval_fn(params)
 
 
-Training
-~~~~~~~~
+Training with a custom loss
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is a small training loop that minimizes the sum of all two-body ``Z``
-correlators on the same ``3x3`` lattice. The loss function reuses the
+Below is a training loop that minimizes the sum of all two-body ``Z``
+correlators on the same ``3×3`` lattice. The loss function reuses the
 compiled ``expval_fn`` from above.
 
 .. code-block:: python
@@ -126,13 +156,21 @@ compiled ``expval_fn`` from above.
    print("Optimized parameters:", result.final_params)
 
 
-Maximum Mean Discrepancy (MMD) Loss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Training with MMD loss (distribution matching)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To train a circuit to reproduce a target probability distribution (e.g., a dataset
-of bitstrings), you can use the built-in MMD loss utilities. This integrates
-seamlessly with the ``train`` function using the :class:`~pennylane.labs.tcdq.MMDConfig`
-dataclass.
+To train a circuit so that its output distribution reproduces a target
+dataset of bitstrings, use the built-in Maximum Mean Discrepancy (MMD)
+loss. The MMD is a kernel-based distance between probability distributions.
+Smaller values mean the circuit output is closer to the target data.
+
+The ``bandwidth`` parameter controls the length-scale of the radial basis
+function (RBF) kernel used in the MMD. A good default is the median pairwise
+distance of the dataset, computed with :func:`~median_heuristic`.
+
+For more detail on how the loss is constructed, see
+`Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
+of the technical notes.
 
 .. code-block:: python
 
