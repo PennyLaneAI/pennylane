@@ -33,6 +33,8 @@ from pennylane.wires import Wires, WiresLike
 from .out_multiplier import _c_add_sub, _c_add_sub_resources
 from .semi_adder import (
     SemiAdder,
+    _ctrl_right_block,
+    _ctrl_right_block_zeroed,
     _left_block,
     _left_block_zeroed,
     _right_block,
@@ -231,7 +233,7 @@ class OutSquare(Operation):
         n = len(x_wires)
         m = len(output_wires)
 
-        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
+        num_required_work_wires = min(n - 1, m - 4) if output_wires_zeroed else m
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
@@ -296,34 +298,31 @@ class OutSquare(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _out_square_with_adder_condition(
+def _out_square_with_adder_not_zeroed_condition(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> bool:
-    n = num_x_wires
-    m = num_output_wires
-    largest_adder = min(m, n + 1) if output_wires_zeroed else m
+    # pylint: disable=unused-argument
+    if output_wires_zeroed:
+        return False
     # work wires: one for control cache, largest_adder-1 for adder
-    min_num_work_wires = 1 + (largest_adder - 1)
-    return num_work_wires >= min_num_work_wires
+    return num_work_wires >= 1 + (num_output_wires - 1)
 
 
-def _out_square_with_adder_resources(
+def _out_square_with_adder_not_zeroed_resources(
     num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
 ) -> dict:
     # pylint: disable=unused-argument
-    n = num_x_wires
-    m = num_output_wires
     resources = defaultdict(int)
-    if output_wires_zeroed:
-        # Copying of first bit is a CNOT, all other bits require a TemporaryAND
-        resources[resource_rep(CNOT)] += 1
-        resources[resource_rep(TemporaryAND)] = min(n, m) - 1
 
-    # Controlled adders, includes the one for copying if output_wires_zeroed=False
-    for i in range(output_wires_zeroed, min(n, m)):
-        num_out = min(m - i, n + 1) if output_wires_zeroed else m - i
+    # Controlled adders, includes the one for copying because output_wires_zeroed=False
+    for i in range(min(num_x_wires, num_output_wires)):
+        num_out = num_output_wires - i
         resources[resource_rep(CNOT)] += 2
-        add_params = {"num_x_wires": n, "num_y_wires": num_out, "num_work_wires": num_out - 1}
+        add_params = {
+            "num_x_wires": num_x_wires,
+            "num_y_wires": num_out,
+            "num_work_wires": num_out - 1,
+        }
         ctrl_params = {
             "num_control_wires": 1,
             "num_work_wires": num_work_wires - num_out,
@@ -334,43 +333,26 @@ def _out_square_with_adder_resources(
     return dict(resources)
 
 
-@register_condition(_out_square_with_adder_condition)
-@register_resources(_out_square_with_adder_resources)
-def _out_square_with_adder(
+@register_condition(_out_square_with_adder_not_zeroed_condition)
+@register_resources(_out_square_with_adder_not_zeroed_resources)
+def _out_square_with_adder_not_zeroed(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
-    **_,
+    *_,
+    **__,
 ):
-    n = len(x_wires)
-    m = len(output_wires)
     x_wires = x_wires[::-1]
     output_wires = output_wires[::-1]
 
-    if output_wires_zeroed:
-        # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
-        # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
-        # the other bits.
-        CNOT([x_wires[0], output_wires[0]])  # First control-copy is a CNOT
-        num_elbows = min(n, m) - 1
-        copy_input = x_wires[1 : num_elbows + 1]
-        copy_output = output_wires[1 : num_elbows + 1]
-        for x_wire, out_wire in zip(copy_input, copy_output, strict=True):
-            TemporaryAND([x_wires[0], x_wire, out_wire])  # Subsequent control-copies
-
-    # Mark that the copying has happened and does not have to happen via an adder in the loop
-    start = int(output_wires_zeroed)
-
-    for i, x_wire in enumerate(x_wires[start:m], start=start):
+    for i, x_wire in enumerate(x_wires[: len(output_wires)]):
         # Add x to the output register, controlled on x_wire via the work_wires[0] and
         # shifted by i bit positions. For output_wires_zeroed=False, includes the initial copy
         # The output wires of the adder need to take all of the output register of square
         # into account due to carry values. For output_wires_zeroed=True, we can reduce to
         # a fixed size (`n`) instead, because we know at each step how large the value stored
         # in the output register can have grown by then.
-        output_msb = min(m, n + i + 1) if output_wires_zeroed else m
-        output = output_wires[i:output_msb]
+        output = output_wires[i:]
         CNOT([x_wire, work_wires[0]])
         ctrl(
             SemiAdder(
@@ -381,6 +363,149 @@ def _out_square_with_adder(
             work_wire_type="zeroed",
         )
         CNOT([x_wire, work_wires[0]])
+
+
+def _out_square_with_adder_zeroed_condition(
+    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+) -> bool:
+    if not output_wires_zeroed:
+        return False
+    return num_work_wires >= min(num_x_wires - 1, num_output_wires - 4)
+
+
+def _out_square_with_adder_zeroed_resources(
+    num_x_wires, num_output_wires, num_work_wires, **_
+) -> dict:
+    # pylint: disable=unused-argument
+    n = num_x_wires
+    m = num_output_wires
+    resources = defaultdict(int)
+    # Copying of first bit is a CNOT, all other bits require a TemporaryAND
+    resources[resource_rep(CNOT)] += 1
+    resources[resource_rep(TemporaryAND)] = min(n - 1, m - 2)
+    num_work_wires += 2
+    p = min(n - 1, m // 2 - 1)
+    for i in range(1, p + 1):
+        in_size = num_x_wires - i
+        out_size = min(m - 2 * i, n + 2 - i)
+        for k, val in _self_ctrl_one_sparse_add_resources(
+            in_size, out_size, num_work_wires
+        ).items():
+            resources[k] += val
+
+    return dict(resources)
+
+
+def _self_ctrl_one_sparse_add_resources(num_x_wires, num_y_wires, num_work_wires):
+    if num_y_wires == 1:
+        return {resource_rep(CNOT): 1}
+
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, [1])
+    num_elbows = num_y_wires - 1
+    num_blocks = num_y_wires - 2
+    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
+    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
+    # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
+    # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
+    # the remaining construction uses 1 CNOT and 1 + int(num_y_wires-1 not in zeroed) ctrl(CNOT)s
+    # print(f"Rep: {num_work_wires=},
+    ccnot_rep = controlled_resource_rep(
+        CNOT, {}, 1, 0, num_work_wires - num_elbows, work_wire_type="zeroed"
+    )
+    return {
+        resource_rep(TemporaryAND): num_elbows,
+        adjoint_resource_rep(TemporaryAND, {}): num_elbows,
+        CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1,
+        ccnot_rep: num_blocks + (1 + int(num_y_wires - 1 not in zeroed)),
+    }
+
+
+def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires):
+    """Specialized arithmetic unit: Addition controlled on the first qubit of the first addend,
+    with a classically fixed bit in state |0> injected into first addend register at the position
+    of the 2's bit. All other input bits are shifted in position.
+
+    Effectively, we are adding :math:`x_0 * (x_{n-1} x_{n-2} ... x_1 0 x_0)_2` to ``y_wires``.
+    """
+    num_y_wires = len(y_wires)
+    if num_y_wires == 1:
+        CNOT([x_wires[0], y_wires[0]])
+        return
+
+    print(f"{len(x_wires)=} ; {len(y_wires)=}")
+    print(f"Have {len(work_wires)=} work wires in _self_ctrl_one_sparse_add.")
+    print(f"Will slice down to {len(work_wires[num_y_wires-1:])} work wires for CCNOT.")
+
+    # Set up control structure for controlled ops within decomposition
+    ctrl_kwargs = {
+        "control": x_wires[:1],
+        "control_values": [1],
+        "work_wires": work_wires[num_y_wires - 1 :],  # Pass only additional work qubits
+        "work_wire_type": "zeroed",
+    }
+
+    num_x_wires = len(x_wires)
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, [1])
+    work_wires = work_wires[: num_y_wires - 1]
+
+    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+    x_pos = 1
+    for i in range(1, num_y_wires - 1):
+        if i in zeroed:
+            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos += 1
+
+    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+    if num_y_wires - 1 not in zeroed:
+        ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+
+    x_pos -= 1
+    for i in range(num_y_wires - 2, 0, -1):
+        if i in zeroed:
+            _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
+        else:
+            _wires = [work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]]
+            _ctrl_right_block(_wires, **ctrl_kwargs)
+            x_pos -= 1
+
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    CNOT([x_wires[0], y_wires[0]])
+
+
+@register_condition(_out_square_with_adder_zeroed_condition)
+@register_resources(_out_square_with_adder_zeroed_resources)
+def _out_square_with_adder_zeroed(
+    x_wires: WiresLike,
+    output_wires: WiresLike,
+    work_wires: WiresLike,
+    *_,
+    **__,
+):
+    n = len(x_wires)
+    m = len(output_wires)
+    x_wires = x_wires[::-1]
+    output_wires = output_wires[::-1]
+    work_wires = Wires.all_wires([work_wires, output_wires[:2]])
+
+    # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
+    # which is in |0>. This can be reduced to a CNOT for the LSB and TemporaryANDs for
+    # the other bits. The CNOT is performed at the very end, to use the 1s bit of the output as
+    # work wire until then.
+    num_elbows = min(n - 1, m - 2)
+    copy_input = x_wires[1 : num_elbows + 1]
+    copy_output = output_wires[2 : num_elbows + 2]
+    for x_wire, out_wire in zip(copy_input, copy_output, strict=True):
+        TemporaryAND([x_wires[0], x_wire, out_wire])
+
+    p = min(n - 1, m // 2 - 1)
+    for i in range(1, p + 1):
+        # Perform specialized "self"-controlled addition with zeroed 2s input bit, using
+        # sliced x_wires and output_wires.
+        _self_ctrl_one_sparse_add(x_wires[i:], output_wires[2 * i : min(m, n + 2 + i)], work_wires)
+
+    CNOT([x_wires[0], output_wires[0]])  # First control-copy, delayed until end of decomp.
 
 
 def _out_square_with_caddsub_condition(
@@ -572,4 +697,9 @@ def _out_square_with_caddsub(
         _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
 
 
-add_decomps(OutSquare, _out_square_with_adder, _out_square_with_caddsub)
+add_decomps(
+    OutSquare,
+    _out_square_with_adder_zeroed,
+    _out_square_with_adder_not_zeroed,
+    _out_square_with_caddsub,
+)

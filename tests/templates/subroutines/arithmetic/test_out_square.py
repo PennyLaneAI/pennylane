@@ -23,7 +23,8 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Adjoint, Controlled
 from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
-    _out_square_with_adder,
+    _out_square_with_adder_not_zeroed,
+    _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
 )
 
@@ -164,54 +165,54 @@ class TestOutSquare:
             OutSquare(x_wires, output_wires, work_wires)
 
     @pytest.mark.parametrize(
-        "x_wires, output_wires, work_wires, zeroed, should_raise",
+        "num_x_wires, num_output_wires, num_work_wires, zeroed, should_raise",
         [
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], True, False),
-            ([0, 1, 2], [3, 4, 5], [6, 7], True, True),
-            ([0, 1], [3, 4, 5], [6, 7, 8], True, False),
-            ([0, 1], [3, 4, 5], [6, 7], True, True),
-            ([0], [3, 4, 5], [6, 7, 8], True, False),
-            ([0], [3, 4, 5], [6, 7], True, False),
-            ([0], [3, 4, 5], [6], True, True),
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8], False, False),
-            ([0, 1, 2], [3, 4, 5], [6, 7], False, True),
-            ([0, 1], [3, 4, 5], [6, 7, 8], False, False),
-            ([0, 1], [3, 4, 5], [6, 7], False, True),
-            ([0], [3, 4, 5], [6, 7, 8], False, False),
-            ([0], [3, 4, 5], [6, 7], False, True),
-            ([0], [3, 4, 5], [6], False, True),
+            (6, 6, 2, True, False),
+            (6, 6, 1, True, True),
+            (5, 10, 4, True, False),
+            (5, 10, 3, True, True),
+            (3, 3, 3, False, False),
+            (3, 3, 2, False, True),
+            (2, 3, 3, False, False),
+            (2, 3, 2, False, True),
+            (1, 3, 3, False, False),
+            (1, 3, 2, False, True),
+            (1, 3, 1, False, True),
         ],
     )
     def test_work_wire_number(
-        self, x_wires, output_wires, work_wires, zeroed, should_raise
+        self, num_x_wires, num_output_wires, num_work_wires, zeroed, should_raise
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised (only) when too few work wires are supplied."""
+        wires = qp.registers(
+            {"x_wires": num_x_wires, "output_wires": num_output_wires, "work_wires": num_work_wires}
+        )
         if should_raise:
             msg_match = "OutSquare requires at least"
             with pytest.raises(ValueError, match=msg_match):
-                OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+                OutSquare(**wires, output_wires_zeroed=zeroed)
         else:
-            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+            OutSquare(**wires, output_wires_zeroed=zeroed)
 
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "output_wires_zeroed", "applicable_rules"),
         [
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], True, [0]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [0]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
-            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [0, 1]),
-            ([0, 1], [3, 5], [9, 10], True, [0]),
-            ([0, 1], [3, 5], [9, 10], False, [0]),
-            ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 1]),
-            ([0, 1], [3, 5], [9, 10, 11, 12], False, [0, 1]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True, [0]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 1]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [0]),
-            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [0, 1]),
+            ([0, 1, 2, 3], [4, 5, 6], [9], True, [0]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11], False, [1]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], True, [0, 2]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13], False, [1, 2]),
+            ([0, 1], [3, 5], [], True, [0]),
+            ([0, 1], [3, 5], [9, 10], False, [1]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], True, [0, 2]),
+            ([0, 1], [3, 5], [9, 10, 11, 12], False, [1, 2]),
+            ([0, 1], [3, 4, 5, 6], [9], True, [0]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], True, [0, 2]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False, [1]),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13, 14], False, [1, 2]),
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11], True, [0]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 1]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [0]),
-            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], True, [0, 2]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14], False, [1]),
+            ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1, 2]),
         ],
     )
     @pytest.mark.parametrize(
@@ -246,7 +247,9 @@ class TestOutSquare:
             [7, 8, 9, 10],
         )
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=True)
+            _out_square_with_adder_zeroed(
+                x_wires, output_wires, work_wires, output_wires_zeroed=True
+            )
 
         expected = [
             # controlled copy
@@ -283,7 +286,9 @@ class TestOutSquare:
             [7, 8, 9, 10],
         )
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder(x_wires, output_wires, work_wires, output_wires_zeroed=False)
+            _out_square_with_adder_not_zeroed(
+                x_wires, output_wires, work_wires, output_wires_zeroed=False
+            )
 
         expected = [
             # controlled copy (="zeroth" CNOT-wrapped controlled adder)

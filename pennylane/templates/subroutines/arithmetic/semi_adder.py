@@ -106,6 +106,21 @@ def _right_ladder(x_wires, y_wires, work_wires):
     CNOT([x_wires[0], y_wires[0]])
 
 
+def _ctrl_right_block_zeroed(wires, **ctrl_kwargs):
+    ck, tk, aux = wires
+    adjoint(TemporaryAND([ck, tk, aux]))
+    ctrl(CNOT(wires=[ck, tk]), **ctrl_kwargs)
+
+
+def _ctrl_right_block(wires, **ctrl_kwargs):
+    ck, ik, tk, aux = wires
+    CNOT([ck, aux])
+    adjoint(TemporaryAND([ik, tk, aux]))
+    ctrl(CNOT(wires=[ik, tk]), **ctrl_kwargs)
+    CNOT([ck, tk])
+    CNOT([ck, ik])
+
+
 def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwargs):
     """Implement a ladder formed from the right block in figure 4, https://arxiv.org/pdf/1709.06648.
 
@@ -124,21 +139,11 @@ def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwarg
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     crossover = min(num_y_wires - 1, num_x_wires)
+
     for i in range(len(y_wires) - 2, crossover - 1, -1):
-        ck, tk, aux = [work_wires[i - 1], y_wires[i], work_wires[i]]
-        CNOT([ck, aux])
-        adjoint(TemporaryAND([ck, tk, aux]))
-        ctrl(CNOT(wires=[ck, tk]), **ctrl_kwargs)
-        CNOT([ck, tk])
-
+        _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
     for i in range(crossover - 1, 0, -1):
-
-        ck, ik, tk, aux = [work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]]
-        CNOT([ck, aux])
-        adjoint(TemporaryAND([ik, tk, aux]))
-        ctrl(CNOT(wires=[ik, tk]), **ctrl_kwargs)
-        CNOT([ck, tk])
-        CNOT([ck, ik])
+        _ctrl_right_block([work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]], **ctrl_kwargs)
 
     adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
     ctrl(CNOT([x_wires[0], y_wires[0]]), **ctrl_kwargs)
