@@ -86,15 +86,23 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        # NOTE: If called without arguments (during a __copy__)
+        # skip signature binding as attributes will be restored
+        # during the copy.
+        if not args and not kwargs:
+            return obj
+
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
-        obj = super().__new__(cls)
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         obj._init_args = bound_args.arguments
+
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -105,7 +113,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
@@ -148,7 +155,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
-
         super().__init_subclass__(is_baseclass)
 
         base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
@@ -236,7 +242,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
-
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
 
@@ -268,7 +273,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
-
         target_matrix = _get_sparse_matrix(base)
 
         num_target_states = 2 ** len(base.wires)
@@ -340,7 +344,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     def simplify(self):
         if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
-
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
@@ -502,13 +505,12 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
-            # need to insert the new control wires before the old control values.
-            invars = (
-                eqns[0].invars[:-n_ctrls]
-                + self.control_wires.tolist()
-                + eqns[0].invars[-n_ctrls:]
-                + self.control_values
-            )
+            # need to insert the new control wires before the old ones, and do the same
+            # for control values too.
+            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+
         params["n_ctrls"] += len(self.control_wires)
         res = operator_p.bind(*invars, **params)
 
