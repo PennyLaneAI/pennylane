@@ -421,6 +421,11 @@ class TestExpvalVar:
 
         obs = PauliX(0) if defined_outside else None
 
+        # mini test for producing outside of tracing context
+        mp = m_type(obs if obs else PauliX(0))
+        assert isinstance(mp, m_type)
+        assert isinstance(mp.obs, PauliX)
+
         def f():
             obs_inside = obs if obs else PauliX(0)
             return m_type(obs=obs_inside)
