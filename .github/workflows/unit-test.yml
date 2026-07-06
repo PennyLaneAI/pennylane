@@ -156,7 +156,7 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv pip install $line
+                uv pip install $line || uv pip install $(echo "$line" | sed 's/--index-url [^ ]*//')
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
@@ -178,7 +178,7 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv pip install $line
+                uv pip install $line || uv pip install $(echo "$line" | sed 's/--index-url [^ ]*//')
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 

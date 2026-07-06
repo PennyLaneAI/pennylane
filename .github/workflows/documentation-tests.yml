@@ -58,7 +58,8 @@ jobs:
 
       - name: Install PyTorch (CPU-only)
         run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install torch --index-url https://download.pytorch.org/whl/cpu \
+            || pip install torch
 
       - name: Install PennyLane (editable)
         run: |
