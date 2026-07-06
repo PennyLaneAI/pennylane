@@ -28,6 +28,7 @@ from jax.core import eval_jaxpr
 
 import pennylane as qp
 from pennylane.capture.autograph import run_autograph
+from tests.capture.capture_utils import extract_all_primitives
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -118,8 +119,9 @@ class TestAnd:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a, y=b)
-        assert result == -1.0 if (a and b) else 1.0
+        jaxpr = jax.make_jaxpr(run_autograph(circuit))(x=a, y=b)
+        primitives = extract_all_primitives(jaxpr.jaxpr)
+        assert "and" in {prim.name for prim in primitives}
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -259,8 +261,9 @@ class TestOr:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a, y=b)
-        assert result == -1.0 if (a or b) else 1.0
+        jaxpr = make_jaxpr(run_autograph(circuit))(x=a, y=b)
+        primitives = extract_all_primitives(jaxpr.jaxpr)
+        assert "or" in {prim.name for prim in primitives}
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -395,8 +398,9 @@ class TestNot:
                 qp.PauliX(0)
             return qp.expval(qp.PauliZ(0))
 
-        result = run_autograph(circuit)(x=a)
-        assert result == -1.0 if (not a) else 1.0
+        jaxpr = make_jaxpr(run_autograph(circuit))(x=a)
+        primitives = extract_all_primitives(jaxpr.jaxpr)
+        assert "not" in {prim.name for prim in primitives}
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""

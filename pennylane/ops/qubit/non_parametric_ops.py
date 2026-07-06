@@ -45,6 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.typing import AbstractWires
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -321,6 +322,7 @@ class PauliX(Operator2):
     """
 
     wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -368,6 +370,8 @@ class PauliX(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "PauliX"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"X('{wire}')"
@@ -622,6 +626,7 @@ class PauliY(Operator2):
     """
 
     wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
 
     is_verified_hermitian = True
 
@@ -660,6 +665,8 @@ class PauliY(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "PauliY"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Y('{wire}')"
@@ -894,6 +901,7 @@ class PauliZ(Operator2):
     """
 
     wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
 
     is_verified_hermitian = True
     num_wires = 1
@@ -931,6 +939,8 @@ class PauliZ(Operator2):
 
     def __repr__(self) -> str:
         """String representation."""
+        if isinstance(self.wires, AbstractWires):
+            return "PauliZ"
         wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Z('{wire}')"

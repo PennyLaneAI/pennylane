@@ -35,7 +35,7 @@ repos:
     hooks:
     -   id: pyupgrade
         name: "🐍 pyupgrade · Check language features"
-        args: [--py312-plus]
+        args: [--py311-plus]
 - repo: local
   hooks:
     - id: pylint

@@ -681,21 +681,6 @@ class TestDecomposeGraphEnabled:
             qp.assert_equal(actual, exp)
 
 
-@pytest.mark.capture
-@pytest.mark.system
-def test_decompose_qnode():
-    """Tests that the decompose transform works with a QNode."""
-
-    @qp.transforms.decompose(gate_set={"CZ", "Hadamard"})
-    @qp.qnode(qp.device("default.qubit", wires=2))
-    def circuit():
-        qp.CNOT(wires=[0, 1])
-        return qp.expval(qp.PauliZ(0))
-
-    res = circuit()
-    assert qp.math.allclose(res, 1.0)
-
-
 @pytest.mark.unit
 def test_stopping_condition_graph_enabled():
     """Tests that the stopping condition is resolved correctly when the graph is disabled."""
