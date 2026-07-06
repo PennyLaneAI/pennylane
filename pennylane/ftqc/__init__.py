@@ -43,6 +43,7 @@ from .parametric_midmeasure import (
     diagonalize_mcms,
 )
 from .conditional_measure import cond_measure
+from .decoder import Decoder, DecoderSchema, get_decoder, register_decoder
 from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
@@ -80,4 +81,8 @@ __all__ = [
     "xz_to_pauli",
     "pauli_prod",
     "commute_clifford_op",
+    "Decoder",
+    "DecoderSchema",
+    "register_decoder",
+    "get_decoder",
 ]
