@@ -1069,7 +1069,7 @@ class TestHash:
         assert op1 == op2
         assert hash(op1) == hash(op2)
 
-    def test_abstract_op_hash(self):
+    def test_abstract_op_hash_contract(self):
         """Tests that an abstract op and abstractified op have the same hash."""
         op1 = DynOp(Float, Wire[2])
         op2 = abstractify(DynOp(0.5, [0, 1]))
