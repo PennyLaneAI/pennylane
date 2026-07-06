@@ -121,13 +121,15 @@ def preprocess_level_input(
         "all-mlir": list(range(num_tape_levels, total_levels)),
         "user": [total_levels - 1],
     }
-    if level in default_level_map:
+    if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]
 
     if isinstance(level, (int, str)):
         level = [level]
     elif isinstance(level, slice):
-        level = list(range(level.start or 0, level.stop, level.step or 1))
+        stop = level.stop if level.stop is not None else total_levels
+        step = level.step if level.step is not None else 1
+        level = list(range(level.start or 0, stop, step))
     else:
         level = list(level)
 

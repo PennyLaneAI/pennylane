@@ -33,6 +33,7 @@ def dummy_transform(qnode):
     [
         (0, [0], False),
         (slice(3), [0, 1, 2], False),
+        (slice(3, None), [3, 4, 5, 6], False),
         (slice(1, 3), [1, 2], False),
         (slice(1, 4, 2), [1, 3], False),
         ([0, 1], [0, 1], False),
