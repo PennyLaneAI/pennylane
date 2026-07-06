@@ -378,7 +378,7 @@ class TestSPSAOptimizer:
         assert isinstance(res, float)
         assert res == params
 
-    def test_obj_func_with_probs_not_a_scalar_function(self):
+    def test_obj_func_with_probs_not_a_scalar_function(self, seed):
         """Test that if the objective function is not a
         scalar function, like qp.probs(), an error is raised."""
 
@@ -395,7 +395,9 @@ class TestSPSAOptimizer:
             return qp.probs(wires=[0, 1, 2, 3])
 
         opt = qp.SPSAOptimizer(maxiter=10)
-        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+        rng = np.random.default_rng(seed)
+        params = rng.normal(scale=0.1, size=(n_layers, n_wires, 3))
+        params = np.tensor(params, requires_grad=True)
 
         with pytest.raises(
             ValueError,
@@ -417,7 +419,7 @@ class TestSPSAOptimizer:
             spsa_opt.step(f, args)
 
     @pytest.mark.tf
-    def test_obj_func_not_a_scalar_function_with_tensorflow_interface(self):
+    def test_obj_func_not_a_scalar_function_with_tensorflow_interface(self, seed):
         """Test that if the objective function is not a
         scalar function, an error is raised using tensorflow_interface."""
 
@@ -434,7 +436,9 @@ class TestSPSAOptimizer:
             return qp.probs(wires=[0, 1, 2, 3])
 
         opt = qp.SPSAOptimizer(maxiter=10)
-        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+        rng = np.random.default_rng(seed)
+        params = rng.normal(scale=0.1, size=(n_layers, n_wires, 3))
+        params = np.tensor(params, requires_grad=True)
 
         with pytest.raises(
             ValueError,
@@ -443,7 +447,7 @@ class TestSPSAOptimizer:
             opt.step(cost, params)
 
     @pytest.mark.slow
-    def test_lightning_device(self):
+    def test_lightning_device(self, seed):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
         coeffs = [0.2, -0.543, 0.4514]
         obs = [
@@ -468,7 +472,9 @@ class TestSPSAOptimizer:
                 qp.CNOT(wires=[3, 1])
             return qp.expval(H)
 
-        init_params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+        rng = np.random.default_rng(seed)
+        init_params = rng.normal(0, np.pi, (num_qubits, 3))
+        init_params = np.tensor(init_params, requires_grad=True)
         params = init_params
 
         init_energy = cost_fun(init_params, num_qubits)
@@ -482,7 +488,7 @@ class TestSPSAOptimizer:
         assert energy < init_energy
 
     @pytest.mark.slow
-    def test_default_mixed_device(self):
+    def test_default_mixed_device(self, seed):
         """Test SPSAOptimizer implementation with default.mixed device."""
         n_qubits = 1
         max_iterations = 400
@@ -497,7 +503,9 @@ class TestSPSAOptimizer:
 
         opt = qp.SPSAOptimizer(maxiter=max_iterations, c=0.3)
 
-        init_params = np.random.normal(scale=0.1, size=(2,), requires_grad=True)
+        rng = np.random.default_rng(seed)
+        init_params = rng.normal(scale=0.1, size=(2,))
+        init_params = np.tensor(init_params, requires_grad=True)
         params = init_params
         init_circuit_res = circuit(params)
 
