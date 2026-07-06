@@ -11,11 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Implementations for the qudit expectation value functions.
+"""Implementations for the qudit expectation value functions.
 
-See ``notes.md`` for the full theoretical derivation and a notation
-cross-reference table mapping math symbols to code variables.
+If you read this module as a software engineer, the main execution path is:
+
+1. Draw random dit-strings ``z`` from ``Z_d^n``.
+2. Build the observable-dependent phase matrix ``J`` for each requested
+    displacement operator.
+3. Build the circuit-dependent phase-difference matrix ``E`` without
+    materializing the full statevector.
+4. Average ``J * exp(iE)`` over the sampled dit-strings, optionally with an
+    extra initial-state correction.
+
+The public entry point is ``build_qudit_expval_func``. See ``notes.md`` §2 for
+the derivation and Appendix A for the notation-to-code glossary.
 """
 
 import itertools
@@ -41,10 +50,10 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             of generator vectors. Each generator vector has length ``n_qudits`` with integer
             entries in ``{0, ..., d-1}``, representing the Z-power on each qudit.
         observables (tuple[ArrayLike, ArrayLike] | None): Pair ``(l_vecs, m_vecs)`` specifying
-            the displacement operators ``D(l, m)`` to measure. Each array has shape
-            ``(n_obs, n_qudits)`` with integer entries in ``{0, ..., d-1}``.  If ``None``,
-            observables must be supplied when constructing the expectation-value function
-            (e.g. via ``build_qudit_mmd_loss``, which generates its own observables).
+            the displacement operators ``O(l, m)`` from ``notes.md`` to measure. Each array
+            has shape ``(n_obs, n_qudits)`` with integer entries in ``{0, ..., d-1}``.  If
+            ``None``, observables must be supplied when constructing the expectation-value
+            function (e.g. via ``build_qudit_mmd_loss``, which generates its own observables).
         n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
         key (ArrayLike): Random key for JAX.
         init_state_elems (ArrayLike | None): Support elements of the initial state. Array of
@@ -115,7 +124,7 @@ class WeightGroupData(NamedTuple):
 
     Gates are grouped by weight ``ω`` (number of active qudits) so that
     the ``2^ω``-term angle-addition expansion of the phase difference
-    ``Φ_g(z) − Φ_g(z ⊕ l)`` can be vectorised over gates.  See
+    ``Φ_g(z) − Φ_g(z ⊖ l)`` can be vectorised over gates.  See
     ``notes.md`` §2.3 for the full derivation.
 
     ``samples_matrices[σ]`` and ``obs_matrices[σ]`` store the ``B`` and
@@ -371,21 +380,48 @@ def _compute_mc_statistics(
 def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
-    """Factory that returns an expectation-value function for a qudit circuit.
+    """Factory that returns a batched Monte Carlo estimator for qudit observables.
+
+    Conceptually, the returned callable evaluates many Fourier-like
+    observables on the same batch of randomly sampled dit-strings, so one call
+    produces a vector of complex moment estimates. Internally it constructs the
+    observable phase ``J``, the circuit phase-difference matrix ``E``, and an
+    optional initial-state correction ``H``, then averages the resulting
+    integrand over the Monte Carlo samples.
 
     The returned function estimates ``⟨O(l, m)⟩`` for each displacement-operator
     observable via a Monte Carlo method.  See ``notes.md`` §2 for the full
-    derivation of the estimator.
+    derivation of the estimator and Appendix A for notation.
 
     Args:
         config (QuditCircuitConfig): Circuit configuration.
 
     Returns:
-        Callable: ``qudit_expval_batched(gates_params, key=None, n_samples=None)``
+        Callable: ``qudit_expval_batched(``
+        ``gates_params, key=None, n_samples=None, observables=None,``
+        ``init_state_elems=None, init_state_amps=None, return_mean_y_sq=False)``
         returning ``(expvals, cov)`` by default (shapes ``(n_obs,)`` and
-        ``(n_obs, 2, 2)``).  With ``return_mean_y_sq=True``, also returns
+        ``(n_obs, 2, 2)``). With ``return_mean_y_sq=True``, it also returns
         ``mean_y_sq`` (shape ``(n_obs,)``), needed for the QQ U-statistic
         correction in the MMD loss (see ``notes.md`` §5.3).
+
+    **Example**
+
+    >>> config = QuditCircuitConfig(
+    ...     d=3,
+    ...     n_qudits=2,
+    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     observables=(
+    ...         jnp.array([[1, 0], [0, 1]], dtype=jnp.int32),
+    ...         jnp.zeros((2, 2), dtype=jnp.int32),
+    ...     ),
+    ...     n_samples=512,
+    ... )
+    >>> expval_fn = build_qudit_expval_func(config)
+    >>> params = jnp.array([0.2, -0.1])
+    >>> expvals, cov = expval_fn(params)
+    >>> expvals.shape, cov.shape
+    ((2,), (2, 2, 2))
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 

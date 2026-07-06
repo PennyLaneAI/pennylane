@@ -5,6 +5,25 @@ circuit family implemented in this module.  The presentation follows
 the mathematical narrative — circuit ↦ classical estimator ↦ training
 loss — and points to the implementing functions where helpful.
 
+If you are approaching this codebase as a software engineer rather than
+from quantum machine learning, the practical picture is:
+
+- A qudit is a discrete variable with ``d`` possible values.
+- The circuit family is chosen so that a useful batch of Fourier-like
+	statistics can be estimated by Monte Carlo instead of by full
+	statevector simulation.
+- ``build_qudit_expval_func`` is the low-level API: given circuit
+	parameters and observables, it returns estimated complex moments and
+	covariance information.
+- ``build_qudit_mmd_loss`` is the training API: it samples observables
+	from a graph-kernel distribution, estimates the same moments for the
+	circuit and the dataset, and combines them into an MMD loss.
+
+If you want to follow the implementation rather than the derivation,
+Sections 2 and 5 are the most directly relevant, and Appendix A at the
+end of the document maps the main symbols to code variables and helper
+functions.
+
 Throughout, $d$ is the qudit dimension, $n$ is the number of qudits,
 $\omega = e^{2\pi i/d}$ is the primitive $d$-th root of unity, and
 $\oplus$ denotes componentwise addition modulo $d$ on $\mathbb{Z}_d^n$.
@@ -15,10 +34,16 @@ $\oplus$ denotes componentwise addition modulo $d$ on $\mathbb{Z}_d^n$.
 
 ### 1.1 From IQP to Fourier Circuits over $\mathbb{Z}_d$
 
-The qubit IQP circuit has the form $F D(\boldsymbol{\theta}) F^\dagger |0\rangle$,
-where $F$ is the $n$-fold Hadamard (the QFT over $\mathbb{Z}_2^n$) and
-$D(\boldsymbol{\theta})$ is a diagonal unitary built from Pauli $Z$ tensor
-products.
+For qubits, because the Hadamard is self-inverse, the usual IQP circuit
+can be written as either $F D(\boldsymbol{\theta}) F^\dagger |0\rangle$
+or $F^\dagger D(\boldsymbol{\theta}) F |0\rangle$, where $F$ is the
+$n$-fold Hadamard (the QFT over $\mathbb{Z}_2^n$) and
+$D(\boldsymbol{\theta})$ is a diagonal unitary built from Pauli $Z$
+tensor products.
+
+In the qudit code below we use the $F^{\dagger} D F$ orientation, which
+matters because the discrete Fourier transform is no longer self-inverse
+when $d > 2$.
 
 The key property that makes classical training possible is that
 the Fourier-conjugated observable $F Z_{\mathbf{a}} F^\dagger = X_{\mathbf{a}}$
@@ -320,3 +345,27 @@ This combination is assembled by `_unbiased_mmd_squared`; the public entry
 point `build_qudit_mmd_loss` returns a loss function that orchestrates the
 full pipeline — sampling Fourier indices, estimating moments, and combining
 the PP/PQ/QQ terms — for one or more heat-kernel bandwidths.
+
+---
+
+## Appendix A. Glossary and Code Map
+
+| Symbol or term | Code name | Plain-English meaning | Main implementation |
+| --- | --- | --- | --- |
+| $d$ | `d` | Number of values each qudit can take | `QuditCircuitConfig.d` and downstream helpers |
+| $n$ | `n`, `n_qudits` | Number of qudits, or equivalently the length of each dit-string | `QuditCircuitConfig.n_qudits` |
+| generator $\mathbf{g}$ | `gates`, `generators` | One diagonal gate pattern over the qudits | `_parse_qudit_generator_dict` |
+| observable index $\mathbf{l}$ | `l_vecs`, `l_obs`, `L_visible` | Fourier index selecting which complex moment to estimate | `build_qudit_expval_func`, `_sample_fourier_indices` |
+| observable index $\mathbf{m}$ | `m_vecs`, `m_obs` | Shift part of the displacement observable; for the MMD loss it is always zero | `build_qudit_expval_func`, `_compute_qudit_loss_for_bandwidth` |
+| Monte Carlo sample $\mathbf{z}$ | `samples` | Random dit-string used to estimate an expectation value | `_compute_qudit_samples` |
+| observable phase $J$ | `obs_phase_matrix`, `obs_pm` | The part of the integrand determined only by the observable and the sample | `_obs_phase_matrix` |
+| phase-difference matrix $E$ | `accumulated_phase_diffs` | The part of the integrand determined by the circuit parameters | `_accumulate_phase_diffs` |
+| initial-state correction $H$ | `H` | Extra multiplicative factor used when the input is not just a basis state | `_compute_initial_state_correction` |
+| angle-addition factors $\mathbf{B}_\sigma^\omega$, $\mathbf{C}_\sigma^\omega$ | `samples_matrices`, `obs_matrices` | Batched sample-side and observable-side factors for the shifted gate-eigenvalue expansion | `_expand_angle_addition`, `_build_weight_group` |
+| weight group $\omega$ | `WeightGroupData` | Gates with the same number of active qudits so they can be processed together | `_build_weight_group`, `_build_all_weight_groups` |
+| model moment $\hat{\mu}_q(\mathbf{l})$ | `expvals`, `mu_q_hat` | Circuit-side estimate of the complex moment for one observable | `_compute_mc_statistics`, `_compute_qudit_loss_for_bandwidth` |
+| data moment $\hat{\mu}_p(\mathbf{l})$ | `mu_p_hat` | Empirical moment computed directly from `target_data` | `_empirical_fourier_moments` |
+| second moment $\overline{|y|^2}$ | `mean_y_sq` | Monte Carlo estimate used to remove the model-model diagonal bias | `_compute_mc_statistics`, `_qq_term` |
+| PP / PQ / QQ | `_pp_term`, `_pq_cross_term`, `_qq_term` | The unbiased data-data, data-model, and model-model contributions to the MMD estimator | `qudit_mmd_loss.py` |
+| heat-kernel scale $t$ | `bandwidth` | Controls how strongly the kernel emphasizes low versus high graph frequencies | `QuditMMDConfig.bandwidth` |
+| empirical dataset $\mathcal{X}$ | `target_data`, `X_data` | Sampled dit-strings whose distribution the circuit should match | `loss_fn` inside `build_qudit_mmd_loss` |

@@ -13,10 +13,18 @@
 # limitations under the License.
 """Estimate graph-kernel MMD losses for qudit circuits on ``Z_d^n``.
 
-This module builds a stochastic estimate of the squared Maximum Mean
-Discrepancy between an empirical dataset and a model distribution defined
-by a qudit circuit.  See ``notes.md`` §5 for the full theoretical
-background.
+If you set aside the quantum terminology, this module implements a
+randomized feature-matching loss over discrete vectors:
+
+1. Sample Fourier index vectors from a graph-kernel distribution.
+2. Use the qudit expectation estimator to get model moments for those
+    indices.
+3. Compute the matching empirical moments directly from the dataset.
+4. Combine the data-data, data-model, and model-model terms into an
+    unbiased MMD estimate.
+
+The public entry point is ``build_qudit_mmd_loss``. See ``notes.md`` §5 for
+the derivation and Appendix A for the notation-to-code glossary.
 """
 
 from collections.abc import Callable, Sequence
@@ -294,7 +302,13 @@ def build_qudit_mmd_loss(
 ) -> Callable:
     """Build a reusable qudit MMD loss function from circuit and loss configs.
 
-    See ``notes.md`` §5 for the theoretical background.
+    At a high level, the returned callable draws a random batch of
+    Fourier-like observables, estimates those moments for the circuit,
+    computes the same moments from ``target_data``, and averages the PP, PQ,
+    and QQ contributions of the unbiased MMD estimator.
+
+    See ``notes.md`` §5 for the theoretical background and Appendix A for
+    notation.
 
     Args:
         circuit_config: Configuration for the underlying qudit expectation-value
@@ -312,6 +326,22 @@ def build_qudit_mmd_loss(
         ValueError: If ``n_ops < 1``.
         ValueError: If ``bandwidth`` is empty.
         ValueError: If ``wires`` contains duplicates or out-of-range indices.
+
+    **Example**
+
+    >>> circuit_config = QuditCircuitConfig(
+    ...     d=3,
+    ...     n_qudits=2,
+    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     n_samples=512,
+    ... )
+    >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
+    >>> loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+    >>> params = jnp.array([0.2, -0.1])
+    >>> target_data = jnp.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=jnp.int32)
+    >>> loss = loss_fn(params, target_data, key=jax.random.PRNGKey(123))
+    >>> loss.shape
+    ()
     """
     n_samples = circuit_config.n_samples
     if n_samples <= 1:
