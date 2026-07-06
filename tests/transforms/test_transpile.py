@@ -419,7 +419,7 @@ class TestTranspile:
 
         assert batch[0][0] == qp.PauliX(0)
         assert batch[0][1] == qp.SWAP((1, 2))
-        assert batch[0][2] == qp.CNOT((0, 1))
+        assert batch[0][2] == ControlledOp2(qp.X(1), [0])
         assert batch[0][3] == qp.state()
         assert batch[0][4] == qp.expval(qp.PauliZ(1))
 
