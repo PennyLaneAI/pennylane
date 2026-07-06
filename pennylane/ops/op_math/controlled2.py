@@ -104,15 +104,23 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        # NOTE: If called without arguments (during a __copy__)
+        # skip signature binding as attributes will be restored
+        # during the copy.
+        if not args and not kwargs:
+            return obj
+
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
-        obj = super().__new__(cls)
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         obj._init_args = bound_args.arguments
+
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -123,7 +131,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
@@ -166,7 +173,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
-
         super().__init_subclass__(is_baseclass)
 
         base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
@@ -254,7 +260,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
-
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
 
@@ -286,7 +291,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
-
         target_matrix = _get_sparse_matrix(base)
 
         num_target_states = 2 ** len(base.wires)
@@ -358,7 +362,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     def simplify(self):
         if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
-
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
@@ -573,7 +576,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         # TODO: we need a better startegy for control values, but for now
         #       we're assuming that half the control values are 0s
         return {
-            _ctrl(op, control_wires, work_wires, work_wire_type): count
+            _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_res.gate_counts.items()
         } | {qp.X: len(control_values)}
 
@@ -581,7 +584,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     @register_resources(
         _resource_fn,
         work_wires=base_rule._work_wire_spec,
-        exact=base_rule.exact_resources,
+        exact=False,  # TODO:: no reliable way to tell whether control values has 0s.
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
@@ -685,7 +688,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     @register_resources(
         _resource_fn,
         work_wires=rule._work_wire_spec,
-        exact=rule.exact_resources,
+        exact=False,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
@@ -717,7 +720,7 @@ def _ctrl_single_work_wire_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     return {
-        _ctrl(
+        _ctrl_abstract(
             base,
             control_wires=Wire[1],
             work_wires=work_wires,
@@ -747,7 +750,7 @@ def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
 
 
-def _ctrl(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
 
     if isinstance(op, CompressedResourceOp):
         return controlled_resource_rep(
