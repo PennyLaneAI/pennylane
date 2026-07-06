@@ -462,7 +462,7 @@
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
-  decompositions of :class:`~.CRZ`, as described 
+  decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
   [(#9750)](https://github.com/PennyLaneAI/pennylane/pull/9750)
 
@@ -825,6 +825,7 @@
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
     [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+    [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
   - Integration with :func:`pennylane.insert`.
@@ -932,7 +933,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+  [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.

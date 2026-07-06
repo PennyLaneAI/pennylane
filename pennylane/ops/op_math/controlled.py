@@ -36,6 +36,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -197,12 +198,15 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
 
     if not isinstance(control_wires, AbstractWires):
         control_wires = Wires(control_wires)
+    if control_values is None:
+        control_values = [True] * len(control_wires)
     if work_wires is None:
         work_wires = []
     if not isinstance(work_wires, AbstractWires):
         work_wires = Wires(work_wires)
 
     if isinstance(op, Controlled2):
+        _ = pop_op_eqns((op,))
         ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
         ctrl_values = resolve_ctrl_values(control_values, op)
         return ctrl(
