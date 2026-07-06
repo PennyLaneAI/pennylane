@@ -371,8 +371,6 @@ def test_public_prod_binding():
 
     # Prod primitive consumes the ops
     assert eqns[1].outvars[0] == eqns[2].invars[0]
-    assert eqns[1].outvars[0] == eqns[2].invars[0]
-    assert eqns[0].outvars[0] == eqns[2].invars[1]
     assert eqns[0].outvars[0] == eqns[2].invars[1]
 
 
