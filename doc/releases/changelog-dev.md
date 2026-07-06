@@ -931,7 +931,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+  [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
