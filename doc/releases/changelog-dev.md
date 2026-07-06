@@ -462,7 +462,7 @@
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
-  decompositions of :class:`~.CRZ`, as described 
+  decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
   [(#9750)](https://github.com/PennyLaneAI/pennylane/pull/9750)
 
@@ -801,7 +801,9 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
   - Integration with :func:`pennylane.apply`.
+  - Integration with measurements and capture.
   - Integration with the graph-based decomposition system.
+  - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -829,7 +831,10 @@
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+  [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+  [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
+  [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
@@ -933,7 +938,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+  [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
