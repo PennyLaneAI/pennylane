@@ -601,15 +601,20 @@ class TestSumOfSlatersPrep:
             assert np.allclose([out_state[key] for key in indices], coefficients)
 
     @pytest.mark.external
-    def test_qjit_on_subroutine(self, seed):
+    @pytest.mark.parametrize("force_non_id_encoding", (False, True))
+    def test_qjit_on_subroutine(self, seed, force_non_id_encoding):
         """Test that the subroutine of the SumOfSlatersPrep decomposition
         that uses already allocated wires is qjit compatible."""
 
         seed += 1
-        n = 6
-        num_entries = 28
+        n = 8
+        num_entries = 8
         wires = list(range(n))
         coefficients, indices = self.make_random_data(n, num_entries, seed=seed)
+        if force_non_id_encoding:
+            # Add indices (powers of two) that force many bits to be required,
+            # avoiding the identity encoding case
+            indices = self.force_powers_of_two(indices, n)
 
         v_bits = qp.math.int_to_binary(np.array(indices), n).T
 

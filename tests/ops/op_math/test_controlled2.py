@@ -21,6 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.ops.op_math.controlled import Controlled
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import OneWireDynOp
 
@@ -400,6 +401,16 @@ class TestControlledOp2:
 
         generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
         qp.assert_equal(op.generator(), generator)
+
+    def test_create_abstract_op(self):
+        """Tests creating an abstract operator."""
+
+        op = ControlledOp2(OneWireDynOp, Wire[2])
+        assert op.control_wires == Wire[2]
+        assert op.target_wires == Wire[1]
+        assert op.control_values == Bool[2]
+        assert op.work_wires == Wire[0]
+        assert op.wires == Wire[3]
 
     def test_create_controlled_op2(self):
         """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
