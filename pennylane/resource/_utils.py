@@ -79,7 +79,7 @@ def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
     return 0
 
 
-def preprocess_level_input(  # pylint: disable=too-many-branches
+def preprocess_level_input(
     level: str | int | slice | list[int | str],
     marker_to_level: dict[str, int],
     pipeline_len: int,
@@ -122,7 +122,7 @@ def preprocess_level_input(  # pylint: disable=too-many-branches
         "user": [total_levels - 1],
     }
     if level in default_level_map:
-        return keyword_map[level]
+        return default_level_map[level]
 
     if isinstance(level, (int, str)):
         level = [level]
