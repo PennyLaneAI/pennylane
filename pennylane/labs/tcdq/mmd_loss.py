@@ -77,21 +77,17 @@ class MMDConfig:
 
 
 def median_heuristic(samples: ArrayLike) -> float:
-    """Compute a bandwidth for the RBF kernel using the median pairwise distance heuristic.
+    """Choose a reasonable radial basis function (RBF) kernel bandwidth from the target dataset.
 
-    This is a widely used data-driven method for selecting the bandwidth
-    (length-scale) of a radial basis function (RBF) kernel: set the bandwidth
-    equal to the median of all non-zero pairwise Euclidean distances in the
-    dataset. This ensures the kernel is sensitive at the typical inter-sample
-    scale.
+    A good starting point for :class:`MMDConfig`'s ``bandwidth`` parameter.
 
     Args:
         samples (ArrayLike): Dataset array of shape ``(n_samples, n_features)``.
             For qubit circuits, this is typically a binary matrix of bitstrings.
 
     Returns:
-        float: The median non-zero pairwise Euclidean distance. Returns ``1.0``
-        if all pairwise distances are zero (e.g., identical samples).
+        float: A scalar bandwidth derived from the target data. Returns ``1.0``
+        if all samples are identical.
 
     Raises:
         ValueError: If fewer than two samples are provided.
