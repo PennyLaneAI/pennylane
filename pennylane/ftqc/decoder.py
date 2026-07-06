@@ -43,8 +43,7 @@ class Decoder:
     Args:
         name (str): The name used for registration and selection.
         schema (DecoderSchema): The syndrome -> correction I/O contract.
-        kernel (object | None): The compiled GPU artifact (e.g. a builder or a prebuilt library
-            handle). Defaults to ``None``.
+        kernel (object | None): The decoder kernel (e.g.a prebuilt library handle or Python function). Defaults to ``None``.
     """
 
     name: str
