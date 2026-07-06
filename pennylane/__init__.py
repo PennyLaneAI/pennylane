@@ -31,6 +31,7 @@ from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
+from pennylane.backline import Backline, Endpoint, backline
 from pennylane import math
 from pennylane import operation
 from pennylane.core import operator
