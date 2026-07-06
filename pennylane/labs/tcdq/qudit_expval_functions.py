@@ -29,7 +29,7 @@ the derivation and Appendix A for the notation-to-code glossary.
 
 import itertools
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import NamedTuple
 
 import jax
@@ -49,13 +49,13 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         gates (dict[int, list[list[int]]]): Circuit structure mapping parameter indices to lists
             of generator vectors. Each generator vector has length ``n_qudits`` with integer
             entries in ``{0, ..., d-1}``, representing the Z-power on each qudit.
+        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
+        key (ArrayLike): Random key for JAX.
         observables (tuple[ArrayLike, ArrayLike] | None): Pair ``(l_vecs, m_vecs)`` specifying
             the displacement operators ``O(l, m)`` from ``notes.md`` to measure. Each array
             has shape ``(n_obs, n_qudits)`` with integer entries in ``{0, ..., d-1}``.  If
             ``None``, observables must be supplied when constructing the expectation-value
             function (e.g. via ``build_qudit_mmd_loss``, which generates its own observables).
-        n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
-        key (ArrayLike): Random key for JAX.
         init_state_elems (ArrayLike | None): Support elements of the initial state. Array of
             shape ``(N, n_qudits)`` with integer entries in ``{0, ..., d-1}``, where ``N`` is
             the number of non-zero amplitudes. Each row is a dit-string in ``Z_d^n``.
@@ -66,9 +66,9 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     d: int
     n_qudits: int
     gates: dict[int, list[list[int]]]
+    n_samples: int
+    key: ArrayLike
     observables: tuple[ArrayLike, ArrayLike] | None = None
-    n_samples: int = 10000
-    key: ArrayLike = field(default_factory=lambda: jax.random.PRNGKey(0))
     init_state_elems: ArrayLike | None = None
     init_state_amps: ArrayLike | None = None
 
@@ -411,11 +411,12 @@ def build_qudit_expval_func(
     ...     d=3,
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
     ...     observables=(
     ...         jnp.array([[1, 0], [0, 1]], dtype=jnp.int32),
     ...         jnp.zeros((2, 2), dtype=jnp.int32),
     ...     ),
-    ...     n_samples=512,
     ... )
     >>> expval_fn = build_qudit_expval_func(config)
     >>> params = jnp.array([0.2, -0.1])

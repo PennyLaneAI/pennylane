@@ -334,6 +334,7 @@ def build_qudit_mmd_loss(
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
     ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
     ... )
     >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
     >>> loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
