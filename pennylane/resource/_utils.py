@@ -116,12 +116,13 @@ def preprocess_level_input(  # pylint: disable=too-many-branches
         # Account for an additional "Before Tape Transforms" level
         total_levels += 1
 
-    if level == "all":
-        return list(range(0, total_levels))
-    if level == "all-mlir":
-        return list(range(num_tape_levels, total_levels))
-    if level == "user":
-        return [total_levels - 1]
+    default_level_map = {
+        "all": list(range(0, total_levels)),
+        "all-mlir": list(range(num_tape_levels, total_levels)),
+        "user": [total_levels - 1],
+    }
+    if level in default_level_map:
+        return keyword_map[level]
 
     if isinstance(level, (int, str)):
         level = [level]
