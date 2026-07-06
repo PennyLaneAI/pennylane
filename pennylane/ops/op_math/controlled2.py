@@ -672,7 +672,13 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
         # TODO: in the eye of the decomposition graph, we're essentially just adding PauliX
         #       gates for no reason. It'll be like this until we have a better solution.
-        return rule.compute_resources(**base.arguments).gate_counts | {qp.X: len(control_wires)}
+        return rule.compute_resources(
+            base=base,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ).gate_counts | {qp.X: len(control_wires)}
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)

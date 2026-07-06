@@ -50,11 +50,17 @@ from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.controlled2 import to_controlled_unitary
 from pennylane.typing import Float, Wire
 
 # pylint: disable=no-name-in-module
-from tests.core.operator.operator2_utils import DynOp, DynOpWithMatrix, OneWireDynOp
+from tests.core.operator.operator2_utils import (
+    DynOp,
+    DynOpWithMatrix,
+    NonParametricOp,
+    OneWireDynOp,
+)
 from tests.decomposition.conftest import to_resources
 
 
@@ -942,6 +948,45 @@ class TestControlledDecomposition:
             qp.X(3),
         ]
 
+    def test_flip_zero_control2(self):
+        """Tests the new flip_zero_control."""
+
+        def _condition_fn(control_wires, **_):
+            return len(control_wires) == 3
+
+        @qp.register_condition(_condition_fn)
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+
+        op = qp.ctrl(NonParametricOp(wires=[0]), control=[1, 2, 3, 4])
+        assert not custom_rule.is_applicable(**op.arguments)
+
+        op = qp.ctrl(NonParametricOp(wires=[0]), control=[1, 2, 3], control_values=[1, 1, 0])
+        assert custom_rule.is_applicable(**op.arguments)
+
+        resources = custom_rule.compute_resources(**op.arguments)
+        assert resources == to_resources({qp.CNOT: 3, qp.H: 2, qp.X: 3})
+
+        with qp.queuing.AnnotatedQueue() as q:
+            custom_rule(**op.arguments)
+
+        assert q.queue == [
+            qp.X(3),
+            qp.CNOT([1, 2]),
+            qp.H(3),
+            qp.CNOT([3, 0]),
+            qp.H(3),
+            qp.CNOT([1, 2]),
+            qp.X(3),
+        ]
+
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
@@ -968,6 +1013,14 @@ class TestControlledDecomposition:
         with queuing.AnnotatedQueue() as q:
             qp.Projector([0], wires=4)
             ctrl_single_work_wire2(**op.arguments)
+
+        assert ctrl_single_work_wire2.compute_resources(**op.arguments) == to_resources(
+            {
+                qp.X: 3,
+                ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
+                controlled_resource_rep(qp.X, {}, num_control_wires=3): 2,
+            }
+        )
 
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)

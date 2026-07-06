@@ -633,6 +633,10 @@ class TestDecompDictionary:
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
 
+            op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
+            rule_names = {rule.name for rule in qp.list_decomps(op)}
+            assert rule_names == {"flip_control_adjoint"}
+
             op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
             rule_names = {rule.name for rule in qp.list_decomps(op)}
             assert rule_names == {
