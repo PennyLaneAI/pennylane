@@ -24,7 +24,14 @@ import pennylane as qp
 from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep, \
+    AbstractOperatorLike, CompressedResourceOp
+
+
+def _adjoint(op: AbstractOperatorLike):
+    if isinstance(op, CompressedResourceOp):
+        return adjoint_resource_rep(op.op_type, op.params)
+    return qp.ops.op_math.Adjoint2(op)
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -36,7 +43,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
+            _adjoint(decomp_op): count
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
