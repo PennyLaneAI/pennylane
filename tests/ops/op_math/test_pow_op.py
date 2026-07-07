@@ -1029,3 +1029,15 @@ class TestIntegration:
 
         assert np.allclose(res, expected)
         assert np.allclose(res_grad, expected_grad)
+
+def test_eigvals_fractional_power_negative_eigenvalue():
+        
+        base = qp.PauliZ(0)
+        z = 0.5
+        op = qp.pow(base, z) 
+        
+        eigvals = op.eigvals()
+        
+        """Expected eigenvalues for Z**0.5 are [1.0, 1.0j]"""
+        expected_eigvals = [1.0, 1j]
+        assert np.allclose(eigvals, expected_eigvals)
