@@ -1381,10 +1381,9 @@ def _init_arg_types(op: Operator2) -> None:
 
         # Check if either shape or dtype is not compatible
         if not exp_type.is_compatible_with(comparison_abstract_type):
-            actual_dtype = argval_dtype
-
             # Isolate if it's a pure dtype issue by comparing with a mock type that has the
             # expected shape but the actual dtype
+            actual_dtype = argval_dtype
             if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
                 raise ValueError(
                     f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
