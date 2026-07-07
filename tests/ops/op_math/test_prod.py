@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
-from pennylane import math
+from pennylane import math, resource_rep
 from pennylane.core.operator import Operator
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
@@ -1673,7 +1673,7 @@ class TestDecomposition:
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
         product = qp.X(0) @ qp.Y(1) @ qp.X(2)
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.Y): 1}
+        resources = {resource_rep(qp.X): 2, resource_rep(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
@@ -1683,7 +1683,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qp.resource_rep(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {qp.X: 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
