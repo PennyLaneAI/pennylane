@@ -327,17 +327,17 @@ class SignedOutMultiplier(Operator):
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        if any(wire in work_wires for wire in x_wires):
-            raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if any(wire in work_wires for wire in y_wires):
-            raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        # if any(wire in work_wires for wire in x_wires):
+        # raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        # if any(wire in work_wires for wire in y_wires):
+        # raise ValueError("None of the wires in work_wires should be included in y_wires.")
 
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
+        # if any(wire in y_wires for wire in x_wires):
+        # raise ValueError("None of the wires in y_wires should be included in x_wires.")
+        # if any(wire in x_wires for wire in output_wires):
+        # raise ValueError("None of the wires in x_wires should be included in output_wires.")
+        # if any(wire in y_wires for wire in output_wires):
+        # raise ValueError("None of the wires in y_wires should be included in output_wires.")
 
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
@@ -471,7 +471,7 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
-    if compiler.active() or capture.enabled():
+    if compiler.active():
         input_reg = math.array(input_reg, like="jax")
 
     # Invert all bits

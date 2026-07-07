@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
+from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
@@ -23,7 +24,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.math import array
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
 from pennylane.wires import Wires, WiresLike
 
@@ -32,7 +32,6 @@ from .temporary_and import TemporaryAND
 has_jax = True
 try:
     from jax import lax
-    from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -233,8 +232,8 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         wires = wires[::-1]
         num_controls = 0
     else:
-        if enabled() and control_wires.shape[0] > 0:
-            wires = jnp.concatenate([wires, jnp.atleast_1d(control_wires)])
+        if compiler.active() or enabled() and control_wires.shape[0] > 0:
+            wires = math.concatenate([wires, math.atleast_1d(control_wires)])
         else:
             wires = wires + control_wires
         wires = wires[::-1]
@@ -243,19 +242,20 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     def _increment():
         # Construct the wires on which the ladder will act.
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
-        if enabled():
-            zipped = array(zipped, like="jax")
-            all_wires = jnp.concatenate([wires[:1], zipped])
+        if compiler.active() or enabled():
+            zipped = math.array(zipped, like="jax")
+            all_wires = math.concatenate([wires[:1], zipped])
         else:
             all_wires = wires[:1] + zipped
 
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            if enabled():
-                TemporaryAND(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
+            if math.is_abstract(all_wires):
+                _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
             else:
-                TemporaryAND(all_wires[2 * k : 2 * k + 3])
+                _slice = all_wires[2 * k : 2 * k + 3]
+            TemporaryAND(_slice)
 
         forward_ladder()  # pylint: disable=no-value-for-parameter
 
@@ -263,10 +263,11 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            if enabled():
-                adjoint(TemporaryAND)(lax.dynamic_slice(all_wires, (2 * k,), (3,)))
+            if math.is_abstract(all_wires):
+                _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
             else:
-                adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
+                _slice = all_wires[2 * k : 2 * k + 3]
+            adjoint(TemporaryAND)(_slice)
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 
@@ -322,8 +323,8 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires, **_):
 
-    if enabled():
-        wires = array(wires, like="jax")
+    if compiler.active() or enabled():
+        wires = math.array(wires, like="jax")
 
     if len(work_wires) > 0:
         wires = wires[: -len(work_wires)]
@@ -357,16 +358,16 @@ def _controlled_incrementer_decomposition(
 ):
     wires = base.wires
 
-    if enabled():
+    if compiler.active() or enabled():
         wires, work_wires, control_wires = (
-            array(wires, like="jax"),
-            array(work_wires, like="jax"),
-            array(control_wires, like="jax"),
+            math.array(wires, like="jax"),
+            math.array(work_wires, like="jax"),
+            math.array(control_wires, like="jax"),
         )
-        base_work_wires = array(base.hyperparameters["work_wires"], like="jax")
+        base_work_wires = math.array(base.hyperparameters["work_wires"], like="jax")
         if base_work_wires.shape[0] > 0 and work_wires.shape[0] > 0:
-            work_wires = jnp.concatenate(
-                [jnp.atleast_1d(base_work_wires), jnp.atleast_1d(work_wires)]
+            work_wires = math.concatenate(
+                [math.atleast_1d(base_work_wires), math.atleast_1d(work_wires)]
             )
         elif base_work_wires.shape[0] > 0 and work_wires.shape[0] == 0:
             work_wires = base_work_wires
