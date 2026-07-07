@@ -721,7 +721,10 @@ class TestInitExpectedArgtypesValidation:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match=r"Expected 'phi' to have shape \(2,\)"):
+        with pytest.raises(
+            ValueError,
+            match=r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) but received \(1,\)",
+        ):
             Op(np.array([0.5]), wires=0)
 
     def test_dynamic_arg_wrong_dtype_error(self):
@@ -738,7 +741,8 @@ class TestInitExpectedArgtypesValidation:
                 super().__init__(phi, wires=wires)
 
         with pytest.raises(
-            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype 'int64'"
+            ValueError,
+            match=r"Parameter 'phi' does not match the operator's expected 'arg_specs' dtype. Expected int64 but received float64",
         ):
             Op(0.5, wires=0)
 
@@ -891,10 +895,12 @@ class TestBroadcasting:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) \(non-broadcasting dimensions\) but received \(4, 3\)."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.ones((4, 3)), wires=0)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = r"Parameter 'phi' does not match the operator's expected 'arg_specs' shape. Expected \(2,\) \(non-broadcasting dimensions\) but received \(4, 1, 2\)."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.ones((4, 1, 2)), wires=0)
 
     def test_broadcasted_array_wrong_dtype_error(self):
@@ -911,7 +917,8 @@ class TestBroadcasting:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'phi' with parameter broadcasting"):
+        expected_msg = "Parameter 'phi' does not match the operator's expected 'arg_specs' dtype. Expected int64 but received float64"
+        with pytest.raises(ValueError, match=expected_msg):
             _ = Op(np.array([0.5, 0.6]), wires=0)
 
     def test_broadcasted_inferred_ndim_from_arg_specs(self):
@@ -2485,7 +2492,6 @@ class TestLegacyCompatibilityViews:
 
 
 class TestApply:
-
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply(self, op2):
         """Tests that Operator2 can queue like Operator1 using ``qp.apply``."""

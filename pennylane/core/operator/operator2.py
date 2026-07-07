@@ -1410,17 +1410,23 @@ def _init_arg_types(op: Operator2) -> None:
             argval.dtype if isinstance(argval, AbstractArray) else math.get_dtype_name(argval)
         )
         comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
+
+        # Check if either shape or dtype is not compatible
         if not exp_type.is_compatible_with(comparison_abstract_type):
+            # Isolate if it's a pure dtype issue by comparing with a mock type that has the
+            # expected shape but the actual dtype
             actual_dtype = argval_dtype
-            if is_broadcasted:
+            if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
                 raise ValueError(
-                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
-                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
-                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
+                    f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
+                    f"Expected {exp_type.dtype} but received {actual_dtype}."
                 )
+
+            # If dtype is fine, must be a shape mismatch
+            broadcast_msg = " (non-broadcasting dimensions)" if is_broadcasted else ""
             raise ValueError(
-                f"Expected '{name}' to have shape {exp_type.shape} and dtype "
-                f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
+                f"Parameter '{name}' does not match the operator's expected 'arg_specs' shape. "
+                f"Expected {exp_type.shape}{broadcast_msg} but received {arg_shape}."
             )
 
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
