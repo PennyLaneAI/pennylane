@@ -45,8 +45,11 @@ from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms import decompose
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=protected-access
@@ -2073,6 +2076,16 @@ class TestCtrl:
             assert op.name == "C(QSVT)"
 
         assert len(q.queue) == 2
+
+    def test_ctrl_on_abstract_controlled_op(self):
+        """Tests that applying `ctrl` on abstract controlled op works."""
+
+        op = qp.ctrl(DynOp(Float, Wire[2]), control=[0], control_values=[1])
+        assert isinstance(op, ControlledOp2)
+        assert op.base == DynOp(Float, Wire[2])
+        assert op.wires == Wire[3]
+        assert op.control_wires == Wire[1]
+        assert op.control_values == Bool[1]
 
 
 class _Rot(Operation):
