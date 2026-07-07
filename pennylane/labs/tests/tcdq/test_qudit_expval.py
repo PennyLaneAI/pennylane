@@ -286,7 +286,7 @@ class TestQuditExpvalVsPennyLane:
             pl_val = _pennylane_qubit_expval(generators_arr.tolist(), thetas_arr.tolist(), l, m)
             assert np.isclose(our_vals[i], pl_val, atol=1e-6), (
                 f"Observable {i} (l={l}, m={m}): got {our_vals[i]:.8f}, "
-                "PennyLane gives {pl_val:.8f}"
+                f"PennyLane gives {pl_val:.8f}"
             )
 
 
