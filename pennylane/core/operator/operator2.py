@@ -32,7 +32,7 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause
+from pennylane.capture import enabled, pause, symbolic_array
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -1228,6 +1228,8 @@ class Operator2(metaclass=OperatorMeta):
         wire_lens = []
         for name, value in self.wire_args.items():
             if name not in self.hybrid_argnames:
+                if isinstance(value, AbstractWires):
+                    value = [symbolic_array((), int) for _ in range(value.num_wires)]
                 pos_args.extend(value)
                 wire_lens.append(len(value))
 
@@ -1250,6 +1252,11 @@ class Operator2(metaclass=OperatorMeta):
             value = self.arguments[name]
             leaves, tree = flatten(value)
             static_args[name] = (tuple(leaves), tree)
+
+        pos_args = [
+            symbolic_array(a.shape, a.dtype) if isinstance(a, AbstractArray) else a
+            for a in pos_args
+        ]
 
         res = operator_p.bind(
             *pos_args,
