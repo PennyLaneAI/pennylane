@@ -507,6 +507,30 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     @property
     @override
+    def has_decomposition(self):
+        return bool(list_decomps(self))
+
+    @override
+    def decomposition(self):
+        from pennylane.core.queuing import AnnotatedQueue, QueuingManager  # tach-ignore
+
+        for decomp in list_decomps(self):
+            try:
+                if not decomp.is_applicable(**self.arguments):
+                    continue
+                with AnnotatedQueue() as q:
+                    decomp(**self.arguments)
+            except TypeError:
+                # Skip legacy rules with incompatible argument signatures
+                continue
+            if QueuingManager.recording():
+                _ = [op.queue() for op in q.queue]
+            return q.queue
+
+        raise qp.exceptions.DecompositionUndefinedError
+
+    @property
+    @override
     def name(self):
         return f"C({self.base.name})"
 
@@ -593,7 +617,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
         [
             _make_controlled_decomp(rule)
             for rule in list_decomps(op.base)
-            if not _decomp_contains_mcm(rule, op.base.arguments)
+            if not _decomp_contains_mcm(rule, op.base.resource_params)
         ]
     )
 
@@ -603,10 +627,10 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 def _make_controlled_decomp(base_rule: DecompositionRule):
 
     def _condition_fn(base, **_):
-        return base_rule.is_applicable(**base.arguments)
+        return base_rule.is_applicable(**base.resource_params)
 
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        base_counts = base_rule.compute_resources(**base.arguments).gate_counts
+        base_counts = base_rule.compute_resources(**base.resource_params).gate_counts
         # TODO: we need a better startegy for control values, but for now
         #       we're assuming that half the control values are 0s
         gate_counts = {
