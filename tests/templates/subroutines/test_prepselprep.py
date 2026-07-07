@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane import resource_rep
 
 
 @pytest.mark.jax
@@ -319,8 +320,8 @@ class TestPrepSelPrep:
 
         ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
         grep = qp.resource_rep(qp.GlobalPhase)
-        xrep = qp.X
-        yrep = qp.Y
+        xrep = resource_rep(qp.X)
+        yrep = resource_rep(qp.Y)
         prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
             qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),

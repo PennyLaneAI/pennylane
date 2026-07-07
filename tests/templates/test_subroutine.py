@@ -762,7 +762,7 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            qp.PauliX, partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
+            resource_rep(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"

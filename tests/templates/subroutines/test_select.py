@@ -252,8 +252,8 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
         op_reps = (
-            qp.X,
-            qp.X,
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
             qp.resource_rep(qp.SWAP),
         )
         control = (0, 1)
@@ -354,10 +354,10 @@ class TestSelect:
         assert resources["num_control_wires"] == 2
 
         op_reps = (
-            qp.X,
-            qp.X,
-            qp.X,
-            qp.Y,
+            resource_rep(qp.X),
+            resource_rep(qp.X),
+            resource_rep(qp.X),
+            resource_rep(qp.Y),
         )
 
         assert resources["op_reps"] == op_reps
