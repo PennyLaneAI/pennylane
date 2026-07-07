@@ -942,10 +942,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in :class:`~.Incrementer` where dynamic loop variables and wires were not taken 
-  into account for `qjit(capture=False)`, leading to a tracer conversion error. Also adjusted
-  the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier` to be 
-  compatible with traced wires.
+* Fixed bugs in :class:`~.Incrementer` and :class:`~.AQFT` where dynamic loop variables and wires 
+  were not taken into account for `qjit(capture=False)`, leading to tracer conversion errors. 
+  Also adjusted the wire validation in :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier`
+  to be compatible with traced wires.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
 * Fixed a bug where the work wires passed by a :class:`~.SignedOutMultiplier` decomposition to 
