@@ -636,6 +636,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`pennylane.resource.Resources` and :mod:`pennylane.resource.error` have been removed.
+  [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
