@@ -172,3 +172,46 @@ class TestLeftClassicalComparator:
         assert np.allclose(state.imag, 0.0), "Phase error: imaginary components detected"
         # All non-zero amplitudes must be non-negative
         assert np.all(state.real >= -1e-10), "Phase error: negative amplitudes detected"
+
+    @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_max_bound_all_inputs(self, comparator, n):
+        """Regression test for the largest allowed bound ``L = 2 ** n - 1``.
+
+        For ``"<="`` and ``">"`` the decomposition internally increments the
+        bound to ``L + 1 == 2 ** n``, which previously wrapped to ``0`` and made
+        the comparator return a constant-wrong result for every input (``"<="``
+        always False, ``">"`` always True). The comparison must now be correct
+        for all ``n``-bit inputs. Work wires are cleaned by applying the adjoint,
+        as documented in the template's warning.
+        """
+        x_wires = list(range(n))
+        target_wire = n
+        work_wires = list(range(n + 1, n + 1 + max(1, n - 1)))
+        total = n + 1 + max(1, n - 1)
+        L = 2**n - 1
+
+        dev = qp.device("lightning.qubit", wires=total)
+
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.BasisState(
+                np.array([int(b) for b in format(x, f"0{n}b")]), wires=x_wires
+            )
+            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            return qp.probs(wires=[target_wire])
+
+        expected_fn = {
+            "<": lambda x: x < L,
+            "<=": lambda x: x <= L,
+            ">": lambda x: x > L,
+            ">=": lambda x: x >= L,
+        }[comparator]
+
+        for x in range(2**n):
+            probs = np.asarray(circuit(x))
+            got = probs[1] > 0.5
+            assert got == bool(expected_fn(x)), (
+                f"comparator={comparator} L={L} x={x}: got {got}, "
+                f"expected {bool(expected_fn(x))}"
+            )

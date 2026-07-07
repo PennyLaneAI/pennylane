@@ -81,6 +81,7 @@ def _full_state(M, N, n):
         (2, 4, 3),
         (1, 2, 2),
         (3, 4, 4),
+        (7, 3, 3),
     ],
 )
 def test_standard_validity(M, N, n):
@@ -116,6 +117,8 @@ class TestSuperpositionTHC:
             (3, 6, 3),
             (4, 4, 3),
             (4, 8, 3),
+            (7, 4, 3),
+
         ],
     )
     def test_operation_result(self, M, N, n, qjit):
@@ -254,3 +257,44 @@ class TestSuperpositionTHC:
         """An error is raised when the registers do not meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
+
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_register_too_small_error(self, n):
+        """The index registers must be able to hold the one-body sentinel value
+        ``M``, i.e. ``M <= 2 ** n - 1``. Passing ``M = 2 ** n`` must raise instead
+        of silently preparing an empty (zero-success) state.
+        """
+        M = 2**n
+        mu_wires, nu_wires, work_wires = _wire_layout(n)
+        with pytest.raises(
+            ValueError, match=r"each need at least ceil\(log2\(M \+ 1\)\) wires"
+        ):
+            SuperpositionTHC(M, 2, mu_wires, nu_wires, work_wires)
+
+    @pytest.mark.parametrize("n", [2, 3, 4])
+    def test_max_rank_boundary(self, n):
+        """``M = 2 ** n - 1`` is the largest rank the ``n``-wire registers can
+        hold; it must construct successfully and prepare exactly the valid set.
+        This exercises the degenerate ``nu <= M`` comparison where the internal
+        bound ``M + 1 == 2 ** n``.
+        """
+        M = 2**n - 1
+        N = 2
+        mu_wires, nu_wires, work_wires = _wire_layout(n)
+        success_flag = work_wires[6]
+        dev = qp.device("lightning.qubit", wires=2 * n + len(work_wires))
+
+        @qp.qnode(dev)
+        def circuit():
+            SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
+            return qp.probs(wires=mu_wires + nu_wires + [success_flag])
+
+        probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
+        success = probs[:, :, 1]
+        support = {
+            (mu, nu)
+            for mu in range(2**n)
+            for nu in range(2**n)
+            if success[mu, nu] > 1e-9
+        }
+        assert support == _valid_pairs(M, N)

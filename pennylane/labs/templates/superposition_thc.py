@@ -66,6 +66,9 @@ class SuperpositionTHC(Operation):
         N (int): The number of spin orbitals. Used to count the one-body contribution
             :math:`N/2` to the valid index set.
         mu_wires (WiresLike): The :math:`n` wires that store the first THC index :math:`\mu`.
+            At least :math:`n = \lceil \log_2(M + 1) \rceil` wires are required so the index
+            registers can hold the one-body sentinel value :math:`M` (equivalently
+            :math:`M \le 2^{n} - 1`).
         nu_wires (WiresLike): The :math:`n` wires that store the second THC index :math:`\nu`.
             Must contain the same number of wires as ``mu_wires``.
         work_wires (WiresLike): The auxiliary wires. The first seven wires are the ones shown in
@@ -78,6 +81,9 @@ class SuperpositionTHC(Operation):
 
     The template prepares the THC index superposition on the ``mu_wires`` / ``nu_wires``
     registers. Here ``n = 3``, so the minimum number of work wires is :math:`3n + 5 = 14`.
+    The prepared superposition is uniform over the valid index pairs
+    :math:`\mathcal{S}` conditioned on the success flag ``work_wires[6] == 1``; we
+    therefore read out the ``mu`` and ``nu`` registers together with that flag.
 
     .. code-block:: python
 
@@ -89,28 +95,29 @@ class SuperpositionTHC(Operation):
         mu_wires = list(range(0, n))
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n, 2 * n + 3 * n + 5))
+        success_flag = work_wires[6]
 
         dev = qp.device("lightning.qubit", wires=2 * n + 3 * n + 5)
 
         @qp.qnode(dev)
         def circuit():
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-            return qp.probs(mu_wires + nu_wires)
+            return qp.probs(mu_wires + nu_wires + [success_flag])
+
+    The valid pairs are exactly those flagged in the success subspace, and each
+    carries equal weight :math:`1 / d` with :math:`d = N/2 + M(M+1)/2`.
 
     .. code-block:: pycon
 
-        >>> print(circuit())
-        [0.05001301 0.05001301 0.05001301 0.05001301 0.05001301 0.05001301
-         0.00416233 0.00416233 0.00416233 0.05001301 0.05001301 0.05001301
-         0.05001301 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.05001301 0.05001301 0.05001301 0.00416233 0.00416233 0.00416233
-         0.00416233 0.00416233 0.00416233 0.05001301 0.05001301 0.00416233
-         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.05001301 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.00416233 0.00416233 0.00416233 0.00416233 0.00416233 0.00416233
-         0.00416233 0.00416233 0.00416233 0.00416233]
+        >>> probs = circuit().reshape(2**n, 2**n, 2)
+        >>> valid = sorted((mu, nu) for mu in range(2**n) for nu in range(2**n)
+        ...                if probs[mu, nu, 1] > 1e-9)
+        >>> valid
+        [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
+        >>> len(valid) == N // 2 + M * (M + 1) // 2
+        True
+        >>> float(probs[0, 0, 1])
+        0.015625
     """
 
     grad_method = None
@@ -153,6 +160,19 @@ class SuperpositionTHC(Operation):
         if overlap:
             raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
 
+        if N/2 > M + 1:
+            raise ValueError(f"M must be greater than or equal to N/2 - 1.")
+
+        # The index registers must be able to hold the one-body sentinel value
+        # ``M`` (the column flagged by ``nu = M``), so ``M <= 2 ** n - 1``.
+        n = len(mu_wires)
+        if M > 2**n - 1:
+            raise ValueError(
+                f"mu_wires and nu_wires each need at least ceil(log2(M + 1)) wires. "
+                f"Got M={M} with {n} wires, which allows M up to {2**n - 1}. "
+                f"Provide at least {int(np.ceil(np.log2(M + 1)))} wires per index register."
+            )
+
         self.hyperparameters["M"] = M
         self.hyperparameters["N"] = N
         self.hyperparameters["mu_wires"] = mu_wires
@@ -177,7 +197,7 @@ class SuperpositionTHC(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
-        return cls(*data, **hyperparams_dict)
+        return cls(**hyperparams_dict)
 
     def map_wires(self, wire_map: dict) -> "SuperpositionTHC":
         new_dict = {
@@ -225,14 +245,14 @@ class SuperpositionTHC(Operation):
         return q.queue
 
 
-def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
+def _left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag
     wires of the ancilla register (Fig. 3 of `Lee et al. (2021)
     <https://arxiv.org/abs/2011.03494>`_):
 
-    * ``work_wires[1]``: :math:`\nu < M` (classical comparison against the THC rank).
+    * ``work_wires[1]``: :math:`\nu <= M` (classical comparison against the THC rank).
     * ``work_wires[2]``: :math:`\mu \leq \nu` (quantum comparison between the two registers).
     * ``work_wires[3]``: :math:`\nu = M` (classical equality against the THC rank,
       i.e. the one-body sentinel column). Only computed when ``keep_eq`` is ``False``.
@@ -252,7 +272,7 @@ def left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
         keep_eq (bool): If ``False`` (the default, used in the forward passes and the
             first adjoint), ``work_wires[3]`` is computed via the zero-controlled
             ``MultiControlledX``. If ``True`` (used only in the final
-            ``adjoint(left_equalities)``), that gate is skipped so the prepared
+            ``adjoint(_left_equalities)``), that gate is skipped so the prepared
             ``work_wires[3]`` flag is left in place as an output.
     """
     n = len(mu_wires)
@@ -378,14 +398,14 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
-    left_equalities(M, N, mu_wires, nu_wires, work_wires)
+    _left_equalities(M, N, mu_wires, nu_wires, work_wires)
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
     Controlled(Z(work_wires[5]), control_wires=work_wires[0:3], work_wires=extra_work)
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
 
     # 4. Uncompute the flags and the amplitude-marking rotation.
-    adjoint(left_equalities)(M, N, mu_wires, nu_wires, work_wires)
+    adjoint(_left_equalities)(M, N, mu_wires, nu_wires, work_wires)
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
@@ -408,7 +428,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
-    left_equalities(M, N, mu_wires, nu_wires, work_wires)
+    _left_equalities(M, N, mu_wires, nu_wires, work_wires)
 
     Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
     Controlled(
@@ -419,7 +439,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     X(wires=work_wires[5])
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    adjoint(lambda: left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
+    adjoint(lambda: _left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)
