@@ -313,9 +313,9 @@ class PauliRot(Operation):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard.compute_matrix(),
-        "Y": RX.compute_matrix(np.pi / 2),
-        "Z": np.array([[1, 0], [0, 1]]),
+        "X": np.array([[1, 1], [1, -1]]) / np.sqrt(2),  # Hadamard
+        "Y": np.array([[1, -1j], [-1j, 1]]) / np.sqrt(2),  # RX(pi/2)
+        "Z": np.eye(2, dtype=complex),  # Identity
     }
 
     @classmethod

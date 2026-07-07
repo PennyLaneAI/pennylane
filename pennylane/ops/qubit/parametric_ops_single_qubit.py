@@ -29,7 +29,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -43,7 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
-from pennylane.typing import TensorLike
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -59,7 +59,7 @@ def _can_replace(x, y):
     return not qp.math.is_abstract(x) and not qp.math.requires_grad(x) and qp.math.allclose(x, y)
 
 
-class RX(Operation):
+class RX(Operator2):
     r"""
     The single qubit X rotation
 
@@ -80,6 +80,10 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
 
     num_wires = 1
     num_params = 1
@@ -121,7 +125,9 @@ class RX(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -141,11 +147,11 @@ class RX(Operation):
         tensor([[0.9689+0.0000j, 0.0000-0.2474j],
                 [0.0000-0.2474j, 0.9689+0.0000j]])
         """
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qp.math.cast_like(c, 1j)
             s = qp.math.cast_like(s, 1j)
@@ -156,11 +162,11 @@ class RX(Operation):
         return qp.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta, format="csr"):
+    def compute_sparse_matrix(phi, wires, format="csr"):
         return sp.sparse.csr_matrix(
             [
-                [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
-                [-1j * qp.math.sin(theta / 2), qp.math.cos(theta / 2)],
+                [qp.math.cos(phi / 2), -1j * qp.math.sin(phi / 2)],
+                [-1j * qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
             ]
         ).asformat(format)
 
@@ -1204,7 +1210,6 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
 def _controlled_rot_decomp(
     phi, theta, omega, wires, control_wires, work_wires, work_wire_type, **_
 ):
-
     if len(control_wires) == 1:
         qp.CRot(phi, theta, omega, wires=wires)
         return
