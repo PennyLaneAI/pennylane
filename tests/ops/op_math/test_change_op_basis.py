@@ -388,9 +388,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": qp.X,
-            "target_op": qp.Y,
-            "uncompute_op": qp.X,
+            "compute_op": resource_rep(qp.X),
+            "target_op": resource_rep(qp.Y),
+            "uncompute_op": resource_rep(qp.X),
         }
 
     def test_registered_decomp(self):
