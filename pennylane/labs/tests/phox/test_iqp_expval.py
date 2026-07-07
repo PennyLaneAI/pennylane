@@ -19,14 +19,18 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.tcdq.expval_functions import (
-    CircuitConfig,
-    _parse_generator_dict,
-    build_expval_func,
-)
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+
+try:
+    from pennylane.labs.phox.expval_functions import (
+        CircuitConfig,
+        _parse_generator_dict,
+        build_expval_func,
+    )
+except ImportError:
+    pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
 
 
 def _prepare_obs_batch(obs_strings):
@@ -59,9 +63,7 @@ def _prepare_pennylane_state(n_qubits, init_state_spec):
         return state
 
     X, P = init_state_spec
-    X = np.array(X)
-    P = np.array(P)
-    for x, p in zip(X, P):
+    for x, p in zip(X, P, strict=True):
         idx = int("".join(str(b) for b in x), 2)
         state[idx] = p
 
@@ -118,7 +120,7 @@ def iqp_circuit_pl(generators, params, obs_ints, init_state):
         for i in range(n_qubits):
             qp.Hadamard(i)
 
-        for param, gen in zip(params, generators):
+        for param, gen in zip(params, generators, strict=True):
             qp.MultiRZ(2 * -param, wires=gen)
 
         for i in range(n_qubits):
@@ -309,7 +311,7 @@ class TestIQPExpval:
             for i in range(n_qubits):
                 qp.Hadamard(i)
 
-            for param, gen in zip(params, generators_pl):
+            for param, gen in zip(params, generators_pl, strict=True):
                 qp.MultiRZ(2 * -param, wires=gen)
 
             qp.DiagonalQubitUnitary(diagonal, wires=[0, 1])
