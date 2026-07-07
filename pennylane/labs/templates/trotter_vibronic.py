@@ -577,7 +577,8 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
           (with ``len(y_wires)=k`` and ``len(output_wires)=b``)
           in the linear terms requires :math:`\max(k, 2b+2)` (see documentation).
         - The ``SignedOutSquare`` of a :math:`k` qubit register with ``output_wires_zeroed=True``
-          requires :math:`k` work wires.
+          into the cache register of size :math:`2k-1` requires :math:`2k-2` work wires for the
+          decomposition with minimized non-Clifford cost.
         - The ``OutMultiplier`` of the unsigned square cache and the coefficients into the phase
           gradient register (with ``output_wires_zeroed=True``) requires :math:`b+1` work wires.
         - The :func:`~.pennylane.labs.templates.half_signed_out_multiplier`
@@ -588,7 +589,7 @@ def trotter_vibronic(evolution_time, num_trotter_steps, fragments, registers, aq
 
         .. math::
 
-            \max(n-1, b-1, \max(k, 2b+2), k, b+1, \max(2k, 2b+2))
+            \max(n-1, b-1, \max(k, 2b+2), 2k-2, b+1, \max(2k, 2b+2))
             =\max(n-1, 2k, 2b+2)
 
         We typically would expect :math:`b>k\approx n`, so the third term to be the largest, but
