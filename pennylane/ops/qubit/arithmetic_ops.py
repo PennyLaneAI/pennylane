@@ -24,7 +24,7 @@ from copy import copy
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -629,12 +629,12 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
         return {}
 
     if value > 2 ** (num_wires - 1) - 1:
-        return {qp.X: 1}
+        return {abstractify(qp.X): 1}
 
     num_controls = num_wires - 1
     binary_str = format(value, f"0{num_controls}b")
     last_significant = binary_str.rfind("1")
-    gate_counts = {resource_rep(qp.X): (last_significant + 1) * 2}
+    gate_counts = {abstractify(qp.X): (last_significant + 1) * 2}
 
     first_significant = binary_str.find("1")
     gate_counts[
@@ -793,7 +793,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             work_wire_type="borrowed",
         )
     ] = 1
-    gate_set[resource_rep(qp.X)] = 2
+    gate_set[abstractify(qp.X)] = 2
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
@@ -805,7 +805,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 work_wire_type="borrowed",
             )
         ] = 1
-        gate_set[resource_rep(qp.X)] += 2
+        gate_set[abstractify(qp.X)] += 2
 
     gate_set[
         resource_rep(
@@ -878,7 +878,7 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
 def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq, **_):
     """Resource estimation for flipping the geq condition."""
     return {
-        qp.X: 1,
+        abstractify(qp.X): 1,
         resource_rep(
             qp.IntegerComparator,
             num_wires=num_wires,

@@ -33,6 +33,7 @@ from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
 from .equal import assert_equal
+from ...core.operator import abstractify
 
 
 def _assert_error_raised(func, error, failure_comment):
@@ -234,7 +235,10 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        op_rep = qp.resource_rep(type(_op), **_op.resource_params)
+        if issubclass(type(_op), Operator2):
+            op_rep = abstractify(_op)
+        else:
+            op_rep = qp.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
