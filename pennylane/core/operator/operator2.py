@@ -1378,18 +1378,20 @@ def _init_arg_types(op: Operator2) -> None:
             argval.dtype if isinstance(argval, AbstractArray) else math.get_dtype_name(argval)
         )
         comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
+
+        # Check if either shape or dtype is not compatible
         if not exp_type.is_compatible_with(comparison_abstract_type):
             actual_dtype = argval_dtype
 
-            # NOTE: Create a mock type with the expect shape but the actual dtype
-            # to enable failure isolation.
-            mock = AbstractArray(exp_type.shape, actual_dtype)
-            if not exp_type.is_compatible_with(mock):
+            # Isolate if it's a pure dtype issue by comparing with a mock type that has the
+            # expected shape but the actual dtype
+            if not exp_type.is_compatible_with(AbstractArray(exp_type.shape, actual_dtype)):
                 raise ValueError(
                     f"Parameter '{name}' does not match the operator's expected 'arg_specs' dtype. "
                     f"Expected {exp_type.dtype} but received {actual_dtype}."
                 )
 
+            # If dtype is fine, must be a shape mismatch
             broadcast_msg = " (non-broadcasting dimensions)" if is_broadcasted else ""
             raise ValueError(
                 f"Parameter '{name}' does not match the operator's expected 'arg_specs' shape. "
