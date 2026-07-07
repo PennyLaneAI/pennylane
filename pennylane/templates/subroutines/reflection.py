@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import ops, pytrees
 from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager, apply, requeue_op
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -275,7 +275,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         ops.PhaseShift(alpha, wires=wires)
         ops.PauliX(wires=wires)
 
-    pytrees.unflatten(*pytrees.flatten(U))
+    requeue_op(U)
 
 
 add_decomps(Reflection, _reflection_decomposition)

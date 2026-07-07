@@ -557,4 +557,29 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
     return op
 
 
-__all__ = ["QueuingManager", "AnnotatedQueue", "apply"]
+def requeue_op(op):
+    """Re-create and queue an existing operator into the current queuing context.
+
+    Uses ``pytrees.unflatten(*pytrees.flatten(op))`` to create a copy, then
+    ensures the copy is queued.  Operator1 copies auto-queue via the constructor;
+    Operator2 copies do not, so this helper adds the missing ``queue()`` call.
+
+    This function is intended for internal decomposition code that needs to
+    re-emit an operator that already exists (e.g. ``base.base`` or an operand).
+
+    Args:
+        op (Operator): the operator to re-create and queue.
+
+    Returns:
+        Operator: the re-created (and queued) operator copy.
+    """
+    from pennylane.core.operator import Operator2  # avoid circular import
+    from pennylane.pytrees import flatten, unflatten
+
+    new_op = unflatten(*flatten(op))
+    if isinstance(new_op, Operator2) and QueuingManager.recording():
+        new_op.queue()
+    return new_op
+
+
+__all__ = ["QueuingManager", "AnnotatedQueue", "apply", "requeue_op"]
