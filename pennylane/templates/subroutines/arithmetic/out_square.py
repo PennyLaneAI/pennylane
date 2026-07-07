@@ -606,12 +606,13 @@ def _out_square_with_caddsub(
 
     _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
 
-    _ = [X(w) for w in output_wires[1:]]
-    SemiAdder(x_wires[1:][::-1], output_wires[1:][::-1], work_wires)
-    _ = [X(w) for w in output_wires[1:]]
+    if n > 1 and m > 1:
+        _ = [X(w) for w in output_wires[1:]]
+        SemiAdder(x_wires[1:][::-1], output_wires[1:][::-1], work_wires)
+        _ = [X(w) for w in output_wires[1:]]
 
     # shifted addition
-    if m > n:
+    if m > n > 1:
         _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
 
 

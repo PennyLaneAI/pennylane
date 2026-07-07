@@ -381,11 +381,11 @@ def _controlled_semi_adder_resource(base_params, base_class, **ctrl_kwargs):
     crossover = min(num_y_wires - 1, num_x_wires)
 
     # _left_ladder uses (num_y_wires - 1) TemporaryANDs
-    # and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
+    # and 3 * (crossover - 1) CNOTs
     # _controlled_right_ladder uses (num_y_wires - 1) TemporaryANDs, (num_y_wires - 1) controlled
-    # CNOTs, and 3 * (crossover - 1) + 2 * (num_y_wires - 1 - crossover) CNOTs
+    # CNOTs, and 3 * (crossover - 1) CNOTs.
     # There are 1 + int(num_x_wires>=num_y_wires) additional ctrl-CNOTs in the main function
-    num_cnots = 2 * crossover + 4 * num_y_wires - 10
+    num_cnots = 6 * (crossover - 1)
     num_ctrl_cnots = num_y_wires + int(num_x_wires >= num_y_wires)
     return {
         TemporaryAND: num_y_wires - 1,
