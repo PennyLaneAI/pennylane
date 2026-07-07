@@ -21,9 +21,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core import Operator2
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.typing import Bool, Wire
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
@@ -99,6 +100,44 @@ class TestControlled2:
         assert op.has_adjoint
         assert op.has_matrix
         assert op.has_sparse_matrix
+
+    def test_custom_controlled_op_abstract(self):
+        """Test creating an abstract custom controlled op."""
+
+        class Rot2(Operator2):
+            """A new Rot."""
+
+            dynamic_argnames = ("phi", "theta", "omega")
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
+
+            def __init__(self, phi, theta, omega, wires):
+                super().__init__(phi, theta, omega, wires)
+
+        class CRot2(Controlled2):
+            """A new CRot."""
+
+            dynamic_argnames = ("phi", "theta", "omega")
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[2]}
+
+            def __init__(self, phi, theta, omega, wires):
+                super().__init__(Rot2(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
+
+            def __abstract_init__(self, phi, theta, omega, wires):
+                super().__abstract_init__(Rot2(phi, theta, omega, wires[1]), wires[0])
+
+        op = CRot2(Float, 0.5, 0.2, wires=[0, 1])
+        assert op.phi == Float
+        assert op.theta == Float
+        assert op.omega == Float
+        assert op.wires == Wire[2]
+        assert op.control_wires == Wire[1]
+        assert op.control_values == Bool[1]
 
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
