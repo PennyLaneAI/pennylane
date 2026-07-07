@@ -461,6 +461,8 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
+  [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
@@ -750,6 +752,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -1038,6 +1043,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Austin Huang,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
