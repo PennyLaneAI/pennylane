@@ -58,7 +58,7 @@ class SuperpositionTHC(Operation):
     .. note::
 
         Every work wire is returned to the zero state
-        except the wires that carry the prepared flags:  `work_wires[0]`, `work_wires[3]` and `work_wires[6]`.
+        except the wires that carry the prepared flags: `work_wires[0]`, `work_wires[3]` and `work_wires[6]`.
 
     Args:
         M (int): The THC rank. Together with ``N``
@@ -68,7 +68,7 @@ class SuperpositionTHC(Operation):
         mu_wires (WiresLike): The :math:`n` wires that store the first THC index :math:`\mu`.
         nu_wires (WiresLike): The :math:`n` wires that store the second THC index :math:`\nu`.
             Must contain the same number of wires as ``mu_wires``.
-        work_wires (WiresLike): The auxiliary wires. The first seven wires are the once shown in
+        work_wires (WiresLike): The auxiliary wires. The first seven wires are the ones shown in
             Fig. 3 of `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_;
             the remaining wires are scratch space for the comparators and multi-controlled
             gates. At least :math:`3\,n + 5` zeroed work wires must be provided, where
@@ -306,7 +306,7 @@ def _controlled_rep(base_class, num_control_wires):
 
 
 def _superposition_thc_resources(num_mu_wires, M, N):
-    r"""Exact gate counts of the SuperpositionTHC decomposition."""
+    r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
     n = num_mu_wires
 
@@ -352,7 +352,7 @@ def _superposition_thc_resources(num_mu_wires, M, N):
 def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # pylint: disable=too-many-arguments
     #
-    # The first seven work_wires correspond to the flag/ancilla register in Fig. 3 of
+    # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires are returned to
     # the zero state except work_wires[0], work_wires[3] and work_wires[6], which carry
     # the prepared flags.
@@ -368,7 +368,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
 
     # 2. Rotation angle for the single round of amplitude amplification.
     n_total_vals = 2 ** len(mu_wires)
-    d = N // 2 + M * (M + 1)
+    d = N // 2 + M * (M + 1) // 2
     frac_valid = d / n_total_vals**2
     limit = 0.5 / math.sqrt(frac_valid)
     cos_val = math.where(limit < 1.0, limit, 1.0)
@@ -394,7 +394,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in nu_wires:
         Hadamard(wire)
 
-    # The diagram in Fig 3. has a typo and these X gates have to be added
+    # The Fig 3. has a typo and these X gates have to be added
     for wire in mu_wires + nu_wires + [work_wires[0]]:
         X(wires=wire)
     GlobalPhase(np.pi)

@@ -166,7 +166,7 @@ class TestSuperpositionTHC:
     )
     def test_work_wires_clean(self, M, N, n):
         """All work wires are returned to |0> except the output flag wires
-        ``work_wires[0]`` (the amplitude-amplification ancilla), ``work_wires[3]``
+        ``work_wires[0]`` (the amplitude-amplification auxiliary wire), ``work_wires[3]``
         (the one-body sentinel) and ``work_wires[6]`` (success), which carry the
         prepared flags.
 
