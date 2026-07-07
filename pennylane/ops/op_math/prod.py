@@ -453,7 +453,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [pauli.operation() for pauli in pr]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():

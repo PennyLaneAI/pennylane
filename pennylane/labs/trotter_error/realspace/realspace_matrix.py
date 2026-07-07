@@ -331,7 +331,7 @@ class RealspaceMatrix(Fragment):
 
     def __mul__(self, scalar: float) -> RealspaceMatrix:
         new_blocks = {}
-        for key in self._blocks.keys():
+        for key in self._blocks:
             new_blocks[key] = scalar * self._blocks[key]
 
         return RealspaceMatrix(self.states, self.modes, new_blocks)
@@ -339,7 +339,7 @@ class RealspaceMatrix(Fragment):
     __rmul__ = __mul__
 
     def __imul__(self, scalar: float) -> RealspaceMatrix:
-        for key in self._blocks.keys():
+        for key in self._blocks:
             self._blocks[key] *= scalar
 
         return self

@@ -44,7 +44,7 @@ class BoseWord(dict):
 
     def __init__(self, operator):
         self.sorted_dic = dict(sorted(operator.items()))
-        indices = [i[0] for i in self.sorted_dic.keys()]
+        indices = [i[0] for i in self.sorted_dic]
 
         if indices:
             if list(range(max(indices) + 1)) != indices:
@@ -73,7 +73,7 @@ class BoseWord(dict):
     @property
     def wires(self):
         r"""Return wires in a BoseWord."""
-        return {i[1] for i in self.sorted_dic.keys()}
+        return {i[1] for i in self.sorted_dic}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in BoseWord."""
@@ -126,7 +126,7 @@ class BoseWord(dict):
             [
                 "b" + symbol_map[j] + "(" + i + ")"
                 for i, j in zip(
-                    [str(i[1]) for i in self.sorted_dic.keys()],
+                    [str(i[1]) for i in self.sorted_dic],
                     self.sorted_dic.values(),
                     strict=True,
                 )
@@ -226,8 +226,8 @@ class BoseWord(dict):
             if len(other) == 0:
                 return copy(self)
 
-            order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
-            other_wires = [i[1] for i in other.sorted_dic.keys()]
+            order_final = [i[0] + len(self) for i in other.sorted_dic]
+            other_wires = [i[1] for i in other.sorted_dic]
 
             dict_other = dict(
                 zip(

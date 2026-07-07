@@ -41,7 +41,7 @@ def log_string_debug_func(func, log_level, use_entry, override=None):
                 raise e
         ba.apply_defaults()
         if override and len(override):
-            for k, v in override.keys():
+            for k, v in override:
                 ba[k] = v
 
         f_string = str(ba).replace("BoundArguments ", func.__name__)

@@ -113,15 +113,12 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
     qfunc_args = op.parameters[1:]
     base_hyper_params = ("n", "order", "qfunc", "reverse")
 
-    with QueuingManager.stop_recording():
-        with AnnotatedQueue() as q:
-            qfunc_args = op.parameters
-            qfunc_kwargs = {
-                k: v for k, v in op.hyperparameters.items() if k not in base_hyper_params
-            }
+    with QueuingManager.stop_recording(), AnnotatedQueue() as q:
+        qfunc_args = op.parameters
+        qfunc_kwargs = {k: v for k, v in op.hyperparameters.items() if k not in base_hyper_params}
 
-            qfunc = op.hyperparameters["qfunc"]
-            qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
+        qfunc = op.hyperparameters["qfunc"]
+        qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
 
     call_graph = defaultdict(int, {})
     if order == 1:

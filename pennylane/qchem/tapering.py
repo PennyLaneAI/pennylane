@@ -255,7 +255,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     wiremap = dict(zip(list(wireset.toset()), range(len(wireset)), strict=True))
     paulix_wires = [x.wires[0] for x in paulixops]
 
-    wires_tap = [i for i in wiremap.keys() if i not in paulix_wires]
+    wires_tap = [i for i in wiremap if i not in paulix_wires]
     wires_ord = list(range(len(wires_tap)))
     wiremap_tap = dict(zip(wires_tap, wires_ord, strict=True))
 

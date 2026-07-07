@@ -94,7 +94,7 @@ class Expression:
         if vars is not None:
             self._vars = vars
         else:
-            self._vars = frozenset(var for vars in self._data.keys() for var in vars)
+            self._vars = frozenset(var for vars in self._data for var in vars)
 
     def _normalize(self) -> None:
         """

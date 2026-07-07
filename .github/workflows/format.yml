@@ -68,3 +68,7 @@ jobs:
       - name: Run Pylint (test files)
         if: always()
         run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+
+      - name: Run ruff 
+        if: always()
+        run: uvx ruff check pennylane/ tests/ --config pennylane/pyproject.toml

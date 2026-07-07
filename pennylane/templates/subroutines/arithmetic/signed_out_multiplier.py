@@ -342,7 +342,7 @@ class SignedOutMultiplier(Operator):
         wires_list = [x_wires, y_wires, output_wires, work_wires]
         wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
 
-        for name, wires in zip(wires_name, wires_list):
+        for name, wires in zip(wires_name, wires_list, strict=True):
             self.hyperparameters[name] = Wires(wires)
 
         self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed

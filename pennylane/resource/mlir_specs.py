@@ -104,10 +104,10 @@ def _mlir_resources_to_specs_resources(
     fn_resources[focus] = None
     resources = all_data[focus]
 
-    operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
+    operations = {k: resources["operations"][k] for k in resources["operations"]}
 
     measurements = defaultdict(
-        int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
+        int, {k: resources["measurements"][k] for k in resources["measurements"]}
     )
     gate_types = defaultdict(int)
     gate_sizes = defaultdict(int)
@@ -176,7 +176,7 @@ def _get_resources_from_analysis_pass(
 ) -> list[SpecsResources]:
     resource_data = {}
 
-    for fn_name in all_data.keys():
+    for fn_name in all_data:
         _mlir_resources_to_specs_resources(
             all_data, focus=fn_name, fn_resources=resource_data, display_names={}
         )
