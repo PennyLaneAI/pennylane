@@ -151,7 +151,10 @@ from .resource import (
 )
 from .expression import Expression
 from .specs import specs
+<<<<<<< HEAD
 from .estimate import estimate
+=======
+>>>>>>> main
 
 __all__ = [
     "AlgorithmicError",
