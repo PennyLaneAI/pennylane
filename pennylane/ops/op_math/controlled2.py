@@ -16,9 +16,10 @@
 
 from collections.abc import Sequence
 from inspect import signature
-from typing import Literal, override
+from typing import Literal
 
 from scipy import sparse
+from typing_extensions import override
 
 import pennylane as qp
 from pennylane import math
@@ -85,15 +86,23 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        # NOTE: If called without arguments (during a __copy__)
+        # skip signature binding as attributes will be restored
+        # during the copy.
+        if not args and not kwargs:
+            return obj
+
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
-        obj = super().__new__(cls)
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         obj._init_args = bound_args.arguments
+
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -104,7 +113,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
@@ -147,7 +155,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
-
         super().__init_subclass__(is_baseclass)
 
         base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
@@ -235,7 +242,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
-
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
 
@@ -267,7 +273,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
-
         target_matrix = _get_sparse_matrix(base)
 
         num_target_states = 2 ** len(base.wires)
@@ -339,7 +344,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     def simplify(self):
         if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
-
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
@@ -419,7 +423,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
-    # overriden with a different signature, we must override __init__ so that the signature
+    # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
     def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
         self,
@@ -430,6 +434,37 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        base,
+        control_wires,
+        control_values=None,
+        work_wires=None,
+        work_wire_type="borrowed",
+    ):
+        # Canonicalize control_values and work_wires
+        if control_values is None:
+            control_values = Bool[len(control_wires)]
+        if work_wires is None:
+            work_wires = Wire[0]
+
+        # Use default implementation for __abstract_init__
+        super().__abstract_init__(
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+        # Update private properties
+        self._base = self.arguments["base"]
+        self._control_wires = self.arguments["control_wires"]
+        self._control_values = self.arguments["control_values"]
+        self._work_wires = self.arguments["work_wires"]
+        self._work_wire_type = self.arguments["work_wire_type"]
 
     @property
     @override
@@ -470,13 +505,12 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
-            # need to insert the new control wires before the old control values.
-            invars = (
-                eqns[0].invars[:-n_ctrls]
-                + self.control_wires.tolist()
-                + eqns[0].invars[-n_ctrls:]
-                + self.control_values
-            )
+            # need to insert the new control wires before the old ones, and do the same
+            # for control values too.
+            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+
         params["n_ctrls"] += len(self.control_wires)
         res = operator_p.bind(*invars, **params)
 
