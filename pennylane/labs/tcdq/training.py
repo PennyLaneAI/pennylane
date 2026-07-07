@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Training utilities for Phox.
+Training utilities for tcdq.
 """
 
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import partial
 from inspect import signature
-from typing import Any, Callable, Iterator, NamedTuple
+from typing import Any, NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -108,7 +109,6 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
     Raises:
         ValueError: If the optimizer name is not recognized.
     """
-    # pylint: disable=import-outside-toplevel
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
     if name == "Adam":
