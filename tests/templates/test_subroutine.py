@@ -691,7 +691,7 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
-            resource_rep(qp.PauliX),
+            qp.PauliX,
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -736,7 +736,7 @@ class TestGraphDecomposition:
 
         rr = change_op_basis_subroutine_resource_rep(
             qp.PauliZ(0),
-            resource_rep(qp.PauliX),
+            qp.PauliX,
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -762,7 +762,7 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
+            qp.PauliX, partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
