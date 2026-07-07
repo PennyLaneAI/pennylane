@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for estimation_array
+Tests for symbolic_array
 """
 
 import numpy as np
@@ -24,7 +24,7 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    estimation_array_prim,
+    symbolic_array_prim,
 )
 
 
@@ -32,17 +32,17 @@ def test_error_without_capture():
     """Test a ``NotImplementedError`` is raised if capture is not turned on."""
     qp.capture.disable()
 
-    with pytest.raises(NotImplementedError, match="estimation_array requires program capture"):
-        qp.capture.estimation_array((), float)
+    with pytest.raises(NotImplementedError, match="symbolic_array requires program capture"):
+        qp.capture.symbolic_array((), float)
 
 
 def test_error_if_execute():
-    """Test that a NotImplementedError is raised if we try and execute estimation_array."""
+    """Test that a NotImplementedError is raised if we try and execute symbolic_array."""
 
     with pytest.raises(
-        NotImplementedError, match="estimation_arrays can only be produced for abstract evaluation"
+        NotImplementedError, match="symbolic_arrays can only be produced for abstract evaluation"
     ):
-        qp.capture.estimation_array((), float)
+        qp.capture.symbolic_array((), float)
 
 
 @pytest.mark.parametrize("bad_dimension", (..., -1, 0, 3.0))
@@ -50,7 +50,7 @@ def test_error_if_bad_dimesion(bad_dimension):
     """Test that a ValueError is raised if a dimension is invalid."""
 
     def f():
-        qp.capture.estimation_array((2, bad_dimension), float)
+        qp.capture.symbolic_array((2, bad_dimension), float)
 
     with pytest.raises(ValueError, match="must be integers greater than zero"):
         jax.make_jaxpr(f)()
@@ -66,15 +66,15 @@ def test_error_if_bad_dimesion(bad_dimension):
         (np.complex128, jnp.complex128),
     ],
 )
-def test_capturing_estimation_array(shape, dtype, converted_dtype):
-    """Test capturing estimation_array's into jaxpr."""
+def test_capturing_symbolic_array(shape, dtype, converted_dtype):
+    """Test capturing symbolic_array's into jaxpr."""
 
     def f():
-        return qp.capture.estimation_array(shape, dtype)
+        return qp.capture.symbolic_array(shape, dtype)
 
     jaxpr = jax.make_jaxpr(f)()
 
-    assert jaxpr.eqns[0].primitive == estimation_array_prim
+    assert jaxpr.eqns[0].primitive == symbolic_array_prim
     assert jaxpr.eqns[0].params["shape"] == shape
     assert jaxpr.eqns[0].params["dtype"] == converted_dtype
 

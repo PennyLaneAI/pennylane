@@ -23,13 +23,13 @@ has_jax = find_spec("jax") is not None
 
 
 @lru_cache
-def _estimation_array_primitive():
+def _symbolic_array_primitive():
     if not has_jax:
         raise ImportError("jax is required for creating a jax primitive.")  # pragma: no cover
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    estimation_p = jax.extend.core.Primitive("estimation_array")
+    estimation_p = jax.extend.core.Primitive("symbolic_array")
 
     @estimation_p.def_abstract_eval
     def _estimation_p_abstract_eval(shape, dtype):
@@ -38,13 +38,13 @@ def _estimation_array_primitive():
     @estimation_p.def_impl
     def _estimation_p_impl(shape, dtype):
         raise NotImplementedError(
-            "estimation_arrays can only be produced for abstract evaluation and cannot be executed."
+            "symbolic_arrays can only be produced for abstract evaluation and cannot be executed."
         )
 
     return estimation_p
 
 
-def estimation_array(shape: tuple[int, ...], dtype: type):
+def symbolic_array(shape: tuple[int, ...], dtype: type):
     """**EXPERIMENTAL** Creates a dummy array that can be used in resource dry-runs with catalyst.
 
     Args:
@@ -68,7 +68,7 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
         @qp.transforms.merge_rotations
         @qp.qnode(qp.device('null.qubit', wires=2))
         def c():
-            x = qp.capture.estimation_array((), float)
+            x = qp.capture.symbolic_array((), float)
             y = 2*x + 1
             qp.RX(x, 0)
             qp.RX(y, 0)
@@ -90,11 +90,11 @@ def estimation_array(shape: tuple[int, ...], dtype: type):
 
     """
     if not enabled():
-        raise NotImplementedError("estimation_array requires program capture to be enabled.")
+        raise NotImplementedError("symbolic_array requires program capture to be enabled.")
     from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
     if not all(isinstance(s, int) and s > 0 for s in shape):
         raise ValueError(
             f"All shape dimensions must be integers greater than zero. Got shape {shape}."
         )
-    return _estimation_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
+    return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))

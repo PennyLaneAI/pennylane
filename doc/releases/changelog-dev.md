@@ -750,7 +750,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Adds `qp.capture.estimation_array` for producing tracers with the correct shape and dtype but no known values.
+* Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
   Could be used for dry-runs and resource calculations with program capture.
   [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
 
