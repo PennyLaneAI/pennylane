@@ -102,8 +102,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             )  # wires + eigvals
 
         if isinstance(obs, Operator2):
-            if obs.tracer is None:
-                obs._bind_primitive()  # pylint: disable=protected-access
+            obs._bind_primitive()  # pylint: disable=protected-access
             # capture on but not tracing, tracer will still be None
             obs = obs if obs.tracer is None else obs.tracer
 

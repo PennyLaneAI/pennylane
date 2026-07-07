@@ -134,6 +134,9 @@ class Adjoint2(SymbolicOp2):
         if not qp.capture.enabled():
             return
 
+        if self._has_valid_tracer():
+            return
+
         eqns = pop_op_eqns((self.base,))
         assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
 
