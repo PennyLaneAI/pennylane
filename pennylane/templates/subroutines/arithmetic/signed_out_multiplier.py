@@ -460,7 +460,7 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
-    if compiler.active():
+    if compiler.active() or capture.enabled():
         input_reg = math.array(input_reg, like="jax")
 
     # Invert all bits
