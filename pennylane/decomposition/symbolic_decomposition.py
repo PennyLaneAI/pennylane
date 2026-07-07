@@ -26,6 +26,7 @@ from pennylane import allocation, math
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep, \
     AbstractOperatorLike, CompressedResourceOp
+from ..typing import Wire
 
 
 def _adjoint(op: AbstractOperatorLike):
@@ -207,6 +208,27 @@ def decompose_to_base(*params, wires, base, **__):
 self_adjoint: DecompositionRule = decompose_to_base
 
 
+def _ctrl_abstract(op: AbstractOperatorLike, control_wires, work_wires, work_wire_type):
+
+    if isinstance(op, CompressedResourceOp):
+        return controlled_resource_rep(
+            op.op_type,
+            op.params,
+            num_control_wires=len(control_wires),
+            num_zero_control_values=0,
+            num_work_wires=len(work_wires),
+            work_wire_type=work_wire_type,
+        )
+
+    return qp.ctrl(
+        op,
+        control=control_wires,
+        control_values=None,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
 def make_controlled_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the control of a decomposition rule."""
 
@@ -218,12 +240,9 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     ):
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
-            controlled_resource_rep(
-                base_class=base_op_rep.op_type,
-                base_params=base_op_rep.params,
-                num_control_wires=num_control_wires,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires,
+            _ctrl_abstract(base_op_rep,
+                control_wires=Wire[num_control_wires],
+                work_wires=Wire[num_work_wires],
                 work_wire_type=work_wire_type,
             ): count
             for base_op_rep, count in base_resources.gate_counts.items()
