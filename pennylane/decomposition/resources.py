@@ -214,7 +214,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp | Operator2:
+def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -302,8 +302,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp | Op
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
-    if issubclass(op_type, Operator2):
-        return abstractify(op_type)
     _validate_resource_rep(op_type, params)
     if issubclass(op_type, qp.ops.Adjoint):
         return adjoint_resource_rep(**params)

@@ -388,9 +388,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": resource_rep(qp.X),
-            "target_op": resource_rep(qp.Y),
-            "uncompute_op": resource_rep(qp.X),
+            "compute_op": qp.X,
+            "target_op": qp.Y,
+            "uncompute_op": qp.X,
         }
 
     def test_registered_decomp(self):
@@ -400,12 +400,12 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {qp.qp.X: 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(
-            compute_op=resource_rep(qp.X),
+            compute_op=qp.X,
             target_op=resource_rep(qp.MultiRZ, num_wires=2),
-            uncompute_op=resource_rep(qp.X),
+            uncompute_op=qp.X,
         )
 
         assert resource_obj.num_gates == 3

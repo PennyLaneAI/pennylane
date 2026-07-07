@@ -604,7 +604,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 2,
+                qp.qp.X: 2,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=2,
@@ -727,7 +727,7 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == Resources(
             {
-                qp.resource_rep(qp.X): 4,
+                qp.qp.X: 4,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
