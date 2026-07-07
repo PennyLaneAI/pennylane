@@ -21,8 +21,8 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math, pytrees
-from pennylane.core import Operator2, queuing
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core import queuing
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
