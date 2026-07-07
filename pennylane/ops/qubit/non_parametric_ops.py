@@ -29,7 +29,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -45,6 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.typing import AbstractWires
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -303,7 +304,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
-class PauliX(Operation):
+class PauliX(Operator2):
     r"""
     The Pauli X operator
 
@@ -320,6 +321,9 @@ class PauliX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -328,6 +332,7 @@ class PauliX(Operation):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """Basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -345,7 +350,9 @@ class PauliX(Operation):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0}
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -358,26 +365,34 @@ class PauliX(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
+        """A string label for the operator."""
         return base_label or "X"
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        if isinstance(self.wires, AbstractWires):
+            return "PauliX"
+        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"X('{wire}')"
         return f"X({wire})"
 
     @property
     def name(self) -> str:
+        """Operator name."""
         return "PauliX"
 
     @property
     def resource_params(self) -> dict:
+        """Resource parameters."""
         return {}
 
-    @staticmethod
-    @lru_cache
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    _cached_mat = np.array([[0, 1], [1, 0]])
+
+    @classmethod
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -395,15 +410,19 @@ class PauliX(Operation):
         [[0 1]
          [1 0]]
         """
-        return np.array([[0, 1], [1, 0]])
+        return cls._cached_mat
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"  # pylint: disable=unused-argument
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -589,7 +608,7 @@ def _controlled_x_decomp(
 add_decomps("C(PauliX)", _controlled_x_decomp)
 
 
-class PauliY(Operation):
+class PauliY(Operator2):
     r"""
     The Pauli Y operator
 
@@ -606,6 +625,9 @@ class PauliY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
+
     is_verified_hermitian = True
 
     num_wires = 1
@@ -618,6 +640,7 @@ class PauliY(Operation):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """Basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -631,7 +654,9 @@ class PauliY(Operation):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -640,7 +665,9 @@ class PauliY(Operation):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        if isinstance(self.wires, AbstractWires):
+            return "PauliY"
+        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Y('{wire}')"
         return f"Y({wire})"
@@ -651,19 +678,25 @@ class PauliY(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
+        """A string label for the operator."""
         return base_label or "Y"
 
     @property
     def name(self) -> str:
+        """Operator name."""
         return "PauliY"
 
     @property
     def resource_params(self) -> dict:
+        """Resource parameters."""
         return {}
 
-    @staticmethod
-    @lru_cache
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    _cached_matrix = np.array([[0, -1j], [1j, 0]])
+
+    @classmethod
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -680,15 +713,19 @@ class PauliY(Operation):
         [[ 0.+0.j -0.-1.j]
          [ 0.+1.j  0.+0.j]]
         """
-        return np.array([[0, -1j], [1j, 0]])
+        return cls._cached_matrix
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"  # pylint: disable=unused-argument
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -846,7 +883,7 @@ def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
 add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
 
 
-class PauliZ(Operation):
+class PauliZ(Operator2):
     r"""
     The Pauli Z operator
 
@@ -863,6 +900,9 @@ class PauliZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    arg_specs = {"wires": AbstractWires(1)}
+
     is_verified_hermitian = True
     num_wires = 1
     num_params = 0
@@ -872,6 +912,7 @@ class PauliZ(Operation):
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
+        """Basis of the operator."""
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -887,7 +928,9 @@ class PauliZ(Operation):
     def pauli_rep(self):
         if self._pauli_rep is None:
             self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
+                {
+                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0
+                }  # pylint: disable=unsubscriptable-object
             )
         return self._pauli_rep
 
@@ -896,7 +939,9 @@ class PauliZ(Operation):
 
     def __repr__(self) -> str:
         """String representation."""
-        wire = self.wires[0]
+        if isinstance(self.wires, AbstractWires):
+            return "PauliZ"
+        wire = self.wires[0]  # pylint: disable=unsubscriptable-object
         if isinstance(wire, str):
             return f"Z('{wire}')"
         return f"Z({wire})"
@@ -907,19 +952,25 @@ class PauliZ(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
+        """A string label for the operator."""
         return base_label or "Z"
 
     @property
     def name(self) -> str:
+        """Operator name."""
         return "PauliZ"
 
     @property
     def resource_params(self) -> dict:
+        """Resource parameters."""
         return {}
 
-    @staticmethod
-    @lru_cache
-    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
+    _cached_matrix = np.array([[1, 0], [0, -1]])
+
+    @classmethod
+    def compute_matrix(
+        cls, wires=None
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -936,15 +987,19 @@ class PauliZ(Operation):
         [[ 1  0]
          [ 0 -1]]
         """
-        return np.array([[1, 0], [0, -1]])
+        return cls._cached_matrix
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        wires=None, format="csr"  # pylint: disable=unused-argument
+    ) -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        wires=None,
+    ) -> np.ndarray:  # pylint: disable=arguments-differ,unused-argument
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -970,7 +1025,7 @@ class PauliZ(Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(
-        wires: WiresLike,
+        wires: WiresLike,  # pylint: disable=unused-argument
     ) -> list[qp.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
