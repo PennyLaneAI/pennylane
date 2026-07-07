@@ -37,7 +37,7 @@ def test_error_without_capture():
 
 
 def test_error_if_execute():
-    """Test that a NotImplementedError is raised if we try and execute symbolic_array."""
+    """Test that a ``NotImplementedError`` is raised if we try and execute symbolic_array."""
 
     with pytest.raises(
         NotImplementedError, match="symbolic_arrays can only be produced for abstract evaluation"
