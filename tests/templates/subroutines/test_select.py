@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane import resource_rep
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
@@ -205,10 +206,10 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
         op_reps = (
-            qp.X,
-            qp.X,
-            qp.X,
-            qp.Y,
+            resource_rep(qp.X),
+            resource_rep(qp.X),
+            resource_rep(qp.X),
+            resource_rep(qp.Y),
         )
         control = (0, 1)
 
@@ -307,7 +308,7 @@ class TestSelect:
         decomp = qp.list_decomps(qp.Select)[0]
 
         ops = [qp.Z(1)]
-        op_reps = (qp.Z,)
+        op_reps = (resource_rep(qp.Z),)
         control = (0,)
 
         resource_obj = decomp.compute_resources(
@@ -321,7 +322,7 @@ class TestSelect:
         kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
 
         if partial:
-            expected_counts = {qp.Z: 1}
+            expected_counts = {resource_rep(qp.Z): 1}
         else:
             expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
         assert resource_obj.gate_counts == expected_counts
