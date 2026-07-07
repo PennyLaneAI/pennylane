@@ -1010,7 +1010,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
     # and after the last group. This amounts to `num_entries` layers of bit flips
-    resources[resource_rep(qp.X)] += num_entries * m
+    resources[qp.X] += num_entries * m
 
     if not identity_encoding:
         ## Step 6 in paper (p.7). This is an upper bound

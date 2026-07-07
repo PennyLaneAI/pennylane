@@ -275,7 +275,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[resource_rep(qp.X)] = gate_counts.get(resource_rep(qp.X), 0) + num_x * 2
+        gate_counts[qp.X] = gate_counts.get(qp.X, 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access

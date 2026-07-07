@@ -205,10 +205,10 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.Y),
+            qp.qp.X,
+            qp.qp.X,
+            qp.qp.X,
+            qp.qp.Y,
         )
         control = (0, 1)
 
@@ -251,8 +251,8 @@ class TestSelect:
 
         ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
+            qp.qp.X,
+            qp.qp.X,
             qp.resource_rep(qp.SWAP),
         )
         control = (0, 1)
@@ -307,7 +307,7 @@ class TestSelect:
         decomp = qp.list_decomps(qp.Select)[0]
 
         ops = [qp.Z(1)]
-        op_reps = (qp.resource_rep(qp.Z),)
+        op_reps = (qp.qp.Z,)
         control = (0,)
 
         resource_obj = decomp.compute_resources(
@@ -321,7 +321,7 @@ class TestSelect:
         kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
 
         if partial:
-            expected_counts = {qp.resource_rep(qp.Z): 1}
+            expected_counts = {qp.qp.Z: 1}
         else:
             expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
         assert resource_obj.gate_counts == expected_counts
@@ -353,10 +353,10 @@ class TestSelect:
         assert resources["num_control_wires"] == 2
 
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.Y),
+            qp.qp.X,
+            qp.qp.X,
+            qp.qp.X,
+            qp.qp.Y,
         )
 
         assert resources["op_reps"] == op_reps
