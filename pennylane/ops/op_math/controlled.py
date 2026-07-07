@@ -36,6 +36,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -195,11 +196,14 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
     """New implementation of qp.ctrl that works better with Operator2."""
 
     control_wires = Wires(control_wires)
+    if control_values is None:
+        control_values = [True] * len(control_wires)
     if work_wires is None:
         work_wires = []
     work_wires = Wires(work_wires)
 
     if isinstance(op, Controlled2):
+        _ = pop_op_eqns((op,))
         ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
         ctrl_values = resolve_ctrl_values(control_values, op)
         return ctrl(
@@ -621,6 +625,8 @@ class Controlled(SymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
+        # Only fire for the abstract types (Controlled, ControlledOp), not their
+        # concrete subclasses (CNOT, Toffoli, etc.), to avoid ambiguous dispatch.
         if cls in (Controlled, ControlledOp) and issubclass(subclass, qp.ops.op_math.Controlled2):
             return True
         return NotImplemented
