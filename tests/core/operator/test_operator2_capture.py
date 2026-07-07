@@ -338,5 +338,141 @@ class TestApply:
             apply(DynOp(1.0, wires=0))
 
 
+class TestBindPrimitiveIdempotency:
+    """Tests that _bind_primitive is idempotent — calling it multiple times
+    produces the same result as calling it once."""
+
+    def test_double_bind_produces_single_equation(self):
+        """Calling _bind_primitive twice on the same operator should produce only
+        one equation, not two."""
+
+        def f(x):
+            op = DynOp(x, wires=0)
+            op._bind_primitive()  # already bound during __init__; should be a no-op
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive is operator_p
+        assert eqn.params["op_cls"] is DynOp
+
+    def test_triple_bind_still_single_equation(self):
+        """Even three explicit binds should still produce a single equation."""
+
+        def f(x):
+            op = DynOp(x, wires=0)
+            op._bind_primitive()
+            op._bind_primitive()
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.eqns) == 1
+
+    def test_idempotent_bind_preserves_tracer_identity(self):
+        """The tracer object should remain the same after a redundant _bind_primitive call."""
+
+        def f(x):
+            op = DynOp(x, wires=0)
+            first_tracer = op.tracer
+            op._bind_primitive()
+            assert op.tracer is first_tracer
+
+        jax.make_jaxpr(f)(0.5)
+
+    def test_idempotent_bind_roundtrip(self):
+        """An operator that was bound multiple times should still round-trip correctly."""
+
+        def f(x):
+            op = DynOp(x, wires=0)
+            op._bind_primitive()
+            op._bind_primitive()
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        [op] = _eval(jaxpr, 0.7)
+        qp.assert_equal(op, DynOp(0.7, wires=0))
+
+    def test_bind_without_capture_is_noop(self):
+        """_bind_primitive should be a no-op when capture is disabled, even if called
+        multiple times."""
+
+        def f(x):
+            with qp.capture.pause():
+                op = DynOp(x, wires=0)
+                op._bind_primitive()
+                op._bind_primitive()
+                assert op.tracer is None
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.eqns) == 0
+
+    def test_preconstructed_op_bind_once(self):
+        """An operator built outside the trace context should emit exactly one equation
+        even when _bind_primitive is called more than once inside the trace."""
+        op = DynOp(0.5, wires=0)
+
+        def f():
+            op._bind_primitive()
+            op._bind_primitive()
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 1
+
+    def test_has_valid_tracer_false_without_capture(self):
+        """_has_valid_tracer should return False when no tracer is set."""
+        with qp.capture.pause():
+            op = DynOp(0.5, wires=0)
+            assert not op._has_valid_tracer()
+
+    def test_has_valid_tracer_true_during_tracing(self):
+        """_has_valid_tracer should return True after binding during an active trace."""
+
+        def f(x):
+            op = DynOp(x, wires=0)
+            assert op._has_valid_tracer()
+
+        jax.make_jaxpr(f)(0.5)
+
+    def test_stale_tracer_detected_across_traces(self):
+        """A tracer from a previous trace context should be detected as stale,
+        allowing _bind_primitive to re-bind in a new trace."""
+        op = DynOp(0.5, wires=0)
+
+        # First trace — explicitly bind the operator inside the trace
+        jax.make_jaxpr(lambda: (op._bind_primitive(), op.tracer)[-1])()
+        # After make_jaxpr returns, op.tracer still references the (now stale) tracer
+        assert op.tracer is not None
+        first_tracer = op.tracer
+
+        # Second trace — the old tracer is stale, so _bind_primitive should re-bind
+        def f():
+            assert not op._has_valid_tracer()
+            op._bind_primitive()
+            assert op._has_valid_tracer()
+            assert op.tracer is not first_tracer
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 1
+
+    def test_stale_tracer_rebind_roundtrip(self):
+        """An operator whose tracer went stale should still round-trip after re-binding."""
+        op = DynOp(0.5, wires=0)
+
+        # First trace — bind
+        jax.make_jaxpr(lambda: (op._bind_primitive(), op.tracer)[-1])()
+
+        # Second trace — re-bind and use
+        def f():
+            op._bind_primitive()
+            return op.tracer
+
+        jaxpr = jax.make_jaxpr(f)()
+        [result] = _eval(jaxpr)
+        qp.assert_equal(result, DynOp(0.5, wires=0))
+
+
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

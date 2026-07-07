@@ -75,7 +75,7 @@ class CompositeOp(Operator):
                 if leaf.tracer is None:
                     # pylint: disable-next=protected-access
                     leaf._bind_primitive()
-                new_leaves.append(leaf.tracer)
+                new_leaves.append(leaf.tracer if leaf.tracer is not None else leaf)
             else:
                 new_leaves.append(leaf)
 

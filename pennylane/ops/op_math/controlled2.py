@@ -486,13 +486,14 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if not qp.capture.enabled():
             return
 
+        if self._has_valid_tracer():
+            return
+
+        self.base._bind_primitive()  # pylint: disable=protected-access
+        # `_bind_primitive` is idempotent: if the base already had a valid tracer,
+        # this is a no-op. If we're not in a tracing context, tracer stays None.
         if self.base.tracer is None:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
-            # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
-            # In that case, there is nothing to do, so return early.
-            if self.base.tracer is None:
-                return
+            return
 
         eqns = pop_op_eqns((self.base,))
         assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."

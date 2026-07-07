@@ -1227,10 +1227,31 @@ class Operator2(metaclass=OperatorMeta):
 
             self._batch_size = first_dims[0]
 
+    def _has_valid_tracer(self):
+        """Whether this operator already has a tracer bound in the current trace context."""
+        if self.tracer is None:
+            return False
+        # A tracer from a previous (no longer active) trace context is stale and invalid.
+        # Check by comparing the tracer's trace to the currently active one.
+        try:
+            from jax._src.core import trace_ctx  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            return True
+        tracer_trace = getattr(self.tracer, "_trace", None)
+        return tracer_trace is not None and tracer_trace is trace_ctx.trace
+
     def _bind_primitive(self):
-        """Bind the operator plxpr primitive."""
+        """Bind the operator plxpr primitive.
+
+        This method is idempotent: if the operator already has a valid tracer
+        bound in the current trace context, it returns immediately.
+        """
         # Skip if program capture is disabled
         if not enabled():
+            return
+
+        # Already bound in this trace — nothing to do.
+        if self._has_valid_tracer():
             return
 
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
