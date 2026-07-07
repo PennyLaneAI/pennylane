@@ -34,36 +34,6 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     estimator via :func:`build_expval_func`: the gate structure, the observables to
     measure, sampling parameters, and an optional non-standard initial state.
 
-    Args:
-        gates (dict[int, list[list[int]]]): Circuit structure mapping each
-            trainable parameter index to a list of gates. Each gate is itself a
-            list of qubit indices that participate in a Pauli-Z tensor-product
-            generator. For example, ``{0: [[0, 1]], 1: [[2]]}`` defines two
-            parameters: parameter 0 drives a ZZ gate on qubits 0 and 1, and
-            parameter 1 drives a Z gate on qubit 2. Use
-            :func:`~pennylane.labs.tcdq.create_local_gates` or
-            :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate
-            these automatically.
-        n_samples (int): Number of random bitstrings drawn for the
-            estimation.
-        key (ArrayLike): JAX PRNG key for random bitstring generation.
-        n_qubits (int): Total number of qubits in the circuit.
-        observables (ArrayLike | None): Integer array of shape
-            ``(n_observables, n_qubits)`` encoding Pauli operators (I=0, X=1,
-            Y=2, Z=3). Each row is one observable. If ``None``, observables must
-            be passed at call time to the function returned by
-            :func:`build_expval_func`.
-        init_state_elems (ArrayLike | None): Binary array of shape ``(N, n_qubits)``
-            listing the computational-basis states with non-zero amplitude in a
-            custom initial state. Use together with ``init_state_amps``. If
-            ``None`` (default), the circuit starts in the uniform superposition
-            state :math:`H^{\\otimes n}|0\\rangle`.
-        init_state_amps (ArrayLike | None): Complex array of shape ``(N,)`` with
-            the amplitudes corresponding to ``init_state_elems``.
-        phase_fn (Callable | None): Optional custom phase function
-            ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
-            Defaults to ``None``.
-
     **Example**
 
     >>> import jax
@@ -83,13 +53,41 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     gates: dict[int, list[list[int]]]
+    """Circuit structure mapping each trainable parameter index to a list of gates.
+    Each gate is itself a list of qubit indices that participate in a Pauli-Z
+    tensor-product generator. For example, ``{0: [[0, 1]], 1: [[2]]}`` defines two
+    parameters: parameter 0 drives a ZZ gate on qubits 0 and 1, and parameter 1
+    drives a Z gate on qubit 2. Use :func:`~pennylane.labs.tcdq.create_local_gates`
+    or :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate these
+    automatically."""
+
     n_samples: int
+    """Number of random bitstrings drawn for the estimation."""
+
     key: ArrayLike
+    """JAX PRNG key for random bitstring generation."""
+
     n_qubits: int
+    """Total number of qubits in the circuit."""
+
     observables: ArrayLike | None = None
+    """Integer array of shape ``(n_observables, n_qubits)`` encoding Pauli operators
+    (I=0, X=1, Y=2, Z=3). Each row is one observable. If ``None``, observables must
+    be passed at call time to the function returned by :func:`build_expval_func`."""
+
     init_state_elems: ArrayLike | None = None
+    """Binary array of shape ``(N, n_qubits)`` listing the computational-basis states
+    with non-zero amplitude in a custom initial state. Use together with
+    ``init_state_amps``. If ``None`` (default), the circuit starts in the uniform
+    superposition state :math:`H^{\\otimes n}|0\\rangle`."""
+
     init_state_amps: ArrayLike | None = None
+    """Complex array of shape ``(N,)`` with the amplitudes corresponding to
+    ``init_state_elems``."""
+
     phase_fn: Callable | None = None
+    """Optional custom phase function ``phase_fn(params, bitstring)`` applied as an
+    extra diagonal layer. Defaults to ``None``."""
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):

@@ -47,35 +47,6 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     :func:`build_qudit_expval_func`. It is the qudit analogue of
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
 
-    Args:
-        d (int): Local qudit dimension (e.g., 2 for qubits, 3 for qutrits).
-        n_qudits (int): Number of qudits in the circuit.
-        gates (dict[int, list[list[int]]]): Circuit structure mapping each
-            trainable-parameter index to a list of generator vectors. Each
-            generator vector has length ``n_qudits`` with integer entries in
-            :math:`\\{0, \\ldots, d-1\\}` that specify the power of :math:`Z` on
-            each qudit. For example, with ``d=3`` and ``n_qudits=2``,
-            ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
-            :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
-            :math:`Z^1 \\otimes Z^1` on both.
-        observables (tuple[ArrayLike, ArrayLike] | None): A pair
-            ``(l_vecs, m_vecs)`` specifying the Heisenberg–Weyl displacement
-            operators :math:`O(\\mathbf{l}, \\mathbf{m})` to measure.
-            Each is an integer array of shape ``(n_obs, n_qudits)`` with entries
-            in :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be
-            supplied at call time (e.g., when used inside
-            :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`).
-        n_samples (int): Number of random dit-strings drawn for the
-            estimation.
-        key (ArrayLike): JAX PRNG key for random dit-string generation.
-        init_state_elems (ArrayLike | None): Support of a custom initial state.
-            Integer array of shape ``(N, n_qudits)`` with entries in
-            :math:`\\{0, \\ldots, d-1\\}`, where ``N`` is the number of non-zero
-            amplitudes. Defaults to ``None`` (uniform superposition via QFT).
-        init_state_amps (ArrayLike | None): Complex amplitudes of shape ``(N,)``
-            for the custom initial state. Must be provided together with
-            ``init_state_elems``.
-
     **Example**
 
     >>> import jax
@@ -100,13 +71,43 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     d: int
+    """Local qudit dimension (e.g., 2 for qubits, 3 for qutrits)."""
+
     n_qudits: int
+    """Number of qudits in the circuit."""
+
     gates: dict[int, list[list[int]]]
+    """Circuit structure mapping each trainable-parameter index to a list of
+    generator vectors. Each generator vector has length ``n_qudits`` with integer
+    entries in :math:`\\{0, \\ldots, d-1\\}` that specify the power of :math:`Z` on
+    each qudit. For example, with ``d=3`` and ``n_qudits=2``,
+    ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
+    :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
+    :math:`Z^1 \\otimes Z^1` on both."""
+
     n_samples: int
+    """Number of random dit-strings drawn for the estimation."""
+
     key: ArrayLike
+    """JAX PRNG key for random dit-string generation."""
+
     observables: tuple[ArrayLike, ArrayLike] | None = None
+    """A pair ``(l_vecs, m_vecs)`` specifying the Heisenberg–Weyl displacement
+    operators :math:`O(\\mathbf{l}, \\mathbf{m})` to measure. Each is an integer
+    array of shape ``(n_obs, n_qudits)`` with entries in
+    :math:`\\{0, \\ldots, d-1\\}`. If ``None``, observables must be supplied at
+    call time (e.g., when used inside
+    :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`)."""
+
     init_state_elems: ArrayLike | None = None
+    """Support of a custom initial state. Integer array of shape
+    ``(N, n_qudits)`` with entries in :math:`\\{0, \\ldots, d-1\\}`, where ``N``
+    is the number of non-zero amplitudes. Defaults to ``None`` (uniform
+    superposition via QFT)."""
+
     init_state_amps: ArrayLike | None = None
+    """Complex amplitudes of shape ``(N,)`` for the custom initial state. Must
+    be provided together with ``init_state_elems``."""
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
@@ -160,21 +161,19 @@ class WeightGroupData(NamedTuple):
     Gates are grouped by weight :math:`\\omega` (number of non-zero entries in
     the generator vector) so that the :math:`2^\\omega`-term angle-addition
     expansion can be vectorised over gates within each group.
-
-    Args:
-        param_indices: Maps each gate in this group to its parameter index in
-            the global ``gates_params`` array, shape ``(n_gates,)``.
-        samples_matrices: :math:`2^\\omega` matrices of shape
-            ``(n_gates, n_samples)`` giving the sample-side factor for each
-            angle-addition term.
-        obs_matrices: :math:`2^\\omega` matrices of shape
-            ``(n_gates, n_obs)`` giving the observable-side factor for each
-            angle-addition term.
     """
 
     param_indices: jnp.ndarray
+    """Maps each gate in this group to its parameter index in the global
+    ``gates_params`` array, shape ``(n_gates,)``."""
+
     samples_matrices: list[jnp.ndarray]
+    """:math:`2^\\omega` matrices of shape ``(n_gates, n_samples)`` giving the
+    sample-side factor for each angle-addition term."""
+
     obs_matrices: list[jnp.ndarray]
+    """:math:`2^\\omega` matrices of shape ``(n_gates, n_obs)`` giving the
+    observable-side factor for each angle-addition term."""
 
 
 def _gather_support_values(

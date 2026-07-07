@@ -45,46 +45,36 @@ except (ModuleNotFoundError, ImportError) as import_error:
 class TrainingOptions:
     """Options controlling the behaviour of :func:`train` and :func:`training_iterator`.
 
-    Args:
-        unroll_steps (int): Number of optimization steps fused into a single
-            ``jax.lax.scan`` call. Higher values reduce Python overhead and
-            speed up training, but produce less frequent progress updates.
-            Defaults to ``1``.
-        val_kwargs (dict[str, Any] | None): Keyword arguments passed to the loss
-            function when evaluating validation loss. If ``None`` (the default),
-            no validation loss is computed.
-        convergence_interval (int): The training loop compares the mean loss over
-            the most recent ``convergence_interval`` steps against the preceding
-            interval. If the improvement is smaller than half the standard error,
-            training stops early. Defaults to ``100``.
-        random_state (int): Integer seed used to create the JAX PRNG key for
-            stochastic loss functions. Defaults to ``666``.
-        opt_jit (bool): Whether to JIT-compile the optimizer's internal update
-            step. Usually ``False`` is sufficient because the outer scan is
-            already JIT-compiled. Defaults to ``False``.
-
     **Example**
 
     >>> options = TrainingOptions(unroll_steps=20, convergence_interval=50)
     """
 
     unroll_steps: int = 1
+    """Number of optimization steps fused into a single ``jax.lax.scan`` call.
+    Higher values reduce Python overhead and speed up training, but produce less
+    frequent progress updates."""
+
     val_kwargs: dict[str, Any] | None = None
+    """Keyword arguments passed to the loss function when evaluating validation
+    loss. If ``None`` (the default), no validation loss is computed."""
+
     convergence_interval: int = 100
+    """The training loop compares the mean loss over the most recent
+    ``convergence_interval`` steps against the preceding interval. If the
+    improvement is smaller than half the standard error, training stops early."""
+
     random_state: int = 666
+    """Integer seed used to create the JAX PRNG key for stochastic loss
+    functions."""
+
     opt_jit: bool = False
+    """Whether to JIT-compile the optimizer's internal update step. Usually
+    ``False`` is sufficient because the outer scan is already JIT-compiled."""
 
 
 class TrainingResult(NamedTuple):
     """Results returned by :func:`train` after the optimization loop completes.
-
-    Attributes:
-        final_params (jnp.ndarray): Optimized circuit parameters after training.
-        losses (jnp.ndarray): Training loss recorded at every optimization step,
-            shape ``(n_steps,)``.
-        val_losses (jnp.ndarray): Validation loss at every step (all zeros if no
-            ``val_kwargs`` was provided), shape ``(n_steps,)``.
-        run_time (float): Wall-clock time of the training loop in seconds.
 
     **Example**
 
@@ -97,9 +87,17 @@ class TrainingResult(NamedTuple):
     """
 
     final_params: jnp.ndarray
+    """Optimized circuit parameters after training."""
+
     losses: jnp.ndarray
+    """Training loss recorded at every optimization step, shape ``(n_steps,)``."""
+
     val_losses: jnp.ndarray
+    """Validation loss at every step (all zeros if no ``val_kwargs`` was provided),
+    shape ``(n_steps,)``."""
+
     run_time: float
+    """Wall-clock time of the training loop in seconds."""
 
 
 class BatchResult(NamedTuple):
@@ -107,24 +105,27 @@ class BatchResult(NamedTuple):
 
     Each ``BatchResult`` covers ``unroll_steps`` consecutive optimization steps
     that were fused into a single ``jax.lax.scan`` call.
-
-    Attributes:
-        params (jnp.ndarray): Circuit parameters at the end of this batch.
-        state (jnp.ndarray): Internal optimizer state (e.g., Adam moments).
-        key (jax.Array): Updated PRNG key for the next training batch.
-        key_val (jax.Array): Updated PRNG key for the next validation evaluation.
-        losses (jnp.ndarray): Training loss values for each step in this batch,
-            shape ``(unroll_steps,)``.
-        val_losses (jnp.ndarray): Validation loss values for each step in this
-            batch (zeros if validation is disabled), shape ``(unroll_steps,)``.
     """
 
     params: jnp.ndarray
+    """Circuit parameters at the end of this batch."""
+
     state: jnp.ndarray
+    """Internal optimizer state (e.g., Adam moments)."""
+
     key: jax.Array
+    """Updated PRNG key for the next training batch."""
+
     key_val: jax.Array
+    """Updated PRNG key for the next validation evaluation."""
+
     losses: jnp.ndarray
+    """Training loss values for each step in this batch, shape
+    ``(unroll_steps,)``."""
+
     val_losses: jnp.ndarray
+    """Validation loss values for each step in this batch (zeros if validation is
+    disabled), shape ``(unroll_steps,)``."""
 
 
 def _prepare_loss_function(loss: Callable) -> Callable:
