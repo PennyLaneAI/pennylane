@@ -40,7 +40,10 @@ _PAULI_FROM_XZ = {(0, 0): I, (1, 0): X, (1, 1): Y, (0, 1): Z}
 #: ``i ** k`` lookup table for ``k = 0, 1, 2, 3`` (phase contributed by ``PauliY`` factors).
 _I_POWERS = np.array([1, 1j, -1, -1j], dtype=complex)
 
-#: Coefficients with magnitude below this value are treated as zero.
+#: Coefficients with magnitude below this value are treated as zero and dropped.
+#: Matches the default absolute tolerance of ``np.allclose`` (used by the dense
+#: routine's ``math.allclose(coefficient, 0)`` check), so the sparse and dense
+#: paths discard the same terms.
 _COEFF_TOLERANCE = 1e-8
 
 
@@ -255,18 +258,29 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
     return (coeffs, obs)
 
 
-def _fast_walsh_hadamard_transform(vec):
+def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
     r"""Compute the unnormalised fast Walsh-Hadamard transform of a 1D array.
 
-    Returns ``H`` with :math:`H[z] = \sum_r \text{vec}[r]\,(-1)^{\operatorname{popcount}(z\,\&\,r)}`
-    using the radix-2 butterfly in :math:`O(N \log N)` time.
+    Uses the radix-2 butterfly in :math:`O(N \log N)` time. The input array is
+    modified in place.
+
+    Args:
+        vec (np.ndarray): 1D array whose length is a power of two.
+
+    Returns:
+        np.ndarray: the transformed array ``H`` with
+        :math:`H[z] = \sum_r \text{vec}[r]\,(-1)^{\operatorname{popcount}(z\,\&\,r)}`.
     """
     length = len(vec)
     step = 1
     while step < length:
         vec = vec.reshape(-1, 2 * step)
+        # Copy the low half: the first in-place assignment below overwrites the
+        # memory it views, but the stale values are still needed for the second.
+        # The high half needs no copy since its memory is only written after
+        # ``low - high`` has been fully evaluated.
         low = vec[:, :step].copy()
-        high = vec[:, step:].copy()
+        high = vec[:, step:]
         vec[:, :step] = low + high
         vec[:, step:] = low - high
         vec = vec.reshape(-1)
@@ -287,6 +301,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     :math:`O(\text{num\_groups} \cdot n \cdot 2^n)` instead of expanding every entry into
     :math:`2^n` words. It supports padding for non-power-of-two or rectangular inputs and
     returns either operator tensors or Pauli-word data depending on the ``pauli`` flag.
+    See `Georges et al., New J. Phys. 27, 033004 (2025)
+    <https://doi.org/10.1088/1367-2630/adb44d>`__ for the underlying XOR-permute plus
+    Walsh-Hadamard formulation.
 
     Args:
         matrix (scipy.sparse matrix): Any sparse matrix. If its dimension is not
@@ -366,9 +383,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     # Pauli word with symplectic representation ``(x=d, z)`` is
     #     c(d, z) = 2**-n * i**popcount(z & d) * sum_r M[r, r ^ d] * (-1)**popcount(z & r),
     # where the inner sum is the (unnormalised) Walsh-Hadamard transform of the
-    # entry values placed at their row index. it mirrors the dense routine (XOR-permute
+    # entry values placed at their row index. It mirrors the dense routine (XOR-permute
     # -> Walsh-Hadamard -> Y-phase) while skipping every empty group, replacing the
-    # per-entry O(nnz * 2**n) expansion with an O(num_groups * n * 2**n) transform.
+    # per-entry O(nnz * n * 2**n) expansion with an O(num_groups * n * 2**n) transform.
     diffs = rows ^ sparse_matrix.col.astype(np.int64, copy=False)
     order = np.argsort(diffs, kind="stable")
     diffs, rows, data = diffs[order], rows[order], data[order]
@@ -388,7 +405,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         values = np.zeros(dim, dtype=complex)
         values[rows[start:end]] = data[start:end]
         transformed = _fast_walsh_hadamard_transform(values)
-        phase = _I_POWERS[np.bitwise_count(z_indices & d) & 3]  # i ** (number of Y factors)
+        phase = _I_POWERS[np.bitwise_count(z_indices & d) & 0b11]  # i ** (number of Y factors)
         group_coeffs = inv_dim * phase * transformed
         for z in np.flatnonzero(np.abs(group_coeffs) > _COEFF_TOLERANCE):
             coeffs.append(group_coeffs[z])

@@ -459,12 +459,9 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
-* The sparse Pauli decomposition used by :func:`~.pauli_decompose` for SciPy sparse inputs is now
-  significantly faster. Instead of expanding every nonzero matrix entry into :math:`2^n` Pauli-word
-  contributions, nonzero entries are grouped by their ``row ^ col`` XOR-difference (which fixes the
-  X-part of the contributing Pauli words) and each group is resolved with a single fast
-  Walsh-Hadamard transform plus a ``PauliY`` phase. This reduces the cost from
-  :math:`O(\text{nnz} \cdot n \cdot 2^n)` to :math:`O(\text{num\_groups} \cdot n \cdot 2^n)`,
+* :func:`~.pauli_decompose` is significantly faster for SciPy sparse inputs. Nonzero entries are
+  grouped by their ``row ^ col`` XOR-difference and each group is resolved with a single fast
+  Walsh-Hadamard transform, following [Georges et al.](https://doi.org/10.1088/1367-2630/adb44d),
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
