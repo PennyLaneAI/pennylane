@@ -244,14 +244,14 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         zipped = sum(zip(wires[1:], work_wires), start=tuple())
         if compiler.active() or enabled():
             zipped = math.array(zipped, like="jax")
-            all_wires = math.concatenate([wires[:1], zipped])
+            all_wires = math.concatenate([wires[:1], zipped], like="jax")
         else:
             all_wires = wires[:1] + zipped
 
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            if math.is_abstract(all_wires):
+            if math.is_abstract(k):
                 _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
             else:
                 _slice = all_wires[2 * k : 2 * k + 3]
@@ -263,7 +263,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
             cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            if math.is_abstract(all_wires):
+            if math.is_abstract(k):
                 _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
             else:
                 _slice = all_wires[2 * k : 2 * k + 3]
