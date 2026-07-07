@@ -22,17 +22,44 @@ import tempfile
 import time
 import warnings
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 import pennylane as qp
 
-from ._utils import make_level_name_unique
 from .expression import Expression
 from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
+
+
+def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> str:
+    """Helper function to make a level name unique by appending a suffix if necessary.
+
+    .. warning::
+
+        This function is intended for internal use and may be subject to change without deprecation.
+
+    Args:
+        level_name (str): The original level name
+        existing_names (Iterable[str]): The set of existing level names to check against
+
+    Returns:
+        str: A unique level name
+
+    Example:
+        >>> existing = {"cancel-inverses", "merge-rotations", "cancel-inverses-2"}
+        >>> make_level_name_unique("cancel-inverses", existing)
+        'cancel-inverses-3'
+    """
+    unique_name = level_name
+    counter = 1
+    while unique_name in existing_names:
+        counter += 1
+        unique_name = f"{level_name}-{counter}"
+    return unique_name
 
 
 def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:

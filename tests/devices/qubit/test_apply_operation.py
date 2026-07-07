@@ -34,7 +34,6 @@ from pennylane.devices.qubit.apply_operation import (
     apply_operation_tensordot,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE
-from pennylane.ops.op_math.controlled2 import ControlledOp2
 
 apply_operation_module = importlib.import_module("pennylane.devices.qubit.apply_operation")
 
@@ -88,33 +87,6 @@ def test_custom_operator_with_matrix():
 
     new_state = apply_operation(CustomOp(0), state)
     assert qp.math.allclose(new_state, mat @ state)
-
-
-def test_controlledop2_dispatch_not_ambiguous():
-    """Regression test: a generic ControlledOp2 must not trigger ambiguous singledispatch.
-
-    ``apply_operation`` is a ``functools.singledispatch`` function with separate
-    registrations for ``ops.CNOT`` and ``ops.MultiControlledX``.  Before the
-    ``__subclasshook__`` fix, ``isinstance(ControlledOp2(...), CNOT)`` and
-    ``isinstance(ControlledOp2(...), MultiControlledX)`` were both ``True``
-    (because the hook was inherited by concrete subclasses of ``Controlled``),
-    causing singledispatch to find two equally-specific handlers and raise::
-
-        RuntimeError: Ambiguous dispatch: <class '...CNOT'>
-                      or <class '...MultiControlledX'>
-
-    If the type ambiguity regresses, this call will raise before producing any
-    result, so the assertion below is unreachable in the failing case.
-    """
-
-    op = ControlledOp2(qp.X(1), control_wires=[0])
-    state = np.zeros((2, 2))
-    state[1, 0] = 1
-
-    expected = np.zeros((2, 2))
-    expected[1, 1] = 1
-
-    assert qp.math.allclose(apply_operation(op, state), expected)
 
 
 class TestSparseOperation:

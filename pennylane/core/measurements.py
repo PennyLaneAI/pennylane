@@ -45,7 +45,7 @@ from ._capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .operator import Operator, Operator2
+from .operator import Operator
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -100,12 +100,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls._wires_primitive.bind(
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
-
-        if isinstance(obs, Operator2):
-            if obs.tracer is None:
-                obs._bind_primitive()  # pylint: disable=protected-access
-            # capture on but not tracing, tracer will still be None
-            obs = obs if obs.tracer is None else obs.tracer
 
         if isinstance(obs, Operator):
             QueuingManager.remove(obs)

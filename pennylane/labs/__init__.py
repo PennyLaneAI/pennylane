@@ -27,7 +27,7 @@ Modules
 
     dla
     estimator_beta
-    tcdq
+    phox
     profiler
     templates
     transforms
@@ -37,7 +37,7 @@ Modules
 
 from pennylane.labs import dla
 from pennylane.labs import estimator_beta
-from pennylane.labs import tcdq
+from pennylane.labs import phox
 from pennylane.labs import profiler
 from pennylane.labs import templates
 from pennylane.labs import transforms

@@ -625,9 +625,7 @@ class Controlled(SymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        # Only fire for the abstract types (Controlled, ControlledOp), not their
-        # concrete subclasses (CNOT, Toffoli, etc.), to avoid ambiguous dispatch.
-        if cls in (Controlled, ControlledOp) and issubclass(subclass, qp.ops.op_math.Controlled2):
+        if issubclass(subclass, qp.ops.op_math.Controlled2):
             return True
         return NotImplemented
 

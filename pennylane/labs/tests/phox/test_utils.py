@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the tcdq simulator utility functions.
+Tests for the Phox simulator utility functions.
 """
 
-from pennylane.labs.tcdq.utils import (
+from pennylane.labs.phox.utils import (
     create_lattice_gates,
     create_local_gates,
     create_random_gates,

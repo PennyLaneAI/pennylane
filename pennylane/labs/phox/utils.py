@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utility functions for generating gates, observables, and analyzing circuits for the tcdq simulator.
+Utility functions for generating gates, observables, and analyzing circuits for the Phox simulator.
 """
 
 from itertools import combinations
@@ -23,7 +23,7 @@ import numpy as np
 
 def create_local_gates(n_qubits: int, max_weight: int = 2) -> dict[int, list[list[int]]]:
     """
-    Generates a gate dictionary for the tcdq simulator containing all gates whose
+    Generates a gate dictionary for the Phox simulator containing all gates whose
     generators have Pauli weight less or equal to max_weight.
 
     Each gate is assigned a unique parameter index.
