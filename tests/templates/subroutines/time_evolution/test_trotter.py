@@ -17,7 +17,6 @@ Tests for the TrotterProduct template and helper functions.
 
 # pylint: disable=private-access, protected-access, too-many-arguments
 import copy
-from collections import defaultdict
 from functools import partial, reduce
 
 import pytest
@@ -26,7 +25,6 @@ import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.resource import SpecsResources
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
     _recursive_expression,

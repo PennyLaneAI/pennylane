@@ -17,13 +17,11 @@ Test base Resource class and its associated methods
 
 # pylint: disable=unnecessary-dunder-call,protected-access
 import textwrap
-from collections import defaultdict
 from dataclasses import FrozenInstanceError
 
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operation
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
@@ -31,7 +29,6 @@ from pennylane.resource.resource import (
     CircuitSpecs,
     SpecsResources,
     SymbolicSpecsResources,
-    _count_resources,
     _count_to_str,
     num_to_letters,
     resources_from_tape,

@@ -149,19 +149,6 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        TODO: Remove this section, instead link to labs
-        An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different
-        methods; the "one-norm-bound" scaling method and the "commutator-bound" scaling method.
-        (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
-
-        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
-        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm-bound")
-        SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator-bound")
-        SpectralNormError(6.166666666666668e-06)
-
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
 
