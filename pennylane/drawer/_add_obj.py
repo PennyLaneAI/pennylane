@@ -30,6 +30,7 @@ from functools import singledispatch
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -50,7 +51,6 @@ from pennylane.ops import (
     PauliMeasure,
 )
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
 

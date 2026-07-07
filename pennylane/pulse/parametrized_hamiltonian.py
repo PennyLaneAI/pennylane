@@ -20,8 +20,8 @@ from copy import copy
 
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import LinearCombination, SProd, Sum, op_math
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 

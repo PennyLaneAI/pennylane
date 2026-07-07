@@ -22,7 +22,8 @@ import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qp
-from pennylane import math, queuing
+from pennylane import math
+from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,

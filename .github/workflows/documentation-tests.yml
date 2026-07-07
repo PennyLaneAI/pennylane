@@ -38,10 +38,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install pip and setuptools
         run: |
@@ -132,7 +132,6 @@ jobs:
           --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
-          --ignore=doc/introduction/pennylane.rst
           --ignore=doc/introduction/templates.rst
           --ignore=doc/introduction/unsupported_gradients.rst
           "

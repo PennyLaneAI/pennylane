@@ -24,6 +24,7 @@ from copy import copy
 
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.core.operator import Operator, StatePrepBase
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
@@ -38,7 +39,6 @@ from pennylane.measurements import (
     sample,
 )
 from pennylane.ops import Snapshot
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (
     diagonalize_measurements,
     resolve_dynamic_wires,

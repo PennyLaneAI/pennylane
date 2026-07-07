@@ -42,7 +42,7 @@ from .utils import (
 
 if TYPE_CHECKING:
     from pennylane.core.operator import Operator
-    from pennylane.tape import QuantumScript
+    from pennylane.core.qscript import QuantumScript
 
 
 has_mpl = True

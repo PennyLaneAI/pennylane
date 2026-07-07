@@ -19,8 +19,11 @@ See ``explanations.md`` for technical explanations of how this works.
 
 from abc import ABCMeta
 from inspect import Signature, signature
+from numbers import Number
 
 from pennylane.capture import enabled
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 def _stop_autograph(f):
@@ -36,6 +39,20 @@ def _stop_autograph(f):
         return f(*args, **kwargs)
 
     return new_f
+
+
+def _contains_abstract_type(val):
+    """Check if pytree contains any abstract types."""
+    leaves, _ = flatten(val)
+
+    for leaf in leaves:
+        if isinstance(leaf, (AbstractArray, AbstractWires)):
+            return True
+
+        if isinstance(val, type) and issubclass(val, Number):
+            return True
+
+    return False
 
 
 class OperatorMeta(ABCMeta):
@@ -55,6 +72,17 @@ class OperatorMeta(ABCMeta):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
+
+        bound = cls._sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        arguments: dict = bound.arguments
+        target_args = cls.dynamic_argnames + cls.hybrid_argnames + cls.wire_argnames
+
+        if any(_contains_abstract_type(arguments[name]) for name in target_args):
+            obj = cls.__new__(cls, *bound.args, **bound.kwargs)
+            obj.__abstract_init__(*bound.args, **bound.kwargs)
+            return obj
+
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         op = type.__call__(cls, *args, **kwargs)
@@ -66,8 +94,3 @@ class OperatorMeta(ABCMeta):
             op._bind_primitive()
 
         return op
-
-
-# pylint: disable=abstract-method
-# class ABCOperatorMeta(OperatorMeta, ABCMeta):
-#     """A combination of the operator metaclass and ABCMeta."""

@@ -21,7 +21,8 @@ import numpy as np
 from scipy import sparse
 from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, queuing, templates
+from pennylane import capture, compiler, math, ops, templates
+from pennylane.core import queuing
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.exceptions import DecompositionUndefinedError

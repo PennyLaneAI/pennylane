@@ -28,9 +28,9 @@ from typing import Any
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.ops.op_math import Controlled, ControlledOp
-from pennylane.tape import QuantumScript
 
 from .error.error import _compute_algo_error
 from .expression import Expression, convert_int_vals_to_expression

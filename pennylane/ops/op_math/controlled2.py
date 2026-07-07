@@ -24,11 +24,12 @@ from typing_extensions import override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .controlled import Controlled
 from .symbolicop2 import SymbolicOp2
 
 
@@ -85,15 +86,23 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        # NOTE: If called without arguments (during a __copy__)
+        # skip signature binding as attributes will be restored
+        # during the copy.
+        if not args and not kwargs:
+            return obj
+
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
         # we can pass that along to the base Operator2.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
-        obj = super().__new__(cls)
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         obj._init_args = bound_args.arguments
+
         return obj
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -104,7 +113,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
@@ -147,7 +155,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         super().__init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
-
         super().__init_subclass__(is_baseclass)
 
         base_argnames = {"base", "control_wires", "control_values", "work_wires", "work_wire_type"}
@@ -235,7 +242,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
-
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
 
@@ -267,7 +273,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @override
     # pylint: disable=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
-
         target_matrix = _get_sparse_matrix(base)
 
         num_target_states = 2 ** len(base.wires)
@@ -338,8 +343,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @override
     def simplify(self):
-        if isinstance(self.base, (Controlled, Controlled2)):
-
+        if isinstance(self.base, (qp.ops.Controlled, Controlled2)):
             simplified_base = self.base.base.simplify()
             if isinstance(simplified_base, qp.Identity):
                 return simplified_base
@@ -413,11 +417,13 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
     hybrid_argnames = ("base",)
 
-    compilable_argnames = ("work_wire_type",)
+    static_argnames = ("work_wire_type",)
+
+    arg_specs = {"control_values": Bool[-1], "control_wires": Wire[-1], "work_wires": Wire[-1]}
 
     # We cannot remove this __init__, otherwise signature(ControlledOp2) will return the
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
-    # overriden with a different signature, we must override __init__ so that the signature
+    # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
     def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
         self,
@@ -428,6 +434,37 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         super().__init__(base, control_wires, control_values, work_wires, work_wire_type)
+
+    @override
+    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
+        self,
+        base,
+        control_wires,
+        control_values=None,
+        work_wires=None,
+        work_wire_type="borrowed",
+    ):
+        # Canonicalize control_values and work_wires
+        if control_values is None:
+            control_values = Bool[len(control_wires)]
+        if work_wires is None:
+            work_wires = Wire[0]
+
+        # Use default implementation for __abstract_init__
+        super().__abstract_init__(
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+        # Update private properties
+        self._base = self.arguments["base"]
+        self._control_wires = self.arguments["control_wires"]
+        self._control_values = self.arguments["control_values"]
+        self._work_wires = self.arguments["work_wires"]
+        self._work_wire_type = self.arguments["work_wire_type"]
 
     @property
     @override
@@ -441,3 +478,44 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.control_values and not all(self.control_values):
             params.append(f"control_values={self.control_values}")
         return f"Controlled({self.base}, {', '.join(params)})"
+
+    @override
+    def _bind_primitive(self):
+        """Bind the operator primitive. ``ControlledOp2`` has to override the method of
+        the base ``Operator2`` class so that we can "edit" the original primitive."""
+        if not qp.capture.enabled():
+            return
+
+        if self.base.tracer is None:
+            # pylint: disable=protected-access
+            self.base._bind_primitive()
+            # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
+            # In that case, there is nothing to do, so return early.
+            if self.base.tracer is None:
+                return
+
+        eqns = pop_op_eqns((self.base,))
+        assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
+        params = eqns[0].params
+        n_ctrls = params["n_ctrls"]
+
+        # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
+        # be tracers, not `Var`s wrapping abstract values.
+        if n_ctrls == 0:
+            invars = eqns[0].invars + self.control_wires.tolist() + self.control_values
+        else:
+            # invars are ordered as (*other_args, *control_wires, *control_values), so we
+            # need to insert the new control wires before the old ones, and do the same
+            # for control values too.
+            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            control_values = self.control_values + eqns[0].invars[-n_ctrls:]
+            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+
+        params["n_ctrls"] += len(self.control_wires)
+        res = operator_p.bind(*invars, **params)
+
+        self.base.tracer = None
+        # If we bind the primitive outside a tracing context but with program capture enabled,
+        # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
+        if math.is_abstract(res):
+            self.tracer = res

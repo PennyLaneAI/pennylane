@@ -93,7 +93,7 @@ def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     given length, representing the integers as binaries.
 
     Args:
-        integer (int | np.ndarray): Integer(s) to convert. Either a single integers or an
+        integer (int | np.ndarray): Integer(s) to convert. Either a single integer or an
             array of integers.
         width (int): Length of the bitstrings to which the integer(s) are converted. Note
             that the ``width`` **least** significant bits corresponding to
