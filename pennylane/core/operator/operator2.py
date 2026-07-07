@@ -1380,6 +1380,14 @@ def _init_arg_types(op: Operator2) -> None:
         comparison_abstract_type = AbstractArray(unbatched_shape, np.dtype(argval_dtype))
         if not exp_type.is_compatible_with(comparison_abstract_type):
             actual_dtype = argval_dtype
+
+            mock = AbstractArray(exp_type.shape, actual_dtype)
+            if not exp_type.is_compatible_with(mock):
+                raise ValueError(
+                    f"Expected '{name}' to have dtype "
+                    f"'{exp_type.dtype.name}', but got dtype '{actual_dtype}'."
+                )
+
             if is_broadcasted:
                 raise ValueError(
                     f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
@@ -1387,8 +1395,7 @@ def _init_arg_types(op: Operator2) -> None:
                     f"got input shape {arg_shape} with dtype '{actual_dtype}'."
                 )
             raise ValueError(
-                f"Expected '{name}' to have shape {exp_type.shape} and dtype "
-                f"'{exp_type.dtype.name}', but got shape {arg_shape} with dtype '{actual_dtype}'."
+                f"Expected '{name}' to have shape {exp_type.shape} but got shape {arg_shape}."
             )
 
         # NOTE: If the argval is an abstract type, we wish to canonicalize it to the
