@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
