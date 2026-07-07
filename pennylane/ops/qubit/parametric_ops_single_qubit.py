@@ -126,7 +126,7 @@ class RX(Operator2):
 
     @staticmethod
     def compute_matrix(
-        phi: TensorLike, wires: WiresLike
+        phi: TensorLike, wires: WiresLike = None
     ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
