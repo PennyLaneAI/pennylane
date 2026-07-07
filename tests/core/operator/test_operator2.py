@@ -737,9 +737,7 @@ class TestInitExpectedArgtypesValidation:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with pytest.raises(
-            ValueError, match=r"Expected 'phi' to have shape \(\) and dtype 'int64'"
-        ):
+        with pytest.raises(ValueError, match=r"Expected 'phi' to have dtype 'int64'"):
             Op(0.5, wires=0)
 
     def test_weak_type_allows_python_scalar(self):
@@ -2452,7 +2450,6 @@ class TestLegacyCompatibilityViews:
 
 
 class TestApply:
-
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply(self, op2):
         """Tests that Operator2 can queue like Operator1 using ``qp.apply``."""

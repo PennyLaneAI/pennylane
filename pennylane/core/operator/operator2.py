@@ -1381,6 +1381,15 @@ def _init_arg_types(op: Operator2) -> None:
         if not exp_type.is_compatible_with(comparison_abstract_type):
             actual_dtype = argval_dtype
 
+            if is_broadcasted:
+                raise ValueError(
+                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
+                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
+                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
+                )
+
+            # NOTE: Create a mock type with the expect shape but the actual dtype
+            # to enable failure isolation.
             mock = AbstractArray(exp_type.shape, actual_dtype)
             if not exp_type.is_compatible_with(mock):
                 raise ValueError(
@@ -1388,12 +1397,6 @@ def _init_arg_types(op: Operator2) -> None:
                     f"'{exp_type.dtype.name}', but got dtype '{actual_dtype}'."
                 )
 
-            if is_broadcasted:
-                raise ValueError(
-                    f"Expected '{name}' with parameter broadcasting to have shape {exp_type.shape} "
-                    f"for the non-broadcasting dimensions and dtype '{exp_type.dtype.name}', but "
-                    f"got input shape {arg_shape} with dtype '{actual_dtype}'."
-                )
             raise ValueError(
                 f"Expected '{name}' to have shape {exp_type.shape} but got shape {arg_shape}."
             )
