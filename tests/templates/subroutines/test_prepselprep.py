@@ -309,8 +309,8 @@ class TestPrepSelPrep:
         op = qp.PrepSelPrep(lcu, (3, 4))
 
         op_reps = (
-            qp.X,
-            qp.X,
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
             qp.resource_rep(qp.ops.Prod, **ops[-1].resource_params),
         )
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
