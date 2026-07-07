@@ -2080,12 +2080,20 @@ class TestCtrl:
     def test_ctrl_on_abstract_controlled_op(self):
         """Tests that applying `ctrl` on abstract controlled op works."""
 
-        op = qp.ctrl(DynOp(Float, Wire[2]), control=[0], control_values=[1])
+        op = qp.ctrl(DynOp(Float, Wire[2]), control=[0], control_values=1)
         assert isinstance(op, ControlledOp2)
         assert op.base == DynOp(Float, Wire[2])
         assert op.wires == Wire[3]
         assert op.control_wires == Wire[1]
         assert op.control_values == Bool[1]
+
+        new_op = qp.ctrl(op, control=[3, 4], work_wires=[5])
+        assert isinstance(new_op, ControlledOp2)
+        assert new_op.base == DynOp(Float, Wire[2])
+        assert new_op.wires == Wire[5]
+        assert new_op.control_wires == Wire[3]
+        assert new_op.control_values == Bool[3]
+        assert new_op.work_wires == Wire[1]
 
 
 class _Rot(Operation):

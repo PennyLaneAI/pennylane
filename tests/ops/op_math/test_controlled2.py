@@ -136,6 +136,8 @@ class TestControlled2:
         assert op.theta == Float
         assert op.omega == Float
         assert op.wires == Wire[2]
+        assert op.control_wires == Wire[1]
+        assert op.control_values == Bool[1]
 
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
