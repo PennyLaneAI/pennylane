@@ -289,7 +289,7 @@ class TestQSVTIntegration:
                     qp.RZ(0.1, wires=[0]),
                     qp.Z(0),
                     qp.RY(0.2, wires=[0]),
-                    qp.adjoint(qp.Z)(0),
+                    qp.Z(0),
                     qp.RZ(0.3, wires=[1]),
                 ],
             ),

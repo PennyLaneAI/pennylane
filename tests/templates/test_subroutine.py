@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane import resource_rep
 from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
@@ -690,7 +691,7 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
-            qp.PauliX,
+            resource_rep(qp.PauliX),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
@@ -735,7 +736,7 @@ class TestGraphDecomposition:
 
         rr = change_op_basis_subroutine_resource_rep(
             qp.PauliZ(0),
-            qp.PauliX,
+            resource_rep(qp.PauliX),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"

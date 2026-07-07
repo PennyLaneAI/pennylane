@@ -400,7 +400,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.qp.X: 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {qp.X: 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(
             compute_op=qp.X,
