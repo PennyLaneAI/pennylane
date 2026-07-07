@@ -79,7 +79,7 @@ def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
     return 0
 
 
-def preprocess_level_input(  # pylint: disable=too-many-branches
+def preprocess_level_input(
     level: str | int | slice | list[int | str],
     marker_to_level: dict[str, int],
     pipeline_len: int,
@@ -116,17 +116,20 @@ def preprocess_level_input(  # pylint: disable=too-many-branches
         # Account for an additional "Before Tape Transforms" level
         total_levels += 1
 
-    if level == "all":
-        return list(range(0, total_levels))
-    if level == "all-mlir":
-        return list(range(num_tape_levels, total_levels))
-    if level == "user":
-        return [total_levels - 1]
+    default_level_map = {
+        "all": list(range(0, total_levels)),
+        "all-mlir": list(range(num_tape_levels, total_levels)),
+        "user": [total_levels - 1],
+    }
+    if isinstance(level, str) and level in default_level_map:
+        return default_level_map[level]
 
     if isinstance(level, (int, str)):
         level = [level]
     elif isinstance(level, slice):
-        level = list(range(level.start or 0, level.stop, level.step or 1))
+        stop = level.stop if level.stop is not None else total_levels
+        step = level.step if level.step is not None else 1
+        level = list(range(level.start or 0, stop, step))
     else:
         level = list(level)
 
