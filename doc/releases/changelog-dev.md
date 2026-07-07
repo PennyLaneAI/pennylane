@@ -464,7 +464,7 @@
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
-  decompositions of :class:`~.CRZ`, as described 
+  decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
   [(#9750)](https://github.com/PennyLaneAI/pennylane/pull/9750)
 
@@ -492,6 +492,7 @@
 
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
   ```python
   import pennylane as qp
@@ -798,7 +799,10 @@
   - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
   - Integration with :mod:`pennylane.capture`.
   - Integration with :func:`pennylane.apply`.
+  - Integration with measurements and capture.
   - Integration with the graph-based decomposition system.
+  - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
+  - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
@@ -826,11 +830,17 @@
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+  [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
+  [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+  [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
+  [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
-* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+
+* Added an `is_abstract` property to `Operator2` in order to improve abstractification efficiency.
   [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
 * Adds a new `pennylane/core` module.
@@ -929,7 +939,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
+* Fixed a bug in :class:~.OutMultiplier` for small output registers.
+  [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
+
+* Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
 
 * Lazily defers checking program capture mode when taking the adjoint and ctrl of a qfunc.
