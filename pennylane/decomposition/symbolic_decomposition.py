@@ -223,7 +223,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[resource_rep(qp.PauliX)] = num_zero_control_values * 2
+        gate_counts[qp.PauliX] = num_zero_control_values * 2
         return gate_counts
 
     # pylint: disable=protected-access,too-many-arguments
