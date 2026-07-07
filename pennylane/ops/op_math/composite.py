@@ -24,9 +24,10 @@ from warnings import warn
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -66,8 +67,22 @@ class CompositeOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        # needs to be overwritten because it doesnt take wires
-        return cls._primitive.bind(*args, **kwargs)
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_args, new_kwargs = unflatten(new_leaves, structure)
+
+        # has no wires, so doesn't need any wires processing
+        return cls._primitive.bind(*new_args, **new_kwargs)
 
     def _flatten(self):
         return tuple(self.operands), tuple()
@@ -85,7 +100,7 @@ class CompositeOp(Operator):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
-        self._wires = qp.wires.Wires.all_wires([op.wires for op in operands])
+        self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
