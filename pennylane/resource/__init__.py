@@ -58,7 +58,6 @@ __all__ = [
     "SymbolicSpecsResources",
     "CircuitSpecs",
     "resources_from_tape",
-    "substitute",
     "Expression",
     "specs",
 ]

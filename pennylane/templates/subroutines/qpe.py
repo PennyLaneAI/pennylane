@@ -18,7 +18,7 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=arguments-differ
 import copy
 
-from pennylane import math, ops
+from pennylane import ops
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (

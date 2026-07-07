@@ -450,7 +450,6 @@ class CircuitGraph:
 
         # pylint: disable=unused-argument
         def weight_fn(in_idx, out_idx, w):
-            out_op = ops_with_initial_I[out_idx]
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)
