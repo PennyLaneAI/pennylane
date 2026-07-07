@@ -92,6 +92,8 @@ on:
 
 env:
   UV_SYSTEM_PYTHON: 1
+  UV_CONCURRENT_DOWNLOADS: 1
+  UV_HTTP_TIMEOUT: 120
   TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
@@ -154,7 +156,7 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv pip install $line
+                uv pip install $line || uv pip install $(echo "$line" | sed 's/--index-url [^ ]*//')
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
@@ -176,7 +178,7 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv pip install $line
+                uv pip install $line || uv pip install $(echo "$line" | sed 's/--index-url [^ ]*//')
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 

@@ -750,6 +750,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* CI torch install steps now fall back to PyPI when the PyTorch CDN (`download.pytorch.org`) is unreachable.
+  [(#9696)](https://github.com/PennyLaneAI/pennylane/pull/9696)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
