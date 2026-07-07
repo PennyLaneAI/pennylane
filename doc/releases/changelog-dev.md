@@ -461,6 +461,8 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
+  [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
@@ -754,6 +756,9 @@
   Could be used for dry-runs and resource calculations with program capture.
   [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
 
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -803,6 +808,7 @@
   - Integration with :func:`pennylane.apply`.
   - Integration with measurements and capture.
   - Integration with the graph-based decomposition system.
+  - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
   - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
   [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
@@ -833,13 +839,15 @@
   [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
   [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
   [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
   [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
 
 * Added an internal `abstractify` utility function that is able to convert various objects
   to their abstract versions.
-* Added an `is_abstract` property.
   [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+
+* Added an `is_abstract` property to `Operator2` in order to improve abstractification efficiency.
   [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
 
 * Adds a new `pennylane/core` module.
@@ -1039,6 +1047,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Austin Huang,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
