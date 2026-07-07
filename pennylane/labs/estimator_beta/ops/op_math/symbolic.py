@@ -55,7 +55,7 @@ def _generate_name(
     >>> from inspect import signature
     >>> def my_func(arg1, arg2, kwarg1 = "a"):
     ...     return
-    ...
+    >>>
     >>> f_name = my_func.__name__
     >>> f_sig = signature(my_func)
     >>>
@@ -108,8 +108,8 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
             parameters to include in the name.
 
     Returns:
-        Callable: A function which, when executed, returns a :class:``~.estimator.ResourceOperator``
-            that represents the product of the operators defined within the input ``qfunc`` function.
+        Callable: A function which, when executed, returns a :class:`~.estimator.ResourceOperator`
+            that represents the operators queued by the subroutine ``qfunc``.
 
     **Example**
 
@@ -129,13 +129,9 @@ def mark_subroutine(qfunc: Callable, include_params: Iterable[str] | None = None
 
         def circuit():
             SubroutineA(5)
-
             qre.CNOT()
-
             SubroutineA(3)
-
             qre.QROM(3, 2)
-
             SubroutineA(5)
 
     >>> gate_set = {"CNOT", "QROM", "SubroutineA"}
@@ -237,7 +233,7 @@ class ResourceQfunc(ResourceOperator):
     ...     num_iter = 3,
     ...     op_type = "X",
     ... )
-    >>> print(qre.estimate(op, {"X", "Z"}))
+    >>> print(qre.estimate(op, gate_set={"X", "Z"}))
     --- Resources: ---
      Total wires: 1
        algorithmic wires: 1
@@ -246,7 +242,7 @@ class ResourceQfunc(ResourceOperator):
          any state: 0
      Total gates : 3
        'X': 3
-    >>> print(qre.estimate(op, {"SubA"}))
+    >>> print(qre.estimate(op, gate_set={"SubA"}))
     --- Resources: ---
      Total wires: 1
        algorithmic wires: 1
@@ -280,7 +276,7 @@ class ResourceQfunc(ResourceOperator):
                 ):  # TODO: @Jaybsoni to add support for this eventually
                     raise TypeError(
                         "Marking qubits is currently not supported with mark_subroutine and ResourceQfunc. "
-                        "Instead, instantiate MarkQubit instances within the main Qnode or qfunc directly."
+                        "Instead, instantiate MarkQubits instances within the main Qnode or qfunc directly."
                     )
                 else:
                     continue
