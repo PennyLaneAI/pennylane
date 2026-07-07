@@ -331,8 +331,6 @@ def resources_from_analysis_pass(
             with res_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            # breakpoint()
-
             cur_level_resources = _get_resources_from_analysis_pass(data)
 
             if len(cur_level_resources) == 1:
