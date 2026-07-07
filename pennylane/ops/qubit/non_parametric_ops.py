@@ -1155,6 +1155,9 @@ class S(Operator2):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
+
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
@@ -1332,6 +1335,9 @@ class T(Operator2):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
+
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
@@ -1496,6 +1502,9 @@ class SX(Operator2):
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -1676,6 +1685,9 @@ class SWAP(Operator2):
 
     resource_keys = set()
     batch_size = None
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     @property
     def pauli_rep(self):
@@ -1883,6 +1895,9 @@ class ECR(Operator2):
 
     resource_keys = set()
 
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
+
     @property
     def resource_params(self) -> dict:
         return {}
@@ -2052,6 +2067,9 @@ class ISWAP(Operator2):
 
     batch_size = None
     resource_keys = set()
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -2238,6 +2256,9 @@ class SISWAP(Operator2):
 
     batch_size = None
     resource_keys = set()
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
