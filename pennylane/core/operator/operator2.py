@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import warnings
 from abc import abstractmethod
 from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -41,6 +42,7 @@ from pennylane.exceptions import (
     EigvalsUndefinedError,
     GeneratorUndefinedError,
     MatrixUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -390,6 +392,12 @@ class Operator2(metaclass=OperatorMeta):
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
+    grad_recipe = None
+    """Legacy Operator compatibility default for parameter-shift recipes."""
+
+    grad_method = None
+    """Legacy Operator compatibility default for gradient method metadata."""
+
     @property
     def num_params(self):
         """Number of trainable parameters."""
@@ -418,6 +426,20 @@ class Operator2(metaclass=OperatorMeta):
             for name, value in self.arguments.items()
             if name not in self.dynamic_argnames and name not in self.wire_argnames
         }
+
+    @property
+    def control_wires(self) -> Wires:
+        """Legacy Operator compatibility view of control wires."""
+        return Wires([])
+
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
+        """Legacy Operator compatibility view of single-qubit Rot angles."""
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in v0.47, "
+            "please use qp.single_qubit_zyz_angles(op) instead.",
+            PennyLaneDeprecationWarning,
+        )
+        return qp.single_qubit_zyz_angles(self)[:-1]
 
     # ------------------------------------------------------------------------
     # --------------------------- Operator actions ---------------------------
