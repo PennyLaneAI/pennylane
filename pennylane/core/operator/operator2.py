@@ -1361,10 +1361,8 @@ def _init_arg_types(op: Operator2) -> None:
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            assert exp_type.num_wires in (
-                -1,
-                len(argval),
-            ), f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
+            msg = f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
+            assert exp_type.num_wires == -1 or exp_type.num_wires == len(argval), msg
             continue
 
         # Dynamic argument

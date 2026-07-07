@@ -181,11 +181,6 @@ def _exact_qudit_mmd2_operators(gates, params, data, d, bandwidth, graph_type, n
     return float(np.real(total))
 
 
-# ---------------------------------------------------------------------------
-#  Tests
-# ---------------------------------------------------------------------------
-
-
 class TestMarginalProbs:
     """Verify graph-spectral marginal distributions."""
 
