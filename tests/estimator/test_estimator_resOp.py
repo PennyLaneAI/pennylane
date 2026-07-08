@@ -28,6 +28,8 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
 

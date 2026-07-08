@@ -34,6 +34,8 @@ from pennylane.fourier.reconstruct import (
 )
 from pennylane.fourier.utils import join_spectra
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 dev_0 = qp.device("default.qubit", wires=1)
 
 

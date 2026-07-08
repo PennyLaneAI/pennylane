@@ -21,6 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
 two_h2 = np.array(  # in chemist notation

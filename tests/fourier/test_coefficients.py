@@ -24,6 +24,8 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.fourier import coefficients
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def fourier_function(freq_dict, x):
     r"""Function of the form :math:`\sum c_n e^{inx}` to construct

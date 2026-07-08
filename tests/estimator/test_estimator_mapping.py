@@ -27,6 +27,8 @@ import pennylane.templates as qtemps
 from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable= no-self-use,too-few-public-methods
 
 

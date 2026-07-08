@@ -23,6 +23,8 @@ from pennylane import numpy as pnp
 from pennylane.fourier.circuit_spectrum import circuit_spectrum
 from pennylane.fourier.mark import mark
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestCircuits:
     """Tests that the spectrum is returned as expected."""

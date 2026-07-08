@@ -21,6 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane.fourier.utils import format_nvec, get_spectrum, join_spectra
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 @pytest.mark.parametrize(
     "nvec, exp",

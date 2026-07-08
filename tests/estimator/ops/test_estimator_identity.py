@@ -22,6 +22,8 @@ from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
 

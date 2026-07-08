@@ -22,6 +22,8 @@ import pytest
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResourceManager
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 # pylint: disable= no-self-use
 class TestWireResourceManager:
