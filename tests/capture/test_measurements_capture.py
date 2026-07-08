@@ -101,7 +101,6 @@ def test_abstract_measurement():
 
 
 class TestCounts:
-
     def test_counts_no_implementation(self):
         """Test that counts can't be measured and raises a NotImplementedError."""
 
@@ -392,7 +391,8 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert jaxpr.eqns[0].primitive == operator_p
+        assert jaxpr.eqns[0].params["op_cls"] is qp.PauliX
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -508,16 +508,17 @@ class TestExpvalVar:
             return m_type(obs=obs)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert jaxpr.eqns[0].primitive == operator_p
+        assert jaxpr.eqns[0].params["op_cls"] is qp.PauliX
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qp.Y._primitive
+        assert jaxpr.eqns[2].primitive == operator_p
+        assert jaxpr.eqns[2].params["op_cls"] is qp.PauliY
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive
 
 
 class TestProbs:
-
     @pytest.mark.parametrize(
         "wires, shape", [([0, 1, 2], 8), ([], 16), (jax.numpy.array([0, 1, 2]), 8)]
     )
@@ -595,7 +596,6 @@ class TestProbs:
 
 
 class TestSample:
-
     @pytest.mark.parametrize(
         "wires, dim1_len",
         [
