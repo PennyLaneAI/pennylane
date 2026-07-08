@@ -88,7 +88,11 @@ def _square_observable(obs):
 
 def _process_op_recipe(op, p_idx, order):
     """Process an existing recipe of an operation."""
-    recipe = op.grad_recipe[p_idx]
+    grad_recipe = getattr(op, "grad_recipe", None)
+    if grad_recipe is None:
+        return None
+
+    recipe = grad_recipe[p_idx]
     if recipe is None:
         return None
 
