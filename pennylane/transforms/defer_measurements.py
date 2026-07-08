@@ -13,8 +13,6 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
-from functools import partial
-
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
