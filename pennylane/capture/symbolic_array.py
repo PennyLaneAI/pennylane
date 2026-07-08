@@ -21,7 +21,7 @@ from .switches import enabled
 
 has_jax = find_spec("jax") is not None
 
-from jax._src import config as jax_config
+from pennylane.capture.custom_primitives import QpPrimitive
 
 
 @lru_cache
@@ -31,7 +31,7 @@ def _symbolic_array_primitive():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    estimation_p = jax.extend.core.Primitive("symbolic_array")
+    estimation_p = QpPrimitive("symbolic_array")
 
     @estimation_p.def_abstract_eval
     def _estimation_p_abstract_eval(shape, dtype):
@@ -99,5 +99,4 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
         raise ValueError(
             f"All shape dimensions must be integers greater than zero. Got shape {shape}."
         )
-    with jax_config.eager_constant_folding(False):
-        return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
+    return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
