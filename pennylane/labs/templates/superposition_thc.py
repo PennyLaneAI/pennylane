@@ -381,10 +381,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     extra_work = work_wires[7 + 4 * n - 1 :]
 
     # 1. Equal superposition over both index registers.
-    for wire in mu_wires:
+    for wire in Wires.all_wires([mu_wires, nu_wires]):
         Hadamard(wire)
-    for wire in nu_wires:
-        Hadamard(wire)
+
 
     # 2. Rotation angle for the single round of amplitude amplification.
     n_total_vals = 2 ** len(mu_wires)
@@ -409,9 +408,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
-    for wire in mu_wires:
-        Hadamard(wire)
-    for wire in nu_wires:
+    for wire in Wires.all_wires([mu_wires, nu_wires]):
         Hadamard(wire)
 
     # The Fig 3. has a typo and these X gates have to be added
@@ -419,12 +416,10 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         X(wires=wire)
     GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
-    for wire in mu_wires + nu_wires + [work_wires[0]]:
+    for wire in Wires.all_wires([mu_wires, nu_wires,[work_wires[0]]]):
         X(wires=wire)
 
-    for wire in mu_wires:
-        Hadamard(wire)
-    for wire in nu_wires:
+    for wire in Wires.all_wires([mu_wires, nu_wires]):
         Hadamard(wire)
 
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).

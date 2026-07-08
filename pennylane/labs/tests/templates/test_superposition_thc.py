@@ -251,25 +251,20 @@ class TestSuperpositionTHC:
                 [3] + list(range(6, 6 + 13)),
                 r"work_wires and nu_wires must be disjoint, but share: \[3\]",
             ),
+            (
+                8,
+                4,
+                [0, 1, 2],
+                [3, 4, 5],
+                list(range(6, 6 + 14)),
+                r"each need at least ceil\(log2\(M \+ 1\)\) wires",
+            ),
         ],
     )
     def test_wires_error(self, M, N, mu_wires, nu_wires, work_wires, msg_match):
         """An error is raised when the registers do not meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-
-    @pytest.mark.parametrize("n", [2, 3, 4])
-    def test_register_too_small_error(self, n):
-        """The index registers must be able to hold the one-body sentinel value
-        ``M``, i.e. ``M <= 2 ** n - 1``. Passing ``M = 2 ** n`` must raise instead
-        of silently preparing an empty (zero-success) state.
-        """
-        M = 2**n
-        mu_wires, nu_wires, work_wires = _wire_layout(n)
-        with pytest.raises(
-            ValueError, match=r"each need at least ceil\(log2\(M \+ 1\)\) wires"
-        ):
-            SuperpositionTHC(M, 2, mu_wires, nu_wires, work_wires)
 
     @pytest.mark.parametrize("n", [2, 3, 4])
     def test_max_rank_boundary(self, n):

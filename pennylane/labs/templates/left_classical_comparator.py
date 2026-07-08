@@ -316,8 +316,7 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
     # low ``n`` bits are all zero, so the bitwise core above computes the constant
     # ``x < 0`` (always False) rather than the intended "always True". Bit ``n`` of
     # ``L`` is set exactly in this case, so a single conditional ``X`` fixes the
-    # target wire. Using ``cond`` keeps this qjit/JAX-capture compatible (no Python
-    # boolean conversion of a possibly-traced ``L``).
+    # target wire.
     bit_n = _get_specific_bit(L, len(x_wires))
     cond(bit_n, X)(wires=[used_work_wires[len(x_wires) - 1]])
 

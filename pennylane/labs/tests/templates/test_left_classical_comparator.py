@@ -210,7 +210,7 @@ class TestLeftClassicalComparator:
 
         for x in range(2**n):
             probs = np.asarray(circuit(x))
-            got = probs[1] > 0.5
+            got = np.isclose(probs[1], 1.0)
             assert got == bool(expected_fn(x)), (
                 f"comparator={comparator} L={L} x={x}: got {got}, "
                 f"expected {bool(expected_fn(x))}"
