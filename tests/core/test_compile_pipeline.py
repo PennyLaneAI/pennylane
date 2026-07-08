@@ -21,6 +21,7 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qp
+from pennylane.capture.primitives import operator_p
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms.compile_pipeline import (
     CotransformCache,
@@ -1571,7 +1572,8 @@ class TestCompilePipelineCall:
 
         assert len(transformed_jaxpr.eqns) == 2
         # pylint: disable=protected-access
-        assert transformed_jaxpr.eqns[0].primitive == qp.PauliZ._primitive
+        assert transformed_jaxpr.eqns[0].primitive == operator_p
+        assert transformed_jaxpr.eqns[0].params["op_cls"] is qp.Z
         assert transformed_jaxpr.eqns[1].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     def test_call_fallback_on_qnode(self):

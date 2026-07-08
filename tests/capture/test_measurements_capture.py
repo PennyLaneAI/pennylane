@@ -703,7 +703,8 @@ def test_shadow_expval(seed):
     jaxpr = jax.make_jaxpr(f)()
 
     assert len(jaxpr.eqns) == 2
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert jaxpr.eqns[0].primitive == operator_p
+    assert jaxpr.eqns[0].params["op_cls"] is qp.PauliX
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
