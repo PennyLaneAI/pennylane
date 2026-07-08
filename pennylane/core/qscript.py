@@ -966,8 +966,8 @@ class QuantumScript:
                 resources_from_tape,
             )
 
-            resources, errors = resources_from_tape(self, compute_errors=True)
-            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
+            resources = resources_from_tape(self)
+            self._specs = {"resources": resources, "shots": self.shots}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
