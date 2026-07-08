@@ -296,10 +296,10 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
     return NotImplemented
 
 
-def create_controlled_op(op, control_wires, control_values, work_wires, work_wire_type):
+def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control_wires = Wires(control_wires)
+    control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
@@ -319,7 +319,7 @@ def create_controlled_op(op, control_wires, control_values, work_wires, work_wir
     if (
         custom_op := custom_ctrl_dispatch(
             op,
-            control_wires,
+            control,
             control_values,
             work_wires,
             work_wire_type,
@@ -329,7 +329,7 @@ def create_controlled_op(op, control_wires, control_values, work_wires, work_wir
 
     one_controlled = False
     if control_values is None:
-        control_values = [True] * len(control_wires)
+        control_values = [True] * len(control)
         one_controlled = True
 
     # Flatten nested controlled operations to a multi-controlled operation for better
@@ -344,7 +344,7 @@ def create_controlled_op(op, control_wires, control_values, work_wires, work_wir
         )
         return ctrl(
             op.base,
-            control=control_wires + op.control_wires,
+            control=control + op.control_wires,
             control_values=control_values + op.control_values,
             work_wires=work_wires + op.work_wires,
             work_wire_type=work_wire_type,
@@ -353,7 +353,7 @@ def create_controlled_op(op, control_wires, control_values, work_wires, work_wir
     if isinstance(op, Operator):
         return Controlled(
             op,
-            control_wires=control_wires,
+            control_wires=control,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -372,7 +372,7 @@ def create_controlled_op(op, control_wires, control_values, work_wires, work_wir
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    return _ctrl_transform(op, control_wires, control_values, work_wires, one_controlled)
+    return _ctrl_transform(op, control, control_values, work_wires, one_controlled)
 
 
 def _ctrl_transform(op, control, control_values, work_wires, one_controlled):
