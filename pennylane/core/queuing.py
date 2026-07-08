@@ -538,6 +538,12 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
             return op
         raise RuntimeError("Trying to use apply in a non-tracing context.")
 
+    if enabled():
+        # Capture is active but the op has no _bind_primitive (e.g. minimal
+        # legacy Operator subclass).  Reconstruct via the constructor so the
+        # new instance auto-binds its primitive.
+        return type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
+
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
