@@ -188,7 +188,7 @@ class RX(Operator2):
         return RX(theta, wires=self.wires)
 
 
-def _rx_to_rot_resources():
+def _rx_to_rot_resources(phi, wires): # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
@@ -197,7 +197,7 @@ def _rx_to_rot(phi, wires: WiresLike, **__):
     qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-def _rx_to_rz_ry_resources():
+def _rx_to_rz_ry_resources(phi, wires):# pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RY: 1}
 
 
@@ -208,7 +208,7 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qp.RZ(-np.pi / 2, wires=wires)
 
 
-def _rx_to_ry_cliff_resources():
+def _rx_to_ry_cliff_resources(phi, wires):# pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.S, qp.RY): 1}
 
 
@@ -217,7 +217,7 @@ def _rx_to_ry_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
 
-def _rx_to_rz_cliff_resources():
+def _rx_to_rz_cliff_resources(phi, wires):# pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
 
 
@@ -226,7 +226,7 @@ def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
 
 
-def _rx_to_ppr_resources():
+def _rx_to_ppr_resources(phi, wires):# pylint: disable=unused-argument
     return {resource_rep(qp.PauliRot, pauli_word="X"): 1}
 
 
