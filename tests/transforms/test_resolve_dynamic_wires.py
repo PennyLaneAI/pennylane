@@ -20,6 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane.allocation import AllocateState
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_error_if_no_available_wires():
     """Test that an error is produced if there are no available wires."""

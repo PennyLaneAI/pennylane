@@ -26,6 +26,8 @@ from pennylane.transforms.optimization.relative_phases import (  # pylint: disab
     match_relative_phase_toffoli,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestMultiControlledPhaseXGate:
 

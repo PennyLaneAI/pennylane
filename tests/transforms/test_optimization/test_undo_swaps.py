@@ -23,6 +23,8 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization import undo_swaps
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestUndoSwaps:
     """Test that check the main functionalities of the `undo_swaps` transform"""

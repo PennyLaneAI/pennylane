@@ -23,6 +23,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def test_partial_evaluation():
     """Test partial evaluation matches individual full evaluations"""

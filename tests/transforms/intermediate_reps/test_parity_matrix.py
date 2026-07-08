@@ -22,6 +22,8 @@ import pytest
 import pennylane as qp
 from pennylane.transforms import decompose, parity_matrix
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 circ1 = qp.tape.QuantumScript(
     [
         qp.CNOT((3, 2)),

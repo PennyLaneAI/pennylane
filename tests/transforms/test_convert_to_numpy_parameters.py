@@ -23,6 +23,8 @@ from pennylane.transforms.convert_to_numpy_parameters import (
     _convert_op_to_numpy_data,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),

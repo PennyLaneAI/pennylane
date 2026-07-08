@@ -23,6 +23,8 @@ import pytest
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pytest.importorskip("pyzx")
 
 

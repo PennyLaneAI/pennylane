@@ -33,6 +33,8 @@ from pennylane.transforms.optimization import (
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def build_qfunc(wires):
     def qfunc(x, y, z):

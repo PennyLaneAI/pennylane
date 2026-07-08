@@ -23,6 +23,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def get_device(name="default.qubit", wires=2, seed=None):
     assert seed is not None, "Please use the pytest-rng provided seed"

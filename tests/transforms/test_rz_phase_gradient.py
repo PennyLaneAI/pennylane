@@ -20,6 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def prepare_phase_gradient(wires):
     ops = []

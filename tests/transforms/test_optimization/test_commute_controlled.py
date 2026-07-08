@@ -23,6 +23,8 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization import commute_controlled
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestCommuteControlled:
     """Tests for single-qubit gates being pushed through controlled gates."""

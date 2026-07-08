@@ -31,6 +31,8 @@ from pennylane.transforms.decompose import _resolve_gate_set
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 
 

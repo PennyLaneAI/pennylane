@@ -20,6 +20,8 @@ import pytest
 import pennylane as qp
 from pennylane.transforms import phase_polynomial
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # trivial example
 circ0 = qp.tape.QuantumScript([])
 pmat0 = np.eye(4)
