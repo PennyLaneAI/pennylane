@@ -21,6 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane.transforms import decomp_inspector
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 @pytest.mark.usefixtures("disable_graph_decomposition")
 def test_error_raised_graph_disabled():

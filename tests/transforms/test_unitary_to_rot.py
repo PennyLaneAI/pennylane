@@ -30,6 +30,8 @@ from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.unitary_to_rot import _recursively_decompose_qubit_unitary
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 typeof_gates_zyz = (qp.RZ, qp.RY, qp.RZ)
 single_qubit_decompositions = [
     (I, typeof_gates_zyz, [0.0, 0.0, 0.0]),

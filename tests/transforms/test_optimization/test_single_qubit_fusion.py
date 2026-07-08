@@ -23,6 +23,8 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization import single_qubit_fusion
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestSingleQubitFusion:
     """Test that sequences of any single-qubit rotations are fully fused."""

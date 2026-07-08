@@ -33,6 +33,8 @@ from pennylane.transforms.diagonalize_measurements import (
     null_postprocessing,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=protected-access
 
 

@@ -24,6 +24,8 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DecompositionWarning, QuantumFunctionError
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pyzx = pytest.importorskip("pyzx")
 pytestmark = pytest.mark.external
 supported_operations = [

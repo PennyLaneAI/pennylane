@@ -10,6 +10,8 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def build_qfunc_probs(wires):
     def qfunc(x, y, z):

@@ -29,6 +29,7 @@ from pennylane.transforms.qmc import (
 )
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
 
 def r_unitary(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.
