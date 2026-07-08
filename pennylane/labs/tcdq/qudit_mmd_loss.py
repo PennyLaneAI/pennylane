@@ -47,6 +47,27 @@ class QuditMMDConfig:
     a graph over the local levels of one qudit, applied independently to each
     visible wire.
 
+    Args:
+        bandwidth (float | Sequence[float]): Width of the graph heat
+            kernel. Small values make the loss sensitive to fine-grained
+            differences between distributions; large values emphasize broad
+            structure. If a sequence is provided, the loss is evaluated for
+            each value and then averaged, unless
+            ``return_per_bandwidth=True``.
+        n_ops (int): Number of sampled observables per bandwidth. Larger
+            values reduce estimator variance.
+        graph_type (str): Graph whose spectrum defines the kernel.
+            ``"cycle"`` is usually the better default when neighbouring qudit
+            levels have a natural notion of closeness. ``"complete"`` treats
+            all distinct levels symmetrically. Defaults to ``"cycle"``.
+        wires (Sequence[int] | None): Subset of qudit indices to include in
+            the loss. If ``None`` (default), all qudits are used.
+        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
+            ``MMD²``. Defaults to ``False``.
+        return_per_bandwidth (bool): If ``True``, return a list of
+            per-bandwidth loss values instead of their scalar average.
+            Defaults to ``False``.
+
     **Example**
 
     >>> from pennylane.labs.tcdq import QuditMMDConfig
@@ -59,30 +80,11 @@ class QuditMMDConfig:
     """
 
     bandwidth: float | Sequence[float]
-    """Width of the graph heat kernel. Small values make the loss sensitive to
-    fine-grained differences between distributions; large values emphasize broad
-    structure. If a sequence is provided, the loss is evaluated for each value and
-    then averaged, unless ``return_per_bandwidth=True``."""
-
     n_ops: int
-    """Number of sampled observables per bandwidth. Larger values reduce estimator
-    variance."""
-
     graph_type: str = "cycle"
-    """Graph whose spectrum defines the kernel. ``"cycle"`` is usually the better
-    default when neighbouring qudit levels have a natural notion of closeness.
-    ``"complete"`` treats all distinct levels symmetrically."""
-
     wires: Sequence[int] | None = None
-    """Subset of qudit indices to include in the loss. If ``None`` (default), all
-    qudits are used."""
-
     sqrt_loss: bool = False
-    """If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``."""
-
     return_per_bandwidth: bool = False
-    """If ``True``, return a list of per-bandwidth loss values instead of their
-    scalar average."""
 
 
 def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:

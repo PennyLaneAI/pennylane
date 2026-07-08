@@ -37,6 +37,25 @@ class MMDConfig:
     The MMD measures how well the circuit's output distribution matches a
     target dataset.
 
+    Args:
+        bandwidth (float | Sequence[float]): Width of the Gaussian kernel
+            used to compare distributions. Small values make the loss
+            sensitive to fine-grained differences; large values emphasize
+            broad structure. A good starting point is the median pairwise
+            distance of the target data (see :func:`median_heuristic`). If a
+            sequence is provided, the loss is computed independently for each
+            bandwidth and the results are averaged (or returned individually
+            when ``return_per_bandwidth=True``).
+        n_ops (int): Number of sampled observables per bandwidth. Larger
+            values reduce estimator variance.
+        wires (Sequence[int] | None): Subset of qubit indices to include in
+            the loss. If ``None`` (default), all qubits are used.
+        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
+            ``MMD²``. Defaults to ``False``.
+        return_per_bandwidth (bool): If ``True``, return a list of
+            per-bandwidth loss values instead of their scalar average.
+            Defaults to ``False``.
+
     **Example**
 
     >>> from pennylane.labs.tcdq import MMDConfig, median_heuristic
@@ -51,27 +70,10 @@ class MMDConfig:
     """
 
     bandwidth: float | Sequence[float]
-    """Width of the Gaussian kernel used to compare distributions. Small values
-    make the loss sensitive to fine-grained differences; large values emphasize
-    broad structure. A good starting point is the median pairwise distance of the
-    target data (see :func:`median_heuristic`). If a sequence is provided, the
-    loss is computed independently for each bandwidth and the results are averaged
-    (or returned individually when ``return_per_bandwidth=True``)."""
-
     n_ops: int
-    """Number of sampled observables per bandwidth. Larger values reduce estimator
-    variance."""
-
     wires: Sequence[int] | None = None
-    """Subset of qubit indices to include in the loss. If ``None`` (default), all
-    qubits are used."""
-
     sqrt_loss: bool = False
-    """If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``."""
-
     return_per_bandwidth: bool = False
-    """If ``True``, return a list of per-bandwidth loss values instead of their
-    scalar average."""
 
 
 def median_heuristic(samples: ArrayLike) -> float:
