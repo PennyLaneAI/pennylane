@@ -235,7 +235,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        if issubclass(type(_op), Operator2):
+        if isinstance(_op, Operator2):
             op_rep = abstractify(_op)
         else:
             op_rep = qp.resource_rep(type(_op), **_op.resource_params)
