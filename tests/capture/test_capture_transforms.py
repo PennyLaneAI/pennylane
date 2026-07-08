@@ -70,7 +70,6 @@ def shift_rx_to_end(tape):
 def expval_z_obs_to_x_obs_plxpr(
     jaxpr, consts, targs, tkwargs, *args
 ):  # pylint: disable=unused-argument
-
     class ExpvalZToX(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
         """Expval Z to X plxpr implementation."""
 
@@ -411,13 +410,14 @@ class TestTapeTransformFallback:
             qp.Hadamard._primitive,
             qp.RX._primitive,
             qp.Hadamard._primitive,
-            qp.PauliZ._primitive,
+            operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
             qp.measurements.StateMP._wires_primitive,
             qp.measurements.ProbabilityMP._wires_primitive,
         )
         actual_primitives = tuple(eqn.primitive for eqn in transformed_jaxpr.eqns)
         assert actual_primitives == expected_primitives
+        assert transformed_jaxpr.eqns[3].params["op_cls"] is qp.Z
 
         collector = CollectOpsandMeas()
         collector.eval(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, 1.5)
@@ -598,7 +598,6 @@ class TestTapeTransformFallback:
         transform correctly."""
 
         def f(x):
-
             @qp.cond(x > 3)
             def cond_fn():
                 qp.Z(0)
