@@ -327,6 +327,11 @@ class TestNestedSymbolicOpCapture:
 def test_public_s_prod_binding(defined_outside):
     """Tests that the public API for symbolic op captures properly."""
 
+    # Ensure you can construct the op outside a function that is being traced
+    op = qp.s_prod(2.0, NonParametricOp(0))
+    assert op.base == NonParametricOp(0)
+    assert op.scalar == 2.0
+
     outside_op = NonParametricOp(0) if defined_outside else None
 
     def f():
@@ -349,6 +354,9 @@ def test_public_s_prod_binding(defined_outside):
 
 def test_public_prod_binding():
     """Tests that the public API for symbolic op captures properly."""
+    # Ensure you can construct the op outside a function that is being traced
+    op = qp.prod(NonParametricOp(1), NonParametricOp(0))
+    assert op == NonParametricOp(1) @ NonParametricOp(0)
 
     # NOTE: Have one op be outside trace context to
     # cover the tracer-is-none fallback

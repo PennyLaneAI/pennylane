@@ -187,7 +187,6 @@ def test_tracking():
             )
         ]
         * 13,
-        "errors": [{}] * 13,
     }
 
 

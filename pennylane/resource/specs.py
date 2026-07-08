@@ -316,20 +316,20 @@ def specs(
     Level: gradient
     <BLANKLINE>
     Wire allocations: 2
-    Total gates: 98
+    Total gates: 4
     Gate counts:
     - RX: 1
     - CNOT: 1
-    - Evolution: 96
+    - TrotterProduct: 2
     Measurements:
     - probs(all wires): 1
-    Depth: 98
+    Depth: 4
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
     access to the data fields. For example:
 
     >>> qp.specs(circuit)(x, add_ry=False).resources.gate_counts
-    {'RX': 1, 'CNOT': 1, 'Evolution': 96}
+    {'RX': 1, 'CNOT': 1, 'TrotterProduct': 2}
 
     .. details::
         :title: Specs with Tape Transforms

@@ -637,6 +637,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
+  [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
 * Plxpr transforms have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
 
@@ -835,6 +838,7 @@
     [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
     [(#9758)](https://github.com/PennyLaneAI/pennylane/pull/9758)
     [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+    [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)

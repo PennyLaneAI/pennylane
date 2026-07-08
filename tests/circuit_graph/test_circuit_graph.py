@@ -27,7 +27,6 @@ from pennylane.ops.mid_measure.measurement_value import MeasurementValue
 from pennylane.ops.mid_measure.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
 pytest.skip("Removing this module in PL2", allow_module_level=True)
@@ -147,30 +146,6 @@ def circuit_measure_multiple_with_max_twice():
         qp.probs(wires=[0, 1, 2]),
         qp.var(qp.PauliZ(wires=[1]) @ qp.PauliZ([2])),
     )
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth2(ResourcesOperation):
-    num_wires = 3
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=2)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth3(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=3)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth4(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=4)
 
 
 # pylint: disable=too-many-public-methods
@@ -394,37 +369,6 @@ class TestCircuitGraph:
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
         assert str(circuit_w_wires) == expected
-
-    tape_depth = (
-        ([qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)], 2),
-        ([qp.X(0)] * 4, 4),
-        ([qp.Hadamard(0), qp.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
-        (
-            [
-                qp.RX(1.23, 0),
-                qp.RZ(-0.45, 0),
-                CustomOpDepth3(wires=[3, 4]),
-                qp.Hadamard(0),
-                qp.Hadamard(1),
-                qp.Hadamard(2),
-                qp.Hadamard(3),
-                qp.Hadamard(4),
-                CustomOpDepth2(wires=[1, 2, 3]),
-                qp.RZ(-1, 4),
-                qp.RX(0.5, 4),
-                qp.RX(0.5, 3),
-                CustomOpDepth4(wires=[0, 1]),
-                qp.CNOT(wires=[3, 4]),
-            ],
-            10,
-        ),
-    )
-
-    @pytest.mark.parametrize("ops, true_depth", tape_depth)
-    def test_get_depth(self, ops, true_depth):
-        """Test that depth is computed correctly for operations that define a custom depth > 1"""
-        cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
-        assert cg.get_depth() == true_depth
 
 
 def test_has_path():
