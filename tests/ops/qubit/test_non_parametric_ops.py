@@ -39,9 +39,6 @@ from gate_data import (
     S,
     T,
     Toffoli,
-    X,
-    Y,
-    Z,
 )
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
