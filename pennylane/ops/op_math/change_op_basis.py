@@ -74,7 +74,7 @@ def _apply_op_or_func(op_or_func):
             # pylint: disable-next=protected-access
             op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
-        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
+        queuing.apply(op_or_func)
     elif math.is_abstract(op_or_func):
         pass
     else:
@@ -354,9 +354,9 @@ def _adjoint_change_op_basis_resources(base_params, **_):
 # pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
-    adjoint(pytrees.unflatten(*pytrees.flatten(base.operands[1])))
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    queuing.apply(base.operands[2])
+    adjoint(queuing.apply(base.operands[1]))
+    queuing.apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
@@ -398,22 +398,22 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
+    queuing.apply(base.operands[2])
     ctrl(
-        pytrees.unflatten(*pytrees.flatten(base.operands[1])),
+        queuing.apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    queuing.apply(base.operands[0])
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
-        pytrees.unflatten(*pytrees.flatten(op))
+        queuing.apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)
