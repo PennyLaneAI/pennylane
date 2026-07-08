@@ -21,7 +21,7 @@ from .switches import enabled
 
 has_jax = find_spec("jax") is not None
 
-from pennylane.capture.custom_primitives import QpPrimitive
+import pennylane
 
 
 @lru_cache
@@ -31,7 +31,7 @@ def _symbolic_array_primitive():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    estimation_p = QpPrimitive("symbolic_array")
+    estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
     @estimation_p.def_abstract_eval
     def _estimation_p_abstract_eval(shape, dtype):
