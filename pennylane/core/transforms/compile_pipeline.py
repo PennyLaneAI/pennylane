@@ -910,7 +910,7 @@ class CompilePipeline:
         processing_fns_stack = []
 
         for bound_transform in self:
-            transform, targs, tkwargs, cotransform, _, _, _ = bound_transform
+            transform, targs, tkwargs, cotransform, _, _ = bound_transform
             tkwargs = {
                 key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
             }
