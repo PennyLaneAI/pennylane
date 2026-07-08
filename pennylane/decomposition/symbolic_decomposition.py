@@ -24,7 +24,13 @@ import pennylane as qp
 from pennylane import allocation, math
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
-from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
+from .resources import (
+    CompressedResourceOp,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    pow_resource_rep,
+    resource_rep,
+)
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -35,10 +41,13 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
 
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         base_resources = base_decomposition.compute_resources(**base_params)
-        return {
-            adjoint_resource_rep(decomp_op.op_type, decomp_op.params): count
-            for decomp_op, count in base_resources.gate_counts.items()
-        }
+        result = {}
+        for decomp_op, count in base_resources.gate_counts.items():
+            if isinstance(decomp_op, CompressedResourceOp):
+                result[adjoint_resource_rep(decomp_op.op_type, decomp_op.params)] = count
+            else:
+                result[adjoint_resource_rep(type(decomp_op), decomp_op.resource_params)] = count
+        return result
 
     base_source = base_decomposition._source
 
@@ -210,17 +219,20 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
         base_resources = base_decomposition.compute_resources(**base_params)
-        gate_counts = {
-            controlled_resource_rep(
-                base_class=base_op_rep.op_type,
-                base_params=base_op_rep.params,
+        gate_counts = {}
+        for base_op_rep, count in base_resources.gate_counts.items():
+            if isinstance(base_op_rep, CompressedResourceOp):
+                bc, bp = base_op_rep.op_type, base_op_rep.params
+            else:
+                bc, bp = type(base_op_rep), base_op_rep.resource_params
+            gate_counts[controlled_resource_rep(
+                base_class=bc,
+                base_params=bp,
                 num_control_wires=num_control_wires,
                 num_zero_control_values=0,
                 num_work_wires=num_work_wires,
                 work_wire_type=work_wire_type,
-            ): count
-            for base_op_rep, count in base_resources.gate_counts.items()
-        }
+            )] = count
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
         gate_counts[qp.PauliX] = num_zero_control_values * 2

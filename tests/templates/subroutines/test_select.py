@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
@@ -321,7 +322,6 @@ class TestSelect:
         kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
 
         if partial:
-            from pennylane.core.operator import abstractify
 
             expected_counts = {abstractify(qp.Z): 1}
         else:
@@ -353,8 +353,6 @@ class TestSelect:
 
         resources = op.resource_params
         assert resources["num_control_wires"] == 2
-
-        from pennylane.core.operator import abstractify
 
         op_reps = tuple(abstractify(cls) for cls in (qp.X, qp.X, qp.X, qp.Y))
 

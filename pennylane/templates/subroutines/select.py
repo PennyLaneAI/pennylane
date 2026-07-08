@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -354,7 +354,10 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(auto_wrap(op) for op in self.ops)
+        op_reps = tuple(
+            auto_wrap(op) if isinstance(op, Operator2) else resource_rep(type(op), **op.resource_params)
+            for op in self.ops
+        )
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
