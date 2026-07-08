@@ -221,7 +221,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         if "work_wires" in self._init_args:
             self._init_args["work_wires"] = work_wires
 
-        # call super().__abstract_init__
         super().__abstract_init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
