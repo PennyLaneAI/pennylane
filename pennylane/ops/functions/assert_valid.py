@@ -28,6 +28,7 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator, Operator1, Operator2
 from pennylane.decomposition import DecompositionRule
+from pennylane.decomposition.resources import auto_wrap
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -221,7 +222,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**op.resource_params)
-    gate_counts = resources.gate_counts
+    gate_counts = {auto_wrap(k): v for k, v in resources.gate_counts.items()}
 
     with qp.queuing.AnnotatedQueue() as q:
         rule(*op.data, wires=op.wires, **op.hyperparameters)
@@ -235,10 +236,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
-        if issubclass(type(_op), Operator2):
-            op_rep = abstractify(_op)
-        else:
-            op_rep = qp.resource_rep(type(_op), **_op.resource_params)
+        op_rep = qp.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 

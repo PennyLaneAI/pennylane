@@ -72,6 +72,8 @@ def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"
         return auto_wrap(initial)
     if isinstance(initial, Operator):
         return resource_rep(type(initial), **initial.resource_params)
+    if isinstance(initial, type) and issubclass(initial, Operator):
+        return resource_rep(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
