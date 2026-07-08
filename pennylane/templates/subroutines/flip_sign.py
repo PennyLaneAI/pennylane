@@ -168,7 +168,7 @@ def _flip_sign_resources(num_wires, arr_bin):
         ): 1
     }
     if arr_bin[-1] == 0:
-        res[resource_rep(X)] = 2
+        res[X] = 2
 
     return res
 

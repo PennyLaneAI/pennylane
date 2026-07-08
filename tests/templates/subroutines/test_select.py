@@ -321,7 +321,9 @@ class TestSelect:
         kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
 
         if partial:
-            expected_counts = {qp.Z: 1}
+            from pennylane.core.operator import abstractify
+
+            expected_counts = {abstractify(qp.Z): 1}
         else:
             expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
         assert resource_obj.gate_counts == expected_counts
@@ -352,12 +354,9 @@ class TestSelect:
         resources = op.resource_params
         assert resources["num_control_wires"] == 2
 
-        op_reps = (
-            qp.X,
-            qp.X,
-            qp.X,
-            qp.Y,
-        )
+        from pennylane.core.operator import abstractify
+
+        op_reps = tuple(abstractify(cls) for cls in (qp.X, qp.X, qp.X, qp.Y))
 
         assert resources["op_reps"] == op_reps
 

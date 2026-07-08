@@ -406,7 +406,7 @@ def _out_square_with_caddsub_resources(
     cnot_rep = resource_rep(CNOT)
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
+    x_rep = X
 
     # Controlled add-subtract loop
     loop_size = min(m, n)

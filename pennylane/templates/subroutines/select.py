@@ -32,6 +32,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import CompressedResourceOp, auto_wrap
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.wires import Wires
 
@@ -353,7 +354,7 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
+        op_reps = tuple(auto_wrap(op) for op in self.ops)
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
@@ -565,9 +566,15 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
+    if isinstance(target_rep, CompressedResourceOp):
+        base_class, base_params = target_rep.op_type, target_rep.params
+    elif isinstance(target_rep, type):
+        base_class, base_params = target_rep, {}
+    else:
+        base_class, base_params = type(target_rep), target_rep.resource_params
     return controlled_resource_rep(
-        base_class=target_rep.op_type,
-        base_params=target_rep.params,
+        base_class=base_class,
+        base_params=base_params,
         num_control_wires=num_control_wires,
         num_work_wires=num_work_wires,
         num_zero_control_values=num_control_wires - sum(ctrl_state),
@@ -1098,7 +1105,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
             resources[
                 _multi_controlled_rep(
-                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
                 )
             ] += 2
         else:
@@ -1106,11 +1113,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
             ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
             for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps, strict=True):
                 resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-                resources[
-                    _multi_controlled_rep(
-                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
-                    )
-                ] += 2
+                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -1118,9 +1121,7 @@ def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_wo
         for state, rep in zip(state_iterator, op_reps, strict=False):
 
             resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-            resources[
-                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
-            ] += 2
+            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
     return dict(resources)
 
 
