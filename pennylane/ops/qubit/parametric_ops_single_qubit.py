@@ -43,7 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -83,7 +83,7 @@ class RX(Operator2):
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[1]}
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     num_wires = 1
     num_params = 1
