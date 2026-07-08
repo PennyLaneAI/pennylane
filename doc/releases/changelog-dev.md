@@ -629,6 +629,7 @@
   Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
   application algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
@@ -834,6 +835,7 @@
     [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
     [(#9758)](https://github.com/PennyLaneAI/pennylane/pull/9758)
     [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+    [(#9793)](https://github.com/PennyLaneAI/pennylane/pull/9793)
     [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
