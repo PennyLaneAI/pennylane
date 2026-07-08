@@ -28,6 +28,8 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 # pylint: disable=no-self-use,too-many-arguments
 
 

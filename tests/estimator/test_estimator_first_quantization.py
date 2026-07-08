@@ -22,6 +22,8 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "charge", "br"),

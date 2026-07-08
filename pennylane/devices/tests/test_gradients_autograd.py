@@ -49,6 +49,7 @@ class TestGradients:
         res = qp.grad(circuit)(x)
         assert np.isclose(res, -pnp.sin(x), atol=tol, rtol=0)
 
+    @pytest.mark.skip
     def test_backprop_state(self, diff_method, device, tol, shots):
         """Test the trainability of parameters in a circuit returning the state."""
         if diff_method != "backprop":

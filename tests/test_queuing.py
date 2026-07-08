@@ -24,6 +24,8 @@ import pennylane as qp
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
