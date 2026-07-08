@@ -291,7 +291,7 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
             )
         ] = 1
 
-    resources[resource_rep(PauliX)] = 1
+    resources[PauliX] = 1
 
     return resources
 
