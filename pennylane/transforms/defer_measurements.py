@@ -109,7 +109,7 @@ def null_postprocessing(results):
 
 
 # pylint: disable=unused-argument
-@partial(transform)
+@transform
 def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
