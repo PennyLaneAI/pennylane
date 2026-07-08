@@ -429,7 +429,7 @@ class TestControlledDecomposition:
 
         expected_ops = [
             qp.CNOT(wires=[6, 0]),
-            qp.Toffoli(wires=[6, 0, 1]),
+            qp.MultiControlledX(wires=[6, 0, 1], work_wires=[7]),
             qp.MultiControlledX(wires=[6, 0, 1, 2], work_wires=[7]),
             qp.MultiControlledX(
                 wires=[6, 0, 1, 2, 3], control_values=[1, 1, 0, 1], work_wires=[7, 4]
@@ -462,7 +462,13 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 qp.resource_rep(qp.CNOT): 1,
-                qp.resource_rep(qp.Toffoli): 1,
+                qp.resource_rep(
+                    qp.MultiControlledX,
+                    num_control_wires=2,
+                    num_zero_control_values=0,
+                    num_work_wires=1,
+                    work_wire_type="borrowed",
+                ): 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
@@ -568,7 +574,7 @@ class TestControlledDecomposition:
 
         expected_ops = [
             qp.X(6),
-            qp.Toffoli(wires=[6, 7, 0]),
+            qp.MultiControlledX(wires=[6, 7, 0], work_wires=[8]),
             qp.MultiControlledX(wires=[6, 7, 0, 1], work_wires=[8]),
             qp.MultiControlledX(wires=[6, 7, 0, 1, 2], work_wires=[8]),
             qp.MultiControlledX(
@@ -610,7 +616,13 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 qp.resource_rep(qp.X): 2,
-                qp.resource_rep(qp.Toffoli): 1,
+                qp.resource_rep(
+                    qp.MultiControlledX,
+                    num_control_wires=2,
+                    num_zero_control_values=0,
+                    num_work_wires=1,
+                    work_wire_type="borrowed",
+                ): 1,
                 qp.resource_rep(
                     qp.MultiControlledX,
                     num_control_wires=3,
