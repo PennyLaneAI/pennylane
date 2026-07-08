@@ -289,7 +289,7 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
         )
     ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
     resources[resource_rep(Hadamard)] = num_target_wires * 2
-    resources[resource_rep(PauliZ)] = (1 << n_k) * num_target_wires
+    resources[PauliZ] = (1 << n_k) * num_target_wires
     return resources
 
 
@@ -581,7 +581,7 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
-    resources[resource_rep(PauliX)] += (num_select_wires <= 0) * num_blocks * 2
+    resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
     resources[
         controlled_resource_rep(
@@ -1034,7 +1034,7 @@ def _select_only_qram_resources(
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
 
-        resources[resource_rep(PauliX)] += control_values.count(0) * 2
+        resources[PauliX] += control_values.count(0) * 2
 
         resources[
             controlled_resource_rep(
@@ -1331,7 +1331,7 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     """
     return {
         resource_rep(Hadamard): num_address_wires,
-        resource_rep(PauliX): 2 * num_zero_bits,
+        PauliX: 2 * num_zero_bits,
         controlled_resource_rep(
             base_class=RY,
             base_params={},
