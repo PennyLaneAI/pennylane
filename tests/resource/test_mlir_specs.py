@@ -306,3 +306,27 @@ class TestAnalysisPassConversion:
         )
 
         assert a == b
+
+    def test_extra_depth_info(self, example_loop_analysis_pass_result):
+        """Test that the depth information is correctly extracted from the analysis pass result."""
+        example_loop_analysis_pass_result["for_loop_2"]["depth"] = {
+            "any_commuting_depth": 5,
+        }
+        example_loop_analysis_pass_result["for_loop_1"]["depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+        }
+
+        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+
+        var = _generate_display_name_for_symbolic_var("a", {})
+
+        assert actual == [
+            SymbolicSpecsResources(
+                gate_types={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
+                gate_sizes={1: Expression({(var,): 2, (): 9})},
+                measurements={"expval(PauliZ)": 1},
+                num_allocs=10,
+                pbc_depth={"any_commuting_depth": 22, "qubit_disjoint_depth": 18},
+            ),
+        ]
