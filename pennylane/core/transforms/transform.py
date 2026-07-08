@@ -75,48 +75,6 @@ def _create_transform_primitive():
     return transform_prim
 
 
-def _create_plxpr_fallback_transform(tape_transform):
-    # pylint: disable=import-outside-toplevel
-    try:
-        import jax
-
-        from pennylane.tape import plxpr_to_tape  # tach-ignore
-    except ImportError:
-        return None
-
-    def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
-        # Restore tkwargs from hashable tuple to dict
-        tkwargs = dict(tkwargs)
-
-        def wrapper(*inner_args):
-            tape = plxpr_to_tape(jaxpr, consts, *inner_args)
-            with capture.pause():
-                tapes, _ = tape_transform(tape, *targs, **tkwargs)
-
-            if len(tapes) > 1:
-                raise TransformError(
-                    f"Cannot apply {tape_transform.__name__} transform with program "
-                    "capture enabled. Only transforms that return a single QuantumTape "
-                    "and null processing function are usable with program capture."
-                )
-
-            for op in tapes[0].operations:
-                data, struct = jax.tree_util.tree_flatten(op)
-                jax.tree_util.tree_unflatten(struct, data)
-
-            out = []
-            for mp in tapes[0].measurements:
-                data, struct = jax.tree_util.tree_flatten(mp)
-                out.append(jax.tree_util.tree_unflatten(struct, data))
-
-            return tuple(out)
-
-        abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(args)
-        return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
-
-    return plxpr_fallback_transform
-
-
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
     """The default behavior for Transform._apply_transform. By default, it dispatches to the
     generic registration."""
@@ -558,7 +516,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         self._apply_transform = singledispatch(partial(specific_apply_transform, self))
-        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(tape_transform)
+        self._plxpr_transform = plxpr_transform
 
     @property
     def pass_name(self) -> None | str:
