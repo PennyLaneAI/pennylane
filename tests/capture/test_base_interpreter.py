@@ -93,25 +93,25 @@ def test_primitive_registrations():
         is not PlxprInterpreter._primitive_registrations
     )
 
-    @SimplifyInterpreterLocal.register_primitive(qp.X._primitive)
-    def _(self, *invals, **params):  # pylint: disable=unused-argument
-        return qp.Z(*invals)
+    dummy_p = jax.extend.core.Primitive("dummy")
 
-    assert qp.X._primitive in SimplifyInterpreterLocal._primitive_registrations
-    assert qp.X._primitive not in PlxprInterpreter._primitive_registrations
+    @SimplifyInterpreterLocal.register_primitive(dummy_p)
+    def _(self, *invals, **params):  # pylint: disable=unused-argument
+        return jnp.array(1.0)
+
+    assert dummy_p in SimplifyInterpreterLocal._primitive_registrations
+    assert dummy_p not in PlxprInterpreter._primitive_registrations
+
+    dummy_p.def_abstract_eval(lambda *a, **k: jax.core.ShapedArray((), jnp.float64.dtype))
 
     @SimplifyInterpreterLocal()
     def f():
-        qp.X(0)
-        qp.Y(5)
+        return dummy_p.bind()
 
     jaxpr = jax.make_jaxpr(f)()
 
-    with qp.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, [])
-
-    qp.assert_equal(q.queue[0], qp.Z(0))  # turned into a Z
-    qp.assert_equal(q.queue[1], qp.Y(5))
+    output = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
+    assert jnp.allclose(output[0], jnp.array(1.0))
 
 
 def test_default_operator_handling():
