@@ -1705,7 +1705,7 @@ class MultiControlledX(ControlledOp):
             if not (
                 isinstance(control_values, (bool, int))
                 or (
-                    isinstance(control_values, Sequence)
+                    isinstance(control_values, (list, tuple))
                     and all(isinstance(val, (bool, int)) for val in control_values)
                 )
                 or (hasattr(control_values, "dtype") and control_values.dtype.kind in ("i", "b"))
