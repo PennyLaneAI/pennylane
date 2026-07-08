@@ -1121,13 +1121,13 @@ class TestDecomposition:
         op = qp.ctrl(qp.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qp.assert_equal(decomp[0], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
+        qp.assert_equal(decomp[0], qp.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[1], qp.QubitUnitary)
-        qp.assert_equal(decomp[2], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
+        qp.assert_equal(decomp[2], qp.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[3].base, qp.QubitUnitary)
-        qp.assert_equal(decomp[4], qp.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
+        qp.assert_equal(decomp[4], qp.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[5], qp.QubitUnitary)
-        qp.assert_equal(decomp[6], qp.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
+        qp.assert_equal(decomp[6], qp.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[7].base, qp.QubitUnitary)
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
@@ -1966,7 +1966,7 @@ class TestCtrl:
                 [0, 1],
                 [1, 1],
                 ["aux"],
-                qp.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
+                qp.Toffoli(wires=[0, 1, 2]),
             ),
             (
                 qp.CNOT(wires=[1, 2]),
@@ -1980,7 +1980,7 @@ class TestCtrl:
                 [0],
                 [1],
                 ["aux"],
-                qp.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
+                qp.Toffoli(wires=[0, 1, 2]),
             ),
             (
                 qp.PauliX(wires=[0]),
