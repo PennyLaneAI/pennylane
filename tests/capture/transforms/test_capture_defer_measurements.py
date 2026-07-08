@@ -21,7 +21,7 @@ import pennylane as qp
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import jacobian_prim, qnode_prim
+from pennylane.capture.primitives import jacobian_prim, operator_p, qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
@@ -83,7 +83,8 @@ class TestDeferMeasurementsInterpreter:
         if reset:
             if postselect == 1:
                 # PauliX since we know the state is |1>
-                assert jaxpr.eqns[2].primitive == qp.PauliX._primitive
+                assert jaxpr.eqns[2].primitive == operator_p
+                assert jaxpr.eqns[2].params["op_cls"] is qp.X
                 assert jaxpr.eqns[2].invars[0].val == 0
 
     def test_multiple_mcms(self):

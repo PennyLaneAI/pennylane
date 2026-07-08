@@ -203,7 +203,8 @@ class TestExpandPlxprTransforms:
         ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         assert len(ops_and_meas) == 8
         assert ops_and_meas[0].primitive == qp.RX._primitive
-        assert ops_and_meas[1].primitive == qp.PauliZ._primitive
+        assert ops_and_meas[1].primitive == operator_p
+        assert ops_and_meas[1].params["op_cls"] is qp.Z
         assert ops_and_meas[2].primitive == qp.measurements.ExpectationMP._obs_primitive
         assert ops_and_meas[3].primitive == qp.RX._primitive
         assert ops_and_meas[4].primitive == qp.RZ._primitive
