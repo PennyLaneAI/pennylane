@@ -281,13 +281,11 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 
     .. code-block:: python
 
-        from pennylane.ops.op_math import custom_ctrl_dispatch
+        from pennylane.ops.op_math import custom_ctrl_dispatch, is_empty_or_all_true
 
         @custom_ctrl_dispatch.register
         def _ctrl_y(base: qp.PauliY, control, control_values, *_):
-            if control_values is not None:
-                return NotImplemented
-            if len(control) == 1:
+            if len(control) == 1 and is_empty_or_all_true(control_values):
                 return qp.CY(control + base.wires)
             return NotImplemented
 
