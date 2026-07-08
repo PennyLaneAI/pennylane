@@ -57,8 +57,12 @@ class SuperpositionTHC(Operation):
 
     .. note::
 
-        Every work wire is returned to the zero state
-        except the wires that carry the prepared flags: `work_wires[0]`, `work_wires[3]` and `work_wires[6]`.
+        Every work wire is returned to the zero state, except for the wires that carry the
+        prepared flags: `work_wires[0]`, `work_wires[3]`, and `work_wires[6]`.
+
+        - `work_wires[0]`: Assures that the amplitude amplification process has been performed correctly.
+        - `work_wires[3]`: Evaluates to true if the system is in the state |\eta = M>.
+        - `work_wires[6]`: Evaluates to true if the superposition has been prepared correctly.
 
     Args:
         M (int): The THC rank. Together with ``N``
@@ -370,7 +374,7 @@ def _superposition_thc_resources(num_mu_wires, M, N):
     return resources
 
 
-@register_resources(_superposition_thc_resources, exact=True)
+@register_resources(_superposition_thc_resources, exact=False)
 def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # pylint: disable=too-many-arguments
     #
