@@ -22,25 +22,23 @@ Train Classically, Deploy Quantum (TCDQ).
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-This module provides tools for training a restricted but useful family of
-quantum circuits — Instantaneous Quantum Polynomial (IQP) circuits — with
-classical estimates instead of full statevector simulation.
-The intended workflow is:
+This module classically estimates expectation values and loss functions for
+Instantaneous Quantum Polynomial (IQP) circuits, removing the need for full
+statevector simulation during training. Once the parameters are optimized,
+the trained circuit can be deployed on quantum hardware.
 
-1. describe a qubit or qudit circuit,
-2. build an expectation-value estimator or a Maximum Mean Discrepancy
-   (MMD) loss, and
-3. optimize the circuit parameters with standard JAX optimizers.
+Both qubit and qudit (arbitrary local dimension) circuits are supported.
+The module provides:
 
-The package supports both qubit circuits and qudit circuits of arbitrary local
-dimension. The public APIs fall into two groups:
+- **Expectation-value estimators** that compute Pauli (qubit) or
+  Heisenberg–Weyl (qudit) moments of the circuit output.
+- **MMD loss functions** that measure how well the circuit's output
+  distribution matches a target dataset of bitstrings or dit-strings.
+- **Training utilities** that wrap JAX optimizers with convergence
+  checking and validation.
 
-1. expectation-value estimators for observables of the circuit output, and
-2. loss functions for matching the circuit distribution to a dataset.
-
-For the mathematical background, we recommend reading `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_
-and `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
-of the technical notes.
+For the mathematical background, see the
+`technical notes <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md>`_.
 
 
 Core classes and functions
@@ -77,21 +75,8 @@ Circuit construction utilities
     ~generate_pauli_observables
 
 
-Workflow
-~~~~~~~~
-
-The typical workflow is:
-
-#. Define the circuit structure (which qubits interact via which gates)
-   using the helper functions in this module.
-#. Wrap the circuit description in a :class:`~CircuitConfig` (qubit) or
-   :class:`~QuditCircuitConfig` (qudit) dataclass.
-#. Build an expectation-value estimator with
-   :func:`~build_expval_func` or :func:`~build_qudit_expval_func`.
-#. Optionally, build an MMD loss function for distribution matching with
-   :func:`~mmd_loss` or :func:`~build_qudit_mmd_loss`.
-#. Train the circuit parameters with :func:`~train` or a custom
-   optimization loop.
+Example: estimating expectation values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -104,15 +89,19 @@ The typical workflow is:
        generate_pauli_observables,
    )
 
+   # Define a 3×3 lattice of qubits with nearest-neighbour gates
    n_rows, n_cols = 3, 3
    n_qubits = n_rows * n_cols
-
    gates = create_lattice_gates(n_rows, n_cols, distance=1, max_weight=2)
+
+   # Choose two-body ZZ observables
    observables = generate_pauli_observables(n_qubits, orders=[2], bases=["Z"])
 
+   # Initialize random circuit parameters
    key = jax.random.PRNGKey(0)
    params = jax.random.uniform(key, shape=(len(gates),))
 
+   # Bundle everything into a circuit configuration
    config = CircuitConfig(
        gates=gates,
        observables=observables,
@@ -121,6 +110,7 @@ The typical workflow is:
        n_qubits=n_qubits,
    )
 
+   # Build and JIT-compile the estimator, then evaluate
    expval_fn = jax.jit(build_expval_func(config))
    expvals, std_errs = expval_fn(params)
 
@@ -142,13 +132,15 @@ compiled ``expval_fn`` from above.
        expvals, _ = expval_fn(current_params)
        return jnp.sum(expvals)
 
+   options = TrainingOptions(unroll_steps=10, random_state=1234)
+
    result = train(
        optimizer="Adam",
        loss=loss_fn,
        stepsize=0.05,
        n_iters=200,
        loss_kwargs={"params": params},
-       options=TrainingOptions(unroll_steps=10, random_state=1234),
+       options=options,
    )
 
    print("Final loss:", float(result.losses[-1]))
@@ -196,7 +188,7 @@ of the technical notes.
        stepsize=0.01,
        n_iters=100,
        loss_kwargs=loss_kwargs,
-       options=TrainingOptions(unroll_steps=10)
+       options=TrainingOptions(unroll_steps=10),
    )
 
    print("Final MMD loss:", float(mmd_result.losses[-1]))

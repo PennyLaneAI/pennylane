@@ -66,6 +66,10 @@ class TrainingOptions:
     **Example**
 
     >>> options = TrainingOptions(unroll_steps=20, convergence_interval=50)
+    >>> result = train(
+    ...     optimizer="Adam", loss=my_loss, stepsize=0.01,
+    ...     n_iters=200, loss_kwargs={"params": params}, options=options,
+    ... )
     """
 
     unroll_steps: int = 1
