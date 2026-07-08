@@ -219,7 +219,7 @@ def _recursive_flatten(order: int, num_ops: int, scalar_t: float):
 
     We represent this product formula using two lists. The first which stores the operators and the second stores the
     coefficients. :code:`ops = [X(0), Y(0), Y(0), X(0)], coeffs = [1.2/2, 0.5/2, 0.5/2, 1.2/2]`. We can
-    further compress the memory needed to store the product formula by simply storing the indicies of the operators as
+    further compress the memory needed to store the product formula by simply storing the indices of the operators as
     they appear in the hamiltonian. Since :math:`H = 1.2*X + 0.5*Y`, we have :code:`ops_index = [0, 1, 1, 0]`.
 
     The Suzuki-Trotter product formula is defined recursively (see :class:`~.TrotterProduct`). This function recursively
@@ -267,7 +267,7 @@ def _simplify(ops_index, coeffs):
 
         We represent this product formula using two lists. The first which stores the operators and the second stores the
         coefficients. :code:`ops = [X(0), Y(0), Y(0), X(0)], coeffs = [1.2/2, 0.5/2, 0.5/2, 1.2/2]`. We can
-        further compress the memory needed to store the product formula by simply storing the indicies of the operators as
+        further compress the memory needed to store the product formula by simply storing the indices of the operators as
         they appear in the hamiltonian. Since :math:`H = 1.2*X + 0.5*Y`, we have :code:`ops_index = [0, 1, 1, 0]`.
 
         Note, in the product formula above, the 2nd and 3rd terms in the product have the same base operator, they can
@@ -281,11 +281,11 @@ def _simplify(ops_index, coeffs):
         (in list representation) the simplified product formula (returns :code:`[0, 1, 0], [1.2/2, 0.5, 1.2/2]`).
 
     Args:
-        ops_index (tuple(int)): A tuple storing the indicies of operators to be exponentiated and multiplied.
+        ops_index (tuple(int)): A tuple storing the indices of operators to be exponentiated and multiplied.
         coeffs (tuple(float)): A tuple storing the coefficients associated with the operators in the `ops_index`.
 
     Returns:
-       final_ops, final_coeffs (tuple(ints), tuple(floats)): The simplified operator indicies and associated coefficients.
+       final_ops, final_coeffs (tuple(ints), tuple(floats)): The simplified operator indices and associated coefficients.
     """
     final_ops = []
     final_coeffs = []
