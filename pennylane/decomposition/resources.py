@@ -173,8 +173,7 @@ def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
             sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
-                key=lambda x: str(x[0]),
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
             )
         )
     if isinstance(d, CompressedResourceOp):
@@ -591,9 +590,9 @@ def auto_wrap(op_type) -> AbstractOperatorLike:
     if isinstance(op_type, CompressedResourceOp):
         return op_type
     if isinstance(op_type, Operator2):
-        return resource_rep(type(op_type), **op_type.resource_params)
+        return abstractify(op_type)
     if isinstance(op_type, type) and issubclass(op_type, Operator2):
-        return resource_rep(op_type)
+        return abstractify(op_type)
     if not issubclass(op_type, Operator):
         raise TypeError(
             "The keys of the dictionary returned by the resource function must be a subclass of "

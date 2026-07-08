@@ -32,7 +32,6 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.wires import Wires
 
@@ -566,7 +565,6 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    target_rep = auto_wrap(target_rep)
     return controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
