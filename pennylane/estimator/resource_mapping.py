@@ -25,13 +25,13 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math as pl_math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.prod import Prod
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resource_operator import ResourceOperator
@@ -320,7 +320,7 @@ def _(op: qtemps.AQFT):
 def _(op: qtemps.IQP):
     h = op.hyperparameters
     return re_temps.IQP(
-        num_wires=h["num_wires"],
+        num_wires=len(op.wires),
         pattern=h["pattern"],
         spin_sym=h["spin_sym"],
         wires=op.wires,

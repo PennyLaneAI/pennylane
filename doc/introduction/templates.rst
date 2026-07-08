@@ -130,6 +130,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
     :figure: _static/templates/state_preparations/sumofslatersprep_template.png
 
+.. gallery-item::
+    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
+    :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
+
 
 .. raw:: html
 
@@ -166,6 +170,18 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
     :figure: _static/templates/arithmetic/outmultiplier.png
+
+.. gallery-item::
+    :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
+    :figure: _static/templates/arithmetic/signedoutmultiplier.png
+
+.. gallery-item::
+    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :figure: _static/templates/arithmetic/outsquare.png
+
+.. gallery-item::
+    :description: :doc:`SignedOutSquare <../code/api/pennylane.SignedOutSquare>`
+    :figure: _static/templates/arithmetic/signedoutsquare.png
 
 .. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
@@ -386,6 +402,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
     :figure: _static/templates/qram/hybrid_qram_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`Flip Flop QRAM <../code/api/pennylane.FFQRAM>`
+    :figure: _static/templates/qram/ffqram_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`

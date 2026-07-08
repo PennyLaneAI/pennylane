@@ -19,6 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operation
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
@@ -36,8 +38,6 @@ from pennylane.devices.preprocess import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
-from pennylane.operation import Operation
-from pennylane.tape import QuantumScript
 
 # pylint: disable=too-few-public-methods
 
@@ -789,13 +789,14 @@ class TestMeasurementsFromCountsOrSamples:
         input_measurement,
         expected_res,
         shots,
+        seed,
     ):
         """Test the test_measurements_from_samples and measurements_from_counts transforms with a
         single measurement, and compare outcome to the analytic result.
         """
 
         theta = 2.5
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         tape = qp.tape.QuantumScript(
             [qp.RX(theta, 0), qp.RX(theta / 2, 1)],
@@ -829,11 +830,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_with_counts_output(self, counts_kwargs, meas_transform):
+    def test_with_counts_output(self, counts_kwargs, meas_transform, seed):
         """Test that returning counts works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         @validate_device_wires(wires=dev.wires)
         @qp.set_shots(5000)
@@ -908,11 +909,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform):
+    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform, seed):
         """Test that the measurements with counts when only some states have non-zero counts,
         and confirm that all_counts returns the expected entries"""
 
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         @validate_device_wires(wires=dev.wires)
         @qp.set_shots(5000)

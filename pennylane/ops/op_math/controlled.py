@@ -30,17 +30,23 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane._class_property import classproperty
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.core import Operator2
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator, classproperty
+from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
+from .controlled2 import Controlled2, ControlledOp2
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
@@ -162,6 +168,14 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
+    if isinstance(op, Operator2):
+        return create_controlled_op2(
+            op,
+            control_wires=control,
+            control_values=control_values,
+            work_wires=work_wires,
+            ww_type=work_wire_type,
+        )
     if math.is_abstract(op):
         return Controlled(
             op,
@@ -179,16 +193,65 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     )
 
 
+def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type):
+    """New implementation of qp.ctrl that works better with Operator2."""
+
+    if not isinstance(control_wires, AbstractWires):
+        control_wires = Wires(control_wires)
+    if not isinstance(work_wires, AbstractWires):
+        work_wires = Wires([] if work_wires is None else work_wires)
+
+    if control_values is None:
+        control_values = [True] * len(control_wires)
+
+    if isinstance(op, Controlled2):
+        _ = pop_op_eqns((op,))
+        ww_type = resolve_work_wire_type(op.work_wires, op.work_wire_type, work_wires, ww_type)
+        ctrl_values = resolve_ctrl_values(control_values, op)
+        return ctrl(
+            op.base,
+            control=_concat_wires(control_wires, op.control_wires),
+            control_values=ctrl_values,
+            work_wires=_concat_wires(work_wires, op.work_wires),
+            work_wire_type=ww_type,
+        )
+
+    qp.QueuingManager.remove(op)
+    return ControlledOp2(op, control_wires, control_values, work_wires, ww_type)
+
+
+def _concat_wires(wire1, wire2):
+
+    if isinstance(wire2, AbstractWires):
+        return Wire[len(wire1) + len(wire2)]
+
+    return wire1 + wire2
+
+
+def resolve_ctrl_values(control_values, base_ctrl_op: Controlled2):
+    """Resolves the new control values."""
+
+    if isinstance(control_values, (int, bool)):
+        control_values = [control_values]
+
+    if base_ctrl_op.is_abstract:
+        return Bool[len(control_values) + len(base_ctrl_op.control_values)]
+
+    return math.concatenate([control_values, base_ctrl_op.control_values])
+
+
 def create_controlled_op(
     op, control, control_values=None, work_wires=None, work_wire_type="borrowed"
 ):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control = qp.wires.Wires(control)
+    control = Wires(control)
+    one_controlled = False
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
     elif control_values is None:
         control_values = [True] * len(control)
+        one_controlled = True
     elif isinstance(control_values, tuple):
         control_values = list(control_values)
 
@@ -253,27 +316,35 @@ def create_controlled_op(
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    if qp.capture.enabled():
-        return _capture_ctrl_transform(op, control, control_values, work_wires)
-    return _ctrl_transform(op, control, control_values, work_wires)
+    return _ctrl_transform(op, control, control_values, work_wires, one_controlled)
 
 
-def _ctrl_transform(op, control, control_values, work_wires):
+def _ctrl_transform(op, control, control_values, work_wires, one_controlled):
+
     @wraps(op)
     def wrapper(*args, **kwargs):
+
+        if qp.capture.enabled():
+            return _capture_ctrl_transform(op, control, control_values, work_wires)(*args, **kwargs)
+
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
-        flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
-        op_control_values = None if flip_control_on_zero else control_values
+        flip_control_on_zero = len(qscript) > 1 and not one_controlled
+        op_control_values = None if flip_control_on_zero or one_controlled else control_values
+
         if flip_control_on_zero:
             _ = [qp.X(w) for w, val in zip(control, control_values, strict=True) if not val]
 
         _ = [
-            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+            (
+                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                if not isinstance(op, (Allocate, Deallocate))
+                else qp.apply(op)
+            )
             for op in qscript.operations
         ]
 
@@ -564,6 +635,14 @@ class Controlled(SymbolicOp):
         new_parameters = tuple(sig.parameters.values())[1:]
         new_sig = sig.replace(parameters=new_parameters)
         return new_sig
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        # Only fire for the abstract types (Controlled, ControlledOp), not their
+        # concrete subclasses (CNOT, Toffoli, etc.), to avoid ambiguous dispatch.
+        if cls in (Controlled, ControlledOp) and issubclass(subclass, qp.ops.op_math.Controlled2):
+            return True
+        return NotImplemented
 
     # pylint: disable=unused-argument
     def __new__(cls, *args, **kwargs):

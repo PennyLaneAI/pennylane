@@ -21,17 +21,19 @@ import warnings
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
-from pennylane.queuing import QueuingManager, apply
+from pennylane import queuing
+from pennylane.core.queuing import QueuingManager, apply
 
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
 from pennylane import kernels
 from pennylane import math
 from pennylane import operation
-from pennylane import operation2
+from pennylane.core import operator
 from pennylane import allocation
 from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition

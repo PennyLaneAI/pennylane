@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
@@ -29,6 +30,7 @@ class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):
     """Run basic operator validity fucntions."""
@@ -485,7 +487,7 @@ class TestAdjointOperationDiffInfo:
     )
     def test_parameter_frequencies(self, base):
         """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
-        assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
+        assert parameter_frequencies(Adjoint(base)) == parameter_frequencies(base)
 
 
 class TestQueueing:

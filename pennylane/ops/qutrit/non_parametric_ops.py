@@ -19,10 +19,10 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import AdjointUndefinedError
-from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 from .parametric_ops import validate_subspace

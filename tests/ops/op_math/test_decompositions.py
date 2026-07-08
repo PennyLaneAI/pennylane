@@ -988,7 +988,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_compute_num_cnots_identifies_2_cnots(self, U):
         """Test that the new Shende–Bullock–Markov criterion correctly
         classifies 2-CNOT unitaries."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
         assert _compute_num_cnots(U) == 2
 
     @pytest.mark.unit
@@ -996,7 +996,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots_gate_count(self, U):
         """Test that the dispatcher selects the new 2-CNOT decomposition
         and that the resulting circuit actually contains exactly 2 CNOTs."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         ops = two_qubit_decomposition(U, wires=[0, 1])
 
@@ -1018,7 +1018,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
 
@@ -1037,7 +1037,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
@@ -1054,7 +1054,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
 
@@ -1071,7 +1071,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U, _ = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 
@@ -1230,6 +1230,36 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         jitted_matrix = jax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_two_qubit_decomposition_2_cnots_qjit(self):
+        """Test that two_qubit_decomposition does not raise TracerArrayConversionError
+        under qjit. Regression test for #9016."""
+        pytest.importorskip("catalyst")
+        import jax.numpy as jnp
+        from catalyst import grad as catalyst_grad
+        from catalyst.utils.exceptions import DifferentiableCompileError
+
+        A = jnp.array([[1, 0], [0, 1]])
+        dev = qp.device("lightning.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(angle):
+            qp.BlockEncode(A, wires=[0, 1])
+            qp.RZ(angle, wires=0)
+            return qp.expval(qp.Z(0))
+
+        grad_fn = qp.qjit(catalyst_grad(circuit))
+
+        # Before the fix, this raised TracerArrayConversionError inside _decompose_2_cnots
+        # because np.lexsort received abstract traced arrays under qjit.
+        # After the fix, compiler.active() correctly skips the 2-CNOT path.
+        # The DifferentiableCompileError here is a separate catalyst limitation
+        # (QubitUnitary is non-differentiable), not the bug being fixed.
+        with pytest.raises(DifferentiableCompileError):
+            grad_fn(jnp.array(0.5))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
