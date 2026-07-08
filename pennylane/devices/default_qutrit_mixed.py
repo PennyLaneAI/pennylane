@@ -240,7 +240,7 @@ class DefaultQutritMixed(Device):
 
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
-        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``resources``: the :class:`~.resource.SpecsResources` for the executed circuit.
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
