@@ -77,22 +77,16 @@ class RX(Operator2):
       where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        phi (TensorLike): rotation angle :math:`\phi`
+        wires (WiresLike): the wire the operation acts on
     """
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
 
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -105,7 +99,6 @@ class RX(Operator2):
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_keys = set()
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
@@ -136,7 +129,7 @@ class RX(Operator2):
         .. seealso:: :meth:`~.RX.matrix`
 
         Args:
-            phi (tensor_like or float): rotation angle
+            phi (TensorLike): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -291,13 +284,9 @@ class RY(Operator2):
       where :math:`f` is an expectation value depending on :math:`R_y(\phi)`.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        phi (TensorLike): rotation angle :math:`\phi`
+        wires (WiresLike): the wire the operation acts on
     """
-
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
@@ -317,7 +306,6 @@ class RY(Operator2):
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
-    resource_keys = set()
 
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
@@ -349,7 +337,7 @@ class RY(Operator2):
 
 
         Args:
-            phi (tensor_like or float): rotation angle
+            phi (TensorLike): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -516,18 +504,13 @@ class RZ(Operator2):
       where :math:`f` is an expectation value depending on :math:`R_z(\phi)`.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        phi (TensorLike): rotation angle :math:`\phi`
+        wires (WiresLike): the wire the operation acts on
     """
-
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
@@ -569,7 +552,7 @@ class RZ(Operator2):
         .. seealso:: :meth:`~.RZ.matrix`
 
         Args:
-            phi (tensor_like or float): rotation angle
+            phi (TensorLike): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -622,7 +605,7 @@ class RZ(Operator2):
 
 
         Args:
-            phi (tensor_like or float): rotation angle
+            phi (TensorLike): rotation angle
 
         Returns:
             tensor_like: eigenvalues
