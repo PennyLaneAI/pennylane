@@ -18,7 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=arguments-differ,arguments-renamed
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from functools import lru_cache, partial
 from typing import Literal
 
