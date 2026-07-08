@@ -223,7 +223,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[resource_rep(qp.PauliX)] = num_zero_control_values * 2
+        gate_counts[qp.PauliX] = num_zero_control_values * 2
         return gate_counts
 
     # pylint: disable=protected-access,too-many-arguments
@@ -275,7 +275,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[resource_rep(qp.X)] = gate_counts.get(resource_rep(qp.X), 0) + num_x * 2
+        gate_counts[qp.X] = gate_counts.get(qp.X, 0) + num_x * 2
         return gate_counts
 
     # pylint: disable=protected-access
