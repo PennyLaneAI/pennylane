@@ -466,6 +466,9 @@
   This specific setup is useful for a vibronic dynamics workflow.
   [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
+* The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
+  [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
+
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
@@ -755,6 +758,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
+  Could be used for dry-runs and resource calculations with program capture.
+  [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
+
+* Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
+  [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
+
 * Fixed some more randomness seeds in the test suite.
   [(#9722)](https://github.com/PennyLaneAI/pennylane/pull/9722)
 
@@ -792,59 +802,61 @@
   [(#9590)](https://github.com/PennyLaneAI/pennylane/pull/9590)
 
 * New, experimental abstractions for creating PennyLane operators have been added, built around a new
-  base class, :class:`~.Operator2`. This is an internal, work-in-progress effort that is being incrementally
-  integrated into the PennyLane ecosystem. Supported functionality so far:
-  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
-  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
-  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
-  - Arithmetic can be performed with :class:`~.Operator2` instances.
-  - Symbolic operators with :class:`~.Operator2` instances as the base.
-  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
-  - Integration with :mod:`pennylane.capture`.
-  - Integration with :func:`pennylane.apply`.
-  - Integration with measurements and capture.
-  - Integration with the graph-based decomposition system.
-  - Patched `SymbolicOp` and `CompositeOp` to tolerate `Operator2` instances under program capture.
-  - Integration with :func:`pennylane.adjoint` and :func:`pennylane.ctrl`.
+  base class, :class:`~.Operator2`. 
   [(#9525)](https://github.com/PennyLaneAI/pennylane/pull/9525)
-  [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
-  [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
-  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
-  [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
-  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
-  [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
-  [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
-  [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
-  [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
-  [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
-  [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
-  [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
-  [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
-  [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
-  [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
-  [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
-  [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
-  [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
-  [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
-  [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
-  [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
-  [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
-  [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
-  [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
-  [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
+  [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
 
-* Added an internal `abstractify` utility function that is able to convert various objects
-  to their abstract versions.
-  [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+  This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane 
+  ecosystem. Supported functionality so far:
 
-* Added an `is_abstract` property to `Operator2` in order to improve abstractification efficiency.
-  [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
+  - Create instances of :class:`~.Operator2` with abstract data.
+    [(#9740)](https://github.com/PennyLaneAI/pennylane/pull/9740)
+    [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
+    [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
+    [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+  - Some backwards compatibility with the legacy operator interface.
+    [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
+    [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
+  - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
+    [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
+    [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
+  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+    [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
+  - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
+    [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
+  - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
+    [(#9683)](https://github.com/PennyLaneAI/pennylane/pull/9683)
+  - Arithmetic can be performed with :class:`~.Operator2` instances.
+    [(#9693)](https://github.com/PennyLaneAI/pennylane/pull/9693)
+  - Symbolic operators with :class:`~.Operator2` instances as the base.
+    [(#9597)](https://github.com/PennyLaneAI/pennylane/pull/9597)
+    [(#9647)](https://github.com/PennyLaneAI/pennylane/pull/9647)
+    [(#9737)](https://github.com/PennyLaneAI/pennylane/pull/9737)
+    [(#9766)](https://github.com/PennyLaneAI/pennylane/pull/9766)
+    [(#9758)](https://github.com/PennyLaneAI/pennylane/pull/9758)
+    [(#9762)](https://github.com/PennyLaneAI/pennylane/pull/9762)
+    [(#9778)](https://github.com/PennyLaneAI/pennylane/pull/9778)
+  - Integration with :mod:`pennylane.capture`.
+    [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
+    [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
+    [(#9730)](https://github.com/PennyLaneAI/pennylane/pull/9730)
+    [(#9754)](https://github.com/PennyLaneAI/pennylane/pull/9754)
+  - Integration with measurements.
+    [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
+  - Integration with :func:`pennylane.apply`.
+    [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
+  - Integration with :func:`pennylane.insert`.
+    [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
+  - Integration with the graph-based decomposition system.
+    [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
+    [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+    [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
+    [(#9770)](https://github.com/PennyLaneAI/pennylane/pull/9770)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -860,6 +872,8 @@
   [(#9508)](https://github.com/PennyLaneAI/pennylane/pull/9508)
   [(#9586)](https://github.com/PennyLaneAI/pennylane/pull/9586)
   [(#9583)](https://github.com/PennyLaneAI/pennylane/pull/9583)
+  [(#9607)](https://github.com/PennyLaneAI/pennylane/pull/9607)
+  [(#9627)](https://github.com/PennyLaneAI/pennylane/pull/9627)
 
 * ``assert_valid`` will now correctly raise an ``ImportError`` if `skip_capture=False` and JAX is not installed.
   [(#9567)](https://github.com/PennyLaneAI/pennylane/pull/9567)
@@ -1053,6 +1067,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Austin Huang,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
