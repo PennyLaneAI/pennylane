@@ -43,6 +43,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -195,12 +196,13 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
 def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type):
     """New implementation of qp.ctrl that works better with Operator2."""
 
-    control_wires = Wires(control_wires)
+    if not isinstance(control_wires, AbstractWires):
+        control_wires = Wires(control_wires)
+    if not isinstance(work_wires, AbstractWires):
+        work_wires = Wires([] if work_wires is None else work_wires)
+
     if control_values is None:
         control_values = [True] * len(control_wires)
-    if work_wires is None:
-        work_wires = []
-    work_wires = Wires(work_wires)
 
     if isinstance(op, Controlled2):
         _ = pop_op_eqns((op,))
@@ -208,9 +210,9 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
         ctrl_values = resolve_ctrl_values(control_values, op)
         return ctrl(
             op.base,
-            control=control_wires + op.control_wires,
+            control=_concat_wires(control_wires, op.control_wires),
             control_values=ctrl_values,
-            work_wires=work_wires + op.work_wires,
+            work_wires=_concat_wires(work_wires, op.work_wires),
             work_wire_type=ww_type,
         )
 
@@ -218,11 +220,22 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, ww_type
     return ControlledOp2(op, control_wires, control_values, work_wires, ww_type)
 
 
+def _concat_wires(wire1, wire2):
+
+    if isinstance(wire2, AbstractWires):
+        return Wire[len(wire1) + len(wire2)]
+
+    return wire1 + wire2
+
+
 def resolve_ctrl_values(control_values, base_ctrl_op: Controlled2):
     """Resolves the new control values."""
 
     if isinstance(control_values, (int, bool)):
         control_values = [control_values]
+
+    if base_ctrl_op.is_abstract:
+        return Bool[len(control_values) + len(base_ctrl_op.control_values)]
 
     return math.concatenate([control_values, base_ctrl_op.control_values])
 
@@ -625,7 +638,9 @@ class Controlled(SymbolicOp):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if issubclass(subclass, qp.ops.op_math.Controlled2):
+        # Only fire for the abstract types (Controlled, ControlledOp), not their
+        # concrete subclasses (CNOT, Toffoli, etc.), to avoid ambiguous dispatch.
+        if cls in (Controlled, ControlledOp) and issubclass(subclass, qp.ops.op_math.Controlled2):
             return True
         return NotImplemented
 

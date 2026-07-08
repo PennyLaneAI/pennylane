@@ -182,6 +182,7 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 from .patching import Patcher
 from .jax_patches import get_jax_patches
 from .subroutine import subroutine
+from .symbolic_array import symbolic_array
 
 if TYPE_CHECKING:
     # pylint: disable=import-outside-toplevel, unused-import
@@ -252,4 +253,5 @@ __all__ = (
     "make_plxpr",
     "Patcher",
     "get_jax_patches",
+    "symbolic_array",
 )
