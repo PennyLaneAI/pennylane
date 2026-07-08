@@ -66,13 +66,15 @@ def test_error_if_bad_dimesion(bad_dimension):
         (np.complex128, jnp.complex128),
     ],
 )
-def test_capturing_symbolic_array(shape, dtype, converted_dtype):
+@pytest.mark.parametrize("eager_constant_folding", [True, False])
+def test_capturing_symbolic_array(shape, dtype, converted_dtype, eager_constant_folding):
     """Test capturing symbolic_array's into jaxpr."""
 
     def f():
         return qp.capture.symbolic_array(shape, dtype)
 
-    jaxpr = jax.make_jaxpr(f)()
+    with jax._src.config.eager_constant_folding(eager_constant_folding):
+        jaxpr = jax.make_jaxpr(f)()
 
     assert jaxpr.eqns[0].primitive == symbolic_array_prim
     assert jaxpr.eqns[0].params["shape"] == shape

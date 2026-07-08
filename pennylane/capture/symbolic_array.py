@@ -21,6 +21,8 @@ from .switches import enabled
 
 has_jax = find_spec("jax") is not None
 
+from jax._src import config as jax_config
+
 
 @lru_cache
 def _symbolic_array_primitive():
@@ -97,4 +99,5 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
         raise ValueError(
             f"All shape dimensions must be integers greater than zero. Got shape {shape}."
         )
-    return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
+    with jax_config.eager_constant_folding(False):
+        return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
