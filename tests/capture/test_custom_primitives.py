@@ -20,6 +20,7 @@ import pytest
 
 jax = pytest.importorskip("jax")
 
+import pennylane as qp
 from pennylane.capture.custom_primitives import PrimitiveType, QpPrimitive
 
 pytestmark = pytest.mark.jax
@@ -47,3 +48,19 @@ def test_qp_primitive_prim_type_setter_invalid():
     prim = QpPrimitive("primitive")
     with pytest.raises(ValueError, match="not a valid PrimitiveType"):
         prim.prim_type = "blah"
+
+
+@pytest.mark.capture
+def test_compile_time_constant_eval():
+    """Test that operators and measurements are correctly added to the jaxpr when compile time
+    constant evaluation is enabled."""
+
+    def f():
+        qp.RX(0.5, 0)
+        return qp.expval(qp.Z(0))
+
+    with jax._src.config.eager_constant_folding(True):
+        jaxpr = jax.make_jaxpr(f)()
+
+    assert jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert jaxpr.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive
