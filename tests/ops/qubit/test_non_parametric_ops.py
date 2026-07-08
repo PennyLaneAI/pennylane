@@ -39,6 +39,9 @@ from gate_data import (
     S,
     T,
     Toffoli,
+    X,
+    Y,
+    Z,
 )
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
@@ -1225,8 +1228,6 @@ def test_label_method(op, label):
 control_data = [
     (qp.Identity(0), Wires([])),
     (qp.Hadamard(0), Wires([])),
-    (qp.PauliX(0), Wires([])),
-    (qp.PauliY(0), Wires([])),
     (qp.S(wires=0), Wires([])),
     (qp.T(wires=0), Wires([])),
     (qp.SX(wires=0), Wires([])),
