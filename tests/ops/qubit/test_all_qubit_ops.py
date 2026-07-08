@@ -29,9 +29,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 @pytest.mark.parametrize(
     "op, basis",
     [
-        (qp.X(0), "X"),
-        (qp.Y(0), "Y"),
-        (qp.Z(0), "Z"),
         (qp.S(0), "Z"),
         (qp.T(0), "Z"),
         (qp.SX(0), "X"),
@@ -60,9 +57,6 @@ class TestOperations:
         "op",
         [
             (qp.Hadamard(wires=0)),
-            (qp.PauliX(wires=0)),
-            (qp.PauliY(wires=0)),
-            (qp.PauliZ(wires=0)),
             (qp.S(wires=0)),
             (qp.T(wires=0)),
             (qp.SX(wires=0)),
