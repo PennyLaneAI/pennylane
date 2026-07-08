@@ -15,6 +15,7 @@
 Tests for the 'mark' functionality.
 """
 
+import pytest
 import pennylane as qp
 from pennylane.fourier.mark import MarkedOp, mark
 
