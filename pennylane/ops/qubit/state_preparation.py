@@ -27,6 +27,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.decomposition import (
     add_decomps,
     pow_resource_rep,
@@ -34,7 +35,6 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.exceptions import WireError
-from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -237,13 +237,8 @@ def _basis_state_decomp(state, wires, **__):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        if not qp.math.is_abstract(state):
-            state = jnp.array(state)
-
-        if not qp.math.is_abstract(wires):
-            wires = jnp.array(wires)
+        state = qp.math.array(state, like="jax")
+        wires = qp.math.array(wires, like="jax")
 
     @qp.for_loop(len(state))
     def _loop(i):

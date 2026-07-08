@@ -21,13 +21,13 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 from pennylane.wires import Wires, WiresLike
 
@@ -187,7 +187,7 @@ class AQFT(Operation):
             decomp_ops.append(Hadamard(wire))
             counter = 0
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :], strict=True):
                 if counter >= order:
                     break
 
@@ -198,7 +198,7 @@ class AQFT(Operation):
         first_half_wires = wires[: n_wires // 2]
         last_half_wires = wires[-(n_wires // 2) :]
 
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
+        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires), strict=True):
             swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 

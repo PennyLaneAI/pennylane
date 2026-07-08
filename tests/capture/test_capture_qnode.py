@@ -1,0 +1,1385 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for capturing a qnode into jaxpr.
+"""
+
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports,unbalanced-tuple-unpacking
+
+import pytest
+
+import pennylane as qp
+from pennylane.exceptions import CaptureError, QuantumFunctionError
+
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+jax = pytest.importorskip("jax")
+jnp = jax.numpy
+
+from pennylane.capture.autograph import run_autograph
+
+# must be below jax importorskip
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    qnode_prim,
+    transform_prim,
+    while_loop_prim,
+)
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from tests.capture.capture_utils import extract_all_primitives
+
+
+def get_qnode_output_eqns(jaxpr):
+    """Extracts equations related to QNode outputs in the given JAX expression (jaxpr).
+
+    Parameters:
+        jaxpr: A JAX expression with equations, containing QNode-related operations.
+
+    Returns:
+        List of equations containing QNode outputs.
+    """
+
+    qnode_output_eqns = []
+
+    for eqn in jaxpr.eqns:
+        if eqn.primitive.name == "qnode":
+            qnode_output_eqns.append(eqn)
+
+    return qnode_output_eqns
+
+
+@pytest.mark.capture
+def test_error_if_dynamic_device_wires():
+    """Test that a NotImplementedError is raised if the device has dynamic wires."""
+
+    def f(num_wires):
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def circuit():
+            return qp.probs()
+
+        return circuit()
+
+    with pytest.raises(
+        NotImplementedError, match="Dynamic device wires are not currently supported"
+    ):
+        jax.make_jaxpr(f)(3)
+
+
+def test_error_if_no_device_wires():
+    """Test that a NotImplementedError is raised if the device does not provide wires."""
+
+    dev = qp.device("default.qubit", wires=None)
+
+    @qp.qnode(dev)
+    def circuit():
+        return qp.sample()
+
+    with pytest.raises(NotImplementedError, match="devices must specify wires"):
+        jax.make_jaxpr(circuit)()
+
+
+def test_simple_qnode():
+    """Test capturing a qnode for a simple use."""
+
+    dev = qp.device("default.qubit", wires=4)
+
+    @qp.qnode(dev)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)(0.5)
+
+    assert len(jaxpr.eqns) == 1
+    eqn0 = jaxpr.eqns[0]
+
+    fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+
+    assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+
+    assert eqn0.primitive == qnode_prim
+    assert eqn0.invars[0].aval == jaxpr.in_avals[0]
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
+
+    assert eqn0.params["device"] == dev
+    assert eqn0.params["qnode"] == circuit
+    assert eqn0.params["shots_len"] == 0
+    expected_config = qp.devices.ExecutionConfig(
+        gradient_method="best",
+        use_device_gradient=None,
+        gradient_keyword_arguments={},
+        use_device_jacobian_product=False,
+        interface="jax",
+        grad_on_execution=False,
+        device_options={},
+        mcm_config=qp.devices.MCMConfig(mcm_method=None, postselect_mode=None),
+    )
+    assert eqn0.params["execution_config"] == expected_config
+
+    qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
+    assert len(qfunc_jaxpr.eqns) == 3
+    assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
+    assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
+
+    assert len(eqn0.outvars) == 1
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray((), fdtype)
+
+
+def test_providing_keywords_dynamic():
+    """Test that keyword arguments can be provided to the qnode, but are treated as dynamic."""
+
+    @qp.qnode(qp.device("default.qubit", wires=1))
+    def circuit(*, x):
+        qp.RX(x, 0)
+        return qp.probs()
+
+    jaxpr = jax.make_jaxpr(circuit)(x=2.0)
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+    assert len(jaxpr.jaxpr.invars) == 1
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+    assert len(qfunc_jaxpr.invars) == 1
+    assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert qfunc_jaxpr.eqns[0].invars[0] == qfunc_jaxpr.invars[0]
+    assert len(qfunc_jaxpr.eqns) == 2
+
+
+def test_multiple_measurements():
+    """Test that the qnode can return multiple measurements."""
+
+    @qp.qnode(qp.device("default.qubit", wires=3), shots=50)
+    def circuit():
+        return qp.sample(), qp.probs(wires=(0, 1)), qp.expval(qp.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+    assert qfunc_jaxpr.eqns[0].primitive == qp.measurements.SampleMP._wires_primitive
+    assert qfunc_jaxpr.eqns[1].primitive == qp.measurements.ProbabilityMP._wires_primitive
+    assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+    assert qfunc_jaxpr.eqns[3].primitive == qp.measurements.ExpectationMP._obs_primitive
+
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
+        (50, 3), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+    )
+    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+        (4,), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    )
+    assert jaxpr.out_avals[2] == jax.core.ShapedArray(
+        (), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    )
+
+
+def test_complex_return_types():
+    """Test returning measurements with complex values."""
+
+    @qp.qnode(qp.device("default.qubit", wires=3))
+    def circuit():
+        return qp.state(), qp.density_matrix(wires=(0, 1))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+    assert qfunc_jaxpr.eqns[0].primitive == qp.measurements.StateMP._wires_primitive
+    assert qfunc_jaxpr.eqns[1].primitive == qp.measurements.DensityMatrixMP._wires_primitive
+
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
+        (8,), jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+    )
+    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+        (4, 4), jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+    )
+
+
+def test_capture_qnode_kwargs():
+    """Test that qnode kwargs are captured as parameters."""
+
+    dev = qp.device("default.qubit", wires=3)
+
+    @qp.qnode(
+        dev,
+        diff_method="parameter-shift",
+        grad_on_execution=False,
+        cache=True,
+        cachesize=10,
+        max_diff=2,
+        mcm_method="single-branch-statistics",
+    )
+    def circuit():
+        return qp.expval(qp.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    assert jaxpr.eqns[0].primitive == qnode_prim
+    expected_config = qp.devices.ExecutionConfig(
+        gradient_method="parameter-shift",
+        use_device_gradient=None,
+        grad_on_execution=False,
+        derivative_order=2,
+        use_device_jacobian_product=False,
+        mcm_config=qp.devices.MCMConfig(
+            mcm_method="single-branch-statistics", postselect_mode=None
+        ),
+        interface=qp.math.Interface.JAX,
+        device_options={},
+    )
+    assert jaxpr.eqns[0].params["execution_config"] == expected_config
+
+
+def test_qnode_closure_variables():
+    """Test that qnode can capture closure variables and consts."""
+
+    a = jnp.array(2.0)
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def circuit(w):
+        qp.RX(a, w)
+        return qp.expval(qp.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)(1)
+    assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
+    assert jaxpr.eqns[0].params["n_consts"] == 1
+
+
+def test_qnode_pytree_input():
+    """Test that we can capture and execute a qnode with a pytree input."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def circuit(x):
+        qp.RX(x["val"], wires=x["wires"])
+        return qp.expval(qp.Z(wires=x["wires"]))
+
+    x = {"val": 0.5, "wires": 0}
+
+    jaxpr = jax.make_jaxpr(circuit)(x)
+    assert len(jaxpr.eqns[0].invars) == 2
+
+
+def test_qnode_pytree_output():
+    """Test that we can capture and execute a qnode with a pytree output."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def circuit(x):
+        qp.RX(x, 0)
+        return {"a": qp.expval(qp.Z(0)), "b": qp.expval(qp.Y(0))}
+
+    jaxpr = jax.make_jaxpr(circuit)(1.2)
+    assert len(jaxpr.eqns[0].outvars) == 2
+
+
+def test_informative_error_raw_mcm_return():
+    """Test that a more informative error is raised when returning a raw mcm."""
+
+    @qp.qnode(qp.device("default.qubit", wires=2))
+    def c():
+        return qp.measure(0)
+
+    with pytest.raises(ValueError, match="Only Measurement Processes can be returned from QNode"):
+        jax.make_jaxpr(c)()
+
+
+class TestShots:
+    """Tests for the number of shots."""
+
+    def test_shot_vector(self):
+        """Test that a shot vector can be captured."""
+
+        @qp.set_shots(shots=(10, 10, 20))
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def c():
+            return qp.sample(wires=0)
+
+        jaxpr = jax.make_jaxpr(c)()
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+        assert eqn0.primitive == qnode_prim
+        assert eqn0.params["shots_len"] == 3
+
+        assert eqn0.invars[0].val == 10
+        assert eqn0.invars[1].val == 10
+        assert eqn0.invars[2].val == 20
+
+        assert len(eqn0.outvars) == 3
+        assert eqn0.outvars[0].aval.shape == (10, 1)
+        assert eqn0.outvars[1].aval.shape == (10, 1)
+        assert eqn0.outvars[2].aval.shape == (20, 1)
+
+    def test_shot_vector_multiple_returns_pytree(self):
+        """Test that shot vectors and multiple returns returns the correct shapes."""
+
+        @qp.set_shots(shots=(10, 11))
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def c():
+            return {"sample": qp.sample(wires=0), "expval": qp.expval(qp.Z(0))}
+
+        def w():
+            out = c()
+            assert isinstance(out, tuple)
+            for i, d in enumerate(out):
+                assert isinstance(d, dict)
+                assert d["sample"].shape == (10 + i, 1)
+                assert d["expval"].shape == ()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)()
+        eqn0 = jaxpr.eqns[0]
+        assert len(eqn0.outvars) == 4
+        # for some reason flattening the pytree puts the expval first
+        assert eqn0.outvars[0].aval.shape == ()
+        assert eqn0.outvars[1].aval.shape == (10, 1)
+        assert eqn0.outvars[2].aval.shape == ()
+        assert eqn0.outvars[3].aval.shape == (11, 1)
+
+    def test_error_dynamic_shots_dynamic_shapes_not_enabled(self):
+        """Test that an error is raised if dynamic shots is not enabled."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def c():
+            return qp.sample(wires=0), qp.expval(qp.Z(0))
+
+        def w(num_shots):
+            return qp.set_shots(c, num_shots)()
+
+        with pytest.raises(ValueError, match=r"requires setting jax.config.update"):
+            jax.make_jaxpr(w)(3)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots(self):
+        """Test that the shot number can be dynamic."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def c():
+            return qp.sample(wires=0), qp.expval(qp.Z(0))
+
+        def w(num_shots):
+            return qp.set_shots(c, num_shots)()
+
+        jaxpr = jax.make_jaxpr(w)(3)
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+
+        assert eqn0.params["shots_len"] == 1
+        assert not isinstance(eqn0.invars[0], jax.extend.core.Literal)
+
+        assert isinstance(eqn0.outvars[0].aval, jax.core.DShapedArray)
+        assert isinstance(eqn0.outvars[1].aval, jax.core.ShapedArray)
+
+        assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
+        assert eqn0.outvars[1].aval.shape == ()
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots_shot_vector(self):
+        """Test that a shot vector can be used with a shot vector."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def c():
+            return qp.sample(wires=0)
+
+        def w(shots1, shots2):
+            out = qp.set_shots(c, (shots1, 2, shots2))()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)(5, 6)
+        eqn = jaxpr.eqns[-1]
+        assert eqn.params["shots_len"] == 3
+        assert len(eqn.outvars) == 3
+
+        assert isinstance(eqn.outvars[0].aval, jax.core.DShapedArray)
+        assert eqn.outvars[0].aval.shape[0] is eqn.invars[0]
+        assert isinstance(eqn.outvars[2].aval, jax.core.DShapedArray)
+        assert eqn.outvars[2].aval.shape[0] is eqn.invars[2]
+
+        assert isinstance(eqn.outvars[1].aval, jax.core.ShapedArray)
+        assert eqn.outvars[1].aval.shape == (2, 1)
+
+
+@pytest.mark.parametrize("disable_around_qnode", (True, False))
+class TestUserTransforms:
+    """Integration tests for applying user transforms to a qnode with program capture."""
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_transform(self, disable_around_qnode):
+        """Test that a transformed qnode is captured correctly."""
+
+        if disable_around_qnode:
+            qp.capture.disable()
+
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.RX(x, 0)
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.Z(0))
+
+        assert isinstance(circuit, qp.QNode)
+        assert qp.transforms.cancel_inverses in circuit.compile_pipeline
+
+        if disable_around_qnode:
+            qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        # pylint: disable=protected-access
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        collector = CollectOpsandMeas()
+        collector.eval(qfunc_jaxpr, [], 1.5)
+        assert collector.state["ops"] == [qp.RX(1.5, 0), qp.X(0), qp.X(0)]
+        assert collector.state["measurements"] == [qp.expval(qp.Z(0))]
+
+    @pytest.mark.unit
+    def test_captured_program_qfunc_transform(self, disable_around_qnode):
+        """Test that a qnode with a transformed qfunc is captured correctly."""
+
+        if disable_around_qnode:
+            qp.capture.disable()
+
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(dev)
+        @qp.transforms.cancel_inverses
+        def circuit(x):
+            qp.RX(x, 0)
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.Z(0))
+
+        if disable_around_qnode:
+            qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        # pylint: disable=protected-access
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
+
+        inner_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
+        collector = CollectOpsandMeas()
+        collector.eval(inner_jaxpr, [], 1.5)
+        assert collector.state["ops"] == [qp.RX(1.5, 0), qp.X(0), qp.X(0)]
+        assert collector.state["measurements"] == [qp.expval(qp.Z(0))]
+
+    @pytest.mark.unit
+    def test_captured_program_qnode_qfunc_transform(self, disable_around_qnode):
+        """Test that a transformed qnode with a transformed qfunc is captured correctly."""
+
+        if disable_around_qnode:
+            qp.capture.disable()
+
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
+        @qp.transforms.merge_rotations
+        def circuit(x):
+            qp.RX(x, 0)
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.Z(0))
+
+        assert isinstance(circuit, qp.QNode)
+
+        if disable_around_qnode:
+            qp.capture.enable()
+
+        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        # pylint: disable=protected-access
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
+        inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert inner_jaxpr.eqns[0].primitive == qnode_prim
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert qfunc_jaxpr.eqns[0].primitive == transform_prim
+        assert qfunc_jaxpr.eqns[0].params["transform"] == qp.transforms.merge_rotations
+        inner_jaxpr2 = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
+
+        collector = CollectOpsandMeas()
+        collector.eval(inner_jaxpr2, [], 1.5)
+        assert collector.state["ops"] == [qp.RX(1.5, 0), qp.X(0), qp.X(0)]
+        assert collector.state["measurements"] == [qp.expval(qp.Z(0))]
+
+
+class TestDifferentiation:
+
+    def test_error_backprop_unsupported(self):
+        """Test an error is raised with backprop if the device does not support it."""
+
+        # pylint: disable=too-few-public-methods
+        class DummyDev(qp.devices.Device):
+
+            def execute(self, *_, **__):
+                return 0
+
+        with pytest.raises(QuantumFunctionError, match="does not support backprop"):
+
+            @qp.qnode(DummyDev(wires=2), diff_method="backprop")
+            def _(x):
+                qp.RX(x, 0)
+                return qp.expval(qp.Z(0))
+
+    def test_error_unsupported_diff_method(self):
+        """Test an error is raised for a non-backprop diff method."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2), diff_method="parameter-shift")
+        def circuit(x):
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(NotImplementedError):
+            jax.grad(circuit)(0.5)
+
+
+# pylint: disable=too-many-public-methods
+class TestQNodeVmapIntegration:
+    """Tests for integrating JAX vmap with the QNode primitive."""
+
+    @pytest.mark.parametrize(
+        "input, expected_shape",
+        [
+            (jnp.array([0.1], dtype=jnp.float32), (1,)),
+            (jnp.array([0.1, 0.2], dtype=jnp.float32), (2,)),
+            (jnp.array([0.1, 0.2, 0.3], dtype=jnp.float32), (3,)),
+        ],
+    )
+    def test_qnode_vmap(self, input, expected_shape):
+        """Test that JAX can vmap over the QNode primitive via a registered batching rule."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x):
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(input)
+        eqn0 = jaxpr.eqns[0]
+
+        assert len(eqn0.outvars) == 1
+        assert eqn0.outvars[0].aval.shape == expected_shape
+
+    def test_qnode_vmap_x64_mode(self):
+        """Test that JAX can vmap over the QNode primitive with x64 mode enabled/disabled."""
+
+        dtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x):
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
+
+        x = jnp.array([0.1, 0.2, 0.3], dtype=dtype)
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        eqn0 = jaxpr.eqns[0]
+
+        assert len(eqn0.outvars) == 1
+        assert eqn0.outvars[0].aval == jax.core.ShapedArray((3,), dtype)
+
+    def test_vmap_mixed_arguments(self):
+        """Test vmap with a mix of batched and non-batched arguments."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(arr1, scalar1, arr2, scalar2):
+            qp.RX(arr1, 0)
+            qp.RY(scalar1, 0)
+            qp.RY(arr2, 1)
+            qp.RZ(scalar2, 1)
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
+
+        arr1 = jnp.array([0.1, 0.2, 0.3])
+        arr2 = jnp.array([0.2, 0.4, 0.6])
+        scalar1 = 1.0
+        scalar2 = 2.0
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0, None)))(
+            arr1, scalar1, arr2, scalar2
+        )
+
+        assert len(jaxpr.out_avals) == 2
+        assert jaxpr.out_avals[0].shape == (3,)
+        assert jaxpr.out_avals[1].shape == (3,)
+
+    def test_vmap_multiple_measurements(self):
+        """Test that JAX can vmap over the QNode primitive with multiple measurements."""
+
+        @qp.qnode(qp.device("default.qubit", wires=4), shots=5)
+        def circuit(x):
+            qp.DoubleExcitation(x, wires=[0, 1, 2, 3])
+            return qp.sample(), qp.probs(wires=(0, 1, 2)), qp.expval(qp.Z(0))
+
+        x = jnp.array([1.0, 2.0])
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 3
+        assert jaxpr.out_avals[0].shape == (2, 5, 4)
+        assert jaxpr.out_avals[1].shape == (2, 8)
+        assert jaxpr.out_avals[2].shape == (2,)
+
+    def test_qnode_vmap_closure(self):
+        """Test that JAX can vmap over the QNode primitive with closure variables."""
+
+        const = jnp.array(2.0)
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x, 0)
+            qp.RY(const, 1)
+            return qp.probs(wires=[0, 1])
+
+        x = jnp.array([1.0, 2.0, 3.0])
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        eqn0 = jaxpr.eqns[0]
+
+        assert len(eqn0.invars) == 2  # one closure variable, one (batched) arg
+        assert eqn0.invars[0].aval.shape == ()
+        assert eqn0.invars[1].aval.shape == (3,)
+
+        assert len(eqn0.outvars) == 1
+        assert eqn0.outvars[0].aval.shape == (3, 4)
+
+    def test_qnode_vmap_closure_warn(self):
+        """Test that a warning is raised when trying to vmap over a batched non-scalar closure variable."""
+        dev = qp.device("default.qubit", wires=2)
+
+        const = jnp.array([2.0, 6.6])
+
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.RY(x, 0)
+            qp.RX(const, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
+            jax.make_jaxpr(jax.vmap(circuit))(jnp.array([0.1, 0.2]))
+
+    def test_vmap_overriding_shots(self):
+        """Test that the number of shots can be overridden on call with vmap."""
+
+        dev = qp.device("default.qubit", wires=1)
+
+        @qp.qnode(dev)
+        # pylint: disable=unused-argument
+        def circuit(x):
+            return qp.sample()
+
+        x = jnp.array([1.0, 2.0, 3.0])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(qp.set_shots(circuit, shots=50), in_axes=0))(x)
+
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+
+        assert eqn0.primitive == qnode_prim
+        assert eqn0.params["device"] == dev
+        assert eqn0.params["shots_len"] == 1
+        assert (
+            eqn0.params["qfunc_jaxpr"].eqns[0].primitive
+            == qp.measurements.SampleMP._wires_primitive
+        )
+
+        assert eqn0.outvars[0].aval.shape == (3, 50, 1)
+
+    def test_vmap_error_indexing(self):
+        """Test that an IndexError is raised when indexing a batched parameter."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(vec, scalar):
+            qp.RX(vec[0], 0)
+            qp.RY(scalar, 1)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(IndexError):
+            jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(jnp.array([1.0, 2.0, 3.0]), 5.0)
+
+    def test_vmap_error_empty_array(self):
+        """Test that an error is raised when passing an empty array to vmap."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(ValueError, match="Empty tensors are not supported with jax.vmap."):
+            jax.make_jaxpr(jax.vmap(circuit))(jnp.array([]))
+
+    def test_warning_bypass_vmap(self):
+        """Test that a warning is raised when bypassing vmap."""
+        dev = qp.device("default.qubit", wires=4)
+
+        @qp.qnode(dev)
+        def circuit(param_array, param_array_2):
+            qp.RX(param_array, wires=2)
+            qp.DoubleExcitation(param_array_2[0], wires=[0, 1, 2, 3])
+            return qp.expval(qp.PauliZ(0))
+
+        param_array = jnp.array([1.0, 1.2, 1.3])
+        param_array_2 = jnp.array([2.0, 2.1, 2.2])
+
+        with pytest.warns(UserWarning, match="Argument at index 1 has size"):
+            jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
+
+    def test_qnode_pytree_input_vmap(self):
+        """Test that we can capture and execute a qnode with a pytree input and vmap."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x["val"], wires=x["wires"])
+            return qp.expval(qp.Z(wires=x["wires"]))
+
+        x = {"val": jnp.array([0.1, 0.2]), "wires": 0}
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"val": 0, "wires": None},)))(x)
+
+        assert len(jaxpr.eqns[0].invars) == 2
+
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
+
+    def test_qnode_deep_pytree_input_vmap(self):
+        """Test vmap over qnodes with deep pytree inputs."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x["data"]["val"], wires=x["data"]["wires"])
+            return qp.expval(qp.Z(wires=x["data"]["wires"]))
+
+        x = {"data": {"val": jnp.array([0.1, 0.2]), "wires": 0}}
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"data": {"val": 0, "wires": None}},)))(x)
+
+        assert len(jaxpr.eqns[0].invars) == 2
+
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
+
+    def test_qnode_pytree_output_vmap(self):
+        """Test that we can capture and execute a qnode with a pytree output and vmap."""
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x, 0)
+            return {"a": qp.expval(qp.Z(0)), "b": qp.expval(qp.Y(0))}
+
+        x = jnp.array([1.2, 1.3])
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        assert len(jaxpr.eqns[0].outvars) == 2
+
+    def test_simple_multidim_case(self):
+        """Test vmap over a simple multidimensional case."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x):
+            qp.RX(jnp.pi * x[0], wires=0)
+            qp.RY(x[1] ** 2, wires=0)
+            qp.RX(x[1] * x[2], wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        def cost_fn(x):
+            result = circuit(x)
+            return jnp.cos(result) ** 2
+
+        x = jnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(cost_fn))(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (2,)
+
+    def test_simple_multidim_case_2(self):
+        """Test vmap over a simple multidimensional case with a scalar and constant argument."""
+
+        # pylint: disable=import-outside-toplevel
+        from scipy.stats import unitary_group
+
+        const = jnp.array(2.0)
+
+        @qp.qnode(qp.device("default.qubit", wires=4))
+        def circuit(x, y, U):
+            qp.QubitUnitary(U, wires=[0, 1, 2, 3])
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RX(x, wires=2)
+            qp.RY(const, wires=3)
+            return qp.expval(qp.Z(0) @ qp.X(1) @ qp.Z(2) @ qp.Z(3))
+
+        x = jnp.array([0.4, 2.1, -1.3])
+        y = 2.71
+        U = jnp.stack([unitary_group.rvs(16) for _ in range(3)])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0)))(x, y, U)
+        assert len(jaxpr.eqns[0].invars) == 4  # 3 args + 1 const
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (3,)
+
+    def test_vmap_circuit_inside(self):
+        """Test vmap of a hybrid workflow."""
+
+        def workflow(x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x):
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            res1 = jax.vmap(circuit)(x)
+            res2 = jax.vmap(circuit, in_axes=0)(x)
+            res3 = jax.vmap(circuit, in_axes=(0,))(x)
+            return res1, res2, res3
+
+        x = jnp.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.4, 0.5, 0.6],
+                [0.7, 0.8, 0.9],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+    def test_vmap_nonzero_axes(self):
+        """Test vmap of a hybrid workflow with axes > 0."""
+
+        def workflow(x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x):
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            res1 = jax.vmap(circuit, in_axes=1)(x)
+            res2 = jax.vmap(circuit, in_axes=(1,))(x)
+            return res1, res2
+
+        x = jnp.array(
+            [
+                [0.1, 0.4],
+                [0.2, 0.5],
+                [0.3, 0.6],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
+
+    def test_vmap_nonzero_axes_2(self):
+        """Test vmap of a hybrid workflow with axes > 0."""
+
+        def workflow(y, x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(y, x):
+                qp.RX(jnp.pi * x[0] * y, wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2] * y, wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            res1 = jax.vmap(circuit, in_axes=(None, 1))(y[0], x)
+            res2 = jax.vmap(circuit, in_axes=(0, 1))(y, x)
+            return res1, res2
+
+        x = jnp.array(
+            [
+                [0.1, 0.4],
+                [0.2, 0.5],
+                [0.3, 0.6],
+            ]
+        )
+        y = jnp.array([1, 2])
+
+        jaxpr = jax.make_jaxpr(workflow)(y, x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
+
+    def test_vmap_tuple_in_axes(self):
+        """Test vmap of a hybrid workflow with tuple in_axes."""
+
+        def workflow(x, y, z):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x, y):
+                qp.RX(jnp.pi * x[0] + y - y, wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            def workflow2(x, y):
+                return circuit(x, y) * y
+
+            def workflow3(y, x):
+                return circuit(x, y) * y
+
+            def workflow4(y, x, z):
+                return circuit(x, y) * y * z
+
+            res1 = jax.vmap(workflow2, in_axes=(0, None))(x, y)
+            res2 = jax.vmap(workflow3, in_axes=(None, 0))(y, x)
+            res3 = jax.vmap(workflow4, in_axes=(None, 0, None))(y, x, z)
+            return res1, res2, res3
+
+        y = jnp.pi
+        x = jnp.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.4, 0.5, 0.6],
+                [0.7, 0.8, 0.9],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+    def test_vmap_pytree_in_axes(self):
+        """Test vmap of a hybrid workflow with pytree in_axes."""
+
+        def workflow(x, y, z):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x, y):
+                qp.RX(jnp.pi * x["arr"][0] + y - y, wires=0)
+                qp.RY(x["arr"][1] ** 2, wires=0)
+                qp.RX(x["arr"][1] * x["arr"][2], wires=0)
+                return qp.expval(qp.PauliZ(0))
+
+            def workflow2(x, y):
+                return circuit(x, y) * y
+
+            def workflow3(y, x):
+                return circuit(x, y) * y
+
+            def workflow4(y, x, z):
+                return circuit(x, y) * y * z
+
+            res1 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res2 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res3 = jax.vmap(workflow3, in_axes=(None, {"arr": 0, "foo": None}))(y, x)
+            res4 = jax.vmap(workflow4, in_axes=(None, {"arr": 0, "foo": None}, None))(y, x, z)
+            return res1, res2, res3, res4
+
+        y = jnp.pi
+        x = {
+            "arr": jnp.array(
+                [
+                    [0.1, 0.2, 0.3],
+                    [0.4, 0.5, 0.6],
+                    [0.7, 0.8, 0.9],
+                ]
+            ),
+            "foo": None,
+        }
+
+        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 4
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+    def test_vmap_circuit_return_tensor(self):
+        """Test vmapping over a QNode that returns a tensor."""
+
+        def workflow(x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x):
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.state()
+
+            res1 = jax.vmap(circuit)(x)
+            res2 = jax.vmap(circuit, out_axes=0)(x)
+            return res1, res2
+
+        x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2, 2)
+
+    def test_vmap_circuit_return_tensor_pytree(self):
+        """Test vmapping over a QNode that returns a pytree tensor."""
+
+        def workflow(x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x):
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.state(), qp.probs(0)
+
+            res1 = jax.vmap(circuit)(x)
+            return res1
+
+        x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 2
+        assert jaxpr.out_avals[0].shape == (2, 2)
+        assert jaxpr.out_avals[1].shape == (2, 2)
+
+    def test_vmap_circuit_return_tensor_out_axes_multiple(self):
+        """Test vmapping over a QNode that returns a tensor with multiple out_axes."""
+
+        def workflow(x):
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def circuit(x):
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1] ** 2, wires=0)
+                qp.RX(x[1] * x[2], wires=0)
+                return qp.state(), qp.state()
+
+            res1 = jax.vmap(circuit, out_axes=1)(x)
+            res2 = jax.vmap(circuit, out_axes=(0, 1))(x)
+            return res1, res2
+
+        x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 2
+            assert eqn.outvars[0].aval.shape == (2, 2)
+            assert eqn.outvars[1].aval.shape == (2, 2)
+
+
+class TestQNodeAutographIntegration:
+    """Tests for Autograph integration with QNodes."""
+
+    def test_autograph_with_qnode_transforms(self):
+        """Test that autograph can be used when transforms are applied to the qnode."""
+
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.capture.run_autograph
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
+        def c(n):
+            for i in range(n):
+                qp.H(i)
+            return qp.state()
+
+        jaxpr = jax.make_jaxpr(c)(3)
+        assert jaxpr.eqns[0].params["transform"] == qp.transforms.merge_rotations
+        j2 = jaxpr.eqns[0].params["inner_jaxpr"]
+        assert j2.eqns[0].params["transform"] == qp.transforms.cancel_inverses
+        j3 = j2.eqns[0].params["inner_jaxpr"]
+        assert j3.eqns[0].primitive == qnode_prim
+        j4 = j3.eqns[0].params["qfunc_jaxpr"]
+        assert j4.eqns[0].primitive == qp.capture.primitives.for_loop_prim
+        assert j4.eqns[0].invars[1] is j4.invars[0]
+
+    def test_autograph_on_workflow(self):
+        """Test autograph can be called on a workflow."""
+
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit", wires=[0, 1, 2]))
+        def c(n):
+            for i in range(n):
+                qp.H(i)
+            return qp.expval(qp.Z(0))
+
+        @qp.capture.run_autograph
+        def w(n):
+            return c(n + 1) + c(n + 3)
+
+        jaxpr = jax.make_jaxpr(w)(3)
+
+        for i in [1, 3]:
+
+            assert jaxpr.eqns[i].params["transform"] == qp.transforms.merge_rotations
+            j2 = jaxpr.eqns[i].params["inner_jaxpr"]
+            assert j2.eqns[0].params["transform"] == qp.transforms.cancel_inverses
+            j3 = j2.eqns[0].params["inner_jaxpr"]
+            assert j3.eqns[0].primitive == qnode_prim
+            j4 = j3.eqns[0].params["qfunc_jaxpr"]
+            assert j4.eqns[0].primitive == qp.capture.primitives.for_loop_prim
+            # somehow promoted to closure var?
+            assert j4.eqns[0].invars[1] is j4.constvars[0]
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_python_for_loop(self, autograph):
+        """Tests that native Python for loops can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit(n):
+            for i in range(n):
+                qp.H(i)
+            return qp.state()
+
+        if autograph:
+            circuit = run_autograph(circuit)
+            jaxpr = jax.make_jaxpr(circuit)(3)
+            assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
+            ):
+                _ = jax.make_jaxpr(circuit)(3)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_python_while_loop(self, autograph):
+        """Tests that native Python while loops can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit(n):
+            i = 0
+            while i < n:
+                qp.H(i)
+                i += 1
+            return qp.state()
+
+        if autograph:
+            circuit = run_autograph(circuit)
+            jaxpr = jax.make_jaxpr(circuit)(3)
+            assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
+            ):
+                _ = jax.make_jaxpr(circuit)(3)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_python_conditionals(self, autograph):
+        """Test that native Python conditional statements can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0])
+
+        @qp.qnode(dev)
+        def circuit(x):
+            if x > 1:
+                qp.Hadamard(0)
+            else:
+                qp.I(0)
+            return qp.state()
+
+        if autograph:
+            circuit = run_autograph(circuit)
+            jaxpr = jax.make_jaxpr(circuit)(0)
+            assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
+        else:
+            with pytest.raises(
+                CaptureError,
+                match=(
+                    "Autograph must be used when Python control flow is dependent on a "
+                    r"dynamic variable \(a function input\)"
+                ),
+            ):
+                _ = jax.make_jaxpr(circuit)(0)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_pennylane_for_loop(self, autograph):
+        """Test that a native Pennylane for loop can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit(n: int):
+            @qp.for_loop(n)
+            def loop(i):
+                qp.H(wires=i)
+
+            loop()
+            return qp.state()
+
+        circuit = run_autograph(circuit) if autograph else circuit
+        jaxpr = jax.make_jaxpr(circuit)(2)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_pennylane_while_loop_lambda(self, autograph):
+        """Test that a native Pennylane while loop can be used with the QNode."""
+        if autograph:
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
+
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit(n: int):
+            @qp.while_loop(lambda i: i < n)
+            def loop(i):
+                qp.H(wires=i)
+                return i + 1
+
+            loop(0)
+            return qp.state()
+
+        circuit = run_autograph(circuit) if autograph else circuit
+        jaxpr = jax.make_jaxpr(circuit)(2)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_pennylane_while_loop(self, autograph):
+        """Test that a native Pennylane while loop can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit(n: int):
+            def condition(i):
+                return i < n
+
+            @qp.while_loop(condition)
+            def loop(i):
+                qp.H(wires=i)
+                return i + 1
+
+            loop(0)
+            return qp.state()
+
+        circuit = run_autograph(circuit) if autograph else circuit
+        jaxpr = jax.make_jaxpr(circuit)(2)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_pennylane_conditional_statements(self, autograph):
+        """Test that a native Pennylane conditional statement can be used with the QNode."""
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.X(0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.X, false_fn=qp.I)(wires=[1])
+
+            return qp.state()
+
+        circuit = run_autograph(circuit) if autograph else circuit
+        jaxpr = jax.make_jaxpr(circuit)()
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
+
+
+class TestStaticArgnums:
+    """Unit tests for `QNode.static_argnums`."""
+
+    @pytest.mark.parametrize("sort_static_argnums", [True, False])
+    def test_qnode_static_argnums(self, sort_static_argnums):
+        """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
+        # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
+
+        dev = qp.device("default.qubit", wires=2)
+        args = (1.5, 2.5, 3.5)
+        static_argnums = (0, 1) if sort_static_argnums else (1, 0)
+
+        @qp.qnode(dev, static_argnums=static_argnums)
+        def circuit(a, b, c):
+            qp.RX(a, 0)
+            qp.RY(b + c, 1)
+
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(qfunc_jaxpr.invars) == 1
+
+        assert qp.math.allclose(qfunc_jaxpr.eqns[0].invars[0].val, args[0])
+        assert qp.math.allclose(qfunc_jaxpr.eqns[1].invars[0].val, args[1])
+
+    def test_qnode_static_argnums_pytree(self):
+        """Test that using static argnums with pytree inputs works correctly."""
+
+        dev = qp.device("default.qubit", wires=2)
+        args = ({"1": 2.5, "2": 3.5, "3": 4.5}, (1.5, 5.5))
+        static_argnums = 1
+
+        @qp.qnode(dev, static_argnums=static_argnums)
+        def circuit(a, b):
+            qp.RX(a["1"], 0)
+            qp.RY(a["2"] + a["3"], 1)
+            qp.RX(b[0], 1)
+            qp.RY(b[1], 0)
+
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert len(qfunc_jaxpr.invars) == len(args[0])
+        assert qp.math.allclose(qfunc_jaxpr.eqns[3].invars[0].val, args[1][0])
+        assert qp.math.allclose(qfunc_jaxpr.eqns[4].invars[0].val, args[1][1])
+
+    def test_qnode_static_argnums_autograph(self):
+        """Test that static_argnums work as expected with autograph"""
+
+        dev = qp.device("default.qubit", wires=5)
+
+        @qp.qnode(dev, static_argnums=3)
+        def circuit(x, y, z, n):
+
+            if z > 5:
+                for i in range(n):
+                    qp.RX(x, i)
+            elif z > 3:
+                for i in range(n):
+                    qp.RY(y, i)
+            else:
+                for i in range(n):
+                    qp.RZ(z, i)
+
+            for i in range(n - 1):
+                qp.CNOT([i, i + 1])
+
+            i = 0
+            while i < x + y + z:
+                qp.Rot(x, y, z, i % 5)
+                i += 1
+
+            return qp.state()
+
+        args = (1.5, 2.5, 3.5, 5)
+        circuit = run_autograph(circuit)
+        jaxpr = jax.make_jaxpr(circuit, static_argnums=3)(*args)
+        assert len(jaxpr.in_avals) == 3

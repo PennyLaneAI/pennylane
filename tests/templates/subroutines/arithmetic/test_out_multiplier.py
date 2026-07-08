@@ -132,7 +132,6 @@ def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False
 
     dev = qp.device("default.qubit")
 
-    @qp.set_shots(10)
     @qp.qnode(dev)
     def circuit(x_state, y_state, z_state, output_state):
         qp.StatePrep(x_state, x_wires)
@@ -378,6 +377,9 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9], [0]),
             ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+            ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
+            ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
             ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),

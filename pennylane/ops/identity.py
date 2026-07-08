@@ -22,14 +22,11 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
+from pennylane.core.operator import CVObservable, Operation
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.symbolic_decomposition import (
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
-)
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
 
 
@@ -471,8 +468,8 @@ class GlobalPhase(Operation):
         return qp.s_prod(-1, qp.I(self.wires))
 
 
-add_decomps("Adjoint(GlobalPhase)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(GlobalPhase)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
+add_decomps("Pow(GlobalPhase)", pow_rotation)
 
 
 def _controlled_g_phase_resource(

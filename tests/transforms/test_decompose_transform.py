@@ -21,9 +21,9 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import Conditional, MidMeasure
-from pennylane.queuing import AnnotatedQueue
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment

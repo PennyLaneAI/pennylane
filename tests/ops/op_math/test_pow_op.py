@@ -40,6 +40,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)

@@ -29,13 +29,13 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 from pennylane import math, pytrees
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

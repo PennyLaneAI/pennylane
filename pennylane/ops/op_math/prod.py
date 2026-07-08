@@ -28,18 +28,18 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
     resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 
 from .composite import CompositeOp, handle_recursion_error
@@ -286,8 +286,8 @@ class Prod(CompositeOp):
         to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
         that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
-        if qp.queuing.QueuingManager.recording():
-            return [qp.apply(op) for op in self[::-1]]
+        if QueuingManager.recording():
+            return [apply(op) for op in self[::-1]]
         return list(self[::-1])
 
     @handle_recursion_error

@@ -19,17 +19,17 @@ Contains the PrepSelPrep template.
 import copy
 
 from pennylane import math
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires, WiresLike
 
@@ -42,7 +42,9 @@ def _get_new_terms(lcu):
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
     # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
+    new_ops = [
+        prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops, strict=True)
+    ]
 
     return math.abs(coeffs), new_ops
 

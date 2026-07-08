@@ -120,6 +120,7 @@ def test_dynamic_register_not_hashable():
         qp.wires.Wires((0, reg))
 
 
+@pytest.mark.jax
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]
@@ -215,6 +216,22 @@ def test_allocate_context_manager():
     qp.assert_equal(q.queue[0], Allocate(wires, state=AllocateState.ANY, restored=True))
     qp.assert_equal(q.queue[1], qp.I(wires))
     qp.assert_equal(q.queue[2], Deallocate(wires))
+
+
+def test_allocate_in_ctrl():
+    """Tests that control is not applied to Allocate and Deallocate."""
+
+    def f():
+        with allocate(2, state="zero", restored=True) as wires:
+            qp.H(wires[0])
+            qp.CNOT(wires)
+
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.ctrl(f, control=0)()
+
+    assert len(q.queue) == 4
+    assert isinstance(q.queue[0], Allocate)
+    assert isinstance(q.queue[3], Deallocate)
 
 
 @pytest.mark.jax

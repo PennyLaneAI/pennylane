@@ -18,13 +18,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
     pow_resource_rep,
     register_resources,
 )
-from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
@@ -206,7 +206,7 @@ class ControlledSequence(SymbolicOp, Operation):
         powers_of_two = [2**i for i in range(len(control_wires))]
         ops = []
 
-        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
+        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires, strict=True):
             ops.append(qp_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops

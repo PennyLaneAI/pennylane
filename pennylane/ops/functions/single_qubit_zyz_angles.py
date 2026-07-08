@@ -18,8 +18,8 @@ from functools import singledispatch
 
 import numpy as np
 
+from pennylane.core.operator import Operator
 from pennylane.math.decomposition import zyz_rotation_angles
-from pennylane.operation import Operator
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.qubit import (
     RX,
@@ -78,7 +78,7 @@ def single_qubit_zyz_angles(op: Operator) -> tuple[TensorLike, TensorLike, Tenso
             "qp.single_qubit_zyz_angles is not applicable to operators on more than one wire."
         )
 
-    return zyz_rotation_angles(op.matrix(), return_global_phase=True)
+    return zyz_rotation_angles(op.matrix())
 
 
 @single_qubit_zyz_angles.register

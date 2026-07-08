@@ -28,10 +28,10 @@ import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops, pytrees
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.resources import change_op_basis_resource_rep
-from pennylane.operation import Operation, Operator
-from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 

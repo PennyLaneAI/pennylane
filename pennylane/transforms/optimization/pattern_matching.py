@@ -21,10 +21,10 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qp
-from pennylane import adjoint
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops.op_math import Controlled, adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.typing import PostprocessingFn
@@ -499,9 +499,9 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     first_match_qubits = []
 
     # Controlled gate
-    if len(node_c.op.control_wires) >= 1:
+    if isinstance(node_c.op, Controlled):
         circuit_control = node_c.op.control_wires
-        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
+        circuit_target = Wires([w for w in node_c.op.wires if w not in circuit_control])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control

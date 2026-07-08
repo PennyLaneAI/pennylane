@@ -25,12 +25,12 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _validate_callable
-from pennylane.queuing import AnnotatedQueue
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires
 
@@ -43,6 +43,7 @@ ops = (
 )
 
 
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
