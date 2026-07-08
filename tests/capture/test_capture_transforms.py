@@ -16,7 +16,6 @@ This submodule tests transforms with program capture
 """
 
 # pylint: disable=protected-access
-from functools import partial
 
 import pytest
 
@@ -61,26 +60,7 @@ def shift_rx_to_end(tape):
     return [new_tape], lambda res: res[0]
 
 
-def expval_z_obs_to_x_obs_plxpr(
-    jaxpr, consts, targs, tkwargs, *args
-):  # pylint: disable=unused-argument
-    class ExpvalZToX(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
-        """Expval Z to X plxpr implementation."""
-
-        def interpret_measurement(self, meas):  # pylint: disable=arguments-renamed
-            """Interpret measurement."""
-            if isinstance(meas, qp.measurements.ExpectationMP) and isinstance(meas.obs, qp.PauliZ):
-                return qp.expval(qp.X(meas.wires))
-
-            return super().interpret_measurement(meas)
-
-    def wrapper(*inner_args):
-        return ExpvalZToX().eval(jaxpr, consts, *inner_args)
-
-    return jax.make_jaxpr(wrapper)(*args)
-
-
-@partial(transform, plxpr_transform=expval_z_obs_to_x_obs_plxpr)
+@transform
 def expval_z_obs_to_x_obs(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument

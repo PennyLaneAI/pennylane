@@ -355,7 +355,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
-@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
+@transform
 def decompose(
     tape,
     *,
@@ -801,6 +801,9 @@ def decompose(
     tape = tape.copy(operations=new_ops)
 
     return (tape,), null_postprocessing
+
+
+decompose.plxpr_transform = decompose_plxpr_to_plxpr
 
 
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
