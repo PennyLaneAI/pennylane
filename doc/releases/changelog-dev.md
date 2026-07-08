@@ -849,6 +849,7 @@
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
     [(#9727)](https://github.com/PennyLaneAI/pennylane/pull/9727)
+    [(#9760)](https://github.com/PennyLaneAI/pennylane/pull/9760)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
