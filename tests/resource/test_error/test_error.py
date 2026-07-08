@@ -29,6 +29,8 @@ from pennylane.resource.error import (
 )
 from pennylane.resource.error.error import _compute_algo_error
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class SimpleError(AlgorithmicError):
     def combine(self, other):

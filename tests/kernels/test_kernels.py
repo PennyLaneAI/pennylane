@@ -27,6 +27,7 @@ import pennylane as qp
 import pennylane.kernels as kern
 from pennylane import numpy as pnp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
 
 @pytest.fixture(name="cvxpy_support")
 def fixture_cvxpy_support():

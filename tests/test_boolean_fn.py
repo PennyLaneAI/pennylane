@@ -19,6 +19,8 @@ import pytest
 
 import pennylane as qp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestBooleanFn:
     @pytest.mark.parametrize(

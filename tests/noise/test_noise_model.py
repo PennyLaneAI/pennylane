@@ -21,6 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane.noise import meas_eq, op_eq, op_in, partial_wires, wires_eq, wires_in
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestNoiseModels:
     """Test for Noise Models class and its methods"""

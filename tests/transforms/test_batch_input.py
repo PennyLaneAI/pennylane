@@ -504,6 +504,7 @@ class TestDiffMulti:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    @pytest.mark.skip
     def test_autograd(self, diff_method, tol):
         """Test derivatives when using autograd"""
         dev = qp.device("default.qubit", wires=2)

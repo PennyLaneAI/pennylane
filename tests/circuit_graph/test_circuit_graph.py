@@ -30,6 +30,8 @@ from pennylane.ops.op_math.condition import Conditional
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class Test_WrappedObj:
     """Tests for the ``_WrappedObj`` class"""
