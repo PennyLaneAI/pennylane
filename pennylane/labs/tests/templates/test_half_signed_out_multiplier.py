@@ -115,7 +115,9 @@ def test_half_signed_out_multiplier_correct(x_wires, y_wires, output_wires, work
         # get the integer value of the x input
         x = bin_to_int(x_state)
 
-        # get the integer value of the y input (two's complement)
+        # get the integer value of the y input (two's complement differs from bin_to_int by
+        # _subtracting_ 2**(len(y_state)-1) instead of adding, it, so that we double the term.)
+        # This is equivalent to ``y = bin_to_int(y_state[1:]) - 2 ** (len(y_state)-1) * y_state[0]
         y = bin_to_int(y_state) - 2 ** len(y_state) * y_state[0]
 
         # get the integer value of the z input
