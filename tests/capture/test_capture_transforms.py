@@ -31,6 +31,7 @@ import pennylane as qp
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
+    operator_p,
     qnode_prim,
     transform_prim,
     while_loop_prim,
@@ -296,10 +297,13 @@ class TestCaptureTransforms:
         assert loop_jaxpr.eqns[0].primitive == qp.capture.primitives.for_loop_prim
 
         loop_body_jaxpr = loop_jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert loop_body_jaxpr.eqns[0].primitive == qp.X._primitive
-        assert loop_body_jaxpr.eqns[1].primitive == qp.X._primitive
+        assert loop_body_jaxpr.eqns[0].primitive == operator_p
+        assert loop_body_jaxpr.eqns[0].params["op_cls"] is qp.X
+        assert loop_body_jaxpr.eqns[1].primitive == operator_p
+        assert loop_body_jaxpr.eqns[1].params["op_cls"] is qp.X
 
-        assert qfunc_jaxpr.eqns[1].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == operator_p
+        assert qfunc_jaxpr.eqns[1].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
