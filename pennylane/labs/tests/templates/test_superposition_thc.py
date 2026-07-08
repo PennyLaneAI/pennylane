@@ -118,7 +118,6 @@ class TestSuperpositionTHC:
             (4, 4, 3),
             (4, 8, 3),
             (7, 4, 3),
-
         ],
     )
     def test_operation_result(self, M, N, n, qjit):
@@ -286,10 +285,5 @@ class TestSuperpositionTHC:
 
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
-        support = {
-            (mu, nu)
-            for mu in range(2**n)
-            for nu in range(2**n)
-            if success[mu, nu] > 1e-9
-        }
+        support = {(mu, nu) for mu in range(2**n) for nu in range(2**n) if success[mu, nu] > 1e-9}
         assert support == _valid_pairs(M, N)

@@ -160,7 +160,7 @@ class SuperpositionTHC(Operation):
         if overlap:
             raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
 
-        if N/2 > M + 1:
+        if N / 2 > M + 1:
             raise ValueError(f"M must be greater than or equal to N/2 - 1.")
 
         # The index registers must be able to hold the one-body sentinel value
@@ -384,7 +384,6 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in Wires.all_wires([mu_wires, nu_wires]):
         Hadamard(wire)
 
-
     # 2. Rotation angle for the single round of amplitude amplification.
     n_total_vals = 2 ** len(mu_wires)
     d = N // 2 + M * (M + 1) // 2
@@ -416,7 +415,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         X(wires=wire)
     GlobalPhase(np.pi)
     Controlled(Z(work_wires[0]), control_wires=mu_wires + nu_wires, work_wires=extra_work)
-    for wire in Wires.all_wires([mu_wires, nu_wires,[work_wires[0]]]):
+    for wire in Wires.all_wires([mu_wires, nu_wires, [work_wires[0]]]):
         X(wires=wire)
 
     for wire in Wires.all_wires([mu_wires, nu_wires]):

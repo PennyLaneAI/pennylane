@@ -195,9 +195,7 @@ class TestLeftClassicalComparator:
 
         @qp.qnode(dev)
         def circuit(x):
-            qp.BasisState(
-                np.array([int(b) for b in format(x, f"0{n}b")]), wires=x_wires
-            )
+            qp.BasisState(np.array([int(b) for b in format(x, f"0{n}b")]), wires=x_wires)
             LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             return qp.probs(wires=[target_wire])
 
