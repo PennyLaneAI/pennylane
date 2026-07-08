@@ -56,9 +56,9 @@ class InterfaceTensor(metaclass=InterfaceTensorMeta):
     """Adds support for runtime instance checking of interface-specific tensor-like data"""
 
 
-type Scalar = int | float | bool | complex
-type ArrayLike = np.ndarray | np.generic | "ArrayBox" | "InterfaceTensor" | list | tuple
-TensorLike = Scalar | ArrayLike
+TensorLike = Union[
+    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
+]
 """A type for all tensor-like data.
 
 TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
