@@ -21,8 +21,6 @@ from .switches import enabled
 
 has_jax = find_spec("jax") is not None
 
-import pennylane
-
 
 @lru_cache
 def _symbolic_array_primitive():
@@ -30,6 +28,8 @@ def _symbolic_array_primitive():
         raise ImportError("jax is required for creating a jax primitive.")  # pragma: no cover
 
     import jax  # pylint: disable=import-outside-toplevel
+
+    import pennylane  # pylint: disable=import-outside-toplevel
 
     estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
