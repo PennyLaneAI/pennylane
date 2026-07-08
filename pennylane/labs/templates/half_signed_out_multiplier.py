@@ -19,19 +19,27 @@ from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _tw
 
 
 def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
-    r"""Multiplier of an unsigned register and a signed register into an unsigned output register
+    r"""Multiplier of an unsigned register and a signed register.
 
     Args:
         x_wires (WiresLike): register storing the unsigned integer :math:`x` to be multiplied
         y_wires (WiresLike): register storing the signed integer :math:`y` to be multiplied
         output_wires (WiresLike): register storing the unsigned integer :math:`z` before the
             calculation and the output :math:`(z+xy)\mod 2^k` afterwards, where :math:`k` is the
-            number of wires in ``output_wires``.
-        work_wires (WiresLike): work wires to use for the calculation.
+            number of ``output_wires``.
+        work_wires (WiresLike): work wires to use for the calculation. At least one work wire is
+            required, best results are achieved with :math:`1+\max(m-1, 2k+1, k-1)` work wires
+            (see below).
 
     This is a very specific setup of a multiplier that is useful for the
     :func:`~.pennylane.labs.templates.trotter_vibronic` function. Note that due to the structure
     of the circuit, there is no benefit in knowing the output wires to start out in the zero state.
+
+    Note that while the first input register is fixed to an unsigned integer encoding and
+    the second input register needs to be encoded via
+    `2s complement <https://en.wikipedia.org/wiki/Two%27s_complement>`__, the integer
+    encoding of the output register may be either of the two.
+    The result will be consistent either way (also see example below).
 
     **Example**
 
@@ -71,7 +79,9 @@ def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     [[1 1 1 1 0 0]]
 
     The result :math:`[[1 1 1 1 0 0]]`, is the binary representation of
-    :math:`5 + 3 \cdot (-3) \; = -4` in 2s complement form. We can tell it is negative since
+    :math:`2^5 + 2^4 + 2^3 + 2^2=60 = (-4) \mod 64 = 5+3\cdot (-3)\mod 64` in
+    unsigned integer encoding. Alternatively it is the binary representation of
+    :math:`5 + 3 \cdot (-3) \; = -4` in 2s complement: We can tell it is negative since
     the first bit is 1. Then we can find the magnitude by flipping the bits and adding 1.
     This gives us :math:`[[0 0 0 1 0 0]]`, i.e. the magnitude is :math:`2^2=4` as expected.
 
