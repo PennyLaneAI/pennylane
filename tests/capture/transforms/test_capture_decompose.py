@@ -28,6 +28,7 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
+    operator_p,
     qnode_prim,
     while_loop_prim,
 )
@@ -178,9 +179,12 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-4].primitive == qp.PauliX._primitive
-        assert jaxpr.eqns[-3].primitive == qp.PauliY._primitive
-        assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
+        assert jaxpr.eqns[-4].primitive == operator_p
+        assert jaxpr.eqns[-4].params["op_cls"] is qp.X
+        assert jaxpr.eqns[-3].primitive == operator_p
+        assert jaxpr.eqns[-3].params["op_cls"] is qp.Y
+        assert jaxpr.eqns[-2].primitive == operator_p
+        assert jaxpr.eqns[-2].params["op_cls"] is qp.Z
         assert jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
         transformed_f = interpreter(f)
@@ -194,9 +198,12 @@ class TestDecomposeInterpreter:
         else:
             assert len(recwarn) == 0
 
-        assert transformed_jaxpr.eqns[-4].primitive == qp.PauliX._primitive
-        assert transformed_jaxpr.eqns[-3].primitive == qp.PauliY._primitive
-        assert transformed_jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
+        assert transformed_jaxpr.eqns[-4].primitive == operator_p
+        assert transformed_jaxpr.eqns[-4].params["op_cls"] is qp.X
+        assert transformed_jaxpr.eqns[-3].primitive == operator_p
+        assert transformed_jaxpr.eqns[-3].params["op_cls"] is qp.Y
+        assert transformed_jaxpr.eqns[-2].primitive == operator_p
+        assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.Z
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.Sum._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -212,7 +219,8 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == qp.PauliZ._primitive
+        assert jaxpr.eqns[-2].primitive == operator_p
+        assert jaxpr.eqns[-2].params["op_cls"] is qp.Z
         assert jaxpr.eqns[-1].primitive == qp.ops.SProd._primitive
 
         transformed_f = interpreter(f)
@@ -226,7 +234,8 @@ class TestDecomposeInterpreter:
         else:
             assert len(recwarn) == 0
 
-        assert transformed_jaxpr.eqns[-2].primitive == qp.ops.PauliZ._primitive
+        assert transformed_jaxpr.eqns[-2].primitive == operator_p
+        assert transformed_jaxpr.eqns[-2].params["op_cls"] is qp.Z
         assert transformed_jaxpr.eqns[-1].primitive == qp.ops.SProd._primitive
 
     @pytest.mark.parametrize("decompose", [True, False])
@@ -393,12 +402,13 @@ class TestDecomposeInterpreter:
         branch = jaxpr.eqns[2].params["jaxpr_branches"][2]
         expected_primitives = [
             qp.PhaseShift._primitive,
-            qp.X._primitive,
+            operator_p,
             qp.measurements.ExpectationMP._obs_primitive,
         ]
         assert all(
             eqn.primitive == exp_prim for eqn, exp_prim in zip(branch.eqns, expected_primitives)
         )
+        assert branch.eqns[1].params["op_cls"] is qp.X
 
     def test_for_loop_higher_order_primitive(self):
         """Test that the for_loop primitive is correctly interpreted"""
