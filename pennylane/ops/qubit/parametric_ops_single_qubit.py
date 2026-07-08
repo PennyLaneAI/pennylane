@@ -136,7 +136,7 @@ class RX(Operator2):
         .. seealso:: :meth:`~.RX.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -171,24 +171,24 @@ class RX(Operator2):
         ).asformat(format)
 
     def adjoint(self) -> "RX":
-        return RX(-self.data[0], wires=self.wires)
+        return RX(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [RX(self.data[0] * z, wires=self.wires)]
+        return [RX(self.phi * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qp.CRX":
         return qp.CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RX":
-        theta = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
-        if _can_replace(theta, 0):
+        if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
 
-        return RX(theta, wires=self.wires)
+        return RX(phi, wires=self.wires)
 
 
-def _rx_to_rot_resources(phi, wires): # pylint: disable=unused-argument
+def _rx_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
@@ -197,7 +197,7 @@ def _rx_to_rot(phi, wires: WiresLike, **__):
     qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-def _rx_to_rz_ry_resources(phi, wires):# pylint: disable=unused-argument
+def _rx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RY: 1}
 
 
@@ -208,7 +208,7 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
     qp.RZ(-np.pi / 2, wires=wires)
 
 
-def _rx_to_ry_cliff_resources(phi, wires):# pylint: disable=unused-argument
+def _rx_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.S, qp.RY): 1}
 
 
@@ -217,7 +217,7 @@ def _rx_to_ry_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
 
-def _rx_to_rz_cliff_resources(phi, wires):# pylint: disable=unused-argument
+def _rx_to_rz_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
 
 
@@ -226,7 +226,7 @@ def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
 
 
-def _rx_to_ppr_resources(phi, wires):# pylint: disable=unused-argument
+def _rx_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {resource_rep(qp.PauliRot, pauli_word="X"): 1}
 
 
@@ -273,7 +273,7 @@ def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
 
 
-class RY(Operation):
+class RY(Operator2):
     r"""
     The single qubit Y rotation
 
@@ -301,6 +301,10 @@ class RY(Operation):
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -333,7 +337,9 @@ class RY(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -343,7 +349,7 @@ class RY(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -355,10 +361,10 @@ class RY(Operation):
                 [ 0.2474+0.j,  0.9689+0.j]])
         """
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qp.math.cast_like(c, 1j)
             s = qp.math.cast_like(s, 1j)
@@ -368,33 +374,33 @@ class RY(Operation):
         return qp.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta, format="csr"):
+    def compute_sparse_matrix(phi, wires=None, format="csr"):
         return sp.sparse.csr_matrix(
             [
-                [qp.math.cos(theta / 2), -qp.math.sin(theta / 2)],
-                [qp.math.sin(theta / 2), qp.math.cos(theta / 2)],
+                [qp.math.cos(phi / 2), -qp.math.sin(phi / 2)],
+                [qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
             ]
         ).asformat(format)
 
     def adjoint(self) -> "RY":
-        return RY(-self.data[0], wires=self.wires)
+        return RY(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [RY(self.data[0] * z, wires=self.wires)]
+        return [RY(self.phi * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qp.CRY":
         return qp.CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RY":
-        theta = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
-        if _can_replace(theta, 0):
+        if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
 
-        return RY(theta, wires=self.wires)
+        return RY(phi, wires=self.wires)
 
 
-def _ry_to_rot_resources():
+def _ry_to_rot_resources(phi, wires):
     return {qp.Rot: 1}
 
 
@@ -403,7 +409,7 @@ def _ry_to_rot(phi, wires: WiresLike, **__):
     qp.Rot(0, phi, 0, wires=wires)
 
 
-def _ry_to_rz_rx_resources():
+def _ry_to_rz_rx_resources(phi, wires):
     return {qp.RZ: 2, qp.RX: 1}
 
 
@@ -414,7 +420,7 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
     qp.RZ(np.pi / 2, wires=wires)
 
 
-def _ry_to_rx_cliff_resources():
+def _ry_to_rx_cliff_resources(phi, wires):
     return {change_op_basis_resource_rep(adjoint_resource_rep(qp.S), qp.RX, qp.S): 1}
 
 
@@ -423,7 +429,7 @@ def _ry_to_rx_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
 
 
-def _ry_to_rz_cliff_resources():
+def _ry_to_rz_cliff_resources(phi, wires):
     return {
         change_op_basis_resource_rep(
             resource_rep(
@@ -448,7 +454,7 @@ def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
     )
 
 
-def _ry_to_ppr_resources():
+def _ry_to_ppr_resources(phi, wires):
     return {resource_rep(qp.PauliRot, pauli_word="Y"): 1}
 
 
@@ -492,7 +498,7 @@ def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
 
 
-class RZ(Operation):
+class RZ(Operator2):
     r"""
     The single qubit Z rotation
 
@@ -522,6 +528,9 @@ class RZ(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -549,7 +558,9 @@ class RZ(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -558,7 +569,7 @@ class RZ(Operation):
         .. seealso:: :meth:`~.RZ.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -570,15 +581,15 @@ class RZ(Operation):
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
+            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
             z = qp.math.zeros_like(p)
 
             return qp.math.stack([stack_last([p, z]), stack_last([z, qp.math.conj(p)])], axis=-2)
 
-        signs = qp.math.array([-1, 1], like=theta)
-        arg = 0.5j * theta
+        signs = qp.math.array([-1, 1], like=phi)
+        arg = 0.5j * phi
 
         if qp.math.ndim(arg) == 0:
             return qp.math.diag(qp.math.exp(arg * signs))
@@ -587,13 +598,15 @@ class RZ(Operation):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_sparse_matrix(theta, format="csr"):
+    def compute_sparse_matrix(phi, wires=None, format="csr"):
         return sp.sparse.csr_matrix(
-            [[np.exp(-1j * theta / 2), 0], [0, np.exp(1j * theta / 2)]]
+            [[np.exp(-1j * phi / 2), 0], [0, np.exp(1j * phi / 2)]]
         ).asformat(format)
 
     @staticmethod
-    def compute_eigvals(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -609,7 +622,7 @@ class RZ(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: eigenvalues
@@ -620,41 +633,41 @@ class RZ(Operation):
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(theta, 1j))
+            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
             return qp.math.stack([phase, qp.math.conj(phase)], axis=-1)
 
-        prefactors = qp.math.array([-0.5j, 0.5j], like=theta)
-        if qp.math.ndim(theta) == 0:
-            product = theta * prefactors
+        prefactors = qp.math.array([-0.5j, 0.5j], like=phi)
+        if qp.math.ndim(phi) == 0:
+            product = phi * prefactors
         else:
-            product = qp.math.outer(theta, prefactors)
+            product = qp.math.outer(phi, prefactors)
         return qp.math.exp(product)
 
     def adjoint(self) -> "RZ":
-        return RZ(-self.data[0], wires=self.wires)
+        return RZ(-self.phi, wires=self.wires)
 
     @property
     def resource_params(self) -> dict:
         return {}
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [RZ(self.data[0] * z, wires=self.wires)]
+        return [RZ(self.phi * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qp.CRZ":
         return qp.CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RZ":
-        theta = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
-        if _can_replace(theta, 0):
+        if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
 
-        return RZ(theta, wires=self.wires)
+        return RZ(phi, wires=self.wires)
 
 
-def _rz_to_ps_resources():
+def _rz_to_ps_resources(phi, wires):
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
 
@@ -664,7 +677,7 @@ def _rz_to_ps(phi, wires: WiresLike, **_):
     qp.GlobalPhase(phi / 2)
 
 
-def _rz_to_rot_resources():
+def _rz_to_rot_resources(phi, wires):
     return {qp.Rot: 1}
 
 
@@ -673,7 +686,7 @@ def _rz_to_rot(phi, wires: WiresLike, **__):
     qp.Rot(0, 0, phi, wires=wires)
 
 
-def _rz_to_ry_rx_resources():
+def _rz_to_ry_rx_resources(phi, wires):
     return {qp.RY: 2, qp.RX: 1}
 
 
@@ -684,7 +697,7 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
     qp.RY(-np.pi / 2, wires=wires)
 
 
-def _rz_to_rx_cliff_resources():
+def _rz_to_rx_cliff_resources(phi, wires):
     return {change_op_basis_resource_rep(qp.Hadamard, qp.RX, qp.Hadamard): 1}
 
 
@@ -693,7 +706,7 @@ def _rz_to_rx_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
 
 
-def _rz_to_ry_cliff_resources():
+def _rz_to_ry_cliff_resources(phi, wires):
     return {
         change_op_basis_resource_rep(
             resource_rep(
@@ -718,7 +731,7 @@ def _rz_to_ry_cliff(phi, wires: WiresLike, **__):
     )
 
 
-def _rz_to_ppr_resources():
+def _rz_to_ppr_resources(phi, wires):
     return {resource_rep(qp.PauliRot, pauli_word="Z"): 1}
 
 
