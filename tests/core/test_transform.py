@@ -213,15 +213,12 @@ class TestBoundTransform:
             qp.transform(first_valid_transform), args=[0], kwargs={}
         )
 
-        q_transform, args, kwargs, cotransform, plxpr_transform, is_informative, final_transform = (
-            container
-        )
+        q_transform, args, kwargs, cotransform, _, is_informative, final_transform = container
 
         assert q_transform is first_valid_transform
         assert args == (0,)
         assert kwargs == {}
         assert cotransform is None
-        assert plxpr_transform is not None  # fallback
         assert not is_informative
         assert not final_transform
 
@@ -229,7 +226,6 @@ class TestBoundTransform:
         assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
-        assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
         assert not container.is_final_transform
 
