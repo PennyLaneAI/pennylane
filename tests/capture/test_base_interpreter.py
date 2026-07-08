@@ -210,6 +210,21 @@ def test_measurement_handling():
     qp.assert_equal(m2, qp.probs(wires=0))
 
 
+def test_compile_time_constant_eval():
+    """Test that operators and measurements are correctly added to the jaxpr when compile time
+    constant evaluation is enabled."""
+
+    def f():
+        qp.RX(0.5, 0)
+        return qp.expval(qp.Z(0))
+
+    with jax._src.config.eager_constant_folding(True):
+        jaxpr = jax.make_jaxpr(f)()
+
+    assert jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert jaxpr.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive
+
+
 def test_call_with_pytree_arguments():
     """Test that pytree arguments are correctly flattened when calling a
     decorated function"""
