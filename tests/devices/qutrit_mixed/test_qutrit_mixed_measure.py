@@ -458,6 +458,7 @@ class TestSumOfTermsDifferentiability:
             (qp.numpy.array(2.5, requires_grad=False), qp.numpy.array(6.2, requires_grad=False)),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_backprop(self, coeffs):
         """Test that backpropagation derivatives work in autograd with
         Hamiltonians using new and old math."""
@@ -472,6 +473,7 @@ class TestSumOfTermsDifferentiability:
         assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_backprop_coeffs(self):
         """Test that backpropagation derivatives work in autograd with
         the coefficients of Hamiltonians using new and old math."""

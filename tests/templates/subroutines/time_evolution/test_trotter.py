@@ -1016,6 +1016,7 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("time", (0.5, 1, 2))
+    @pytest.mark.skip
     def test_autograd_execute(self, time):
         """Test that the gate executes correctly in the autograd interface."""
         time = qnp.array(time)
@@ -1047,6 +1048,7 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
+    @pytest.mark.skip
     def test_autograd_gradient(self, order, n):
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)

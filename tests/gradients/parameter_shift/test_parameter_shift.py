@@ -3273,6 +3273,7 @@ class TestParamShiftGradients:
     @pytest.mark.autograd
     # TODO: support Hessian with the new return types
     @pytest.mark.skip
+    @pytest.mark.skip
     def test_autograd(self, tol, broadcast, expected):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""

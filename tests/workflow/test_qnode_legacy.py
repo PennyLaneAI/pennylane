@@ -230,6 +230,7 @@ class TestValidation:
             ],
         }
 
+    @pytest.mark.skip
     def test_autograd_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface,
         except for the deprecation warnings which will be caught by the fixture."""

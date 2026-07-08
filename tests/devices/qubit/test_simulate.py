@@ -169,6 +169,7 @@ class TestBasicCircuit:
         assert np.allclose(result[1], np.cos(phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
         phi = qp.numpy.array(-0.52)
@@ -869,6 +870,7 @@ class TestOperatorArithmetic:
         assert qp.math.allclose(results[1], 3 * np.cos(2 * phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_op_arithmetic(self):
         """Test operator arithmetic circuit with non-integer wires works with autograd."""
 

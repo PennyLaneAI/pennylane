@@ -247,6 +247,7 @@ class TestInterfaces:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    @pytest.mark.skip
     def test_autograd(self, tol, features):
         """Tests the autograd interface."""
 

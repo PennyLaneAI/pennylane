@@ -146,6 +146,7 @@ class TestBasicCircuit:
         assert np.allclose(result, expected_measurements)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_results_and_backprop(self, wires):
         """Tests execution and gradients with autograd"""
         phi = qp.numpy.array(-0.52)

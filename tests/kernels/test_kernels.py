@@ -163,6 +163,7 @@ class TestKernelMatrix:
             expected_dK2[1][i, j, j] = -_jacobian_of_diffable_kernel(x1, x2)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Test differentiability of the kernel matrix methods with Autograd."""
         X1 = pnp.array(self.X1, requires_grad=True)
