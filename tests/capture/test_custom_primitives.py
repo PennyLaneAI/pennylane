@@ -50,6 +50,7 @@ def test_qp_primitive_prim_type_setter_invalid():
         prim.prim_type = "blah"
 
 
+# pylint: disable=protected-access
 @pytest.mark.capture
 def test_compile_time_constant_eval():
     """Test that operators and measurements are correctly added to the jaxpr when compile time

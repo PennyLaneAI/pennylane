@@ -56,6 +56,7 @@ def test_error_if_bad_dimesion(bad_dimension):
         jax.make_jaxpr(f)()
 
 
+# pylint: disable=protected-access
 @pytest.mark.parametrize("shape", [(), (4, 3), (5, 2, 1)])
 @pytest.mark.parametrize(
     "dtype, converted_dtype",
