@@ -463,6 +463,9 @@ class TestControlledOp2:
         assert op.work_wires == Wire[0]
         assert op.wires == Wire[3]
 
+        op = ControlledOp2(OneWireDynOp, Wire[2], control_values=[0, 1])
+        assert op.control_values == Bool[2]
+
     def test_create_controlled_op2(self):
         """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
 
@@ -477,5 +480,4 @@ class TestControlledOp2:
         """Test to make sure that copy roundtrips are sastisfied."""
 
         op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
-
         assert op == copy_fn(op)

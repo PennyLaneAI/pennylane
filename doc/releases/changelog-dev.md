@@ -752,6 +752,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
+  Could be used for dry-runs and resource calculations with program capture.
+  [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
+
 * Various internal helper functions within ``pennylane.resource`` have been migrated to a new ``utils`` module.
   [(#9733)](https://github.com/PennyLaneAI/pennylane/pull/9733)
 
@@ -799,6 +803,7 @@
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
+  [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane 
   ecosystem. Supported functionality so far:
