@@ -756,6 +756,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Skipped tests related to features slated for removal in PennyLane 2.
+  [(#9796)](https://github.com/PennyLaneAI/pennylane/pull/9796)
+
 * Adds `qp.capture.symbolic_array` for producing tracers with the correct shape and dtype but no known values.
   Could be used for dry-runs and resource calculations with program capture.
   [(#9763)](https://github.com/PennyLaneAI/pennylane/pull/9763)
