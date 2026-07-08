@@ -599,7 +599,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qp.Z._primitive  # no adjoint of x
+        assert inner_jaxpr.eqns[0].primitive == operator_p
+        assert inner_jaxpr.eqns[0].params["op_cls"] is qp.Z
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
@@ -728,7 +729,8 @@ class TestHigherOrderPrimitiveRegistrations:
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_vjp(self):
@@ -749,7 +751,8 @@ class TestHigherOrderPrimitiveRegistrations:
         vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     def test_jvp(self):
@@ -770,7 +773,8 @@ class TestHigherOrderPrimitiveRegistrations:
         jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
-        assert qfunc_jaxpr.eqns[2].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == operator_p
+        assert qfunc_jaxpr.eqns[2].params["op_cls"] is qp.Z
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
     @pytest.mark.parametrize("grad_f", (qp.grad, qp.jacobian))

@@ -24,7 +24,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
-from pennylane.capture.primitives import transform_prim
+from pennylane.capture.primitives import operator_p, transform_prim
 from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -121,7 +121,8 @@ class TestExpandPlxprTransforms:
         transformed_f = expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)()
         assert len(transformed_jaxpr.eqns) == 2
-        assert transformed_jaxpr.eqns[0].primitive == qp.PauliZ._primitive
+        assert transformed_jaxpr.eqns[0].primitive == operator_p
+        assert transformed_jaxpr.eqns[0].params["op_cls"] is qp.Z
         assert transformed_jaxpr.eqns[1].primitive == qp.measurements.ExpectationMP._obs_primitive
         assert transformed_jaxpr.jaxpr.outvars == transformed_jaxpr.eqns[1].outvars
 
@@ -154,7 +155,8 @@ class TestExpandPlxprTransforms:
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         assert len(transformed_jaxpr.eqns) == 3
         assert transformed_jaxpr.eqns[0].primitive == qp.RX._primitive
-        assert transformed_jaxpr.eqns[1].primitive == qp.PauliZ._primitive
+        assert transformed_jaxpr.eqns[1].primitive == operator_p
+        assert transformed_jaxpr.eqns[1].params["op_cls"] is qp.Z
         assert transformed_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
         assert transformed_jaxpr.jaxpr.outvars == transformed_jaxpr.eqns[2].outvars
 
