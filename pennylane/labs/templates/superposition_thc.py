@@ -161,7 +161,7 @@ class SuperpositionTHC(Operation):
             raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
 
         if N / 2 > M + 1:
-            raise ValueError(f"M must be greater than or equal to N/2 - 1.")
+            raise ValueError("M must be greater than or equal to N/2 - 1.")
 
         # The index registers must be able to hold the one-body sentinel value
         # ``M`` (the column flagged by ``nu = M``), so ``M <= 2 ** n - 1``.
@@ -245,7 +245,9 @@ class SuperpositionTHC(Operation):
         return q.queue
 
 
-def _left_equalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
+def _left_equalities(
+    M, N, mu_wires, nu_wires, work_wires, keep_eq=False
+):  # pylint:disable=too-many-arguments
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag
