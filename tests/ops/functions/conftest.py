@@ -191,8 +191,6 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
     StatePrepBase,
-    qp.resource.ResourcesOperation,
-    qp.resource.ErrorOperation,
     PowOperation,
     qp.StatePrep,
     qp.FromBloq,
