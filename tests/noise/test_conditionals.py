@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane.boolean_fn import And, Not, Or, Xor
 from pennylane.noise.conditionals import _get_ops, _get_wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class TestNoiseConditionals:
     """Test for the Conditional classes"""

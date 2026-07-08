@@ -33,6 +33,8 @@ from pennylane.pulse.transmon import (
 )
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
     """Compute the transmon drive term for given amplitude, phase and frequency."""

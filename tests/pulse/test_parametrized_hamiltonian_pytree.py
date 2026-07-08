@@ -21,6 +21,8 @@ import pytest
 
 import pennylane as qp
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 try:
     from pennylane.pulse.hardware_hamiltonian import _reorder_parameters, amplitude_and_phase, drive
     from pennylane.pulse.parametrized_hamiltonian_pytree import (

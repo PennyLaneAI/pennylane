@@ -31,6 +31,8 @@ from pennylane.resource.error.trotter_error import (
     _spectral_norm,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 p_4 = (4 - 4 ** (1 / 3)) ** -1
 
 

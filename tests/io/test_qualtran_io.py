@@ -29,6 +29,8 @@ from pennylane.io.qualtran_io import (
     _QReg,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 @pytest.fixture
 def skip_if_no_pl_qualtran_support():

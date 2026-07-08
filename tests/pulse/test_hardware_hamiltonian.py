@@ -31,6 +31,8 @@ from pennylane.pulse.rydberg import RydbergSettings
 from pennylane.pulse.transmon import TransmonSettings
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
 

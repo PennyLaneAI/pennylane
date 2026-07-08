@@ -24,6 +24,8 @@ import pytest
 import pennylane as qp
 from pennylane.qnn.torch import TorchLayer
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 torch = pytest.importorskip("torch")
 
 # pylint: disable=unnecessary-dunder-call

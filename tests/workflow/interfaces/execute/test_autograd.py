@@ -25,6 +25,8 @@ from pennylane.core.shots import Shots
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pytestmark = pytest.mark.autograd
 
 

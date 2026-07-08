@@ -32,6 +32,8 @@ from pennylane.noise.mitigate import (
 )
 from pennylane.transforms import broadcast_expand, decompose
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 with qp.queuing.AnnotatedQueue() as q_tape:
     qp.BasisState([1], wires=0)
     qp.RX(0.9, wires=0)

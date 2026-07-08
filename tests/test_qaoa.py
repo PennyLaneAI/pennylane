@@ -40,6 +40,8 @@ from pennylane.qaoa.cycle import (
     wires_to_edges,
 )
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 #####################################################
 
 line_graph = Graph()

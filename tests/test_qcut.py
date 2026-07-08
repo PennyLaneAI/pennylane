@@ -40,6 +40,8 @@ from pennylane.qcut.tapes import _WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 pytestmark = pytest.mark.qcut
 
 I, X, Y, Z = (

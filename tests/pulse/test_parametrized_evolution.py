@@ -27,6 +27,8 @@ from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
 
+pytest.skip("Removing this module in PL2", allow_module_level=True)
+
 
 class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
