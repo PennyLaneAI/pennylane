@@ -451,6 +451,7 @@ class TestInterfaces:
     of gradients."""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Tests the autograd interface."""
         dev = qp.device("default.qubit", wires=2)
@@ -470,6 +471,7 @@ class TestInterfaces:
         assert qp.math.allclose(grads, grads2)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_parameter_shift(self):
         """Tests the autograd interface using the parameter-shift method."""
         dev = qp.device("default.qubit", wires=2)

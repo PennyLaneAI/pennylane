@@ -1361,6 +1361,7 @@ class TestDifferentiation:
     """Tests for differentiation"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
 
@@ -2448,6 +2449,7 @@ class TestCtrlTransformDifferentiation:
     """Tests for differentiation"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
 

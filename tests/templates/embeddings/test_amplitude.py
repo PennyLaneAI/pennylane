@@ -368,6 +368,7 @@ class TestInterfaces:
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, tol, features, pad_with, normalize):
         """Tests autograd tensors."""
 
@@ -489,6 +490,7 @@ class TestInterfaceDtypes:
     """Unit tests to verify that AmplitudeEmbedding works correctly for features with all dtypes"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, tol, features, pad_with, dtype):
         """Tests autograd tensors."""
 

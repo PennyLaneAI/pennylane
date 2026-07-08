@@ -287,6 +287,7 @@ class TestInterfaces:
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 

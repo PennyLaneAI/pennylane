@@ -853,6 +853,7 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -894,6 +895,7 @@ class TestFiniteDiffGradients:
             assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""

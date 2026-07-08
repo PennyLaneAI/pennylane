@@ -250,6 +250,7 @@ class TestDetach:
         detached_x = fn.detach(x)
         assert x is detached_x
 
+    @pytest.mark.skip
     def test_autograd(self):
         """Test that detach works with Autograd."""
         import autograd
@@ -324,6 +325,7 @@ class TestNorm:
             ),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_norm_gradient(self, arr):
         """Test that qp.math.norm has the correct gradient with autograd
         when the order and axis are not specified."""

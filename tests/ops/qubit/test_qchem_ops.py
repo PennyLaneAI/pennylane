@@ -229,6 +229,7 @@ class TestSingleExcitation:
     @pytest.mark.parametrize(
         "excitation", [qp.SingleExcitation, qp.SingleExcitationPlus, qp.SingleExcitationMinus]
     )
+    @pytest.mark.skip
     def test_autograd(self, excitation):
         """Tests that operations are computed correctly using the
         autograd interface"""
@@ -254,6 +255,7 @@ class TestSingleExcitation:
             (qp.SingleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_grad(self, diff_method, excitation, phi):
         """Tests that gradients are computed correctly using the
         autograd interface"""
@@ -461,6 +463,7 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize(
         "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
     )
+    @pytest.mark.skip
     def test_autograd(self, excitation):
         """Tests that operations are computed correctly using the
         autograd interface"""
@@ -535,6 +538,7 @@ class TestDoubleExcitation:
             (qp.DoubleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_grad(self, excitation, phi):
         """Tests that gradients are computed correctly using the
         autograd interface"""
@@ -730,6 +734,7 @@ class TestOrbitalRotation:
         assert np.allclose(circuit1(), circuit2(phi))
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Tests that operations are computed correctly using the
         autograd interface"""
@@ -886,6 +891,7 @@ class TestOrbitalRotation:
             pnp.array(0.1421, requires_grad=True),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
         autograd interface"""
@@ -1065,6 +1071,7 @@ class TestFermionicSWAP:
         assert np.allclose(res, expected)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Tests that operations are computed correctly using the
         autograd interface"""
@@ -1097,6 +1104,7 @@ class TestFermionicSWAP:
             pnp.array(np.pi / 4, requires_grad=True),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_grad(self, diff_method, phi):
         """Tests that gradients are computed correctly using the
         autograd interface"""

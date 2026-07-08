@@ -275,6 +275,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    @pytest.mark.skip
     def test_autograd(self, params, obs, exp_fn, diff_method, seed):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)

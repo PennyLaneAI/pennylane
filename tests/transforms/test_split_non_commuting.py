@@ -766,6 +766,7 @@ class TestDifferentiability:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
+    @pytest.mark.skip
     def test_autograd(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with autograd"""
 

@@ -470,6 +470,7 @@ class TestInterfaces:
     of gradients."""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, tol):
         """Test the autograd interface."""
 

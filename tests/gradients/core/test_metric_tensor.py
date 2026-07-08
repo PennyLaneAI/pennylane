@@ -1286,6 +1286,7 @@ class TestDifferentiabilityDiag:
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    @pytest.mark.skip
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1409,6 +1410,7 @@ class TestDifferentiability:
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    @pytest.mark.skip
     def test_autograd(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)

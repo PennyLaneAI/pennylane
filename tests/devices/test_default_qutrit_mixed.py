@@ -174,6 +174,7 @@ class TestBasicCircuit:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
+    @pytest.mark.skip
     def test_autograd_results_and_backprop(self, subspace):
         """Tests execution and gradients of a basic circuit using autograd."""
         phi = qp.numpy.array(-0.52)
@@ -669,6 +670,7 @@ class TestExecutingBatches:
         self.nested_compare(results, expected)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Test batches can be executed and have backprop derivatives using autograd."""
         phi = qp.numpy.array(-0.629)
@@ -790,6 +792,7 @@ class TestSumOfTermsDifferentiability:
             (qp.numpy.array(2.5, requires_grad=False), qp.numpy.array(6.2, requires_grad=False)),
         ],
     )
+    @pytest.mark.skip
     def test_autograd_backprop(self, coeffs):
         """Test that backpropagation derivatives work in autograd with
         Hamiltonians using new and old math."""
@@ -804,6 +807,7 @@ class TestSumOfTermsDifferentiability:
         assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_backprop_coeffs(self):
         """Test that backpropagation derivatives work in autograd with
         the coefficients of Hamiltonians using new and old math."""

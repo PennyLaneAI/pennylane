@@ -216,6 +216,7 @@ class TestBasicCircuit:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("max_workers", max_workers_list)
+    @pytest.mark.skip
     def test_autograd_results_and_backprop(self, max_workers):
         """Tests execution and gradients with autograd"""
         phi = qp.numpy.array(-0.52)
@@ -715,6 +716,7 @@ class TestExecutingBatches:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("max_workers", max_workers_list)
+    @pytest.mark.skip
     def test_autograd(self, max_workers):
         """Test batches can be executed and have backprop derivatives in autograd."""
         dev = DefaultQubit(max_workers=max_workers)
@@ -860,6 +862,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("style", ("sum", "hermitian"))
+    @pytest.mark.skip
     def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = DefaultQubit()

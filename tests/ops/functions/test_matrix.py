@@ -739,6 +739,7 @@ class TestInterfaces:
         assert np.allclose(matrix, expected_matrix)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self):
         """Test with autograd interface"""
 

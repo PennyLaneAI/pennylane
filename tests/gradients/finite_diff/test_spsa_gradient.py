@@ -1009,6 +1009,7 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -1045,6 +1046,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd_ragged(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""

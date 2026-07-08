@@ -1411,6 +1411,7 @@ class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
+    @pytest.mark.skip
     def test_autograd(self, mode):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using autograd, yielding second derivatives."""

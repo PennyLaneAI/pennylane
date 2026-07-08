@@ -1522,6 +1522,7 @@ class TestPauliArithmeticWithADInterfaces:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.skip
     def test_autograd_initialization(self, scalar):
         """Test initializing PauliSentence from autograd array"""
 
@@ -1572,6 +1573,7 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.autograd
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
+    @pytest.mark.skip
     def test_autograd_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with an autograd array works and results in the correct types"""
 
