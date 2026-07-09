@@ -213,7 +213,7 @@ class TestBoundTransform:
             qp.transform(first_valid_transform), args=[0], kwargs={}
         )
 
-        q_transform, args, kwargs, cotransform, _, is_informative, final_transform = container
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
 
         assert q_transform is first_valid_transform
         assert args == (0,)
