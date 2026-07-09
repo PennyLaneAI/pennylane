@@ -21,15 +21,10 @@ from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees
+from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.resources import adjoint_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -38,6 +33,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -384,13 +381,12 @@ def _controlled_change_op_basis_resources(
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
-        controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
+            num_zero_control_values,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1
