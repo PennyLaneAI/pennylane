@@ -106,6 +106,8 @@ class RX(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
+    resource_keys = ()
+
     @property
     def resource_params(self) -> dict:
         return {}
@@ -312,6 +314,8 @@ class RY(Operator2):
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
+
+    resource_keys = ()
 
     @property
     def resource_params(self) -> dict:
@@ -630,6 +634,8 @@ class RZ(Operator2):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.phi, wires=self.wires)
+
+    resource_keys = ()
 
     @property
     def resource_params(self) -> dict:
