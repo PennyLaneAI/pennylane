@@ -109,8 +109,7 @@ class TrainingResult(NamedTuple):
 class BatchResult(NamedTuple):
     """Intermediate result yielded by :func:`training_iterator` after each unrolled batch.
 
-    Each ``BatchResult`` covers ``unroll_steps`` consecutive optimization steps
-    that were fused into a single ``jax.lax.scan`` call.
+    Each ``BatchResult`` covers consecutive optimization steps defined by ``unroll_steps``.
 
     Args:
         params (jnp.ndarray): Circuit parameters at the end of this batch.
@@ -241,11 +240,10 @@ def training_iterator(
 ) -> Iterator[BatchResult]:
     """Create an infinite iterator that yields optimization results one batch at a time.
 
-    This is the lower-level interface for users who need custom convergence
+    This function is for users who need custom convergence
     logic, logging, or early-stopping criteria. Each iteration advances the
-    optimizer by ``unroll_steps`` steps (fused via ``jax.lax.scan``) and
-    yields a :class:`BatchResult` containing the updated parameters and
-    per-step losses.
+    optimizer by ``unroll_steps`` steps and returns a :class:`BatchResult`
+    containing the updated parameters and per-step losses.
 
     Args:
         optimizer (str): Name of the optimizer. One of ``"Adam"``,
@@ -343,8 +341,7 @@ def train(
     # pylint: disable=too-many-arguments
     """Run a complete optimization loop with automatic convergence detection.
 
-    This is the high-level training entry point. It internally uses
-    :func:`training_iterator` and adds progress-bar display (via ``tqdm``),
+    This is the high-level training entry point. It provides progress-bar display,
     loss history accumulation, and an automatic early-stopping check based on
     the ``convergence_interval`` setting in :class:`TrainingOptions`.
 

@@ -38,14 +38,13 @@ class MMDConfig:
     target dataset.
 
     Args:
-        bandwidth (float | Sequence[float]): Width of the Gaussian kernel
+        bandwidth (float | Sequence[float]): Width of the Radial Basis Function (RBF) kernel
             used to compare distributions. Small values make the loss
             sensitive to fine-grained differences; large values emphasize
             broad structure. A good starting point is the median pairwise
-            distance of the target data (see :func:`median_heuristic`). If a
-            sequence is provided, the loss is computed independently for each
-            bandwidth and the results are averaged (or returned individually
-            when ``return_per_bandwidth=True``).
+            distance of the target data (see :func:`median_heuristic`). If a sequence is provided,
+            the loss is evaluated for each value and then averaged, unless
+            ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger
             values reduce estimator variance.
         wires (Sequence[int] | None): Subset of qubit indices to include in
@@ -215,17 +214,7 @@ def mmd_loss(
     """Compute the MMD loss between a qubit IQP circuit and a target dataset.
 
     This function estimates how far the circuit's output distribution is from
-    the empirical distribution defined by ``target_data``. At each call it:
-
-    * Samples ``n_ops`` random Pauli-Z observables according to the RBF
-      kernel defined by ``mmd_config.bandwidth``.
-    * Estimates the circuit's expectation values for those observables
-      (via :func:`~pennylane.labs.tcdq.build_expval_func`).
-    * Computes the matching empirical averages directly from ``target_data``.
-    * Combines these into an unbiased MMD² estimator.
-
-    The result is differentiable with respect to ``params`` via JAX
-    autodiff, making it suitable as a training objective.
+    the empirical distribution defined by ``target_data``.
 
     Args:
         params (ArrayLike): Trainable circuit parameters, shape ``(n_params,)``.

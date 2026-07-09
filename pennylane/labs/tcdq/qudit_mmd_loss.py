@@ -48,7 +48,7 @@ class QuditMMDConfig:
     visible wire.
 
     Args:
-        bandwidth (float | Sequence[float]): Width of the graph heat
+        bandwidth (float | Sequence[float]): Width of the Radial Basis Function (RBF) kernel
             kernel. Small values make the loss sensitive to fine-grained
             differences between distributions; large values emphasize broad
             structure. If a sequence is provided, the loss is evaluated for
@@ -321,27 +321,14 @@ def build_qudit_mmd_loss(
 
     The returned callable measures the distance between the qudit circuit's
     output distribution and an empirical target dataset of dit-strings using
-    the Maximum Mean Discrepancy (MMD) with a graph-based kernel. At each
-    evaluation it:
-
-    * Samples a fresh batch of Fourier index vectors from the heat-kernel
-      spectral distribution (controlled by ``mmd_config.bandwidth`` and
-      ``mmd_config.graph_type``).
-    * Estimates the circuit's complex moments for those indices via
-      :func:`~pennylane.labs.tcdq.build_qudit_expval_func`.
-    * Computes the matching empirical moments from ``target_data``.
-    * Combines the data–data (PP), data–model (PQ), and model–model (QQ)
-      terms into an unbiased MMD² estimator.
-
-    The result is differentiable with respect to circuit parameters via JAX
-    autodiff.
+    the Maximum Mean Discrepancy (MMD) with a graph-based kernel.
 
     Args:
         circuit_config (QuditCircuitConfig): Qudit circuit description
             specifying gate structure, qudit dimension, and sample
             count. See :class:`~pennylane.labs.tcdq.QuditCircuitConfig`.
         mmd_config (QuditMMDConfig): MMD hyperparameters including the
-            heat-kernel bandwidth, number of observables, and graph type. See
+            bandwidth, number of observables, and graph type. See
             :class:`QuditMMDConfig`.
 
     Returns:
