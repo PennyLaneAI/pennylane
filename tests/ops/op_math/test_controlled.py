@@ -2109,7 +2109,7 @@ class TestCtrl:
 
         class CustomOp(Operator2):
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         @custom_ctrl_dispatch.register
