@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocation, math
+from pennylane.core.queuing import apply
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import (
@@ -82,7 +83,7 @@ def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-
 @register_resources(_cancel_adjoint_resource)
 def cancel_adjoint(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
+    apply(base.base)
 
 
 def _adjoint_rotation_resource(base_class, base_params):
@@ -111,7 +112,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
 
     @qp.for_loop(0, z)
     def _loop(i):
-        qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+        apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -130,7 +131,7 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 @register_resources(_merge_powers_resource)
 def merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
+    base_op = apply(base.base)
     qp.pow(base_op, z * base.z)
 
 
@@ -149,7 +150,7 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 def flip_pow_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
+    base_op = apply(base.base)
     qp.adjoint(qp.pow(base_op, z))
 
 
@@ -172,7 +173,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
-            qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+            apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
             qp.pow(base, z_mod_period)
 
@@ -202,7 +203,7 @@ def _decompose_to_base_resource(base_class, base_params, **__):
 @register_resources(_decompose_to_base_resource)
 def decompose_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
-    qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+    apply(base)
 
 
 self_adjoint: DecompositionRule = decompose_to_base
@@ -350,7 +351,7 @@ def flip_control_adjoint(
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base.base))
+    base_op = apply(base.base)
     qp.adjoint(
         qp.ctrl(
             base_op,
@@ -374,7 +375,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
-    base_op = qp.pytrees.unflatten(*qp.pytrees.flatten(base))
+    base_op = apply(base)
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.ctrl(qp.X(work_wires[0]), control=control_wires)
         qp.ctrl(base_op, control=work_wires[0])
