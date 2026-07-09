@@ -42,11 +42,12 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
         # pylint: disable=import-outside-toplevel
         # Lazy import: pennylane.decomposition loads before pennylane.ops
-        from pennylane.ops.op_math.adjoint2 import _adjoint
+        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            _adjoint(decomp_op): count for decomp_op, count in base_resources.gate_counts.items()
+            _adjoint_abstract(decomp_op): count
+            for decomp_op, count in base_resources.gate_counts.items()
         }
 
     base_source = base_decomposition._source
