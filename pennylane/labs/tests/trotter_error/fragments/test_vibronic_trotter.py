@@ -34,16 +34,43 @@ def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
 def test_vibronic_fragments():
     """Test that vibronic_fragments returns ``RealspaceMatrix`` objects with the correct number of
     states and modes."""
-    n_states = 5
-    n_modes = 5
-    freqs = np.array([1, 2, 3, 4, 5])
+    states = 5
+    modes = 5
 
-    frags = vibronic_fragments(n_states, n_modes, freqs, [])
+    freqs = np.random.random(modes)
+    lambdas = np.random.random(size=(states, states))
+    alphas = np.random.random(size=(states, states, modes))
+    betas = np.random.random(size=(states, states, modes, modes))
+    taylor_coeffs = [lambdas, alphas, betas]
+
+    frags = vibronic_fragments(states, modes, freqs, taylor_coeffs)
 
     for frag in frags:
         assert isinstance(frag, RealspaceMatrix)
-        assert frag.states == n_states
-        assert frag.modes == n_modes
+        assert frag.states == states
+        assert frag.modes == modes
+
+def test_frag_schemes_equal():
+    """Test the two fragmentation schemes sum to the same Hamiltonian"""
+    states = 1
+    modes = 1
+
+    freqs = np.random.random(modes)
+    lambdas = np.random.random(size=(states, states))
+    alphas = np.random.random(size=(states, states, modes))
+    betas = np.random.random(size=(states, states, modes, modes))
+    taylor_coeffs = [lambdas, alphas, betas]
+
+    frags_og = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="og")
+    ham_og = sum(frags_og, RealspaceMatrix.zero(states, modes))
+
+    frags_mode = vibronic_fragments(states, modes, freqs, taylor_coeffs, scheme="mode")
+    ham_mode = sum(frags_mode, RealspaceMatrix.zero(states, modes))
+
+    print(ham_og.matrix(2))
+    print(ham_mode.matrix(2))
+
+    assert np.allclose(ham_og.matrix(2), ham_mode.matrix(2))
 
 def test_mode_based_fragments():
     """Test the mode based fragmentation scheme against a known example"""
@@ -63,7 +90,7 @@ def test_mode_based_fragments():
 
     taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
 
-    frags = vibronic_fragments(states, modes, omegas, taylor_coeffs, scheme="mode")
+    frags = vibronic_fragments(n_blocks, modes, omegas, taylor_coeffs, scheme="mode")
 
 
     # Q^2 term: beta[0,0,0,0] gets omegas[0]/2 added inside vibronic_fragments_modebased
@@ -88,9 +115,12 @@ def test_mode_based_fragments():
     PP = RealspaceOperator(modes, ('P', 'P'), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
     exp_kinetic.set_block(0, 0, RealspaceSum(modes, (PP,)))
 
+    print(frags[1].matrix(2))
+    print(exp_kinetic.matrix(2))
+
     assert len(frags) == 2
-    assert frags[0] == exp_potential
-    assert frags[1] == exp_kinetic
+    assert np.allclose(frags[0].matrix(2), exp_potential.matrix(2))
+    assert np.allclose(frags[1].matrix(2), exp_kinetic.matrix(2))
 
 class Test1Mode:
     """Test a simple one mode, one state vibronic Hamiltonian"""
