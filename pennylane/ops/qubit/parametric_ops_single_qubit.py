@@ -91,7 +91,9 @@ class RX(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:  # pylint: disable=unused-argument
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -231,7 +233,9 @@ add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
 
-def _controlled_rx_resource(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
+def _controlled_rx_resource(
+    base, control_wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     if len(control_values) == 1:
         return {qp.CRX: 1}
     return {
@@ -248,7 +252,9 @@ def _controlled_rx_resource(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_rx_resource)
-def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
+def _controlled_rx_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
@@ -451,7 +457,9 @@ add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
 
-def _controlled_ry_resource(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
+def _controlled_ry_resource(
+    base, control_wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     if len(control_wires) == 1:
         return {qp.CRY: 1}
     return {
@@ -467,7 +475,9 @@ def _controlled_ry_resource(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_ry_resource)
-def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
+def _controlled_ry_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type
+):  # pylint: disable=unused-argument
     wires = control_wires + base.wires
 
     if len(control_wires) == 1:
@@ -516,7 +526,9 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -560,7 +572,9 @@ class RZ(Operator2):
         ).asformat(format)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
