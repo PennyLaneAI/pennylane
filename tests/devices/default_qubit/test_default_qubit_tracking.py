@@ -81,7 +81,6 @@ class TestTracking:
             ],
             "derivative_batches": [1],
             "derivatives": [1],
-            "errors": [{}, {}, {}],
         }
         assert tracker.totals == {
             "batches": 2,
@@ -102,7 +101,6 @@ class TestTracking:
                 measurements={"expval(PauliZ)": 1},
                 depth=0,
             ),
-            "errors": {},
         }
 
     def test_tracking_execute_and_derivatives(self):
@@ -142,7 +140,6 @@ class TestTracking:
                 )
             ]
             * 12,
-            "errors": [{}] * 12,
         }
 
     def test_tracking_resources(self):
