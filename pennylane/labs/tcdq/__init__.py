@@ -75,7 +75,9 @@ Circuit construction utilities
     ~generate_pauli_observables
 
 
-Example: estimating expectation values
+The following examples demonstrate several of the key workflows supported by this module.   
+
+Estimating expectation values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
