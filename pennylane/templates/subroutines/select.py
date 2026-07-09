@@ -575,14 +575,6 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    if isinstance(target_rep, CompressedResourceOp):
-        return controlled_resource_rep(
-            base_class=target_rep.op_type,
-            base_params=target_rep.params,
-            num_control_wires=num_control_wires,
-            num_work_wires=num_work_wires,
-            num_zero_control_values=num_control_wires - sum(ctrl_state),
-        )
     if isinstance(target_rep, type):
         target_rep = abstractify(target_rep)
     return _ctrl_abstract(target_rep, Wire[num_control_wires], Wire[num_work_wires], "borrowed")

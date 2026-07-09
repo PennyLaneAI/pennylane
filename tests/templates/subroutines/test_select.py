@@ -261,30 +261,17 @@ class TestSelect:
 
         assert resource_obj.num_gates == 3
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
+        swap_rep = qp.resource_rep(qp.SWAP)
         if partial:
             expected_counts = {
                 _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 1,
                 _ctrl_abstract(abstractify(qp.X), Wire[1], Wire[0], "borrowed"): 1,
-                c_resource(
-                    base_class=qp.SWAP,
-                    base_params={},
-                    num_control_wires=1,
-                    num_zero_control_values=0,
-                    num_work_wires=0,
-                ): 1,
+                _ctrl_abstract(swap_rep, Wire[1], Wire[0], "borrowed"): 1,
             }
         else:
             expected_counts = {
                 _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 2,
-                c_resource(
-                    base_class=qp.SWAP,
-                    base_params={},
-                    num_control_wires=2,
-                    num_zero_control_values=1,
-                    num_work_wires=0,
-                ): 1,
+                _ctrl_abstract(swap_rep, Wire[2], Wire[0], "borrowed"): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
