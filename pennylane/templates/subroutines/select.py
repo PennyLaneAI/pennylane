@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
@@ -584,8 +584,6 @@ def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wi
             num_zero_control_values=num_control_wires - sum(ctrl_state),
         )
     if isinstance(target_rep, type):
-        from pennylane.core.operator import abstractify  # pylint: disable=import-outside-toplevel
-
         target_rep = abstractify(target_rep)
     return _ctrl_abstract(target_rep, Wire[num_control_wires], Wire[num_work_wires], "borrowed")
 
