@@ -281,7 +281,8 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 
     .. code-block:: python
 
-        from pennylane.ops.op_math import custom_ctrl_dispatch, is_empty_or_all_true
+        from pennylane.ops.op_math import custom_ctrl_dispatch
+        from pennylane.ops.op_math.controlled import _is_empty_or_all_true
 
         @custom_ctrl_dispatch.register
         def _ctrl_y(base: qp.PauliY, control, control_values, *_):
