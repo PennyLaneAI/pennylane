@@ -130,7 +130,6 @@ to handle a single circuit. See the documentation for each modifier for more det
 >>> import pprint
 >>> pprint.pprint(dev.tracker.history)
 {'batches': [1],
- 'errors': [{}],
  'executions': [1],
  'resources': [SpecsResources(gate_types={'S': 1},
                               gate_sizes={1: 1},

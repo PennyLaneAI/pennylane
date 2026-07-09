@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pure function implementations for the expectation value functions.
+Implementations for the qubit expectation value functions
 """
 
 from collections.abc import Callable
@@ -31,20 +31,22 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
 
     Args:
         gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
-        observables (ArrayLike): List of Pauli observables mapped to integers (I=0, X=1, Y=2, Z=3).
         n_samples (int): Number of Monte Carlo samples for the estimation of the expectation value.
         key (ArrayLike): Random key for JAX.
         n_qubits (int): Number of qubits.
-        init_state_elems (ArrayLike | None): Elements of the initial state (X) - fixed binary matrix.
-        init_state_amps (ArrayLike | None): Amplitudes of the initial state (P) - continuous trainable params.
+        observables (ArrayLike | None): List of Pauli observables mapped to integers
+            (I=0, X=1, Y=2, Z=3). If ``None``, observables must be supplied at call time
+            via the returned function's ``observables`` keyword argument.
+        init_state_elems (ArrayLike | None): Elements of the initial state (X)
+        init_state_amps (ArrayLike | None): Amplitudes of the initial state (P)
         phase_fn (Callable | None): Optional phase layer function.
     """
 
     gates: dict[int, list[list[int]]]
-    observables: ArrayLike
     n_samples: int
     key: ArrayLike
     n_qubits: int
+    observables: ArrayLike | None = None
     init_state_elems: ArrayLike | None = None
     init_state_amps: ArrayLike | None = None
     phase_fn: Callable | None = None
@@ -81,13 +83,14 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
     Converts dictionary circuit definition into matrices.
 
     Args:
-        circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to lists of qubit indices.
+        circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to
+            lists of qubit indices.
         n_qubits (int): Total number of qubits.
 
     Returns:
         tuple[jnp.ndarray, jnp.ndarray]: Tuple containing:
             - Binary matrix of generators.
-            - Integer array mapping parameters to generators.
+            - Integer array mapping each generator to its parameter index.
     """
     flat_gates = []
     param_indices = []
@@ -206,7 +209,7 @@ def build_expval_func(
         )
 
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
-    default_obs_data = _prep_observables(config.observables)
+    default_obs_data = None if config.observables is None else _prep_observables(config.observables)
 
     # pylint: disable=too-many-arguments
     def expval_execution(
@@ -252,7 +255,15 @@ def build_expval_func(
         else:
             samples = default_samples
 
-        obs_data = default_obs_data if observables is None else _prep_observables(observables)
+        if observables is not None:
+            obs_data = _prep_observables(observables)
+        elif default_obs_data is not None:
+            obs_data = default_obs_data
+        else:
+            raise ValueError(
+                "No observables specified. Provide them in CircuitConfig "
+                "or pass at call time via the observables argument."
+            )
 
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
