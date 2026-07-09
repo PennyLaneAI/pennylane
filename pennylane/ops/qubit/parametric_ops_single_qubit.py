@@ -109,13 +109,6 @@ class RX(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    has_decomposition = False
-
-    @staticmethod
-    def compute_decomposition(phi, wires):
-        # dont use graph decomposition for RX-> Rot
-        raise DecompositionUndefinedError
-
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires: WiresLike = None
@@ -167,9 +160,6 @@ class RX(Operator2):
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [RX(self.phi * z, wires=self.wires)]
-
-    def _controlled(self, wire: WiresLike) -> "qp.CRX":
-        return qp.CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RX":
         phi = self.phi % (4 * np.pi)
@@ -315,13 +305,6 @@ class RY(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    has_decomposition = False
-
-    @staticmethod
-    def compute_decomposition(phi, wires):
-        # dont use graph decomposition for RY-> Rot
-        raise DecompositionUndefinedError
-
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires=None
@@ -373,9 +356,6 @@ class RY(Operator2):
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [RY(self.phi * z, wires=self.wires)]
-
-    def _controlled(self, wire: WiresLike) -> "qp.CRY":
-        return qp.CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RY":
         phi = self.phi % (4 * np.pi)
@@ -534,13 +514,6 @@ class RZ(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    has_decomposition = False
-
-    @staticmethod
-    def compute_decomposition(phi, wires):
-        # dont use graph decomposition for RZ-> Rot
-        raise DecompositionUndefinedError
-
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires=None
@@ -634,9 +607,6 @@ class RZ(Operator2):
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [RZ(self.phi * z, wires=self.wires)]
-
-    def _controlled(self, wire: WiresLike) -> "qp.CRZ":
-        return qp.CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RZ":
         phi = self.phi % (4 * np.pi)
@@ -755,7 +725,7 @@ def _controlled_rz_decomp(*params, wires, control_wires, work_wires, work_wire_t
 add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
 
 
-class PhaseShift(Operation):
+class PhaseShift(Operator2):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -784,7 +754,9 @@ class PhaseShift(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -797,10 +769,6 @@ class PhaseShift(Operation):
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
@@ -896,38 +864,11 @@ class PhaseShift(Operation):
             product = qp.math.outer(phi, prefactors)
         return qp.math.exp(product)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qp.operation.Operator":
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.PhaseShift.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Any, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.PhaseShift.compute_decomposition(1.234, wires=0)
-        [RZ(1.234, wires=[0]), GlobalPhase(-0.617, wires=[])]
-
-        """
-        return [RZ(phi, wires=wires), qp.GlobalPhase(-phi / 2)]
-
     def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.data[0], wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
-
-    def _controlled(self, wire: WiresLike) -> "qp.ControlledPhaseShift":
-        return qp.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "PhaseShift":
         phi = self.data[0] % (2 * np.pi)
@@ -938,7 +879,7 @@ class PhaseShift(Operation):
         return PhaseShift(phi, wires=self.wires)
 
 
-def _phaseshift_to_rz_gp_resources():
+def _phaseshift_to_rz_gp_resources(phi, wires):
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
 
@@ -1094,44 +1035,9 @@ class Rot(Operator2):
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Rot.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            theta (float): rotation angle :math:`\theta`
-            omega (float): rotation angle :math:`\omega`
-            wires (Any, Wires): the wire the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.Rot.compute_decomposition(1.2, 2.3, 3.4, wires=0)
-        [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
-
-        """
-        return [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires),
-        ]
-
     def adjoint(self) -> "Rot":
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires)
-
-    def _controlled(self, wire: WiresLike) -> "qp.CRot":
-        return qp.CRot(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "Rot":
         """Simplifies into single-rotation gates or a Hadamard if possible.
@@ -1216,7 +1122,7 @@ def _controlled_rot_decomp(
 add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
 
 
-class U1(Operation):
+class U1(Operator2):
     r"""
     U1 gate.
 
@@ -1252,17 +1158,15 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "wires": Wire[1]}
 
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1302,30 +1206,6 @@ class U1(Operation):
         diags = qp.math.exp(qp.math.outer(arg, fac))
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qp.operation.Operator":
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.U1.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U1.compute_decomposition(1.234, wires=0)
-        [PhaseShift(1.234, wires=[0])]
-
-        """
-        return [PhaseShift(phi, wires=wires)]
-
     def adjoint(self) -> "U1":
         return U1(-self.data[0], wires=self.wires)
 
@@ -1341,7 +1221,7 @@ class U1(Operation):
         return U1(phi, wires=self.wires)
 
 
-def _u1_phaseshift_resources():
+def _u1_phaseshift_resources(phi, wires):
     return {PhaseShift: 1}
 
 
@@ -1355,7 +1235,7 @@ add_decomps("Adjoint(U1)", adjoint_rotation)
 add_decomps("Pow(U1)", pow_rotation)
 
 
-class U2(Operation):
+class U2(Operator2):
     r"""
     U2 gate.
 
@@ -1401,14 +1281,12 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
         super().__init__(phi, delta, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
@@ -1449,37 +1327,6 @@ class U2(Operation):
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2) / np.sqrt(2)
 
-    @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, delta: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.U2.decomposition`.
-
-        Args:
-            phi (TensorLike): azimuthal angle :math:`\phi`
-            delta (TensorLike): quantum phase :math:`\delta`
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U2.compute_decomposition(1.23, 2.34, wires=0)
-        [Rot(2.34, np.float64(1.5707963267948966), -2.34, wires=[0]), PhaseShift(2.34, wires=[0]), PhaseShift(1.23, wires=[0])]
-
-        """
-        pi_half = qp.math.ones_like(delta) * (np.pi / 2)
-        return [
-            Rot(delta, pi_half, -delta, wires=wires),
-            PhaseShift(delta, wires=wires),
-            PhaseShift(phi, wires=wires),
-        ]
-
     def adjoint(self) -> "U2":
         phi, delta = self.parameters
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
@@ -1502,7 +1349,7 @@ class U2(Operation):
         return U2(phi, delta, wires=wires)
 
 
-def _u2_phaseshift_rot_resources():
+def _u2_phaseshift_rot_resources(phi, delta, wires):
     return {PhaseShift: 2, Rot: 1}
 
 
@@ -1527,7 +1374,7 @@ def _adjoint_u2(phi, delta, wires, **__):
 add_decomps("Adjoint(U2)", _adjoint_u2)
 
 
-class U3(Operation):
+class U3(Operator2):
     r"""
     Arbitrary single qubit unitary.
 
@@ -1574,7 +1421,9 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_keys = set()
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"theta": Complex, "phi": Complex, "delta": Complex, "wires": Wire[1]}
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -1585,10 +1434,6 @@ class U3(Operation):
         wires: WiresLike,
     ):
         super().__init__(theta, phi, delta, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
@@ -1643,40 +1488,6 @@ class U3(Operation):
 
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike
-    ) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.U3.decomposition`.
-
-        Args:
-            theta (TensorLike): polar angle :math:`\theta`
-            phi (TensorLike): azimuthal angle :math:`\phi`
-            delta (TensorLike): quantum phase :math:`\delta`
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.U3.compute_decomposition(1.23, 2.34, 3.45, wires=0)
-        [Rot(3.45, 1.23, -3.45, wires=[0]),
-        PhaseShift(3.45, wires=[0]),
-        PhaseShift(2.34, wires=[0])]
-
-        """
-        return [
-            Rot(delta, theta, -delta, wires=wires),
-            PhaseShift(delta, wires=wires),
-            PhaseShift(phi, wires=wires),
-        ]
-
     def adjoint(self) -> "U3":
         theta, phi, delta = self.parameters
         new_delta = qp.math.mod((np.pi - phi), (2 * np.pi))
@@ -1713,7 +1524,7 @@ class U3(Operation):
         return U3(p0, p1, p2, wires=wires)
 
 
-def _u3_phaseshift_rot_resources():
+def _u3_phaseshift_rot_resources(theta, phi, delta, wires):
     return {PhaseShift: 2, Rot: 1}
 
 
