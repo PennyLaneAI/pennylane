@@ -30,12 +30,12 @@ from cachetools import Cache
 import pennylane as qp
 from pennylane import math, pytrees
 from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots, ShotsLike
+from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.queuing import AnnotatedQueue
-from pennylane.transforms.core import BoundTransform, CompilePipeline, Transform
 from pennylane.typing import TensorLike
 
 from .execution import execute

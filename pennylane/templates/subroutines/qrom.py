@@ -25,6 +25,7 @@ from pennylane import compiler
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,

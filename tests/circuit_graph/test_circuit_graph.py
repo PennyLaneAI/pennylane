@@ -22,13 +22,64 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.circuit_graph import CircuitGraph
+from pennylane.circuit_graph import CircuitGraph, _WrappedObj
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue
 from pennylane.ops.mid_measure.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
+
+
+class Test_WrappedObj:
+    """Tests for the ``_WrappedObj`` class"""
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``_WrappedObj`` is initialized correctly"""
+        wo = _WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize(
+        "obj1, obj2",
+        [(qp.PauliX(0), qp.PauliZ(0)), (qp.PauliX(0), qp.PauliX(0)), ((1,), (1, 2))],
+    )
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``_WrappedObj.__eq__`` returns False when expected."""
+        wo1 = _WrappedObj(obj1)
+        wo2 = _WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that _WrappedObj.__eq__ returns False when the object being compared is not
+        a _WrappedObj."""
+        op = qp.PauliX(0)
+        wo = _WrappedObj(op)
+        assert wo != op
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``_WrappedObj.__eq__`` returns True when expected."""
+        op = qp.PauliX(0)
+        assert _WrappedObj(op) == _WrappedObj(op)
+
+    @pytest.mark.parametrize("obj", [qp.PauliX(0), qp.expval(qp.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``_WrappedObj.__hash__`` is the object id."""
+        wo = _WrappedObj(obj)
+        assert wo.__hash__() == id(obj)  # pylint: disable=unnecessary-dunder-call
+
+    def test_wrapped_obj_repr(self):
+        """Test that the ``_WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+
+        class Dummy:  # pylint: disable=too-few-public-methods
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
+        wo = _WrappedObj(obj)
+        assert wo.__repr__() == "_Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
 
 
 @pytest.fixture(name="ops")
@@ -93,30 +144,6 @@ def circuit_measure_multiple_with_max_twice():
         qp.probs(wires=[0, 1, 2]),
         qp.var(qp.PauliZ(wires=[1]) @ qp.PauliZ([2])),
     )
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth2(ResourcesOperation):
-    num_wires = 3
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=2)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth3(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=3)
-
-
-# pylint: disable=too-few-public-methods
-class CustomOpDepth4(ResourcesOperation):
-    num_wires = 2
-
-    def resources(self):
-        return Resources(num_wires=self.num_wires, depth=4)
 
 
 # pylint: disable=too-many-public-methods
@@ -340,37 +367,6 @@ class TestCircuitGraph:
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
         assert str(circuit_w_wires) == expected
-
-    tape_depth = (
-        ([qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)], 2),
-        ([qp.X(0)] * 4, 4),
-        ([qp.Hadamard(0), qp.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
-        (
-            [
-                qp.RX(1.23, 0),
-                qp.RZ(-0.45, 0),
-                CustomOpDepth3(wires=[3, 4]),
-                qp.Hadamard(0),
-                qp.Hadamard(1),
-                qp.Hadamard(2),
-                qp.Hadamard(3),
-                qp.Hadamard(4),
-                CustomOpDepth2(wires=[1, 2, 3]),
-                qp.RZ(-1, 4),
-                qp.RX(0.5, 4),
-                qp.RX(0.5, 3),
-                CustomOpDepth4(wires=[0, 1]),
-                qp.CNOT(wires=[3, 4]),
-            ],
-            10,
-        ),
-    )
-
-    @pytest.mark.parametrize("ops, true_depth", tape_depth)
-    def test_get_depth(self, ops, true_depth):
-        """Test that depth is computed correctly for operations that define a custom depth > 1"""
-        cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
-        assert cg.get_depth() == true_depth
 
 
 def test_has_path():

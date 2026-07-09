@@ -25,12 +25,29 @@ import rustworkx as rx
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.queuing import QueuingManager, WrappedObj
-from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
+
+
+class _WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, _WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def _get_wires(obj, all_wires):
@@ -70,7 +87,7 @@ def _construct_graph_from_queue(queue, all_wires):
     graph = rx.PyDiGraph(multigraph=False)
 
     for i, obj in enumerate(queue):
-        inds_for_objs[WrappedObj(obj)].append(i)
+        inds_for_objs[_WrappedObj(obj)].append(i)
         obj_node = graph.add_node(i)
         if isinstance(obj, (MidMeasure, PauliMeasure)):
             mid_measure_nodes[obj] = obj_node
@@ -246,14 +263,14 @@ class CircuitGraph:
                 "CircuitGraph.ancestors accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
             )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+        if any(len(self._inds_for_objs[_WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "Cannot calculate ancestors for an operator that occurs multiple times."
                 "Please use ancestors_of_indexes instead."
             )
         ancestors = set()
         for op in ops:
-            ind = self._inds_for_objs[WrappedObj(op)][0]
+            ind = self._inds_for_objs[_WrappedObj(op)][0]
             op_ancestors = rx.ancestors(self._graph, ind)
             ancestors.update(set(op_ancestors))
         if sort:
@@ -310,14 +327,14 @@ class CircuitGraph:
                 "CircuitGraph.descendants accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
             )
-        if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
+        if any(len(self._inds_for_objs[_WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "cannot calculate decendents for an operator that occurs multiple times. "
                 "Please use descendants_of_indexes instead."
             )
         descendants = set()
         for op in ops:
-            ind = self._inds_for_objs[WrappedObj(op)][0]
+            ind = self._inds_for_objs[_WrappedObj(op)][0]
             op_descendants = rx.descendants(self._graph, ind)
             descendants.update(set(op_descendants))
         if sort:
@@ -404,7 +421,7 @@ class CircuitGraph:
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
 
-        self._inds_for_objs[WrappedObj(new)] = self._inds_for_objs.pop(WrappedObj(old))
+        self._inds_for_objs[_WrappedObj(new)] = self._inds_for_objs.pop(_WrappedObj(old))
 
         for i, op in enumerate(self._operations):
             if op is old:
@@ -433,9 +450,6 @@ class CircuitGraph:
 
         # pylint: disable=unused-argument
         def weight_fn(in_idx, out_idx, w):
-            out_op = ops_with_initial_I[out_idx]
-            if isinstance(out_op, ResourcesOperation):
-                return out_op.resources().depth
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)
@@ -481,7 +495,7 @@ class CircuitGraph:
         if a is b:
             return True
 
-        if any(len(self._inds_for_objs[WrappedObj(o)]) > 1 for o in (a, b)):
+        if any(len(self._inds_for_objs[_WrappedObj(o)]) > 1 for o in (a, b)):
             raise ValueError(
                 "CircuitGraph.has_path does not work with operations that have been repeated. "
                 "Consider using has_path_idx instead."
@@ -491,8 +505,8 @@ class CircuitGraph:
             len(
                 rx.digraph_dijkstra_shortest_paths(
                     self._graph,
-                    self._inds_for_objs[WrappedObj(a)][0],
-                    self._inds_for_objs[WrappedObj(b)][0],
+                    self._inds_for_objs[_WrappedObj(a)][0],
+                    self._inds_for_objs[_WrappedObj(b)][0],
                     weight_fn=None,
                     default_weight=1.0,
                     as_undirected=False,

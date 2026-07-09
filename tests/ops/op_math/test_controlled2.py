@@ -13,16 +13,23 @@
 
 """Tests for the Controlled2 class."""
 
+import copy
+import pickle
+from typing import override
+
 import numpy as np
 import pytest
-from typing_extensions import override
 
 import pennylane as qp
-from pennylane.ops.op_math.controlled import Controlled
+from pennylane.core import Operator2
+from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp, NonParametricOp, OneWireDynOp
 
-# pylint: disable=unused-argument,too-few-public-methods
+# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
 
 
 class TestControlled2:
@@ -94,6 +101,44 @@ class TestControlled2:
         assert op.has_adjoint
         assert op.has_matrix
         assert op.has_sparse_matrix
+
+    def test_custom_controlled_op_abstract(self):
+        """Test creating an abstract custom controlled op."""
+
+        class Rot2(Operator2):
+            """A new Rot."""
+
+            dynamic_argnames = ("phi", "theta", "omega")
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
+
+            def __init__(self, phi, theta, omega, wires):
+                super().__init__(phi, theta, omega, wires)
+
+        class CRot2(Controlled2):
+            """A new CRot."""
+
+            dynamic_argnames = ("phi", "theta", "omega")
+
+            wire_argnames = ("wires",)
+
+            arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[2]}
+
+            def __init__(self, phi, theta, omega, wires):
+                super().__init__(Rot2(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
+
+            def __abstract_init__(self, phi, theta, omega, wires):
+                super().__abstract_init__(Rot2(phi, theta, omega, wires[1]), wires[0])
+
+        op = CRot2(Float, 0.5, 0.2, wires=[0, 1])
+        assert op.phi == Float
+        assert op.theta == Float
+        assert op.omega == Float
+        assert op.wires == Wire[2]
+        assert op.control_wires == Wire[1]
+        assert op.control_values == Bool[1]
 
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
@@ -213,7 +258,17 @@ class TestControlled2:
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1, 2])
         assert issubclass(ControlledOp2, Controlled)
+        assert issubclass(ControlledOp2, ControlledOp)
         assert isinstance(op, Controlled)
+        assert isinstance(op, ControlledOp)
+
+    @pytest.mark.parametrize("op_type", (qp.CNOT, qp.MultiControlledX, qp.Toffoli, qp.CZ))
+    def test_subclass_hook_does_not_match_specific_controlled_ops(self, op_type):
+        """Test that ControlledOp2 does not pretend to be a concrete controlled gate."""
+
+        op = ControlledOp2(qp.X(0), control_wires=[1])
+        assert not issubclass(ControlledOp2, op_type)
+        assert not isinstance(op, op_type)
 
     def test_simplify(self):
         """Tests the simplify method."""
@@ -398,3 +453,46 @@ class TestControlledOp2:
 
         generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
         qp.assert_equal(op.generator(), generator)
+
+    def test_create_abstract_op(self):
+        """Tests creating an abstract operator."""
+
+        op = ControlledOp2(OneWireDynOp, Wire[2])
+        assert op.control_wires == Wire[2]
+        assert op.target_wires == Wire[1]
+        assert op.control_values == Bool[2]
+        assert op.work_wires == Wire[0]
+        assert op.wires == Wire[3]
+
+        op = ControlledOp2(OneWireDynOp, Wire[2], control_values=[0, 1])
+        assert op.control_values == Bool[2]
+
+    def test_create_controlled_op2(self):
+        """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
+
+        op = OneWireDynOp(0.5, wires=[0])
+        op = qp.ctrl(OneWireDynOp(0.5, wires=[0]), control=[1], control_values=0)
+        assert isinstance(op, ControlledOp2)
+
+    @pytest.mark.parametrize(
+        "copy_fn", (copy.copy, copy.deepcopy, lambda obj: pickle.loads(pickle.dumps(obj)))
+    )
+    def test_copy_roundtrip(self, copy_fn):
+        """Test to make sure that copy roundtrips are sastisfied."""
+
+        op = ControlledOp2(DynOp(0.5, 0), control_wires=1)
+        assert op == copy_fn(op)
+
+    def test_old_decomp_integration(self):
+        """Tests that ControlledOp2 is compatible with the old decomposition convention."""
+
+        @register_resources({qp.RX: 1})
+        def _custom_decomp(wires):
+            qp.RX(np.pi / 2, wires=wires)
+
+        with qp.decomposition.local_decomps():
+
+            qp.add_decomps(NonParametricOp, _custom_decomp)
+            op = qp.ctrl(NonParametricOp(0), control=1)
+            assert op.has_decomposition
+            assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]

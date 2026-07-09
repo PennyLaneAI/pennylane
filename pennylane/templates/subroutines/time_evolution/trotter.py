@@ -16,22 +16,13 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 
 import copy
-from collections import defaultdict
 
-from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operation, Operator
-from pennylane.core.qscript import QuantumScript, make_qscript
+from pennylane.core.qscript import make_qscript
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.queuing import QueuingManager, apply
-from pennylane.resource import Resources, ResourcesOperation
-from pennylane.resource.error import (
-    ErrorOperation,
-    SpectralNormError,
-    _commutator_error,
-    _one_norm_error,
-)
 from pennylane.wires import Wires
 
 
@@ -76,7 +67,7 @@ def _recursive_expression(x, order, ops):
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
-class TrotterProduct(ErrorOperation, ResourcesOperation):
+class TrotterProduct(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -113,7 +104,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian. 
+        ValueError: One or more of the terms in ``hamiltonian`` are not verified to be Hermitian.
             (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
@@ -157,18 +148,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
     .. details::
         :title: Usage Details
-
-        An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different
-        methods; the "one-norm-bound" scaling method and the "commutator-bound" scaling method.
-        (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
-
-        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
-        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm-bound")
-        SpectralNormError(8.039062500000003e-06)
-        >>> op.error(method="commutator-bound")
-        SpectralNormError(6.166666666666668e-06)
 
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
@@ -221,7 +200,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         approximations to the true time evolution.
 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
-        evolution time. Note that this is currently only possible with backprop. 
+        evolution time. Note that this is currently only possible with backprop.
 
         .. code-block:: python
 
@@ -321,95 +300,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
-
-    def resources(self) -> Resources:
-        r"""The resource requirements for a given instance of the Suzuki-Trotter product.
-
-        Returns:
-            :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
-        """
-        with QueuingManager.stop_recording():
-            decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
-
-        num_wires = len(self.wires)
-        num_gates = len(decomp)
-
-        depth = QuantumScript(decomp).graph.get_depth()
-
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        for op in decomp:
-            gate_types[op.name] += 1
-            gate_sizes[len(op.wires)] += 1
-
-        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
-
-    def error(
-        self, method: str = "commutator-bound", fast: bool = True
-    ):  # pylint: disable=arguments-differ
-        r"""Compute an *upper-bound* on the spectral norm error for approximating the
-        time-evolution of the base Hamiltonian using the Suzuki-Trotter product formula.
-
-        The error in the Suzuki-Trotter product formula is defined as
-
-        .. math:: || \ e^{iHt} - \left [S_{m}(t / n)  \right ]^{n} \ ||,
-
-        Where the norm :math:`||\cdot||` is the spectral norm. This function supports two methods
-        from literature for upper-bounding the error, the "one-norm" error bound and the "commutator"
-        error bound.
-
-        **Example:**
-
-        The "one-norm" error bound can be computed by passing the kwarg :code:`method="one-norm-bound"`, and
-        is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
-        `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
-
-        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
-        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="one-norm-bound")
-        SpectralNormError(8.039062500000003e-06)
-
-        The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator-bound"`, and
-        is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
-
-        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
-        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
-        >>> op.error(method="commutator-bound")
-        SpectralNormError(6.166666666666668e-06)
-
-        Args:
-            method (str, optional): Options include "one-norm-bound" and "commutator-bound" and specify the
-                method with which the error is computed. Defaults to "commutator-bound".
-            fast (bool, optional): Uses more approximations to speed up computation. Defaults to True.
-
-        Raises:
-            ValueError: The method is not supported.
-
-        Returns:
-            SpectralNormError: The spectral norm error.
-        """
-        base_unitary = self.hyperparameters["base"]
-        t, p, n = (self.parameters[-1], self.hyperparameters["order"], self.hyperparameters["n"])
-
-        parameters = [t] + base_unitary.parameters
-        if any(
-            math.get_interface(param) == "tensorflow" for param in parameters
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            raise TypeError(
-                "Calculating error bound for Tensorflow objects is currently not supported"
-            )
-
-        terms = base_unitary.operands
-        if method == "one-norm-bound":
-            return SpectralNormError(_one_norm_error(terms, t, p, n, fast=fast))
-
-        if method == "commutator-bound":
-            return SpectralNormError(_commutator_error(terms, t, p, n, fast=fast))
-
-        raise ValueError(
-            f"The '{method}' method is not supported for computing the error. Please select a valid method for computing the error."
-        )
 
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.
@@ -567,7 +457,7 @@ class TrotterizedQfunc(Operation):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The 
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The
     :math:`m^{\text{th}}`-order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
