@@ -23,15 +23,15 @@ Train Classically, Deploy Quantum (TCDQ).
     with no guarantees of stability or backwards compatibility.
 
 This module classically estimates expectation values and loss functions for
-Instantaneous Quantum Polynomial (IQP) circuits, removing the need for full
-statevector simulation during training. Once the parameters are optimized,
-the trained circuit can be deployed on quantum hardware.
+Instantaneous Quantum Polynomial (IQP) circuits. The core idea is to classically
+optimize the parameters of a quantum circuit and subsequently deploy the trained circuit on quantum hardware.
 
 Both qubit and qudit (arbitrary local dimension) circuits are supported.
+
 The module provides:
 
-- **Expectation-value estimators** that compute Pauli (qubit) or
-  Heisenberg–Weyl (qudit) moments of the circuit output.
+- **Expectation-value estimators** that compute qubit (Pauli) or
+  qudit (Heisenberg–Weyl) moments of the circuit output.
 - **MMD loss functions** that measure how well the circuit's output
   distribution matches a target dataset of bitstrings or dit-strings.
 - **Training utilities** that wrap JAX optimizers with convergence
