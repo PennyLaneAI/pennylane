@@ -803,11 +803,6 @@ def decompose(
     return (tape,), null_postprocessing
 
 
-# NOTE: Set attribute dynamically as to not break 'from_plxpr' in Catalyst.
-# TODO: Remove as soon as Catalyst doesn't depend on it.
-decompose.plxpr_transform = decompose_plxpr_to_plxpr
-
-
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
