@@ -242,6 +242,70 @@ qudit.
    params = jnp.zeros(len(gates))
    expvals, cov = expval_fn(params)
 
+
+Training qudit circuits with MMD loss
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Qudit distribution matching uses
+:func:`~build_qudit_mmd_loss`, which returns a reusable loss function
+based on a graph-kernel MMD. The ``graph_type`` parameter selects the
+kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
+``"complete"`` treats all levels symmetrically.
+
+.. code-block:: python
+
+   import jax
+   import jax.numpy as jnp
+
+   from pennylane.labs.tcdq import (
+       QuditCircuitConfig,
+       QuditMMDConfig,
+       build_qudit_mmd_loss,
+       TrainingOptions,
+       train,
+   )
+
+   d = 3
+   n_qudits = 4
+
+   # Define single-qudit and nearest-neighbour two-qudit gates
+   gates = {
+       0: [[1, 0, 0, 0]],
+       1: [[0, 1, 0, 0]],
+       2: [[0, 0, 1, 0]],
+       3: [[0, 0, 0, 1]],
+       4: [[1, 1, 0, 0]],
+       5: [[0, 1, 1, 0]],
+       6: [[0, 0, 1, 1]],
+   }
+
+   circuit_config = QuditCircuitConfig(
+       d=d,
+       n_qudits=n_qudits,
+       gates=gates,
+       n_samples=2000,
+       key=jax.random.PRNGKey(0),
+   )
+
+   # Build the MMD loss with a cycle-graph kernel
+   mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
+   loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+
+   # Generate synthetic target data and train
+   target_data = jax.random.randint(jax.random.PRNGKey(99), (500, n_qudits), 0, d)
+   params = jnp.zeros(len(gates))
+
+   result = train(
+       optimizer="Adam",
+       loss=loss_fn,
+       stepsize=0.01,
+       n_iters=100,
+       loss_kwargs={"params": params, "target_data": target_data},
+       options=TrainingOptions(unroll_steps=10),
+   )
+
+   print("Final MMD loss:", float(result.losses[-1]))
+
 """
 
 from .expval_functions import (
