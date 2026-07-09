@@ -69,9 +69,9 @@ class MMDConfig:
     """
 
     #: Width of the RBF kernel (scalar or sequence for multi-bandwidth).
-    bandwidth: float | Sequence[float]
+    bandwidth: float | Sequence[float] = None
     #: Number of sampled observables per bandwidth.
-    n_ops: int
+    n_ops: int = None
     #: Subset of qubit indices to include, or ``None`` for all qubits.
     wires: Sequence[int] | None = None
     #: If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``.

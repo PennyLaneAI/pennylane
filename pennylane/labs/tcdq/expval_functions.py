@@ -83,13 +83,13 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     #: Circuit structure mapping parameter indices to lists of gates.
-    gates: dict[int, list[list[int]]]
+    gates: dict[int, list[list[int]]] = None
     #: Number of random bitstrings drawn for the estimation.
-    n_samples: int
+    n_samples: int = None
     #: JAX PRNG key for random bitstring generation.
-    key: ArrayLike
+    key: ArrayLike = None
     #: Total number of qubits in the circuit.
-    n_qubits: int
+    n_qubits: int = None
     #: Pauli observables encoded as an integer array, or ``None``.
     observables: ArrayLike | None = None
     #: Computational-basis states with non-zero amplitude, or ``None``.

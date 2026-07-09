@@ -100,15 +100,15 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     #: Local qudit dimension.
-    d: int
+    d: int = None
     #: Number of qudits in the circuit.
-    n_qudits: int
+    n_qudits: int = None
     #: Circuit structure mapping parameter indices to generator vectors.
-    gates: dict[int, list[list[int]]]
+    gates: dict[int, list[list[int]]] = None
     #: Number of random dit-strings drawn for the estimation.
-    n_samples: int
+    n_samples: int = None
     #: JAX PRNG key for random dit-string generation.
-    key: ArrayLike
+    key: ArrayLike = None
     #: Heisenberg–Weyl observables ``(l_vecs, m_vecs)``, or ``None``.
     observables: tuple[ArrayLike, ArrayLike] | None = None
     #: Support of a custom initial state, or ``None``.

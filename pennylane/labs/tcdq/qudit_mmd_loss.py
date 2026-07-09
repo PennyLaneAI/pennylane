@@ -80,9 +80,9 @@ class QuditMMDConfig:
     """
 
     #: Width of the graph heat kernel (scalar or sequence for multi-bandwidth).
-    bandwidth: float | Sequence[float]
+    bandwidth: float | Sequence[float] = None
     #: Number of sampled observables per bandwidth.
-    n_ops: int
+    n_ops: int = None
     #: Graph whose spectrum defines the kernel (``"cycle"`` or ``"complete"``).
     graph_type: str = "cycle"
     #: Subset of qudit indices to include, or ``None`` for all qudits.
