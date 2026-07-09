@@ -45,9 +45,9 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import AbstractWires, Wire
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
