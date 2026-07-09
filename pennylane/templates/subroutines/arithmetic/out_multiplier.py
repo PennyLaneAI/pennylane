@@ -506,7 +506,6 @@ def _out_multiplier_with_caddsub_resources(
     # Some resource reps we will need:
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = X
 
     # Controlled add-subtract loop
     loop_size = min(k, n)
@@ -541,7 +540,7 @@ def _out_multiplier_with_caddsub_resources(
         # bit flips corresponding to input carry activated. Accounts for the fact that
         # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
         has_work_wires = int(k > m + 1)
-        resources[x_rep] += 4 + 2 * has_work_wires
+        resources[X] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
