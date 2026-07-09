@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for Vibronic Hamiltonian"""
 
+import math
 from itertools import product
 
 import numpy as np
@@ -20,7 +21,7 @@ import pytest
 import scipy as sp
 
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
-from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, VibronicHO
+from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicHO
 
 # pylint: disable=no-self-use
 
@@ -44,6 +45,52 @@ def test_vibronic_fragments():
         assert frag.states == n_states
         assert frag.modes == n_modes
 
+def test_mode_based_fragments():
+    """Test the mode based fragmentation scheme against a known example"""
+
+    states = 1
+    modes = 1
+    n_blocks = 2 ** math.ceil(math.log2(states))
+
+    idx0 = 0
+
+    omegas = np.array([6.0])
+
+    lambdas = np.zeros((states, states))
+    alphas  = np.zeros((states, states, modes))
+    alphas[0, 0, idx0] = 2.5
+    betas   = np.zeros((states, states, modes, modes))
+
+    taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
+
+    frags = vibronic_fragments(states, modes, omegas, taylor_coeffs, scheme="mode")
+
+
+    # Q^2 term: beta[0,0,0,0] gets omegas[0]/2 added inside vibronic_fragments_modebased
+    exp0 = RealspaceMatrix.zero(n_blocks, modes)
+    M = np.zeros((modes, modes))
+    M[idx0, idx0] = omegas[idx0] / 2
+    op = RealspaceOperator(modes, ('Q', 'Q'), RealspaceCoeffs(M, label=f"beta[{idx0}][0,0]"))
+    exp0.set_block(0, 0, RealspaceSum(modes, (op,)))
+
+    # Q linear term
+    exp1 = RealspaceMatrix.zero(n_blocks, modes)
+    v = np.zeros(modes)
+    v[idx0] = alphas[0, 0, idx0]
+    opL = RealspaceOperator(modes, ('Q',), RealspaceCoeffs(v, label=f"alpha[{idx0}][0,0]"))
+    exp1.set_block(0, 0, RealspaceSum(modes, (opL,)))
+
+    # FC merges commuting potential fragments (exp0 + exp1)
+    exp_potential = exp0 + exp1
+
+    # kinetic term (appended after grouping)
+    exp_kinetic = RealspaceMatrix.zero(n_blocks, modes)
+    PP = RealspaceOperator(modes, ('P', 'P'), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
+    exp_kinetic.set_block(0, 0, RealspaceSum(modes, (PP,)))
+
+    assert len(frags) == 2
+    assert frags[0] == exp_potential
+    assert frags[1] == exp_kinetic
 
 class Test1Mode:
     """Test a simple one mode, one state vibronic Hamiltonian"""
