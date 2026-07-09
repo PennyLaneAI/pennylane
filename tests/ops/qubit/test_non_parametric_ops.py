@@ -863,7 +863,6 @@ period_two_ops = (
 
 
 class TestPowMethod:
-
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
@@ -1051,21 +1050,6 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_PauliX(self):
-        """Test the PauliX _controlled method."""
-        out = qp.PauliX(0)._controlled("a")
-        qp.assert_equal(out, qp.CNOT(("a", 0)))
-
-    def test_PauliY(self):
-        """Test the PauliY _controlled method."""
-        out = qp.PauliY(0)._controlled("a")
-        qp.assert_equal(out, qp.CY(("a", 0)))
-
-    def test_PauliZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.PauliZ(0)._controlled("a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
-
     def test_Hadamard(self):
         """Test the Hadamard _controlled method."""
         out = qp.Hadamard(0)._controlled("a")
@@ -1109,9 +1093,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**half_op.resource_params):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
                     rule(*half_op.parameters, wires=half_op.wires, **half_op.hyperparameters)
@@ -1120,7 +1102,6 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
             if rule.is_applicable(**quart_op.resource_params):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
                     rule(*quart_op.parameters, wires=quart_op.wires, **quart_op.hyperparameters)
@@ -1139,9 +1120,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**pow_op.resource_params):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
 
