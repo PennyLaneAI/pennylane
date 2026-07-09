@@ -819,6 +819,11 @@ def _ctrl_abstract(
     if isinstance(op, type) and issubclass(op, Operator2):
         op = abstractify(op)
 
+    if isinstance(control_wires, AbstractWires):
+        # AbstractWires can't be subscripted, so custom ctrl dispatch (CNOT, CZ, etc.)
+        # would fail. Use ControlledOp2 directly.
+        return ControlledOp2(op, control_wires=control_wires, work_wires=work_wires)
+
     control_values = Bool[len(control_wires)] if num_zero_control_values else None
     return qp.ctrl(
         op,

@@ -15,16 +15,15 @@ r"""
 Contains the FlipSign template.
 """
 
-from functools import reduce
-
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import X, Z, cond, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 class FlipSign(Operation):
@@ -159,14 +158,7 @@ class FlipSign(Operation):
 
 
 def _flip_sign_resources(num_wires, arr_bin):
-    res = {
-        controlled_resource_rep(
-            Z,
-            {},
-            num_control_wires=num_wires - 1,
-            num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
-        ): 1
-    }
+    res = {_ctrl_abstract(Z, Wire[num_wires - 1], Wire[0], "borrowed"): 1}
     if arr_bin[-1] == 0:
         res[X] = 2
 
