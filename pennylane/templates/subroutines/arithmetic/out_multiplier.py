@@ -18,7 +18,6 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 from itertools import combinations
 
-from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
@@ -639,7 +638,6 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     bits of each register that correspond to an input carry being set to one. The bit flips on
     the least significant work wire occur after the first left elbow/before the last right elbow.
     """
-    c_wire = math.atleast_1d(c_wire)
     # We need to control-flip all x_wires in order to achieve subtraction for c_wire=|0>
     # We also need to control-flip the LSB of x_wires (last wire) to achieve addition plus one
     # (c.f. _add_plus_one). The bit flips on the LSB cancel, so that we only control-flip all _but_
