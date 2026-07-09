@@ -612,8 +612,8 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_counts.items()
         }
-        base_x_count = gate_counts.get(qp.X, 0)
-        gate_counts[qp.X] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(qp.X(Wire[1]), 0)
+        gate_counts[qp.X(Wire[1])] = base_x_count + len(control_values)
         return gate_counts
 
     @register_condition(_condition_fn)
