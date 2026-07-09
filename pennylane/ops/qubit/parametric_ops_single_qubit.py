@@ -82,7 +82,6 @@ class RX(Operator2):
     """
 
     wire_sizes = (1,)
-    num_wires = 1
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
 
@@ -992,7 +991,7 @@ add_decomps("Pow(PhaseShift)", pow_rotation)
 add_decomps("C(PhaseShift)", flip_zero_control(_cphase_to_ppr))
 
 
-class Rot(Operation):
+class Rot(Operator2):
     r"""
     Arbitrary single qubit rotation
 
@@ -1024,14 +1023,16 @@ class Rot(Operation):
         wires (Any, Wires): the wire the operation acts on
     """
 
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi", "theta", "omega")
+    arg_specs = {"phi": Complex, "theta": Complex, "omega": Complex, "wires": Wire[1]}
+
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = set()
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
@@ -1057,6 +1058,7 @@ class Rot(Operation):
         phi: TensorLike,
         theta: TensorLike,
         omega: TensorLike,
+        wires=None,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1180,7 +1182,7 @@ class Rot(Operation):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
-def _rot_to_rz_ry_rz_resources():
+def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
     return {qp.RZ: 2, qp.RY: 1}
 
 
