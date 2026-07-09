@@ -406,7 +406,6 @@ def _out_square_with_caddsub_resources(
     cnot_rep = resource_rep(CNOT)
     cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
     cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = X
 
     # Controlled add-subtract loop
     loop_size = min(m, n)
@@ -445,7 +444,7 @@ def _out_square_with_caddsub_resources(
         ] = 1
 
     # Add (2^n-1-x) + 1
-    resources[x_rep] += 6 + 2 * n
+    resources[X] += 6 + 2 * n
     adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=m)
     for key, value in adder_resources.items():
         resources[key] += value

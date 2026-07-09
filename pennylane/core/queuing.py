@@ -194,9 +194,10 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
+from pennylane import pytrees
 from pennylane.capture import enabled  # tach-ignore
 from pennylane.exceptions import QueuingError
-from pennylane import pytrees
+
 
 class WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
