@@ -21,6 +21,7 @@ from functools import reduce
 
 import numpy as np
 
+from pennylane import compiler
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation
@@ -800,6 +801,8 @@ def _qrom_measurement_condition(
     num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
 ):  # pylint: disable=unused-argument
 
+    if not compiler.active():
+        return False
     if base_params is not None:
         num_bitstrings = base_params["num_bitstrings"]
         num_work_wires = base_params["num_work_wires"]
