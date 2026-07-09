@@ -16,6 +16,8 @@ Decomposition rules for standard operators like ``Hadamard`` or ``CNOT`` into PP
 """
 
 import pennylane as qp
+from pennylane.decomposition import adjoint_resource_rep
+from pennylane.ops import Prod
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.wires import WiresLike
 
@@ -110,3 +112,70 @@ def make_cz_ppm_decomp(work_wire: WiresLike):
         qp.cond(m0 != m2, qp.Z(wires[1]))
 
     return _cz_ppm
+
+
+def make_elbow_ppm_decomp(work_wires: WiresLike):
+    r"""Produce a decomposition rule of :class:`~.Elbow` into 3 PPMs and
+    two Pauli corrections. Uses one work wire, which needs to be in the state :math:`|0\rangle`.
+
+    Args:
+        work_wire (WireLike): Work wire to use for the decomposition rule. It is expected that
+            we can index into this object via ``work_wire[0]``.
+
+    Returns:
+        DecompositionRule: A decomposition rule to be used with :func:`~.decompose`.
+
+    **Example**
+
+    show example usage
+    """
+
+    def _elbow_ppm_resources():
+        return {
+            qp.resource_rep(PauliMeasure): 8,
+            qp.resource_rep(Prod, resources={qp.Y: 1, qp.Z: 2}): 1,
+            qp.resource_rep(Prod, resources={qp.Y: 1, qp.Z: 1}): 2,
+            qp.Y: 1,
+            qp.H: 4,
+            qp.T: 2,
+            adjoint_resource_rep(qp.T, {}): 2,
+        }
+
+    @qp.register_resources(_elbow_ppm_resources)
+    def _elbow_ppm(wires: WiresLike, **__):
+        # pylint: disable=unused-variable
+        # qp.PauliRot(np.pi / 4, "ZZY", wires)
+        qp.H(work_wires[0])
+        qp.T(work_wires[0])
+        m0 = pauli_measure("ZZYZ", [*wires, work_wires[0]])
+        # The following should be a reactive X/Y measurement!
+        m1 = pauli_measure("Y", work_wires[0])
+        qp.cond(m1, qp.prod(qp.Z(wires[0]), qp.Z(wires[1]), qp.Y(wires[2])))
+
+        # qp.PauliRot(-np.pi / 4, "IZY", wires)
+        qp.H(work_wires[1])
+        # Verify that this adjoint produced negated-angle PPR
+        qp.adjoint(qp.T(work_wires[1]))
+        m0 = pauli_measure("ZYZ", [*wires[1:], work_wires[1]])
+        # The following should be a reactive X/Y measurement!
+        m1 = pauli_measure("Y", work_wires[1])
+        qp.cond(m1, qp.prod(qp.Z(wires[1]), qp.Y(wires[2])))
+
+        # qp.PauliRot(-np.pi / 4, "ZIY", wires)
+        qp.H(work_wires[2])
+        # Verify that this adjoint produced negated-angle PPR
+        qp.adjoint(qp.T(work_wires[2]))
+        m0 = pauli_measure("ZYZ", [*wires[::2], work_wires[2]])
+        # The following should be a reactive X/Y measurement!
+        m1 = pauli_measure("Y", work_wires[2])
+        qp.cond(m1, qp.prod(qp.Z(wires[0]), qp.Y(wires[2])))
+
+        # qp.PauliRot(np.pi / 4, "IIY", wires)
+        qp.H(work_wires[3])
+        qp.T(work_wires[3])
+        m0 = pauli_measure("YZ", [wires[2], work_wires[3]])
+        # The following should be a reactive X/Y measurement!
+        m1 = pauli_measure("Y", work_wires[3])
+        qp.cond(m1, qp.Y(wires[2]))
+
+    return _elbow_ppm
