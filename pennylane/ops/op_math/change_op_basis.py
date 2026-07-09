@@ -38,6 +38,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -383,15 +385,12 @@ def _controlled_change_op_basis_resources(
 ):  # pylint: disable=unused-argument, too-many-arguments
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
-    target_op_type, target_params = _resource_type_and_params(base_params["target_op"])
     resources[
-        controlled_resource_rep(
-            target_op_type,
-            target_params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1
@@ -424,12 +423,6 @@ def _controlled_change_op_basis_decomposition(
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
         pytrees.unflatten(*pytrees.flatten(op))
-
-
-def _resource_type_and_params(op):
-    if hasattr(op, "op_type"):
-        return op.op_type, op.params
-    return type(op), op.resource_params
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

@@ -34,6 +34,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import CompressedResourceOp, auto_wrap
 from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -574,18 +576,18 @@ class Select(Operation):
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
     if isinstance(target_rep, CompressedResourceOp):
-        base_class, base_params = target_rep.op_type, target_rep.params
-    elif isinstance(target_rep, type):
-        base_class, base_params = target_rep, {}
-    else:
-        base_class, base_params = type(target_rep), target_rep.resource_params
-    return controlled_resource_rep(
-        base_class=base_class,
-        base_params=base_params,
-        num_control_wires=num_control_wires,
-        num_work_wires=num_work_wires,
-        num_zero_control_values=num_control_wires - sum(ctrl_state),
-    )
+        return controlled_resource_rep(
+            base_class=target_rep.op_type,
+            base_params=target_rep.params,
+            num_control_wires=num_control_wires,
+            num_work_wires=num_work_wires,
+            num_zero_control_values=num_control_wires - sum(ctrl_state),
+        )
+    if isinstance(target_rep, type):
+        from pennylane.core.operator import abstractify  # pylint: disable=import-outside-toplevel
+
+        target_rep = abstractify(target_rep)
+    return _ctrl_abstract(target_rep, Wire[num_control_wires], Wire[num_work_wires], "borrowed")
 
 
 def _select_resources_multi_control(op_reps, num_control_wires, partial, num_work_wires):

@@ -219,14 +219,12 @@ class TestSelect:
 
         assert resource_obj.num_gates == 4
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
-
-        kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
+        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+        from pennylane.typing import Wire
 
         expected_counts = {
-            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=2): 1,
-            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=1): 2,
-            c_resource(base_class=qp.Y, **kwargs, num_zero_control_values=0): 1,
+            _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 3,
+            _ctrl_abstract(abstractify(qp.Y), Wire[2], Wire[0], "borrowed"): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
@@ -264,23 +262,33 @@ class TestSelect:
 
         assert resource_obj.num_gates == 3
 
-        c_resource = qp.decomposition.resources.controlled_resource_rep
+        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+        from pennylane.typing import Wire
 
-        kwargs22 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 2}
-        kwargs21 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 1}
-        kwargs10 = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 0}
+        c_resource = qp.decomposition.resources.controlled_resource_rep
 
         if partial:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs10): 1,
-                c_resource(base_class=qp.SWAP, **kwargs10): 1,
+                _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 1,
+                _ctrl_abstract(abstractify(qp.X), Wire[1], Wire[0], "borrowed"): 1,
+                c_resource(
+                    base_class=qp.SWAP,
+                    base_params={},
+                    num_control_wires=1,
+                    num_zero_control_values=0,
+                    num_work_wires=0,
+                ): 1,
             }
         else:
             expected_counts = {
-                c_resource(base_class=qp.X, **kwargs22): 1,
-                c_resource(base_class=qp.X, **kwargs21): 1,
-                c_resource(base_class=qp.SWAP, **kwargs21): 1,
+                _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 2,
+                c_resource(
+                    base_class=qp.SWAP,
+                    base_params={},
+                    num_control_wires=2,
+                    num_zero_control_values=1,
+                    num_work_wires=0,
+                ): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
@@ -325,7 +333,10 @@ class TestSelect:
 
             expected_counts = {abstractify(qp.Z): 1}
         else:
-            expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
+            from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+            from pennylane.typing import Wire
+
+            expected_counts = {_ctrl_abstract(abstractify(qp.Z), Wire[1], Wire[0], "borrowed"): 1}
         assert resource_obj.gate_counts == expected_counts
 
         op = qp.Select(ops, control, partial=partial)

@@ -45,8 +45,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
 
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
-            _adjoint(decomp_op): count
-            for decomp_op, count in base_resources.gate_counts.items()
+            _adjoint(decomp_op): count for decomp_op, count in base_resources.gate_counts.items()
         }
 
     base_source = base_decomposition._source
