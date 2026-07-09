@@ -43,7 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch, is_empty_or_all_true
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -185,7 +185,7 @@ class RX(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_rx(base: RX, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CRX(base.data[0], wires=control + base.wires)
     return NotImplemented
 
@@ -398,7 +398,7 @@ class RY(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_ry(base: RY, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CRY(base.data[0], wires=control + base.wires)
     return NotImplemented
 
@@ -665,7 +665,7 @@ class RZ(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_rz(base: RZ, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CRZ(base.data[0], wires=control + base.wires)
     return NotImplemented
 
@@ -963,7 +963,7 @@ class PhaseShift(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_ps(base: PhaseShift, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.ControlledPhaseShift(base.data[0], wires=control + base.wires)
     return NotImplemented
 
@@ -1193,7 +1193,7 @@ class Rot(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_rot(base: Rot, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CRot(*base.data, wires=control + base.wires)
     return NotImplemented
 

@@ -45,7 +45,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch, is_empty_or_all_true
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -222,7 +222,7 @@ class Hadamard(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_h(base: Hadamard, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CH(control + base.wires)
     return NotImplemented
 
@@ -500,7 +500,7 @@ class PauliX(Operation):
 @custom_ctrl_dispatch.register
 def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
     wires = control + base.wires
-    if not is_empty_or_all_true(control_values):
+    if not _is_empty_or_all_true(control_values):
         return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
     if len(control) == 1:
         return qp.CNOT(wires)
@@ -796,7 +796,7 @@ class PauliY(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_y(base: PauliY, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CY(control + base.wires)
     return NotImplemented
 
@@ -1068,7 +1068,7 @@ class PauliZ(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
-    if not is_empty_or_all_true(control_values):
+    if not _is_empty_or_all_true(control_values):
         return NotImplemented
     if len(control) == 1:
         return qp.CZ(control + base.wires)
@@ -1801,7 +1801,7 @@ class SWAP(Operation):
 
 @custom_ctrl_dispatch.register
 def _ctrl_swap(base: SWAP, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CSWAP(control + base.wires)
     return NotImplemented
 

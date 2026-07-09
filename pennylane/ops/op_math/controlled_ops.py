@@ -47,9 +47,9 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled import (
     ControlledOp,
+    _is_empty_or_all_true,
+    _resolve_ctrl_values,
     custom_ctrl_dispatch,
-    is_empty_or_all_true,
-    resolve_ctrl_values,
 )
 from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
@@ -679,7 +679,7 @@ class CZ(ControlledOp):
 
 @custom_ctrl_dispatch.register
 def _ctrl_cz(base: CZ, control, control_values, *_):
-    if len(control) == 1 and is_empty_or_all_true(control_values):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
         return qp.CCZ(control + base.wires)
     return NotImplemented
 
@@ -1279,8 +1279,8 @@ class CNOT(ControlledOp):
 @custom_ctrl_dispatch.register
 def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     wires = control + base.wires
-    if not is_empty_or_all_true(control_values):
-        ctrl_values = resolve_ctrl_values(control_values, [True], len(control))
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True], len(control))
         return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
     if len(control) == 1 and not work_wires:
         return qp.Toffoli(control + base.wires)
@@ -1513,8 +1513,8 @@ class Toffoli(ControlledOp):
 @custom_ctrl_dispatch.register
 def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_type):
     wires = control + base.wires
-    if not is_empty_or_all_true(control_values):
-        ctrl_values = resolve_ctrl_values(control_values, [True, True], len(control))
+    if not _is_empty_or_all_true(control_values):
+        ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control))
         return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
