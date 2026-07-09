@@ -324,6 +324,8 @@ class PauliX(Operator2):
 
     wire_sizes = (1,)
 
+    arg_specs = {"wires": Wire[1]}
+
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
@@ -575,6 +577,8 @@ class PauliY(Operator2):
     """
 
     wire_sizes = (1,)
+
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 
@@ -832,6 +836,8 @@ class PauliZ(Operator2):
     """
 
     wire_sizes = (1,)
+
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 
