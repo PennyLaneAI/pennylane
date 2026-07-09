@@ -72,10 +72,15 @@ class TrainingOptions:
     ... )
     """
 
+    #: Number of optimization steps fused into a single ``jax.lax.scan`` call.
     unroll_steps: int = 1
+    #: Keyword arguments for the validation loss, or ``None`` to disable.
     val_kwargs: dict[str, Any] | None = None
+    #: Window size for the convergence check.
     convergence_interval: int = 100
+    #: Integer seed for the JAX PRNG key.
     random_state: int = 666
+    #: Whether to JIT-compile the optimizer's internal update step.
     opt_jit: bool = False
 
 
@@ -100,9 +105,13 @@ class TrainingResult(NamedTuple):
     100
     """
 
+    #: Optimized circuit parameters after training.
     final_params: jnp.ndarray
+    #: Training loss at every optimization step.
     losses: jnp.ndarray
+    #: Validation loss at every step (zeros if disabled).
     val_losses: jnp.ndarray
+    #: Wall-clock time of the training loop in seconds.
     run_time: float
 
 
@@ -122,11 +131,17 @@ class BatchResult(NamedTuple):
             batch (zeros if validation is disabled), shape ``(unroll_steps,)``.
     """
 
+    #: Circuit parameters at the end of this batch.
     params: jnp.ndarray
+    #: Internal optimizer state (e.g., Adam moments).
     state: jnp.ndarray
+    #: Updated PRNG key for the next training batch.
     key: jax.Array
+    #: Updated PRNG key for the next validation evaluation.
     key_val: jax.Array
+    #: Training loss for each step in this batch.
     losses: jnp.ndarray
+    #: Validation loss for each step (zeros if disabled).
     val_losses: jnp.ndarray
 
 

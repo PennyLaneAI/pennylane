@@ -82,13 +82,21 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         `Section 1, Circuit Architecture <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#1-circuit-architecture>`_
     """
 
+    #: Circuit structure mapping parameter indices to lists of gates.
     gates: dict[int, list[list[int]]]
+    #: Number of random bitstrings drawn for the estimation.
     n_samples: int
+    #: JAX PRNG key for random bitstring generation.
     key: ArrayLike
+    #: Total number of qubits in the circuit.
     n_qubits: int
+    #: Pauli observables encoded as an integer array, or ``None``.
     observables: ArrayLike | None = None
+    #: Computational-basis states with non-zero amplitude, or ``None``.
     init_state_elems: ArrayLike | None = None
+    #: Amplitudes for the custom initial state, or ``None``.
     init_state_amps: ArrayLike | None = None
+    #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
 
 

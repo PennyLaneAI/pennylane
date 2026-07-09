@@ -68,10 +68,15 @@ class MMDConfig:
         `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
     """
 
+    #: Width of the RBF kernel (scalar or sequence for multi-bandwidth).
     bandwidth: float | Sequence[float]
+    #: Number of sampled observables per bandwidth.
     n_ops: int
+    #: Subset of qubit indices to include, or ``None`` for all qubits.
     wires: Sequence[int] | None = None
+    #: If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``.
     sqrt_loss: bool = False
+    #: If ``True``, return per-bandwidth losses instead of their average.
     return_per_bandwidth: bool = False
 
 

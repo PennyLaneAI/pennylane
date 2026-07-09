@@ -79,11 +79,17 @@ class QuditMMDConfig:
         `Section 5.2, Spectral Sampling Distributions <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#52-spectral-sampling-distributions>`_
     """
 
+    #: Width of the graph heat kernel (scalar or sequence for multi-bandwidth).
     bandwidth: float | Sequence[float]
+    #: Number of sampled observables per bandwidth.
     n_ops: int
+    #: Graph whose spectrum defines the kernel (``"cycle"`` or ``"complete"``).
     graph_type: str = "cycle"
+    #: Subset of qudit indices to include, or ``None`` for all qudits.
     wires: Sequence[int] | None = None
+    #: If ``True``, return ``sqrt(|MMD²|)`` instead of ``MMD²``.
     sqrt_loss: bool = False
+    #: If ``True``, return per-bandwidth losses instead of their average.
     return_per_bandwidth: bool = False
 
 

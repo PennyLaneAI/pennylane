@@ -99,13 +99,21 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         `Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_
     """
 
+    #: Local qudit dimension.
     d: int
+    #: Number of qudits in the circuit.
     n_qudits: int
+    #: Circuit structure mapping parameter indices to generator vectors.
     gates: dict[int, list[list[int]]]
+    #: Number of random dit-strings drawn for the estimation.
     n_samples: int
+    #: JAX PRNG key for random dit-string generation.
     key: ArrayLike
+    #: Heisenberg–Weyl observables ``(l_vecs, m_vecs)``, or ``None``.
     observables: tuple[ArrayLike, ArrayLike] | None = None
+    #: Support of a custom initial state, or ``None``.
     init_state_elems: ArrayLike | None = None
+    #: Amplitudes for the custom initial state, or ``None``.
     init_state_amps: ArrayLike | None = None
 
 
@@ -172,8 +180,11 @@ class WeightGroupData(NamedTuple):
             angle-addition term.
     """
 
+    #: Maps each gate to its parameter index, shape ``(n_gates,)``.
     param_indices: jnp.ndarray
+    #: Sample-side factor matrices for each angle-addition term.
     samples_matrices: list[jnp.ndarray]
+    #: Observable-side factor matrices for each angle-addition term.
     obs_matrices: list[jnp.ndarray]
 
 
