@@ -23,7 +23,7 @@ from functools import reduce
 
 from pennylane import capture, math, pytrees
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -383,10 +383,11 @@ def _controlled_change_op_basis_resources(
 ):  # pylint: disable=unused-argument, too-many-arguments
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
+    target_op_type, target_params = _resource_type_and_params(base_params["target_op"])
     resources[
         controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
+            target_op_type,
+            target_params,
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
@@ -423,6 +424,12 @@ def _controlled_change_op_basis_decomposition(
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
         pytrees.unflatten(*pytrees.flatten(op))
+
+
+def _resource_type_and_params(op):
+    if hasattr(op, "op_type"):
+        return op.op_type, op.params
+    return type(op), op.resource_params
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

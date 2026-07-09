@@ -355,7 +355,11 @@ class Select(Operation):
     @property
     def resource_params(self):
         op_reps = tuple(
-            auto_wrap(op) if isinstance(op, Operator2) else resource_rep(type(op), **op.resource_params)
+            (
+                auto_wrap(op)
+                if isinstance(op, Operator2)
+                else resource_rep(type(op), **op.resource_params)
+            )
             for op in self.ops
         )
         return {

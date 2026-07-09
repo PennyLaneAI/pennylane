@@ -225,14 +225,16 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
                 bc, bp = base_op_rep.op_type, base_op_rep.params
             else:
                 bc, bp = type(base_op_rep), base_op_rep.resource_params
-            gate_counts[controlled_resource_rep(
-                base_class=bc,
-                base_params=bp,
-                num_control_wires=num_control_wires,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires,
-                work_wire_type=work_wire_type,
-            )] = count
+            gate_counts[
+                controlled_resource_rep(
+                    base_class=bc,
+                    base_params=bp,
+                    num_control_wires=num_control_wires,
+                    num_zero_control_values=0,
+                    num_work_wires=num_work_wires,
+                    work_wire_type=work_wire_type,
+                )
+            ] = count
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
         gate_counts[qp.PauliX] = num_zero_control_values * 2
