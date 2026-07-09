@@ -109,12 +109,6 @@ class RX(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     has_decomposition = False
 
     @staticmethod
@@ -320,12 +314,6 @@ class RY(Operator2):
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     has_decomposition = False
 
@@ -643,12 +631,6 @@ class RZ(Operator2):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.phi, wires=self.wires)
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [RZ(self.phi * z, wires=self.wires)]
@@ -1037,8 +1019,6 @@ class Rot(Operator2):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    resource_keys = set()
-
     # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
@@ -1048,10 +1028,6 @@ class Rot(Operator2):
         wires: WiresLike,
     ):
         super().__init__(phi, theta, omega, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(
