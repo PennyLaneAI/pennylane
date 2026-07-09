@@ -2045,6 +2045,13 @@ class TestCtrl:
                 None,
                 qp.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
+            (
+                qp.Toffoli(wires=[1, 2, 3]),
+                [0],
+                [0],
+                None,
+                qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 1], work_wires=[]),
+            ),
         ],
     )
     def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, work_wires, expected_op):

@@ -215,7 +215,8 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
             work_wire_type,
         )
     ) is not NotImplemented:
-        return custom_op
+        # TODO: remove the no cover as we migrate operators to `Operator2` [sc-123701]
+        return custom_op  # pragma: no cover
 
     if isinstance(op, Controlled2):
         _ = pop_op_eqns((op,))
@@ -259,9 +260,8 @@ def resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
 
 def is_empty_or_all_true(control_values):
     """Checks whether a control values argument is empty or all True."""
-    return (
-        control_values is None
-        or not math.is_abstract(control_values)
+    return control_values is None or (
+        not math.is_abstract(control_values)
         and not isinstance(control_values, AbstractArray)
         and all(control_values)
     )
