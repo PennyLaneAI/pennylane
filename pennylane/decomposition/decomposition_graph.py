@@ -54,7 +54,6 @@ from .symbolic_decomposition import (
     decompose_to_base,
     flip_control_adjoint,
     flip_pow_adjoint,
-    make_adjoint_decomp,
     make_controlled_decomp,
     merge_powers,
     repeat_pow_base,
@@ -543,7 +542,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         return [
-            make_adjoint_decomp(base_decomp)
+            qp.decomposition.make_adjoint_decomp(base_decomp)
             for base_decomp in self._get_decompositions(base)
             if base_decomp.get_work_wire_spec(**base_params).total == 0
             and not _decomp_contains_mcm(base_decomp, base_params)

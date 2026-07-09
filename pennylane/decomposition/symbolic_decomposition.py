@@ -52,9 +52,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     )
     def _impl(*params, wires, base):
         # pylint: disable=protected-access
-        qp.adjoint(base_decomposition._impl, lazy=False)(
-            *params, wires=wires, **base.hyperparameters
-        )
+        qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
     _impl._source = (
         dedent(_impl._source).strip()
