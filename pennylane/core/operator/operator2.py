@@ -794,7 +794,7 @@ class Operator2(metaclass=OperatorMeta):
             return self.compute_decomposition(**self.arguments)
 
         for decomp in qp.list_decomps(self):
-            if decomp.is_applicable():
+            if decomp.is_applicable(**self.arguments):
                 with AnnotatedQueue() as q:
                     decomp(**self.arguments)
                 if QueuingManager.recording():
