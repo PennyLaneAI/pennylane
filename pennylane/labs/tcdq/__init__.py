@@ -23,21 +23,6 @@ The supported workflows include fast optimization of instantaneous quantum polyn
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-This module classically estimates expectation values and loss functions for
-Instantaneous Quantum Polynomial (IQP) circuits. The core idea is to classically
-optimize the parameters of a quantum circuit and subsequently deploy the trained circuit on quantum hardware.
-
-Both qubit and qudit (arbitrary local dimension) circuits are supported.
-
-The module provides:
-
-- **Expectation-value estimators** that compute qubit (Pauli) or
-  qudit (Heisenberg–Weyl) moments of the circuit output.
-- **MMD loss functions** that measure how well the circuit's output
-  distribution matches a target dataset of bitstrings or dit-strings.
-- **Training utilities** that wrap JAX optimizers with convergence
-  checking and validation.
-
 For the mathematical background, see the
 `technical notes <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md>`_.
 
