@@ -164,7 +164,7 @@ def _flip_sign_resources(num_wires, arr_bin):
             control_wires=Wire[num_wires - 1],
             work_wires=Wire[0],
             work_wire_type="borrowed",
-            num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
+            num_zero_control_values=arr_bin[:-1].count(0),
         ): 1
     }
     if arr_bin[-1] == 0:
