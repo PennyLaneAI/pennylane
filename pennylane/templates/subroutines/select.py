@@ -573,11 +573,11 @@ class Select(Operation):
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
     return _ctrl_abstract(
-        target_rep,
-        Wire[num_control_wires],
-        Wire[num_work_wires],
-        "borrowed",
-        num_control_wires - sum(ctrl_state),
+        op=target_rep,
+        control_wires=Wire[num_control_wires],
+        work_wires=Wire[num_work_wires],
+        work_wire_type="borrowed",
+        num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
 
