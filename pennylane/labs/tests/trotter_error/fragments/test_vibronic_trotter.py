@@ -21,7 +21,14 @@ import pytest
 import scipy as sp
 
 from pennylane.labs.trotter_error.fragments import vibronic_fragments
-from pennylane.labs.trotter_error.realspace import HOState, RealspaceMatrix, RealspaceOperator, RealspaceSum, RealspaceCoeffs, VibronicHO
+from pennylane.labs.trotter_error.realspace import (
+    HOState,
+    RealspaceCoeffs,
+    RealspaceMatrix,
+    RealspaceOperator,
+    RealspaceSum,
+    VibronicHO,
+)
 
 # pylint: disable=no-self-use
 
@@ -50,6 +57,7 @@ def test_vibronic_fragments():
         assert frag.states == states
         assert frag.modes == modes
 
+
 def test_frag_schemes_equal():
     """Test the two fragmentation schemes sum to the same Hamiltonian"""
     states = 1
@@ -72,6 +80,7 @@ def test_frag_schemes_equal():
 
     assert np.allclose(ham_og.matrix(2), ham_mode.matrix(2))
 
+
 def test_mode_based_fragments():
     """Test the mode based fragmentation scheme against a known example"""
 
@@ -84,27 +93,26 @@ def test_mode_based_fragments():
     omegas = np.array([6.0])
 
     lambdas = np.zeros((states, states))
-    alphas  = np.zeros((states, states, modes))
+    alphas = np.zeros((states, states, modes))
     alphas[0, 0, idx0] = 2.5
-    betas   = np.zeros((states, states, modes, modes))
+    betas = np.zeros((states, states, modes, modes))
 
     taylor_coeffs = [lambdas.copy(), alphas.copy(), betas.copy()]
 
     frags = vibronic_fragments(n_blocks, modes, omegas, taylor_coeffs, scheme="mode")
 
-
     # Q^2 term: beta[0,0,0,0] gets omegas[0]/2 added inside vibronic_fragments_modebased
     exp0 = RealspaceMatrix.zero(n_blocks, modes)
     M = np.zeros((modes, modes))
     M[idx0, idx0] = omegas[idx0] / 2
-    op = RealspaceOperator(modes, ('Q', 'Q'), RealspaceCoeffs(M, label=f"beta[{idx0}][0,0]"))
+    op = RealspaceOperator(modes, ("Q", "Q"), RealspaceCoeffs(M, label=f"beta[{idx0}][0,0]"))
     exp0.set_block(0, 0, RealspaceSum(modes, (op,)))
 
     # Q linear term
     exp1 = RealspaceMatrix.zero(n_blocks, modes)
     v = np.zeros(modes)
     v[idx0] = alphas[0, 0, idx0]
-    opL = RealspaceOperator(modes, ('Q',), RealspaceCoeffs(v, label=f"alpha[{idx0}][0,0]"))
+    opL = RealspaceOperator(modes, ("Q",), RealspaceCoeffs(v, label=f"alpha[{idx0}][0,0]"))
     exp1.set_block(0, 0, RealspaceSum(modes, (opL,)))
 
     # FC merges commuting potential fragments (exp0 + exp1)
@@ -112,7 +120,7 @@ def test_mode_based_fragments():
 
     # kinetic term (appended after grouping)
     exp_kinetic = RealspaceMatrix.zero(n_blocks, modes)
-    PP = RealspaceOperator(modes, ('P', 'P'), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
+    PP = RealspaceOperator(modes, ("P", "P"), RealspaceCoeffs(np.diag(omegas) / 2, label="omega"))
     exp_kinetic.set_block(0, 0, RealspaceSum(modes, (PP,)))
 
     print(frags[1].matrix(2))
@@ -121,6 +129,7 @@ def test_mode_based_fragments():
     assert len(frags) == 2
     assert np.allclose(frags[0].matrix(2), exp_potential.matrix(2))
     assert np.allclose(frags[1].matrix(2), exp_kinetic.matrix(2))
+
 
 class Test1Mode:
     """Test a simple one mode, one state vibronic Hamiltonian"""

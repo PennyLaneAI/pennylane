@@ -31,7 +31,11 @@ from pennylane.labs.trotter_error.realspace.realspace_matrix import _next_pow_2
 
 
 def vibronic_fragments(
-        states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike], scheme: str = "og"
+    states: int,
+    modes: int,
+    freqs: ArrayLike,
+    taylor_coeffs: Sequence[ArrayLike],
+    scheme: str = "og",
 ) -> list[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian.
 
@@ -71,10 +75,14 @@ def vibronic_fragments(
         case "mode":
             return _mode_frags(states, modes, freqs, taylor_coeffs)
         case _:
-            raise ValueError(f"Fragmentation scheme must be either 'og' or 'mode', got {scheme} instead.")
+            raise ValueError(
+                f"Fragmentation scheme must be either 'og' or 'mode', got {scheme} instead."
+            )
 
 
-def _og_frags(states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]) -> list[RealspaceMatrix]:
+def _og_frags(
+    states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
+) -> list[RealspaceMatrix]:
     frags = [
         _position_fragment(i, states, modes, freqs, taylor_coeffs)
         for i in range(_next_pow_2(states))
@@ -138,14 +146,22 @@ def _realspace_sum(
 
     return RealspaceSum(modes, realspace_ops)
 
-def _mode_frags(states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]) -> list[RealspaceMatrix]:
+
+def _mode_frags(
+    states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
+) -> list[RealspaceMatrix]:
 
     if len(taylor_coeffs) != 3:
-        raise ValueError("Mode-based fragmentation is only compatible with quadratic Taylor coefficients.")
+        raise ValueError(
+            "Mode-based fragmentation is only compatible with quadratic Taylor coefficients."
+        )
 
     _, alphas, betas = taylor_coeffs
 
-    quadratic_frags = [_mode_quadratic(states, modes, index, betas, freqs) for index in product(range(modes), repeat=2)]
+    quadratic_frags = [
+        _mode_quadratic(states, modes, index, betas, freqs)
+        for index in product(range(modes), repeat=2)
+    ]
     linear_frags = [_mode_linear(states, modes, index, alphas) for index in range(modes)]
 
     frags = _mode_group_commuting(quadratic_frags + linear_frags)
@@ -155,6 +171,7 @@ def _mode_frags(states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequen
 
     return frags
 
+
 def _mode_quadratic(states, modes, index, betas, omegas) -> tuple[RealspaceMatrix, np.ndarray]:
     m1, m2 = index
 
@@ -162,18 +179,21 @@ def _mode_quadratic(states, modes, index, betas, omegas) -> tuple[RealspaceMatri
     mat = np.zeros((states, states))
 
     for i, j in product(range(states), repeat=2):
-        h = betas[i, j, m1, m2] + (omegas[i]/2 if i == j else 0)
+        h = betas[i, j, m1, m2] + (omegas[i] / 2 if i == j else 0)
 
         if np.isclose(h, 0):
             continue
 
         coeffs = np.zeros((modes, modes))
         coeffs[m1, m2] = h
-        op = RealspaceOperator(modes, ("Q", "Q"), RealspaceCoeffs(coeffs, label=f"beta[{m1}, {m2}][{i}, {j}]"))
+        op = RealspaceOperator(
+            modes, ("Q", "Q"), RealspaceCoeffs(coeffs, label=f"beta[{m1}, {m2}][{i}, {j}]")
+        )
         frag.set_block(i, j, RealspaceSum(modes, [op]))
         mat[i, j] = h
 
     return frag, mat
+
 
 def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndarray]:
     frag = RealspaceMatrix.zero(states, modes)
@@ -187,11 +207,14 @@ def _mode_linear(states, modes, index, alphas) -> tuple[RealspaceMatrix, np.ndar
 
         coeffs = np.zeros(modes)
         coeffs[index] = h
-        op = RealspaceOperator(modes, ("Q", ), RealspaceCoeffs(coeffs, label=f"alpha[{index}][{i}, {j}]"))
+        op = RealspaceOperator(
+            modes, ("Q",), RealspaceCoeffs(coeffs, label=f"alpha[{index}][{i}, {j}]")
+        )
         frag.set_block(i, j, RealspaceSum(modes, [op]))
         mat[i, j] = h
 
     return frag, mat
+
 
 def _mode_group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> list[RealspaceMatrix]:
     remaining = frags
@@ -219,26 +242,24 @@ def _mode_group_commuting(frags: list[tuple[RealspaceMatrix, np.ndarray]]) -> li
 
     return summed_groups
 
-def _mode_potential_fragment(states: int, modes: int, taylor_coeffs: Sequence[ArrayLike]) -> RealspaceMatrix:
+
+def _mode_potential_fragment(
+    states: int, modes: int, taylor_coeffs: Sequence[ArrayLike]
+) -> RealspaceMatrix:
     frag = RealspaceMatrix.zero(states, modes)
 
     for i, j in product(range(states), repeat=2):
-        ops = []
-        for m, phi in enumerate(taylor_coeffs):
-            word = ("Q" ,) * m
-            coeffs = RealspaceCoeffs(phi[i, j], label=f"phi[{m}][{i}, {j}]")
-            ops.append(RealspaceOperator(modes, word, coeffs))
-
-        print(RealspaceSum(modes, ops))
-
-        frag.set_block(i, j, RealspaceSum(modes, ops))
+        lambdas = taylor_coeffs[0][i, j]
+        op = RealspaceOperator(modes, (), RealspaceCoeffs(lambdas, label=f"lambda[{i}, {j}]"))
+        frag.set_block(i, j, RealspaceSum(modes, [op]))
 
     return frag
 
 
 def _commute(a: np.ndarray, b: np.ndarray) -> bool:
-    c = a@b - b@a
+    c = a @ b - b @ a
     return np.allclose(c, np.zeros_like(c))
+
 
 def _validate_input(
     states: int, modes: int, freqs: ArrayLike, taylor_coeffs: Sequence[ArrayLike]
