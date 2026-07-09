@@ -92,7 +92,7 @@ class RX(Operator2):
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=arguments-differ, unused-argument
+    ) -> TensorLike:  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -293,9 +293,7 @@ class RY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -422,7 +420,7 @@ def _ry_to_rz_cliff_resources(phi, wires):  # pylint: disable=unused-argument
 
 
 @register_resources(_ry_to_rz_cliff_resources)
-def _ry_to_rz_cliff(phi, wires: WiresLike, **__):  # pylint: disable=unused-argument
+def _ry_to_rz_cliff(phi, wires):
     qp.change_op_basis(
         qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
         qp.RZ(phi, wires),
@@ -979,7 +977,6 @@ class Rot(Operator2):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         phi: TensorLike,
@@ -1444,7 +1441,6 @@ class U3(Operator2):
     dynamic_argnames = ("theta", "phi", "delta")
     arg_specs = {"theta": Complex, "phi": Complex, "delta": Complex, "wires": Wire[1]}
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         theta: TensorLike,
