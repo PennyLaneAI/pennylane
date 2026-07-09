@@ -271,8 +271,6 @@ class TestSuperpositionTHC:
     def test_max_rank_boundary(self, n):
         """``M = 2 ** n - 1`` is the largest rank the ``n``-wire registers can
         hold; it must construct successfully and prepare exactly the valid set.
-        This exercises the degenerate ``nu <= M`` comparison where the internal
-        bound ``M + 1 == 2 ** n``.
         """
         M = 2**n - 1
         N = 2
