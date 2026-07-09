@@ -504,7 +504,7 @@ def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
         return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
     if len(control) == 1:
         return qp.CNOT(wires)
-    if len(control) == 2 and len(work_wires) == 0:
+    if len(control) == 2 and not work_wires:
         return qp.Toffoli(wires)
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 

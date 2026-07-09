@@ -1282,7 +1282,7 @@ def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
     if not is_empty_or_all_true(control_values):
         ctrl_values = resolve_ctrl_values(control_values, [True], len(control))
         return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
-    if len(control) == 1 and len(work_wires) == 0:
+    if len(control) == 1 and not work_wires:
         return qp.Toffoli(control + base.wires)
     return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
