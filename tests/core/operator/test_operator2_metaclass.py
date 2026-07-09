@@ -276,7 +276,6 @@ class TestOperatorAbstractInputs:
         """Tests that an operator can override __abstract_init__."""
 
         class CustomOp(Operator2):  # pylint: disable=too-few-public-methods
-
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires", "work_wires")
@@ -358,7 +357,8 @@ class TestArgSpecValidationAbstractInputs:
 
         # Abstract inputs that are not compatible raise an error
         # NOTE: Cannot downcast complex to float
-        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+        expected_msg = r"Parameter \'dynamic_arg\' does not match the operator\'s expected \'arg_specs\' dtype. Expected float64 but received complex128."
+        with pytest.raises(ValueError, match=expected_msg):
             _ = MixedArgOp(Complex[2, 3], Wire[3])
 
         # Concrete inputs go through as normal
@@ -416,7 +416,9 @@ class TestArgSpecValidationAbstractInputs:
             def __init__(self, dynamic_arg, wires):
                 super().__init__(dynamic_arg, wires=wires)
 
-        with pytest.raises(ValueError, match="Expected 'dynamic_arg' to have"):
+        with pytest.raises(
+            ValueError, match=r"expected 'arg_specs' shape\. Expected \(3,\) but received .*"
+        ):
             _ = MixedArgOp(bad_dynamic_arg, Wire[3])
 
 
