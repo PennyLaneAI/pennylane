@@ -373,8 +373,7 @@ def build_qudit_mmd_loss(
     .. seealso::
 
         :func:`~pennylane.labs.tcdq.build_qudit_expval_func`,
-        `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_,
-        `Section 5.3, Unbiased MMD Estimator <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#53-unbiased-mmd-estimator>`_
+        `Section IV B, Loss functions via graph-Fourier kernels <https://arxiv.org/pdf/2607.06675>`_.
     """
     n_samples = circuit_config.n_samples
     if n_samples <= 1:

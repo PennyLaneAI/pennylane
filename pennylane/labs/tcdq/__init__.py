@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains features to enable Train Classical, Deploy Quantum (TCDQ) workflows. 
+This module contains features to enable Train Classical, Deploy Quantum (TCDQ) workflows.
 
-The supported workflows include fast optimization of instantaneous quantum polynomial (IQP) circuits and their extensions. See [arXiv:2501.04776](https://arxiv.org/abs/2501.04776) and [arXiv:2607.06675](https://arxiv.org/abs/2607.06675) for theoretical details.
+The supported workflows include fast optimization of instantaneous quantum polynomial (IQP) circuits and their extensions.
+See [arXiv:2501.04776](https://arxiv.org/abs/2501.04776) and [arXiv:2607.06675](https://arxiv.org/abs/2607.06675) for theoretical details.
 
 .. currentmodule:: pennylane.labs.tcdq
 
@@ -22,10 +23,6 @@ The supported workflows include fast optimization of instantaneous quantum polyn
 
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
-
-For the mathematical background, see the
-`technical notes <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md>`_.
-
 
 Core classes and functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +58,7 @@ Circuit construction utilities
     ~generate_pauli_observables
 
 
-The following examples demonstrate several of the key workflows supported by this module.   
+The following examples demonstrate several of the key workflows supported by this module.
 
 Estimating expectation values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,8 +146,7 @@ default is the median pairwise distance of the dataset, computed with
 :func:`~median_heuristic`.
 
 For more detail on how the loss is constructed, see
-`Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
-of the technical notes.
+`Section IV B, Loss functions via graph-Fourier kernels. <https://arxiv.org/pdf/2607.06675>`_
 
 .. code-block:: python
 

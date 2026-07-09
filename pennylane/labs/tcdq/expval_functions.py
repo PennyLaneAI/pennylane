@@ -79,7 +79,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
 
     .. seealso::
 
-        `Section 1, Circuit Architecture <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#1-circuit-architecture>`_
+        `arXiv:2501.04776 <https://arxiv.org/pdf/2501.04776>`_
     """
 
     #: Circuit structure mapping parameter indices to lists of gates.

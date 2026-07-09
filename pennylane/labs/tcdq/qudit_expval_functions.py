@@ -478,9 +478,7 @@ def build_qudit_expval_func(
 
     .. seealso::
 
-        `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_,
-        `Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_,
-        `Section 4, Monte Carlo Statistics <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#4-monte-carlo-statistics>`_
+        `arXiv:2607.06675 <https://arxiv.org/pdf/2607.06675>`_.
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
