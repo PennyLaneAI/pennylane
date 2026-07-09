@@ -109,9 +109,7 @@ def get_momentum_coefficients(fragment: RealspaceMatrix):
         np.ndarray: Array of momentum coefficients with shape ``(fragment.modes,)``
 
     """
-    coeffs = fragment_to_dense(
-        fragment, ("P", "P")
-    )  #  shape=(n_states, n_states, n_modes, n_modes)
+    coeffs = fragment_to_dense(fragment, ("P", "P"))  #  n_states, n_states, n_modes, n_modes)
     coeffs_diag = np.diagonal(coeffs, axis1=2, axis2=3)  # shape = (n_states, n_states, n_modes)
     coeffs_diag2 = np.diagonal(
         coeffs_diag
@@ -213,7 +211,7 @@ def diagonalize_vibronic_qjit(*, key, wires):
         # This loop goes over the full range in order to not have a dynamic range that depends
         # on control_pos
 
-        @qp.for_loop(n)
+        @qp.for_loop(n - 1, -1, -1)
         def loop(w):
 
             # If the diff bit is set and the wire is not the control wire
@@ -340,12 +338,40 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
     return {new: registers[old] for new, old in reg.items()}
 
 
-def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, aqft_order):
+def _preprocess_data(time, fragments):
+    first_order_time_step = time / 2
+    diag_keys = [
+        next(iter(k for k, v in frag.get_coefficients().items() if v)) for frag in fragments
+    ]
+    constant, linear, quadratic, bilinear = zip(
+        *[
+            [c * first_order_time_step for c in get_position_coefficients(fragment)]
+            for fragment in fragments[:-1]
+        ]
+    )
+
+    n_modes = fragments[0].modes
+    # Reshape the bilinear data into a flattened structure with respect to mode pairs
+    # Note that k < ell matches the data structure of bilinear_coeffs, which is only
+    # populated in the upper triangular part, w.r.t. the mode axes.
+    bilinear_indices = np.array(np.triu_indices(n_modes, 1))
+    bilinear = [x[*bilinear_indices] for x in bilinear]
+    if qp.compiler.active():
+        constant = qp.math.array(constant, like="jax")
+        linear = qp.math.array(linear, like="jax")
+        quadratic = qp.math.array(quadratic, like="jax")
+        bilinear_indices = qp.math.array(bilinear_indices, like="jax")
+        bilinear = qp.math.array(bilinear, like="jax")
+        diag_keys = qp.math.array(diag_keys, like="jax")
+    return (constant, linear, quadratic, bilinear), bilinear_indices, diag_keys
+
+
+def _trotter_step_second_order(_, time, fragments, registers, mode_registers, aqft_order):
     r"""Second-order Trotter time evolution step implemented via custom arithmetic circuits
     based on a phase gradient resource state.
 
     Args:
-        idx (int): Trotter step index. This argument is not used explicitly.
+        _ (int): Trotter step index. This argument is not used explicitly.
         time (float): Second-order Trotter time step size.
         fragments (list[RealspaceMatrix]): Trotter fragments of the vibronic Hamiltonian.
             It is assumed that the kinetic fragment is in the last position.
@@ -367,38 +393,10 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
     # pylint: disable=no-value-for-parameter, unused-argument, too-many-statements, too-many-arguments
 
     precision = len(registers["phase gradient"])
-    first_order_time_step = time / 2
+    all_coeffs, bilinear_indices, diag_keys = _preprocess_data(time, fragments)
+    all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
-    diag_keys = [
-        next(iter(k for k, v in frag.get_coefficients().items() if v)) for frag in fragments
-    ]
     n_modes = fragments[0].modes
-    n_states = fragments[0].states
-    all_constant = []
-    all_linear = []
-    all_quadratic = []
-    all_bilinear = []
-
-    # dynamic loops
-    for fragment in fragments[:-1]:
-        _coeffs = [c * first_order_time_step for c in get_position_coefficients(fragment)]
-        all_constant.append(_coeffs[0])
-        all_linear.append(_coeffs[1])
-        all_quadratic.append(_coeffs[2])
-        all_bilinear.append(_coeffs[3])
-
-    bilinear_indices = np.array(np.triu_indices(n_modes, 1))
-    all_bilinear = [x[*bilinear_indices] for x in all_bilinear]
-    if qp.compiler.active():
-        all_constant = qp.math.array(all_constant, like="jax")
-        all_linear = qp.math.array(all_linear, like="jax")
-        all_quadratic = qp.math.array(all_quadratic, like="jax")
-        # Reshape the bilinear data into a flattened structure with respect to mode pairs
-        # Note that k < ell matches the data structure of bilinear_coeffs, which is only
-        # populated in the upper triangular part, w.r.t. the mode axes.
-        bilinear_indices = qp.math.array(bilinear_indices, like="jax")
-        all_bilinear = qp.math.array(all_bilinear, like="jax")
-        diag_keys = qp.math.array(diag_keys, like="jax")
 
     def position_fragments(i):
         diag_key = diag_keys[i]
@@ -489,7 +487,7 @@ def _trotter_step_second_order(idx, time, fragments, registers, mode_registers, 
 
             return qp.cond(qp.math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        prev_bitstrings = np.zeros((n_states, precision), dtype=int)
+        prev_bitstrings = np.zeros((fragments[0].states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
         prev_bitstrings = linear_terms(prev_bitstrings)
         prev_bitstrings = quadratic_terms(prev_bitstrings)

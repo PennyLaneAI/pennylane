@@ -18,7 +18,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.labs.templates.trotter_vibronic import (
-    diagonalize_vibronic,
+    diagonalize_vibronic_mat,
+    diagonalize_vibronic_qjit,
     fragment_to_dense,
     get_momentum_coefficients,
     get_position_coefficients,
@@ -31,8 +32,8 @@ from pennylane.labs.trotter_error.realspace import (
 )
 
 
-class TestDiagonalizeVibronic:
-    """Tests for ``diagonalize_vibronic``."""
+class TestDiagonalizeVibronicMat:
+    """Tests for ``diagonalize_vibronic_mat`` and ``diagonalize_vibronic_qjit``."""
 
     @pytest.mark.parametrize(
         "n_states, elec_key, expected_support",
@@ -55,14 +56,16 @@ class TestDiagonalizeVibronic:
             (128, (0, 127), [6, 5, 4, 3, 2, 1, 0]),
         ],
     )
-    def test_expected_circuit(self, n_states, elec_key, expected_support, seed):
+    @pytest.mark.parametrize("fn", [diagonalize_vibronic_mat, diagonalize_vibronic_qjit])
+    def test_expected_circuit(self, n_states, elec_key, expected_support, fn, seed):
         """Test that the diagonalization circuit looks as expected for some small-scale examples."""
+        # pylint: disable=too-many-arguments
         n_wires = qp.math.ceil_log2(n_states)
         wires = list(range(n_wires))
         rng = np.random.default_rng(seed)
         rng.shuffle(wires)
         with qp.queuing.AnnotatedQueue() as q:
-            diagonalize_vibronic(elec_key, wires)
+            fn(key=elec_key, wires=wires)
 
         if expected_support:
             c = wires[expected_support[0]]
@@ -76,7 +79,7 @@ class TestDiagonalizeVibronic:
         "n_states, col", [(3, 0), (3, 1), (3, 2), (4, 0), (4, 1), (4, 2), (4, 3), (17, 9), (34, 19)]
     )
     @pytest.mark.parametrize("row", (0, 1, 2))
-    def test_diagonalizes_correctly(self, n_states, col, row, seed):
+    def test_diagonalizes_correctly_mat(self, n_states, col, row, seed):
         """Test that the diagonalization works as expected."""
         n_wires = qp.math.ceil_log2(n_states)
         wires = list(range(n_wires))
@@ -88,7 +91,7 @@ class TestDiagonalizeVibronic:
             if i < i ^ m < n_states:
                 matrix[i, i ^ m] = matrix[i ^ m, i] = val
         key = (row, col)
-        diag_mat = qp.matrix(diagonalize_vibronic, wires)(key, wires)
+        diag_mat = qp.matrix(diagonalize_vibronic_mat, wires)(key=key, wires=wires)
         # Just make sure it is an orthogonal matrix
         assert np.all(np.isreal(diag_mat)) and np.allclose(
             diag_mat @ diag_mat.T, np.eye(2**n_wires)
@@ -98,6 +101,55 @@ class TestDiagonalizeVibronic:
         diagonalized = diag_mat.T @ matrix @ diag_mat
         # Test that the diagonalization worked
         assert np.allclose(np.diag(np.diag(diagonalized)), diagonalized)
+
+    @pytest.mark.parametrize(
+        "n_states, elec_key, expected_support",
+        [
+            (2, (0, 0), []),
+            (2, (0, 1), [0]),
+            (3, (0, 0), []),
+            (3, (0, 1), [1]),
+            (3, (0, 2), [0]),
+            (4, (0, 0), []),
+            (4, (0, 1), [1]),
+            (4, (0, 2), [0]),
+            (4, (0, 3), [1, 0]),
+            (5, (0, 4), [0]),
+            (6, (0, 1), [2]),
+            (7, (0, 2), [1]),
+            (8, (0, 3), [2, 1]),
+            (8, (0, 7), [2, 1, 0]),
+            (128, (0, 62), [5, 4, 3, 2, 1]),
+            (128, (0, 127), [6, 5, 4, 3, 2, 1, 0]),
+        ],
+    )
+    def test_qjit_compatibility(self, n_states, elec_key, expected_support, seed):
+        """Test that the diagonalization circuit matrix looks the same when using `qjit` or not."""
+
+        n_wires = qp.math.ceil_log2(n_states)
+        wires = list(range(n_wires))
+        rng = np.random.default_rng(seed)
+        rng.shuffle(wires)
+        state = rng.random(size=2**n_wires)
+        state /= np.linalg.norm(state)
+
+        @qp.qnode(qp.device("lightning.qubit"))
+        def test_fn(key):
+            # Use wires in order for state comparability
+            qp.StatePrep(state, list(range(n_wires)))
+            # Run expected circuit forward
+            if expected_support:
+                c = wires[expected_support[0]]
+                qp.Hadamard(c)
+                _ = [qp.CNOT([c, wires[idx]]) for idx in expected_support[1:]]
+            # Run qjit-compatible function backward
+            qp.adjoint(diagonalize_vibronic_qjit, lazy=False)(key=key, wires=wires)
+            return qp.state()
+
+        non_qjit_result = test_fn(elec_key)
+        qjit_result = qp.qjit(test_fn)(elec_key)
+        assert np.allclose(non_qjit_result, state)
+        assert np.allclose(qjit_result, state)
 
 
 def _random_vibronic_elec_ids(n_states, rng):
@@ -204,7 +256,9 @@ class TestFragmentReadout:
         n_wires = qp.math.ceil_log2(n_states)
         wires = list(range(n_wires))
         diag_key = next(iter(k for k, v in fragment.get_coefficients().items() if v))
-        M = qp.matrix(diagonalize_vibronic, wires)(diag_key, wires)[:n_states, :n_states]
+        M = qp.matrix(diagonalize_vibronic_mat, wires)(key=diag_key, wires=wires)[
+            :n_states, :n_states
+        ]
 
         constant, linear, quadratic, bilinear = get_position_coefficients(fragment)
 
