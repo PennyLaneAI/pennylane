@@ -300,6 +300,8 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
     control = Wires(control)
+    work_wires = Wires(() if work_wires is None else work_wires)
+
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
@@ -335,7 +337,6 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
-        work_wires = Wires(() if work_wires is None else work_wires)
         work_wire_type = resolve_work_wire_type(
             op.work_wires,
             op.work_wire_type,
