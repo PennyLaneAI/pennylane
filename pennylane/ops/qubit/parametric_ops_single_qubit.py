@@ -43,6 +43,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -90,9 +91,7 @@ class RX(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -173,6 +172,13 @@ class RX(Operator2):
     parameter_frequencies = [(1,)]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_rx(base: RX, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRX(base.data[0], wires=control + base.wires)
+    return NotImplemented
+
+
 def _rx_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
@@ -225,9 +231,7 @@ add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
 
-def _controlled_rx_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_rx_resource(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
     if len(control_values) == 1:
         return {qp.CRX: 1}
     return {
@@ -244,9 +248,7 @@ def _controlled_rx_resource(
 
 
 @register_resources(_controlled_rx_resource)
-def _controlled_rx_decomp(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
@@ -374,6 +376,13 @@ class RY(Operator2):
     parameter_frequencies = [(1,)]
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_ry(base: RY, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRY(base.data[0], wires=control + base.wires)
+    return NotImplemented
+
+
 def _ry_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
@@ -442,9 +451,7 @@ add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
 
-def _controlled_ry_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_ry_resource(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
     if len(control_wires) == 1:
         return {qp.CRY: 1}
     return {
@@ -460,9 +467,7 @@ def _controlled_ry_resource(
 
 
 @register_resources(_controlled_ry_resource)
-def _controlled_ry_decomp(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):  # pylint: disable=unused-argument
     wires = control_wires + base.wires
 
     if len(control_wires) == 1:
@@ -511,9 +516,7 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -557,9 +560,7 @@ class RZ(Operator2):
         ).asformat(format)
 
     @staticmethod
-    def compute_eigvals(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -631,6 +632,13 @@ class RZ(Operator2):
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_rz(base: RZ, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRZ(base.data[0], wires=control + base.wires)
+    return NotImplemented
 
 
 def _rz_to_ps_resources(phi, wires):
@@ -896,6 +904,13 @@ class PhaseShift(Operator2):
         return PhaseShift(phi, wires=self.wires)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_ps(base: PhaseShift, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.ControlledPhaseShift(base.data[0], wires=control + base.wires)
+    return NotImplemented
+
+
 def _phaseshift_to_rz_gp_resources(phi, wires):
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
@@ -1078,6 +1093,13 @@ class Rot(Operator2):
             return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_rot(base: Rot, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.CRot(*base.data, wires=control + base.wires)
+    return NotImplemented
 
 
 def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
