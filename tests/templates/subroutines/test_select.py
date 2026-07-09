@@ -25,11 +25,13 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
+from pennylane.typing import Wire
 
 
 @pytest.mark.jax
@@ -219,9 +221,6 @@ class TestSelect:
 
         assert resource_obj.num_gates == 4
 
-        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-        from pennylane.typing import Wire
-
         expected_counts = {
             _ctrl_abstract(abstractify(qp.X), Wire[2], Wire[0], "borrowed"): 3,
             _ctrl_abstract(abstractify(qp.Y), Wire[2], Wire[0], "borrowed"): 1,
@@ -261,9 +260,6 @@ class TestSelect:
         )
 
         assert resource_obj.num_gates == 3
-
-        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-        from pennylane.typing import Wire
 
         c_resource = qp.decomposition.resources.controlled_resource_rep
 
@@ -333,8 +329,6 @@ class TestSelect:
 
             expected_counts = {abstractify(qp.Z): 1}
         else:
-            from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-            from pennylane.typing import Wire
 
             expected_counts = {_ctrl_abstract(abstractify(qp.Z), Wire[1], Wire[0], "borrowed"): 1}
         assert resource_obj.gate_counts == expected_counts
