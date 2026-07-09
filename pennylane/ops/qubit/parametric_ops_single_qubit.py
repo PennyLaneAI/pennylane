@@ -155,12 +155,6 @@ class RX(Operator2):
 
     # TODO: Remove once we phase out Operation / Operator.
 
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
@@ -362,12 +356,6 @@ class RY(Operator2):
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
     # TODO: Remove once we phase out Operation / Operator.
-
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
@@ -629,12 +617,6 @@ class RZ(Operator2):
 
     # TODO: Remove once we phase out Operation / Operator.
 
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     @property
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
@@ -786,31 +768,9 @@ class PhaseShift(Operator2):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
-
-    @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
-        return "Z"
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
-    def generator(self) -> "qp.Projector":
-        return qp.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
@@ -917,6 +877,21 @@ class PhaseShift(Operator2):
 
         return PhaseShift(phi, wires=self.wires)
 
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([1]), wires=self.wires)
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    grad_method = "A"
+    parameter_frequencies = [(1,)]
+
 
 @custom_ctrl_dispatch.register
 def _ctrl_ps(base: PhaseShift, control, control_values, *_):
@@ -995,16 +970,6 @@ class Rot(Operator2):
     wire_sizes = (1,)
     dynamic_argnames = ("phi", "theta", "omega")
     arg_specs = {"phi": Complex, "theta": Complex, "omega": Complex, "wires": Wire[1]}
-
-    num_wires = 1
-    num_params = 3
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    parameter_frequencies = [(1,), (1,), (1,)]
 
     def __init__(
         self,
@@ -1108,6 +1073,9 @@ class Rot(Operator2):
 
         return Rot(p0, p1, p2, wires=self.wires)
 
+    grad_method = "A"
+    parameter_frequencies = [(1,), (1,), (1,)]
+
 
 @custom_ctrl_dispatch.register
 def _ctrl_rot(base: Rot, control, control_values, *_):
@@ -1200,16 +1168,6 @@ class U1(Operator2):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    num_wires = 1
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Complex, "wires": Wire[1]}
@@ -1272,6 +1230,9 @@ class U1(Operator2):
 
         return U1(phi, wires=self.wires)
 
+    grad_method = "A"
+    parameter_frequencies = [(1,)]
+
 
 def _u1_phaseshift_resources(phi, wires):
     return {PhaseShift: 1}
@@ -1322,16 +1283,6 @@ class U2(Operator2):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-
-    num_wires = 1
-    num_params = 2
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    parameter_frequencies = [(1,), (1,)]
 
     wire_sizes = (1,)
     dynamic_argnames = ("phi", "delta")
@@ -1400,6 +1351,8 @@ class U2(Operator2):
 
         return U2(phi, delta, wires=wires)
 
+    parameter_frequencies = [(1,), (1,)]
+
 
 def _u2_phaseshift_rot_resources(phi, delta, wires):
     return {PhaseShift: 2, Rot: 1}
@@ -1462,16 +1415,6 @@ class U3(Operator2):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-
-    num_wires = 1
-    num_params = 3
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0, 0, 0)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    parameter_frequencies = [(1,), (1,), (1,)]
 
     wire_sizes = (1,)
     dynamic_argnames = ("theta", "phi", "delta")
@@ -1573,6 +1516,8 @@ class U3(Operator2):
             return RY(p0, wires=wires)
 
         return U3(p0, p1, p2, wires=wires)
+
+    parameter_frequencies = [(1,), (1,), (1,)]
 
 
 def _u3_phaseshift_rot_resources(theta, phi, delta, wires):
