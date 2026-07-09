@@ -32,17 +32,13 @@ from .expval_functions import CircuitConfig, build_expval_func
 
 @dataclass(frozen=True)
 class MMDConfig:
-    """Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
+    r"""Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
 
     The MMD measures how well the circuit's output distribution matches a
     target dataset.
 
     Args:
-        bandwidth (float | Sequence[float]): Width of the Radial Basis Function (RBF) kernel
-            used to compare distributions. Small values make the loss
-            sensitive to fine-grained differences; large values emphasize
-            broad structure. A good starting point is the median pairwise
-            distance of the target data (see :func:`median_heuristic`). If a sequence is provided,
+        bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
             the loss is evaluated for each value and then averaged, unless
             ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger

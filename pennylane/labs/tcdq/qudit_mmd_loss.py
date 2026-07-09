@@ -39,7 +39,7 @@ from .qudit_expval_functions import QuditCircuitConfig, build_qudit_expval_func
 
 @dataclass(frozen=True)
 class QuditMMDConfig:
-    """Hyperparameters for the qudit graph-kernel MMD loss.
+    r"""Hyperparameters for the qudit graph-kernel MMD loss.
 
     The MMD measures how well the circuit output matches a target dataset of
     dit-strings. In the qudit setting, the kernel comes from heat diffusion on
@@ -47,11 +47,8 @@ class QuditMMDConfig:
     visible wire.
 
     Args:
-        bandwidth (float | Sequence[float]): Width of the Radial Basis Function (RBF) kernel
-            kernel. Small values make the loss sensitive to fine-grained
-            differences between distributions; large values emphasize broad
-            structure. If a sequence is provided, the loss is evaluated for
-            each value and then averaged, unless
+        bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
+            the loss is evaluated for each value and then averaged, unless
             ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger
             values reduce estimator variance.
