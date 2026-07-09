@@ -62,10 +62,6 @@ class MMDConfig:
     >>> target_data = np.random.binomial(1, 0.5, size=(200, 6))
     >>> bw = median_heuristic(target_data)
     >>> config = MMDConfig(bandwidth=bw, n_ops=64)
-
-    .. seealso::
-
-        `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
     """
 
     #: Width of the RBF kernel (scalar or sequence for multi-bandwidth).
@@ -266,7 +262,7 @@ def mmd_loss(
     .. seealso::
 
         :func:`~pennylane.labs.tcdq.build_expval_func`,
-        `Section 3.3, Generative machine learning tools <https://arxiv.org/pdf/2501.04776>`_
+        `Section 3.3 of IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`_
     """
     effective_samples = circuit_config.n_samples
     if effective_samples <= 1:

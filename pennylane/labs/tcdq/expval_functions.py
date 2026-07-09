@@ -79,7 +79,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
 
     .. seealso::
 
-        `arXiv:2501.04776 <https://arxiv.org/pdf/2501.04776>`_
+        `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
 
     #: Circuit structure mapping parameter indices to lists of gates.
@@ -261,7 +261,7 @@ def build_expval_func(
     .. seealso::
 
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
-        `Section 2, Classically Estimating Expectation Values <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#2-classically-estimating-expectation-values>`_
+        `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 

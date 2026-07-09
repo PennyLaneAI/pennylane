@@ -92,11 +92,6 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     ...     n_samples=5000,
     ...     key=jax.random.PRNGKey(42),
     ... )
-
-    .. seealso::
-
-        `Section 1, Circuit Architecture <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#1-circuit-architecture>`_,
-        `Section 3, General Input States <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#3-general-input-states>`_
     """
 
     #: Local qudit dimension.
@@ -478,7 +473,7 @@ def build_qudit_expval_func(
 
     .. seealso::
 
-        `arXiv:2607.06675 <https://arxiv.org/pdf/2607.06675>`_.
+        `Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/pdf/2607.06675>`_.
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 

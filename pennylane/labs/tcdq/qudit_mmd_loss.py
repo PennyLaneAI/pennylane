@@ -23,8 +23,7 @@ available choices are the cycle graph :math:`C_d` and the complete graph
 :math:`K_d`.
 
 For the mathematical construction, see
-`Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_
-of the technical notes.
+`Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
 """
 
 from collections.abc import Callable, Sequence
@@ -72,11 +71,6 @@ class QuditMMDConfig:
 
     >>> from pennylane.labs.tcdq import QuditMMDConfig
     >>> config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
-
-    .. seealso::
-
-        `Section 5, Graph-Kernel MMD Loss <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#5-graph-kernel-mmd-loss>`_,
-        `Section 5.2, Spectral Sampling Distributions <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#52-spectral-sampling-distributions>`_
     """
 
     #: Width of the graph heat kernel (scalar or sequence for multi-bandwidth).
@@ -101,7 +95,7 @@ def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
     eigenvalues of the heat kernel on the cycle graph :math:`C_d`.
 
     For the derivation, see
-    `Section 5.2, Spectral Sampling Distributions <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#52-spectral-sampling-distributions>`_.
+    `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     k = jnp.arange(d)
     log_p = -4.0 * t * jnp.sin(jnp.pi * k / d) ** 2
@@ -117,7 +111,7 @@ def _complete_marginal_probs(d: int, t: float) -> jnp.ndarray:
     other indices share the remaining mass equally.
 
     For the derivation, see
-    `Section 5.2, Spectral Sampling Distributions <https://github.com/PennyLaneAI/pennylane/blob/port_tcdq_docs_pr/pennylane/labs/tcdq/notes.md#52-spectral-sampling-distributions>`_.
+    `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     log_unnorm = jnp.zeros(d).at[1:].set(-t * d)
     p = jnp.exp(log_unnorm)
@@ -373,7 +367,7 @@ def build_qudit_mmd_loss(
     .. seealso::
 
         :func:`~pennylane.labs.tcdq.build_qudit_expval_func`,
-        `Section IV B, Loss functions via graph-Fourier kernels <https://arxiv.org/pdf/2607.06675>`_.
+        `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
     n_samples = circuit_config.n_samples
     if n_samples <= 1:
