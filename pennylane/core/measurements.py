@@ -27,6 +27,7 @@ from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
@@ -35,7 +36,6 @@ from pennylane.exceptions import (
 )
 from pennylane.math.utils import is_abstract
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -45,7 +45,7 @@ from ._capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .operator import Operator
+from .operator import Operator, Operator2
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -100,6 +100,12 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             return cls._wires_primitive.bind(
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
+
+        if isinstance(obs, Operator2):
+            if obs.tracer is None:
+                obs._bind_primitive()  # pylint: disable=protected-access
+            # capture on but not tracing, tracer will still be None
+            obs = obs if obs.tracer is None else obs.tracer
 
         if isinstance(obs, Operator):
             QueuingManager.remove(obs)

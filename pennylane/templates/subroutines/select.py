@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -32,7 +33,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -991,7 +991,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             if first_bit_has_flipped:
                 inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [ctrl(X(c2), control=c0, control_values=[0])]
+                inter_ops = [ctrl(X(c2), control=[c0], control_values=[0])]
         elif first_flip_bit == 0:
             c0, c1, c2 = unary_triples[0]
             inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]
@@ -1006,7 +1006,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     # For the last target operator, apply controlled target op and then the "closing"
     # ladder of right elbows
     closing_ctrl_bits = list(map(int, np.binary_repr(K - 1, width=c)))
-    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1], work_wires=new_work_wires))
+    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1:], work_wires=new_work_wires))
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))

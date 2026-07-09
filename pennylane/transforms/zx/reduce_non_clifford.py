@@ -18,7 +18,7 @@ pipeline (available through the external `pyzx <https://pyzx.readthedocs.io/en/l
 to a PennyLane circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

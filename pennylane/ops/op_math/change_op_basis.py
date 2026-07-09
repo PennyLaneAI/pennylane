@@ -15,13 +15,15 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
+import copy
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees, queuing
-from pennylane.core.operator import Operator
+from pennylane import capture, math, pytrees
+from pennylane.core import queuing
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -65,6 +67,12 @@ def _apply_op_or_func(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            # pylint: disable-next=protected-access
+            op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
         type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
     elif math.is_abstract(op_or_func):
@@ -187,6 +195,14 @@ def change_op_basis(
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
