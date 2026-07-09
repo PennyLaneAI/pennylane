@@ -23,6 +23,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core.queuing import apply
+from pennylane.typing import Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import (
@@ -222,7 +223,6 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         # pylint: disable=import-outside-toplevel
         # Lazy import: pennylane.decomposition loads before pennylane.ops
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-        from pennylane.typing import Wire
 
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
