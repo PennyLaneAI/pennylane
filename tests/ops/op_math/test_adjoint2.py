@@ -20,6 +20,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.wires import Wires
@@ -144,6 +145,21 @@ def test_attributes():
         }
     )
     assert op2.has_adjoint
+
+
+def test_old_decomp_integartion():
+    """Tests that adjoint2 is compatible with the old decomposition convention."""
+
+    @register_resources({qp.RX: 1})
+    def _sx_to_rx(wires):
+        qp.RX(np.pi / 2, wires=wires)
+
+    with qp.decomposition.local_decomps():
+
+        qp.add_decomps(SX2, _sx_to_rx)
+        op = qp.adjoint(SX2(0))
+        assert op.has_decomposition
+        assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
 
 
 def test_parameter_frequencies():
